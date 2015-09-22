@@ -41,9 +41,14 @@ Other quantities are:
   \D^i =D_m^i \tau \tn I + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \otimes \vc v}{\abs{\vc v}^2}\right),
 \end{equation}
 which represents (isotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
-Here $D_m^i$ \units{}{2}{-1} is the \hyperA{SoluteTransport-DG-Data::diff-m}{molecular diffusion coefficient} of the $i$-th substance (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), $\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{SoluteTransport-DG-Data::disp-l}{longitudal dispersivity} and the \hyperA{SoluteTransport-DG-Data::disp-t}{transverse dispersivity}, respectively.
-Note that although we allow dispersivities to have different values for different substances, it is often assumed that they are intrinsic parameters of the porous medium.
-Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, related to the Darcy flux $\vc q$ by the relation $\vc q = \th\delta\vc v$.
+Here $D_m^i$ \units{}{2}{-1} is the \hyperA{SoluteTransport-DG-Data::diff-m}{molecular diffusion coefficient} of the $i$-th substance 
+(usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), 
+$\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{SoluteTransport-DG-Data::disp-l}{longitudal dispersivity} 
+and the \hyperA{SoluteTransport-DG-Data::disp-t}{transverse dispersivity}, respectively.
+Note that although we allow dispersivities to have different values for different substances, it is often assumed that they are intrinsic parameters
+of the porous medium.
+Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, also called \emph{seepage velocity}, 
+related to the Darcy flux $\vc q$ by the relation $\vc q = \th\delta\vc v$.
 The value of $D_m^i$ for specific substances can be found in literature (see e.g. \cite{cislerova_vogel}).
 For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cite{marsily,domenico_schwartz}.
 

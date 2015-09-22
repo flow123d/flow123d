@@ -140,61 +140,48 @@ $H_d^R$ to specify $h_d^R$.
 while the equality holds in at least one inequality. This condition is used to model spring area. 
 The former inequality
 (usually with default value $h_d^D=0$) disallow non-zero water height on the surface, the later
-inequality allow only out flow from the domain (i.e. spring).
+inequality (again with default value $q_d^N=0$) allows only outflow from the domain (i.e. spring).
+In practice one may want to allow given water height $h_d^D$ or given infilration (e.g. precipitation-evaporation) $q_d^N$.
 
 {\bf River} boundary condition
 
-This boundary condition models kind of free water surface, namely a watercourse.
-In order to derive the inequalities similar to that in the Seepage face condition, we
-start with a model that use the combined flux condition
+This boundary condition models small scale free water surface, namely a watercourse.
+To begin with consider a small scale case where elements have scale of the width of the watercourse and the boundary match the free water surface of the water course.
+In such a case we can prescribe the boundary condition:
+\[
+  h_d \le h_r\quad \text{and}\quad \vc q_d \cdot \vc n \ge \sigma (h - h_r)
+\]
+where $\sigma$ is a transmissivity of the river bedrock and $h_r=0$ is the height of the water column above the discrete boundary.
+This condition use the information about water depth $h_0$ clearly can not be smaller then the pressure head at the same place. However, if the pressure head is 
+smaller, we do not allow arbitrary infiltration as in the seepage face boundary condition, but limit the infiltration by the transmissivity of the bedrock. 
+Next, if discrete boundary do not match the free surface of height $H_r$, we should rather use the piezometric head in boundary condition, getting:
 \begin{equation}
-    \label{bc:robin_flux}
-    \vc q \cdot \vc n = \sigma (h - h_0) + q_i,
+  \label{BC:river_raw}
+  H_d \le H_r\quad \text{and}\quad \vc q_d \cdot \vc n \ge \sigma (H - H_r).
 \end{equation}
-where $\sigma$ is a kind of transmissivity of the river bedrock (see detailed discussion later on) and $q_i$ can represent e.g. precipitation.
-From practical point of view, the river can be understood as an information that the underground water
-is close to the surface. One possibility how to express this information in the model is to constrain the piezometric head:
+Finally, let us assume elements significantly larger then width of the watercourse. Let, $A_e$ be the surface of a boundary element face
+containing a water source with the surface $A_R=\alpha_r A_e$. We want to combine the seepage face condition out of the watercourse with 
+the river condition \eqref{BC:river_raw} in to single condition. The inequality for the flux is weighted by the area:
 \[
-    H \ge H_c, \text{ or equivalently } h \ge H_c - z
+   \vc q\cdot \vc n \ge \alpha_r \sigma(H-H_r) + (1-\alpha_r)q_i
 \]
-where $H$ is the piezometric head of the solution pressure $h$ and $H_c$ is the piezometric head constraint usually something little bit below
-the river's altitude. Then we use \eqref{bc:robin_flux} to derive complementary constraint for the flux:
+where $q_i$ is the infiltration (negative) or evaporation (positive) on the surface out of the watercourse. Similarly, we consider
 \[
-    \vc q \cdot \vc n \ge \sigma(H_c - z - h_0) + q_i.
+  H_d \le H_c = (\alpha_r) H_r + (1-\alpha_r) H_s
 \]
+where the critical piezometric head $H_c$ is a weighted average of the river head and the average height $H_s$ of the real surface.
 
 
-Other possibility is to constrain the infiltration from the river into the underground domain:
-\[
-    \vc q \cdot \vc n \ge q_c
-\]
-and then use \eqref{bc:robin_flux} to obtain complementary condition for the pressure:
-\[
-    h \ge \frac{q_c - q_i}{\sigma} + h_0.
-\]
+Parameters: $\alpha_r$ \units{}{}{} the \hyperA{DarcyFlowMH-Data::bc-river-fraction}{river surface fraction}, $H_r$ \units{1}{}{} 
+the \hyperA{DarcyFlowMH-Data::bc-river-head}{river head}, 
+alternatively $H_c=H_d^D$ \units{1}{}{} the critical piezometric head or $h_c=h_d^D$ \units{1}{}{} the critical pressure head, $q_i=q_d^N$ \units{}{4-d}{-1}
+the infiltration or evapotranspiration rate, $\sigma=\sigma_d^R$ \units{}{3-d}{-1}  
+the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient} of the bedrock.
 
+Implementation: prescribing $\alpha_r$ as a field makes only sense for the case of element-wise field since the value depends on the cross-section 
+of the river and the boundary element. Ultimate goal should be to prescribe river as an 1D line and set width of the river on its elements. Then we can 
+modify non-compatible intersection algorithms to compute value of $\alpha_r$ for individual elements.
 
-
-%\begin{equation}
-%    \vc q^d \cdot \vc n \ge q_d^N
-%\end{equation}
-%
-%where $\sigma$ \units{}{3-d}{-1} may be precalculated by the user as 
-%\[
-%  \sigma = \frac{\delta k^R}{l^R}
-%\]
-%where $k^R$ is the hydraulic conductivity of the river badrock and $l^R$ is its thicknes.
-%Percipitation can be prescribed through $q_d^N$.
-%From parctical point of view, the river can be understud as an information that the underground water
-%is close to the surface. So we constrain the infiltration from the river into the domain by the percipitation
-%\begin{equation}
-%    \vc q^d \cdot \vc n \ge q_d^N
-%\end{equation}
-%which, using \eqref{bc:river_flux}, is equivalent to constrain for the pressure head
-%\begin{equation}
-%    h_d \ge h_d^D
-%\end{equation}
-%
 
 
 
