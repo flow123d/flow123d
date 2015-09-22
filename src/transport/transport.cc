@@ -88,7 +88,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 
 
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
-: TransportBase(init_mesh, in_rec)
+: TransportBase(init_mesh, in_rec), time_constraint_cfl("Convection CFL")
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -96,6 +96,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     target_mark_type = time_->equation_fixed_mark_type();
+    time_->define_constraint(time_constraint_cfl, 
+                             "Time step constrained due to CFL condition (including both flow and sources).");
 
     cfl_max_step = time_->end_time();
 
@@ -636,7 +638,7 @@ void ConvectionTransport::set_target_time(double target_time)
     // If CFL condition is changed, time fixation will change later from TOS.
     
     // Set the same constraint as was set last time.
-    time_->set_upper_constraint(cfl_max_step);
+    time_->set_upper_constraint(time_constraint_cfl,cfl_max_step);
     
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes

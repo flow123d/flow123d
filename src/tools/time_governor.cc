@@ -146,8 +146,9 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
         if (init_dt > 0.0) {
             // set first time step suggested by user
             //time_step_=min(init_dt, time_step_);
-            lower_constraint_=init_dt;
-            upper_constraint_=init_dt;
+            time_constraints_.define_constraint("Initial","Initial time step set by user.", init_dt);
+            lower_constraint_ = time_constraints_.get("Initial");
+            upper_constraint_ = time_constraints_.get("Initial");
         } else {
             // apply constraints
             //time_step_=min(time_step_, upper_constraint_);
@@ -174,8 +175,9 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
     time_step_changed_=true;
     end_of_fixed_dt_interval_ = inf_time;
 
-    upper_constraint_=max_time_step_=dt;
-    lower_constraint_=min_time_step_=dt;
+    time_constraints_.define_constraint("Initial","Initial time step set by user.", dt);
+    lower_constraint_ = time_constraints_.get("Initial");
+    upper_constraint_ = time_constraints_.get("Initial");
     //time_step_=dt;
 }
 
@@ -221,11 +223,11 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
     	time_step_changed_=true;
     	end_of_fixed_dt_interval_ = init_time_;
 
-    	min_time_step_=lower_constraint_=time_step_precision;
+    	lower_constraint_.set_value(min_time_step_ = time_step_precision);
     	if (end_time_ == inf_time) {
-        	max_time_step_=upper_constraint_=inf_time;
+        	upper_constraint_.set_value(max_time_step_ = inf_time);
     	} else {
-    		max_time_step_=upper_constraint_= end_time - init_time_;
+    		upper_constraint_.set_value(max_time_step_ = end_time - init_time_);
     	}
     	// choose maximum possible time step
     	//time_step_=max_time_step_;
@@ -266,8 +268,19 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
 		THROW(ExcTimeGovernorMessage()	<< EI_Message("'max_dt' smaller then 'min_dt'.\n") );
     }
 
-    lower_constraint_ = min_time_step_ = max(min_dt, time_step_precision);
-    upper_constraint_ = max_time_step_ = min(max_dt, end_time_-t());
+    lower_constraint_.set_value(min_time_step_ = max(min_dt, time_step_precision));
+    upper_constraint_.set_value(max_time_step_ = min(max_dt, end_time_-t()));
+}
+
+
+void TimeGovernor::define_constraint(string name, string message, double value)
+{
+    time_constraints_.define_constraint(name, message, value);
+}
+
+void TimeGovernor::print_time_constraints(ostream& stream)
+{
+    time_constraints_.print_all(stream);
 }
 
 
@@ -277,22 +290,25 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
 // +1 mensi
 // 0 OK
 
-int TimeGovernor::set_upper_constraint (double upper)
+int TimeGovernor::set_upper_constraint (string name, double value)
 {
-    if (upper_constraint_ < upper) 
+    TimeConstraint tc = time_constraints_.get(name); 
+    tc.set_value(value);
+    
+    if (upper_constraint_.value() < value) 
     {
         //do not change upper_constraint_
         return -1;
     }
     
-    if (lower_constraint_ <= upper) 
+    if (lower_constraint_.value() <= value) 
     {
-        //change upper_constraint_ to upper
-        upper_constraint_ = upper;
+        //change upper_constraint_
+        upper_constraint_ = tc;
         return 0;
     }
     
-    if (lower_constraint_ > upper) 
+    if (lower_constraint_.value() > value) 
     {
         //do not change upper_constraint_
         return 1;
@@ -302,23 +318,25 @@ int TimeGovernor::set_upper_constraint (double upper)
 }
 
 
-
-int TimeGovernor::set_lower_constraint (double lower)
+int TimeGovernor::set_lower_constraint (string name, double value)
 {   
-    if (upper_constraint_ < lower) 
+    TimeConstraint tc = time_constraints_.get(name); 
+    tc.set_value(value);
+    
+    if (upper_constraint_.value() < value) 
     {
         //do not change lower_constraint_
         return -1;
     }
     
-    if (min_time_step_ <= lower)
+    if (min_time_step_ <= value)
     {
         //change lower_constraint_ to lower
-        lower_constraint_ = lower;
+        lower_constraint_ = tc;
         return 0;
     }
     
-    if (min_time_step_ > lower)
+    if (min_time_step_ > value)
     {
         //do not change lower_constraint_
         return 1;
@@ -367,8 +385,8 @@ double TimeGovernor::estimate_dt() const {
     // compute step to next fix time and apply constraints
     double full_step = fix_time_it->time() - t();
 
-    double step_estimate = min(full_step, upper_constraint_);
-    step_estimate = max(step_estimate, lower_constraint_); //these two must be in this order
+    double step_estimate = min(full_step, upper_constraint_.value());
+    step_estimate = max(step_estimate, lower_constraint_.value()); //these two must be in this order
 
     if (step_estimate == inf_time) return step_estimate;
 
@@ -387,9 +405,9 @@ double TimeGovernor::estimate_dt() const {
     
     // if the step estimate gets by rounding lower than lower constraint program will not crash
     // will just output a user warning.
-    if (step_estimate < lower_constraint_)
+    if (step_estimate < lower_constraint_.value())
         xprintf(Warn, "Time step estimate is below the lower constraint of time step. The difference is: %.16f.\n", 
-                lower_constraint_ - step_estimate);
+                lower_constraint_.value() - step_estimate);
     
     return step_estimate;
 }
@@ -436,8 +454,8 @@ void TimeGovernor::next_time()
     }
 
     // refreshing the upper_constraint_
-    upper_constraint_ = min(end_time_ - t(), max_time_step_);
-    lower_constraint_ = min_time_step_;
+    upper_constraint_.set_value(min(end_time_ - t(), max_time_step_));
+    lower_constraint_.set_value(min_time_step_);
 
 }
 
@@ -462,12 +480,14 @@ const TimeStep &TimeGovernor::step(int index) const {
 void TimeGovernor::view(const char *name) const
 {
     xprintf(Msg, "\nTG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>",
-            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
+            name, tlevel(), t(), dt(), lower_constraint_.value(), upper_constraint_.value() );
 #ifdef FLOW123D_DEBUG_MESSAGES
     xprintf(Msg, "    end_time: %f end_fixed_time: %f type: 0x%x\n" , end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
 #else
     xprintf(Msg,"\n");
 #endif
+    xprintf(Msg, "Lower time step constraint: %s \nUpper time step constraint: %s \n",
+            lower_constraint_.to_string().c_str(), upper_constraint_.to_string().c_str() );
 }
 
 

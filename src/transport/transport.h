@@ -241,6 +241,7 @@ private:
     Vec *v_sources_corr;
     
 
+    const TimeConstraintName time_constraint_cfl;
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;    ///< Time step constraint coming from CFL condition.
     

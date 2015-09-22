@@ -152,7 +152,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	this->eq_data_ = &(convection->data());
 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type() );
-
+    time_->define_constraint(time_constraint_flow, 
+                             "Time step constrained due to time discretisation of flow.");
 
     convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
@@ -232,7 +233,7 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::zero_time_step()
 {
-  
+    
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream_->write_time_frame();
@@ -246,8 +247,8 @@ void TransportOperatorSplitting::update_solution() {
 
 	vector<double> source(n_substances()), region_mass(mesh_->region_db().bulk_size());
 
-    time_->next_time();
     time_->view("TOS");    //show time governor
+    time_->next_time();
 
     convection->set_target_time(time_->t());
     
@@ -263,7 +264,7 @@ void TransportOperatorSplitting::update_solution() {
         )
         {
             DBGMSG("CFL changed.\n");
-            convection->time_->set_upper_constraint(cfl_convection);
+            convection->time_->set_upper_constraint(convection->time_constraint_cfl,cfl_convection);
 //             convection->time_->set_upper_constraint(std::min(cfl_convection, cfl_reaction));
             
             // fix step with new constraint
