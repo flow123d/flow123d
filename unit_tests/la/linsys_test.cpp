@@ -133,6 +133,8 @@ public:
             */
 	}
 	
+	double compute_residual() {return 0;}
+
 	
 	arma::uvec non_dirichlet_rows_;
 	arma::uvec dirichlet_rows_;
@@ -163,4 +165,4 @@ TEST_F(SetValues, dirichlet) {
         this->add( {1,3,4}, {4,5} );
         this->add( {0,3}, {4,5,} );
     }     
-}
+};
