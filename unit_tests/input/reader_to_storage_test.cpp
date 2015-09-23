@@ -678,6 +678,59 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
 }
 
+
+const string input_json_multiple_inheritance = R"JSON(
+{
+  primary = { TYPE="Desc_B", b_val=1 },
+  secondary = { TYPE="Desc_B", b_val=5 }
+}
+)JSON";
+
+
+TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	Type::AbstractRecord a_rec1 = Type::AbstractRecord("Base1", "Base of equation records.").close();
+	Type::AbstractRecord a_rec2 = Type::AbstractRecord("Base2", "Other base of equation records.").close();
+
+	Type::Record rec_a = Type::Record("Desc_A", "First descendant")
+			.derive_from(a_rec1)
+			.declare_key("a_val", Type::String(), Type::Default::obligatory(), "")
+			.close();
+	Type::Record rec_b = Type::Record("Desc_B", "Second descendant")
+			.derive_from(a_rec1)
+			.derive_from(a_rec2)
+			.declare_key("b_val", Type::Integer(), Type::Default::obligatory(), "")
+			.close();
+	Type::Record rec_c = Type::Record("Desc_C", "Third descendant")
+			.derive_from(a_rec2)
+			.declare_key("c_val", Type::Double(), Type::Default::obligatory(), "")
+			.close();
+
+	Type::Record root = Type::Record("problem", "Root record")
+			.declare_key("primary", a_rec1, Type::Default::obligatory(), "")
+			.declare_key("secondary", a_rec2, Type::Default::obligatory(), "")
+			.close();
+
+    {   // Try correct type
+        stringstream ss(input_json_multiple_inheritance);
+        read_stream(ss, root);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ("Desc_B", storage_->get_item(0)->get_item(0)->get_string());
+        EXPECT_EQ(1, storage_->get_item(0)->get_item(1)->get_int());
+
+        EXPECT_EQ(2, storage_->get_item(1)->get_array_size());
+        EXPECT_EQ("Desc_B", storage_->get_item(1)->get_item(0)->get_string());
+        EXPECT_EQ(5, storage_->get_item(1)->get_item(1)->get_int());
+    }
+
+}
+
+
 /*TEST_F(InputReaderToStorageTest, AdHocAbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
