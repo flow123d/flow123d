@@ -329,31 +329,6 @@ TEST(GenericType, parameter_not_replaced) {
 }
 
 
-TEST(GenericType, parameter_not_used) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	std::vector<TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("param", boost::make_shared<Integer>()) );
-	param_vec.push_back( std::make_pair("param2", boost::make_shared<Double>()) );
-
-	static Record inner = Record("inner_rec", "")
-			.root_of_generic_subtree()
-			.declare_key("param", Parameter("param"), "desc.")
-			.declare_key("some_double", Double(), "Double key")
-			.close();
-
-	static Instance inst = Instance(inner, param_vec)
-								.close();
-
-	static Record record = Record("parametrized_record", "")
-			.declare_key("generic_rec", inst, "desc.")
-			.declare_key("some_double", Double(), "Double key")
-			.close();
-
-	EXPECT_ASSERT_DEATH( { TypeBase::lazy_finish(); }, "must be used");
-}
-
-
 TEST(GenericType, parameter_during_lazy_finish) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -409,4 +384,29 @@ TEST(GenericType, unused_record) {
 			.close();
 
 	TypeBase::lazy_finish();
+}
+
+
+TEST(GenericType, parameter_not_used) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param", boost::make_shared<Integer>()) );
+	param_vec.push_back( std::make_pair("param2", boost::make_shared<Double>()) );
+
+	static Record inner = Record("inner_rec", "")
+			.root_of_generic_subtree()
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	static Instance inst = Instance(inner, param_vec)
+								.close();
+
+	static Record record = Record("parametrized_record", "")
+			.declare_key("generic_rec", inst, "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	EXPECT_ASSERT_DEATH( { TypeBase::lazy_finish(); }, "must be used");
 }

@@ -654,7 +654,6 @@ bool AbstractRecord::finish(bool is_generic) {
 
 	child_data_->finished_ = true;
 
-	cout << "AbstractRecord " << type_name() << ", finish " << is_generic << endl;
 	for (auto &child : child_data_->list_of_childs) {
 		child.add_parent(*this);
         try {
