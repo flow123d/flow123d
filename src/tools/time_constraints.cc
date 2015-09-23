@@ -77,6 +77,17 @@ TimeConstraint& TimeConstraintList::get(TimeConstraintName name)
     return *tc_it;
 }
 
+void TimeConstraintList::set(TimeConstraint& time_constraint, TimeConstraintName name, double value)
+{
+    TimeConstraintIt tc_it;
+    if(find(name,tc_it))
+        tc_it->set_value(value);
+    else
+        THROW(ExcConstraintUndefined() << EI_Undefined(name));
+    
+    time_constraint = *tc_it;
+}
+
 
 void TimeConstraintList::print_all(ostream& stream)
 {

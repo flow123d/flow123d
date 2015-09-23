@@ -137,18 +137,20 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
     	init_common(input.val<double>("start_time"),
     				input.val<double>("end_time", inf_time),
     				eq_mark_type);
+        
+        // default values are set in init_common above:
         set_permanent_constraint(
-            input.val<double>("min_dt", min_time_step_),
-            input.val<double>("max_dt", max_time_step_)
+            input.val<double>("min_dt", time_constraints_.get("Permanent lower").value()),
+            input.val<double>("max_dt", time_constraints_.get("Permanent upper").value())
             );
 
         double init_dt=input.val<double>("init_dt");
         if (init_dt > 0.0) {
             // set first time step suggested by user
             //time_step_=min(init_dt, time_step_);
-            time_constraints_.define_constraint("Initial","Initial time step set by user.", init_dt);
-            lower_constraint_ = time_constraints_.get("Initial");
-            upper_constraint_ = time_constraints_.get("Initial");
+            
+            time_constraints_.set(lower_constraint_,"Initial", init_dt);
+            time_constraints_.set(upper_constraint_,"Initial", init_dt);
         } else {
             // apply constraints
             //time_step_=min(time_step_, upper_constraint_);
@@ -175,9 +177,8 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
     time_step_changed_=true;
     end_of_fixed_dt_interval_ = inf_time;
 
-    time_constraints_.define_constraint("Initial","Initial time step set by user.", dt);
-    lower_constraint_ = time_constraints_.get("Initial");
-    upper_constraint_ = time_constraints_.get("Initial");
+    time_constraints_.set(lower_constraint_,"Initial", dt);
+    time_constraints_.set(upper_constraint_,"Initial", dt);
     //time_step_=dt;
 }
 
@@ -197,8 +198,11 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 // common part of constructors
 void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type type)
 {
-
-
+    // Add possible time constraints.
+    time_constraints_.define_constraint("Initial","Initial time step set by user.");
+    time_constraints_.define_constraint("Permanent lower","Permanent lower time step set by user.");
+    time_constraints_.define_constraint("Permanent upper","Permanent upper time step set by user.");
+        
     if (init_time < 0.0) {
 		THROW(ExcTimeGovernorMessage()
 				<< EI_Message("Start time has to be greater or equal to 0.0\n")
@@ -222,13 +226,15 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
     	is_time_step_fixed_=false;
     	time_step_changed_=true;
     	end_of_fixed_dt_interval_ = init_time_;
-
-    	lower_constraint_.set_value(min_time_step_ = time_step_precision);
+        
+        time_constraints_.set(lower_constraint_,"Permanent lower", time_step_precision);
+        
     	if (end_time_ == inf_time) {
-        	upper_constraint_.set_value(max_time_step_ = inf_time);
+            time_constraints_.set(upper_constraint_,"Permanent upper", inf_time);
     	} else {
-    		upper_constraint_.set_value(max_time_step_ = end_time - init_time_);
+            time_constraints_.set(upper_constraint_,"Permanent upper", end_time - init_time_);
     	}
+    	
     	// choose maximum possible time step
     	//time_step_=max_time_step_;
     /*} else {
@@ -268,8 +274,8 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
 		THROW(ExcTimeGovernorMessage()	<< EI_Message("'max_dt' smaller then 'min_dt'.\n") );
     }
 
-    lower_constraint_.set_value(min_time_step_ = max(min_dt, time_step_precision));
-    upper_constraint_.set_value(max_time_step_ = min(max_dt, end_time_-t()));
+    time_constraints_.set(lower_constraint_,"Permanent lower", max(min_dt, time_step_precision));
+    time_constraints_.set(upper_constraint_,"Permanent upper", min(max_dt, end_time_-t()));
 }
 
 
@@ -329,14 +335,15 @@ int TimeGovernor::set_lower_constraint (string name, double value)
         return -1;
     }
     
-    if (min_time_step_ <= value)
+    double min = time_constraints_.get("Permanent lower").value();
+    if (min <= value)
     {
         //change lower_constraint_ to lower
         lower_constraint_ = tc;
         return 0;
     }
     
-    if (min_time_step_ > value)
+    if (min > value)
     {
         //do not change lower_constraint_
         return 1;
@@ -454,9 +461,10 @@ void TimeGovernor::next_time()
     }
 
     // refreshing the upper_constraint_
-    upper_constraint_.set_value(min(end_time_ - t(), max_time_step_));
-    lower_constraint_.set_value(min_time_step_);
-
+    lower_constraint_ = time_constraints_.get("Permanent lower");
+    //cannot increase permanent maximum
+    double max = time_constraints_.get("Permanent upper").value();
+    time_constraints_.set(upper_constraint_,"Permanent upper", min(end_time_ - t(), max));
 }
 
 

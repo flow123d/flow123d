@@ -516,9 +516,9 @@ private:
                    lower_constraint_;   ///< Lower constraint for the choice of the next time step.
 
     /// Permanent upper limit for the time step.
-    double max_time_step_;
+//     double max_time_step_;
     /// Permanent lower limit for the time step.
-    double min_time_step_;
+//     double min_time_step_;
 
     /**
      * When the next time is chosen we need only the lowest fix time. Therefore we use

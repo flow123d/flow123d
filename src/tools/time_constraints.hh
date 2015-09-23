@@ -69,23 +69,24 @@ public:
      */
     bool find(TimeConstraintName name, TimeConstraintIt& time_constraint_it);
     TimeConstraint & get(TimeConstraintName name);
-    TimeConstraint & upper();
-    TimeConstraint & lower();
+    
+    /// Sets the time step constraint @p time_constraint with the type @p name and value @p value.
+    void set(TimeConstraint& time_constraint, TimeConstraintName name, double value);
+    
     void print_all(std::ostream &stream);
     
 private:
     std::vector<TimeConstraint> time_constraints_;
-    TimeConstraintIt upper_, lower_;
 };
 
 
 /**************************   implemenation of TimeConstraints   *****************************/
 
-inline TimeConstraint& TimeConstraintList::upper()
-{   return *upper_; }
-
-inline TimeConstraint& TimeConstraintList::lower()
-{   return *lower_; }
+// inline TimeConstraint& TimeConstraintList::upper()
+// {   return *upper_; }
+// 
+// inline TimeConstraint& TimeConstraintList::lower()
+// {   return *lower_; }
 
 
 
