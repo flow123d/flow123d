@@ -77,7 +77,7 @@ protected:
     /// Gets range of double
     void get_double_bounds(Double dbl, double &lower , double &upper );
     /// Gets pointer of parent AbstractRecord for given Record
-    void get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr);
+    void get_parent_vec(Record rec, std::vector< boost::shared_ptr<AbstractRecord> > &parent_vec);
     /// Gets pointer of inner type for given Array
     void get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type);
     /// Gets values of default for given record key
