@@ -99,13 +99,8 @@ void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &k
 
 
 
-void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
-	if (rec.data_->parent_vec_.size()) {
-		// temporary solution, if we need this method in new input, it must return vector of parents
-		parent_ptr = rec.data_->parent_vec_[0];
-	} else {
-		parent_ptr = boost::shared_ptr<AbstractRecord>();
-	}
+void OutputBase::get_parent_vec(Record rec, std::vector< boost::shared_ptr<AbstractRecord> > &parent_vec) {
+	parent_vec = rec.data_->parent_vec_;
 }
 
 
@@ -344,11 +339,11 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 			stream << "" << "Record '" << type->type_name() << "'";
 
 			// parent record
-			boost::shared_ptr<AbstractRecord> parent_ptr;
+			/*boost::shared_ptr<AbstractRecord> parent_ptr;
 			get_parent_ptr(*type, parent_ptr);
 			if (parent_ptr) {
 				stream << ", implementation of " << parent_ptr->type_name();
-			}
+			}*/
 
 			// reducible to key
 			Record::KeyIter key_it = type->auto_conversion_key_iter();
@@ -716,7 +711,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 
 			std::vector<string> refs;
 			boost::split(refs, reference_, boost::is_any_of("#"));
-		    ASSERT( refs.size() == 2, "Invalid reference of %s, size %d\n", type->type_name().c_str(), refs.size());
+		    //ASSERT( refs.size() == 2, "Invalid reference of %s, size %d\n", type->type_name().c_str(), refs.size());
 
 		    stream << endl;
 			stream << setw(depth * padding_size) << "";
@@ -1037,13 +1032,13 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                    << internal::hyper_B("IT", type->type_name()) << "}";
 
             // parent record
-            boost::shared_ptr<AbstractRecord> parent_ptr;
+            /*boost::shared_ptr<AbstractRecord> parent_ptr;
             get_parent_ptr(*type, parent_ptr);
             if (parent_ptr) {
                 stream << "{" << internal::hyper_link("IT", parent_ptr->type_name()) <<"}";
             } else {
                 stream << "{}";
-            }
+            }*/
 
             // reducible to key
             Record::KeyIter key_it = type->auto_conversion_key_iter();
@@ -1318,10 +1313,17 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
             escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
 
     // parent records, implemented abstracts
-    boost::shared_ptr<AbstractRecord> parent_ptr;
-    get_parent_ptr(*type, parent_ptr);
-    if (parent_ptr) {
-        stream << "\"implements\" : [ \"" << format_hash(parent_ptr->content_hash()) << "\" ]," << endl;
+    std::vector< boost::shared_ptr<AbstractRecord> > parent_vec;
+    get_parent_vec(*type, parent_vec);
+    if (parent_vec.size()) {
+        stream << "\"implements\" : [ ";
+        bool add_comma = false;
+        for (auto &parent : parent_vec) {
+        	if (add_comma) stream << ", ";
+        	else add_comma = true;
+            stream << "\"" << format_hash(parent->content_hash()) << "\"";
+        }
+        stream << " ]," << endl;
     }
 
     // reducible to key
