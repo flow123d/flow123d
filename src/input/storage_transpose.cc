@@ -113,10 +113,9 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 	ASSERT( typeid(*source_storage) == typeid(StorageArray), "Incompatible type of storage. Must be Array!\n");
 
 	string descendant_name = source_storage->get_item(0)->get_string();
-	unsigned int descendant_index = (unsigned int)(source_type->get_type_selection().name_to_int(descendant_name));
 
-	return modify_storage( &( target_arec->get_descendant(descendant_index) ),
-	                	   &( source_type->get_descendant(descendant_index) ),
+	return modify_storage( &( target_arec->get_descendant(descendant_name) ),
+	                	   &( source_type->get_descendant(descendant_name) ),
 	                	   source_storage, index );
 }
 

@@ -591,12 +591,6 @@ public:
     const Record  &get_descendant(const string& name) const;
 
     /**
-     * Returns reference to the inherited Record with given index (indexed in the same order
-     * as they are derived).
-     */
-    const Record  &get_descendant(unsigned int idx) const;
-
-    /**
      * Returns default descendant if TYPE key has default value, otherwise returns empty Record.
      */
     const Record * get_default_descendant() const;

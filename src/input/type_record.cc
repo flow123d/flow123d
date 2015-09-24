@@ -544,16 +544,7 @@ bool AbstractRecord::valid_default(const string &str) const
 const Record  & AbstractRecord::get_descendant(const string& name) const
 {
     ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
-    return get_descendant( child_data_->selection_of_childs->name_to_int(name) );
-}
-
-
-
-const Record  & AbstractRecord::get_descendant(unsigned int idx) const
-{
-    ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
-    ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");
-    return child_data_->list_of_childs[idx];
+    return child_data_->list_of_childs[ child_data_->selection_of_childs->name_to_int(name) ];
 }
 
 
