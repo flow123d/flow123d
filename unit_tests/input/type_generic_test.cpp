@@ -173,7 +173,7 @@ TEST(GenericType, generic_abstract) {
 		const AbstractRecord *abstract = static_cast<const AbstractRecord *>(key_it->type_.get());
 		EXPECT_EQ( abstract->child_size(), 2 );
 		Record::KeyIter desc_it = abstract->get_descendant(0).begin();
-		EXPECT_EQ( typeid( *(desc_it->type_.get()) ), typeid(Selection) );
+		EXPECT_EQ( typeid( *(desc_it->type_.get()) ), typeid(String) );
 		++desc_it;
 		const Selection *sel = static_cast<const Selection *>(desc_it->type_.get());
 		EXPECT_EQ( sel->type_name(), "colors" );
@@ -185,7 +185,7 @@ TEST(GenericType, generic_abstract) {
 		const AbstractRecord *abstract = static_cast<const AbstractRecord *>(key_it->type_.get());
 		EXPECT_EQ( abstract->child_size(), 2 );
 		Record::KeyIter desc_it = abstract->get_descendant(0).begin();
-		EXPECT_EQ( typeid( *(desc_it->type_.get()) ), typeid(Selection) );
+		EXPECT_EQ( typeid( *(desc_it->type_.get()) ), typeid(String) );
 		++desc_it;
 		const Selection *sel = static_cast<const Selection *>(desc_it->type_.get());
 		EXPECT_EQ( sel->type_name(), "shapes" );

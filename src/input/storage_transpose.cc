@@ -112,7 +112,8 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 	ASSERT( target_arec != NULL, "Incompatible type of target type. Must be AbstractRecord!\n");
 	ASSERT( typeid(*source_storage) == typeid(StorageArray), "Incompatible type of storage. Must be Array!\n");
 
-	unsigned int descendant_index = (unsigned int)(source_storage->get_item(0)->get_int());
+	string descendant_name = source_storage->get_item(0)->get_string();
+	unsigned int descendant_index = (unsigned int)(source_type->get_type_selection().name_to_int(descendant_name));
 
 	return modify_storage( &( target_arec->get_descendant(descendant_index) ),
 	                	   &( source_type->get_descendant(descendant_index) ),

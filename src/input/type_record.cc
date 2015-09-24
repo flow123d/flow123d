@@ -181,7 +181,7 @@ Record &Record::derive_from(AbstractRecord &parent) {
 	data_->parent_vec_.push_back( boost::make_shared<AbstractRecord>(parent) );
 
 	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default( type_name() ), "Sub-record Selection.");
+    	data_->declare_key("TYPE", boost::make_shared<String>(), Default( type_name() ), "Sub-record Selection.");
     }
 
 	return *this;
@@ -283,14 +283,6 @@ string Record::type_name() const {
 }
 
 
-string Record::full_type_name() const {
-	if (data_->parent_vec_.size()) {
-		return data_->type_name_ + ":" + data_->parent_vec_[0]->type_name();
-	}
-    return data_->type_name_;
-}
-
-
 
 bool Record::valid_default(const string &str) const
 {
@@ -317,19 +309,16 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
+Record &Record::declare_type_key() {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", key_type, Default::obligatory(),
+	data_->declare_key("TYPE", boost::make_shared<String>(), Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
 
 Record &Record::has_obligatory_type_key() {
 	ASSERT( ! data_->parent_vec_.size(), "Record with obligatory TYPE key can't be derived.\n");
-	boost::shared_ptr<Selection> sel = boost::make_shared<Selection>(type_name() + "_TYPE_selection");
-	sel->add_value(0, type_name());
-	sel->close();
-	declare_type_key( sel );
+	declare_type_key();
 	return *this;
 }
 
@@ -382,8 +371,6 @@ const Record &Record::add_parent(AbstractRecord &parent) const {
 	// finish inheritance
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
 				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
-	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( parent.get_type_selection() );
-	data_->keys[0].type_ = type_copy;
 	data_->keys[0].default_ = Default( type_name() );
 
 	return *this;
@@ -470,33 +457,11 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 
 
 
-template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
-{
-	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
-    //Record::declare_key(key, type, default_value, description);
-    return *this;
-}
-
-
-
-template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
-                        const string &description)
-{
-	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
-    return declare_key(key,type, Default::optional(), description);
-}
-
-
 // explicit instantiation of template methods
 
 #define RECORD_DECLARE_KEY(TYPE) \
 template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description); \
-template AbstractRecord &AbstractRecord::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template AbstractRecord &AbstractRecord::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
 
 
 RECORD_DECLARE_KEY(String);
@@ -679,11 +644,6 @@ bool AbstractRecord::is_closed() const {
 
 string AbstractRecord::type_name() const {
     return child_data_->type_name_;
-}
-
-
-string AbstractRecord::full_type_name() const {
-    return this->type_name();
 }
 
 
