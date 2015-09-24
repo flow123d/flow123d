@@ -27,6 +27,10 @@ Options:
                         Start sequence of license, default is '/*!'
   -e END_SEQ, --end=END_SEQ
                         End sequence of license, default is '*/'
+  -r, --replace-only    If no license was found, skip file, default is False
+  -w, --whitespace      If set, whitespace around license as well as at the
+                        beginning of each file will be stripped. After new
+                        license two \n will be added
   -o NAME:VALUE, --option=NAME:VALUE
                         Additional formatting variables which will be replaced
                         In license test by using {variable_name} placeholder
@@ -210,6 +214,13 @@ def create_parser():
     parser.add_option("-e", "--end", dest="license_end", metavar="END_SEQ", default='*/',
                       help="End sequence of license, default is '%default'")
 
+    parser.add_option("-r", "--replace-only", dest="replace_only", default=False, action="store_true",
+                      help="If no license was found, skip file, default is %default")
+
+    parser.add_option("-w", "--whitespace", dest="whitespace", default=False, action="store_true",
+                      help="If set, whitespace around license as well as at the beginning of each "
+                           "file will be stripped. After new license two \\n will be added")
+
     parser.add_option("-o", "--option", dest="variables", metavar="NAME:VALUE", default=[], action="append",
                       help="""Additional formatting variables which will be replaced
 In license test by using {variable_name} placeholder format syntax
@@ -272,7 +283,9 @@ def main():
         license_text=license_text,
         license_start=options.license_start,
         license_end=options.license_end,
-        variables=variables
+        variables=variables,
+        replace_only=options.replace_only,
+        whitespace=options.whitespace
     )
     manager.add_locations(options.files, options.dirs)
     manager.add_git(options.git)

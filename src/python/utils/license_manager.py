@@ -4,17 +4,24 @@
 import os
 import datetime
 from subprocess import CalledProcessError
+from utils.logger import Logger
+
+
+logger = Logger(__name__)
 
 
 class LicenseManager(object):
     """
     Class for adding/removing or replacing license in given files and folders
     """
-    def __init__(self, license_text, license_start, license_end, variables={}):
+    def __init__(self, license_text, license_start, license_end,
+                 variables={}, replace_only=False, whitespace=False):
         self.license_start = license_start
         self.license_stop = license_end
         self.license_text = license_text
         self.variables = variables
+        self.replace_only = replace_only
+        self.whitespace = whitespace
         self.extensions = ['.hh', '.cc', '.h', '.c', '.cpp', '.hpp']
         self.files = []
         self.dirs = []
@@ -89,12 +96,17 @@ class LicenseManager(object):
         :param file_path:
         :return:
         """
-        print ('Processing {:s}'.format(file_path))
+        logger.info ('Processing {:s}'.format(file_path))
         with open(file_path, 'r') as fp:
             file_content = fp.read()
 
         file_content = file_content.lstrip()
         li_start, li_end = self.find_license(file_content)
+
+        if li_start == 0 and li_end == 0:
+            if self.replace_only:
+                logger.info('File {:s} skipped, no license found'.format(file_path))
+                return
 
         if li_start is not None and li_end is not None:
             file_content = file_content[li_end:].lstrip()
@@ -113,11 +125,12 @@ class LicenseManager(object):
                     'last_email':  self._secure_output('git log -1 --format=%ce '+ file_path)
                 })
 
-            license_text = self.license_text.strip()
+            license_text = self.license_text.strip() if self.whitespace else self.license_text
             license_text = license_text.format(**variables)
 
             with open(file_path, 'w') as fp:
                 if license_text:
                     fp.write(license_text)
-                    fp.write('\n\n')
+                    if self.whitespace:
+                        fp.write('\n\n')
                 fp.write(file_content)
