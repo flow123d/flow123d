@@ -283,14 +283,6 @@ string Record::type_name() const {
 }
 
 
-string Record::full_type_name() const {
-	if (data_->parent_vec_.size()) {
-		return data_->type_name_ + ":" + data_->parent_vec_[0]->type_name();
-	}
-    return data_->type_name_;
-}
-
-
 
 bool Record::valid_default(const string &str) const
 {
@@ -652,11 +644,6 @@ bool AbstractRecord::is_closed() const {
 
 string AbstractRecord::type_name() const {
     return child_data_->type_name_;
-}
-
-
-string AbstractRecord::full_type_name() const {
-    return this->type_name();
 }
 
 

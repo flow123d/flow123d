@@ -278,9 +278,6 @@ public:
     /// Record type name getter.
     virtual string type_name() const override;
 
-    /// Record type full name getter.
-    virtual string full_type_name() const override;
-
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
@@ -624,9 +621,6 @@ public:
 
     /// AbstractRecord type name getter.
     virtual string type_name() const override;
-
-    /// AbstractRecord type full name getter.
-    virtual string full_type_name() const override;
 
     /**
      * Container-like access to the data of the Record. Returns iterator to the first data.

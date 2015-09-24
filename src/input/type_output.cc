@@ -330,9 +330,8 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 		stream << "" << "Record '" << type->type_name() << "' (" << type->size() << " keys).";
 		break;
 	case full_record:
-		const void * data_ptr = get_record_data(type);
-		if (! doc_flags_.was_written(data_ptr, type->full_type_name())) {
-			doc_flags_.mark_written(data_ptr, type->full_type_name());
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash)) {
 
 			// header
 			stream << endl;
@@ -410,11 +409,8 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
 		stream << "AbstractRecord '" << type->type_name() << "' with "<< type->child_size() << " descendants.";
 		break;
 	case full_record:
-		const void * data_ptr = get_abstract_record_data(type);
-		if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
-
-            // Extensive description
-			doc_flags_.mark_written(data_ptr, type->full_type_name());
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash)) {
 
             // header
             stream << endl;
@@ -482,10 +478,8 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 		stream << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
 		break;
 	case full_record:
-		const void * data_ptr = get_selection_data(type);
-
-		if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
-			doc_flags_.mark_written(data_ptr, type->full_type_name());
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash)) {
 
 			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
 			write_description(stream, OutputBase::get_selection_description( type ), 0);
@@ -584,11 +578,8 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 			}
 
 			const void *data_ptr = get_record_data(type); // get pointer to type->data_
-			if ( doc_flags_.was_written(data_ptr, type->full_type_name())) {
-				stream << "{REF=\"" << doc_flags_.get_reference(data_ptr) << "\"}";
-			} else {
-				doc_flags_.mark_written( data_ptr, type->full_type_name(), reference_ );
-
+			TypeBase::TypeHash hash=type->content_hash();
+			if (! doc_flags_.was_written(hash)) {
 				stream << "{";
 				if (OutputBase::get_record_description(type).size()) {
 					size_setw_ = depth+1;
@@ -651,7 +642,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			const void * data_ptr = get_array_data(type); // get pointer to type->data_
 
 			get_array_type(*type, array_type);
-			doc_flags_.mark_written( data_ptr, type->full_type_name(), reference_ );
 
 			if ( (typeid(*(array_type.get())) == typeid(Type::Record))
 					| (typeid(*(array_type.get())) == typeid(Type::AbstractRecord))
@@ -1023,9 +1013,8 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
         stream << "record: " << internal::hyper_link("IT", type->type_name());
         break;
     case full_record:
-    	const void * data_ptr = get_record_data(type);
-    	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
-			doc_flags_.mark_written(data_ptr, type->full_type_name());
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash)) {
 
             // header
             stream << endl <<"\\begin{RecordType}{"
@@ -1122,11 +1111,8 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
         stream << "abstract type: " << internal::hyper_link("IT",type->type_name());
         break;
     case full_record:
-    	const void * data_ptr = get_abstract_record_data(type);
-    	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
-
-            // Extensive description
-			doc_flags_.mark_written(data_ptr, type->full_type_name());
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash)) {
 
             // header
             stream << endl << "\\begin{AbstractType}{"
@@ -1196,10 +1182,8 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
         }
         break;
     case full_record:
-    	const void * data_ptr = get_selection_data(type);
-    	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
-			doc_flags_.mark_written(data_ptr, type->full_type_name());
-
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash)) {
             stream <<endl << "\\begin{SelectionType}{" << internal::hyper_B("IT", type->type_name() ) << "}";
             stream << "{" << OutputBase::get_selection_description(type) << "}" <<endl;
             // keys
@@ -1306,7 +1290,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Record\"," << endl;
     stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-    stream << "\"type_full_name\" : \"" << type->full_type_name() << "\"," << endl;
     type->write_attributes(stream);
     stream << "," << endl << endl;
     stream << "\"description\" : \"" <<
@@ -1398,7 +1381,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"AbstractRecord\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-    stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
     type->write_attributes(stream);
     stream << "," << endl;
     stream << "\"description\" : \"" <<
@@ -1468,7 +1450,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Selection\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << "," << endl;
 	stream << "\"description\" : \"" <<
@@ -1500,7 +1481,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigne
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Integer\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << "," << endl;
 
@@ -1520,7 +1500,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Double\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << "," << endl;
 
@@ -1537,7 +1516,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned i
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Bool\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << endl;
 	stream << "},";
@@ -1552,7 +1530,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"String\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << endl;
 	stream << "},";
@@ -1566,7 +1543,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << "," << endl;
 
