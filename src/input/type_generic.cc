@@ -102,7 +102,7 @@ const Instance &Instance::close() const {
 
 
 bool Instance::finish(bool is_generic) {
-	return generic_type_.finish(is_generic);
+	return generic_type_.finish(true);
 }
 
 

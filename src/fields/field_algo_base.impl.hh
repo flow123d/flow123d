@@ -65,6 +65,7 @@ template <int spacedim, class Value>
 Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
 	return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
+			.root_of_generic_subtree()
 			.close();
 
 	/*it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")

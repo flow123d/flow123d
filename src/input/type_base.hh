@@ -178,6 +178,11 @@ public:
     /// Create instance of generic type, replace parameters in input tree by type stored in @p vec.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
 
+    /// Indicates if type is marked with flag @p root_of_generic_subtree_
+    inline bool is_root_of_generic_subtree() {
+    	return root_of_generic_subtree_;
+    }
+
 protected:
 
     /**

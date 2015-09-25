@@ -43,9 +43,24 @@ public:
     	return instance;
     };
 
+    /**
+     * Add @p type to TypeRepository if doesn't exist there
+     * or get existing type with same TypeHash
+     */
     boost::shared_ptr<T> add_type(const T & type);
 
-    void finish(bool is_generic = false);
+    /**
+     * Iterate through all types stored in TypeRepository
+     * and call finish if flag @p root_of_generic_subtree_
+     * has same value as @param is_root_of_generic_subtree.
+     *
+     * We need call finish in two steps for correct
+     * functionality of generic types. In first step all
+     * types marked as "root_of_generic_subtree" are
+     * finished and then in second step can be finished
+     * other types.
+     */
+    void finish(bool is_root_of_generic_subtree = false);
 
 private:
     /// Default constructor.
@@ -70,9 +85,10 @@ boost::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
 }
 
 template <class T>
-void TypeRepository<T>::finish(bool is_generic) {
-	for (typename TypeRepositoryMap::iterator it = type_repository_map_.begin(); it != type_repository_map_.end(); ++it) {
-		it->second->finish(is_generic);
+void TypeRepository<T>::finish(bool is_root_of_generic_subtree) {
+	// We need reverse iterating for correct finish of generic types.
+	for (typename TypeRepositoryMap::reverse_iterator it = type_repository_map_.rbegin(); it != type_repository_map_.rend(); ++it) {
+		if(is_root_of_generic_subtree == it->second->is_root_of_generic_subtree()) it->second->finish();
 	}
 }
 
