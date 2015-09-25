@@ -14,9 +14,10 @@
         { region = "plane",
           anisotropy = 1
         },
+        /*
         { region = ".bottom",
           bc_type = "neumann" // zero flux
-        },
+        },*/
         { region = ".right",
           bc_type = "dirichlet",
           bc_piezo_head = 1.25
@@ -28,7 +29,7 @@
         },
         { region = ".left",
           bc_type = "dirichlet",
-          bc_piezo_head = 0.25
+          bc_piezo_head = 0.75
         }
       ],
 
