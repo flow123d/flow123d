@@ -32,14 +32,6 @@ namespace it = Input::Type;
 
 
 
-/*FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
-FLOW123D_FORCE_LINK_IN_PARENT(field_python)
-FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
-FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)*/
-
-
-
 /******************************************************************************************
  * Implementation of FieldBase<...>
  */
@@ -67,24 +59,6 @@ Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 			.allow_auto_conversion("FieldConstant")
 			.root_of_generic_subtree()
 			.close();
-
-	/*it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
-    	.allow_auto_conversion("FieldConstant")
-		.close();
-
-	if ( !type.is_finished() ) {
-		type.add_child( const_cast<it::Record &>(FieldConstant<spacedim,Value>::get_input_type()) );
-		type.add_child( const_cast<it::Record &>(FieldFormula<spacedim,Value>::get_input_type()) );
-#ifdef FLOW123D_HAVE_PYTHON
-		type.add_child( const_cast<it::Record &>(FieldPython<spacedim,Value>::get_input_type()) );
-#endif
-		type.add_child( const_cast<it::Record &>(FieldInterpolatedP0<spacedim,Value>::get_input_type()) );
-		type.add_child( const_cast<it::Record &>(FieldElementwise<spacedim,Value>::get_input_type()) );
-
-		type.finish();
-    }
-
-    return type.close();*/
 }
 
 

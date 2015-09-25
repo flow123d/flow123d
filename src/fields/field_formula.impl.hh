@@ -24,14 +24,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
-	//auto input_type = FieldFormula<spacedim, Value>::get_input_type_instance().make_instance().first;
-	//return static_cast<const it::Record &>( *input_type );
-	/*std::vector<it::TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::String>()) );
-	static auto string_val = StringValue::get_input_type();
-	static it::Instance inst = it::Instance(string_val, param_vec).close();
-	static auto input_type = inst.make_instance().first.get();*/
-
     static auto value_type = StringValue::get_input_type();
     auto instance_ = value_type.make_instance({ std::make_pair("element_input_type", boost::make_shared<it::String>()) });
 
@@ -49,28 +41,6 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
                                         "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
 			.close();
 }
-
-
-/*
-template <int spacedim, class Value>
-const Input::Type::Instance & FieldFormula<spacedim, Value>::get_input_type_instance() {
-	std::vector<it::TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::String>()) );
-
-	static it::Record rec = it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
-		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
-		.declare_key("value", StringValue::get_input_type(), it::Default::obligatory(),
-									"String, array of strings, or matrix of strings with formulas for individual "
-									"entries of scalar, vector, or tensor value respectively.\n"
-									"For vector values, you can use just one string to enter homogeneous vector.\n"
-									"For square (($N\\times N$))-matrix values, you can use:\n\n"
-									" - array of strings of size (($N$)) to enter diagonal matrix\n"
-									" - array of strings of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
-									" - just one string to enter (spatially variable) multiple of the unit matrix.\n"
-									"Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
-		.close();
-	return it::Instance(rec, param_vec).close();
-}*/
 
 
 

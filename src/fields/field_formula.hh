@@ -41,8 +41,6 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
-    //static const Input::Type::Instance & get_input_type_instance();
-
     virtual void init_from_input(const Input::Record &rec);
 
     /**
