@@ -133,55 +133,102 @@ is the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient}.
 As before one can also prescribe the \Alink{DarcyFlowMH-Data::bc-piezo-head}{boundary piezo head}
 $H_d^R$ to specify $h_d^R$.
 
-{\bf Seepage face} boundary condition 
+{\bf Seepage face} This condition is used to model surface with possible springs:
 \[
-    h_d \le h_d^D\quad \text{and} \quad \vc q_d \cdot \vc n \ge q_d^N
+    h_d \le h_d^S\quad \text{and} \quad \vc q_d \cdot \vc n \ge q_d^N
 \]    
-while the equality holds in at least one inequality. This condition is used to model spring area. 
+while the equality holds in at least one inequality. The \hyperA{DarcyFlowMH-Data::bc-switch-pressure}{switch pressure head} 
+$h_d^S$ \units{1}{}{} can alternatively be given by \hyperA{DarcyFloeMH-Data::bc-switch-piezo-head}{switch piezometric head}.
+
 The former inequality
-(usually with default value $h_d^D=0$) disallow non-zero water height on the surface, the later
+(usually with default value $h_s^S=0$) disallow non-zero water height on the surface, the later
 inequality (again with default value $q_d^N=0$) allows only outflow from the domain (i.e. spring).
-In practice one may want to allow given water height $h_d^D$ or given infilration (e.g. precipitation-evaporation) $q_d^N$.
+In practice one may want to allow given water height $h_d^D$ or given infiltration (e.g. precipitation-evaporation) $q_d^N$.
+
 
 {\bf River} boundary condition
+This boundary condition models free water surface with bedrock of given conductivity. 
+We prescribe:
+\begin{align}
+  \vc q_d \cdot \vc n &= \sigma_d^R ( H_d - H_d^D) + q_d^N, \quad \text{for} H_d \ge H_d^S,\\
+  \vc q_d \cdot \vc n &= \sigma_d^R ( H_d^S - H_d^D)+q_d^N, \quad \text{for} H_d < H_d^S,
+\end{align}
+where $H_d$ is piezometric head.
+The parameters of the condition are given by similar fields of other boundary conditions: 
+the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient} of the bedrock $\sigma_d^R$ \units{}{3-d}{-1}, 
+the piezometric head of the water surface given as \hyperA{DarcyFlowMH-Data::bc-piezo-head}{boundary piezometric head}  $H_d^D$ \units{}{1}{},
+the head of the bottom of the river given as the \hyperA{DarcyFlowMH-Data::bc-switch-piezo-head}{switch piezometric head} 
+$h_d^S$ \units{1}{}{}. The boundary flux $q_d^N$ is zero by default, but can be used to express approximation of the seepage face condition 
+(see discussion below).  The piezometric heads  $H_d^S$ and $H_d^R$ may be alternatively 
+given by pressure heads $h_d^S$ and $h_d^R$, respectively.
 
-This boundary condition models small scale free water surface, namely a watercourse.
-To begin with consider a small scale case where elements have scale of the width of the watercourse and the boundary match the free water surface of the water course.
-In such a case we can prescribe the boundary condition:
+The physical interpretation of the condition is as follows. For the water level $H_d$ above the bottom of the river $H_d^S$ the infiltration is given 
+as Robin boundary condition with respect to the surface of the river $H_d^D$. 
+For the water level below the bottom the infiltration is given by the water column of the river and transition coefficient of the bedrock.
+
+The river could be used to approximate the seepage face condition in the similar way as the Robin boundary condition with large $\sigma$ 
+can approximate Dirichlet boundary condition. We rewrite the condition as follows
+\begin{align}
+  \vc q_d \cdot \vc n &= \sigma_d^R ( h_d - h_d^D) + q_d^N, \quad \text{for} q_d \cdot \vc n \ge \sigma_d^R ( h_d^S - h_d^D) + q_d^N,\\
+  \vc q_d \cdot \vc n &= \sigma_d^R ( h_d^S - h_d^D)+q_d^N, \quad \text{for} h_d < h_d^S.
+\end{align}
+Now if we take $h_d^S=h_d^D$, we obtain
+\begin{align}
+  \vc q_d \cdot \vc n &= \sigma_d^R ( h_d - h_d^S) + q_d^N, \quad \text{for} q_d \cdot \vc n \ge q_d^N,\\
+  \vc q_d \cdot \vc n &= q_d^N, \quad \text{for} h_d < h_d^S.
+\end{align}
+where the first equation approximates $h_d = h_d^S$ as long as $\sigma_d^R$ is large.
+
+TODO: mixing seepage and river condition on single element using weighting.
+\begin{align}
+  \vc q_d \cdot \vc n &= \alpha \sigma_d^R ( H_d - H_d^D) + (1-\alpha) \sigma_{big}(H_d - H_d^S), \quad \text{for} H_d \ge H_d^S,\\
+  \vc q_d \cdot \vc n &= \alpha \sigma_d^R ( H_d^S - H_d^D)+(1-\alpha) q_d^N, \quad \text{for} H_d < H_d^S,
+\end{align}
+Since $\alpha$ is small and $\sigma_{big} \gg \sigma_d^R$ the first equation can be simplified to 
 \[
-  h_d \le h_r\quad \text{and}\quad \vc q_d \cdot \vc n \ge \sigma (h - h_r)
+    \vc q_d \cdot \vc n = \sigma_{big}(H_d - H_d^S) + \alpha \sigma_d^R ( H_d^S - H_d^D)+(1-\alpha) q_d^N, \quad \text{for} H_d \ge H_d^S,
 \]
-where $\sigma$ is a transmissivity of the river bedrock and $h_r=0$ is the height of the water column above the discrete boundary.
-This condition use the information about water depth $h_0$ clearly can not be smaller then the pressure head at the same place. However, if the pressure head is 
-smaller, we do not allow arbitrary infiltration as in the seepage face boundary condition, but limit the infiltration by the transmissivity of the bedrock. 
-Next, if discrete boundary do not match the free surface of height $H_r$, we should rather use the piezometric head in boundary condition, getting:
-\begin{equation}
-  \label{BC:river_raw}
-  H_d \le H_r\quad \text{and}\quad \vc q_d \cdot \vc n \ge \sigma (H - H_r).
-\end{equation}
-Finally, let us assume elements significantly larger then width of the watercourse. Let, $A_e$ be the surface of a boundary element face
-containing a water source with the surface $A_R=\alpha_r A_e$. We want to combine the seepage face condition out of the watercourse with 
-the river condition \eqref{BC:river_raw} in to single condition. The inequality for the flux is weighted by the area:
-\[
-   \vc q\cdot \vc n \ge \alpha_r \sigma(H-H_r) + (1-\alpha_r)q_i
-\]
-where $q_i$ is the infiltration (negative) or evaporation (positive) on the surface out of the watercourse. Similarly, we consider
-\[
-  H_d \le H_c = (\alpha_r) H_r + (1-\alpha_r) H_s
-\]
-where the critical piezometric head $H_c$ is a weighted average of the river head and the average height $H_s$ of the real surface.
+where the additional terms are to preserve continuity of the condition in the switch point.
 
 
-Parameters: $\alpha_r$ \units{}{}{} the \hyperA{DarcyFlowMH-Data::bc-river-fraction}{river surface fraction}, $H_r$ \units{1}{}{} 
-the \hyperA{DarcyFlowMH-Data::bc-river-head}{river head}, 
-alternatively $H_c=H_d^D$ \units{1}{}{} the critical piezometric head or $h_c=h_d^D$ \units{1}{}{} the critical pressure head, $q_i=q_d^N$ \units{}{4-d}{-1}
-the infiltration or evapotranspiration rate, $\sigma=\sigma_d^R$ \units{}{3-d}{-1}  
-the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient} of the bedrock.
 
-Implementation: prescribing $\alpha_r$ as a field makes only sense for the case of element-wise field since the value depends on the cross-section 
-of the river and the boundary element. Ultimate goal should be to prescribe river as an 1D line and set width of the river on its elements. Then we can 
-modify non-compatible intersection algorithms to compute value of $\alpha_r$ for individual elements.
-
+%This boundary condition models small scale free water surface, namely a watercourse.
+%To begin with consider a small scale case where elements have scale of the width of the watercourse and the boundary match the free water surface of the water course.
+%In such a case we can prescribe the boundary condition:
+%\[
+%  h_d \le h_r\quad \text{and}\quad \vc q_d \cdot \vc n \ge \sigma (h - h_r)
+%\]
+%where $\sigma$ is a transmissivity of the river bedrock and $h_r=0$ is the height of the water column above the discrete boundary.
+%This condition use the information about water depth $h_0$ clearly can not be smaller then the pressure head at the same place. However, if the pressure head is 
+%smaller, we do not allow arbitrary infiltration as in the seepage face boundary condition, but limit the infiltration by the transmissivity of the bedrock. 
+%Next, if discrete boundary do not match the free surface of height $H_r$, we should rather use the piezometric head in boundary condition, getting:
+%\begin{equation}
+%  \label{BC:river_raw}
+%  H_d \le H_r\quad \text{and}\quad \vc q_d \cdot \vc n \ge \sigma (H - H_r).
+%\end{equation}
+%Finally, let us assume elements significantly larger then width of the watercourse. Let, $A_e$ be the surface of a boundary element face
+%containing a water source with the surface $A_R=\alpha_r A_e$. We want to combine the seepage face condition out of the watercourse with 
+%the river condition \eqref{BC:river_raw} in to single condition. The inequality for the flux is weighted by the area:
+%\[
+%   \vc q\cdot \vc n \ge \alpha_r \sigma(H-H_r) + (1-\alpha_r)q_i
+%\]
+%where $q_i$ is the infiltration (negative) or evaporation (positive) on the surface out of the watercourse. Similarly, we consider
+%\[
+%  H_d \le H_c = (\alpha_r) H_r + (1-\alpha_r) H_s
+%\]
+%where the critical piezometric head $H_c$ is a weighted average of the river head and the average height $H_s$ of the real surface.
+%
+%
+%Parameters: $\alpha_r$ \units{}{}{} the \hyperA{DarcyFlowMH-Data::bc-river-fraction}{river surface fraction}, $H_r$ \units{1}{}{} 
+%the \hyperA{DarcyFlowMH-Data::bc-river-head}{river head}, 
+%alternatively $H_c=H_d^D$ \units{1}{}{} the critical piezometric head or $h_c=h_d^D$ \units{1}{}{} the critical pressure head, $q_i=q_d^N$ \units{}{4-d}{-1}
+%the infiltration or evapotranspiration rate, $\sigma=\sigma_d^R$ \units{}{3-d}{-1}  
+%the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient} of the bedrock.
+%
+%Implementation: prescribing $\alpha_r$ as a field makes only sense for the case of element-wise field since the value depends on the cross-section 
+%of the river and the boundary element. Ultimate goal should be to prescribe river as an 1D line and set width of the river on its elements. Then we can 
+%modify non-compatible intersection algorithms to compute value of $\alpha_r$ for individual elements.
+%
 
 
 
