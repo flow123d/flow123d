@@ -222,8 +222,16 @@ public:
 
 
     /**
-     * Method to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
-     * in the @p parent. You are free to overwrite copied keys, but you can not delete them.
+     * Method to derive new Record from an AbstractRecord @p parent. This register the @p parent in the newly
+     * created Record. Method creates TYPE key of Record and must be call before declaration of keys.
+     *
+     * Mechanism of set parent to derived Record and child to parent Abstract is a bit more complicated. For
+     * correct finish it must be done in these steps:
+     *
+     * - in derive_from is set @p parent to derived Record
+     * - in \p close is set derived Record to parent (or to all parents for multiple inheritance) and registered
+     *   parents in derived Record are erased
+     * - in \p AbstractRecord::finish is re-registered parents to descendant (through \p add_parent method)
      */
     Record &derive_from(AbstractRecord &parent);
 
@@ -269,7 +277,11 @@ public:
 
 
     /**
-     *  Can be used to close the Record for further declarations of keys.
+     * Close the Record for further declarations of keys.
+     *
+     * Add Record to type repository (see @p TypeRepository::add_type) and set Record
+     * as descendant of parent if Record is derived (for mechanism of set parent and
+     * descendant see \p derive_from)
      */
     const Record &close() const;
 
@@ -388,7 +400,8 @@ protected:
      * Set parent Abstract of Record.
      *
      * This method is created for correct functionality of generic types. It must be called
-     * in Abstract::finish() and refill @p parent_vec_ vector of correct parents.
+     * in Abstract::finish() and refill @p parent_vec_ vector of correct parents (for complete
+     * mechanism of set parent and descendant see \p derive_from)
      */
     const Record &add_parent(AbstractRecord &parent) const;
 
@@ -602,6 +615,9 @@ public:
 
     /**
      *  Finish declaration of the AbstractRecord type.
+     *
+     *  Set AbstractRecord as parent of derived Records (for mechanism of
+     *  set parent and descendant see \p Record::derive_from)
      */
     bool finish(bool is_generic = false) override;
 
