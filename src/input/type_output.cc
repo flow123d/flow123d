@@ -27,22 +27,6 @@ OutputBase::~OutputBase() {}
 
 
 
-ostream& OutputBase::print(ostream& stream) {
-	doc_type_ = full_record;
-	clear_processed_types();
-
-	stream << format_head;
-	print_program_info(stream);
-	stream << format_inner;
-	print(stream, type_);
-	stream << format_full_hash;
-	print_full_hash(stream);
-	stream << format_tail;
-	return stream;
-}
-
-
-
 OutputBase::OutputBase(const TypeBase *type)
 : type_(type)
 {
@@ -133,7 +117,7 @@ const string & OutputBase::get_adhoc_parent_name(const AdHocAbstractRecord *a_re
 
 
 
-void OutputBase::print(ostream& stream, const TypeBase *type) {
+void OutputBase::print_base(ostream& stream, const TypeBase *type) {
 
 	if (typeid(*type) == typeid(Type::Record)) {
 		print_impl(stream, static_cast<const Type::Record *>(type) );
@@ -214,6 +198,14 @@ void OutputBase::clear_processed_types() {
  * implementation of OutputText
  */
 
+ostream& OutputText::print(ostream& stream) {
+	doc_type_ = full_record;
+	clear_processed_types();
+
+	print_base(stream, type_);
+	return stream;
+}
+
 void OutputText::print_impl(ostream& stream, const Record *type) {
 	if (! type->is_finished()) {
 		xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
@@ -251,7 +243,7 @@ void OutputText::print_impl(ostream& stream, const Record *type) {
 		        write_default_value(stream, it->default_);
 		        stream << endl;
 		        stream << setw(padding_size + size_setw_) << "" <<"#### is ";
-		        print(stream, it->type_.get());
+		        print_base(stream, it->type_.get());
 		        write_description(stream, it->description_, padding_size+size_setw_);
 		        stream << endl;
 		    }
@@ -271,10 +263,10 @@ void OutputText::print_impl(ostream& stream, const Array *type) {
 		get_array_sizes(*type, lower_size, upper_size);
 		stream << "Array, size limits: [" << lower_size << ", " << upper_size << "] of type: " << endl;
 		stream << setw(padding_size + size_setw_) << "" << "#### ";
-		print(stream, array_type.get());
+		print_base(stream, array_type.get());
 		break;
 	case full_record:
-		print(stream, array_type.get());
+		print_base(stream, array_type.get());
 		break;
 	}
 }
@@ -441,6 +433,21 @@ std::string OutputJSONMachine::escape_description(std::string desc) {
 }
 
 
+ostream& OutputJSONMachine::print(ostream& stream) {
+	doc_type_ = full_record;
+	clear_processed_types();
+
+	stream << format_head;
+	print_program_info(stream);
+	stream << format_inner;
+	print_base(stream, type_);
+	stream << format_full_hash;
+	print_full_hash(stream);
+	stream << format_tail;
+	return stream;
+}
+
+
 void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
 
 	TypeBase::TypeHash hash=type->content_hash();
@@ -494,7 +501,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
     // Full documentation of embedded record types.
     doc_type_ = full_record;
 	for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-		print(stream, it->type_.get());
+		print_base(stream, it->type_.get());
 	}
 
     boost::hash_combine(full_hash_, hash);
@@ -521,7 +528,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type) {
 	stream << endl;
 	stream << "}," << endl;
 
-	print(stream, array_type.get());
+	print_base(stream, array_type.get());
 
 	boost::hash_combine(full_hash_, hash);
 }
@@ -545,7 +552,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type) 
     stream << "},";
 
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-        print(stream, &*it);
+    	print_base(stream, &*it);
     }
 
     boost::hash_combine(full_hash_, hash);
@@ -567,7 +574,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
     stream << "},";
 
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-        print(stream, &*it);
+    	print_base(stream, &*it);
     }
 
     boost::hash_combine(full_hash_, hash);

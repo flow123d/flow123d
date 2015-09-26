@@ -39,7 +39,7 @@ public:
      * @brief Performs output of the documentation into given @p stream. The same effect has the reloaded operator '<<'.
      * Returns reference to the same stream.
      */
-    ostream& print(ostream& stream);
+    virtual ostream& print(ostream& stream) = 0;
 
 protected:
     /**
@@ -93,19 +93,7 @@ protected:
     /**
      * Perform resolution according to actual @p type (using typeid) and call particular print_impl method.
      */
-    void print(ostream& stream, const TypeBase *type);
-
-
-    /**
-     * Print actual version of program.
-     */
-    virtual void print_program_info(ostream& stream) = 0;
-
-
-    /**
-     * Print @p full_hash_ key.
-     */
-    virtual void print_full_hash(ostream& stream) = 0;
+    void print_base(ostream& stream, const TypeBase *type);
 
 
     /**
@@ -189,18 +177,6 @@ protected:
     /// temporary value for printout of description (used in std::setw function)
     unsigned int size_setw_;
 
-    /// Header of the format, printed before call of version print.
-    /// see @p print(stream) method
-    std::string format_head;
-    /// Inner part of the format, printed before first call of recursive print.
-    /// see @p print(stream) method
-    std::string format_inner;
-    /// Tail of the format, printed after all recursive prints are finished and before full hash prints.
-    /// see @p print(stream) method
-    std::string format_full_hash;
-    /// Tail of the format, printed after all recursive prints are finished.
-    /// see @p print(stream) method
-    std::string format_tail;
     /// Set of hashes of outputed types. Should replace keys.
     std::set<std::size_t> processed_types_hash_;
     /// Content hash of full IST, value is used for key IST_hash
@@ -226,6 +202,8 @@ protected:
 class OutputText : public OutputBase {
 public:
 	OutputText(const TypeBase *type) : OutputBase(type) {}
+
+	ostream& print(ostream& stream) override;
 protected:
     void print_impl(ostream& stream, const Record *type);
     void print_impl(ostream& stream, const Array *type);
@@ -237,9 +215,6 @@ protected:
 	void print_impl(ostream& stream, const Bool *type);
 	void print_impl(ostream& stream, const String *type);
     void print_impl(ostream& stream, const FileName *type);
-
-    void print_program_info(ostream& stream) override {};
-    void print_full_hash(ostream& stream) override {};
 };
 
 
@@ -268,6 +243,8 @@ public:
 	    format_full_hash="{}],\n";
 	    format_tail="}\n";
     }
+
+	ostream& print(ostream& stream) override;
 
     /**
      * @brief Simple internal class for storing JSON description rewrite rule
@@ -315,13 +292,26 @@ protected:
     /**
      * Print actual version of program.
      */
-    void print_program_info(ostream& stream) override;
+    void print_program_info(ostream& stream);
 
     /**
      * Print @p full_hash_ key.
      */
-    void print_full_hash(ostream& stream) override;
+    void print_full_hash(ostream& stream);
 
+
+    /// Header of the format, printed before call of version print.
+    /// see @p print(stream) method
+    std::string format_head;
+    /// Inner part of the format, printed before first call of recursive print.
+    /// see @p print(stream) method
+    std::string format_inner;
+    /// Tail of the format, printed after all recursive prints are finished and before full hash prints.
+    /// see @p print(stream) method
+    std::string format_full_hash;
+    /// Tail of the format, printed after all recursive prints are finished.
+    /// see @p print(stream) method
+    std::string format_tail;
 
 };
 
