@@ -38,6 +38,9 @@ public:
 
     typedef std::map< Type::TypeBase::TypeHash, boost::shared_ptr<T> > TypeRepositoryMap;
 
+    /// Public typedef of constant iterator into map of stored type.
+    typedef typename TypeRepositoryMap::const_iterator TypeRepositoryMapIter;
+
     static TypeRepository & get_instance() {
     	static TypeRepository instance;
     	return instance;
@@ -47,6 +50,15 @@ public:
 
     void finish();
 
+    /// Container-like access to the data stored in TypeRepository. Returns iterator to the first data.
+    TypeRepositoryMapIter begin() const {
+        return type_repository_map_.begin();
+    }
+
+    /// Container-like access to the data stored in TypeRepository. Returns iterator to the last data.
+    TypeRepositoryMapIter end() const {
+        return type_repository_map_.end();
+    }
 private:
     /// Default constructor.
     TypeRepository() {};
