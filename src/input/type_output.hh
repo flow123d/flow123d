@@ -59,7 +59,7 @@ protected:
      *
      * @param type Stores input sequence
      */
-    OutputBase(const TypeBase *type);
+    OutputBase();
 
 
     /// Destructor
@@ -170,8 +170,6 @@ protected:
 
     /// Padding of new level of printout, used where we use indentation.
     static const unsigned int padding_size = 4;
-    /// Object for which is created printout
-    const TypeBase *type_;
     /// Type of documentation output
     DocumentationType doc_type_;
     /// temporary value for printout of description (used in std::setw function)
@@ -201,7 +199,12 @@ protected:
  */
 class OutputText : public OutputBase {
 public:
-	OutputText(const TypeBase *type) : OutputBase(type) {}
+    /**
+     * Constructor
+     *
+     * @param type Stores input sequence
+     */
+	OutputText(const TypeBase *type) : OutputBase(), type_(type) {}
 
 	ostream& print(ostream& stream) override;
 protected:
@@ -215,6 +218,9 @@ protected:
 	void print_impl(ostream& stream, const Bool *type);
 	void print_impl(ostream& stream, const String *type);
     void print_impl(ostream& stream, const FileName *type);
+
+    /// Object for which is created printout
+    const TypeBase *type_;
 };
 
 
@@ -236,7 +242,7 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
-	OutputJSONMachine(TypeBase *type) : OutputBase(type)
+	OutputJSONMachine() : OutputBase()
     {
 	    format_head="{ \"version\" :";
 	    format_inner=",\n\"ist_nodes\" : [\n";

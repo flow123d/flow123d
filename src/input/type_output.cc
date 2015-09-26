@@ -3,6 +3,7 @@
  */
 
 #include "input/type_output.hh"
+#include "input/type_repository.hh"
 #include "rev_num.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -27,8 +28,7 @@ OutputBase::~OutputBase() {}
 
 
 
-OutputBase::OutputBase(const TypeBase *type)
-: type_(type)
+OutputBase::OutputBase()
 {
     TypeBase::lazy_finish();
 }
@@ -440,7 +440,20 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 	stream << format_head;
 	print_program_info(stream);
 	stream << format_inner;
-	print_base(stream, type_);
+
+	for (Input::TypeRepository<Selection>::TypeRepositoryMapIter it = Input::TypeRepository<Selection>::get_instance().begin();
+			it != Input::TypeRepository<Selection>::get_instance().end(); ++it) {
+		print_base( stream, it->second.get() );
+	}
+	for (Input::TypeRepository<AbstractRecord>::TypeRepositoryMapIter it = Input::TypeRepository<AbstractRecord>::get_instance().begin();
+			it != Input::TypeRepository<AbstractRecord>::get_instance().end(); ++it) {
+		print_base( stream, it->second.get() );
+	}
+	for (Input::TypeRepository<Record>::TypeRepositoryMapIter it = Input::TypeRepository<Record>::get_instance().begin();
+			it != Input::TypeRepository<Record>::get_instance().end(); ++it) {
+		print_base( stream, it->second.get() );
+	}
+
 	stream << format_full_hash;
 	print_full_hash(stream);
 	stream << format_tail;

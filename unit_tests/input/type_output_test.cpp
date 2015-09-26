@@ -95,7 +95,7 @@ TEST(OutputTypeTypeBase, record_output_test) {
     cout << OutputText(&main) << endl << endl;
 
     cout << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine(&main) << endl;
+    cout << OutputJSONMachine() << endl;
 }
 
 /*TEST(OutputTypeAbstractRecord, abstract_record_test) {
@@ -130,7 +130,7 @@ TEST(OutputTypeTypeBase, record_output_test) {
     output_text2.print(cout);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine(&a_rec) << endl;
+    cout << OutputJSONMachine() << endl;
 }*/
 
 
@@ -208,8 +208,7 @@ public:
     output_text.print(cout);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    OutputJSONMachine output_json_machine( &root_rec);
-    output_json_machine.print(cout);
+    cout << OutputJSONMachine() << endl;
 }*/
 
 
@@ -231,12 +230,10 @@ TEST(OutputTypeArray, array_of_array_test) {
     }
 
     cout << "## " << "OutputText printout" << endl;
-    OutputText output_text( &array_record);
-    output_text.print(cout);
+    cout << OutputText(&array_record) << endl;
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    OutputJSONMachine output_machine( &array_record);
-    output_machine.print(cout);
+    cout << OutputJSONMachine() << endl;
 }
 
 /*

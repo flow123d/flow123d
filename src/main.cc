@@ -219,7 +219,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     		cerr << "Failed to open file '" << json_filename << "'" << endl;
         } else {
 	        Input::Type::TypeBase::lazy_finish();
-	        json_stream << Input::Type::OutputJSONMachine(&get_input_type());
+	        json_stream << Input::Type::OutputJSONMachine();
 	        json_stream.close();
         }
         exit( exit_output );
