@@ -4,6 +4,7 @@
 import os
 import datetime
 from subprocess import CalledProcessError
+import re
 from utils.logger import Logger
 
 
@@ -14,13 +15,16 @@ class LicenseManager(object):
     """
     Class for adding/removing or replacing license in given files and folders
     """
+
     def __init__(self, license_text, license_start, license_end,
-                 variables={}, replace_only=False, whitespace=False):
+                 variables={ }, replace_only=False, whitespace=False,
+                 old_variables=True):
         self.license_start = license_start
         self.license_stop = license_end
         self.license_text = license_text
         self.variables = variables
         self.replace_only = replace_only
+        self.old_variables = old_variables
         self.whitespace = whitespace
         self.extensions = ['.hh', '.cc', '.h', '.c', '.cpp', '.hpp']
         self.files = []
@@ -34,6 +38,7 @@ class LicenseManager(object):
         :param default:
         """
         from subprocess import check_output
+
         try:
             return check_output(command, shell=True, cwd=self.git).strip()
         except CalledProcessError as e:
@@ -90,6 +95,60 @@ class LicenseManager(object):
         for file_path in self.files:
             self.process_file(file_path)
 
+    def add_old_variables(self, variables, old_license):
+        # basic variables used in old license
+        basic_vars = {
+            'brief': [''],
+            'ingroup': [],
+            'author': [],
+            'date': [],
+            'file': [os.path.basename(variables['filepath'])]
+        }
+
+        # find old variables
+        section = None
+        old_vars = { }
+        for line in old_license.split('\n'):
+            line = line.lstrip('* /')
+            line = line.rstrip('\r')
+            if not line.strip():
+                section = None
+                continue
+
+            result = re.findall(r'@([a-zA-Z]+)[ \t]+(.+)', line)
+            if result:
+                var_name, var_value = result[0]
+                var_value = var_value.strip()
+                old_vars[var_name] = [var_value]
+                section = var_name
+            elif section:
+                old_vars[var_name].append(line)
+
+        # max_length = 7#len(max(old_vars.keys(), key=len)) + 1
+        new_vars = basic_vars.copy()
+        new_vars.update(old_vars)
+        keys = new_vars.keys()
+
+        # create _name_ variables
+        for key, values in new_vars.items():
+            if not values:
+                new_vars['_' + key + '_'] = ''
+                continue
+
+            if values[0].strip() == '???':
+                new_vars['_' + key + '_'] = ' '
+                continue
+
+            fmt = '\n * @{:7s} {:s}' + '\n *  {space:7s} {:s}'.join([''] * len(values))
+            new_vars['_' + key + '_'] = fmt.format(key, *values, space='')
+
+        # add them to variable reference
+        variables.update(new_vars)
+
+        # convert lists to str
+        for key in keys:
+            variables[key] = '\n'.join(variables[key])
+
     def process_file(self, file_path):
         """
         Process single file
@@ -109,6 +168,7 @@ class LicenseManager(object):
                 return
 
         if li_start is not None and li_end is not None:
+            old_license = file_content[li_start:li_end]
             file_content = file_content[li_end:].lstrip()
             variables = self.variables.copy()
             variables.update(
@@ -117,6 +177,9 @@ class LicenseManager(object):
                     'filename': os.path.basename(file_path),
                     'datetime': datetime.datetime.now()
                 })
+
+            if self.old_variables:
+                self.add_old_variables(variables, old_license)
 
             if self.git:
                 variables.update({
