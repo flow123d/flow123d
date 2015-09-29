@@ -33,9 +33,10 @@ message(STATUS "===========================================")
 # Note: deal.II implicitly uses variables PETSC_DIR, PETSC_ARCH from upstream
 set(DEAL_II_WITH_MUPARSER OFF)
 set(DEAL_II_WITH_MPI ON)
+set(DEAL_II_WITH_THREADS OFF)
 set(BOOST_DIR "${BOOST_ROOT}")
 set(BOOST_LIBRARIES "${BOOST_LIBRARY_DIRS}")
-set(TBB_FOUND "true")
+#set(TBB_FOUND "true")
 set(DEAL_II_WITH_UMFPACK OFF)
 ## Check if UMFPACK is installed with PETSc
 #if (PETSC_VAR_UMFPACK_LIB)
@@ -50,11 +51,6 @@ set(DEAL_II_WITH_LAPACK ON)
 set(LAPACK_FOUND "true")
 set(LAPACK_LIBRARIES "${PETSC_EXTERNAL_LIB}")
 set(LAPACK_LINKER_FLAGS ${PETSC_VAR_BLASLAPACK_LIB})
-if (FLOW_BUILD_TYPE STREQUAL "release")
-  set(CMAKE_BUILD_TYPE "Release")
-else()
-  set(CMAKE_BUILD_TYPE "Debug")
-endif()
 add_subdirectory("dealii")
 set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
 message(STATUS "===========================================")
@@ -105,8 +101,12 @@ add_library(input_lib
     input/type_base.cc
     input/type_record.cc
     input/type_selection.cc
+    input/type_generic.cc
     input/storage.cc
-    input/json_to_storage.cc
+    input/reader_to_storage.cc
+    input/path_base.cc
+    input/path_json.cc
+    input/path_yaml.cc
     input/type_output.cc
     
     input/accessors.cc
@@ -228,6 +228,7 @@ add_library(coupling_lib
     fields/unit_si.cc
     fields/generic_field.cc
     coupling/equation.cc
+    coupling/balance.cc
     flow/old_bcd.cc
     # coupling/hc_explicit_sequential.cc
 )
@@ -254,10 +255,10 @@ set(sources_lib_non_system
 )
 # all remaining sources 
 add_library(flow123d_lib 
-    flow/mh_fe_values.cc
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
+    flow/richards_lmh.cc
 
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc
@@ -277,7 +278,7 @@ add_library(flow123d_lib
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
-    transport/mass_balance.cc
+    
     transport/substance.cc
 
     coupling/hc_explicit_sequential.cc

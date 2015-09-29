@@ -34,7 +34,7 @@
 
 #include "system/system.hh"
 #include "system/xio.h"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
 
@@ -73,8 +73,8 @@ const IT::Record & Mesh::get_input_type() {
 		.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
 				"List of additional region definitions not contained in the mesh.")
 		.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
-				"List of region set definitions. There are three region sets implicitly defined:\n"
-				"ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
+				"List of region set definitions. There are three region sets implicitly defined:\n\n"
+				" - ALL (all regions of the mesh)\n - BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
 		.close();
 }
@@ -87,7 +87,7 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
 
-    Input::JSONToStorage reader( input_str, Mesh::get_input_type() );
+    Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);

@@ -726,6 +726,8 @@ public:
     {}
     void output(MPI_Comm comm)
     {}
+    void transform_profiler_data(const string &output_file_suffix, const string &formatter)
+    {}
     double get_resolution () const
     { return 0.0; }
     const char *actual_tag() const

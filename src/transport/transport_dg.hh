@@ -31,6 +31,8 @@
 #define TRANSPORT_DG_HH_
 
 #include "transport_operator_splitting.hh"
+#include "fields/bc_field.hh"
+#include "fields/field.hh"
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
 
@@ -137,7 +139,6 @@ template<class Model>
 class TransportDG : public TransportBase, public Model
 {
 public:
-	typedef AdvectionProcessBase FactoryBaseType;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -184,7 +185,7 @@ public:
      * @param init_mesh         computational mesh
      * @param in_rec            input record
      */
-    TransportDG(Mesh &init_mesh, const Input::Record &in_rec);
+    TransportDG(Mesh &init_mesh, const Input::Record in_rec);
     /**
 
      * @brief Declare input record type for the equation TransportDG.
@@ -406,42 +407,6 @@ private:
 	 */
 	template<unsigned int dim>
 	void prepare_initial_condition();
-
-	/**
-	 * @brief Calculates flux through boundary of each region.
-	 *
-	 * This actually calls calc_fluxes<dim>() for each space dimension.
-	 * @param bcd_balance       Total fluxes.
-	 * @param bcd_plus_balance  Incoming fluxes.
-	 * @param bcd_minus_balance Outgoing fluxes.
-	 */
-	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-
-	/**
-	 * @brief Calculates flux through boundary of each region of specific dimension.
-	 * @param bcd_balance       Total fluxes.
-	 * @param bcd_plus_balance  Incoming fluxes.
-	 * @param bcd_minus_balance Outgoing fluxes.
-	 */
-	template<unsigned int dim>
-	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-
-	/**
-	 * @brief Calculates volume sources for each region.
-	 *
-	 * This method actually calls calc_elem_sources<dim>() for each space dimension.
-	 * @param mass        Vector of substance mass per region.
-	 * @param src_balance Vector of sources per region.
-	 */
-	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
-
-	/**
-	 * @brief Calculates volume sources for each region of specific dimension.
-	 * @param mass        Vector of substance mass per region.
-	 * @param src_balance Vector of sources per region.
-	 */
-	template<unsigned int dim>
-	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
 
 
 

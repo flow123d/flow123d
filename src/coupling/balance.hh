@@ -1,5 +1,5 @@
-#ifndef MASS_BALANCE_HH_
-#define MASS_BALANCE_HH_
+#ifndef BALANCE_HH_
+#define BALANCE_HH_
 
 
 #include "la/distribution.hh"
@@ -489,4 +489,4 @@ private:
 
 
 
-#endif // MASS_BALANCE_HH_
+#endif // BALANCE_HH_

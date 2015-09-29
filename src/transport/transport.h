@@ -44,6 +44,7 @@
 #include "transport/transport_operator_splitting.hh"
 
 #include "fields/field_algo_base.hh"
+#include "fields/bc_field.hh"
 #include "fields/field_values.hh"
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
@@ -108,7 +109,7 @@ public:
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec);
+        ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec);
 	/**
 	 * TODO: destructor
 	 */
@@ -144,11 +145,7 @@ public:
     /**
      * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
      */
-    void set_balance_object(boost::shared_ptr<Balance> balance)
-    {
-    	balance_ = balance;
-    	subst_idx = balance_->add_quantities(substances_.names());
-    }
+    void set_balance_object(boost::shared_ptr<Balance> balance);
 
     const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
