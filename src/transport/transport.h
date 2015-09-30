@@ -231,11 +231,14 @@ private:
      */
     EqData data_;
 
+    //@{
     /**
-     * Indicates if we finished the matrix and add vector by scaling with timestep factor.
+     * Flag indicates the state of object (transport matrix or source term).
+     * If false, the object is freshly assembled and not rescaled.
+     * If true, the object is scaled (not necessarily with the current time step).
      */
-	bool is_convection_matrix_scaled, tm_need_time_rescaling, 
-         is_src_term_scaled, src_need_time_rescaling;
+	bool is_convection_matrix_scaled, is_src_term_scaled;
+    //@}
     
     double **sources_corr;
     Vec *v_sources_corr;

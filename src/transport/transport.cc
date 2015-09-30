@@ -118,8 +118,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     transport_bc_time = -1.0;
     is_convection_matrix_scaled = false;
     is_src_term_scaled=false;
-    tm_need_time_rescaling=true;
-    src_need_time_rescaling=true;
 
     // register output vectors
     output_rec = in_rec.val<Input::Record>("output_stream");
@@ -378,7 +376,9 @@ void ConvectionTransport::set_boundary_conditions()
     for (sbi=0; sbi<n_subst_; sbi++)  	VecAssemblyBegin(bcvcorr[sbi]);
     for (sbi=0; sbi<n_subst_; sbi++)   	VecAssemblyEnd(bcvcorr[sbi]);
 
-    transport_bc_time = time_->t();
+    // we are calling set_boundary_conditions() after next_time() and
+    // we are using data from t() before, so we need to set corresponding bc time
+    transport_bc_time = time_->last_t();
 }
 
 
@@ -496,7 +496,6 @@ bool ConvectionTransport::assess_time_constraint(double& time_constraint)
     {
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
-        tm_need_time_rescaling = true;
         cfl_changed = true;
         DBGMSG("CFL changed - flow.\n");
     }
@@ -507,7 +506,6 @@ bool ConvectionTransport::assess_time_constraint(double& time_constraint)
     {
         compute_concentration_sources();
         is_src_term_scaled = false;
-        src_need_time_rescaling = true;
         cfl_changed = true;
         DBGMSG("CFL changed - source.\n");
     }
@@ -535,12 +533,18 @@ void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
     
+    // proceed to next time - which we are about to compute
+    // explicit scheme looks one step back and uses data from previous time
+    // (data time set previously in assess_time_constraint())
+    time_->next_time();
+    
     if(time_->is_changed_dt()) time_->view("Convection");    //show time governor
     
-    double dt_new = time_->estimate_dt(),
-           dt_scaled = dt_new / time_->dt();
+    double dt_new = time_->dt(),                    // current time step we are about to compute
+           dt_scaled = dt_new / time_->last_dt();   // scaling ratio to previous time step
     
     START_TIMER("time step rescaling");
+    bool scaled = false; //flag to avoid rescaling newly created bc term
     // if FLOW or DATA or BC changed ---------------------> recompute boundary condition
     if ( (mh_dh->time_changed() > transport_bc_time)
         || data_.porosity.changed()
@@ -548,50 +552,58 @@ void ConvectionTransport::update_solution() {
     {
         set_boundary_conditions();
         // rescale by time step
+        DBGMSG("BC - rescale NEW dt.\n");
         for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
             VecScale(bcvcorr[sbi], dt_new);
+        scaled = true;
     }
-    else if(time_->is_changed_dt()) // if time step changed, only rescale
+    
+    if( !scaled && time_->is_changed_dt() ) // if time step changed, only rescale
     {
+        DBGMSG("BC - rescale SCALE dt.\n");
         for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
             VecScale(bcvcorr[sbi], dt_scaled);
     }
+    
 
     // if DATA or TIME STEP changed -----------------------> rescale source term
-    if (src_need_time_rescaling || time_->is_changed_dt()) {
-        if(is_src_term_scaled) { // if it is already scaled
-            for (unsigned int sbi=0; sbi<n_subst_; sbi++)
-            {
-                VecScale(v_sources_corr[sbi], dt_scaled);
-                VecScale(v_tm_diag[sbi], dt_scaled);
-            }
+    scaled = false; //reset; flag to avoid rescaling newly created src term
+    if( !is_src_term_scaled ) { //if it is not scaled (freshly computed)
+        DBGMSG("SRC - rescale NEW dt.\n");
+        for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+        {
+            VecScale(v_sources_corr[sbi], dt_new);
+            VecScale(v_tm_diag[sbi], dt_new);
         }
-        else{ //if it is not scaled (freshly computed)
-            for (unsigned int sbi=0; sbi<n_subst_; sbi++)
-            { 
-                VecScale(v_sources_corr[sbi], dt_new);
-                VecScale(v_tm_diag[sbi], dt_new);
-            }
-            is_src_term_scaled = true;
+        is_src_term_scaled = true;
+        scaled = true;
+    }
+    if( !scaled && time_->is_changed_dt() ) { // if time step changed, only rescale
+        DBGMSG("SRC - rescale SCALE dt.\n");
+        for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+        {
+            VecScale(v_sources_corr[sbi], dt_scaled);
+            VecScale(v_tm_diag[sbi], dt_scaled);
         }
-        src_need_time_rescaling = false;
     }
     
     // if DATA or TIME STEP changed -----------------------> rescale transport matrix
-    if (tm_need_time_rescaling || time_->is_changed_dt()) {
-        if ( is_convection_matrix_scaled ) { // if it is already scaled
-            // rescale matrix
-            MatShift(tm, -1.0);
-            MatScale(tm, dt_scaled );
-            MatShift(tm, 1.0);
-        } else {
-            // scale fresh convection term matrix
-            MatScale(tm, dt_new);
-            MatShift(tm, 1.0);
-            is_convection_matrix_scaled = true;
-        }
-        tm_need_time_rescaling = false;
-    } 
+    scaled = false; //reset; flag to avoid rescaling newly created tm term
+    if ( !is_convection_matrix_scaled ) { // scale fresh convection term matrix
+        DBGMSG("TM - rescale NEW dt.\n");
+        MatScale(tm, dt_new);
+        MatShift(tm, 1.0);
+        is_convection_matrix_scaled = true;
+        scaled = true;
+    }
+    if ( !scaled && time_->is_changed_dt()) {
+        DBGMSG("TM - rescale SCALE dt.\n");
+        // rescale matrix
+        MatShift(tm, -1.0);
+        MatScale(tm, dt_scaled );
+        MatShift(tm, 1.0);
+    }
+
     END_TIMER("time step rescaling");
     
 
@@ -619,10 +631,6 @@ void ConvectionTransport::update_solution() {
       MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
       END_TIMER("mat mult");
     }
-
-    // proceed to actually computed time
-    // explicit scheme use values from previous time and then set then new time
-    time_->next_time();
     
     END_TIMER("convection-one step");
 }
@@ -643,10 +651,6 @@ void ConvectionTransport::set_target_time(double target_time)
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes
     time_->fix_dt_until_mark();
-    
-    // invalidate scaling
-    tm_need_time_rescaling = true;
-    src_need_time_rescaling = true;
 }
 
 
