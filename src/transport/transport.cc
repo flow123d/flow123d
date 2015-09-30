@@ -376,7 +376,9 @@ void ConvectionTransport::set_boundary_conditions()
     for (sbi=0; sbi<n_subst_; sbi++)  	VecAssemblyBegin(bcvcorr[sbi]);
     for (sbi=0; sbi<n_subst_; sbi++)   	VecAssemblyEnd(bcvcorr[sbi]);
 
-    transport_bc_time = time_->t();
+    // we are calling set_boundary_conditions() after next_time() and
+    // we are using data from t() before, so we need to set corresponding bc time 
+    transport_bc_time = time_->last_t();
 }
 
 
@@ -533,12 +535,18 @@ void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
     
+    // proceed to next time - which we are about to compute
+    // explicit scheme looks one step back and uses data from previous time 
+    // (data time set previously in assess_time_constraint())
+    time_->next_time();
+    
     if(time_->is_changed_dt()) time_->view("Convection");    //show time governor
     
-    double dt_new = time_->estimate_dt(),
-           dt_scaled = dt_new / time_->dt();
+    double dt_new = time_->dt(),                    // current time step we are about to compute
+           dt_scaled = dt_new / time_->last_dt();   // scaling ratio to previous time step
     
     START_TIMER("time step rescaling");
+    bool bc_scaled = false; //flag to avoid rescaling newly created bc term
     // if FLOW or DATA or BC changed ---------------------> recompute boundary condition
     if ( (mh_dh->time_changed() > transport_bc_time)
         || data_.porosity.changed()
@@ -549,16 +557,14 @@ void ConvectionTransport::update_solution() {
         DBGMSG("BC - rescale NEW dt.\n");
         for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
             VecScale(bcvcorr[sbi], dt_new);
-        bc_need_time_rescaling = false;
+        bc_scaled = true;
     }
     
-    //TODO: check time_->is_changed_dt
-    if(bc_need_time_rescaling)// || time_->is_changed_dt()) // // if time step changed, only rescale
+    if( !bc_scaled && time_->is_changed_dt()) // if time step changed, only rescale
     {
         DBGMSG("BC - rescale SCALE dt.\n");
         for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
             VecScale(bcvcorr[sbi], dt_scaled);
-        bc_need_time_rescaling = false;
     }
     
 
@@ -628,10 +634,6 @@ void ConvectionTransport::update_solution() {
       MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
       END_TIMER("mat mult");
     }
-
-    // proceed to actually computed time
-    // explicit scheme use values from previous time and then set then new time
-    time_->next_time();
     
     END_TIMER("convection-one step");
 }
@@ -656,7 +658,6 @@ void ConvectionTransport::set_target_time(double target_time)
     // invalidate scaling
     tm_need_time_rescaling = true;
     src_need_time_rescaling = true;
-    bc_need_time_rescaling = true;
 }
 
 

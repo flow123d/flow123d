@@ -235,7 +235,7 @@ private:
      * Indicates if we finished the matrix and add vector by scaling with timestep factor.
      */
 	bool is_convection_matrix_scaled, tm_need_time_rescaling, 
-         is_src_term_scaled, src_need_time_rescaling, bc_need_time_rescaling;
+         is_src_term_scaled, src_need_time_rescaling;
     
     double **sources_corr;
     Vec *v_sources_corr;
