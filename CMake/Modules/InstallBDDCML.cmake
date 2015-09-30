@@ -66,7 +66,7 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(BDDCML
     DOWNLOAD_DIR ${EXTERNAL_BDDCML_DIR} 
-    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/bddcml-2.4.tar.gz\"
+    URL \"http://flow.nti.tul.cz/libraries/bddcml-2.4.tar.gz\"
     SOURCE_DIR ${EXTERNAL_BDDCML_DIR}/src
     BINARY_DIR ${EXTERNAL_BDDCML_DIR}/src
     PATCH_COMMAND patch ${EXTERNAL_BDDCML_DIR}/src/src/f_symbol.h ${PROJECT_SOURCE_DIR}/CMake/Modules/BDDCML_patch/f_symbol.h.patch

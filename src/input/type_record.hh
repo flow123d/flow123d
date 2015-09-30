@@ -297,9 +297,6 @@ public:
     /// Record type name getter.
     virtual string type_name() const override;
 
-    /// Record type full name getter.
-    virtual string full_type_name() const override;
-
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
@@ -394,7 +391,7 @@ protected:
     /**
      * Declares a TYPE key of the Record.
      */
-    Record &declare_type_key(boost::shared_ptr<Selection> key_type);
+    Record &declare_type_key();
 
     /**
      * Set parent Abstract of Record.
@@ -596,19 +593,6 @@ public:
     AbstractRecord &allow_auto_conversion(const string &type_default);
 
     /**
-     * Same as Record::declare_key but returning reference to AbstractRecord.
-     */
-    template <class KeyType>
-    AbstractRecord &declare_key(const string &key, const KeyType &type,
-                            const Default &default_value, const string &description);
-    /**
-     * Same as previous method but without given default value (same as Default() - optional key )
-     */
-    template <class KeyType>
-    AbstractRecord &declare_key(const string &key, const KeyType &type,
-                            const string &description);
-
-    /**
      *  Can be used to close the AbstractRecord for further declarations of keys.
      */
     AbstractRecord &close();
@@ -631,12 +615,6 @@ public:
      * Returns reference to the inherited Record with given name.
      */
     const Record  &get_descendant(const string& name) const;
-
-    /**
-     * Returns reference to the inherited Record with given index (indexed in the same order
-     * as they are derived).
-     */
-    const Record  &get_descendant(unsigned int idx) const;
 
     /**
      * Returns default descendant if TYPE key has default value, otherwise returns empty Record.
@@ -663,9 +641,6 @@ public:
 
     /// AbstractRecord type name getter.
     virtual string type_name() const override;
-
-    /// AbstractRecord type full name getter.
-    virtual string full_type_name() const override;
 
     /**
      * Container-like access to the data of the Record. Returns iterator to the first data.
