@@ -101,16 +101,6 @@ public:
 			arma::uvec &bc_types) = 0;
 
 	/**
-	 * Computes the Dirichlet boundary condition values.
-	 * @param point_list   Points at which to evaluate.
-	 * @param ele_acc      Element accessor.
-	 * @param bc_values    Vector of b.c. values (output).
-	 */
-	virtual void get_dirichlet_bc_data(const std::vector<arma::vec3> &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_values) = 0;
-
-	/**
 	 * \brief Return data for total flux b.c.
 	 *
 	 * The total flux can in general be of the form

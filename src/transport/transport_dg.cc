@@ -1281,7 +1281,7 @@ void TransportDG<Model>::set_boundary_conditions()
 			data_.cross_section.value_list(fe_values_side.point_list(), side->element()->element_accessor(), csection);
 			// The b.c. data are fetched for all possible b.c. types since we allow
 			// different bc_type for each substance.
-			Model::get_dirichlet_bc_data(fe_values_side.point_list(), ele_acc, bc_values);
+			data_.bc_dirichlet_value.value_list(fe_values_side.point_list(), ele_acc, bc_values);
 			Model::get_total_flux_bc_data(fe_values_side.point_list(), ele_acc, bc_tfluxes, bc_tad_values, bc_tsigma, bc_tref_values);
 			Model::get_diffusive_flux_bc_data(fe_values_side.point_list(), ele_acc, bc_dfluxes, bc_dsigma, bc_dref_values);
 

@@ -55,7 +55,7 @@ public:
 		/// Type of boundary condition (see also BC_Type)
         BCField<3, FieldValue<3>::EnumVector > bc_type;
 		/// Prescribed concentration for Dirichlet/reference concentration for flux b.c.
-		BCField<3, FieldValue<3>::Vector> bc_conc;
+		BCField<3, FieldValue<3>::Vector> bc_dirichlet_value;
 		/// Advected concentration for total flux b.c.
 		BCField<3, FieldValue<3>::Vector> bc_ad_conc;
 		/// Flux value in total/diffusive flux b.c.
@@ -151,10 +151,6 @@ public:
 
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
-
-	void get_dirichlet_bc_data(const std::vector<arma::vec3> &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_values) override;
 
 	void get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,

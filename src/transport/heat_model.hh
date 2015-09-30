@@ -54,13 +54,13 @@ public:
 		/// Type of boundary condition (see also BC_Type)
         BCField<3, FieldValue<3>::Enum > bc_type;
 		/// Dirichlet boundary condition for temperature.
-		BCField<3, FieldValue<3>::Scalar> bc_temperature;
+		BCField<3, FieldValue<3>::Vector> bc_dirichlet_value;
 		/// Advected temperature for total flux b.c.
-		BCField<3, FieldValue<3>::Scalar> bc_ad_temperature;
+		BCField<3, FieldValue<3>::Vector> bc_ad_temperature;
 		/// Flux value in total/diffusive flux b.c.
-		BCField<3, FieldValue<3>::Scalar > bc_flux;
+		BCField<3, FieldValue<3>::Vector > bc_flux;
 		/// Transition coefficient in total/diffusive flux b.c.
-		BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+		BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
 		/// Initial temperature.
 		Field<3, FieldValue<3>::Scalar> init_temperature;
 		/// Porosity of solid.
@@ -156,10 +156,6 @@ public:
 
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
-
-	void get_dirichlet_bc_data(const std::vector<arma::vec3> &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_values) override;
 
 	void get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,

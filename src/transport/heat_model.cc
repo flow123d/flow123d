@@ -42,12 +42,6 @@ using namespace std;
 using namespace Input::Type;
 
 
-const std::map<unsigned int,unsigned int> HeatTransferModel::ModelEqData::bc_type_conversion = {
-		{ bc_inflow,    	 abc_inflow },
-		{ bc_dirichlet, 	 abc_dirichlet },
-		{ bc_total_flux,     abc_total_flux },
-		{ bc_diffusive_flux, abc_diffusive_flux }
-};
 
 
 
@@ -91,7 +85,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .input_default("\"inflow\"")
             .input_selection( &get_bc_type_selection() )
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
-    *this+=bc_temperature
+    *this+=bc_dirichlet_value
             .name("bc_temperature")
             .description("Boundary value of temperature.")
             .units( UnitSI().K() )
@@ -350,19 +344,11 @@ void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_l
 void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 			arma::uvec &bc_types)
 {
-	bc_types = { ModelEqData::bc_type_conversion.find(data().bc_type.value(ele_acc.centre(), ele_acc))->second };
+	// Currently the bc types for HeatTransfer are numbered in the same way as in TransportDG.
+	// In general we should use some map here.
+	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) };
 }
 
-
-void HeatTransferModel::get_dirichlet_bc_data(const std::vector<arma::vec3> &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_values)
-{
-	vector<double> bc_value(point_list.size());
-	data().bc_temperature.value_list(point_list, ele_acc, bc_value);
-	for (unsigned int i=0; i<point_list.size(); i++)
-		bc_values[i] = bc_value[i];
-}
 
 void HeatTransferModel::get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
@@ -371,24 +357,10 @@ void HeatTransferModel::get_total_flux_bc_data(const std::vector<arma::vec3> &po
 		std::vector< arma::vec > &bc_sigma,
 		std::vector< arma::vec > &bc_ref_value)
 {
-	const unsigned int np = point_list.size();
-	vector<double> bc_flux_scalar(np),
-			bc_ad_temperature(np),
-			bc_robin_sigma(np),
-			bc_temperature(np);
-
-	data().bc_flux.value_list(point_list, ele_acc, bc_flux_scalar);
-	data().bc_ad_temperature.value_list(point_list, ele_acc, bc_ad_temperature);
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_robin_sigma);
-	data().bc_temperature.value_list(point_list, ele_acc, bc_temperature);
-
-	for (unsigned int i=0; i<np; i++)
-	{
-		bc_flux[i] = bc_flux_scalar[i];
-		bc_ad_value[i] = bc_ad_temperature[i];
-		bc_sigma[i] = bc_robin_sigma[i];
-		bc_ref_value[i] = bc_temperature[i];
-	}
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
+	data().bc_ad_temperature.value_list(point_list, ele_acc, bc_ad_value);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
 }
 
 void HeatTransferModel::get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
@@ -397,32 +369,16 @@ void HeatTransferModel::get_diffusive_flux_bc_data(const std::vector<arma::vec3>
 		std::vector< arma::vec > &bc_sigma,
 		std::vector< arma::vec > &bc_ref_value)
 {
-	vector<double> bc_flux_scalar(point_list.size()),
-			bc_robin_sigma(point_list.size()),
-			bc_temperature(point_list.size());
-
-	data().bc_flux.value_list(point_list, ele_acc, bc_flux_scalar);
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_robin_sigma);
-	data().bc_temperature.value_list(point_list, ele_acc, bc_temperature);
-
-	for (unsigned int i=0; i<point_list.size(); i++)
-	{
-		bc_flux[i] = bc_flux_scalar[i];
-		bc_sigma[i] = bc_robin_sigma[i];
-		bc_ref_value[i] = bc_temperature[i];
-	}
-
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
 }
 
 void HeatTransferModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< arma::vec > &bc_sigma)
 {
-	vector<double> bc_robin_sigma(point_list.size());
-
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_robin_sigma);
-	for (unsigned int i=0; i<point_list.size(); i++)
-		bc_sigma[i] = bc_robin_sigma[i];
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 }
 
 

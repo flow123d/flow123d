@@ -42,13 +42,6 @@ using namespace std;
 using namespace Input::Type;
 
 
-const std::map<unsigned int,unsigned int> ConcentrationTransportModel::ModelEqData::bc_type_conversion = {
-		{ bc_inflow,         abc_inflow },
-		{ bc_dirichlet,      abc_dirichlet },
-		{ bc_total_flux,     abc_total_flux },
-		{ bc_diffusive_flux, abc_diffusive_flux }
-};
-
 
 const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
 	return Selection("SoluteTransport_BC_Type", "Types of boundary conditions for solute transport model.")
@@ -90,7 +83,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .input_default("\"inflow\"")
             .input_selection( &get_bc_type_selection() )
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
-    *this+=bc_conc
+    *this+=bc_dirichlet_value
             .name("bc_conc")
             .units( UnitSI().kg().m(-3) )
             .description("Dirichlet boundary condition (for each substance).")
@@ -259,17 +252,11 @@ void ConcentrationTransportModel::compute_init_cond(const std::vector<arma::vec3
 void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 			arma::uvec &bc_types)
 {
+	// Currently the bc types for ConcentrationTransport are numbered in the same way as in TransportDG.
+	// In general we should use some map here.
 	bc_types = data().bc_type.value(ele_acc.centre(), ele_acc);
-	for (unsigned int i=0; i<bc_types.size(); ++i)
-		bc_types[i] = ModelEqData::bc_type_conversion.find(bc_types[i])->second;
 }
 
-void ConcentrationTransportModel::get_dirichlet_bc_data(const std::vector<arma::vec3> &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_values)
-{
-	data().bc_conc.value_list(point_list, ele_acc, bc_values);
-}
 
 void ConcentrationTransportModel::get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
@@ -281,7 +268,7 @@ void ConcentrationTransportModel::get_total_flux_bc_data(const std::vector<arma:
 	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
 	data().bc_ad_conc.value_list(point_list, ele_acc, bc_ad_value);
 	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
-	data().bc_conc.value_list(point_list, ele_acc, bc_ref_value);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
 }
 
 void ConcentrationTransportModel::get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
@@ -292,7 +279,7 @@ void ConcentrationTransportModel::get_diffusive_flux_bc_data(const std::vector<a
 {
 	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
 	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
-	data().bc_conc.value_list(point_list, ele_acc, bc_ref_value);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
 }
 
 void ConcentrationTransportModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
