@@ -321,10 +321,8 @@ class HTMLRecord(HTMLItemFormatter):
 
         with self.open('ul', attrib={ 'class': 'item-list' }):
             for record_key in record.keys:
-
                 if not record_key.include_in_format():
                     continue
-
                 with self.open('li'):
                     fmt = HTMLFormatter.get_formatter_for(record_key)
                     fmt.format(record_key, record)

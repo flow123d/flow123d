@@ -74,13 +74,8 @@ const string & OutputBase::get_abstract_description(const AbstractRecord *a_rec)
 
 
 
-void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
-	if (rec.data_->parent_vec_.size()) {
-		// temporary solution, if we need this method in new input, it must return vector of parents
-		parent_ptr = rec.data_->parent_vec_[0];
-	} else {
-		parent_ptr = boost::shared_ptr<AbstractRecord>();
-	}
+void OutputBase::get_parent_vec(Record rec, std::vector< boost::shared_ptr<AbstractRecord> > &parent_vec) {
+	parent_vec = rec.data_->parent_vec_;
 }
 
 
@@ -224,11 +219,12 @@ void OutputText::print_impl(ostream& stream, const Record *type) {
 			stream << endl;
 			stream << "" << "Record '" << type->type_name() << "'";
 			// parent record
-			boost::shared_ptr<AbstractRecord> parent_ptr;
+			/*boost::shared_ptr<AbstractRecord> parent_ptr;
 			get_parent_ptr(*type, parent_ptr);
 			if (parent_ptr) {
 				stream << ", implementation of " << parent_ptr->type_name();
-			}
+			}*/
+
 			// reducible to key
 			Record::KeyIter key_it = type->auto_conversion_key_iter();
 			if (key_it != type->end()) {
@@ -484,10 +480,17 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
             escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
 
     // parent records, implemented abstracts
-    boost::shared_ptr<AbstractRecord> parent_ptr;
-    get_parent_ptr(*type, parent_ptr);
-    if (parent_ptr) {
-        stream << "\"implements\" : [ \"" << format_hash(parent_ptr->content_hash()) << "\" ]," << endl;
+    std::vector< boost::shared_ptr<AbstractRecord> > parent_vec;
+    get_parent_vec(*type, parent_vec);
+    if (parent_vec.size()) {
+        stream << "\"implements\" : [ ";
+        bool add_comma = false;
+        for (auto &parent : parent_vec) {
+        	if (add_comma) stream << ", ";
+        	else add_comma = true;
+            stream << "\"" << format_hash(parent->content_hash()) << "\"";
+        }
+        stream << " ]," << endl;
     }
 
     // reducible to key

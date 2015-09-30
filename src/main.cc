@@ -171,8 +171,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
-//        ("full_doc", "Prints full structure of the main input file.")
-//        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
         ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
         ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
 
@@ -208,6 +206,15 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     	display_version();
     	exit( exit_output );
     }
+
+    // if there is "full_doc" option
+    /*if (vm.count("full_doc")) {
+        Input::Type::TypeBase::lazy_finish();
+        Input::Type::OutputText type_output(&get_input_type());
+        type_output.set_filter(":Field:.*");
+        cout << type_output;
+        exit( exit_output );
+    }*/
 
     // if there is "JSON_machine" option
     if (vm.count("JSON_machine")) {
