@@ -53,7 +53,7 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 }
 
 static const Instance & get_generic_array(const Selection *sel) {
-	static Array arr = Array(Parameter("param"), 0, 100).root_of_generic_subtree();
+	static Array arr = Array(Parameter("param"), 0, 100);
 
 	std::vector<TypeBase::ParameterPair> param_vec;
 	param_vec.push_back( std::make_pair("param", boost::make_shared<Selection>(*sel)) );

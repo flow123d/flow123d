@@ -327,9 +327,6 @@ public:
     /// Create deep copy of Array (copy all data stored in shared pointers etc.)
     Array deep_copy() const;
 
-    /// Set flag @p root_of_generic_subtree_ to true
-    Array &root_of_generic_subtree();
-
 protected:
 
     /// Handle to the actual array data.

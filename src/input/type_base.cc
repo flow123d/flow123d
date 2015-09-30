@@ -238,12 +238,6 @@ Array Array::deep_copy() const {
 }
 
 
-Array &Array::root_of_generic_subtree() {
-	root_of_generic_subtree_ = true;
-	return *this;
-}
-
-
 /**********************************************************************************
  * implementation and explicit instantiation of Array constructor template
  */
