@@ -140,11 +140,11 @@ protected:
             sub_array_sub_rec->new_item(1, sub_rec->deep_copy());
 
             StorageArray * desc_a = new StorageArray(2);
-            desc_a->new_item(0,new StorageInt(0));
+            desc_a->new_item(0,new StorageString("DescendantA"));
             desc_a->new_item(1,new StorageInt(234));
 
             StorageArray * desc_b = new StorageArray(3);
-            desc_b->new_item(0,new StorageInt(1));
+            desc_b->new_item(0,new StorageString("DescendantB"));
             desc_b->new_item(1,new StorageInt(345));
             desc_b->new_item(2,new StorageDouble(3.45));
 

@@ -95,9 +95,6 @@ public:
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  { return "TypeBase"; }
 
-    /// Returns an identification of the type in format "type_name():parent->type_name()".
-    virtual string full_type_name() const  { return "TypeBase"; }
-
     /**
      * Returns string with Type extensive documentation. We need this to pass Type description at
      * throw points since the Type object can be deallocated during stack unrolling so it is not good idea to pass
@@ -306,9 +303,6 @@ public:
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
     virtual string type_name() const override;
 
-    /// @brief Implements @p Type::TypeBase::full_type_name.
-    virtual string full_type_name() const override;
-
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     virtual bool operator==(const TypeBase &other) const;
 
@@ -343,9 +337,6 @@ private:
  */
 class Scalar : public TypeBase {
 public:
-
-	virtual string full_type_name() const override;
-
 };
 
 

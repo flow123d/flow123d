@@ -96,11 +96,11 @@ TEST(OutputTypeTypeBase, record_output_test) {
     OutputText output_text( &main, 0);
     output_text.print(cout);
 
-    cout << endl;
-    cout << "## " << "OutputJSONTemplate printout" << endl;
+    //cout << endl;
+    //cout << "## " << "OutputJSONTemplate printout" << endl;
 
-    OutputJSONTemplate output_json( &main, 0);
-    output_json.print(cout);
+    //OutputJSONTemplate output_json( &main, 0);
+    //output_json.print(cout);
 
     cout << endl;
     cout << "## " << "OutputLatex printout" << endl;
@@ -256,10 +256,10 @@ TEST(OutputTypeArray, array_of_array_test) {
     OutputText output_text( &array_record, 0);
     output_text.print(cout);
 
-    cout << endl;
-    cout << "## " << "OutputJSONTemplate printout" << endl;
-    OutputJSONTemplate output_json( &array_record, 0);
-    output_json.print(cout);
+    //cout << endl;
+    //cout << "## " << "OutputJSONTemplate printout" << endl;
+    //OutputJSONTemplate output_json( &array_record, 0);
+    //output_json.print(cout);
 
 }
 
