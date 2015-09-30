@@ -250,6 +250,7 @@ void TransportOperatorSplitting::update_solution() {
     time_->view("TOS");    //show time governor
 
     convection->set_target_time(time_->t());
+    convection->time_->view("Convection");
     
     START_TIMER("TOS-one step");
     int steps=0;

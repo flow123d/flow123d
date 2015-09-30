@@ -546,18 +546,26 @@ void ConvectionTransport::update_solution() {
     {
         set_boundary_conditions();
         // rescale by time step
+        DBGMSG("BC - rescale NEW dt.\n");
         for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
             VecScale(bcvcorr[sbi], dt_new);
+        bc_need_time_rescaling = false;
     }
-    else if(time_->is_changed_dt()) // if time step changed, only rescale
+    
+    //TODO: check time_->is_changed_dt
+    if(bc_need_time_rescaling)// || time_->is_changed_dt()) // // if time step changed, only rescale
     {
+        DBGMSG("BC - rescale SCALE dt.\n");
         for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
             VecScale(bcvcorr[sbi], dt_scaled);
+        bc_need_time_rescaling = false;
     }
+    
 
     // if DATA or TIME STEP changed -----------------------> rescale source term
     if (src_need_time_rescaling || time_->is_changed_dt()) {
         if(is_src_term_scaled) { // if it is already scaled
+            DBGMSG("SRC - rescale SCALE dt.\n");
             for (unsigned int sbi=0; sbi<n_subst_; sbi++)
             {
                 VecScale(v_sources_corr[sbi], dt_scaled);
@@ -565,6 +573,7 @@ void ConvectionTransport::update_solution() {
             }
         }
         else{ //if it is not scaled (freshly computed)
+            DBGMSG("SRC - rescale NEW dt.\n");
             for (unsigned int sbi=0; sbi<n_subst_; sbi++)
             { 
                 VecScale(v_sources_corr[sbi], dt_new);
@@ -578,12 +587,14 @@ void ConvectionTransport::update_solution() {
     // if DATA or TIME STEP changed -----------------------> rescale transport matrix
     if (tm_need_time_rescaling || time_->is_changed_dt()) {
         if ( is_convection_matrix_scaled ) { // if it is already scaled
+            DBGMSG("TM - rescale SCALE dt.\n");
             // rescale matrix
             MatShift(tm, -1.0);
             MatScale(tm, dt_scaled );
             MatShift(tm, 1.0);
         } else {
             // scale fresh convection term matrix
+            DBGMSG("TM - rescale NEW dt.\n");
             MatScale(tm, dt_new);
             MatShift(tm, 1.0);
             is_convection_matrix_scaled = true;
@@ -645,6 +656,7 @@ void ConvectionTransport::set_target_time(double target_time)
     // invalidate scaling
     tm_need_time_rescaling = true;
     src_need_time_rescaling = true;
+    bc_need_time_rescaling = true;
 }
 
 
