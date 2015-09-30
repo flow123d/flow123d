@@ -142,6 +142,9 @@ void OutputBase::print_base(ostream& stream, const TypeBase *type) {
 	} else
 	if (typeid(*type) == typeid(Type::Bool)) {
 		print_impl(stream, static_cast<const Type::Bool *>(type) );
+	} else
+	if (typeid(*type) == typeid(Type::Parameter)) {
+		print_impl(stream, static_cast<const Type::Parameter *>(type) );
 	} else {
 		const Type::FileName * file_name_type = dynamic_cast<const Type::FileName *>(type);
         if (file_name_type != NULL ) {
@@ -393,6 +396,11 @@ void OutputText::print_impl(ostream& stream, const FileName *type) {
 	}
 }
 
+
+
+void OutputText::print_impl(ostream& stream, const Parameter *type) {
+	ASSERT(false, "Parameter appears in the IST. Check where Instance is missing.\n");
+}
 
 
 
@@ -746,6 +754,21 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type) {
 	}
 
 	stream << endl << "},";
+
+	boost::hash_combine(full_hash_, hash);
+}
+
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const Parameter *type) {
+	TypeBase::TypeHash hash=type->content_hash();
+    if (was_written(hash)) return;
+
+    stream << "{" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"Parameter\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+	stream << "},";
 
 	boost::hash_combine(full_hash_, hash);
 }

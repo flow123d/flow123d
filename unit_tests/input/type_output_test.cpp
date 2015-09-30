@@ -236,6 +236,26 @@ TEST(OutputTypeArray, array_of_array_test) {
     cout << OutputJSONMachine() << endl;
 }
 
+
+TEST(OutputTypeParameter, parameter_test) {
+    using namespace Input::Type;
+
+    std::vector<TypeBase::ParameterPair> param_vec;
+    param_vec.push_back( std::make_pair("param", boost::make_shared<Integer>()) );
+
+    static Record param_record = Record("WithParameter", "Record with parameter.")
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("start_time", Double(), "desc.")
+			.declare_key("name", String(), "desc.")
+			.close();
+
+	static Instance inst = Instance(param_record, param_vec)
+								.close();
+
+    cout << endl << "## " << "OutputJSONMachine printout" << endl;
+    cout << OutputJSONMachine() << endl;
+}
+
 /*
 #include <boost/regex.hpp>
 TEST(OutputTypeRegEx, regex_filter_test) {

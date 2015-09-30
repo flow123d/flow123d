@@ -11,6 +11,7 @@
 
 #include "input/type_base.hh"
 #include "input/type_record.hh"
+#include "input/type_generic.hh"
 #include <boost/regex.hpp>
 
 
@@ -136,6 +137,10 @@ protected:
      * Implements printout of FileName @p type
      */
     virtual void print_impl(ostream& stream, const FileName *type) = 0;
+    /**
+     * Implements printout of FileName @p type
+     */
+    virtual void print_impl(ostream& stream, const Parameter *type) = 0;
 
     /**
      * Write out a string with given padding of every new line.
@@ -218,6 +223,7 @@ protected:
 	void print_impl(ostream& stream, const Bool *type);
 	void print_impl(ostream& stream, const String *type);
     void print_impl(ostream& stream, const FileName *type);
+    void print_impl(ostream& stream, const Parameter *type);
 
     /// Object for which is created printout
     const TypeBase *type_;
@@ -290,6 +296,7 @@ protected:
     void print_impl(ostream& stream, const Bool *type);
     void print_impl(ostream& stream, const String *type);
     void print_impl(ostream& stream, const FileName *type);
+    void print_impl(ostream& stream, const Parameter *type);
 
 
     /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
