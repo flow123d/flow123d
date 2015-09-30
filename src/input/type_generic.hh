@@ -83,7 +83,13 @@ public:
     /// Finish declaration of the Instance type. Call finish of stored @p generic_type_
     bool finish(bool is_generic = false) override;
 
-    // Implements @p TypeBase::make_instance.
+    /**
+     * Implements @p TypeBase::make_instance.
+     *
+     * In first call creates instance and stores its to @p created_instance_.
+     *
+     * At each successive call returns this stored type.
+     */
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 protected:
@@ -92,6 +98,13 @@ protected:
 
 	/// Stores pairs of (name, Input::Type), that are used for replace of parameters in generic types.
 	std::vector<TypeBase::ParameterPair> parameters_;
+
+	/**
+	 * Stores returned type created in first call of @p make_instance method.
+	 *
+	 * At each successive call of make_instance returns this stored type.
+	 */
+	mutable MakeInstanceReturnType created_instance_;
 };
 
 
