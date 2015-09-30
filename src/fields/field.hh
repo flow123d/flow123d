@@ -56,7 +56,6 @@ public:
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
-    static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
     static const unsigned int space_dim = spacedim;
 
 

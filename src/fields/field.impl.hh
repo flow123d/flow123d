@@ -99,11 +99,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 const it::Instance &Field<spacedim,Value>::get_input_type() {
-	if (is_enum_valued) {
-		return FieldBaseType::get_input_type_instance(shared_->input_element_selection_);
-	} else {
-		return FieldBaseType::get_input_type_instance();
-	}
+	return FieldBaseType::get_input_type_instance(shared_->input_element_selection_);
 }
 
 

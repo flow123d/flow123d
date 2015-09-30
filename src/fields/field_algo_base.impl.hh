@@ -65,7 +65,8 @@ Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 template <int spacedim, class Value>
 const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(const Input::Type::Selection *value_selection) {
 	std::vector<it::TypeBase::ParameterPair> param_vec;
-	if ( boost::is_same<typename Value::element_type, FieldEnum>::value && value_selection) {
+	if (is_enum_valued) {
+		ASSERT(value_selection, "Not defined 'value_selection' for enum element type.\n");
 		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::Selection>(*value_selection)) );
 	} else {
 		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
