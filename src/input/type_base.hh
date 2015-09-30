@@ -295,9 +295,9 @@ public:
     TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    virtual bool finish(bool is_generic = false) override;
+    bool finish(bool is_generic = false) override;
 
-    virtual bool is_finished() const override {
+    bool is_finished() const override {
         return data_->finished; }
 
     /// Getter for the type of array items.
@@ -309,20 +309,20 @@ public:
         return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
-    virtual string type_name() const override;
+    string type_name() const override;
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
-    virtual bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const override;
 
     /**
      *  Default values for an array creates array containing one element
      *  that is initialized by given default value. So this method check
      *  if the default value is valid for the sub type of the array.
      */
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
     // Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Create deep copy of Array (copy all data stored in shared pointers etc.)
     Array deep_copy() const;
@@ -365,11 +365,11 @@ public:
 
     bool from_default(const string &str) const;
 
-    virtual string type_name() const override;
+    string type_name() const override;
 
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };
 
 
@@ -400,11 +400,11 @@ public:
      */
     int from_default(const string &str) const;
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
-    virtual string type_name() const override;
+    string type_name() const override;
 
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
     std::int64_t lower_bound_, upper_bound_;
@@ -435,16 +435,16 @@ public:
     bool match(double value) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
     /**
      * As before but also returns converted integer in @p value.
      */
     double from_default(const string &str) const;
 
-    virtual string type_name() const override;
+    string type_name() const override;
 
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
 
@@ -504,15 +504,15 @@ public:
     static FileName output()
     { return FileName(::FilePath::output_file); }
 
-    virtual string type_name() const override;
+    string type_name() const override;
 
-    virtual bool operator==(const TypeBase &other) const
+    bool operator==(const TypeBase &other) const
     { return  typeid(*this) == typeid(other) &&
                      (type_== static_cast<const FileName *>(&other)->get_file_type() );
     }
 
     /// Checks relative output paths.
-    virtual bool match(const string &str) const;
+    bool match(const string &str) const;
 
 
     /**
@@ -523,7 +523,7 @@ public:
     }
 
 
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 
 

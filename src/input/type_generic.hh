@@ -43,16 +43,16 @@ public:
 	Parameter(const Parameter & other);
 
     /// Parameter type name getter.
-    virtual string type_name() const override;
+    string type_name() const override;
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const  override;
 
     /// Implements @p TypeBase::valid_default.
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
     /// Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Implements @p TypeBase::finish.
     bool finish(bool is_generic = false) override;
@@ -75,7 +75,7 @@ public:
     TypeHash content_hash() const  override;
 
     /// Implements @p TypeBase::valid_default.
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
     /// Used for set Instance to TypeRepository
     const Instance &close() const;
@@ -84,7 +84,7 @@ public:
     bool finish(bool is_generic = false) override;
 
     // Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 protected:
     /// Reference to generic types (contains some descendants of type @p Parameter).

@@ -289,22 +289,22 @@ public:
     /**
      * Implements @p TypeBase::is_finished.
      */
-    virtual bool is_finished() const override;
+    bool is_finished() const override;
 
     /// Returns true if @p data_ is closed.
-    virtual bool is_closed() const override;
+    bool is_closed() const override;
 
     /// Record type name getter.
-    virtual string type_name() const override;
+    string type_name() const override;
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
      */
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
     /// Class comparison and Record type name comparision.
-    virtual bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const;
 
     /**
      * Interface to mapping key -> index in record. Returns index (in continuous array) for given key.
@@ -363,7 +363,7 @@ public:
     Record &has_obligatory_type_key();
 
     /// Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;

@@ -108,13 +108,13 @@ public:
 
 
     /// Implements \p TypeBase::is_finished
-    virtual bool is_finished() const override;
+    bool is_finished() const override;
 
     /// Implements \p TypeBase::type_name
-    virtual string type_name() const override;
+    string type_name() const override;
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
-    virtual bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const override;
 
     /**
      * Container-like access to the keys of the Record. Returns iterator to the first key.
@@ -149,7 +149,7 @@ public:
     int from_default(const string &str) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
     /**
      * Just check if there is a particular name in the Selection.
@@ -172,11 +172,11 @@ public:
 
 
     /// Implements \p TypeBase::is_closed
-    virtual bool is_closed() const override;
+    bool is_closed() const override;
 
 
     // Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
     /**
