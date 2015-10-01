@@ -58,6 +58,9 @@ public:
      */
     Default(const std::string & value);
 
+    /**
+     * Hash of the Default specification, counted of type_ and value_.
+     */
     TypeBase::TypeHash content_hash() const;
 
     /**
@@ -218,6 +221,11 @@ public:
     Record(const string & type_name_in, const string & description);
 
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, description, auto conversion key, hash of keys and attributes.
+     */
     TypeHash content_hash() const  override;
 
 
@@ -521,7 +529,8 @@ protected:
 		  type_name_(name),
 		  finished_(false),
 		  closed_(false),
-		  selection_default_(Default::obligatory())
+		  selection_default_(Default::obligatory()),
+		  parameters_json_to_hash_("")
         {}
 
         /**
@@ -557,6 +566,15 @@ protected:
          */
         Default selection_default_;
 
+        /**
+         * Store JSON string of used parameters.
+         *
+         * This class members is used for instances of generic types, is counted
+         * to content hash and allows distinguish different instances with same
+         * type name. For non-generic types is empty.
+         */
+        json_string parameters_json_to_hash_;
+
     };
 
 public:
@@ -582,6 +600,12 @@ public:
      */
     AbstractRecord(const string & type_name_in, const string & description);
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, description, hash of attributes and for instances of generic types
+     * by hash of parameters (see @p parameters_json_to_hash_).
+     */
     TypeHash content_hash() const   override;
 
     /**
@@ -738,6 +762,7 @@ public:
 	 */
 	AdHocAbstractRecord(const AbstractRecord &ancestor);
 
+	/// Implements @p TypeBase::content_hash.
 	TypeHash content_hash() const   override
             { return 0;}
 

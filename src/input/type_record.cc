@@ -532,6 +532,9 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     if (child_data_->element_input_selection != nullptr) {
     	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
     }
+    if (child_data_->parameters_json_to_hash_ != "") {
+    	boost::hash_combine(seed, child_data_->parameters_json_to_hash_);
+    }
     attribute_content_hash(seed);
     //for( Record &key : child_data_->list_of_childs) {
     //    boost::hash_combine(seed, key.content_hash() );
@@ -703,6 +706,7 @@ TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<Param
 	std::stringstream type_stream;
 	type_stream << "\"" << this->content_hash() << "\"";
 	abstract.add_attribute("generic_type", type_stream.str());
+	abstract.child_data_->parameters_json_to_hash_ = print_parameter_map_to_json(parameter_map);
 
 	return std::make_pair( boost::make_shared<AbstractRecord>(abstract.close()), parameter_map );
 }

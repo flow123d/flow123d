@@ -163,6 +163,8 @@ public:
     /**
      * Hash of the type specification. Provides unique id computed from its
      * content (definition) so that same types have same hash.
+     *
+     * Hash is counted using type, name and other class members specific for descendants.
      */
     virtual TypeHash content_hash() const =0;
 
@@ -292,6 +294,11 @@ public:
     template <class ValueType>
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, bounds, hash of stored type and hash of attributes.
+     */
     TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
@@ -360,6 +367,7 @@ public:
     Bool()
 	{}
 
+    /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const   override;
 
 
@@ -388,6 +396,11 @@ public:
 	: lower_bound_(lower_bound), upper_bound_(upper_bound)
 	{}
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by tape name and bounds.
+     */
     TypeHash content_hash() const   override;
 
     /**
@@ -427,6 +440,11 @@ public:
 	: lower_bound_(lower_bound), upper_bound_(upper_bound)
 	{}
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name and bounds.
+     */
     TypeHash content_hash() const   override;
 
     /**
@@ -463,6 +481,7 @@ class String : public Scalar {
 public:
     virtual string type_name() const override;
 
+    /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const   override;
 
 
@@ -490,6 +509,7 @@ public:
 class FileName : public String {
 public:
 
+    /// Implements @p TypeBase::content_hash.
 	TypeHash content_hash() const   override;
 
     /**

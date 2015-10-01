@@ -71,7 +71,11 @@ class Instance : public TypeBase {
 public:
 	Instance(TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters);
 
-	/// Implements @p TypeBase::content_hash.
+	/**
+	 * Implements @p TypeBase::content_hash.
+	 *
+	 * Hash is calculated by hash of generic type and hash of parameters.
+	 */
     TypeHash content_hash() const  override;
 
     /// Implements @p TypeBase::valid_default.

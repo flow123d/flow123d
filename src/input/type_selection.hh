@@ -104,6 +104,11 @@ public:
     const Selection &close() const;
 
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, description, hash of keys and attributes.
+     */
     TypeHash content_hash() const   override;
 
 
