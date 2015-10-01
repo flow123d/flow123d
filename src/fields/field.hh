@@ -55,6 +55,7 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef Value ValueType;
 
     static const unsigned int space_dim = spacedim;
 
