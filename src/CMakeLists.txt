@@ -103,7 +103,10 @@ add_library(input_lib
     input/type_selection.cc
     input/type_generic.cc
     input/storage.cc
-    input/json_to_storage.cc
+    input/reader_to_storage.cc
+    input/path_base.cc
+    input/path_json.cc
+    input/path_yaml.cc
     input/type_output.cc
     
     input/accessors.cc
@@ -255,6 +258,7 @@ add_library(flow123d_lib
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
+    flow/richards_lmh.cc
 
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc

@@ -31,6 +31,9 @@
 #define CONC_TRANS_MODEL_HH_
 
 #include "advection_diffusion_model.hh"
+
+#include "fields/bc_field.hh"
+#include "fields/field.hh"
 #include "fields/multi_field.hh"
 
 

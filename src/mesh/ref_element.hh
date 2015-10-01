@@ -146,6 +146,13 @@ public:
 	static arma::vec::fixed<dim> normal_vector(unsigned int sid);
 
 	static double side_measure(unsigned int sid);
+    
+    /**
+     * Returns index of the node that is oposite to side of given index @p sid.
+     * Note: It is dependent on current node and side numbering.
+     * @param sid Side number.
+     */
+    static unsigned int oposite_node(unsigned int sid);
 
 	/**
 	 * Return index of 1D line, shared by two faces @p f1 and @p f2 of the reference tetrahedron.
@@ -214,7 +221,13 @@ public:
 };
 
 
-
+template<unsigned int dim>
+inline unsigned int RefElement<dim>::oposite_node(unsigned int sid)
+{
+    // Is dependent on current node and side numbering.
+    return n_sides - sid - 1;
+    // (sid + dim) % (dim + 1); //older numbering
+}
 
 
 

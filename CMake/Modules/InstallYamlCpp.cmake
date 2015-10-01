@@ -21,7 +21,7 @@ file (WRITE "${cmakelists_fname}"
     DOWNLOAD_DIR ${EXTERNAL_YamlCpp_DIR} 
     #GIT_REPOSITORY \"https://github.com/flow123d/yaml-cpp.git\"
     #GIT_TAG master
-    #URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/armadillo-3.4.3.tar.gz\"
+    #URL \"http://flow.nti.tul.cz/libraries/armadillo-3.4.3.tar.gz\"
     URL \"https://github.com/flow123d/yaml-cpp/archive/master.zip\"
     SOURCE_DIR ${EXTERNAL_YamlCpp_DIR}/src
     BINARY_DIR ${EXTERNAL_YamlCpp_DIR}/src

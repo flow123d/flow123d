@@ -49,8 +49,6 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
-// TODO: move partitioning into mesh_ and remove this include
-//#include "flow/darcy_flow_mh.hh"
 #include "flow/old_bcd.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
@@ -89,7 +87,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 }
 
 
-ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
+ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : TransportBase(init_mesh, in_rec)
 {
 	START_TIMER("ConvectionTransport");

@@ -30,7 +30,6 @@
 #include "input/input_type.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-#include "flow/darcy_flow_mh.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
 #include "fields/unit_si.hh"
