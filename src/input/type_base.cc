@@ -181,6 +181,7 @@ bool Array::ArrayData::finish(bool is_generic)
 	if (finished) return true;
 
 	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) type_of_values_ = type_of_values_->make_instance().first;
+	if (!is_generic && type_of_values_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
 
 	return (finished = type_of_values_->finish(is_generic) );
 }

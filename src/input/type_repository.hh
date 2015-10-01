@@ -88,7 +88,16 @@ template <class T>
 void TypeRepository<T>::finish(bool is_root_of_generic_subtree) {
 	// We need reverse iterating for correct finish of generic types.
 	for (typename TypeRepositoryMap::reverse_iterator it = type_repository_map_.rbegin(); it != type_repository_map_.rend(); ++it) {
-		if(is_root_of_generic_subtree == it->second->is_root_of_generic_subtree()) it->second->finish();
+		if (is_root_of_generic_subtree == it->second->is_root_of_generic_subtree()) {
+			if (is_root_of_generic_subtree) {
+#ifdef FLOW123D_DEBUG
+           		if ( !it->second->is_finished() ) xprintf(Warn, "Unused root of generic subtree: '%s'.\n", it->second->type_name().c_str());
+#endif
+				it->second->finish(true);
+			} else {
+				it->second->finish();
+			}
+		}
 	}
 }
 

@@ -27,6 +27,8 @@ DECLARE_INPUT_EXCEPTION(ExcParamaterNotSubsituted,
 		<< " found during creation of instance with parameter list: " << EI_ParameterList::val << ".");
 DECLARE_INPUT_EXCEPTION(ExcParamaterInIst,
 		<< "Parameter " << EI_Object::qval << " appears in the IST. Check where Instance is missing.");
+DECLARE_INPUT_EXCEPTION(ExcGenericWithoutInstance,
+		<< "Root of generic subtree " << EI_Object::qval << " used without Instance.");
 
 
 
