@@ -101,32 +101,9 @@ public:
 			arma::uvec &bc_types) = 0;
 
 	/**
-	 * \brief Return data for total flux b.c.
+	 * \brief Return data for diffusive or total flux b.c.
 	 *
-	 * The total flux can in general be of the form
-	 *
-	 *   cross_section*(flux + water_flux*ad_value + sigma*(solution - ref_value))
-	 *
-	 * @param point_list   Points at which to evaluate.
-	 * @param ele_acc      Element accessor.
-	 * @param bc_flux      Neumann flux (output).
-	 * @param bc_ad_value  Advected value (output).
-	 * @param bc_sigma     Transition parameter (output).
-	 * @param bc_ref_value Reference value (output).
-	 */
-	virtual void get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_flux,
-			std::vector< arma::vec > &bc_ad_value,
-			std::vector< arma::vec > &bc_sigma,
-			std::vector< arma::vec > &bc_ref_value) = 0;
-
-	/**
-	 * \brief Return data for diffusive flux b.c.
-	 *
-	 * The diffusive flux condition can be seen as a special case of total flux,
-	 * with ad_value = solution.
-	 * The diffusive flux can in general take the form
+	 * The flux can in general take the form
 	 *
 	 *   cross_section*(flux + sigma*(solution - ref_value))
 	 *
@@ -136,7 +113,7 @@ public:
 	 * @param bc_sigma     Transition parameter (output).
 	 * @param bc_ref_value Reference value (output).
 	 */
-	virtual void get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
+	virtual void get_flux_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &bc_flux,
 			std::vector< arma::vec > &bc_sigma,

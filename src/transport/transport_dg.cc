@@ -1238,13 +1238,9 @@ void TransportDG<Model>::set_boundary_conditions()
     vector<PetscScalar> local_flux_balance_vector(ndofs);
     PetscScalar local_flux_balance_rhs;
     vector<arma::vec> bc_values(qsize, arma::vec(n_substances())),
-    		bc_tfluxes(qsize, arma::vec(n_substances())),
-			bc_dfluxes(qsize, arma::vec(n_substances())),
-			bc_tsigma(qsize, arma::vec(n_substances())),
-			bc_dsigma(qsize, arma::vec(n_substances())),
-			bc_tad_values(qsize, arma::vec(n_substances())),
-			bc_tref_values(qsize, arma::vec(n_substances())),
-			bc_dref_values(qsize, arma::vec(n_substances()));
+    		bc_fluxes(qsize, arma::vec(n_substances())),
+			bc_sigma(qsize, arma::vec(n_substances())),
+			bc_ref_values(qsize, arma::vec(n_substances()));
     vector<double> csection(qsize);
 	vector<arma::vec3> velocity;
 
@@ -1282,8 +1278,7 @@ void TransportDG<Model>::set_boundary_conditions()
 			// The b.c. data are fetched for all possible b.c. types since we allow
 			// different bc_type for each substance.
 			data_.bc_dirichlet_value.value_list(fe_values_side.point_list(), ele_acc, bc_values);
-			Model::get_total_flux_bc_data(fe_values_side.point_list(), ele_acc, bc_tfluxes, bc_tad_values, bc_tsigma, bc_tref_values);
-			Model::get_diffusive_flux_bc_data(fe_values_side.point_list(), ele_acc, bc_dfluxes, bc_dsigma, bc_dref_values);
+			Model::get_flux_bc_data(fe_values_side.point_list(), ele_acc, bc_fluxes, bc_sigma, bc_ref_values);
 
 			feo->dh()->get_dof_indices(cell, (unsigned int *)&(side_dof_indices[0]));
 
@@ -1340,7 +1335,7 @@ void TransportDG<Model>::set_boundary_conditions()
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
-						double bc_term = (csection[k]*(bc_tsigma[k][sbi]*bc_tref_values[k][sbi]-bc_tfluxes[k][sbi])-transport_flux*bc_tad_values[k][sbi])*fe_values_side.JxW(k);
+						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]-bc_fluxes[k][sbi])*fe_values_side.JxW(k);
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
@@ -1350,7 +1345,7 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int i=0; i<ndofs; i++)
 						{
 							for (unsigned int k=0; k<qsize; k++)
-								local_flux_balance_vector[i] += csection[k]*bc_tsigma[k][sbi]*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+								local_flux_balance_vector[i] += csection[k]*bc_sigma[k][sbi]*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
 							local_flux_balance_rhs -= local_rhs[i];
 						}
 					}
@@ -1359,7 +1354,7 @@ void TransportDG<Model>::set_boundary_conditions()
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
-						double bc_term = csection[k]*(bc_dsigma[k][sbi]*bc_dref_values[k][sbi]-bc_dfluxes[k][sbi])*fe_values_side.JxW(k);
+						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]-bc_fluxes[k][sbi])*fe_values_side.JxW(k);
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
@@ -1369,7 +1364,7 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int i=0; i<ndofs; i++)
 						{
 							for (unsigned int k=0; k<qsize; k++)
-								local_flux_balance_vector[i] += csection[k]*(arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_dsigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+								local_flux_balance_vector[i] += csection[k]*(arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
 							local_flux_balance_rhs -= local_rhs[i];
 						}
 					}

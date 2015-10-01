@@ -46,8 +46,8 @@
           bc_flux = { TYPE="FieldFormula", value="7.5*4*y*(1-y)" }
         },
         { region = ".right",
-          bc_type = "total_flux"
-          bc_ad_conc = 10
+          bc_type = "inflow"
+          bc_conc = 10
         },
         { region = ".top",
           bc_type = "total_flux"

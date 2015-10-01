@@ -89,12 +89,6 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .description("Dirichlet boundary condition (for each substance).")
             .input_default("0.0")
             .flags_add( in_rhs );
-    *this+=bc_ad_conc
-            .name("bc_ad_conc")
-            .units( UnitSI().kg().m(-3) )
-            .description("Advected concentration in total flux b.c.")
-            .input_default("0.0")
-            .flags_add( in_rhs );
 	*this+=bc_flux
 			.name("bc_flux")
 			.description("Flux in Neumann boundary condition.")
@@ -258,20 +252,7 @@ void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 }
 
 
-void ConcentrationTransportModel::get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_flux,
-		std::vector< arma::vec > &bc_ad_value,
-		std::vector< arma::vec > &bc_sigma,
-		std::vector< arma::vec > &bc_ref_value)
-{
-	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
-	data().bc_ad_conc.value_list(point_list, ele_acc, bc_ad_value);
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
-	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
-}
-
-void ConcentrationTransportModel::get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
+void ConcentrationTransportModel::get_flux_bc_data(const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< arma::vec > &bc_flux,
 		std::vector< arma::vec > &bc_sigma,

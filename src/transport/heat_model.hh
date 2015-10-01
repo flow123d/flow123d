@@ -55,8 +55,6 @@ public:
         BCField<3, FieldValue<3>::Enum > bc_type;
 		/// Dirichlet boundary condition for temperature.
 		BCField<3, FieldValue<3>::Vector> bc_dirichlet_value;
-		/// Advected temperature for total flux b.c.
-		BCField<3, FieldValue<3>::Vector> bc_ad_temperature;
 		/// Flux value in total/diffusive flux b.c.
 		BCField<3, FieldValue<3>::Vector > bc_flux;
 		/// Transition coefficient in total/diffusive flux b.c.
@@ -157,14 +155,7 @@ public:
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
 
-	void get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_flux,
-			std::vector< arma::vec > &bc_ad_value,
-			std::vector< arma::vec > &bc_sigma,
-			std::vector< arma::vec > &bc_ref_value) override;
-
-	void get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
+	void get_flux_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &bc_flux,
 			std::vector< arma::vec > &bc_sigma,
