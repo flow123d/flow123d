@@ -89,12 +89,21 @@ $$ -\th\delta\D^i\nabla c^i\cdot\vc n = 0 \mbox{ on }\Gamma_I^-. $$
 $$ c^i = c^i_D \mbox{ on }\Gamma_D. $$
 \item \textbf{total\_flux}
 On $\Gamma_{TF}$ we impose total mass flux condition:
-$$ (\vc q c^i - \th\delta\D^i\nabla c^i)\cdot\vc n = \delta(f^i_N + \sigma^i_R(c^i-c^i_R))+\vc q\cdot\vc n c^i_A, $$
+$$ (\vc q c^i - \th\delta\D^i\nabla c^i)\cdot\vc n = \delta(f^i_N + \sigma^i_R(c^i-c^i_D)), $$
 with user-defined \hyperA{SoluteTransport-DG-Data::bc-flux}{concentration flux} $f^i_N$ \units{1}{-2}{-1},
 \hyperA{SoluteTransport-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^i_R$ \units{}{1}{-1},
-\hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c^i_R$ \units{1}{-3}{} and \hyperA{SoluteTransport-DG-Data::bc-ad-conc}{advected concentration} $c^i_A$ \units{1}{-3}{}.
-\item \textbf{diffusive\_flux} Finally on $\Gamma_{DF}$ we prescribe diffusive mass flux through \hyperA{SoluteTransport-DG-Data::bc-flux}{concentration flux} $f^i_N$, \hyperA{SoluteTransport-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^i_R$ and \hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c^i_R$:
+and \hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c^i_D$ \units{1}{-3}{}.
+\item \textbf{diffusive\_flux} Finally on $\Gamma_{DF}$ we prescribe diffusive mass flux (analogously to the previous case):
 $$ -\th\delta\D^i\nabla c^i\cdot\vc n = \delta(f^i_N+\sigma^i_R(c^i-c^i_D)). $$
+\end{itemize}
+We mention several typical uses of boundary conditions:
+\begin{itemize}
+\item natural inflow: Use dirichlet or inflow b.c. (the later type is useful when the location of liquid inflow is not known a priori) and specify $c_D^i$.
+\item natural outflow: The substance leaves the domain only due to advection by the liquid. Use zero diffusive\_flux or inflow (the latter in case that the outflow boundary is not known a priori).
+\item boundary with known mass flux: Use total\_flux and $f_N^i$.
+\item impermeable boundary: Use zero total\_flux.
+\item partially permeable boundary: When the exterior of the domain represents a reservoir with known concentration and the Darcy flux is reasonably small, the mass exchange is proportional to the concentration difference inside and outside the domain.
+Use diffusive\_flux, $c_D^i$ and $\sigma_R^i$. 
 \end{itemize}
 
 

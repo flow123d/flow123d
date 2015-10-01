@@ -40,11 +40,20 @@ while on the outflow $\Gamma_I^-$ we prescribe zero diffusive flux:
 \[ T = T_D \mbox{ on }\Gamma_I^+\cup\Gamma_D. \]
 \item \textbf{total\_flux}
 On $\Gamma_{TF}$ we impose total energy flux condition:
-\[ \left(\varrho_l c_l T \vc q - \delta\Lambda\nabla T\right)\cdot\vc n = \delta(f^T_N+\sigma^T_R(T-T_R)) + \varrho_l c_l T_A\vc q\cdot\vc n. \]
+\[ \left(\varrho_l c_l T \vc q - \delta\Lambda\nabla T\right)\cdot\vc n = \delta(f^T_N+\sigma^T_R(T-T_D)). \]
 with user-defined \hyperA{HeatTransfer-DG-Data::bc-flux}{energy flux} $f^T_N$ [J$\mathrm{m}^{-2}\mathrm{s}^{-1}$],
-\hyperA{HeatTransfer-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^T_R$ [J$\mathrm{m}^{-2}\mathrm{s}^{-1}\mathrm{K}^{-1}$], \hyperA{HeatTransfer-DG-Data::bc-temperature}{reference temperature} $T_R$ and \hyperA{HeatTransfer-DG-Data::bc-ad-temperature}{advected temperature} $T_A$.
-\item \textbf{diffusive\_flux} Finally on $\Gamma_{DF}$ we prescribe diffusive energy flux through \hyperA{HeatTransfer-DG-Data::bc-flux}{given energy flux} $f^T_N$, \hyperA{HeatTransfer-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^T_R$ and \hyperA{HeatTransfer-DG-Data::bc-temperature}{reference temperature} $T_R$:
-\[ -\delta\Lambda\nabla T\cdot\vc n = \delta(f^T_N+\sigma^T_R(T-T_R)). \]
+\hyperA{HeatTransfer-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^T_R$ [J$\mathrm{m}^{-2}\mathrm{s}^{-1}\mathrm{K}^{-1}$] and \hyperA{HeatTransfer-DG-Data::bc-temperature}{reference temperature} $T_D$.
+\item \textbf{diffusive\_flux} Finally on $\Gamma_{DF}$ we prescribe diffusive energy flux (similarly as above):
+\[ -\delta\Lambda\nabla T\cdot\vc n = \delta(f^T_N+\sigma^T_R(T-T_D)). \]
+\end{itemize}
+We mention several typical uses of boundary conditions:
+\begin{itemize}
+\item natural inflow: Use dirichlet or inflow b.c. (the later type is useful when the location of liquid inflow is not known a priori) and specify $T_D$.
+\item natural outflow: The energy in the domain decreases only due to advection. Use zero diffusive\_flux or inflow (the latter in case that the outflow boundary is not known a priori).
+\item boundary with known energy flux: Use total\_flux and $f_N^T$.
+\item thermally insulated boundary: Use zero total\_flux.
+\item partially permeable boundary: The energy transfer is proportional to the temperature difference inside and outside the domain.
+Use diffusive\_flux, $T_D$ and $\sigma_R^T$.
 \end{itemize}
 
 
