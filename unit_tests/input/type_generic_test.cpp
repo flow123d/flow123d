@@ -341,6 +341,23 @@ TEST(GenericType, parameter_during_lazy_finish) {
 }
 
 
+TEST(GenericType, root_without_instance) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	static Record with_root_flag = Record("in_rec", "")
+			.root_of_generic_subtree()
+			.declare_key("array", Array( Array( Parameter("param") ) ), "desc.")
+			.close();
+
+	static Record root_rec = Record("root_record", "desc.")
+			.declare_key("primary", with_root_flag, "Primary problem.")
+			.declare_key("bool", Bool(), "Some bool key.")
+			.close();
+
+	EXPECT_THROW_WHAT( { TypeBase::lazy_finish(); }, ExcGenericWithoutInstance, "'in_rec' used without Instance");
+}
+
+
 template <int spacedim>
 class ParametrizedTestClass {
 public:
