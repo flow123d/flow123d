@@ -14,15 +14,15 @@
  * @file    ref_element.hh
  * @brief   Class RefElement defines numbering of vertices, sides, calculation of normal vectors etc.
  * @author  Jan Stebel
- * @todo
- *
+ * @todo    
+ * 
  * - design interface in such a way, that we can change numbering
  * - design numbering and orientations on ref element that is consistent (orientation and numbering od 2d el. match sides of 3d),
  *   and possibly allows permute vertices of elements so that sides sharing an edge match numbering and orientation (we dos'nt need permute faces)
- *
+ * 
  *   Proposal(prefers combinatoric order) :
  *   1D  - orientation V0 -> V1
- *
+ * 
  *   2D  - edges: E0: V0 -> V1,
  *                E1: V0 -> V2
  *                E2: V1 -> V2
@@ -34,20 +34,20 @@
  *         1 2 0            - - +
  *         2 0 1            + - -
  *         2 1 0            - - -
- *
+ * 
  *                   vertices   edges       normal (out = +)
  *   3D - sides: S0: 0 1 2      E0 E1 E3    -
  *               S1: 0 1 3      E0 E2 E4    +
  *               S2: 0 2 3      E1 E2 E5    -
  *               S3: 1 2 3      E3 E4 E5    -
- *
+ * 
  *        edges: E0: V0 -> V1  x direction
  *               E1: V0 -> V2  y direction
  *               E2: V0 -> V3  z direction
  *               E3: V1 -> V2
  *               E4: V1 -> V3
  *               E5: V2 -> V3
- *
+ * 
  * - functions from DEAL.ii:
  *   bool is_inside_unit_cell( point )
  *   line_to_cell_vertices(line, vertex) vertex index on line to index on whole element
@@ -60,11 +60,10 @@
  *   project_to_unit_cell
  *   distance_to_unit_cell
  *   d_linear_shape_function
- *
+ * 
  * - can not change numbering of element sides due to DarcyFlow, which use hardwired side numbering in construction of basis functions
  * - any change of side numbering requires also change in flow/old_bcd.cc
- *
- *
+ * 
  */
 
 #ifndef REF_ELEMENT_HH_

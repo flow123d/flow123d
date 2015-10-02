@@ -13,31 +13,31 @@
  * 
  * @file    sys_profiler.hh
  * @brief   
- * @todo
+ * @todo    
  * - START_GLOBAL_TIMER(tag) - this calls the start_timer, which creates local timer on the correct place in the hierarchy,
  *    further this timer is added to the list of global timers, this contains groups of timers with same tag, and
  *    collect/sum data from these timers in the report.
- *
+ * 
  * - Allow output even during calculation (not complete, but at least some thing)
  *    Report should contain time of start as well as time of creation of the report or time from start of the program.
- *
+ * 
  * - When generating report we has to deal with possibly different trees at every MPI process.
- *
+ * 
  * - test memory profiling
  *   in our own new and xmalloc functions - register allocatied and deallocated memory to active Profiler frame.
- *
+ * 
  * - test in parallel
  * - extended output:
  *      cas na jedno volani (jina redukce nez pro kumulativni cas, pokud je pocet volani ruzny)
  *      procenta vuci predkovi
  *      code point (az nekde na konci radky)
- *
- *
+ * 
+ * 
  *  !!! Unfortunately using constexpr is worse (without optimization).
  *  This is probably due to use of static variable for
  *  CodePoint, the access could be slow, and computation of hash is done only once. Actually timing results
  *  are:
- *
+ * 
  *  OPTIONS     OVERHEAD (compared to call 2x clock())
  *  -g, no c++11 : 18%
  *  -g,    c++11 : 60%

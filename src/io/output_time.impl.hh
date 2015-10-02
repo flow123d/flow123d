@@ -13,7 +13,7 @@
  * 
  * @file    output.h
  * @brief   Header: The functions for all outputs.
- * @todo
+ * @todo    
  * - remove Output, keep OutputTime only (done)
  * - remove parameter mesh from static method OutputTime::output_stream (done)
  * - move initialization of streams from hc_expolicit_sequantial to
@@ -21,36 +21,36 @@
  * - OutputTime::register_XXX_data - should accept iterator to output record of particular equation, ask for presence of the key
  *   that has same name as the name of the quantity to output, extract the string with stream name from this key, find the stream
  *   and perform output.
- *
+ * 
  *   on input:
- *
+ * 
  *   { // darcy flow
  *      output = {
  *          pressure_nodes="nodal_data",
  *          pressure_elements="el_data"
  *      }
  *   }
- *
+ * 
  *   output_streams=[
  *      {name="nodal_data", ... },
  *      {name="el_data", ... }
  *   ]
- *
+ * 
  *   in code:
- *
+ * 
  *   Input::Record out_rec = in_rec.val<Input::Record>("output");
  *   OutputTime::register_node_data(mesh_, "pressure_nodes", "L", out_rec, node_pressure);
  *   OutputTime::register_elem_data(mesh_, "pressure_elements", "L", out_rec, ele_pressure);
  *   ...
- *
+ * 
  * - use exceptions instead of returning result, see declaration of exceptions through DECLARE_EXCEPTION macro
  * - move write_data from equations into coupling, write all streams
- *
+ * 
  * =======================
  * - Is it still necessary to split output into registration and write the data?
  *   Could we perform it at once? ... No, it doesn't make any sense.
  * - Support for output of corner data into GMSH format (ElementNodeData section)
- *
+ * 
  */
 
 #ifndef OUTPUT_H

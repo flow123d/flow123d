@@ -13,14 +13,14 @@
  * 
  * @file    region.hh
  * @brief   
- * @todo
+ * @todo    
  *  - komentar k RegionIdx
  *  - presun enum RegionType do public Region - komentar + pouzit v kodu
  *  - zkontrolovat chybove hlasky a ASSERTY, co z toho by melo byt pres exception?
- *
+ * 
  *  - Seems that GMSH allows repeating ID and Label on regions of different dimension, therefore
  *    label and ID are not unique without dimension.
- *
+ * 
  */
 
 #ifndef REGION_HH_

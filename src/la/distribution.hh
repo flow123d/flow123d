@@ -13,7 +13,7 @@
  * 
  * @file    distribution.hh
  * @brief   Support classes for parallel programing.
- * @todo
+ * @todo    
  *  - need better resolution of constructors
  */
 

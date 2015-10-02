@@ -13,12 +13,12 @@
  * 
  * @file    sorption_base.hh
  * @brief   Class SorptionBase is abstract class representing model of sorption in transport.
- * 
- * The sorption is described by several types of isotherms - linear, Freundlich or Langmuir. 
- * Limited solubility can be considered.
- *
- * Interpolation tables are used to speed up evaluation of isotherms.
- *
+ *          
+ *          The sorption is described by several types of isotherms - linear, Freundlich or Langmuir.
+ *          Limited solubility can be considered.
+ *          
+ *          Interpolation tables are used to speed up evaluation of isotherms.
+ *          
  */
 
 #ifndef SORPTION_BASE_H

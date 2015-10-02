@@ -13,7 +13,6 @@
  * 
  * @file    sys_vector.hh
  * @brief   Vector classes to support both Iterator, index and Id access and creating co-located vectors.
- *
  * @todo    Implement co-located vector class that takes reference of the original Vector and
  *          is of the same size. FullIterator should have method for accessing elements in the original vector.
  */

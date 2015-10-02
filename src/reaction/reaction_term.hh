@@ -13,9 +13,9 @@
  * 
  * @file    reaction_term.hh
  * @brief   Class ReactionTerm is an abstract class representing reaction term in transport.
- *
- * Descending classes implements different physical models - dual porosity, sorption, decays, 
- * chemical reactions.
+ *          
+ *          Descending classes implements different physical models - dual porosity, sorption, decays,
+ *          chemical reactions.
  */
 
 #ifndef REACTION_TERM_H

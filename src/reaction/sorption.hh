@@ -14,11 +14,10 @@
  * @file    sorption.hh
  * @brief   This file contains classes representing sorption model.
  *          Sorption model can be computed both in case the dual porosity is considered or not.
- * 
- * The difference is only in the isotherm_reinit method. 
- * Passing immobile porosity from dual porosity model is solved in abstract class SorptionDual.
- * 
- * @todo
+ *          
+ *          The difference is only in the isotherm_reinit method.
+ *          Passing immobile porosity from dual porosity model is solved in abstract class SorptionDual.
+ * @todo    
  * It seems that the methods isotherm_reinit() are different only at computation of scale_aqua and scale_sorbed.
  * So it could be moved to SorptionDual and the only method which would be virtual would be 
  * compute_sorbing_scale(). It is prepared in comment code.

@@ -13,30 +13,30 @@
  * 
  * @file    isotherm.hh
  * @brief   
- *
+ * 
  * Other possible transformation of coordinates:
- *
+ * 
  * c_l - conc. liquid
  * c_s - conc. solid
  * c_t = h_l * c_l + h_s * c_s = X' + Y'
  * X = c_t
  * Y = X' - Y' = h_l * c_l - h_s * c_s
- *
+ * 
  * A) make table for function c_t -> Y
  * 1) for given c_t solve nonlinear eq.
  *    h_l * c_l + h_s * f(c_l) = c_t
- *
+ * 
  * 2) from c_l compute
  *    Y = c_t - 2* h_l * c_l
- *
- *
+ * 
+ * 
  * B) calculation of new c_l, c_s from c_t using table:
- *
+ * 
  * 1) use table to get value of Y for given c_t
  * 2) compute:
  *    c_l = (c_t - Y) / (2 * h_l)
  *    c_s = (c_t + Y) / (2 * h_s)
- *
+ * 
  * ========================
  * The transformation currently in use transforms
  * pair (c_l, c_s) directly to (c_t, W) in ortogonal way.

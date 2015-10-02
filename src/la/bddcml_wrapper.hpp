@@ -12,8 +12,8 @@
  *
  * 
  * @file    bddcml_wrapper.hpp
- * @author  Jakub Sistek
  * @brief   
+ * @author  Jakub Sistek
  */
 
 #ifndef la_bddcml_wrapper_h

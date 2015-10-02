@@ -13,7 +13,7 @@
  * 
  * @file    accessors.hh
  * @brief   
- * @todo
+ * @todo    
  *  - decide which part of interface has to be optimized ( probably nothing until we
  *    implement reader for HDF5, XML or large Raw data files, and try to use the same input interface for input of large data)
  *  - then make inlined only neccessary functions  and carefully move as much as possible into accessors.cc including explicit instantiation of
