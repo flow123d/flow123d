@@ -385,7 +385,7 @@ protected:
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
-	bool is_linear_;
+	int is_linear_;
 	double tolerance_;
 	unsigned int max_n_it_;
 

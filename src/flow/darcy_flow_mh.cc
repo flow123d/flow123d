@@ -40,7 +40,7 @@
 #include "petscmat.h"
 #include "petscviewer.h"
 #include "petscerror.h"
-
+#include "mpi.h"
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -392,13 +392,18 @@ void DarcyFlowMH_Steady::solve_nonlinear()
     unsigned int n_it=0, l_it=0;
     xprintf(Msg, "Nonlin iter: %d %d %g\n",n_it, l_it, residual_norm);
     n_it++;
+
+    // Reduce is_linear flag.
+    int is_linear_common;
+    MPI_Allreduce(&is_linear_, &is_linear_common,1, MPI_INT ,MPI_MIN,PETSC_COMM_WORLD);
+
     while (residual_norm > this->tolerance_ || n_it > this->max_n_it_) {
 
         int convergedReason = schur0->solve();
         this -> postprocess();
 
         // hack to make BDDC work with empty compute_residual
-        if (is_linear_) break;
+        if (is_linear_common) break;
 
         //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
         //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
