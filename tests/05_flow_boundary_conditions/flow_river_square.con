@@ -1,0 +1,73 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Steady flow with River boundary condition", 
+    /*
+     * The test problem use square computational domain and emulate slope of the top surface
+     * by prescribing boundary (hD) and switch pressure (hS) as linear functions, while
+     * hD > hS to get physically relevant solution (no outflow for h<hS).
+     * The solution can be visualized with Paraview using ref_output/flow_river_square.pvsm.
+     * The "plot over line" near the top surface clearly displays three different parts of the 
+     * top boundary. On the left where h<hS, the slope of the solution is smaller due to the limited
+     * inflow, for h>hS to slope is higher. For h>hD, the inflow turns into outflow which is visible on
+     * the velocity field on the left.
+     */
+    mesh = {
+      mesh_file = "${INPUT}/square_xz.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      n_schurs = 2, 
+
+      input_fields= [
+        { region = "plane",
+          conductivity = 1E-3
+        },
+        { region = ".top",
+          bc_type = "river",
+          bc_switch_pressure = {
+            TYPE="FieldFormula",
+            value= "-x+0.3"
+          },  
+          bc_pressure = {
+            TYPE="FieldFormula",
+            value="-x+0.6"
+          },  
+          bc_robin_sigma= 4E-4
+        }/*,
+        
+        { region = ".bottom",
+          bc_type = "neumann" // zero flux
+        },*/
+        /*
+        { region = ".right",
+          bc_type = "dirichlet",
+          bc_piezo_head = 1.25
+        },
+        { region = ".left",
+          bc_type = "dirichlet",
+          bc_piezo_head = 0.75
+        }*/
+      ],
+
+      output = {
+        output_stream = {
+          file = "./flow_river_square.pvd", 
+          format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          } 
+        }, 
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      } 
+    }
+  }
+}
