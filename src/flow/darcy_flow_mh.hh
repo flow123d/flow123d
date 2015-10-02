@@ -152,7 +152,8 @@ public:
             dirichlet=1,
             neumann=2,
             robin=3,
-            total_flux=4
+            seepage=4,
+            river=5
         };
 
         /// Return a Selection corresponding to enum BC_Type.
@@ -172,6 +173,7 @@ public:
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+        BCField<3, FieldValue<3>::Scalar > bc_switch_pressure;
         
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
@@ -226,6 +228,7 @@ public:
 
     void update_solution() override;
     void zero_time_step() override;
+
     void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     void get_parallel_solution_vector(Vec &vector) override;
     
@@ -310,7 +313,8 @@ protected:
 
 
 
-
+    /// Solve method common to zero_time_step and update solution.
+    void solve_nonlinear();
     void make_serial_scatter();
     virtual void modify_system()
     {  };
@@ -404,6 +408,9 @@ protected:
 	int	*side_row_4_id;		//< side id to matrix row
 	int *edge_4_loc;		//< array of indexes of local edges
 	int	*row_4_edge;		//< edge index to matrix row
+
+	/// Idicator of dirichlet or neumann type of switch boundary conditions.
+	std::vector<char> bc_switch_dirichlet;
 
 	/// Necessary only for BDDC solver.
     boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
