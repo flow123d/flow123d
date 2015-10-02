@@ -1,7 +1,19 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition", 
+    description = "Steady flow with Seepage face boundary condition", 
+    /*
+     * The test problem use square computational domain and emulate slope of the top surface
+     * by prescribing the switch pressure (hS) as a linear function.
+     * The output could be visualized with Paraview using ref_output/flow_seepage.pvsm.
+     * According to the internal output, the interface between h<hS and h=hS should be 
+     * just in the middle. However since we can not display values on the boundary yet, the 
+     * velocities in the elements (z component in the left view) seem to have negative Z component
+     * even on the right half of the domain so the switch point seems to be slightly on the right.
+     * On the other hand the "plot over line" of the pressure and the switch pressure near the boundary
+     * clearly displays the switch point in for x=0.5. Again the pressure is slightly above the switch pressure
+     * since we do not plot values directly on the boundary.
+     */
     mesh = {
       mesh_file = "${INPUT}/square_xz.msh"
     }, 
@@ -12,25 +24,29 @@
 
       input_fields= [
         { region = "plane",
-          anisotropy = 1
+          conductivity = 1E-3
         },
-        /*
+        { region = ".top",
+          bc_type = "seepage",
+          bc_switch_pressure = {
+            TYPE="FieldFormula",
+            value= "-x+0.5"
+          },  
+          bc_flux = -5.0E-4
+        }/*,
+        
         { region = ".bottom",
           bc_type = "neumann" // zero flux
         },*/
+        /*
         { region = ".right",
           bc_type = "dirichlet",
           bc_piezo_head = 1.25
         },
-        { region = ".top",
-          bc_type = "seepage",
-          bc_pressure = 0,
-          bc_flux = 0
-        },
         { region = ".left",
           bc_type = "dirichlet",
           bc_piezo_head = 0.75
-        }
+        }*/
       ],
 
       output = {
