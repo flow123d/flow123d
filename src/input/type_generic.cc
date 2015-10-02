@@ -1,10 +1,19 @@
-/*
- * type_generic.cc
+/*!
  *
- *  Created on: May 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_generic.cc
+ * @brief   
  */
-
 
 #include <input/type_generic.hh>
 #include <input/type_repository.hh>
