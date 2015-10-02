@@ -1,14 +1,29 @@
-/** @brief This file contains classes representing sorption model. 
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
- * Sorption model can be computed both in case the dual porosity is considered or not.
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    sorption.hh
+ * @brief   This file contains classes representing sorption model.
+ *          Sorption model can be computed both in case the dual porosity is considered or not.
+ * 
  * The difference is only in the isotherm_reinit method. 
  * Passing immobile porosity from dual porosity model is solved in abstract class SorptionDual.
  * 
- * TODO:
+ * @todo
  * It seems that the methods isotherm_reinit() are different only at computation of scale_aqua and scale_sorbed.
  * So it could be moved to SorptionDual and the only method which would be virtual would be 
  * compute_sorbing_scale(). It is prepared in comment code.
  */
+
 #ifndef SORPTION_H
 #define SORPTION_H
 

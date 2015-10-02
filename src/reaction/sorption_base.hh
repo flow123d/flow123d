@@ -1,12 +1,26 @@
-/** @brief Class SorptionBase is abstract class representing model of sorption in transport.
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    sorption_base.hh
+ * @brief   Class SorptionBase is abstract class representing model of sorption in transport.
  * 
  * The sorption is described by several types of isotherms - linear, Freundlich or Langmuir. 
  * Limited solubility can be considered.
  *
  * Interpolation tables are used to speed up evaluation of isotherms.
  *
- *
  */
+
 #ifndef SORPTION_BASE_H
 #define SORPTION_BASE_H
 
