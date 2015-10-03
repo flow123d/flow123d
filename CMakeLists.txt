@@ -413,7 +413,7 @@ set(PETSC_EXPORT_LIST
   METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
   MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB
   UMFPACK_LIB)  
-find_package(PETSc 3.4.0)
+find_package(PETSc 3.6.0)
 
 
 if (NOT PETSC_FOUND)
@@ -423,11 +423,11 @@ if (NOT PETSC_FOUND)
         # Install PETSC
         # also set PETSC_DIR, PETSC_ARCH
         set(PETSC_INSTALL_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
-        set(PETSC_INSTALL_URL \"http://flow.nti.tul.cz/libraries/petsc-lite-3.4.3.tar.gz\")
+        set(PETSC_INSTALL_URL \"http://flow.nti.tul.cz/libraries/petsc-lite-3.6.1.tar.gz\")
         include(InstallPetsc)
         
         set(PETSC_CURRENT "NO")
-        find_package(PETSc 3.4.0)
+        find_package(PETSc 3.6.0)
         
     endif()    
         

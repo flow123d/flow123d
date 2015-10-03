@@ -341,7 +341,7 @@ int LinSys_PETSC::solve()
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
     KSPCreate( comm_, &system );
-    KSPSetOperators(system, matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
+    KSPSetOperators(system, matrix_, matrix_);
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
     KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
