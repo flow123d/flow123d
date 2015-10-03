@@ -248,8 +248,11 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
-	OutputJSONMachine() : OutputBase()
+	OutputJSONMachine(std::map<string, string> version_map) : OutputBase()
     {
+		ASSERT(version_map.size()==4, "Invalid size of map stored version of program and other base data.\n");
+		version_map_ = version_map;
+
 	    format_head="{ \"version\" :";
 	    format_inner=",\n\"ist_nodes\" : [\n";
 	    format_full_hash="{}],\n";
@@ -325,6 +328,8 @@ protected:
     /// Tail of the format, printed after all recursive prints are finished.
     /// see @p print(stream) method
     std::string format_tail;
+    /// Contains version of program and other base data
+    std::map<string, string> version_map_;
 
 };
 

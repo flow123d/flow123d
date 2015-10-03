@@ -7,6 +7,17 @@
 #include "input/type_base.hh"
 #include "input/type_output.hh"
 
+// Set version of program and other base data. Simulate data got from rev_num.h.
+std::map<string, string> get_rev_num_data() {
+	static std::map<string, string> version_map;
+	version_map["version"] = "X.X.X";
+	version_map["revision"] = "unit.test";
+	version_map["branch"] = "unit.test";
+	version_map["url"] = "unit.test";
+
+	return version_map;
+}
+
 /**
  * Test Selection class.
  */
@@ -95,7 +106,7 @@ TEST(OutputTypeTypeBase, record_output_test) {
     cout << OutputText(&main) << endl << endl;
 
     cout << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine() << endl;
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }
 
 TEST(OutputTypeAbstractRecord, abstract_record_test) {
@@ -130,7 +141,7 @@ TEST(OutputTypeAbstractRecord, abstract_record_test) {
     cout << OutputText( &c_rec);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine() << endl;
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }
 
 
@@ -180,7 +191,7 @@ TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
     cout << OutputText( &root_rec) << endl;
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine() << endl;
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }
 
 
@@ -205,7 +216,7 @@ TEST(OutputTypeArray, array_of_array_test) {
     cout << OutputText(&array_record) << endl;
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine() << endl;
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }
 
 
@@ -225,5 +236,5 @@ TEST(OutputTypeParameter, parameter_test) {
 								.close();
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine() << endl;
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }

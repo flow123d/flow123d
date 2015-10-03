@@ -4,7 +4,6 @@
 
 #include "input/type_output.hh"
 #include "input/type_repository.hh"
-#include "rev_num.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/concepts.hpp>
@@ -779,13 +778,11 @@ void OutputJSONMachine::print_impl(ostream& stream, const Parameter *type) {
 
 
 void OutputJSONMachine::print_program_info(ostream& stream) {
-    string revision(_GIT_REVISION_);
-	string version(_VERSION_NAME_);
 	string build_date = string(__DATE__) + ", " + string(__TIME__);
 
     stream << "{" << endl;
-    stream << "\"flow123d_commit\" : \"" << revision << "\"," << endl;
-    stream << "\"flow123d_version\" : \"" << version << "\"," << endl;
+    stream << "\"flow123d_commit\" : \"" << version_map_["revision"] << "\"," << endl;
+    stream << "\"flow123d_version\" : \"" << version_map_["version"] << "\"," << endl;
     stream << "\"date\" : \"" << build_date << "\"" << endl;
 	stream << "}";
 }

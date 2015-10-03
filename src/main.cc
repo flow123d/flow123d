@@ -112,23 +112,32 @@ void Application::split_path(const string& path, string& directory, string& file
     }
 }
 
+
+std::map<string, string> Application::get_rev_num_data() {
+	std::map<string, string> version_map;
+	version_map["version"] = string(_VERSION_NAME_);
+	version_map["revision"] = string(_GIT_REVISION_);
+	version_map["branch"] = string(_GIT_BRANCH_);
+	version_map["url"] = string(_GIT_URL_);
+
+	return version_map;
+}
+
+
 void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
-    string version(_VERSION_NAME_);
-    string revision(_GIT_REVISION_);
-    string branch(_GIT_BRANCH_);
-    string url(_GIT_URL_);
+	std::map<string, string> version_map = this->get_rev_num_data();
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
+    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version_map["version"].c_str(), version_map["revision"].c_str());
     xprintf(Msg,
     	 "Branch: %s\n"
 		 "Build: %s\n"
 		 "Fetch URL: %s\n",
-		 branch.c_str(), build.c_str() , url.c_str() );
-    Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
+		 version_map["branch"].c_str(), build.c_str() , version_map["url"].c_str() );
+    Profiler::instance()->set_program_info("Flow123d", version_map["version"], version_map["branch"], version_map["revision"], build);
 }
 
 
@@ -226,7 +235,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     		cerr << "Failed to open file '" << json_filename << "'" << endl;
         } else {
 	        Input::Type::TypeBase::lazy_finish();
-	        json_stream << Input::Type::OutputJSONMachine();
+	        json_stream << Input::Type::OutputJSONMachine( this->get_rev_num_data() );
 	        json_stream.close();
         }
         exit( exit_output );

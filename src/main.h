@@ -94,6 +94,9 @@ protected:
 
 private:
 
+    /// Get version of program and other base data from rev_num.h and store them to map
+    std::map<string, string> get_rev_num_data();
+
     /// directory of main input file (used to resolve relative paths of other input files)
     string main_input_dir_;
     /// filename of main input file
