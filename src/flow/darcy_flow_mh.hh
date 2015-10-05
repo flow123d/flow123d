@@ -76,7 +76,6 @@ class Balance;
 class VectorSeqDouble;
 
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
 template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
 template<unsigned int dim, unsigned int spacedim> class MappingP1;
 template<unsigned int dim, unsigned int spacedim> class FEValues;
@@ -289,7 +288,7 @@ protected:
         
         // assembly face integrals (BC)
         QGauss<dim-1> side_quad_;
-        FiniteElement<dim,3> *fe_p_disc_;
+        FE_P_disc<0,dim,3> fe_p_disc_;
         FESideValues<dim,3> fe_side_values_;
 
         // Interpolation of velocity into barycenters

@@ -57,6 +57,13 @@ class ISTFormatter(object):
         html_nav_abc = HTMLFormatter.abc_navigation_bar(json_object)
         html_nav_tree = HTMLFormatter.tree_navigation_bar(json_object)
 
+        # show specified element by given id
+        for child in html_content.current():
+            if child.attrib['id'].lower() == focus_element_id.lower():
+                child.attrib['class'] = child.attrib['class'].replace('hidden', '')
+                print "Element {:s} is displayed".format(child.attrib['id'])
+                break
+
         max_cols = 12
         if 'right-list' not in skip_block_creation or 'left-list' not in skip_block_creation:
             max_cols -= 3
@@ -144,11 +151,6 @@ class ISTFormatter(object):
                                                     href='#input-reference', cls='well well-sm'):
                                     html_body.span(cls='glyphicon glyphicon-menu-up')
                                 html_body.add(html_content.current())
-
-                            # show specified element by given id
-                            for child in html_body.current()._children[0]:
-                                if child.attrib['id'].lower() == focus_element_id.lower():
-                                    child.attrib['class'] = child.attrib['class'].replace('hidden', '')
 
         html_head = htmltree('head')
 
