@@ -524,7 +524,6 @@ protected:
     public:
         ChildData(const string &name, const string &description)
         : selection_of_childs( boost::make_shared<Selection> (name + "_TYPE_selection") ),
-		  element_input_selection(nullptr),
 		  description_(description),
 		  type_name_(name),
 		  finished_(false),
@@ -543,9 +542,6 @@ protected:
          * Vector of derived Records (proxies) in order of derivation.
          */
         vector< Record > list_of_childs;
-
-        // TODO: temporary hack, should be removed after implementation of generic types
-        const Selection * element_input_selection;
 
         /// Description of the whole AbstractRecord type.
         const string description_;
@@ -708,9 +704,6 @@ public:
 	 @endcode
      */
     int add_child(const Record &subrec);
-
-    // TODO: temporary hack, should be removed after implementation of generic types
-    AbstractRecord &set_element_input(const Selection * element_input);
 
     // Get default value of selection_of_childs
     Default &get_selection_default() const;

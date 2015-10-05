@@ -521,10 +521,6 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, child_data_->description_);
-    // TODO temporary hack, should be removed after implementation of generic types
-    if (child_data_->element_input_selection != nullptr) {
-    	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
-    }
     if (child_data_->parameters_json_to_hash_ != "") {
     	boost::hash_combine(seed, child_data_->parameters_json_to_hash_);
     }
@@ -628,14 +624,6 @@ bool AbstractRecord::finish(bool is_generic) {
 AbstractRecord &AbstractRecord::close() {
 	child_data_->closed_=true;
     return *( Input::TypeRepository<AbstractRecord>::get_instance().add_type( *this ) );
-}
-
-
-AbstractRecord &AbstractRecord::set_element_input(const Selection * element_input) {
-	if (element_input != NULL ) {
-		child_data_->element_input_selection = element_input;
-	}
-	return *this;
 }
 
 
