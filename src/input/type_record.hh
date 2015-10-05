@@ -529,8 +529,7 @@ protected:
 		  finished_(false),
 		  closed_(false),
 		  selection_default_(Default::obligatory()),
-		  generic_content_hash_(0),
-		  parameters_json_to_hash_("")
+		  generic_content_hash_(0)
         {}
 
         /**
@@ -576,15 +575,6 @@ protected:
          */
         TypeHash generic_content_hash_;
 
-        /**
-         * Store JSON string of used parameters.
-         *
-         * This class members is used for instances of generic types, is counted
-         * to content hash and allows distinguish different instances with same
-         * type name. For non-generic types is empty.
-         */
-        json_string parameters_json_to_hash_;
-
     };
 
 public:
@@ -613,8 +603,8 @@ public:
     /**
      * Implements @p TypeBase::content_hash.
      *
-     * Hash is calculated by type name, description, hash of attributes and for instances of generic types
-     * by hash of parameters (see @p parameters_json_to_hash_).
+     * Hash is calculated by type name, description, hash of attributes and hash of part
+     * of generic subtree (see @p generic_content_hash_).
      */
     TypeHash content_hash() const   override;
 
