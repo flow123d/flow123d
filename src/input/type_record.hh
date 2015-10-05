@@ -529,6 +529,7 @@ protected:
 		  finished_(false),
 		  closed_(false),
 		  selection_default_(Default::obligatory()),
+		  generic_content_hash_(0),
 		  parameters_json_to_hash_("")
         {}
 
@@ -561,6 +562,19 @@ protected:
          * If default value isn't set, selection_default_ is set to obligatory.
          */
         Default selection_default_;
+
+        /**
+         * Allow store hash of part of generic subtree.
+         *
+         * This hash can be typically used if descendants of Abstract contains different
+         * structure of parameter location.
+         * For example we have have Records with key represents generic part of subtree:
+         *  - in first descendant this key is of the type Parameter
+         *  - in second descendant this key is of the type Array of Parameter
+         *  - in third descendant this key is of the type Array of Parameter with fixed size
+         *  etc.
+         */
+        TypeHash generic_content_hash_;
 
         /**
          * Store JSON string of used parameters.
@@ -716,6 +730,9 @@ public:
 
     /// Set flag @p root_of_generic_subtree_ to true
     AbstractRecord &root_of_generic_subtree();
+
+    /// Set @p generic_content_hash_
+    AbstractRecord &set_generic_content_hash(TypeHash generic_content_hash);
 
 protected:
     /**

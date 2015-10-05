@@ -521,6 +521,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, child_data_->description_);
+    boost::hash_combine(seed, child_data_->generic_content_hash_);
     if (child_data_->parameters_json_to_hash_ != "") {
     	boost::hash_combine(seed, child_data_->parameters_json_to_hash_);
     }
@@ -699,6 +700,12 @@ AbstractRecord AbstractRecord::deep_copy() const {
 
 AbstractRecord &AbstractRecord::root_of_generic_subtree() {
 	root_of_generic_subtree_ = true;
+	return *this;
+}
+
+
+AbstractRecord &AbstractRecord::set_generic_content_hash(TypeHash generic_content_hash) {
+	child_data_->generic_content_hash_ = generic_content_hash;
 	return *this;
 }
 
