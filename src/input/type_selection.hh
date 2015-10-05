@@ -113,9 +113,6 @@ public:
     /// Implements \p TypeBase::type_name
     virtual string type_name() const override;
 
-    /// Implements \p TypeBase::full_type_name
-    virtual string full_type_name() const override;
-
     /// Implements \p TypeBase::operator==  compare also Selection names.
     virtual bool operator==(const TypeBase &other) const;
 

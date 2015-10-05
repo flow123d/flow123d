@@ -60,7 +60,7 @@ safe_copy "${BUILD_TREE}/Flow123d-${GIT_VERSION_FULL}-Source.tar.gz" \
 safe_copy "${BUILD_TREE}/Flow123d-${GIT_VERSION_FULL}-CYGWIN.exe" \
           "${PUBLISH_DIR}/flow123d_${GIT_VERSION_FULL}_${PLATFORM_NAME}.exe"
 
-safe_copy "${BUILD_TREE}/htmldoc/html" \
+safe_copy "${BUILD_TREE}/htmldoc/html/src" \
           "${PUBLISH_DIR}/htmldoc"
 
 # write current date to json file
