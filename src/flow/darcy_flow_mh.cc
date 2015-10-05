@@ -108,11 +108,11 @@ const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
                .add_value(seepage, "seepage",
                        "Seepage face boundary condition. Boundary with potential seepage flow is described by the pair of inequalities:"
-                       "(($h \\ge h_d^D$)) and (($ q \\ge q_d^N)), where the equality holds in at least one of them."
-                       "Parameters (($h_d^D$)) and (($q_d^N)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
+                       "(($h \\ge h_d^D$)) and (($q \\ge q_d^N$)), where the equality holds in at least one of them."
+                       "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
                        )
                .add_value(river, "river",
-                       "River boundary condtion. For the water level above the bedrock, (($ H > H^S$)) the Robin boundary condition is used, "
+                       "River boundary condtion. For the water level above the bedrock, (($H > H^S$)) the Robin boundary condition is used, "
                        "(( $q = \\sigma^R( H - H^D) + q^N$ )). For the water level under the bedrock, constant infiltration is used "
                        "(( $q = \\sigma^R( H^S - H^D) + q^N$ )). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
                        " ``bc_sigma, ``bc_flux``."
@@ -133,12 +133,20 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
         .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
         .close();
 
+    it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
+        .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"), "Residual tolerance.")
+        .declare_key("max_it", it::Integer(0), it::Default("100"), "Maximal number of iterations before diverging.")
+        .close();
+
     return it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
         .declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
                 "Linear solver for MH problem.")
+        .declare_key("nonlinear_solver", ns_rec, it::Default::optional(),
+                "Non-linear solver for MH problem.")
+
         .declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
                 "Parameters of output form MH module.")
         .declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
@@ -395,6 +403,14 @@ void DarcyFlowMH_Steady::solve_nonlinear()
     // Reduce is_linear flag.
     int is_linear_common;
     MPI_Allreduce(&is_linear_, &is_linear_common,1, MPI_INT ,MPI_MIN,PETSC_COMM_WORLD);
+
+    if (! is_linear_common) {
+        this->tolerance_ = 1E-6;
+        Input::Record rec;
+        if (input_record_.opt_val<Input::Record>("nonlinear_solver", rec)) {
+            this->tolerance_ = rec.val<double>("tolerance", 1E-6);
+        }
+    }
 
     while (residual_norm > this->tolerance_ || n_it > this->max_n_it_) {
 
@@ -1163,9 +1179,9 @@ void DarcyFlowMH_Steady::create_linear_system() {
         }
     }
 
-
     END_TIMER("preallocation");
 
+    this->tolerance_ = Input::Record(in_rec).val<double>("r_tol");
     make_serial_scatter();
 
 }

@@ -315,6 +315,7 @@
           branches:
             - master
             - 1.8.2
+            - JB_switch_bc
     triggers:
       # run every day around 3 AM even if there is no change in code
       - timed: "H 3 * * *"
