@@ -528,8 +528,7 @@ protected:
 		  type_name_(name),
 		  finished_(false),
 		  closed_(false),
-		  selection_default_(Default::obligatory()),
-		  generic_content_hash_(0)
+		  selection_default_(Default::obligatory())
         {}
 
         /**
@@ -573,7 +572,7 @@ protected:
          *  - in third descendant this key is of the type Array of Parameter with fixed size
          *  etc.
          */
-        TypeHash generic_content_hash_;
+        //TypeHash generic_content_hash_;
 
     };
 
@@ -603,8 +602,7 @@ public:
     /**
      * Implements @p TypeBase::content_hash.
      *
-     * Hash is calculated by type name, description, hash of attributes and hash of part
-     * of generic subtree (see @p generic_content_hash_).
+     * Hash is calculated by type name, description and hash of attributes.
      */
     TypeHash content_hash() const   override;
 
@@ -722,7 +720,7 @@ public:
     AbstractRecord &root_of_generic_subtree();
 
     /// Set @p generic_content_hash_
-    AbstractRecord &set_generic_content_hash(TypeHash generic_content_hash);
+    //AbstractRecord &set_generic_content_hash(TypeHash generic_content_hash);
 
 protected:
     /**
