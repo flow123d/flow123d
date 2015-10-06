@@ -19,7 +19,7 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
+        Input::Type::Abstract &a_type, const typename Value::ElementInputType *eit
         )
 {
     return it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")

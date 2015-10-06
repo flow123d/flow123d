@@ -25,7 +25,7 @@ public:
   /**
    * Static variable for definition of common input record in reaction term.
    */
-  static Input::Type::AbstractRecord & get_input_type();
+  static Input::Type::Abstract & get_input_type();
   
   /// Constructor.
   /** @param init_mesh is the reference to the computational mesh

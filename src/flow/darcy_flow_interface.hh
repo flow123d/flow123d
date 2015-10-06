@@ -17,8 +17,8 @@ public:
     /// Typedef for usage of Input::Factory in child classes.
     typedef DarcyFlowInterface FactoryBaseType;
 
-    static Input::Type::AbstractRecord & get_input_type() {
-        return Input::Type::AbstractRecord("DarcyFlow",
+    static Input::Type::Abstract & get_input_type() {
+        return Input::Type::Abstract("DarcyFlow",
                 "Darcy flow model. Abstraction of various porous media flow models.")
                 .close();
     }

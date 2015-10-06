@@ -26,7 +26,7 @@ using std::string;
  * The primary purpose of this class is initialization of enum variables. Since C++ provides no reflection,
  * in particular no access to enum identifiers as strings, you has to construct the Selection object consistent with an enum you want to initialize.
  *
- * Similarly to Type::Record and Type::AbstractRecord the Selection class is only proxy to the actual data.
+ * Similarly to Type::Record and Type::Abstract the Selection class is only proxy to the actual data.
  *
  * Usage:
  @code
@@ -185,7 +185,7 @@ private:
     void finished_check() const;
 
     /**
-     * Used in error messaged, where we can not use desc(), which can lead to infinite loop due to TYPE selection of AbstractRecord.
+     * Used in error messaged, where we can not use desc(), which can lead to infinite loop due to TYPE selection of Abstract.
      */
     string key_list() const;
 

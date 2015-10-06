@@ -58,7 +58,7 @@ protected:
 
         FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
 
-        abstr_rec_ptr = new AbstractRecord("AbstractRecord", "desc");
+        abstr_rec_ptr = new Abstract("Abstract", "desc");
         abstr_rec_ptr->close();
 
         selection_ptr = new Selection("NameOfSelectionType");
@@ -190,7 +190,7 @@ protected:
 
     ::Input::Type::Record *desc_a_ptr;
     ::Input::Type::Record *desc_b_ptr;
-    ::Input::Type::AbstractRecord *abstr_rec_ptr;
+    ::Input::Type::Abstract *abstr_rec_ptr;
 
     ::Input::Type::Selection *selection_ptr;
 };

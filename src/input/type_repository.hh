@@ -19,8 +19,8 @@ namespace Input {
 /**
  * The Singleton class TypeRepository serves for handling the lazy-evaluated input types, derived from the base class
  * LazyType. When all static variables are initialized, the method TypeRepository::instance().finish() can be called
- * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
- * Selections have to be finished after all other types since they are used by AbstractRecords to register all
+ * in order to finish initialization of lazy types such as Records, Abstracts, Arrays and Selections.
+ * Selections have to be finished after all other types since they are used by Abstracts to register all
  * derived types. For this reason TypeRepository contains two arrays - one for Selections, one for the rest.
  *
  * This is list of unique instances that may contain raw pointers to possibly not yet constructed

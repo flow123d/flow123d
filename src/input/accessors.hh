@@ -391,7 +391,7 @@ protected:
 
 class AbstractRecord {
 public:
-	typedef ::Input::Type::AbstractRecord InputType;
+	typedef ::Input::Type::Abstract InputType;
 
     /**
      * Default constructor creates an empty accessor.
@@ -409,7 +409,7 @@ public:
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
      * type specification of the record given by parameter \p type.
      */
-    AbstractRecord(const Address &address, const Type::AbstractRecord type);
+    AbstractRecord(const Address &address, const Type::Abstract type);
 
     /**
      * Implicit conversion to the \p Input::Record accessor. You can use \p Input::AbstractRecord in the same
@@ -466,8 +466,8 @@ public:
 
 
 private:
-    /// Corresponding Type::AbstractRecord object.
-    Input::Type::AbstractRecord record_type_ ;
+    /// Corresponding Type::Abstract object.
+    Input::Type::Abstract record_type_ ;
 
     /// Contains address and relationships with abstract record ancestor
     Address address_;
@@ -831,7 +831,7 @@ struct TypeDispatch<string> {
 
 template<>
 struct TypeDispatch<AbstractRecord> {
-    typedef Input::Type::AbstractRecord InputType;
+    typedef Input::Type::Abstract InputType;
     typedef AbstractRecord ReadType;
     typedef AbstractRecord TmpType;
     static inline ReadType value(const Address &a, const InputType& t) { return AbstractRecord(a, t); }

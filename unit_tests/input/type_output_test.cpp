@@ -112,13 +112,13 @@ TEST(OutputTypeTypeBase, record_output_test) {
     cout << OutputJSONMachine(&main) << endl;
 }
 
-/*TEST(OutputTypeAbstractRecord, abstract_record_test) {
+/*TEST(OutputTypeAbstract, abstract_record_test) {
     using namespace Input::Type;
 
-    AbstractRecord a_rec("EqBase","Base of equation records.");
+    Abstract a_rec("EqBase","Base of equation records.");
     a_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
     a_rec.declare_key("a_val", String(), Default::obligatory(), "");
-    AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy");
+    Abstract &a_ref = a_rec.allow_auto_conversion("EqDarcy");
     EXPECT_EQ( a_rec, a_ref);
     a_rec.close();
 
@@ -149,13 +149,13 @@ TEST(OutputTypeTypeBase, record_output_test) {
 
 
 /**
- * Child classes of Input::Type::AbstractRecord and AdHocAbstractRecord
+ * Child classes of Input::Type::Abstract and AdHocAbstractRecord
  * Contains public method for adding descendants
  */
-class AbstractRecordTest : public Input::Type::AbstractRecord {
+class AbstractTest : public Input::Type::Abstract {
 public:
-	AbstractRecordTest(const string & type_name_in, const string & description)
-	: Input::Type::AbstractRecord(type_name_in, description)
+	AbstractTest(const string & type_name_in, const string & description)
+	: Input::Type::Abstract(type_name_in, description)
 	{}
 
 	void declare_descendant(const Input::Type::Record &subrec) {
@@ -163,7 +163,7 @@ public:
 	}
 };
 
-/*TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
+/*TEST(OutputTypeAbstract, ad_hoc_abstract_record_test) {
     using namespace Input::Type;
 
 	Selection sel_problem("Problem_TYPE_selection");
@@ -200,11 +200,11 @@ public:
     e_rec.close();
 
     // ancestor abstract record
-    AbstractRecordTest a_rec_test("EqBase", "Base of equation records.");
+    AbstractTest a_rec_test("EqBase", "Base of equation records.");
     a_rec_test.close();
     a_rec_test.declare_descendant(b_rec);
     a_rec_test.declare_descendant(c_rec);
-    AbstractRecord a_rec(a_rec_test);
+    Abstract a_rec(a_rec_test);
 
     // adhoc abstract record - descendant of a_rec
     AdHocAbstractRecord adhoc_rec(a_rec);

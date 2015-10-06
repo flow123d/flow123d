@@ -136,7 +136,7 @@ protected:
     StorageBase * make_storage(PathBase &p, const Type::TypeBase *type);
 
     StorageBase * make_storage(PathBase &p, const Type::Record *record);
-    StorageBase * make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * make_storage(PathBase &p, const Type::Abstract *abstr_rec);
     StorageBase * make_storage(PathBase &p, const Type::Array *array);
 
     StorageBase * make_selection_storage_without_catch(PathBase &p, const Type::Selection *selection);
@@ -147,7 +147,7 @@ protected:
     StorageBase * make_storage(PathBase &p, const Type::String *string_type);
 
     StorageBase * record_automatic_conversion(PathBase &p, const Type::Record *record);
-    StorageBase * abstract_rec_automatic_conversion(PathBase &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * abstract_automatic_conversion(PathBase &p, const Type::Abstract *abstr_rec);
 
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.

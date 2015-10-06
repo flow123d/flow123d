@@ -30,7 +30,7 @@ private:
 
     StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Record *source_type,
     		StorageBase const *source_storage, unsigned int index);
-    StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::AbstractRecord *source_type,
+    StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Abstract *source_type,
     		StorageBase const *source_storage, unsigned int index);
     StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Array *source_type,
     		StorageBase const *source_storage, unsigned int index);

@@ -182,7 +182,7 @@ TYPED_TEST_CASE(FieldFix, FieldTypes);
 // we shall do it as part of FieldList test.
 //
 TYPED_TEST(FieldFix, get_input_type) {
-	Input::Type::AbstractRecord a_rec_type = this->field_.get_input_type();
+	Input::Type::Abstract a_rec_type = this->field_.get_input_type();
 }
 
 

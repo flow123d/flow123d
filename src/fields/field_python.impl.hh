@@ -20,7 +20,7 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
+        Input::Type::Abstract &a_type, const typename Value::ElementInputType *eit
         )
 {
     return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")

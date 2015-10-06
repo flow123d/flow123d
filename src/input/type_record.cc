@@ -173,13 +173,13 @@ void Record::make_copy_keys(Record &origin) {
 
 
 
-Record &Record::derive_from(AbstractRecord &parent) {
-	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
+Record &Record::derive_from(Abstract &parent) {
+	ASSERT( parent.is_closed(), "Parent Abstract '%s' must be closed!\n", parent.type_name().c_str());
 	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE"),
 			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
 
 	// add Abstract to vector of parents
-	data_->parent_vec_.push_back( boost::make_shared<AbstractRecord>(parent) );
+	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
 
 	if (data_->keys.size() == 0) {
     	data_->declare_key("TYPE", boost::make_shared<String>(), Default( type_name() ), "Sub-record Selection.");
@@ -356,8 +356,8 @@ Record Record::deep_copy() const {
 }
 
 
-const Record &Record::add_parent(AbstractRecord &parent) const {
-	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
+const Record &Record::add_parent(Abstract &parent) const {
+	ASSERT( parent.is_closed(), "Parent Abstract '%s' must be closed!\n", parent.type_name().c_str());
 
 	// check if parent exists in parent_vec_ vector
 	TypeHash hash = parent.content_hash();
@@ -367,7 +367,7 @@ const Record &Record::add_parent(AbstractRecord &parent) const {
 		}
 	}
 
-	data_->parent_vec_.push_back( boost::make_shared<AbstractRecord>(parent) );
+	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
 
 	// finish inheritance
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
@@ -473,7 +473,7 @@ RECORD_DECLARE_KEY(FileName);
 RECORD_DECLARE_KEY(Selection);
 RECORD_DECLARE_KEY(Array);
 RECORD_DECLARE_KEY(Record);
-RECORD_DECLARE_KEY(AbstractRecord);
+RECORD_DECLARE_KEY(Abstract);
 RECORD_DECLARE_KEY(AdHocAbstractRecord);
 RECORD_DECLARE_KEY(Parameter);
 RECORD_DECLARE_KEY(Instance);
@@ -481,11 +481,11 @@ RECORD_DECLARE_KEY(Instance);
 
 
 /************************************************
- * implementation of AbstractRecord
+ * implementation of Abstract
  */
 
-AbstractRecord::AbstractRecord()
-: child_data_( boost::make_shared<ChildData>( "EmptyAbstractRecord", "" ) )
+Abstract::Abstract()
+: child_data_( boost::make_shared<ChildData>( "EmptyAbstract", "" ) )
 {
 	close();
 	finish();
@@ -493,18 +493,18 @@ AbstractRecord::AbstractRecord()
 
 
 
-AbstractRecord::AbstractRecord(const AbstractRecord& other)
+Abstract::Abstract(const Abstract& other)
 : TypeBase( other ), child_data_(other.child_data_)
 {}
 
 
 
-AbstractRecord::AbstractRecord(const string & type_name_in, const string & description)
+Abstract::Abstract(const string & type_name_in, const string & description)
 : child_data_( boost::make_shared<ChildData>( type_name_in, description ) )
 {}
 
 
-TypeBase::TypeHash AbstractRecord::content_hash() const
+TypeBase::TypeHash Abstract::content_hash() const
 {
 	TypeHash seed=0;
     boost::hash_combine(seed, "Abstract");
@@ -523,15 +523,15 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
 
 
 
-AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_default) {
-    if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
+Abstract & Abstract::allow_auto_conversion(const string &type_default) {
+    if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the Abstract '%s' is closed.\n", type_name().c_str());
     child_data_->selection_default_=Default(type_default); // default record is closed; other constructor creates the zero item
     return *this;
 }
 
 
 
-bool AbstractRecord::valid_default(const string &str) const
+bool Abstract::valid_default(const string &str) const
 {
 	// obligatory value if default is not set, see @p selection_default_
 	if ( !child_data_->selection_default_.is_obligatory() )  {
@@ -542,7 +542,7 @@ bool AbstractRecord::valid_default(const string &str) const
 }
 
 
-const Record  & AbstractRecord::get_descendant(const string& name) const
+const Record  & Abstract::get_descendant(const string& name) const
 {
     ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
     return child_data_->list_of_childs[ child_data_->selection_of_childs->name_to_int(name) ];
@@ -550,7 +550,7 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 
 
 
-const Record * AbstractRecord::get_default_descendant() const {
+const Record * Abstract::get_default_descendant() const {
     if ( have_default_descendant() ) {
         return &( get_descendant( child_data_->selection_default_.value() ) );
     }
@@ -559,20 +559,20 @@ const Record * AbstractRecord::get_default_descendant() const {
 
 
 
-const Selection  & AbstractRecord::get_type_selection() const
+const Selection  & Abstract::get_type_selection() const
 {
     return * child_data_->selection_of_childs;
 }
 
 
-unsigned int AbstractRecord::child_size() const {
+unsigned int Abstract::child_size() const {
     return child_data_->list_of_childs.size();
 }
 
 
-int AbstractRecord::add_child(const Record &subrec)
+int Abstract::add_child(const Record &subrec)
 {
-    ASSERT( child_data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
+    ASSERT( child_data_->closed_, "Can not add descendant to Abstract that is not closed.\n");
 
     if (std::find(child_data_->list_of_childs.begin(), child_data_->list_of_childs.end(), subrec) == child_data_->list_of_childs.end()) {
         child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
@@ -583,10 +583,10 @@ int AbstractRecord::add_child(const Record &subrec)
 }
 
 
-bool AbstractRecord::finish(bool is_generic) {
+bool Abstract::finish(bool is_generic) {
 	if (child_data_->finished_) return true;
 
-	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
+	ASSERT(child_data_->closed_, "Finished Abstract '%s' must be closed!", this->type_name().c_str());
 
 	child_data_->selection_of_childs->close();
 
@@ -602,7 +602,7 @@ bool AbstractRecord::finish(bool is_generic) {
 		try {
 			child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
 		} catch (ExcWrongDefault & e) {
-			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
+			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of Abstract '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
 		}
     }
 
@@ -610,13 +610,13 @@ bool AbstractRecord::finish(bool is_generic) {
 }
 
 
-AbstractRecord &AbstractRecord::close() {
+Abstract &Abstract::close() {
 	child_data_->closed_=true;
-    return *( Input::TypeRepository<AbstractRecord>::get_instance().add_type( *this ) );
+    return *( Input::TypeRepository<Abstract>::get_instance().add_type( *this ) );
 }
 
 
-AbstractRecord &AbstractRecord::set_element_input(const Selection * element_input) {
+Abstract &Abstract::set_element_input(const Selection * element_input) {
 	if (element_input != NULL ) {
 		child_data_->element_input_selection = element_input;
 	}
@@ -624,26 +624,26 @@ AbstractRecord &AbstractRecord::set_element_input(const Selection * element_inpu
 }
 
 
-bool AbstractRecord::is_finished() const {
+bool Abstract::is_finished() const {
     return child_data_->finished_;
 }
 
 
-bool AbstractRecord::is_closed() const {
+bool Abstract::is_closed() const {
 	return child_data_->closed_;
 }
 
 
-string AbstractRecord::type_name() const {
+string Abstract::type_name() const {
     return child_data_->type_name_;
 }
 
 
-Default &AbstractRecord::get_selection_default() const {
+Default &Abstract::get_selection_default() const {
 	return child_data_->selection_default_;
 }
 
-bool AbstractRecord::have_default_descendant() const {
+bool Abstract::have_default_descendant() const {
 	// obligatory value if default is not set, see @p selection_default_
     if ( !child_data_->selection_default_.is_obligatory() )  {
         if ( child_data_->selection_default_.has_value_at_declaration() ) {
@@ -655,8 +655,8 @@ bool AbstractRecord::have_default_descendant() const {
 
 
 
-TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
-	AbstractRecord abstract = this->deep_copy();
+TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPair> vec) const {
+	Abstract abstract = this->deep_copy();
 	ParameterMap parameter_map;
 
 	// Set close flag - add_child method required closed child_data
@@ -677,13 +677,13 @@ TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<Param
 	type_stream << "\"" << this->content_hash() << "\"";
 	abstract.add_attribute("generic_type", type_stream.str());
 
-	return std::make_pair( boost::make_shared<AbstractRecord>(abstract.close()), parameter_map );
+	return std::make_pair( boost::make_shared<Abstract>(abstract.close()), parameter_map );
 }
 
 
-AbstractRecord AbstractRecord::deep_copy() const {
-	AbstractRecord abstract = AbstractRecord();
-	abstract.child_data_ =  boost::make_shared<AbstractRecord::ChildData>(*this->child_data_);
+Abstract Abstract::deep_copy() const {
+	Abstract abstract = Abstract();
+	abstract.child_data_ =  boost::make_shared<Abstract::ChildData>(*this->child_data_);
 	abstract.child_data_->closed_ = false;
 	abstract.child_data_->finished_ = false;
 	abstract.child_data_->list_of_childs.clear();
@@ -693,11 +693,11 @@ AbstractRecord AbstractRecord::deep_copy() const {
 }
 
 
-AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
+Abstract::ChildDataIter Abstract::begin_child_data() const {
     return child_data_->list_of_childs.begin();
 }
 
-AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
+Abstract::ChildDataIter Abstract::end_child_data() const {
     return child_data_->list_of_childs.end();
 }
 
@@ -706,8 +706,8 @@ AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
  * implementation of AdHocAbstractRecord
  */
 
-AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
-: AbstractRecord("Derived AdHocAbstractRecord", "This description doesn't have print out.")
+AdHocAbstractRecord::AdHocAbstractRecord(const Abstract &ancestor)
+: Abstract("Derived AdHocAbstractRecord", "This description doesn't have print out.")
 {
 	parent_data_ = ancestor.child_data_;
 	parent_name_ = ancestor.type_name();
@@ -726,7 +726,7 @@ AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
 
 AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 {
-	AbstractRecord::add_child(subrec);
+	Abstract::add_child(subrec);
 
 	return *this;
 }
@@ -737,7 +737,7 @@ bool AdHocAbstractRecord::finish(bool is_generic)
 	if (child_data_->finished_) return true;
 
 	if (tmp_ancestor_ != 0) {
-		const_cast<AbstractRecord *>(tmp_ancestor_)->finish(is_generic);
+		const_cast<Abstract *>(tmp_ancestor_)->finish(is_generic);
 
         parent_data_ = tmp_ancestor_->child_data_;
         parent_name_ = tmp_ancestor_->type_name();
@@ -759,12 +759,12 @@ bool AdHocAbstractRecord::finish(bool is_generic)
 	    unconstructed_childs_.pop_front();
 	}
 
-	for (AbstractRecord::ChildDataIter it = parent_data_->list_of_childs.begin(); it != parent_data_->list_of_childs.end(); ++it) {
+	for (Abstract::ChildDataIter it = parent_data_->list_of_childs.begin(); it != parent_data_->list_of_childs.end(); ++it) {
 	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), (*it).type_name());
 	    child_data_->list_of_childs.push_back(*it);
 	}
 
-	return AbstractRecord::finish(is_generic);
+	return Abstract::finish(is_generic);
 }
 
 

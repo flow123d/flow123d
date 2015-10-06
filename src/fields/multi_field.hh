@@ -34,7 +34,7 @@ namespace IT=Input::Type;
  *  - implement set_from_input
  *  - implement set_Time
  *
- *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of AbstractRecords
+ *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of Abstracts
  *    simplest solution - test that in EqDataBase and have more methods in FieldCommonBase, or somehow detach input handling from
  *    Fields
  *
@@ -69,7 +69,7 @@ public:
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::AbstractRecord &get_input_type() override;
+    IT::Abstract &get_input_type() override;
 
     IT::Record &get_multifield_input_type() override;
 

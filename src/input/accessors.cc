@@ -140,8 +140,8 @@ std::string Address::make_full_address() const {
         	input_type = it->type_.get();
         	i--;
         } else
-		if (typeid(*input_type) == typeid(Type::AbstractRecord)) {
-			const Type::AbstractRecord * a_rec = static_cast<const Type::AbstractRecord *>(input_type);
+		if (typeid(*input_type) == typeid(Type::Abstract)) {
+			const Type::Abstract * a_rec = static_cast<const Type::Abstract *>(input_type);
 			const StorageString * storage_type = static_cast<const StorageString *>(storage->get_item(0));
 			input_type = & a_rec->get_descendant(storage_type->get_string());
 		} else
@@ -218,7 +218,7 @@ AbstractRecord::AbstractRecord(const AbstractRecord &rec)
 
 
 
-AbstractRecord::AbstractRecord(const Address &address, const Type::AbstractRecord type)
+AbstractRecord::AbstractRecord(const Address &address, const Type::Abstract type)
 : record_type_(type), address_(address)
 {
 	if (address.storage_head()->is_null())

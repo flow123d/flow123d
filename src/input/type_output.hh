@@ -83,15 +83,15 @@ protected:
     /// Gets description of the given record type.
     const string & get_record_description(const Record *rec);
     /// Gets description of the given abstract type.
-    const string & get_abstract_description(const AbstractRecord *a_rec);
+    const string & get_abstract_description(const Abstract *a_rec);
     /// Gets record key for given index
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
     /// Gets range of integer
     void get_integer_bounds(Integer integer, int &lower , int &upper );
     /// Gets range of double
     void get_double_bounds(Double dbl, double &lower , double &upper );
-    /// Gets pointer of parent AbstractRecord for given Record
-    void get_parent_vec(Record rec, std::vector< boost::shared_ptr<AbstractRecord> > &parent_vec);
+    /// Gets pointer of parent Abstract for given Record
+    void get_parent_vec(Record rec, std::vector< boost::shared_ptr<Abstract> > &parent_vec);
     /// Gets pointer of inner type for given Array
     void get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type);
     /// Gets values of default for given record key
@@ -101,13 +101,13 @@ protected:
     /// Gets parent_name_ of the given AdHocAbstractRecord type.
     const string & get_adhoc_parent_name(const AdHocAbstractRecord *a_rec);
     /// Gets iterator to begin of parent_data_ of the given AdHocAbstractRecord type.
-    AbstractRecord::ChildDataIter get_adhoc_parent_data(const AdHocAbstractRecord *a_rec);
+    Abstract::ChildDataIter get_adhoc_parent_data(const AdHocAbstractRecord *a_rec);
 
 
     /// Gets pointer of inner data for given Record
     const void * get_record_data(const Record *rec);
-    /// Gets pointer of inner data for given AbstractRecord
-    const void * get_abstract_record_data(const AbstractRecord *a_rec);
+    /// Gets pointer of inner data for given Abstract
+    const void * get_abstract_record_data(const Abstract *a_rec);
     /// Gets pointer of inner data for given Selection
     const void * get_selection_data(const Selection *sel);
     /// Gets pointer of inner data for given Array
@@ -131,9 +131,9 @@ protected:
      */
     virtual void print_impl(ostream& stream, const Array *type, unsigned int depth) = 0;
     /**
-     * Implements printout of AbstractRecord @p type
+     * Implements printout of Abstract @p type
      */
-    virtual void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) = 0;
+    virtual void print_impl(ostream& stream, const Abstract *type, unsigned int depth) = 0;
     /**
      * Implements printout of AdHocAbstractRecord @p type
      */
@@ -299,8 +299,8 @@ protected:
 /**
  * @brief Class for create text documentation
  *
- * Record, AbstractRecord and Selection are represented by block of text that contains type name, name, description
- * and count and list of keys (for Record), descendants (for AbstractRecord) or values (for Selection).
+ * Record, Abstract and Selection are represented by block of text that contains type name, name, description
+ * and count and list of keys (for Record), descendants (for Abstract) or values (for Selection).
  *
  * In list are displayed information about subtypes, e.g. type name, description, value, range of numeric values etc.
  *
@@ -314,7 +314,7 @@ protected:
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
-    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const Abstract *type, unsigned int depth);
     void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
 	void print_impl(ostream& stream, const Integer *type, unsigned int depth);
@@ -364,7 +364,7 @@ protected:
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
-    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const Abstract *type, unsigned int depth);
     void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
 	void print_impl(ostream& stream, const Integer *type, unsigned int depth);
@@ -417,7 +417,7 @@ protected:
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
-    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const Abstract *type, unsigned int depth);
     void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
     void print_impl(ostream& stream, const Integer *type, unsigned int depth);
@@ -479,7 +479,7 @@ protected:
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
-    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const Abstract *type, unsigned int depth);
     void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
     void print_impl(ostream& stream, const Integer *type, unsigned int depth);
@@ -489,8 +489,8 @@ protected:
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
 
 
-    /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
-    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    /// Print all keys of Abstract type or AdHocAbstractRecord type
+    void print_abstract_record_keys(ostream& stream, const Abstract *type, unsigned int depth);
 };
 
 

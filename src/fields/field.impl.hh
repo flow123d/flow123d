@@ -98,7 +98,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
+it::Abstract &Field<spacedim,Value>::get_input_type() {
 	if (is_enum_valued) {
 		return make_input_tree();
 	} else {
@@ -120,7 +120,7 @@ it::Record &Field<spacedim,Value>::get_multifield_input_type() {
 
 /// ---------- Helper function template for make_input_tree method
 template <class FieldBaseType>
-IT::AbstractRecord & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::true_type&)
+IT::Abstract & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::true_type&)
 {
     ASSERT( sel != nullptr,
     		"NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
@@ -129,7 +129,7 @@ IT::AbstractRecord & get_input_type_resolution(const Input::Type::Selection *sel
 
 
 template <class FieldBaseType>
-IT::AbstractRecord & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::false_type&)
+IT::Abstract & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::false_type&)
 {
     return FieldBaseType::get_input_type(nullptr);
 }
@@ -139,7 +139,7 @@ IT::AbstractRecord & get_input_type_resolution(const Input::Type::Selection *sel
 
 
 template<int spacedim, class Value>
-it::AbstractRecord & Field<spacedim,Value>::make_input_tree() {
+it::Abstract & Field<spacedim,Value>::make_input_tree() {
 	ASSERT(is_enum_valued,
 			"Can not use make_input_tree() for non-enum valued fields, use get_inout_type() instead.\n" );
     return get_input_type_resolution<FieldBaseType>(

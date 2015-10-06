@@ -148,7 +148,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
     if (typeid(*type) == typeid(Type::Selection)) {
         return make_storage(p, static_cast<const Type::Selection *>(type) );
     } else {
-    	const Type::AbstractRecord * abstract_record_type = dynamic_cast<const Type::AbstractRecord *>(type);
+    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
     	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
 
         const Type::String * string_type = dynamic_cast<const Type::String *>(type);
@@ -265,16 +265,16 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 
 
 
-StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Abstract *abstr_rec)
 {
 	if ( p.is_record_type() ) {
 
 		string descendant_name = p.get_descendant_name();
 		if ( descendant_name == "" ) {
 			if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
+				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in Abstract.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
 			} else { // auto conversion
-				return abstract_rec_automatic_conversion(p, abstr_rec);
+				return abstract_automatic_conversion(p, abstr_rec);
 			}
 		} else {
 			try {
@@ -289,7 +289,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::AbstractRec
 			THROW( ExcInputError() << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ")
 				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
 		} else { // auto conversion
-			return abstract_rec_automatic_conversion(p, abstr_rec);
+			return abstract_automatic_conversion(p, abstr_rec);
 		}
 	}
 
@@ -298,12 +298,12 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::AbstractRec
 
 
 
-StorageBase * ReaderToStorage::abstract_rec_automatic_conversion(PathBase &p, const Type::AbstractRecord *abstr_rec)
+StorageBase * ReaderToStorage::abstract_automatic_conversion(PathBase &p, const Type::Abstract *abstr_rec)
 {
     // perform automatic conversion
     const Type::Record *default_child = abstr_rec->get_default_descendant();
     if (! default_child) THROW(ExcInputError()
-    		<< EI_Specification("Auto conversion of AbstractRecord not allowed.\n")
+    		<< EI_Specification("Auto conversion of Abstract not allowed.\n")
     		<< EI_ErrorAddress(p.as_string())
     		<< EI_InputType(abstr_rec->desc())
     		);
@@ -478,11 +478,11 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
     	return tmp_storage.storage_;
 		*/
 
-        // an auto-convertible AbstractRecord can be initialized form default value
-    	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
+        // an auto-convertible Abstract can be initialized form default value
+    	const Type::Abstract *a_record = dynamic_cast<const Type::Abstract *>(type);
     	if (a_record != NULL ) {
     		ASSERT( a_record->get_selection_default().has_value_at_declaration(),
-    				"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", type->type_name().c_str() );
+    				"Can not initialize (non-auto-convertible) Abstract '%s' by default value\n", type->type_name().c_str() );
             return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
         } else
         if (typeid(*type) == typeid(Type::Record) ) {

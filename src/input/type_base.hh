@@ -137,7 +137,7 @@ public:
 
 
     /**
-     * Finish method. Finalize construction of "Lazy types": Record, Selection, AbstractRecord, and Array.
+     * Finish method. Finalize construction of "Lazy types": Record, Selection, Abstract and Array.
      * These input types are typically defined by means
      * of static variables, whose order of initialization is not known a priori. Since e.g. a Record can link to other
      * input types through its keys, these input types cannot be accessed directly at the initialization phase.
@@ -245,7 +245,7 @@ class Selection;
  * @brief Class for declaration of inputs sequences.
  *
  * The type is fully specified after its constructor is called. All elements of the Array has same type, however you
- * can use elements of AbstractRecord.
+ * can use elements of Abstract.
  *
  * If you not disallow Array size 1, the input reader will try to convert any other type
  * on input into array with one element, e.g.

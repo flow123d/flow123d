@@ -7,8 +7,8 @@
 
 using namespace Input::Type;
         
-AbstractRecord & ReactionTerm::get_input_type() {
-	return AbstractRecord("ReactionTerm",
+Abstract & ReactionTerm::get_input_type() {
+	return Abstract("ReactionTerm",
 			"Equation for reading information about simple chemical reactions.")
 			.close();
 }

@@ -28,10 +28,10 @@ MultiField<spacedim, Value>::MultiField()
 
 
 template<int spacedim, class Value>
-it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
+it::Abstract &  MultiField<spacedim,Value>::get_input_type() {
 	ASSERT(false, "This method can't be used for MultiField");
 
-	static it::AbstractRecord a_rec = it::AbstractRecord();
+	static it::Abstract a_rec = it::Abstract();
 	return a_rec;
 }
 

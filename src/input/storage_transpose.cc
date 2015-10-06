@@ -59,7 +59,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
         ASSERT( typeid(*source_storage) == typeid(StorageInt), "Incompatible type of storage. For selection must be Integer!\n");
     	return source_storage->deep_copy();
     } else {
-    	const Type::AbstractRecord * abstract_record_type = dynamic_cast<const Type::AbstractRecord *>(source_type);
+    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(source_type);
     	if (abstract_record_type != NULL ) {
             return modify_storage(target_type, abstract_record_type, source_storage, index);
     	}
@@ -105,11 +105,11 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 }
 
 
-StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::AbstractRecord *source_type,
+StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::Abstract *source_type,
 		const StorageBase *source_storage, unsigned int index) {
 
-	const Type::AbstractRecord *target_arec = dynamic_cast<const Type::AbstractRecord *>(target_type);
-	ASSERT( target_arec != NULL, "Incompatible type of target type. Must be AbstractRecord!\n");
+	const Type::Abstract *target_arec = dynamic_cast<const Type::Abstract *>(target_type);
+	ASSERT( target_arec != NULL, "Incompatible type of target type. Must be Abstract!\n");
 	ASSERT( typeid(*source_storage) == typeid(StorageArray), "Incompatible type of storage. Must be Array!\n");
 
 	string descendant_name = source_storage->get_item(0)->get_string();

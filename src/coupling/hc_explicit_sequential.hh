@@ -47,7 +47,7 @@ class AdvectionProcessBase;
  */
 class CouplingBase {
 public:
-    static Input::Type::AbstractRecord & get_input_type();
+    static Input::Type::Abstract & get_input_type();
 
 };
 

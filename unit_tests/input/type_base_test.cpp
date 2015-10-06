@@ -351,7 +351,7 @@ TEST(InputTypeAttributes, base_test) {
 		.declare_key("step_iter", Integer(1, 100), Default::obligatory(), "Count of steps.")
 		.close();
 
-	static AbstractRecord a_rec = AbstractRecord("a_rec", "Step AbstractRecord")
+	static Abstract a_rec = Abstract("a_rec", "Step Abstract")
 		.close();
 	a_rec.add_child(rec1);
 	a_rec.add_child(rec2);

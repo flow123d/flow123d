@@ -61,8 +61,8 @@ static const Instance & get_generic_array(const Selection *sel) {
 			.close();
 }
 
-static AbstractRecord & get_abstract_type() {
-	return AbstractRecord("SomeAbstract", "Some Abstract.").close();
+static Abstract & get_abstract_type() {
+	return Abstract("SomeAbstract", "Some Abstract.").close();
 }
 
 static const Instance & get_generic_abstract(const Selection *sel) {
@@ -169,8 +169,8 @@ TEST(GenericType, generic_abstract) {
 
 	Record::KeyIter key_it = rec_with_abstracts.begin();
 	{
-		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(AbstractRecord) );
-		const AbstractRecord *abstract = static_cast<const AbstractRecord *>(key_it->type_.get());
+		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Abstract) );
+		const Abstract *abstract = static_cast<const Abstract *>(key_it->type_.get());
 		EXPECT_EQ( abstract->child_size(), 2 );
 		Record::KeyIter desc_it = abstract->get_descendant("Descendant1").begin();
 		EXPECT_EQ( typeid( *(desc_it->type_.get()) ), typeid(String) );
@@ -181,8 +181,8 @@ TEST(GenericType, generic_abstract) {
 
 	++key_it;
 	{
-		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(AbstractRecord) );
-		const AbstractRecord *abstract = static_cast<const AbstractRecord *>(key_it->type_.get());
+		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Abstract) );
+		const Abstract *abstract = static_cast<const Abstract *>(key_it->type_.get());
 		EXPECT_EQ( abstract->child_size(), 2 );
 		Record::KeyIter desc_it = abstract->get_descendant("Descendant1").begin();
 		EXPECT_EQ( typeid( *(desc_it->type_.get()) ), typeid(String) );

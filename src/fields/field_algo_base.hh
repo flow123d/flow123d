@@ -66,7 +66,7 @@ public:
        FieldAlgorithmBase(unsigned int n_comp=0);
 
        /**
-        * Returns template parameters as string in order to distinguish name of AbstractRecords
+        * Returns template parameters as string in order to distinguish name of Abstracts
         * for initialization of different instances of the FieldBase template.
         */
        static std::string template_name();
@@ -75,7 +75,7 @@ public:
         * Returns whole tree of input types for FieldBase with all descendants based on element input type (namely for FieldConstant)
         * given by element_input_type pointer.
         */
-       static Input::Type::AbstractRecord & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
+       static Input::Type::Abstract & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
 
        /**
         * This static method gets accessor to abstract record with function input,

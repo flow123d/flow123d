@@ -53,14 +53,14 @@ string FieldAlgorithmBase<spacedim, Value>::template_name() {
 
 
 template <int spacedim, class Value>
-Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
+Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
 	const it::Selection *element_input_sel = nullptr;
 	if (element_input_type != nullptr) {
 		const it::Selection * sel_type = dynamic_cast<const it::Selection *>(element_input_type);
 		if (sel_type != NULL ) element_input_sel = sel_type;
 	}
 
-	it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+	it::Abstract type= it::Abstract("Field:"+template_name(), "Abstract record for all time-space functions.")
     	.allow_auto_conversion("FieldConstant")
 		.set_element_input(element_input_sel)
 		.close();

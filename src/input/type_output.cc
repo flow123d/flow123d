@@ -86,7 +86,7 @@ const string & OutputBase::get_record_description(const Record *rec) {
 
 
 
-const string & OutputBase::get_abstract_description(const AbstractRecord *a_rec) {
+const string & OutputBase::get_abstract_description(const Abstract *a_rec) {
     return a_rec->child_data_->description_;
 }
 
@@ -99,7 +99,7 @@ void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &k
 
 
 
-void OutputBase::get_parent_vec(Record rec, std::vector< boost::shared_ptr<AbstractRecord> > &parent_vec) {
+void OutputBase::get_parent_vec(Record rec, std::vector< boost::shared_ptr<Abstract> > &parent_vec) {
 	parent_vec = rec.data_->parent_vec_;
 }
 
@@ -130,7 +130,7 @@ const string & OutputBase::get_adhoc_parent_name(const AdHocAbstractRecord *a_re
 }
 
 
-AbstractRecord::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstractRecord *a_rec) {
+Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstractRecord *a_rec) {
 	return a_rec->parent_data_->list_of_childs.begin();
 }
 
@@ -141,7 +141,7 @@ const void * OutputBase::get_record_data(const Record *rec) {
 	return rec->data_.get();
 }
 
-const void * OutputBase::get_abstract_record_data(const AbstractRecord *a_rec) {
+const void * OutputBase::get_abstract_record_data(const Abstract *a_rec) {
 	return a_rec->child_data_.get();
 }
 
@@ -162,8 +162,8 @@ const void * OutputBase::get_type_base_data(const TypeBase *type) {
 	if (typeid(*type) == typeid(Type::Array)) {
 		return ( static_cast<const Type::Array *>(type) )->data_.get();
 	} else
-	if (typeid(*type) == typeid(Type::AbstractRecord)) {
-		return ( static_cast<const Type::AbstractRecord *>(type) )->child_data_.get();
+	if (typeid(*type) == typeid(Type::Abstract)) {
+		return ( static_cast<const Type::Abstract *>(type) )->child_data_.get();
 	} else
 	if (typeid(*type) == typeid(Type::Selection)) {
 		return ( static_cast<const Type::Selection *>(type) )->data_.get();
@@ -181,8 +181,8 @@ void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth
 	if (typeid(*type) == typeid(Type::Array)) {
 		print_impl(stream, static_cast<const Type::Array *>(type), depth );
 	} else
-	if (typeid(*type) == typeid(Type::AbstractRecord)) {
-			print_impl(stream, static_cast<const Type::AbstractRecord *>(type), depth );
+	if (typeid(*type) == typeid(Type::Abstract)) {
+			print_impl(stream, static_cast<const Type::Abstract *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::AdHocAbstractRecord)) {
 		print_impl(stream, static_cast<const Type::AdHocAbstractRecord *>(type), depth );
@@ -338,7 +338,7 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 			stream << "" << "Record '" << type->type_name() << "'";
 
 			// parent record
-			/*boost::shared_ptr<AbstractRecord> parent_ptr;
+			/*boost::shared_ptr<Abstract> parent_ptr;
 			get_parent_ptr(*type, parent_ptr);
 			if (parent_ptr) {
 				stream << ", implementation of " << parent_ptr->type_name();
@@ -402,11 +402,11 @@ void OutputText::print_impl(ostream& stream, const Array *type, unsigned int dep
 }
 
 
-void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Abstract *type, unsigned int depth) {
 	// Print documentation of abstract record
 	switch (doc_type_) {
 	case key_record:
-		stream << "AbstractRecord '" << type->type_name() << "' with "<< type->child_size() << " descendants.";
+		stream << "Abstract '" << type->type_name() << "' with "<< type->child_size() << " descendants.";
 		break;
 	case full_record:
 		TypeBase::TypeHash hash=type->content_hash();
@@ -414,13 +414,13 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
 
             // header
             stream << endl;
-            stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
+            stream << "" << "Abstract '" << type->type_name() << "' with " << type->child_size() << " descendants.";
             write_description(stream, OutputBase::get_abstract_description( type ), 0);
             stream << endl;
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // descendants
             doc_type_ = key_record;
-            for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+            for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
             	size_setw_ = 0;
                 stream << setw(padding_size) << "";
                 stream << "" << "Record '" << (*it).type_name() << "'";
@@ -432,7 +432,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             // Full documentation of embedded record types.
             doc_type_ = full_record;
             if (depth_ == 0 || depth_ > depth) {
-                for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+                for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
                     print(stream, &*it, depth+1);
                 }
             }
@@ -447,13 +447,13 @@ void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, un
 	if (doc_type_ == key_record) {
 		stream << "AdHocAbstractRecord" << endl;
 		stream << setw(padding_size + size_setw_) << "";
-		stream << "#### Derived from AbstractRecord '" << get_adhoc_parent_name(type) << "', ";
+		stream << "#### Derived from Abstract '" << get_adhoc_parent_name(type) << "', ";
 		stream << "added Records: ";
 
 		{
-			AbstractRecord::ChildDataIter parent_it = get_adhoc_parent_data(type);
+			Abstract::ChildDataIter parent_it = get_adhoc_parent_data(type);
 			bool add_comma = false;
-			for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+			for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
 				if ((*it).type_name() == (*parent_it).type_name()) {
 					++parent_it;
 				} else {
@@ -586,7 +586,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 					write_description(stream, OutputBase::get_record_description(type), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					if ( (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord))
+					if ( (typeid(*(it->type_.get())) == typeid(Type::Abstract))
 							| (typeid(*(it->type_.get())) == typeid(Type::AdHocAbstractRecord)) ) {
 						reference_ = doc_flags_.get_reference(data_ptr) + "/" + "#" + it->key_;
 					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))
@@ -644,7 +644,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			get_array_type(*type, array_type);
 
 			if ( (typeid(*(array_type.get())) == typeid(Type::Record))
-					| (typeid(*(array_type.get())) == typeid(Type::AbstractRecord))
+					| (typeid(*(array_type.get())) == typeid(Type::Abstract))
 					| (typeid(*(array_type.get())) == typeid(Type::Array))) {
 				reference_ = doc_flags_.get_reference(data_ptr) + "/0";
 			}
@@ -691,7 +691,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 }
 
 
-void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const Abstract *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			stream << "# abstract record " << type->type_name();
@@ -707,7 +707,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			stream << setw(depth * padding_size) << "";
 			stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
 
-		    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+		    for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
 		    	reference_ = refs[0] + it->type_name() + "_" + refs[1];
 
 		    	key_name_ = it->type_name() + "_" + rec_name;
@@ -738,7 +738,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AdHocAbstractRecord *
 			stream << "# ad hoc abstract record";
 			break;
 		case full_record:
-			const AbstractRecord *a_rec = dynamic_cast<const Type::AbstractRecord *>(type);
+			const Abstract *a_rec = dynamic_cast<const Type::Abstract *>(type);
 			print_impl(stream, a_rec, depth);
 			break;
 	}
@@ -1021,7 +1021,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                    << internal::hyper_B("IT", type->type_name()) << "}";
 
             // parent record
-            /*boost::shared_ptr<AbstractRecord> parent_ptr;
+            /*boost::shared_ptr<Abstract> parent_ptr;
             get_parent_ptr(*type, parent_ptr);
             if (parent_ptr) {
                 stream << "{" << internal::hyper_link("IT", parent_ptr->type_name()) <<"}";
@@ -1104,7 +1104,7 @@ void OutputLatex::print_impl(ostream& stream, const Array *type, unsigned int de
 }
 
 
-void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputLatex::print_impl(ostream& stream, const Abstract *type, unsigned int depth) {
     // Print documentation of abstract record
     switch (doc_type_) {
     case key_record:
@@ -1128,7 +1128,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
 
             // descendants
             doc_type_ = key_record;
-            for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+            for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
                 stream << "\\Descendant{" << internal::hyper_link( "IT", (*it).type_name() ) << "}" << endl;
             }
             stream << "\\end{AbstractType}" << endl;
@@ -1137,7 +1137,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
             // Full documentation of embedded record types.
             doc_type_ = full_record;
             if (depth_ == 0 || depth_ > depth) {
-                for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+                for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
                     print(stream, &*it, depth+1);
                 }
             }
@@ -1155,8 +1155,8 @@ void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, u
         stream << "\\Ancestor{" << internal::hyper_link( "IT", get_adhoc_parent_name(type) ) << "}";
 
 		{
-			AbstractRecord::ChildDataIter parent_it = get_adhoc_parent_data(type);
-			for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+			Abstract::ChildDataIter parent_it = get_adhoc_parent_data(type);
+			for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
 				if ((*it).type_name() == (*parent_it).type_name()) {
 					++parent_it;
 				} else {
@@ -1296,7 +1296,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
             escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
 
     // parent records, implemented abstracts
-    std::vector< boost::shared_ptr<AbstractRecord> > parent_vec;
+    std::vector< boost::shared_ptr<Abstract> > parent_vec;
     get_parent_vec(*type, parent_vec);
     if (parent_vec.size()) {
         stream << "\"implements\" : [ ";
@@ -1373,13 +1373,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
 
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const Abstract *type, unsigned int depth) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
-    stream << "\"input_type\" : \"AbstractRecord\"," << endl;
+    stream << "\"input_type\" : \"Abstract\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
     type->write_attributes(stream);
     stream << "," << endl;
@@ -1389,7 +1389,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
     print_abstract_record_keys(stream, type, depth);
     stream << "},";
 
-    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+    for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
         print(stream, &*it, depth+1);
     }
 }
@@ -1406,10 +1406,10 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
     type->write_attributes(stream);
     stream << "," << endl;
 
-    print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type), depth);
+    print_abstract_record_keys(stream, dynamic_cast<const Type::Abstract *>(type), depth);
     stream << "},";
 
-    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+    for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
         print(stream, &*it, depth+1);
     }
 
@@ -1417,7 +1417,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
 
 
 
-void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstract *type, unsigned int depth) {
 
     // Print documentation of abstract record
     const Record * desc = type->get_default_descendant();
@@ -1427,7 +1427,7 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
         stream << "\"default_descendant\" : \"" << format_hash(desc->content_hash())  << "\"," << endl;
     }
     stream << "\"implementations\" : [" << endl;
-    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+    for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
         if (it != type->begin_child_data()) {
             stream << ",\n" << endl;
         }

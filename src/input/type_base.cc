@@ -76,7 +76,7 @@ string TypeBase::desc() const {
 void TypeBase::lazy_finish() {
 	Input::TypeRepository<Instance>::get_instance().finish();
 	Input::TypeRepository<Record>::get_instance().finish();
-	Input::TypeRepository<AbstractRecord>::get_instance().finish();
+	Input::TypeRepository<Abstract>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
 }
 
@@ -264,7 +264,7 @@ ARRAY_CONSTRUCT(FileName);
 ARRAY_CONSTRUCT(Selection);
 ARRAY_CONSTRUCT(Array);
 ARRAY_CONSTRUCT(Record);
-ARRAY_CONSTRUCT(AbstractRecord);
+ARRAY_CONSTRUCT(Abstract);
 ARRAY_CONSTRUCT(Parameter);
 ARRAY_CONSTRUCT(Instance);
 

@@ -13,10 +13,10 @@
 
 
 /**
- * Test Abstract Record.
+ * Test Abstract.
  */
 
-TEST(InputTypeAbstractRecord, inheritance) {
+TEST(InputTypeAbstract, inheritance) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -25,8 +25,8 @@ using namespace Input::Type;
        	.declare_key("a_val", String(), Default::obligatory(), "")
 		.close();
 
-    AbstractRecord a_rec = AbstractRecord("EqBase","Base of equation records.");
-    AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
+    Abstract a_rec = Abstract("EqBase","Base of equation records.");
+    Abstract &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
     EXPECT_EQ( a_rec, a_ref);
 
     // test derived type
@@ -51,7 +51,7 @@ using namespace Input::Type;
     // auto conversion - default value for TYPE
     EXPECT_EQ("EqDarcy", a_rec.get_selection_default().value() );
     // no more allow_auto_conversion for a_rec
-    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed.");
+    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the Abstract 'EqBase' is closed.");
 
     a_rec.finish();
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
@@ -82,10 +82,10 @@ using namespace Input::Type;
 
 
     // check of correct auto conversion value
-    AbstractRecord x = AbstractRecord("AR","")
+    Abstract x = Abstract("AR","")
     	.allow_auto_conversion("BR")
 		.close();
-    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
+    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of Abstract 'AR'.");
 
 }
 
@@ -103,7 +103,7 @@ public:
 	static const IT::Record & get_rec();
 	static const IT::Record & get_in_rec1();
 	static const IT::Record & get_in_rec2();
-	static const IT::AbstractRecord & get_ancestor();
+	static const IT::Abstract & get_ancestor();
 	static const IT::AdHocAbstractRecord & get_adhoc_1();
 	static const IT::AdHocAbstractRecord & get_adhoc_2();
 
@@ -140,8 +140,8 @@ const IT::AdHocAbstractRecord & AdHocDataTest::get_adhoc_2() {
 		.add_child(AdHocDataTest::get_in_rec2());
 }
 
-const IT::AbstractRecord & AdHocDataTest::get_ancestor() {
-	return IT::AbstractRecord("Ancestor","Base of equation records.").close();
+const IT::Abstract & AdHocDataTest::get_ancestor() {
+	return IT::Abstract("Ancestor","Base of equation records.").close();
 }
 
 const IT::Record & AdHocDataTest::get_in_rec2() {

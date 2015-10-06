@@ -496,7 +496,7 @@ TEST_F(InputReaderToStorageTest, Record) {
 */
 /*
     {
-        static Type::AbstractRecord abstr("Abstract", "");
+        static Type::Abstract abstr("Abstract", "");
         abstr.finish();
 
         static Type::Record lower( "Lower", "");
@@ -546,7 +546,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
        	.declare_key("a_val", Type::String(), Type::Default::obligatory(), "")
 		.close();
 
-    static Type::AbstractRecord a_rec = Type::AbstractRecord("EqBase","Base of equation records.")
+    static Type::Abstract a_rec = Type::Abstract("EqBase","Base of equation records.")
     	.close();
 
     static Type::Record b_rec = Type::Record("EqDarcy","")
@@ -621,7 +621,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
     {   // Missing TYPE
         stringstream ss("{ c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Missing key 'TYPE' in AbstractRecord.");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Missing key 'TYPE' in Abstract.");
 
     }
 
@@ -638,7 +638,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
     }
 
     { // auto conversion
-       Type::AbstractRecord ar = Type::AbstractRecord("AR","")
+       Type::Abstract ar = Type::Abstract("AR","")
          .allow_auto_conversion("BR")
          .close();
        Type::Record br = Type::Record("BR","")
@@ -690,8 +690,8 @@ const string input_json_multiple_inheritance = R"JSON(
 TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	Type::AbstractRecord a_rec1 = Type::AbstractRecord("Base1", "Base of equation records.").close();
-	Type::AbstractRecord a_rec2 = Type::AbstractRecord("Base2", "Other base of equation records.").close();
+	Type::Abstract a_rec1 = Type::Abstract("Base1", "Base of equation records.").close();
+	Type::Abstract a_rec2 = Type::Abstract("Base2", "Other base of equation records.").close();
 
 	Type::Record rec_a = Type::Record("Desc_A", "First descendant")
 			.derive_from(a_rec1)
@@ -752,7 +752,7 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
     c_rec.declare_key("c_val", Type::Integer(), "");
     c_rec.finish();
 
-    static Type::AbstractRecord a_rec("EqBase","Base of equation records.");
+    static Type::Abstract a_rec("EqBase","Base of equation records.");
     static Type::AdHocAbstractRecord ah_rec(a_rec);
     ah_rec.add_child(b_rec);
     ah_rec.add_child(c_rec);
@@ -783,7 +783,7 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 
     {   // Missing TYPE
         stringstream ss("{ b_val=4, a_val=\"Some text\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "Missing key 'TYPE' in AbstractRecord.");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "Missing key 'TYPE' in Abstract.");
     }
 
     {   // Wrong derived value type
