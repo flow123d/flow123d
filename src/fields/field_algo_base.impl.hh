@@ -48,7 +48,7 @@ FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 
 template <int spacedim, class Value>
 string FieldAlgorithmBase<spacedim, Value>::template_name() {
-    return boost::str(boost::format("R%i") % spacedim );
+	return boost::str(boost::format("R%i -> %s") % spacedim % Value::type_name() );
 }
 
 
@@ -58,7 +58,6 @@ Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 	return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
 			.root_of_generic_subtree()
-			.set_generic_content_hash( Value::get_input_type().content_hash() )
 			.close();
 }
 

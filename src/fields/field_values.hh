@@ -194,13 +194,15 @@ public:
     const static int NRows_ = NRows;
     const static int NCols_ = NCols;
 
-    static std::string type_name() { return boost::str(boost::format("%s[%d,%d]") % internal::type_name_( ET() ) % NRows % NCols); }
+    static std::string type_name() { return boost::str(boost::format("R[%d,%d]") % NRows % NCols); }
     static IT::Array get_input_type() {
-		if (NRows == NCols)
+		if (NRows == NCols) {
 			// for square tensors allow initialization by diagonal vector, etc.
 			return IT::Array( IT::Array( IT::Parameter("element_input_type"), 1), 1 );
-		else
+		}
+		else {
 			return IT::Array( IT::Array( IT::Parameter("element_input_type"), NCols, NCols), NRows, NRows );
+		}
 
     }
 
@@ -301,7 +303,7 @@ public:
     const static int NRows_ = 1;
     const static int NCols_ = 1;
 
-    static std::string type_name() { return boost::str(boost::format("%s") % internal::type_name_( ET() ) ); }
+    static std::string type_name() { return "R"; }
     static IT::Parameter get_input_type()
     {
         return IT::Parameter("element_input_type");
@@ -351,7 +353,7 @@ public:
     const static int NCols_ = 1;
 
 
-    static std::string type_name() { return boost::str(boost::format("%s[n]") % internal::type_name_( ET() ) ); }
+    static std::string type_name() { return "R[n]"; }
     static IT::Array get_input_type() {
         return IT::Array( IT::Parameter("element_input_type"), 1);
     }
@@ -412,7 +414,7 @@ public:
     const static int NCols_ = 1;
 
 
-    static std::string type_name() { return boost::str(boost::format("%s[%d]") % internal::type_name_( ET() ) % NRows ); }
+    static std::string type_name() { return boost::str(boost::format("R[%d]") % NRows ); }
     static IT::Array get_input_type() {
         return IT::Array( IT::Parameter("element_input_type"), 1, NRows);
     }
