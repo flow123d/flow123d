@@ -1,12 +1,6 @@
 ﻿Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
 
-Authors of this software are noted on project web pages.
-
-Please make a following refer to Flow123d on your project site if you use the
-program for any purpose, especially for academic research:
-
-Flow123d, Research Centre:
-Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+Full list of authors can be found in reference manual.
 
 -------------------------------------------------------------------------------
 
@@ -36,6 +30,7 @@ http://creativecommons.org/licenses/by-nc-sa/3.0/cz
 Plné znění GPL3 licence v češtině:
 http://creativecommons.org/licenses/by-nc-sa/3.0/cz/legalcode
 
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 PETSC COPYRIGHT NOTIFICATION

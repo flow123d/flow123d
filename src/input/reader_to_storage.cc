@@ -278,8 +278,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::AbstractRec
 			}
 		} else {
 			try {
-				unsigned int descendant_index = (unsigned int)abstr_rec->get_type_selection().name_to_int( descendant_name );
-				return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
+				return make_storage(p, &( abstr_rec->get_descendant(descendant_name) ) );
 			} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
 				THROW( ExcInputError() << EI_Specification("Wrong value '" + descendant_name + "' of the Selection.")
 						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(abstr_rec->get_type_selection().desc()) );

@@ -90,11 +90,6 @@ string Selection::type_name() const {
 }
 
 
-string Selection::full_type_name() const {
-   return data_->type_name_;
-}
-
-
 
 bool Selection::operator==(const TypeBase &other) const {
     return typeid(*this) == typeid(other) && (type_name() == static_cast<const Selection *>(&other)->type_name());
