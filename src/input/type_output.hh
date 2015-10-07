@@ -12,7 +12,6 @@
 #include "input/type_base.hh"
 #include "input/type_record.hh"
 #include "input/type_generic.hh"
-#include <boost/regex.hpp>
 
 
 namespace Input {
@@ -260,29 +259,6 @@ public:
     }
 
 	ostream& print(ostream& stream) override;
-
-    /**
-     * @brief Simple internal class for storing JSON description rewrite rule
-     */
-    class RewriteRule {
-        public:
-            /** boost regex regular expression */
-            boost::regex search;
-
-            /** simple string replacement */
-            std::string replacement;
-
-            /**
-             * Constructor
-             * @param _search boost::regex regular expression match pattern
-             * @param _replacement std::string string _replacement
-             */
-            RewriteRule (boost::regex _search, std::string _replacement):
-                search(_search),
-                replacement(_replacement) {
-
-            };
-    };
 
 
 protected:

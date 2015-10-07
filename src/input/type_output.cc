@@ -12,6 +12,7 @@
 
 #include <string>
 #include <limits>
+#include <boost/regex.hpp>
 
 namespace Input {
 namespace Type {
@@ -414,22 +415,22 @@ std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
 
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
-    static OutputJSONMachine::RewriteRule rewrite_rules[] = {
-        // replace single slash with two slashes 
-        OutputJSONMachine::RewriteRule (boost::regex("\\\\"), "\\\\\\\\"),
-        // replace quote with slash quote
-        OutputJSONMachine::RewriteRule (boost::regex("\\\""), "\\\\\""),
-        // replace special chars with escaped slash + special chars
-        OutputJSONMachine::RewriteRule (boost::regex("\\n"), "\\\\n"),
-        OutputJSONMachine::RewriteRule (boost::regex("\\t"), "\\\\t"),
-        OutputJSONMachine::RewriteRule (boost::regex("\\r"), "\\\\r")
-    };
+	static std::vector< std::pair<boost::regex, std::string> > rewrite_rules = {
+	        // replace single slash with two slashes
+			{boost::regex("\\\\"), "\\\\\\\\"},
+	        // replace quote with slash quote
+			{boost::regex("\\\""), "\\\\\""},
+	        // replace special chars with escaped slash + special chars
+			{boost::regex("\\n"), "\\\\n"},
+			{boost::regex("\\t"), "\\\\t"},
+			{boost::regex("\\r"), "\\\\r"}
+	};
 
 
     std::string tmp = std::string(desc);
 
-    for (OutputJSONMachine::RewriteRule rewrite_rule : rewrite_rules) {
-        tmp = boost::regex_replace(tmp, rewrite_rule.search, rewrite_rule.replacement);
+    for (auto rewrite_rule : rewrite_rules) {
+        tmp = boost::regex_replace(tmp, rewrite_rule.first, rewrite_rule.second);
     }
 
     return tmp;
