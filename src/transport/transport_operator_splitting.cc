@@ -95,7 +95,7 @@ const int TransportOperatorSplitting::registrar =
 
 
 
-TransportCommon::TransportEqData::TransportEqData()
+TransportEqData::TransportEqData()
 {
 
 	ADD_FIELD(porosity, "Mobile porosity", "1");
@@ -118,13 +118,6 @@ TransportCommon::TransportEqData::TransportEqData()
 }
 
 
-TransportCommon::TransportCommon()
-{
-}
-
-TransportCommon::~TransportCommon()
-{
-}
 
 
 

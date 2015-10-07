@@ -76,10 +76,10 @@ class ConvectionTransport;
  * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
  *
  */
-class ConvectionTransport : public TransportCommon, public ConcentrationTransportBase {
+class ConvectionTransport : public ConcentrationTransportBase {
 public:
 
-    class EqData : public TransportCommon::TransportEqData {
+    class EqData : public TransportEqData {
     public:
         static const Input::Type::Selection & get_output_selection();
 

@@ -42,7 +42,7 @@
 class ConcentrationTransportModel : public AdvectionDiffusionModel, public ConcentrationTransportBase {
 public:
 
-	class ModelEqData : public TransportCommon::TransportEqData {
+	class ModelEqData : public TransportEqData {
 	public:
 
 		/// Boundary conditions (Dirichlet) for concentrations.

@@ -118,40 +118,28 @@ protected:
 
 
 /**
- * Interface class for transport/heat equations with common declarations.
+ * Class with fields that are common to all transport models.
  */
-class TransportCommon {
+class TransportEqData : public FieldSet {
 public:
 
-    /**
-     * Class with fields that are common to all transport models.
-     */
-	class TransportEqData : public FieldSet {
-	public:
+	TransportEqData();
+	inline virtual ~TransportEqData() {};
 
-		TransportEqData();
-		inline virtual ~TransportEqData() {};
+	/// Mobile porosity
+	Field<3, FieldValue<3>::Scalar> porosity;
 
-		/// Mobile porosity
-		Field<3, FieldValue<3>::Scalar> porosity;
+	/// Pointer to DarcyFlow field cross_section
+	Field<3, FieldValue<3>::Scalar > cross_section;
 
-		/// Pointer to DarcyFlow field cross_section
-		Field<3, FieldValue<3>::Scalar > cross_section;
-
-		/// Concentration sources - density of substance source, only positive part is used.
-		Field<3, FieldValue<3>::Vector> sources_density;
-		/// Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc)
-		Field<3, FieldValue<3>::Vector> sources_sigma;
-		Field<3, FieldValue<3>::Vector> sources_conc;
-
-	};
-
-    TransportCommon();
-    virtual ~TransportCommon();
-
-
+	/// Concentration sources - density of substance source, only positive part is used.
+	Field<3, FieldValue<3>::Vector> sources_density;
+	/// Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc)
+	Field<3, FieldValue<3>::Vector> sources_sigma;
+	Field<3, FieldValue<3>::Vector> sources_conc;
 
 };
+
 
 
 

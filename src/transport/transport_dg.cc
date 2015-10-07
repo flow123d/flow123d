@@ -45,8 +45,8 @@
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
 
-FLOW123D_FORCE_LINK_IN_CHILD(soluteTransportDG);
-FLOW123D_FORCE_LINK_IN_CHILD(heatTransfer);
+FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);
+FLOW123D_FORCE_LINK_IN_CHILD(heatModel);
 
 
 
@@ -264,8 +264,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
-        : TransportCommon(),
-		  Model(init_mesh, in_rec),
+        : Model(init_mesh, in_rec),
           mass_matrix(0),
 		  input_rec(in_rec),
 		  allocation_done(false)

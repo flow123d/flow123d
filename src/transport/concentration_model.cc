@@ -49,7 +49,7 @@ using namespace Input::Type;
 
 
 ConcentrationTransportModel::ModelEqData::ModelEqData()
-: TransportCommon::TransportEqData()
+: TransportEqData()
 {
     *this+=bc_conc
             .name("bc_conc")

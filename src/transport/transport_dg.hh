@@ -136,7 +136,7 @@ private:
  *
  */
 template<class Model>
-class TransportDG : public TransportCommon, public Model
+class TransportDG : public Model
 {
 public:
 

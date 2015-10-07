@@ -29,8 +29,8 @@
  */
 
 #include "hc_explicit_sequential.hh"
-#include "flow/darcy_flow_mh.hh"
-#include "flow/darcy_flow_mh_output.hh"
+#include "flow/darcy_flow_interface.hh"
+//#include "flow/darcy_flow_mh_output.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -39,9 +39,9 @@
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
-FLOW123D_FORCE_LINK_IN_PARENT(soluteTransportDG);
+FLOW123D_FORCE_LINK_IN_PARENT(concentrationTransportModel);
 FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport);
-FLOW123D_FORCE_LINK_IN_PARENT(heatTransfer);
+FLOW123D_FORCE_LINK_IN_PARENT(heatModel);
 
 FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh);
 FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh);

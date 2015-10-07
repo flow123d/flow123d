@@ -93,7 +93,7 @@ const IT::Selection & ConvectionTransport::EqData::get_output_selection() {
 }
 
 
-ConvectionTransport::EqData::EqData() : TransportCommon::TransportEqData()
+ConvectionTransport::EqData::EqData() : TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
     	bc_conc.add_factory( OldBcdInput::instance()->trans_conc_factory );
@@ -110,8 +110,7 @@ ConvectionTransport::EqData::EqData() : TransportCommon::TransportEqData()
 
 
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
-: TransportCommon(),
-  ConcentrationTransportBase(init_mesh, in_rec),
+: ConcentrationTransportBase(init_mesh, in_rec),
   input_rec(in_rec),
   mh_dh(nullptr)
 {
