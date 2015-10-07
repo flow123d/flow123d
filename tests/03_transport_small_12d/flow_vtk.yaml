@@ -40,22 +40,24 @@ problem: !SequentialCoupling
   secondary_equation: !TransportOperatorSplitting
     balance:
       cumulative: true
-    input_fields:
-    - init_conc: 0
-      porosity: 0.25
-      r_set: ALL
-      sources_density:
-      - 0.25
-      - 0
-    - bc_conc:
-      - 0.0
-      - 1.0
-      r_set: BOUNDARY
+
     output_stream:
       file: transport.pvd
       format: !vtk
         variant: ascii
       time_step: 100000
+    transport: !ConvectionTransport
+      input_fields:
+      - init_conc: 0
+        porosity: 0.25
+        r_set: ALL
+        sources_density:
+        - 0.25
+        - 0
+      - bc_conc:
+        - 0.0
+        - 1.0
+        r_set: BOUNDARY
     reaction_term: !DualPorosity
       reaction_mobile: !SorptionMobile
         input_fields: &anchor1

@@ -50,20 +50,26 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       
-      input_fields= [
-        { r_set = "subset",
-          init_conc = 0,
-          porosity= 0.25
-        },
-        { region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test3.tbc"
-        }
-      ],
+
       
       substances = [
         "age", 
         "U235"
       ], 
+      
+      transport = { 
+        TYPE="ConvectionTransport",
+        
+        input_fields= [
+          { r_set = "subset",
+            init_conc = 0,
+            porosity= 0.25
+          },
+          { region = "IMPLICIT BOUNDARY",
+            transport_old_bcd_file = "./input/test3.tbc"
+          }
+        ]
+      },
       
       reaction_term = {
         TYPE = "DualPorosity",
