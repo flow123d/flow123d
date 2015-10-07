@@ -49,9 +49,8 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
-// TODO: move partitioning into mesh_ and remove this include
-//#include "flow/darcy_flow_mh.hh"
 #include "flow/old_bcd.hh"
+#include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
 
@@ -88,7 +87,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 }
 
 
-ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
+ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : TransportBase(init_mesh, in_rec)
 {
 	START_TIMER("ConvectionTransport");
@@ -134,18 +133,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	output_stream_ = OutputTime::create_output_stream(output_rec);
 	output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 	output_stream_->mark_output_times(*time_);
-
-    // initialization of balance object
-    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
-    if (it->val<bool>("balance_on"))
-    {
-    	balance_ = boost::make_shared<Balance>("mass", mesh_, el_ds, el_4_loc, *it);
-
-    	subst_idx = balance_->add_quantities(substances_.names());
-
-	    balance_->allocate(el_ds->lsize(), 1);
-    }
-
 }
 
 
@@ -465,10 +452,6 @@ void ConvectionTransport::zero_time_step()
     if (balance_ != nullptr)
     {
     	START_TIMER("Convection balance zero time step");
-    	balance_->units(
-    	        data_.cross_section.units()*UnitSI().md(1)
-    	        *data_.porosity.units()
-    	        *data_.conc_mobile.units());
 
     	create_transport_matrix_mpi();
     	set_boundary_conditions();
@@ -820,4 +803,10 @@ void ConvectionTransport::output_data() {
 		data_.output_fields.output(output_stream_);
 
     }
+}
+
+void ConvectionTransport::set_balance_object(boost::shared_ptr<Balance> balance)
+{
+	balance_ = balance;
+	subst_idx = balance_->add_quantities(substances_.names());
 }

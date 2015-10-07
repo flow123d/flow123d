@@ -108,6 +108,13 @@ public:
 private:
     void make_side_flux();
     void make_element_scalar();
+    
+    /** Computes fluxes at the barycenters of elements.
+     *  TODO:
+     *  We use FEValues to get fluxes at the barycenters of elements,
+     *  but we still use MHDofHandler. Once we are able to make output routines
+     *  parallel, we can use simply FieldFE for velocity here.
+     */
     void make_element_vector();
 
     void make_sides_scalar();

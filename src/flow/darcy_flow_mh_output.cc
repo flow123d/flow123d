@@ -38,7 +38,6 @@
 
 #include <system/global_defs.h>
 
-#include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
@@ -48,12 +47,15 @@
 #include "system/xio.h"
 
 #include "fem/dofhandler.hh"
+#include "fem/fe_values.hh"
+#include "fem/fe_rt.hh"
+#include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
 
 #include "mesh/partitioning.hh"
 
-#include "transport/mass_balance.hh"
+#include "coupling/balance.hh"
 
 
 namespace it = Input::Type;
@@ -165,11 +167,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
         }
 
     }
-
-	flow->balance_->units(
-	        get_output_fields().field_ele_pressure.units()
-	        *flow->data_.cross_section.units()*UnitSI().md(1)
-	        *flow->data_.storativity.units());
 }
 
 
@@ -243,31 +240,19 @@ void DarcyFlowMHOutput::make_element_scalar() {
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
-    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
-    MHFEValues fe_values;
+    // need to call this to create mh solution vector
+    darcy_flow->get_mh_dofhandler();
 
-    int i_side=0;
+    unsigned int i=0;
+    arma::vec3 flux_in_center;
     FOR_ELEMENTS(mesh_, ele) {
-        arma::vec3 flux_in_centre;
-        flux_in_centre.zeros();
+        flux_in_center = darcy_flow->assembly_[ele->dim() -1]->make_element_vector(ele);
 
-        fe_values.update(ele,
-        		darcy_flow->data_.anisotropy,
-        		darcy_flow->data_.cross_section,
-        		darcy_flow->data_.conductivity );
+        // place it in the sequential vector
+        for(unsigned int j=0; j<3; j++) ele_flux[3*i+j]=flux_in_center[j];
 
-        for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_centre += dh.side_flux( *(ele->side( li ) ) )
-                              * fe_values.RT0_value( ele, ele->centre(), li )
-                              / darcy_flow->data_.cross_section.value(ele->centre(), ele->element_accessor() );
-        }
-
-        for(unsigned int j=0; j<3; j++) 
-            ele_flux[3*i_side+j]=flux_in_centre[j];
-        
-        i_side++;
+        i++;
     }
-
 }
 
 
@@ -579,7 +564,6 @@ struct DiffData {
 
     double * solution;
     const MH_DofHandler * dh;
-    MHFEValues fe_values;
 
     //std::vector< std::vector<double>  > *ele_flux;
     std::vector<int> velocity_mask;
@@ -588,24 +572,24 @@ struct DiffData {
 };
 
 template <int dim>
-void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSolution &anal_sol,  DiffData &result) {
+void l2_diff_local(ElementFullIter &ele, 
+                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
+                   ExactSolution &anal_sol,  DiffData &result) {
 
+    fv_rt.reinit(ele);
     fe_values.reinit(ele);
-    result.fe_values.update(ele,
-    		result.data_->anisotropy,
-    		result.data_->cross_section,
-    		result.data_->conductivity);
+    
     double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
     double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
 
 
     // get coefficients on the current element
     vector<double> fluxes(dim+1);
-    vector<double> pressure_traces(dim+1);
+//     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
         fluxes[li] = result.dh->side_flux( *(ele->side( li ) ) );
-        pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
+//         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     double pressure_mean = result.dh->element_scalar(ele);
 
@@ -635,7 +619,7 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSoluti
         // compute postprocesed pressure
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
-            unsigned int oposite_node = (i_shape + dim) % (dim + 1);
+            unsigned int oposite_node = RefElement<dim>::oposite_node(i_shape);
 
             diff += fluxes[ i_shape ] *
                                (  arma::dot( q_point, q_point )/ 2
@@ -654,7 +638,7 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSoluti
         flux_in_q_point.zeros();
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
             flux_in_q_point += fluxes[ i_shape ]
-                              * result.fe_values.RT0_value( ele, q_point, i_shape )
+                              * fv_rt.shape_vector(i_shape, i_point)
                               / cross;
         }
 
@@ -708,6 +692,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     FEValues<1,3> fe_values_1d(mapp_1d, quad_1d,   fe_1d, update_JxW_values | update_quadrature_points);
     FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
+    
+    // FEValues for velocity.
+    FE_RT0<1,3> fe_rt1d;
+    FE_RT0<2,3> fe_rt2d;
+    FEValues<1,3> fv_rt1d(mapp_1d,quad_1d, fe_rt1d, update_values | update_quadrature_points);
+    FEValues<2,3> fv_rt2d(mapp_2d,quad_2d, fe_rt2d, update_values | update_quadrature_points);
 
     FilePath source_file( "analytical_module.py", FilePath::input_file);
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
@@ -760,10 +750,10 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	switch (ele->dim()) {
         case 1:
 
-            l2_diff_local<1>( ele, fe_values_1d, anal_sol_1d, result);
+            l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, result);
             break;
         case 2:
-            l2_diff_local<2>( ele, fe_values_2d, anal_sol_2d, result);
+            l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, result);
             break;
         }
     }

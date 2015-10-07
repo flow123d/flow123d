@@ -90,11 +90,6 @@ string Selection::type_name() const {
 }
 
 
-string Selection::full_type_name() const {
-   return data_->type_name_;
-}
-
-
 
 bool Selection::operator==(const TypeBase &other) const {
     return typeid(*this) == typeid(other) && (type_name() == static_cast<const Selection *>(&other)->type_name());
@@ -151,6 +146,13 @@ string Selection::key_list() const {
     ostringstream os;
     for(unsigned int i=0; i<size(); i++) os << "'" <<data_->keys_[i].key_ << "' ";
     return os.str();
+}
+
+
+
+// Implements @p TypeBase::make_instance.
+TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Selection>(*this), ParameterMap() );
 }
 
 

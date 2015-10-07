@@ -197,22 +197,22 @@
     defaults: flow123d-build
     builders:
       - shell: |
+          make -C flow123d clean-tests
           cd flow123d/build_tree
-          rm -rf _CPack_Packages         
-          make package_source
           rm -rf _CPack_Packages
           make -i package
           make post_package
+          rm -rf _CPack_Packages
+          make package_source
       - shell: |
           cd flow123d
           bin/prepare_to_publish.sh
       - inject:
           properties-file: prop.file
-          
     publishers:
       - cifs: 
-          site: 'bacula'
-          target: 'jan.brezina/public_html/flow123d_packages'
+          site: 'flow123d@intec'
+          target: '/packages/'
           source: build-${{GIT_BRANCH}}/publish_dir/**/*
           remove-prefix: build-${{GIT_BRANCH}}/publish_dir
 
@@ -261,7 +261,11 @@
       - build-name:
           name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
-      - shell: "cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
+      - shell:
+          # remove all build directories safe the latest five
+          rm -rf `ls -dt ./build-* |tail -n +6 `
+          cd flow123d
+          git checkout ${{GIT_BRANCH##origin/}}
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL

@@ -1,5 +1,5 @@
 /*
- * json_to_storage.cpp
+ * reader_to_storage_test.cpp
  *
  *  Created on: May 7, 2012
  *      Author: jb
@@ -12,19 +12,80 @@
 #include <flow_gtest.hh>
 #include <fstream>
 
-#include "input/json_to_storage.hh"
+
+#include "input/reader_to_storage.hh"
+#include "input/accessors.hh"
+#include "input/path_base.hh"
+#include "input/path_json.hh"
+#include "input/path_yaml.hh"
 
 using namespace std;
 
 using namespace Input;
 
-TEST(JSONPath, all) {
+TEST(PathJSON, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-    JSONPath::Node node;
-    json_spirit::read_or_throw( in_str, node);
-    JSONPath path(node);
+    ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/reader_to_storage_test.con").c_str());
+    PathJSON path(in_str);
+
+    { ostringstream os;
+    os << path;
+    EXPECT_EQ("/",os.str());
+    }
+
+    path.down(6);
+    { ostringstream os;
+    os << path;
+    EXPECT_EQ("/6",os.str());
+    }
+
+    path.down("a");
+    { ostringstream os;
+    os << path;
+    EXPECT_EQ("/6/a",os.str());
+    }
+    EXPECT_EQ(1,path.find_ref_node()->get_int_value() );
+
+    path.go_to_root();
+    path.down(6);
+    path.down("b");
+    EXPECT_EQ("ctyri",path.find_ref_node()->get_string_value() );
+}
+
+
+TEST(PathJSON, errors) {
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/reader_to_storage_test.con").c_str());
+
+    PathJSON path(in_str);
+    path.down(8);
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcRefOfWrongType,"has wrong type, should by string." );
+
+    path.go_to_root();
+    path.down(9); // "REF":"/5/10"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "index out of size of Array" );
+
+    path.go_to_root();
+    path.down(10); // "REF":"/6/../.."
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "can not go up from root" );
+
+    path.go_to_root();
+    path.down(11); // "REF":"/key"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "there should be Record" );
+
+    path.go_to_root();
+    path.down(12); // "REF":"/6/key"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "key 'key' not found" );
+}
+
+
+
+TEST(PathYAML, all) {
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/reader_to_storage_test.yaml").c_str());
+	PathYAML path(in_str);
 
     { ostringstream os;
     os << path;
@@ -43,44 +104,73 @@ TEST(JSONPath, all) {
     EXPECT_EQ("/6/a",os.str());
     }
 
-    string ref;
-    path.get_ref_from_head(ref);
-    EXPECT_EQ("../../7/b/c",ref);
-
+    path.up();
     { ostringstream os;
     os << path;
-    EXPECT_EQ("/6/a",os.str());
+    EXPECT_EQ("/6",os.str());
     }
 
-    EXPECT_EQ(1,path.find_ref_node(ref).head()->get_int() );
+    path.down("b");
+    { ostringstream os;
+    os << path;
+    EXPECT_EQ("/6/b",os.str());
+    }
 
-    path=path.find_ref_node("/6/b");
-    path.get_ref_from_head(ref);
-    EXPECT_EQ("/4", ref);
-    EXPECT_EQ("ctyri",path.find_ref_node(ref).head()->get_str() );
 }
 
 
-TEST(JSONPath, errors) {
+TEST(PathYAML, values) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-    JSONPath::Node node;
-    json_spirit::read_or_throw( in_str, node);
 
-    string ref;
-    JSONPath path(node);
-    path.down(8);
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/reader_to_storage_test.yaml").c_str());
+	PathYAML path(in_str);
 
-    EXPECT_THROW_WHAT( { path.get_ref_from_head(ref);} ,JSONPath::ExcRefOfWrongType,"has wrong type, should by string." );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/4");}, JSONPath::ExcReferenceNotFound, "there should be Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/5/10");}, JSONPath::ExcReferenceNotFound, "index out of size of Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/../..");}, JSONPath::ExcReferenceNotFound, "can not go up from root" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/key");}, JSONPath::ExcReferenceNotFound, "there should be Record" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/key");}, JSONPath::ExcReferenceNotFound, "key 'key' not found" );
+	path.down(0); // bool value
+	EXPECT_FALSE(path.get_bool_value());
+	EXPECT_THROW( { path.get_int_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_THROW( { path.get_double_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_STREQ("false", path.get_string_value().c_str());
+	path.up();
+
+	path.down(1); // int value
+	EXPECT_THROW( { path.get_bool_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_EQ(1, path.get_int_value());
+	EXPECT_FLOAT_EQ(1.0, path.get_double_value());
+	EXPECT_STREQ("1", path.get_string_value().c_str());
+	path.up();
+
+	path.down(3); // double value
+	EXPECT_THROW( { path.get_bool_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_THROW( { path.get_int_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_FLOAT_EQ(3.3, path.get_double_value());
+	EXPECT_STREQ("3.3", path.get_string_value().c_str());
+	path.up();
+
+	path.down(4); // string value
+	EXPECT_THROW( { path.get_bool_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_THROW( { path.get_int_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_THROW( { path.get_double_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_STREQ("ctyri", path.get_string_value().c_str());
+	path.up();
+
+	path.down(9); // int64 value
+	EXPECT_EQ(5000000000000, path.get_int_value());
+	path.up();
+
+	path.down(6); // record
+	std::set<std::string> set;
+	path.get_record_key_set(set);
+	EXPECT_EQ(2, set.size());
+	EXPECT_TRUE( set.find("a")!=set.end() );
+	EXPECT_TRUE( set.find("b")!=set.end() );
+	EXPECT_FALSE( set.find("c")!=set.end() );
+
+	path.down("b"); // reference
+	EXPECT_STREQ("ctyri", path.get_string_value().c_str());
 }
 
 
-class InputJSONToStorageTest : public testing::Test, public Input::JSONToStorage {
+class InputReaderToStorageTest : public testing::Test, public Input::ReaderToStorage {
 protected:
 
     virtual void SetUp() {
@@ -89,14 +179,14 @@ protected:
     };
 
     // overload parent class method in order to reset pointers
-    void read_stream(istream &in, const Type::TypeBase &root_type) {
+    void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
-    	JSONToStorage::read_stream(in,root_type);
+    	ReaderToStorage::read_stream(in, root_type, format);
     }
 };
 
-TEST_F(InputJSONToStorageTest, Integer) {
+TEST_F(InputReaderToStorageTest, Integer) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Integer int_type(1,10);
     Type::Integer any_int;
@@ -121,7 +211,7 @@ TEST_F(InputJSONToStorageTest, Integer) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, Double) {
+TEST_F(InputReaderToStorageTest, Double) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Double dbl_type(1.1,10.1);
     Type::Double any_double;
@@ -158,7 +248,7 @@ TEST_F(InputJSONToStorageTest, Double) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, Selection) {
+TEST_F(InputReaderToStorageTest, Selection) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Selection sel_type = Type::Selection("IntSelection")
     	.add_value(10,"ten","")
@@ -184,7 +274,7 @@ TEST_F(InputJSONToStorageTest, Selection) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, String) {
+TEST_F(InputReaderToStorageTest, String) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::String str_type;
 
@@ -201,7 +291,7 @@ TEST_F(InputJSONToStorageTest, String) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, Bool) {
+TEST_F(InputReaderToStorageTest, Bool) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Bool bool_type;
 
@@ -218,11 +308,19 @@ TEST_F(InputJSONToStorageTest, Bool) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, Array) {
+
+const string input_yaml_array = R"YAML(
+- 3.2
+- 4
+- 4.01
+)YAML";
+
+
+TEST_F(InputReaderToStorageTest, Array) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Array darr_type( Type::Double(3.1,4.1), 2,4);
 
-    {
+    {  //JSON format
         stringstream ss("[ 3.2, 4, 4.01 ]");
         read_stream(ss, darr_type);
 
@@ -232,9 +330,24 @@ TEST_F(InputJSONToStorageTest, Array) {
         EXPECT_EQ(4, storage_->get_item(1)->get_double() );
     }
 
-    {
+    {  //YAML format
+        stringstream ss( input_yaml_array );
+        read_stream(ss, darr_type, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(3, storage_->get_array_size());
+        EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
+        EXPECT_EQ(4, storage_->get_item(1)->get_double() );
+    }
+
+    {  //JSON format
         stringstream ss("[ 3.2 ]");
         EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Do not fit into size limits of the Array.");
+    }
+
+    {  //YAML format
+        stringstream ss("- 3.2");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type, FileFormat::format_YAML);} , ExcInputError, "Do not fit into size limits of the Array.");
     }
 
     {
@@ -274,14 +387,14 @@ TEST_F(InputJSONToStorageTest, Array) {
 }
 
 
-TEST_F(InputJSONToStorageTest, Record) {
+TEST_F(InputReaderToStorageTest, Record) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     static Type::Record rec_type = Type::Record( "SomeRec","desc.")
     	.declare_key("int_key", Type::Integer(0,5), Type::Default::obligatory(), "")
     	.declare_key("str_key", Type::String(), "")
 		.close();
 
-    {
+    { // JSON format
         stringstream ss("{ int_key=5 }");
         read_stream(ss, rec_type);
 
@@ -291,9 +404,24 @@ TEST_F(InputJSONToStorageTest, Record) {
         EXPECT_EQ(true, storage_->get_item(1)->is_null() );
     }
 
-    {
+    { // YAML format
+        stringstream ss("int_key: 5");
+        read_stream(ss, rec_type, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ(5, storage_->get_item(0)->get_int() );
+        EXPECT_EQ(true, storage_->get_item(1)->is_null() );
+    }
+
+    { // JSON format
         stringstream ss("{ str_key=\"ahoj\" }");
         EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Missing obligatory key 'int_key'.");
+    }
+
+    { // YAML format
+        stringstream ss("str_key: ahoj}");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type, FileFormat::format_YAML);} , ExcInputError, "Missing obligatory key 'int_key'.");
     }
 
     {
@@ -401,7 +529,16 @@ TEST_F(InputJSONToStorageTest, Record) {
 
 }
 
-TEST_F(InputJSONToStorageTest, AbstractRec) {
+
+const string input_yaml_abstract = R"YAML(
+!EqDarcy
+b_val: 10
+a_val: prime
+mesh: some.msh
+)YAML";
+
+
+TEST_F(InputReaderToStorageTest, AbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	static Type::Record copy_rec = Type::Record("Copy","")
@@ -418,7 +555,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     	.declare_key("b_val", Type::Integer(), "")
 		.close();
 
-    EXPECT_EQ(false, b_rec.is_finished());
+    EXPECT_FALSE(b_rec.is_finished());
 
     static Type::Record c_rec = Type::Record("EqTransp","")
     	.derive_from(a_rec)
@@ -446,7 +583,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(4, storage_->get_array_size());
-        EXPECT_EQ(0, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqDarcy", storage_->get_item(0)->get_string());
         EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
         EXPECT_EQ("prime", storage_->get_item(2)->get_string() );
         EXPECT_EQ(10, storage_->get_item(3)->get_int() );
@@ -458,10 +595,22 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(4, storage_->get_array_size());
-        EXPECT_EQ(1, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqTransp", storage_->get_item(0)->get_string());
         EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
         EXPECT_EQ(5.5, storage_->get_item(2)->get_double() );
         EXPECT_EQ(4, storage_->get_item(3)->get_int() );
+    }
+
+    {   //Try YAML correct type
+        stringstream ss(input_yaml_abstract);
+        read_stream(ss, a_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(4, storage_->get_array_size());
+        EXPECT_EQ("EqDarcy", storage_->get_item(0)->get_string());
+        EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
+        EXPECT_EQ("prime", storage_->get_item(2)->get_string() );
+        EXPECT_EQ(10, storage_->get_item(3)->get_int() );
     }
 
     {   // Wrong derived value type
@@ -501,21 +650,88 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
        ar.add_child(br);
        br.finish();
 
-       stringstream ss("20");
-       this->read_stream(ss, ar);
+       { // YAML format
+		   stringstream ss("20");
+		   this->read_stream(ss, ar, FileFormat::format_YAML);
 
-       EXPECT_NE((void *)NULL, storage_);
-       storage_->get_array_size();
-       EXPECT_EQ(3, storage_->get_array_size());
-       EXPECT_EQ(0, storage_->get_item(0)->get_int());
-       EXPECT_EQ(10, storage_->get_item(1)->get_int());
-       EXPECT_EQ(20, storage_->get_item(2)->get_int());
+		   EXPECT_NE((void *)NULL, storage_);
+		   storage_->get_array_size();
+		   EXPECT_EQ(3, storage_->get_array_size());
+		   EXPECT_EQ("BR", storage_->get_item(0)->get_string());
+		   EXPECT_EQ(10, storage_->get_item(1)->get_int());
+		   EXPECT_EQ(20, storage_->get_item(2)->get_int());
+       }
+
+       { // JSON format
+		   stringstream ss("20");
+		   this->read_stream(ss, ar);
+
+		   EXPECT_NE((void *)NULL, storage_);
+		   storage_->get_array_size();
+		   EXPECT_EQ(3, storage_->get_array_size());
+		   EXPECT_EQ("BR", storage_->get_item(0)->get_string());
+		   EXPECT_EQ(10, storage_->get_item(1)->get_int());
+		   EXPECT_EQ(20, storage_->get_item(2)->get_int());
+       }
     }
 
 
 }
 
-/*TEST_F(InputJSONToStorageTest, AdHocAbstractRec) {
+
+const string input_json_multiple_inheritance = R"JSON(
+{
+  primary = { TYPE="Desc_B", b_val=1 },
+  secondary = { TYPE="Desc_B", b_val=5 }
+}
+)JSON";
+
+
+TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	Type::AbstractRecord a_rec1 = Type::AbstractRecord("Base1", "Base of equation records.").close();
+	Type::AbstractRecord a_rec2 = Type::AbstractRecord("Base2", "Other base of equation records.").close();
+
+	Type::Record rec_a = Type::Record("Desc_A", "First descendant")
+			.derive_from(a_rec1)
+			.declare_key("a_val", Type::String(), Type::Default::obligatory(), "")
+			.close();
+	Type::Record rec_b = Type::Record("Desc_B", "Second descendant")
+			.derive_from(a_rec1)
+			.derive_from(a_rec2)
+			.declare_key("b_val", Type::Integer(), Type::Default::obligatory(), "")
+			.close();
+	Type::Record rec_c = Type::Record("Desc_C", "Third descendant")
+			.derive_from(a_rec2)
+			.declare_key("c_val", Type::Double(), Type::Default::obligatory(), "")
+			.close();
+
+	Type::Record root = Type::Record("problem", "Root record")
+			.declare_key("primary", a_rec1, Type::Default::obligatory(), "")
+			.declare_key("secondary", a_rec2, Type::Default::obligatory(), "")
+			.close();
+
+    {   // Try correct type
+        stringstream ss(input_json_multiple_inheritance);
+        read_stream(ss, root);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ("Desc_B", storage_->get_item(0)->get_item(0)->get_string());
+        EXPECT_EQ(1, storage_->get_item(0)->get_item(1)->get_int());
+
+        EXPECT_EQ(2, storage_->get_item(1)->get_array_size());
+        EXPECT_EQ("Desc_B", storage_->get_item(1)->get_item(0)->get_string());
+        EXPECT_EQ(5, storage_->get_item(1)->get_item(1)->get_int());
+    }
+
+}
+
+
+/*TEST_F(InputReaderToStorageTest, AdHocAbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     static Type::Selection sel_type("TYPE_selection");
@@ -576,21 +792,20 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     }
 } */
 
-TEST(InputJSONToStorageTest_external, get_root_interface) {
+TEST(InputReaderToStorageTest_external, get_root_interface) {
     static Type::Record one_rec = Type::Record("One","")
     	.declare_key("one",Input::Type::Integer(),"")
 		.close();
     one_rec.finish();
 
-    stringstream ss("{ one=1 }");
-    JSONToStorage json_reader(ss, one_rec);
+    ReaderToStorage json_reader("{ one=1 }", one_rec, FileFormat::format_JSON);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("one")) );
     //json_reader.get_storage()->print(cout);
 
 }
 
-TEST_F(InputJSONToStorageTest, default_values) {
+TEST_F(InputReaderToStorageTest, default_values) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     static Type::Selection sel_type = Type::Selection("tmp selection")
