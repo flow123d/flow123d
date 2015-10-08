@@ -37,6 +37,7 @@
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
+#include "la/distribution.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
@@ -167,6 +168,10 @@ Mesh::~Mesh() {
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
+
+    delete[] row_4_el;
+    delete[] el_4_loc;
+    delete el_ds;
 }
 
 
@@ -266,6 +271,13 @@ void Mesh::setup_topology() {
 
     region_db_.close();
     part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
+
+    // create parallel distribution and numbering of elements
+    int *id_4_old = new int[element.size()];
+    int i = 0;
+    FOR_ELEMENTS(this, ele) id_4_old[i++] = ele.index();
+    part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
+    delete[] id_4_old;
 }
 
 
