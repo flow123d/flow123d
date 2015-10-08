@@ -313,7 +313,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
-        balance_ = boost::make_shared<Balance>("water", mesh_, el_ds, el_4_loc, *it);
+        balance_ = boost::make_shared<Balance>("water", mesh_, *it);
         water_balance_idx_ = balance_->add_quantity("water_volume");
         balance_->allocate(rows_ds->lsize(), 1);
         balance_->units(UnitSI().m(3));

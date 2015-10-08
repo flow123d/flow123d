@@ -70,8 +70,6 @@ const Record & Balance::get_input_type() {
 
 Balance::Balance(const std::string &file_prefix,
 		const Mesh *mesh,
-		const Distribution *el_ds,
-		const int *el_4_loc,
 		const Input::Record &in_rec)
 	: 	  regions_(mesh->region_db()),
 	  	  initial_time_(),
@@ -105,9 +103,9 @@ Balance::Balance(const std::string &file_prefix,
 	}
 
 	// construct vector of regions of boundary edges
-    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    for (unsigned int loc_el = 0; loc_el < mesh->get_el_ds()->lsize(); loc_el++)
     {
-        Element *elm = mesh->element(el_4_loc[loc_el]);
+        Element *elm = mesh->element(mesh->get_el_4_loc()[loc_el]);
         if (elm->boundary_idx_ != nullptr)
         {
             FOR_ELEMENT_SIDES(elm,si)

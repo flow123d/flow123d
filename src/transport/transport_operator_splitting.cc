@@ -187,7 +187,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
   if (it->val<bool>("balance_on"))
   {
-	  balance_ = boost::make_shared<Balance>("mass", mesh_, el_distribution, el_4_loc, *it);
+	  balance_ = boost::make_shared<Balance>("mass", mesh_, *it);
 
 	  convection->set_balance_object(balance_);
 
