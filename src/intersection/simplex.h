@@ -33,6 +33,10 @@ namespace computeintersection {
  */
 template<int N> class Simplex;
 
+
+/**
+ * TODO: comment specialisation
+ */
 template<> class Simplex<0> {
 private:
 	//arma::vec3 coordinates;
@@ -67,8 +71,15 @@ public:
 	}
 };
 
+
+/**
+ * TODO: comment
+ */
 template<int N> class Simplex {
 private:
+    /**
+     * TODO: (idea - when used in new mesh) replace with references 
+     */
 	Simplex<N - 1> Simplices[N + 1];
 public:
 	inline Simplex(){};
@@ -99,6 +110,7 @@ public:
 		return Simplices[a];
 	};
 
+    ///TODO: convert to operator <<
 	inline void to_string(){
 		cout << "Simplex<" << N << ">:" << endl;
 		for (int i = 0; i < N + 1; i++) {

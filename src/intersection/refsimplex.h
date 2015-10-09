@@ -36,6 +36,8 @@ namespace computeintersection{
  *                                                         3        1,2,3      IN
  *
  *
+ * TODO:
+ * - comment all the members - i/o parameters
  */
 
 template<unsigned int dim>

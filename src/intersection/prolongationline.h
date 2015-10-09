@@ -15,6 +15,11 @@ namespace computeintersection{
 
 /**
  * Simple class defines indices of elements for later processing of computing intersection 2D-3D
+ * 
+ * TODO:
+ * - comment
+ * - split prolongationline into Prolongation2D (neighbor is 2D) and Prolongation3D (neighbor is 3D)
+ * - replace with struct, remove .cpp file
  */
 class ProlongationLine {
 private:

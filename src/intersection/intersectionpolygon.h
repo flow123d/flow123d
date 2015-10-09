@@ -17,6 +17,9 @@
 using namespace std;
 namespace computeintersection{
 
+    /**
+     * TODO: comment
+     */
 class IntersectionPolygon {
 
 	static const double epsilon;

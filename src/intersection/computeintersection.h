@@ -26,6 +26,9 @@ template<class A, class B> class ComputeIntersection {};
  * 	TŘÍDA PRO VÝPOČET SIMPLEX 1 - SIMPLEX 2
  * ****************************************************************/
 
+/**
+ * TODO: comment
+ */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
 
 
@@ -36,6 +39,7 @@ public:
 	inline ~ComputeIntersection() {};
 
 	void clear_all();
+    //TODO: why this is not done in constructor?
 	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
 	void init_plucker_to_compute();
 	void set_data(Simplex<1> *abs, Simplex<2> *triang);
@@ -72,6 +76,7 @@ private:
 	std::vector<Plucker *> plucker_coordinates_abscissa;
 	std::vector<Plucker *> plucker_coordinates_triangle;
 
+    //TODO: allocate at the top level intersection object, use NaN to indicate plucker products not computed yet
 	double *plucker_products[3];
 	bool computed;
 

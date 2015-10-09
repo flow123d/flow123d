@@ -23,7 +23,12 @@
 using namespace std;
 namespace computeintersection {
 
-
+/**
+* TODO: comment
+* 
+* clear functions duplicities
+* use only algotrithm 2 (with BIHTree)
+*/
 class InspectElements {
 
 	/* Possibly replace IntersectionLocal by index of ProlongationLine

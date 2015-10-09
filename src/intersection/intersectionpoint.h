@@ -20,6 +20,11 @@ namespace computeintersection{
  * intersections with additional info.
  *
  * Describe data attributes.
+ * 
+ * TODO: 
+ * - comment
+ * - comment template parameters M,N
+ * 
  */
 template<int N, int M> class IntersectionPoint {
 

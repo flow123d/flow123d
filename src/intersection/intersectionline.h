@@ -16,6 +16,9 @@
 using namespace std;
 namespace computeintersection{
 
+    /**
+     * TODO: comment
+     */
 class IntersectionLine{
 
 	std::vector<IntersectionPoint<1,3>> i_points;

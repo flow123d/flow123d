@@ -13,6 +13,12 @@ namespace computeintersection{
  * class creates plucker coordinates of the line.
  *
  * Class also can compute a product of two plucker coordinates.
+ * 
+ * TODO: 
+ * - is compute() used from outside ?
+ * - link to Plucker coords. definition
+ * - comment in Doxygen
+ * - explain creation
  */
 class Plucker{
 private:
@@ -57,6 +63,7 @@ public:
 		return coordinates;
 	};
 
+    ///TODO: convert to operator <<
 	void toString();
 };
 

@@ -6,6 +6,8 @@ namespace computeintersection{
 
 /**
  * Simple class defines indices of elements for later processing of computing intersection 1D-3D
+ * TODO:
+ * - replace with struct, remove .cpp file
  */
 class ProlongationPoint{
 

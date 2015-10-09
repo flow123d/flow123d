@@ -28,7 +28,9 @@ namespace computeintersection{
  * Have distinguished class for incomplete intersection polygon
  * (How it is related to ProlongationLine?)
  *
- *
+ *  TODO: 
+ * - move functions into class where they are used - probably into IntersectionPoint
+ * - remove these h and cpp files
  *
  */
 class IntersectionLocal {
@@ -54,16 +56,19 @@ public:
       * Interpoluje souřadnice na elementu o dimenzi nižší
       * (1 -> 2) nebo (2 -> 3)
       * Templetuji dimenzí, kterou chci a vkládám IP s druhou nižší dimenzí
+      * TODO: into constructor of IP
       * */
      template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-1> &IP){
 
         	arma::vec::fixed<d+1> interpolovane;
         	//cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-1 << "> na <" << sd << "," <<  d << ">" << endl;
+            //TODO: PE; try to replace if cases; interpolate<d-1>
         	if(d == 3){
         		interpolovane = RefSimplex<3>::interpolate<2>(IP.get_local_coords2(), IP.get_side2());
         	}else if(d == 2){
         		interpolovane = RefSimplex<2>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
         	}else{
+                //TODO: ASSERT
         		cout << "zakazany stav" << endl;
         		interpolovane.zeros();
         	}
@@ -75,6 +80,7 @@ public:
       * Interpoluje souřadnice na elementu o 2 dimenze nižší
       * (1 -> 3)
       * Templetuji dimenzí, kterou chci a vkládám IP s druhou dimenzí o 2 menší
+      * TODO: into constructor of IP
       * */
      template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-2> &IP){
 
@@ -83,6 +89,7 @@ public:
              	if(d == 3){
              		interpolovane = RefSimplex<3>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
              	}else{
+                    //TODO: ASSERT
              		cout << "zakazany stav" << endl;
              		interpolovane.zeros();
              	}
