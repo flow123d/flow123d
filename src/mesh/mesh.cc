@@ -85,7 +85,10 @@ const IT::Record & Mesh::get_input_type() {
 const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
-:comm_(comm)
+:comm_(comm),
+ row_4_el(nullptr),
+ el_ds(nullptr),
+ el_4_loc(nullptr)
 {
 
     Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
@@ -98,7 +101,10 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
-  comm_(com)
+  comm_(com),
+  row_4_el(nullptr),
+  el_ds(nullptr),
+  el_4_loc(nullptr)
 {
     reinit(in_record_);
 }
@@ -169,9 +175,9 @@ Mesh::~Mesh() {
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
 
-    delete[] row_4_el;
-    delete[] el_4_loc;
-    delete el_ds;
+    if (row_4_el != nullptr) delete[] row_4_el;
+    if (el_4_loc != nullptr) delete[] el_4_loc;
+    if (el_ds != nullptr) delete el_ds;
 }
 
 
