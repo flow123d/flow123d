@@ -94,9 +94,9 @@ using namespace Input::Type;
 
 
 /**
- * Test AdHocAbstractRecord.
+ * Test AdHocAbstract.
  */
-/*namespace IT=Input::Type;
+namespace IT=Input::Type;
 
 class AdHocDataTest : public testing::Test {
 public:
@@ -104,8 +104,8 @@ public:
 	static const IT::Record & get_in_rec1();
 	static const IT::Record & get_in_rec2();
 	static const IT::Abstract & get_ancestor();
-	static const IT::AdHocAbstractRecord & get_adhoc_1();
-	static const IT::AdHocAbstractRecord & get_adhoc_2();
+	static const IT::AdHocAbstract & get_adhoc_1();
+	static const IT::AdHocAbstract & get_adhoc_2();
 
 protected:
     virtual void SetUp() {
@@ -117,14 +117,17 @@ protected:
 
 const IT::Record & AdHocDataTest::get_in_rec1() {
 	return IT::Record("Record 1","")
+		.declare_key("TYPE", IT::String(), IT::Default("Record 1"), "")
 		.declare_key("val_1", IT::Integer(0), "value 1" )
 		.close();
 }
 
-const IT::AdHocAbstractRecord & AdHocDataTest::get_adhoc_1() {
-	return IT::AdHocAbstractRecord(get_ancestor())
-	.add_child(AdHocDataTest::get_in_rec1())
-	.add_child(AdHocDataTest::get_in_rec2());
+const IT::AdHocAbstract & AdHocDataTest::get_adhoc_1() {
+	static IT::AdHocAbstract ad_hoc = IT::AdHocAbstract(get_ancestor())
+		.close();
+	ad_hoc.add_child(AdHocDataTest::get_in_rec1());
+	ad_hoc.add_child(AdHocDataTest::get_in_rec2());
+	return ad_hoc;
 }
 
 const IT::Record & AdHocDataTest::get_rec() {
@@ -134,10 +137,12 @@ const IT::Record & AdHocDataTest::get_rec() {
 		.close();
 }
 
-const IT::AdHocAbstractRecord & AdHocDataTest::get_adhoc_2() {
-	return IT::AdHocAbstractRecord(get_ancestor())
-		.add_child(AdHocDataTest::get_in_rec1())
-		.add_child(AdHocDataTest::get_in_rec2());
+const IT::AdHocAbstract & AdHocDataTest::get_adhoc_2() {
+	static IT::AdHocAbstract ad_hoc = IT::AdHocAbstract(get_ancestor())
+		.close();
+	ad_hoc.add_child(AdHocDataTest::get_in_rec1());
+	ad_hoc.add_child(AdHocDataTest::get_in_rec2());
+	return ad_hoc;
 }
 
 const IT::Abstract & AdHocDataTest::get_ancestor() {
@@ -146,23 +151,25 @@ const IT::Abstract & AdHocDataTest::get_ancestor() {
 
 const IT::Record & AdHocDataTest::get_in_rec2() {
 	return IT::Record("Record 2","")
+		.declare_key("TYPE", IT::String(), IT::Default("Record 2"), "")
 		.declare_key("val_2", IT::Integer(0), "value 2" )
 		.close();
 }
 
 
-TEST(InputTypeAdHocAbstractRecord, inheritance) {
+TEST(InputTypeAdHocAbstract, inheritance) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	AdHocDataTest::get_in_rec1().finish();
-	AdHocDataTest::get_in_rec2().finish();
-	AdHocDataTest::get_adhoc_1().finish();
-	AdHocDataTest::get_adhoc_2().finish();
-	AdHocDataTest::get_rec().finish();
+	AdHocDataTest::get_in_rec1();
+	AdHocDataTest::get_in_rec2();
+	AdHocDataTest::get_adhoc_1();
+	AdHocDataTest::get_adhoc_2();
+	AdHocDataTest::get_rec();
+	TypeBase::lazy_finish();
 
-	EXPECT_EQ( 1, AdHocDataTest::get_in_rec1().size());
-	EXPECT_EQ( 1, AdHocDataTest::get_in_rec2().size());
+	EXPECT_EQ( 2, AdHocDataTest::get_in_rec1().size());
+	EXPECT_EQ( 2, AdHocDataTest::get_in_rec2().size());
 	EXPECT_EQ( 2, AdHocDataTest::get_adhoc_1().child_size());
 	EXPECT_EQ( 2, AdHocDataTest::get_adhoc_2().child_size());
 	EXPECT_EQ( 2, AdHocDataTest::get_rec().size());
-}*/
+}

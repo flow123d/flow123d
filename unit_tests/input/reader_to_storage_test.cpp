@@ -731,29 +731,26 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 }
 
 
-/*TEST_F(InputReaderToStorageTest, AdHocAbstractRec) {
+TEST_F(InputReaderToStorageTest, AdHocAbstract) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    static Type::Selection sel_type("TYPE_selection");
-    sel_type.add_value(0, "EqDarcy");
-    sel_type.add_value(1, "EqTransp");
-    sel_type.finish();
+    static Type::Abstract a_rec = Type::Abstract("EqBase","Base Abstract of equation records.")
+    	.close();
 
-    static Type::Record b_rec("EqDarcy","");
-    b_rec.declare_key("TYPE", sel_type, Type::Default("EqDarcy"), "Type of problem");
-    b_rec.declare_key("a_val", Type::String(), Type::Default("Description"), "");
-    b_rec.declare_key("b_val", Type::Integer(), "");
-    b_rec.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Mesh.");
-    b_rec.finish();
+    static Type::Record b_rec = Type::Record("EqDarcy","")
+    	.declare_key("TYPE", Type::String(), Type::Default("EqDarcy"), "Type of problem")
+    	.declare_key("a_val", Type::String(), Type::Default("Description"), "")
+    	.declare_key("b_val", Type::Integer(), "")
+    	.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Mesh.")
+		.close();
 
-    static Type::Record c_rec("EqTransp","");
-    c_rec.declare_key("TYPE", sel_type, Type::Default("EqTransp"), "Type of problem");
-    c_rec.declare_key("a_val", Type::Double(),"");
-    c_rec.declare_key("c_val", Type::Integer(), "");
-    c_rec.finish();
+    static Type::Record c_rec = Type::Record("EqTransp","")
+    	.declare_key("TYPE", Type::String(), Type::Default("EqTransp"), "Type of problem")
+    	.declare_key("a_val", Type::Double(),"")
+    	.declare_key("c_val", Type::Integer(), "")
+    	.close();
 
-    static Type::Abstract a_rec("EqBase","Base of equation records.");
-    static Type::AdHocAbstractRecord ah_rec(a_rec);
+    static Type::AdHocAbstract ah_rec(a_rec);
     ah_rec.add_child(b_rec);
     ah_rec.add_child(c_rec);
     ah_rec.finish();
@@ -764,7 +761,7 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(4, storage_->get_array_size());
-        EXPECT_EQ(0, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqDarcy", storage_->get_item(0)->get_string());
         EXPECT_EQ("Description", storage_->get_item(1)->get_string() );
         EXPECT_EQ(4, storage_->get_item(2)->get_int() );
         EXPECT_EQ("some.msh", storage_->get_item(3)->get_string() );
@@ -776,7 +773,7 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(3, storage_->get_array_size());
-        EXPECT_EQ(1, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqTransp", storage_->get_item(0)->get_string());
         EXPECT_EQ(5.5, storage_->get_item(1)->get_double() );
         EXPECT_EQ(4, storage_->get_item(2)->get_int() );
     }
@@ -790,7 +787,7 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\" }");
         EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
     }
-} */
+}
 
 TEST(InputReaderToStorageTest_external, get_root_interface) {
     static Type::Record one_rec = Type::Record("One","")
