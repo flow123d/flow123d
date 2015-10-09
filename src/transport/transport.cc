@@ -141,11 +141,14 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 //=============================================================================
 void ConvectionTransport::make_transport_partitioning() {
 
-    int * id_4_old = new int[mesh_->n_elements()];
-    int i = 0;
-    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
-    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
-    delete[] id_4_old;
+//    int * id_4_old = new int[mesh_->n_elements()];
+//    int i = 0;
+//    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
+//    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
+//    delete[] id_4_old;
+	el_ds = mesh_->get_el_ds();
+	el_4_loc = mesh_->get_el_4_loc();
+	row_4_el = mesh_->get_row_4_el();
 
     // TODO: make output of partitioning is usefull but makes outputs different
     // on different number of processors, which breaks tests.
