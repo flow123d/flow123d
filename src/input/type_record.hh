@@ -709,8 +709,7 @@ public:
 	 */
 	AdHocAbstract(const Abstract &ancestor);
 
-	TypeHash content_hash() const   override
-            { return 0;}
+	TypeHash content_hash() const   override;
 
 
     /**

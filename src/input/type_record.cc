@@ -768,6 +768,19 @@ bool AdHocAbstract::finish(bool is_generic)
 }
 
 
+TypeBase::TypeHash AdHocAbstract::content_hash() const {
+	TypeHash seed=0;
+    boost::hash_combine(seed, "AdHocAbstract");
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, child_data_->description_);
+    boost::hash_combine(seed, parent_name_);
+
+    attribute_content_hash(seed);
+    return seed;
+}
+
+
+
 } // closing namespace Type
 } // closing namespace Input
 
