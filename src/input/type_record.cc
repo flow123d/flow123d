@@ -474,7 +474,7 @@ RECORD_DECLARE_KEY(Selection);
 RECORD_DECLARE_KEY(Array);
 RECORD_DECLARE_KEY(Record);
 RECORD_DECLARE_KEY(Abstract);
-RECORD_DECLARE_KEY(AdHocAbstractRecord);
+RECORD_DECLARE_KEY(AdHocAbstract);
 RECORD_DECLARE_KEY(Parameter);
 RECORD_DECLARE_KEY(Instance);
 
@@ -703,11 +703,11 @@ Abstract::ChildDataIter Abstract::end_child_data() const {
 
 
 /************************************************
- * implementation of AdHocAbstractRecord
+ * implementation of AdHocAbstract
  */
 
-AdHocAbstractRecord::AdHocAbstractRecord(const Abstract &ancestor)
-: Abstract("Derived AdHocAbstractRecord", "This description doesn't have print out.")
+AdHocAbstract::AdHocAbstract(const Abstract &ancestor)
+: Abstract("Derived AdHocAbstract", "This description doesn't have print out.")
 {
 	parent_data_ = ancestor.child_data_;
 	parent_name_ = ancestor.type_name();
@@ -724,7 +724,7 @@ AdHocAbstractRecord::AdHocAbstractRecord(const Abstract &ancestor)
 }
 
 
-AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
+AdHocAbstract &AdHocAbstract::add_child(const Record &subrec)
 {
 	Abstract::add_child(subrec);
 
@@ -732,7 +732,7 @@ AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 }
 
 
-bool AdHocAbstractRecord::finish(bool is_generic)
+bool AdHocAbstract::finish(bool is_generic)
 {
 	if (child_data_->finished_) return true;
 

@@ -98,10 +98,10 @@ protected:
     void get_default(Record::KeyIter it, string &type, string &value);
     /// Gets description of the given selection type.
     const string & get_selection_description(const Selection *sel);
-    /// Gets parent_name_ of the given AdHocAbstractRecord type.
-    const string & get_adhoc_parent_name(const AdHocAbstractRecord *a_rec);
-    /// Gets iterator to begin of parent_data_ of the given AdHocAbstractRecord type.
-    Abstract::ChildDataIter get_adhoc_parent_data(const AdHocAbstractRecord *a_rec);
+    /// Gets parent_name_ of the given AdHocAbstract type.
+    const string & get_adhoc_parent_name(const AdHocAbstract *a_rec);
+    /// Gets iterator to begin of parent_data_ of the given AdHocAbstract type.
+    Abstract::ChildDataIter get_adhoc_parent_data(const AdHocAbstract *a_rec);
 
 
     /// Gets pointer of inner data for given Record
@@ -135,9 +135,9 @@ protected:
      */
     virtual void print_impl(ostream& stream, const Abstract *type, unsigned int depth) = 0;
     /**
-     * Implements printout of AdHocAbstractRecord @p type
+     * Implements printout of AdHocAbstract @p type
      */
-    virtual void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) = 0;
+    virtual void print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth) = 0;
     /**
      * Implements printout of Selection @p type
      */
@@ -315,7 +315,7 @@ protected:
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const Abstract *type, unsigned int depth);
-    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
 	void print_impl(ostream& stream, const Integer *type, unsigned int depth);
 	void print_impl(ostream& stream, const Double *type, unsigned int depth);
@@ -365,7 +365,7 @@ protected:
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const Abstract *type, unsigned int depth);
-    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
 	void print_impl(ostream& stream, const Integer *type, unsigned int depth);
 	void print_impl(ostream& stream, const Double *type, unsigned int depth);
@@ -418,7 +418,7 @@ protected:
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const Abstract *type, unsigned int depth);
-    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
     void print_impl(ostream& stream, const Integer *type, unsigned int depth);
     void print_impl(ostream& stream, const Double *type, unsigned int depth);
@@ -480,7 +480,7 @@ protected:
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const Abstract *type, unsigned int depth);
-    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
     void print_impl(ostream& stream, const Integer *type, unsigned int depth);
     void print_impl(ostream& stream, const Double *type, unsigned int depth);
@@ -489,7 +489,7 @@ protected:
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
 
 
-    /// Print all keys of Abstract type or AdHocAbstractRecord type
+    /// Print all keys of Abstract type or AdHocAbstract type
     void print_abstract_record_keys(ostream& stream, const Abstract *type, unsigned int depth);
 };
 

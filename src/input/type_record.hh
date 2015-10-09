@@ -170,7 +170,7 @@ class Abstract;
 class Record : public TypeBase {
 	friend class OutputBase;
 	friend class Abstract;
-	friend class AdHocAbstractRecord;
+	friend class AdHocAbstract;
 
 public:
 
@@ -482,7 +482,7 @@ protected:
 class Abstract : public TypeBase {
 	friend class OutputBase;
 	//friend class Record;
-	friend class AdHocAbstractRecord;
+	friend class AdHocAbstract;
 
 protected:
 
@@ -701,20 +701,20 @@ protected:
  *
  * @ingroup input_types
  */
-class AdHocAbstractRecord : public Abstract {
+class AdHocAbstract : public Abstract {
 	friend class OutputBase;
 public:
 	/**
 	 * Constructor
 	 */
-	AdHocAbstractRecord(const Abstract &ancestor);
+	AdHocAbstract(const Abstract &ancestor);
 
 	TypeHash content_hash() const   override
             { return 0;}
 
 
     /**
-     * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor Abstract,
+     * Finish declaration of the AdHocAbstract type. Adds descendants of ancestor Abstract,
      * calls close() and complete keys with non-null pointers to lazy types.
      */
     bool finish(bool is_generic = false) override;
@@ -722,7 +722,7 @@ public:
     /**
      * Add inherited Record.
      */
-    AdHocAbstractRecord &add_child(const Record &subrec);
+    AdHocAbstract &add_child(const Record &subrec);
 
 protected:
     /// Pointer to actual data of the parent Abstract.
@@ -732,7 +732,7 @@ protected:
     const Abstract *tmp_ancestor_;
 
     /*
-     * Temporary list of unconstructed descendants of AdHocAbstractRecord.
+     * Temporary list of unconstructed descendants of AdHocAbstract.
      * Items are checked and added to child_data_ in finish() method.
      */
     std::deque< const Record * > unconstructed_childs_;

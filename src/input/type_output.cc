@@ -125,12 +125,12 @@ const string & OutputBase::get_selection_description(const Selection *sel) {
 }
 
 
-const string & OutputBase::get_adhoc_parent_name(const AdHocAbstractRecord *a_rec) {
+const string & OutputBase::get_adhoc_parent_name(const AdHocAbstract *a_rec) {
 	return a_rec->parent_name_;
 }
 
 
-Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstractRecord *a_rec) {
+Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstract *a_rec) {
 	return a_rec->parent_data_->list_of_childs.begin();
 }
 
@@ -184,8 +184,8 @@ void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth
 	if (typeid(*type) == typeid(Type::Abstract)) {
 			print_impl(stream, static_cast<const Type::Abstract *>(type), depth );
 	} else
-	if (typeid(*type) == typeid(Type::AdHocAbstractRecord)) {
-		print_impl(stream, static_cast<const Type::AdHocAbstractRecord *>(type), depth );
+	if (typeid(*type) == typeid(Type::AdHocAbstract)) {
+		print_impl(stream, static_cast<const Type::AdHocAbstract *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Selection)) {
 		print_impl(stream, static_cast<const Type::Selection *>(type), depth );
@@ -442,10 +442,10 @@ void OutputText::print_impl(ostream& stream, const Abstract *type, unsigned int 
 }
 
 
-void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
 	if (doc_type_ == key_record) {
-		stream << "AdHocAbstractRecord" << endl;
+		stream << "AdHocAbstract" << endl;
 		stream << setw(padding_size + size_setw_) << "";
 		stream << "#### Derived from Abstract '" << get_adhoc_parent_name(type) << "', ";
 		stream << "added Records: ";
@@ -587,7 +587,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
 					if ( (typeid(*(it->type_.get())) == typeid(Type::Abstract))
-							| (typeid(*(it->type_.get())) == typeid(Type::AdHocAbstractRecord)) ) {
+							| (typeid(*(it->type_.get())) == typeid(Type::AdHocAbstract)) ) {
 						reference_ = doc_flags_.get_reference(data_ptr) + "/" + "#" + it->key_;
 					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))
 							| (typeid(*(it->type_.get())) == typeid(Type::Array))
@@ -731,7 +731,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Abstract *type, unsig
 }
 
 
-void OutputJSONTemplate::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
 	switch (doc_type_) {
 		case key_record:
@@ -1148,7 +1148,7 @@ void OutputLatex::print_impl(ostream& stream, const Abstract *type, unsigned int
 }
 
 
-void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+void OutputLatex::print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
 	if (doc_type_ == key_record) {
         stream << "adhoc abstract type}";
@@ -1395,13 +1395,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const Abstract *type, unsign
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
-    stream << "\"input_type\" : \"AdHocAbstractRecord\"," << endl;
+    stream << "\"input_type\" : \"AdHocAbstract\"," << endl;
     stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
     type->write_attributes(stream);
     stream << "," << endl;
