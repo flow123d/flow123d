@@ -56,7 +56,6 @@ class FieldAlgorithmBase {
 public:
        // expose template parameters
        typedef typename Space<spacedim>::Point Point;
-       typedef Value ValueType;
        static const unsigned int spacedim_=spacedim;
        static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
 

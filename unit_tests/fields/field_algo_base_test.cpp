@@ -88,7 +88,7 @@ public:
 	// time of HistoryPoint given by region index and position in circular buffer.
 	double rh_time(int r_idx, int j) { return this->rh(r_idx)[j].first; }
 
-	typedef typename FieldType::FieldBaseType::ValueType Value;
+	typedef typename FieldType::ValueType Value;
 	// const value of HistoryPoint given by region index and position in circular buffer.
 	typename Value::element_type rh_value(int r_idx, int j) {
 		typename FieldType::FieldBasePtr fb = rh(r_idx)[j].second;
