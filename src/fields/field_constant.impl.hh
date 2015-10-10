@@ -16,15 +16,15 @@
 
 namespace it = Input::Type;
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_constant)
+
 
 template <int spacedim, class Value>
-const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
-        .derive_from(a_type)
-        .declare_key("value", Value::get_input_type(eit), it::Default::obligatory(),
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .declare_key("value", Value::get_input_type(), it::Default::obligatory(),
                                     "Value of the constant field.\n"
                                     "For vector values, you can use scalar value to enter constant vector.\n"
                                     "For square (($N\\times N$))-matrix values, you can use:\n"
@@ -37,7 +37,8 @@ const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldConstant<spacedim, Value>::registrar =
-		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant");
+		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant") +
+		FieldConstant<spacedim, Value>::get_input_type().size();
 
 
 template <int spacedim, class Value>
