@@ -422,7 +422,7 @@ if (NOT PETSC_FOUND)
     else()    
         # Install PETSC
         # also set PETSC_DIR, PETSC_ARCH
-        set(PETSC_INSTALL_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
+        set(PETSC_INSTALL_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_3.6_build)
         set(PETSC_INSTALL_URL \"http://flow.nti.tul.cz/libraries/petsc-lite-3.6.1.tar.gz\")
         include(InstallPetsc)
         
