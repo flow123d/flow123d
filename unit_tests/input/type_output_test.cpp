@@ -8,14 +8,14 @@
 #include "input/type_output.hh"
 
 // Set version of program and other base data. Simulate data got from rev_num.h.
-std::map<string, string> get_rev_num_data() {
-	static std::map<string, string> version_map;
-	version_map["version"] = "X.X.X";
-	version_map["revision"] = "unit.test";
-	version_map["branch"] = "unit.test";
-	version_map["url"] = "unit.test";
+Input::Type::RevNumData get_rev_num_data() {
+	static Input::Type::RevNumData rev_num_data;
+	rev_num_data.version = "X.X.X";
+	rev_num_data.revision = "unit.test";
+	rev_num_data.branch = "unit.test";
+	rev_num_data.url = "unit.test";
 
-	return version_map;
+	return rev_num_data;
 }
 
 /**

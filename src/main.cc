@@ -35,7 +35,6 @@
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
-#include "input/type_output.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 
@@ -113,31 +112,31 @@ void Application::split_path(const string& path, string& directory, string& file
 }
 
 
-std::map<string, string> Application::get_rev_num_data() {
-	std::map<string, string> version_map;
-	version_map["version"] = string(_VERSION_NAME_);
-	version_map["revision"] = string(_GIT_REVISION_);
-	version_map["branch"] = string(_GIT_BRANCH_);
-	version_map["url"] = string(_GIT_URL_);
+Input::Type::RevNumData Application::get_rev_num_data() {
+	Input::Type::RevNumData rev_num_data;
+	rev_num_data.version = string(_VERSION_NAME_);
+	rev_num_data.revision = string(_GIT_REVISION_);
+	rev_num_data.branch = string(_GIT_BRANCH_);
+	rev_num_data.url = string(_GIT_URL_);
 
-	return version_map;
+	return rev_num_data;
 }
 
 
 void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
-	std::map<string, string> version_map = this->get_rev_num_data();
+	Input::Type::RevNumData rev_num_data = this->get_rev_num_data();
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version_map["version"].c_str(), version_map["revision"].c_str());
+    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", rev_num_data.version.c_str(), rev_num_data.revision.c_str());
     xprintf(Msg,
     	 "Branch: %s\n"
 		 "Build: %s\n"
 		 "Fetch URL: %s\n",
-		 version_map["branch"].c_str(), build.c_str() , version_map["url"].c_str() );
-    Profiler::instance()->set_program_info("Flow123d", version_map["version"], version_map["branch"], version_map["revision"], build);
+		 rev_num_data.branch.c_str(), build.c_str() , rev_num_data.url.c_str() );
+    Profiler::instance()->set_program_info("Flow123d", rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 }
 
 

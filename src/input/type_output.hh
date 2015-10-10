@@ -18,6 +18,11 @@ namespace Input {
 
 namespace Type {
 
+/// Stores version of program and other base data of application
+struct RevNumData {
+	std::string version, revision, branch, url;
+};
+
 /**
  * @brief Base abstract class for output description of the Input::Type tree.
  *
@@ -247,10 +252,9 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
-	OutputJSONMachine(std::map<string, string> version_map) : OutputBase()
+	OutputJSONMachine(RevNumData rev_num_data) : OutputBase()
     {
-		ASSERT(version_map.size()==4, "Invalid size of map stored version of program and other base data.\n");
-		version_map_ = version_map;
+		rev_num_data_ = rev_num_data;
 
 	    format_head="{ \"version\" :";
 	    format_inner=",\n\"ist_nodes\" : [\n";
@@ -305,7 +309,7 @@ protected:
     /// see @p print(stream) method
     std::string format_tail;
     /// Contains version of program and other base data
-    std::map<string, string> version_map_;
+    RevNumData rev_num_data_;
 
 };
 

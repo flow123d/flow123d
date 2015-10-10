@@ -30,6 +30,7 @@
 #include <string>
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "input/type_output.hh"
 #include "system/application_base.hh"
 
 using namespace std;
@@ -95,7 +96,7 @@ protected:
 private:
 
     /// Get version of program and other base data from rev_num.h and store them to map
-    std::map<string, string> get_rev_num_data();
+    Input::Type::RevNumData get_rev_num_data();
 
     /// directory of main input file (used to resolve relative paths of other input files)
     string main_input_dir_;

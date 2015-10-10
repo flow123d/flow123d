@@ -782,8 +782,8 @@ void OutputJSONMachine::print_program_info(ostream& stream) {
 	string build_date = string(__DATE__) + ", " + string(__TIME__);
 
     stream << "{" << endl;
-    stream << "\"flow123d_commit\" : \"" << version_map_["revision"] << "\"," << endl;
-    stream << "\"flow123d_version\" : \"" << version_map_["version"] << "\"," << endl;
+    stream << "\"flow123d_commit\" : \"" << rev_num_data_.revision << "\"," << endl;
+    stream << "\"flow123d_version\" : \"" << rev_num_data_.version << "\"," << endl;
     stream << "\"date\" : \"" << build_date << "\"" << endl;
 	stream << "}";
 }
