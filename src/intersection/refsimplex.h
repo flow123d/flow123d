@@ -45,9 +45,6 @@ class RefSimplex
 {
 public:
 
-	template<unsigned int subdim> static RefSimplex<subdim> SubRefSimplex();
-
-
 	template<unsigned int subdim> inline static std::array<arma::vec::fixed<dim+1>,subdim+1> bary_coords(unsigned int sid){
 		    //ASSERT(subdim < dim, "Sub-dimension is bigger than dimension!");
 			//xprintf(Msg, "barycoods \n");

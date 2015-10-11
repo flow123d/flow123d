@@ -30,12 +30,14 @@ namespace computeintersection {
  *
  * Simplex<0> has pointer to 3D point, because 3D point will be only once in memory
  *
+ * https://en.wikipedia.org/wiki/Simplex
  */
 template<int N> class Simplex;
 
 
 /**
- * TODO: comment specialisation
+ * Simplex<0> represents a point in 3D
+ * it has a pointer to coordinates of point in 3D because of mesh implementation
  */
 template<> class Simplex<0> {
 private:
@@ -89,6 +91,7 @@ public:
 		setSimplices(field_of_pointers_to_coordinates);
 	};
 
+	/// Creating sub-simplices in lexicografic order
 	inline void setSimplices(arma::vec3 **field_of_pointers_to_coordinates){
 		arma::vec3 *temporary_pointers[N];
 
@@ -121,6 +124,7 @@ public:
 		}
 	}
 
+	/// Get simplex of abscissa from different simplices - if it has own implementation in .cpp file
 	Simplex<1> &getAbscissa(unsigned int index);
 };
 
