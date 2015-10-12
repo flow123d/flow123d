@@ -23,7 +23,7 @@
 
 #set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib)
 
-set(libs mesh_lib system_lib intersection_2_3_lib)
+set(libs mesh_lib system_lib intersections_lib)
 add_test_directory("${libs}")
     
     define_test(gmsh_reader)

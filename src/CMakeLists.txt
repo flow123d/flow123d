@@ -109,19 +109,7 @@ set(sources_mesh_lib
     mesh/ngh/src/vertex.cpp
 )
 
-set(sources_fast_intersection
-	fast_intersection/inspect_elements.cpp
-	fast_intersection/prolongation_point.cpp
-	fast_intersection/intersection_local.cpp
-	bp_fris/spoint.cpp
-	bp_fris/vector.cpp
-	bp_fris/plucker.cpp
-	bp_fris/hyperplane.cpp
-	bp_fris/simplex.cpp
-	bp_fris/intersections.cpp
-)
-
-set(sources_intersection_2_3
+set(sources_intersections
 	intersection/plucker.cpp
 	intersection/simplex.cpp
 	intersection/refsimplex.cpp
@@ -252,22 +240,11 @@ set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" )
 add_library(mesh_lib ${sources_mesh_lib})
 target_link_libraries(mesh_lib
     input_lib system_lib la_lib armadillo ${Boost_LIBRARIES})
-    
-# fast_intersection_lib
-add_library(fast_intersection_lib ${sources_fast_intersection})
-target_link_libraries(fast_intersection_lib
-    mesh_lib system_lib armadillo ${Boost_LIBRARIES})
 
 # intersection_2_3_lib
-add_library(intersection_2_3_lib ${sources_intersection_2_3})
-target_link_libraries(intersection_2_3_lib
+add_library(intersections_lib ${sources_intersections})
+target_link_libraries(intersections_lib
     mesh_lib system_lib armadillo ${Boost_LIBRARIES})
-    
-# intersection_area_lib
-add_library(intersection_area_lib ${sources_intersection_area})
-target_link_libraries(intersection_area_lib intersection_2_3_lib
-    mesh_lib system_lib armadillo ${Boost_LIBRARIES})
-    
     
 # fem_lib    
 add_library(fem_lib ${sources_fem_lib})

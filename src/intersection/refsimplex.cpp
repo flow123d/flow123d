@@ -130,11 +130,6 @@ template<> const unsigned int RefSimplex<2>::line_sides[][2] = {
 //template<> static std::array< arma::vec::fixed<dim+1>, subdim+1 > bary_coords(unsigned int sid){
 
 //};
-template<unsigned int dim>
-template<unsigned int subdim>
-RefSimplex<subdim> RefSimplex<dim>::SubRefSimplex(){
-
-};
 
 /*template<unsigned int dim>
 template<unsigned int subdim>
