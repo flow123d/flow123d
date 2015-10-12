@@ -14,11 +14,15 @@ namespace computeintersection{
  *
  * Class also can compute a product of two plucker coordinates.
  * 
+ * Description of Plücker Coordinates:
+ * https://en.wikipedia.org/wiki/Pl%C3%BCcker_coordinates
+ *
+ * Empty constructor is used for passing object to pointers from different places
+ * coordinates data are filled after calling method "compute"
+ * a flag "computed" is for comparison if coordinates data are filled
+ *
  * TODO: 
- * - is compute() used from outside ?
- * - link to Plucker coords. definition
- * - comment in Doxygen
- * - explain creation
+ * - is compute() used from outside ? Yes
  */
 class Plucker{
 private:
@@ -28,15 +32,16 @@ private:
 
 public:
 	Plucker();
-	Plucker(const arma::vec3 &u, const arma::vec3 &a);
-	Plucker(const Plucker &p); // copy constructor
+	Plucker(const arma::vec3 &a, const arma::vec3 &b);
+	/// copy constructor
+	Plucker(const Plucker &p);
 	inline ~Plucker(){};
 
 	inline double operator[](const unsigned int index) const{
 		return coordinates[index];
 	};
 
-	// Compute product of two Plücker coordinates
+	/// Compute product of two Plücker coordinates
 	double operator*(const Plucker &b);
 
 	inline void clear(){computed = false;};
@@ -49,12 +54,12 @@ public:
 	// Compute Plücker coordinates and set computed to true
 	void compute(const arma::vec3 &a, const arma::vec3 &b);
 
-	// get directional vector U
+	/// get directional vector U
 	inline arma::vec3 get_u_vector() const{
 		return coordinates(arma::span(0,2));
 	};
 
-	// get cross product vector UxA
+	/// get cross product vector UxA
 	inline arma::vec3 get_ua_vector() const{
 		return coordinates(arma::span(3,5));
 	};
