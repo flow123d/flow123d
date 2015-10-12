@@ -21,7 +21,7 @@ void InspectElements::compute_intersections_init<1,3>(){
 	intersection_line_list.assign(mesh->n_elements(),std::vector<IntersectionLine>());
 
 	if(elements_bb.size() == 0){
-		elements_bb.reserve(mesh->n_elements());
+		elements_bb.resize(mesh->n_elements());
 		bool first_3d_element = true;
 		FOR_ELEMENTS(mesh, elm) {
 
@@ -47,7 +47,7 @@ void InspectElements::compute_intersections_init<2,3>(){
 	intersection_list.assign(mesh->n_elements(),std::vector<IntersectionPolygon>());
 
 	if(elements_bb.size() == 0){
-		elements_bb.reserve(mesh->n_elements());
+		elements_bb.resize(mesh->n_elements());
 		bool first_3d_element = true;
 		FOR_ELEMENTS(mesh, elm) {
 
