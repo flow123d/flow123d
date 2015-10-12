@@ -14,6 +14,7 @@ using namespace std;
 #include "system/exceptions.hh"
 #include "fields/field_values.hh"
 #include "input/accessors.hh"
+#include "input/type_generic.hh"
 #include "tools/time_marks.hh"
 #include "tools/time_governor.hh"
 
@@ -237,7 +238,7 @@ public:
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
      * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */
-    virtual IT::AbstractRecord &get_input_type() =0;
+    virtual const IT::Instance &get_input_type() =0;
 
     /**
      * Returns input type for MultiField instance.

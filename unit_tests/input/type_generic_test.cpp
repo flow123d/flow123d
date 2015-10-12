@@ -41,6 +41,7 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 	param_vec.push_back( std::make_pair("param2", boost::make_shared<Integer>(0, max_limit)) );
 
 	static Record rec = Record("generic_rec", "desc.")
+							.root_of_generic_subtree()
 							.declare_key("param1", Parameter("param1"), "desc.")
 							.declare_key("param2", Parameter("param2"), "desc.")
 							.declare_key("start_time", Double(), "desc.")
@@ -52,7 +53,7 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 }
 
 static const Instance & get_generic_array(const Selection *sel) {
-	static Array arr(Parameter("param"), 0, 100);
+	static Array arr = Array(Parameter("param"), 0, 100);
 
 	std::vector<TypeBase::ParameterPair> param_vec;
 	param_vec.push_back( std::make_pair("param", boost::make_shared<Selection>(*sel)) );
@@ -62,7 +63,7 @@ static const Instance & get_generic_array(const Selection *sel) {
 }
 
 static AbstractRecord & get_abstract_type() {
-	return AbstractRecord("SomeAbstract", "Some Abstract.").close();
+	return AbstractRecord("SomeAbstract", "Some Abstract.").root_of_generic_subtree().close();
 }
 
 static const Instance & get_generic_abstract(const Selection *sel) {
@@ -96,6 +97,7 @@ static const Instance & get_record_with_record(const Selection *sel, const boost
 	param_vec.push_back( std::make_pair("param2", type) );
 
 	static Record rec = Record("record", "desc.")
+					.root_of_generic_subtree()
 					.declare_key("inner_record", get_inner_record(), "desc.")
 					.declare_key("param1", Parameter("param1"), "desc.")
 					.declare_key("start_time", Double(), "desc.")
@@ -226,12 +228,91 @@ TEST(GenericType, record_with_record) {
 }
 
 
+TEST(GenericType, parameter_in_deep) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param", boost::make_shared<Double>()) );
+
+	static Record with_array = Record("inner_rec", "")
+			.root_of_generic_subtree()
+			.declare_key("array", Array( Array( Parameter("param") ) ), "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	static Instance inst = Instance(with_array, param_vec).close();
+
+	static Record record = Record("parametrized_record", "")
+			.declare_key("generic_rec", inst, "desc.")
+			.declare_key("some_int", Integer(), "Int key")
+			.close();
+
+	TypeBase::lazy_finish();
+}
+
+
+TEST(GenericType, array_of_instances) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param", boost::make_shared<Double>()) );
+
+	static Parameter param = Parameter("param");
+
+	static Instance inst = Instance(param, param_vec).close();
+
+	static Array array = Array( inst );
+
+	array.finish();
+	TypeBase::lazy_finish();
+
+	EXPECT_EQ( typeid( array.get_sub_type() ), typeid(Double) );
+}
+
+
+TEST(GenericType, instance_in_instance) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec1, param_vec2;
+	param_vec1.push_back( std::make_pair("param", boost::make_shared<Double>()) );
+	param_vec2.push_back( std::make_pair("param", boost::make_shared<String>()) );
+
+	static Parameter param = Parameter("param");
+	static Instance inst_in = Instance(param, param_vec2).close();
+
+	static Record in_rec = Record("Inner record", "")
+			.root_of_generic_subtree()
+			.declare_key("key1", inst_in, "Inner instance.")
+			.declare_key("param", Parameter("param"), "Parameterized key")
+			.close();
+
+	static Instance inst = Instance(in_rec, param_vec1).close();
+
+	static Record root_rec = Record("Root record", "")
+			.declare_key("rec", inst, "First instance.")
+			.declare_key("some_int", Integer(), "Int key")
+			.close();
+
+	TypeBase::lazy_finish();
+
+	Record::KeyIter key_it = root_rec.begin();
+	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
+	const Record *inner_rec = static_cast<const Record *>(key_it->type_.get());
+	EXPECT_EQ(inner_rec->size(), 2);
+	Record::KeyIter key_it_in = inner_rec->begin();
+	EXPECT_EQ( typeid( *(key_it_in->type_.get()) ), typeid(String) );
+	++key_it_in;
+	EXPECT_EQ( typeid( *(key_it_in->type_.get()) ), typeid(Double) );
+}
+
+
 TEST(GenericType, parameter_not_replaced) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	std::vector<TypeBase::ParameterPair> param_vec;
 
 	static Record inner = Record("inner_rec", "")
+			.root_of_generic_subtree()
 			.declare_key("param", Parameter("param"), "desc.")
 			.declare_key("some_double", Double(), "Double key")
 			.close();
@@ -248,6 +329,81 @@ TEST(GenericType, parameter_not_replaced) {
 }
 
 
+TEST(GenericType, parameter_during_lazy_finish) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	static Record param_record = Record("record_with_param", "")
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	EXPECT_THROW_WHAT( { TypeBase::lazy_finish(); }, ExcParamaterInIst, "Parameter 'param' appears in the IST");
+}
+
+
+TEST(GenericType, root_without_instance) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	static Record with_root_flag = Record("in_rec", "")
+			.root_of_generic_subtree()
+			.declare_key("array", Array( Array( Parameter("param") ) ), "desc.")
+			.close();
+
+	static Record root_rec = Record("root_record", "desc.")
+			.declare_key("primary", with_root_flag, "Primary problem.")
+			.declare_key("bool", Bool(), "Some bool key.")
+			.close();
+
+	EXPECT_THROW_WHAT( { TypeBase::lazy_finish(); }, ExcGenericWithoutInstance, "'in_rec' used without Instance");
+}
+
+
+template <int spacedim>
+class ParametrizedTestClass {
+public:
+	static string template_name() {
+	    stringstream ss;
+	    ss << "Rec:" << spacedim;
+		return ss.str();
+	}
+
+	static Record & get_input_type() {
+		static Record rec = Record(template_name(), "Record with parameterized dimension.")
+				.root_of_generic_subtree()
+				.declare_key("param", Parameter("param"), "desc.")
+				.declare_key("boundary", Bool(), "desc.")
+				.close();
+
+		return rec;
+	}
+
+	static const Instance & get_input_type_instance() {
+		std::vector<TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("param", boost::make_shared<Array>(Double(), 0, spacedim)) );
+
+		return Instance(get_input_type(), param_vec).close();
+	}
+};
+
+
+TEST(GenericType, unused_record) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	{
+		// same mechanism as call of registrars
+		ParametrizedTestClass<2>::get_input_type();
+		ParametrizedTestClass<3>::get_input_type();
+	}
+
+	static Record root_templated_record = Record("templated_record", "")
+			.declare_key("generic_rec", ParametrizedTestClass<3>::get_input_type_instance(), "desc.")
+			.declare_key("some_int", Integer(), "Integer key")
+			.close();
+
+	TypeBase::lazy_finish();
+}
+
+
 TEST(GenericType, parameter_not_used) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -256,6 +412,7 @@ TEST(GenericType, parameter_not_used) {
 	param_vec.push_back( std::make_pair("param2", boost::make_shared<Double>()) );
 
 	static Record inner = Record("inner_rec", "")
+			.root_of_generic_subtree()
 			.declare_key("param", Parameter("param"), "desc.")
 			.declare_key("some_double", Double(), "Double key")
 			.close();
@@ -269,16 +426,4 @@ TEST(GenericType, parameter_not_used) {
 			.close();
 
 	EXPECT_ASSERT_DEATH( { TypeBase::lazy_finish(); }, "must be used");
-}
-
-
-TEST(GenericType, parameter_during_lazy_finish) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	static Record record = Record("parametrized_record", "")
-			.declare_key("param", Parameter("param"), "desc.")
-			.declare_key("some_double", Double(), "Double key")
-			.close();
-
-	EXPECT_ASSERT_DEATH( { TypeBase::lazy_finish(); }, "Finish of non-generic Parameter 'param'");
 }

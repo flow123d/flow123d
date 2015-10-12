@@ -38,6 +38,7 @@ template <class F>
 class FieldFix : public testing::Test, public F {
 public:
 	typedef F FieldType;
+	static constexpr bool is_enum_valued = boost::is_same<typename FieldType::ValueType::element_type, FieldEnum>::value;
 
 	void SetUp() {
 	    Profiler::initialize();
@@ -87,7 +88,7 @@ public:
 	// time of HistoryPoint given by region index and position in circular buffer.
 	double rh_time(int r_idx, int j) { return this->rh(r_idx)[j].first; }
 
-	typedef typename FieldType::FieldBaseType::ValueType Value;
+	typedef typename FieldType::ValueType Value;
 	// const value of HistoryPoint given by region index and position in circular buffer.
 	typename Value::element_type rh_value(int r_idx, int j) {
 		typename FieldType::FieldBasePtr fb = rh(r_idx)[j].second;
@@ -182,7 +183,7 @@ TYPED_TEST_CASE(FieldFix, FieldTypes);
 // we shall do it as part of FieldList test.
 //
 TYPED_TEST(FieldFix, get_input_type) {
-	Input::Type::AbstractRecord a_rec_type = this->field_.get_input_type();
+	auto a_rec_type = this->field_.get_input_type();
 }
 
 

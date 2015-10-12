@@ -246,10 +246,10 @@ const IT::Record & SomeEquation::get_input_type() {
 	        .declare_key("data", IT::Array(
 	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_decsription("SomeEquation_Data") )
 	                .copy_keys( SomeEquation::EqData().make_field_descriptor_type("SomeEquation") )
-	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
+	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
 	                .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
 	                .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
-	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
+	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
 					.close()
 	                ), IT::Default::obligatory(), ""  )
 			.close();
