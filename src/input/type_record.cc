@@ -19,6 +19,7 @@
 
 #include "system/system.hh"
 #include "input/type_generic.hh"
+#include "input/reader_to_storage.hh"
 
 #include <boost/typeof/typeof.hpp>
 #include <boost/type_traits.hpp>
@@ -59,6 +60,19 @@ TypeBase::TypeHash Default::content_hash() const
     boost::hash_combine(seed, type_);
     boost::hash_combine(seed, value_);
     return seed;
+}
+
+
+bool Default::check_validity(const TypeBase &type)
+{
+	if ( !has_value_at_declaration() ) return true;
+
+	try {
+		Input::ReaderToStorage reader( value_, type, Input::FileFormat::format_JSON );
+		return true;
+	} catch ( ... ) {
+		return false;
+	}
 }
 
 

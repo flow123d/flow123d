@@ -140,6 +140,12 @@ public:
     inline bool has_same_type(const Default &other) const
         {return type_ == other.type_; }
 
+    /**
+     * Check validity of @p value_ using the JSON reader
+     * if default type is default_at_declaration.
+     */
+    bool check_validity(const TypeBase &type);
+
 private:
     string value_;              ///< Stored value.
     enum DefaultType type_;     ///< Type of the Default.
