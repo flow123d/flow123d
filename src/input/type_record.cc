@@ -63,14 +63,16 @@ TypeBase::TypeHash Default::content_hash() const
 }
 
 
-bool Default::check_validity(const TypeBase &type)
+bool Default::check_validity(const TypeBase &type) const
 {
 	if ( !has_value_at_declaration() ) return true;
 
 	try {
 		Input::ReaderToStorage reader( value_, type, Input::FileFormat::format_JSON );
 		return true;
-	} catch ( ... ) {
+	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
+		return false;
+	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
 		return false;
 	}
 }
@@ -429,6 +431,8 @@ void Record::RecordData::declare_key(const string &key,
                          const Default &default_value, const string &description)
 {
     ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
+    //ASSERT((key=="TYPE") || default_value.check_validity(*type), "Input string '%s' of default value of key '%s' is not valid.\n",
+    //		default_value.value().c_str(), key.c_str() );
 
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
 
