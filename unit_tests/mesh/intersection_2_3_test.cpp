@@ -4,8 +4,6 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
-#include <array>
-#include "mesh/msh_gmshreader.h"
 #include "intersection/inspectelements.h"
 
 using namespace std;
@@ -16,7 +14,7 @@ TEST(intersections, all) {
 
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/site/TEST2.msh", FilePath::input_file);
+	FilePath mesh_file("mesh/site/triangle_tetrahedron.msh", FilePath::input_file);
 
 	Profiler::initialize();
 

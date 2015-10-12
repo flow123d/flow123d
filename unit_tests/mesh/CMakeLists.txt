@@ -34,7 +34,7 @@ add_test_directory("${libs}")
     #define_test(fast_intersection_1_3)
     define_mpi_test(intersection_2_3 1)
     define_mpi_test(ngh_intersection_2_3 1)
-    define_test(intersection_area)
+    define_mpi_test(intersection_area 1)
     define_mpi_test(simplex_class 1)
     
     
