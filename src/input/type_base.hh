@@ -350,9 +350,7 @@ private:
  *
  *  @ingroup input_types
  */
-class Scalar : public TypeBase {
-public:
-};
+class Scalar : public TypeBase {};
 
 
 /**

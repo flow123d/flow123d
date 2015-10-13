@@ -39,7 +39,7 @@ namespace Type {
 class Default {
 	friend class Record;
 	friend class OutputBase;
-	friend class OutputJSONTemplate;
+	//friend class OutputJSONTemplate;
 
 private:
     /**
