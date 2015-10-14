@@ -68,7 +68,9 @@ bool Default::check_validity(const TypeBase &type) const
 	if ( !has_value_at_declaration() ) return true;
 
 	try {
-		Input::ReaderToStorage reader( value_, type, Input::FileFormat::format_JSON );
+		istringstream is(value_);
+		Input::ReaderToStorage reader;
+		reader.read_stream(is, type, FileFormat::format_JSON);
 		return true;
 	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
 		return false;
@@ -153,7 +155,7 @@ void Record::make_copy_keys(Record &origin) {
 		// we have to copy TYPE also since there should be place in storage for it
 		// however we change its Default to name of actual Record
 		if (tmp_key.key_=="TYPE")
-			tmp_key.default_=Default( type_name() );
+			tmp_key.default_=Default( "\""+type_name()+"\"" );
 
 		// check for duplicate keys, override keys of the parent record by the child record
 		RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
@@ -198,7 +200,7 @@ Record &Record::derive_from(AbstractRecord &parent) {
 	data_->parent_vec_.push_back( boost::make_shared<AbstractRecord>(parent) );
 
 	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", boost::make_shared<String>(), Default( type_name() ), "Sub-record Selection.");
+    	data_->declare_key("TYPE", boost::make_shared<String>(), Default( "\""+type_name()+"\"" ), "Sub-record Selection.");
     }
 
 	return *this;
@@ -431,8 +433,8 @@ void Record::RecordData::declare_key(const string &key,
                          const Default &default_value, const string &description)
 {
     ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
-    //ASSERT((key=="TYPE") || default_value.check_validity(*type), "Input string '%s' of default value of key '%s' is not valid.\n",
-    //		default_value.value().c_str(), key.c_str() );
+    ASSERT(default_value.check_validity(*type), "Input string '%s' of default value of key '%s' is not valid.\n",
+    		default_value.value().c_str(), key.c_str() );
 
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
 

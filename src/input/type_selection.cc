@@ -70,8 +70,10 @@ TypeBase::TypeHash Selection::content_hash() const
 
 
 bool Selection::valid_default(const string &str) const {
-    if (! has_name(str))
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName( type_name() + " with values: "+key_list() ));
+	string s(str);
+	s.erase( std::remove( s.begin(), s.end(), '\"' ),s.end() );
+    if (! has_name(s))
+        THROW( ExcWrongDefault() << EI_DefaultStr( s ) << EI_TypeName( type_name() + " with values: "+key_list() ));
     return true;
 }
 
@@ -133,10 +135,12 @@ Selection &Selection::copy_values(const Selection &sel)
 
 
 int Selection::from_default(const string &str) const {
+	string s(str);
     try {
-        return name_to_int(str);
+    	s.erase( std::remove( s.begin(), s.end(), '\"' ),s.end() );
+        return name_to_int(s);
     } catch (ExcSelectionKeyNotFound &e) {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName( type_name() + " with values: "+key_list() ));
+        THROW( ExcWrongDefault() << EI_DefaultStr( s ) << EI_TypeName( type_name() + " with values: "+key_list() ));
     }
     return -1;
 }

@@ -161,6 +161,8 @@ protected:
     /// Root of the declaration tree of the data in the storage.
     const Type::TypeBase *root_type_;
 
+    friend class Type::Default;
+
 };
 
 

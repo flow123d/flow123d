@@ -50,6 +50,10 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &
     if (! in) {
     	THROW(ExcInputMessage() << EI_Message("Can not open main input file: '" + fname + "'.\n"));
     }
+
+    // finish all lazy input types
+    Input::Type::TypeBase::lazy_finish();
+
 	read_stream(in, root_type, format);
 }
 
@@ -58,6 +62,9 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &
 ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_type, FileFormat format)
 : ReaderToStorage()
 {
+	// finish all lazy input types
+    Input::Type::TypeBase::lazy_finish();
+
 	try {
 		istringstream is(str);
 		read_stream(is, root_type, format);
@@ -71,9 +78,6 @@ ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_
 void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
     ASSERT(storage_==nullptr," ");
-
-    // finish all lazy input types
-    Input::Type::TypeBase::lazy_finish();
 
     PathBase * root_path;
 	if (format == FileFormat::format_JSON) {
