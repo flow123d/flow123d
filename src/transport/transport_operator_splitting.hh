@@ -69,6 +69,8 @@ public:
      * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
      */
     virtual void set_balance_object(boost::shared_ptr<Balance> balance) = 0;
+    
+    virtual bool assess_time_constraint(double &time_constraint) = 0;
 
     virtual const vector<unsigned int> &get_subst_idx() = 0;
 
