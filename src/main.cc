@@ -35,7 +35,6 @@
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
-#include "input/type_output.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 
@@ -112,23 +111,32 @@ void Application::split_path(const string& path, string& directory, string& file
     }
 }
 
+
+Input::Type::RevNumData Application::get_rev_num_data() {
+	Input::Type::RevNumData rev_num_data;
+	rev_num_data.version = string(_VERSION_NAME_);
+	rev_num_data.revision = string(_GIT_REVISION_);
+	rev_num_data.branch = string(_GIT_BRANCH_);
+	rev_num_data.url = string(_GIT_URL_);
+
+	return rev_num_data;
+}
+
+
 void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
-    string version(_VERSION_NAME_);
-    string revision(_GIT_REVISION_);
-    string branch(_GIT_BRANCH_);
-    string url(_GIT_URL_);
+	Input::Type::RevNumData rev_num_data = this->get_rev_num_data();
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
+    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", rev_num_data.version.c_str(), rev_num_data.revision.c_str());
     xprintf(Msg,
     	 "Branch: %s\n"
 		 "Build: %s\n"
 		 "Fetch URL: %s\n",
-		 branch.c_str(), build.c_str() , url.c_str() );
-    Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
+		 rev_num_data.branch.c_str(), build.c_str() , rev_num_data.url.c_str() );
+    Profiler::instance()->set_program_info("Flow123d", rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 }
 
 
@@ -171,8 +179,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
-        ("full_doc", "Prints full structure of the main input file.")
-        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
         ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
         ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
 
@@ -210,22 +216,15 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // if there is "full_doc" option
-    if (vm.count("full_doc")) {
+    /*if (vm.count("full_doc")) {
         Input::Type::TypeBase::lazy_finish();
         Input::Type::OutputText type_output(&get_input_type());
         type_output.set_filter(":Field:.*");
         cout << type_output;
         exit( exit_output );
-    }
+    }*/
 
-    if (vm.count("latex_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputLatex type_output(&get_input_type());
-        type_output.set_filter("");
-        cout << type_output;
-        exit( exit_output );
-    }
-
+    // if there is "JSON_machine" option
     if (vm.count("JSON_machine")) {
         // write ist to json file
         string json_filename = vm["JSON_machine"].as<string>();
@@ -235,7 +234,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     		cerr << "Failed to open file '" << json_filename << "'" << endl;
         } else {
 	        Input::Type::TypeBase::lazy_finish();
-	        json_stream << Input::Type::OutputJSONMachine(&get_input_type());
+	        json_stream << Input::Type::OutputJSONMachine( this->get_rev_num_data() );
 	        json_stream.close();
         }
         exit( exit_output );

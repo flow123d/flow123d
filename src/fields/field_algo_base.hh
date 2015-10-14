@@ -28,6 +28,7 @@
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "input/type_generic.hh"
 
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
@@ -55,8 +56,8 @@ class FieldAlgorithmBase {
 public:
        // expose template parameters
        typedef typename Space<spacedim>::Point Point;
-       typedef Value ValueType;
        static const unsigned int spacedim_=spacedim;
+       static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
 
 
        /**
@@ -75,7 +76,13 @@ public:
         * Returns whole tree of input types for FieldBase with all descendants based on element input type (namely for FieldConstant)
         * given by element_input_type pointer.
         */
-       static Input::Type::AbstractRecord & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
+       static Input::Type::AbstractRecord & get_input_type();
+
+       /**
+        * Returns parameterized whole tree of input types for FieldBase with all descendants based on element input type (namely
+        * for FieldConstant) given by element_input_type pointer.
+        */
+       static const Input::Type::Instance & get_input_type_instance(const Input::Type::Selection *value_selection=NULL);
 
        /**
         * This static method gets accessor to abstract record with function input,

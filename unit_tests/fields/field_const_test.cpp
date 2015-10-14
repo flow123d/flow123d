@@ -17,6 +17,8 @@
 #include "input/reader_to_storage.hh"
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+
 
 string input = R"INPUT(
 {   
@@ -56,11 +58,11 @@ TEST(FieldConst, read_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Record rec_type = Input::Type::Record("FieldConstTest","")
-        .declare_key("tensor1", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
-        .declare_key("tensor2", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
-        .declare_key("tensor3", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
-        .declare_key("tensor4", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
-        .declare_key("init_conc", VectorField::get_input_type(nullptr), Input::Type::Default::obligatory(), "" )
+        .declare_key("tensor1", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
+        .declare_key("tensor2", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
+        .declare_key("tensor3", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
+        .declare_key("tensor4", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
+        .declare_key("init_conc", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .close();
 
     // read input string

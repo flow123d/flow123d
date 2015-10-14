@@ -3,6 +3,7 @@
  *
  *  Created on: Mar 29, 2012
  *      Author: jb
+ *
  */
 
 
@@ -181,7 +182,7 @@ Record &Record::derive_from(AbstractRecord &parent) {
 	data_->parent_vec_.push_back( boost::make_shared<AbstractRecord>(parent) );
 
 	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default( type_name() ), "Sub-record Selection.");
+    	data_->declare_key("TYPE", boost::make_shared<String>(), Default( type_name() ), "Sub-record Selection.");
     }
 
 	return *this;
@@ -231,6 +232,7 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
 
 bool Record::finish(bool is_generic)
 {
+
 	if (data_->finished) return true;
 
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
@@ -240,7 +242,8 @@ bool Record::finish(bool is_generic)
     {
     	if (it->key_ != "TYPE") {
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-            data_->finished = data_->finished && it->type_->finish(is_generic);
+			if (!is_generic && it->type_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
+           	data_->finished = data_->finished && it->type_->finish(is_generic);
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
@@ -283,14 +286,6 @@ string Record::type_name() const {
 }
 
 
-string Record::full_type_name() const {
-	if (data_->parent_vec_.size()) {
-		return data_->type_name_ + ":" + data_->parent_vec_[0]->type_name();
-	}
-    return data_->type_name_;
-}
-
-
 
 bool Record::valid_default(const string &str) const
 {
@@ -317,19 +312,16 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
+Record &Record::declare_type_key() {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", key_type, Default::obligatory(),
+	data_->declare_key("TYPE", boost::make_shared<String>(), Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
 
 Record &Record::has_obligatory_type_key() {
 	ASSERT( ! data_->parent_vec_.size(), "Record with obligatory TYPE key can't be derived.\n");
-	boost::shared_ptr<Selection> sel = boost::make_shared<Selection>(type_name() + "_TYPE_selection");
-	sel->add_value(0, type_name());
-	sel->close();
-	declare_type_key( sel );
+	declare_type_key();
 	return *this;
 }
 
@@ -382,10 +374,14 @@ const Record &Record::add_parent(AbstractRecord &parent) const {
 	// finish inheritance
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
 				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
-	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( parent.get_type_selection() );
-	data_->keys[0].type_ = type_copy;
 	data_->keys[0].default_ = Default( type_name() );
 
+	return *this;
+}
+
+
+Record &Record::root_of_generic_subtree() {
+	root_of_generic_subtree_ = true;
 	return *this;
 }
 
@@ -418,6 +414,8 @@ void Record::RecordData::declare_key(const string &key,
                          boost::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description)
 {
+    ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
+
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
 
     if (key!="TYPE" && ! TypeBase::is_valid_identifier(key))
@@ -440,6 +438,13 @@ void Record::RecordData::declare_key(const string &key,
 
 }
 
+Record &Record::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
+                        const Default &default_value, const string &description)
+{
+    check_key_default_value(default_value, *type, key);
+    data_->declare_key(key, type, default_value, description);
+    return *this;
+}
 
 
 template <class KeyType>
@@ -449,14 +454,8 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
-    if (data_->closed_)
-        xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
-
-	check_key_default_value(default_value, type, key);
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
-	data_->declare_key(key, type_copy, default_value, description);
-
-    return *this;
+	return declare_key(key, type_copy, default_value, description);
 }
 
 
@@ -470,33 +469,11 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 
 
 
-template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
-{
-	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
-    //Record::declare_key(key, type, default_value, description);
-    return *this;
-}
-
-
-
-template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
-                        const string &description)
-{
-	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
-    return declare_key(key,type, Default::optional(), description);
-}
-
-
 // explicit instantiation of template methods
 
 #define RECORD_DECLARE_KEY(TYPE) \
 template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description); \
-template AbstractRecord &AbstractRecord::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template AbstractRecord &AbstractRecord::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
 
 
 RECORD_DECLARE_KEY(String);
@@ -544,10 +521,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, child_data_->description_);
-    // TODO temporary hack, should be removed after implementation of generic types
-    if (child_data_->element_input_selection != nullptr) {
-    	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
-    }
+    //boost::hash_combine(seed, child_data_->generic_content_hash_);
     attribute_content_hash(seed);
     //for( Record &key : child_data_->list_of_childs) {
     //    boost::hash_combine(seed, key.content_hash() );
@@ -579,16 +553,7 @@ bool AbstractRecord::valid_default(const string &str) const
 const Record  & AbstractRecord::get_descendant(const string& name) const
 {
     ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
-    return get_descendant( child_data_->selection_of_childs->name_to_int(name) );
-}
-
-
-
-const Record  & AbstractRecord::get_descendant(unsigned int idx) const
-{
-    ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
-    ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");
-    return child_data_->list_of_childs[idx];
+    return child_data_->list_of_childs[ child_data_->selection_of_childs->name_to_int(name) ];
 }
 
 
@@ -636,8 +601,9 @@ bool AbstractRecord::finish(bool is_generic) {
 	child_data_->finished_ = true;
 
 	for (auto &child : child_data_->list_of_childs) {
+		if (!is_generic && child.is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
 		child.add_parent(*this);
-		child_data_->finished_ = child_data_->finished_ && child.finish(is_generic);
+       	child_data_->finished_ = child_data_->finished_ && child.finish(is_generic);
 	}
 
     // check validity of possible default value of TYPE key
@@ -659,14 +625,6 @@ AbstractRecord &AbstractRecord::close() {
 }
 
 
-AbstractRecord &AbstractRecord::set_element_input(const Selection * element_input) {
-	if (element_input != NULL ) {
-		child_data_->element_input_selection = element_input;
-	}
-	return *this;
-}
-
-
 bool AbstractRecord::is_finished() const {
     return child_data_->finished_;
 }
@@ -679,11 +637,6 @@ bool AbstractRecord::is_closed() const {
 
 string AbstractRecord::type_name() const {
     return child_data_->type_name_;
-}
-
-
-string AbstractRecord::full_type_name() const {
-    return this->type_name();
 }
 
 
@@ -739,6 +692,18 @@ AbstractRecord AbstractRecord::deep_copy() const {
 	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	return abstract;
 }
+
+
+AbstractRecord &AbstractRecord::root_of_generic_subtree() {
+	root_of_generic_subtree_ = true;
+	return *this;
+}
+
+
+/*AbstractRecord &AbstractRecord::set_generic_content_hash(TypeHash generic_content_hash) {
+	child_data_->generic_content_hash_ = generic_content_hash;
+	return *this;
+}*/
 
 
 AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {

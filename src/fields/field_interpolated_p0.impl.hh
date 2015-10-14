@@ -41,15 +41,15 @@
 
 namespace it = Input::Type;
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_interpolated)
+
 
 
 template <int spacedim, class Value>
-const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
-        .derive_from(a_type)
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
@@ -61,7 +61,8 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
 
 template <int spacedim, class Value>
 const int FieldInterpolatedP0<spacedim, Value>::registrar =
-		Input::register_class< FieldInterpolatedP0<spacedim, Value>, unsigned int >("FieldInterpolatedP0");
+		Input::register_class< FieldInterpolatedP0<spacedim, Value>, unsigned int >("FieldInterpolatedP0") +
+		FieldInterpolatedP0<spacedim, Value>::get_input_type().size();
 
 
 template <int spacedim, class Value>
