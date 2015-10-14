@@ -50,9 +50,6 @@ public:
 			bc_diffusive_flux
 		};
 
-		/// Convert bc_type in model to bc_type in abstract setting.
-		static const std::map<unsigned int,unsigned int> bc_type_conversion;
-
 		/// Type of boundary condition (see also BC_Type)
         BCField<3, FieldValue<3>::Enum > bc_type;
 		/// Dirichlet boundary condition for temperature.
