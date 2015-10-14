@@ -250,16 +250,29 @@ void TransportOperatorSplitting::update_solution() {
     time_->view("TOS");    //show time governor
 
     convection->set_target_time(time_->t());
-    convection->time_->estimate_dt();
-    convection->time_->view("Convection");    //show time governor
-
+    convection->time_->view("Convection");
+    
     START_TIMER("TOS-one step");
     int steps=0;
     while ( convection->time().step().lt(time_->t()) )
     {
         steps++;
 	    // one internal step
+        double cfl_convection, cfl_reaction;
+        if (convection->assess_time_constraint(cfl_convection)
+            //|| reaction->assess_time_constraint(cfl_reaction)
+        )
+        {
+            DBGMSG("CFL changed.\n");
+            convection->time_->set_upper_constraint(cfl_convection);
+//             convection->time_->set_upper_constraint(std::min(cfl_convection, cfl_reaction));
+            
+            // fix step with new constraint
+            convection->time_->fix_dt_until_mark();
+        }
+            
 	    convection->update_solution();
+        
 
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
@@ -274,6 +287,8 @@ void TransportOperatorSplitting::update_solution() {
 	    			source[sbi] -= region_mass[ri];
 	    	}
 
+	    	//TODO: idea: call this function inside convection->update_solution() before updating concentration vector
+	    	// then it will not be neccessary to keep vector of previous concentrations of all substances
 	    	convection->calculate_cumulative_balance();
 
 	    	END_TIMER("TOS-balance");

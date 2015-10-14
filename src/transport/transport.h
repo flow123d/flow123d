@@ -119,6 +119,10 @@ public:
 	 * Initialize solution at zero time.
 	 */
     void zero_time_step() override;
+    /**
+     * 
+     */
+    bool assess_time_constraint(double &time_constraint);
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
@@ -207,8 +211,11 @@ private:
 	void set_boundary_conditions();
   
   //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-	void compute_concentration_sources(unsigned int sbi);
+// 	void compute_concentration_sources(unsigned int sbi);
 
+    //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+    void compute_concentration_sources();
+    
 	/**
 	 * Finish explicit transport matrix (time step scaling)
 	 */
@@ -224,33 +231,37 @@ private:
      */
     EqData data_;
 
+    //@{
     /**
-     * Indicates if we finished the matrix and add vector by scaling with timestep factor.
+     * Flag indicates the state of object (transport matrix or source term).
+     * If false, the object is freshly assembled and not rescaled.
+     * If true, the object is scaled (not necessarily with the current time step).
      */
-	bool is_convection_matrix_scaled, need_time_rescaling;
-
-    double *sources_corr;
-    Vec v_sources_corr;
+	bool is_convection_matrix_scaled, is_src_term_scaled;
+    //@}
     
-    ///temporary arrays to store constant values of fields over time interval
-    //(avoiding calling "field.value()" too often)
-    double **sources_density, 
-           **sources_conc,
-           **sources_sigma;
+    double **sources_corr;
+    Vec *v_sources_corr;
+    
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
-    double cfl_max_step;
-            // only local part
-
+    double cfl_max_step;    ///< Time step constraint coming from CFL condition.
+    
+    Vec vcfl_flow_,     ///< Parallel vector for flow contribution to CFL condition.
+        vcfl_source_;   ///< Parallel vector for source term contribution to CFL condition.
+    double *cfl_flow_, *cfl_source_;
 
 
     VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
+    Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
+    double **tm_diag;
 
     /// Time when the transport matrix was created.
     /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
     /// necessity for matrix update
     double transport_matrix_time;
+    double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 
     /// Concentration vectors for mobile phase.
     Vec *vconc; // concentration vector
