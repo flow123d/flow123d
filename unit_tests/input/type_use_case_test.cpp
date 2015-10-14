@@ -131,7 +131,7 @@ const it::Record & EquationB::get_input_rec() {
 		.derive_from( const_cast<it::AbstractRecord &>(Equation::get_input_type()) )
 		.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
 		.declare_key("parameter_b", it::Integer(), it::Default("111"), "")
-		.declare_key("default_str", it::String(), it::Default("str value"), "" )
+		.declare_key("default_str", it::String(), it::Default("\"str value\""), "" )
 		.declare_key("substances", it::Array( it::String() ), it::Default::obligatory(), "" )
 		.close();
 }
@@ -175,7 +175,7 @@ EquationB::EquationB(Input::Record rec) {
     int param = rec.val<int>("parameter_b");
     EXPECT_EQ(314, param);
 
-    EXPECT_EQ("str value", rec.val<string>("default_str"));
+    EXPECT_EQ("\"str value\"", rec.val<string>("default_str"));
     EXPECT_TRUE( rec.find<string>("default_str"));
 
     Array array( rec.val<Array>("substances") );

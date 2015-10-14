@@ -189,6 +189,7 @@ using namespace Input::Type;
     	.declare_key("int_key", Integer(),  "")
     	.allow_auto_conversion("int_key")
     	.close();
+    sub_rec.finish();
 
     Record record_record = Record("RecordOfRecords", "")
     	.declare_key("sub_rec_1", other_record, "key desc");

@@ -21,7 +21,7 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	Record copy_rec = Record("Copy","")
-       	.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.")
+       	.declare_key("mesh", String(), Default("\"input.msh\""), "Comp. mesh.")
        	.declare_key("a_val", String(), Default::obligatory(), "")
 		.close();
 
@@ -58,7 +58,7 @@ using namespace Input::Type;
 
     // test default value for an auto convertible abstract record key
     Record xx_rec = Record("XX", "")
-    		.declare_key("ar_key", a_rec, Default("ahoj"), "")
+    		.declare_key("ar_key", a_rec, Default("\"ahoj\""), "")
 			.close();
     xx_rec.finish();
 
