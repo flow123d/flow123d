@@ -40,39 +40,46 @@
       }
     }, 
     secondary_equation = {
-      TYPE = "SoluteTransport_DG", 
+      TYPE = "TransportOperatorSplitting",
+
       dual_porosity = false, 
-      
-      input_fields= [
-        { region = "IMPLICIT BOUNDARY",
-          bc_conc = 0
-        },
-        { rid = 7,
-          init_conc = 0,
-          porosity= 1,
-          diff_m = 1e-9,
-          disp_l = 1e-2,
-          disp_t = 1e-2,
-          dg_penalty = 1e1,
-          sources_density = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "input/test16_sources.msh",
-            field_name = "density"
+      transport = {
+        TYPE = "SoluteTransport_DG", 
+        input_fields= [
+          { region = "IMPLICIT BOUNDARY",
+            bc_conc = 0
           },
-          sources_sigma = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "input/test16_sources.msh",
-            field_name = "sigma"
-          },
-          sources_conc = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "input/test16_sources.msh",
-            field_name = "concentration"
+          { rid = 7,
+            init_conc = 0,
+            porosity= 1,
+            diff_m = 1e-9,
+            disp_l = 1e-2,
+            disp_t = 1e-2,
+            dg_penalty = 1e1,
+            sources_density = {
+              TYPE = "FieldElementwise",
+              gmsh_file = "input/test16_sources.msh",
+              field_name = "density"
+            },
+            sources_sigma = {
+              TYPE = "FieldElementwise",
+              gmsh_file = "input/test16_sources.msh",
+              field_name = "sigma"
+            },
+            sources_conc = {
+              TYPE = "FieldElementwise",
+              gmsh_file = "input/test16_sources.msh",
+              field_name = "concentration"
+            }
           }
-        }
-      ],
-      
-      dg_variant = "symmetric",
+        ],
+        solver = {
+          TYPE = "Petsc", 
+          a_tol = 1e-12,
+          r_tol = 1e-12
+        },
+        dg_variant = "symmetric"
+      },
       
       output_stream = {
         REF = "/system/output_streams/1"
@@ -84,11 +91,6 @@
       ], 
       time = {
         REF = "../../time"
-      },
-      solver = {
-        TYPE = "Petsc", 
-        a_tol = 1e-12,
-        r_tol = 1e-12
       },
       balance = {
         cumulative = true

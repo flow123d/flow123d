@@ -39,31 +39,34 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
     
-      input_fields= [
-        { rid = 100,
-          init_conc = 0
-        },
-        {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_000",
-          time = 1
-        },
-        {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_001",
-          time = 3
-        },
-        {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_002",
-          time = 6
-        },
-        {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_003",
-          time = 7
-        }
-      ],
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields= [
+          { rid = 100,
+            init_conc = 0
+          },
+          {
+            region = "IMPLICIT BOUNDARY",
+            transport_old_bcd_file = "./input/test14_tbc_000",
+            time = 1
+          },
+          {
+            region = "IMPLICIT BOUNDARY",
+            transport_old_bcd_file = "./input/test14_tbc_001",
+            time = 3
+          },
+          {
+            region = "IMPLICIT BOUNDARY",
+            transport_old_bcd_file = "./input/test14_tbc_002",
+            time = 6
+          },
+          {
+            region = "IMPLICIT BOUNDARY",
+            transport_old_bcd_file = "./input/test14_tbc_003",
+            time = 7
+          }
+        ]
+      },
 
       output_stream = {
         REF = "/system/output_streams/1"

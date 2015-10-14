@@ -34,10 +34,13 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       
-      input_fields= [
-        { rid = 1,
-          init_conc =
-            [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.060000000, 0.07000000, 0.080000000]
+      
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields= [
+          { rid = 1,
+            init_conc =
+              [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.060000000, 0.07000000, 0.080000000]
 // this currently does not work
 /*          {
             TYPE = "FieldElementwise",
@@ -45,11 +48,12 @@
             field_name = "concentration"
           }
 */
-        },
-        { region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/sit_decay_long.tbc"
-        }
-      ],
+          },
+          { region = "IMPLICIT BOUNDARY",
+            old_boundary_file = "./input/sit_decay_long.tbc"
+          }
+        ]
+      },
 
       substances = [
         "A", 

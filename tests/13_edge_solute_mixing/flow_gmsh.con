@@ -44,22 +44,25 @@
 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-       
-      input_fields= [
-        { rid = 17,
-          init_conc = 0
-        },
-        { rid = 18,
-          init_conc = 0
-        },
-        { rid = 19,
-          init_conc = 0
-        },
-        {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test13.tbc"
-        }
-      ],
+      
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields= [
+          { rid = 17,
+            init_conc = 0
+          },
+          { rid = 18,
+            init_conc = 0
+          },
+          { rid = 19,
+            init_conc = 0
+          },
+          {
+            region = "IMPLICIT BOUNDARY",
+            transport_old_bcd_file = "./input/test13.tbc"
+          }
+        ]
+      },
 
       output_stream = {
         REF = "/system/output_streams/1"

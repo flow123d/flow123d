@@ -44,30 +44,34 @@
       boundary_file = "./input/test16.tbc", 
       initial_file = "./input/test16.tic", 
       
-      input_fields= [
-        { region = "IMPLICIT BOUNDARY",
-          bc_conc = 0
-        },
-        { rid = 7,
-          init_conc = 0,
-          porosity= 1,
-          sources_density = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "input/test16_sources.msh",
-            field_name = "density"
+      
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields= [
+          { region = "IMPLICIT BOUNDARY",
+            bc_conc = 0
           },
-          sources_sigma = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "input/test16_sources.msh",
-            field_name = "sigma"
-          },
-          sources_conc = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "input/test16_sources.msh",
-            field_name = "concentration"
+          { rid = 7,
+            init_conc = 0,
+            porosity= 1,
+            sources_density = {
+              TYPE = "FieldElementwise",
+              gmsh_file = "input/test16_sources.msh",
+              field_name = "density"
+            },
+            sources_sigma = {
+              TYPE = "FieldElementwise",
+              gmsh_file = "input/test16_sources.msh",
+              field_name = "sigma"
+            },
+            sources_conc = {
+              TYPE = "FieldElementwise",
+              gmsh_file = "input/test16_sources.msh",
+              field_name = "concentration"
+            }
           }
-        }
-      ],
+        ]
+      },
       
       output_stream = {
         REF = "/system/output_streams/1"

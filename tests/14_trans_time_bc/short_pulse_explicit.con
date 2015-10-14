@@ -51,27 +51,29 @@
         end_time = 1.0
       },
     
-      input_fields= [
-        { region = "bulk",
-          init_conc = 0
-        },
-        {
-          region = ".right",
-          time = 0.01,
-          bc_conc=100
-          
-        },
-        {
-          region = ".right",
-          time = 0.02,
-          bc_conc=0
-        },
-        {
-          region = ".right",
-          time = 0.35,
-          bc_conc=20
-        }  
-      ],
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields= [
+          { region = "bulk",
+            init_conc = 0
+          },
+          {
+            region = ".right",
+            time = 0.01,
+            bc_conc=100
+          },
+          {
+            region = ".right",
+            time = 0.02,
+            bc_conc=0
+          },
+          {
+            region = ".right",
+            time = 0.35,
+            bc_conc=20
+          }  
+        ]
+      },
 
       output_stream = {
         REF = "/system/output_streams/1"

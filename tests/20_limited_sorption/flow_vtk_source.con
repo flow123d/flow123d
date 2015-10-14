@@ -45,18 +45,21 @@
    
       substances = ["A", "As-lin-limit", "As-lin", "As-lang", "As-freund"],
       
-      input_fields = [
-        { region = "volume",
-          init_conc = 0.0,
-          porosity= 0.25,
-          sources_density = [0, 0.8, 0.2, 0.3, 0.5],
-          sources_conc = [0.5, 0, 0, 0, 0],
-          sources_sigma = [1.5, 0, 0, 0, 0]
-        },
-        { r_set = ".boundary",
-          bc_conc = 0
-        }
-      ],      
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields = [
+          { region = "volume",
+            init_conc = 0.0,
+            porosity= 0.25,
+            sources_density = [0, 0.8, 0.2, 0.3, 0.5],
+            sources_conc = [0.5, 0, 0, 0, 0],
+            sources_sigma = [1.5, 0, 0, 0, 0]
+          },
+          { r_set = ".boundary",
+            bc_conc = 0
+          }
+        ]
+      },
       
       reaction_term = {
         TYPE = "Sorption",

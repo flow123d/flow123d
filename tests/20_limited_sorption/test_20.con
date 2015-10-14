@@ -39,15 +39,18 @@
    
       substances = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
       
-      input_fields= [
-        { r_set = "ALL",
-          init_conc = 0,
-          porosity= 0.25 
-        },
-        { r_set = "BOUNDARY",
-          bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
-        }
-      ],
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields= [
+          { r_set = "ALL",
+            init_conc = 0,
+            porosity= 0.25 
+          },
+          { r_set = "BOUNDARY",
+            bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
+          }
+        ]
+      },
       
       output_stream = {
         REF = "/output_streams/1"

@@ -35,17 +35,20 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
     
-      input_fields= [
-        { region = ".right",
-          bc_conc = 1
-        },
-        { region = ".bottom",
-          bc_conc = 2
-        },
-        { region = ".top",
-          bc_conc = 3
-        }
-      ],
+      transport = {
+        TYPE="ConvectionTransport"
+        input_fields= [
+          { region = ".right",
+            bc_conc = 1
+          },
+          { region = ".bottom",
+            bc_conc = 2
+          },
+          { region = ".top",
+            bc_conc = 3
+          }
+        ]
+      },
 
       output_stream = {
         REF = "/system/output_streams/1"

@@ -51,17 +51,20 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      input_fields=[
-        { 
-          region="IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test2.tbc"
-        },
-        {
-          r_set="subset",
-          init_conc = 0,
-          porosity= 0.25
-        }
-      ],
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields=[
+          { 
+            region="IMPLICIT BOUNDARY",
+            transport_old_bcd_file = "./input/test2.tbc"
+          },
+          {
+            r_set="subset",
+            init_conc = 0,
+            porosity= 0.25
+          }
+        ]
+      }
 
       output_stream = {
         REF = "/system/output_streams/1"

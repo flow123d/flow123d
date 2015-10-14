@@ -39,7 +39,8 @@
     },
 
     secondary_equation = {
-      TYPE = "SoluteTransport_DG", 
+      TYPE = "TransportOperatorSplitting",
+      
       output_stream = {
           REF = "/system/output_streams/1"
       }, 
@@ -49,27 +50,30 @@
         end_time = 5.0,
 	init_dt = 0.5
       },
-      solver = {
-        TYPE = "Petsc", 
-        a_tol = 1e-12,
-        r_tol = 1e-12
-      },
-      input_fields=[
-        { 
-          region="IMPLICIT BOUNDARY",
-          bc_conc = 1
+      transport = {
+        TYPE = "SoluteTransport_DG", 
+        solver = {
+          TYPE = "Petsc", 
+          a_tol = 1e-12,
+          r_tol = 1e-12
         },
-        {
-          rid=48,
-          init_conc = 0,
-          porosity= 0.25
-        },
-        {
-          rid=184,
-          init_conc = 0,
-          porosity= 0.25
-        }
-      ],
+        input_fields=[
+          { 
+            region="IMPLICIT BOUNDARY",
+            bc_conc = 1
+          },
+          {
+            rid=48,
+            init_conc = 0,
+            porosity= 0.25
+          },
+          {
+            rid=184,
+            init_conc = 0,
+            porosity= 0.25
+          }
+        ]
+      }
       balance = {
         cumulative = true
       }

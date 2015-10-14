@@ -37,16 +37,19 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      input_fields= [
-        { rid = 1,
-          init_conc = 
-            [1, 0, 0]
-        },
-        {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/flow_decay/sit_decay.tbc"
-        }
-      ],
+      transport = {
+        TYPE = "ConvectionTransport",
+        input_fields= [
+          { rid = 1,
+            init_conc = 
+              [1, 0, 0]
+          },
+          {
+            region = "IMPLICIT BOUNDARY",
+            transport_old_bcd_file = "./input/flow_decay/sit_decay.tbc"
+          }
+        ]
+      },
 
       output_stream = {
         REF = "/system/output_streams/1"

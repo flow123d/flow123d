@@ -38,23 +38,31 @@
     }, 
  
     secondary_equation = {
-      TYPE = "SoluteTransport_DG", 
-
-      input_fields= [
-        { region = "IMPLICIT BOUNDARY",
-          bc_conc=0
-        },
-        {
-          r_set="ALL",
-          init_conc = { 
-            TYPE="FieldElementwise", 
-            gmsh_file = "./input/test18_init.msh",
-            field_name = "concentration"
+      TYPE = "TransportOperatorSplitting",
+      
+      transport = {
+        TYPE = "SoluteTransport_DG", 
+        input_fields= [
+          { region = "IMPLICIT BOUNDARY",
+            bc_conc=0
           },
-          diff_m = 1e-1,
-          dg_penalty = 100
+          {
+            r_set="ALL",
+            init_conc = { 
+              TYPE="FieldElementwise", 
+              gmsh_file = "./input/test18_init.msh",
+              field_name = "concentration"
+            },
+            diff_m = 1e-1,
+            dg_penalty = 100
+          }
+        ],
+        solver = {
+          TYPE = "Petsc", 
+          a_tol = 1e-12,
+          r_tol = 1e-12
         }
-      ],
+      }, 
 
       output_stream = {
         REF = "/system/output_streams/1"
@@ -63,11 +71,7 @@
       substances = [
         "A"
       ],      
-      solver = {
-        TYPE = "Petsc", 
-        a_tol = 1e-12,
-        r_tol = 1e-12
-      }, 
+      
       time = {
         end_time = 0.01, 
         max_dt = 0.001
