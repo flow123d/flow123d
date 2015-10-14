@@ -548,7 +548,7 @@ void ConvectionTransport::update_solution() {
         || data_.porosity.changed()
         || data_.bc_conc.changed() )
     {
-        set_boundary_conditions();
+        set_boundary_conditions();  //TODO move to asses...
         // rescale by time step
         DBGMSG("BC - rescale NEW dt.\n");
         for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
