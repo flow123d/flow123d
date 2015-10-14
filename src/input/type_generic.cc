@@ -64,7 +64,7 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 
 
 bool Parameter::finish(bool is_generic) {
-	ASSERT(is_generic, "Finish of non-generic Parameter '%s'.\n", this->name_.c_str());
+	if (!is_generic) THROW( ExcParamaterInIst() << EI_Object(this->name_));
 	return true;
 }
 
@@ -119,21 +119,25 @@ std::string print_parameter_vec(std::vector<TypeBase::ParameterPair> vec) {
 
 // Implements @p TypeBase::make_instance.
 TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPair> vec) const {
-	TypeBase::MakeInstanceReturnType ret;
+	// check if instance is created
+	if (created_instance_.first) {
+		return created_instance_;
+	}
+
 	try {
-		ret = generic_type_.make_instance(parameters_);
+		created_instance_ = generic_type_.make_instance(parameters_);
 	} catch (ExcParamaterNotSubsituted &e) {
         e << EI_ParameterList( print_parameter_vec(parameters_) );
         throw;
 	}
 #ifdef FLOW123D_DEBUG_ASSERTS
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = parameters_.begin(); vec_it!=parameters_.end(); vec_it++) {
-		ParameterMap::iterator map_it = ret.second.find( vec_it->first );
-		ASSERT(map_it != ret.second.end(), "Unused parameter '%s' in input type instance with parameters: %s.\n",
+		ParameterMap::iterator map_it = created_instance_.second.find( vec_it->first );
+		ASSERT(map_it != created_instance_.second.end(), "Unused parameter '%s' in input type instance with parameters: %s.\n",
 				vec_it->first.c_str(), print_parameter_vec(parameters_).c_str());
 	}
 #endif
-	return ret;
+	return created_instance_;
 }
 
 } // closing namespace Type

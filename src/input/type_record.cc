@@ -232,6 +232,7 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
 
 bool Record::finish(bool is_generic)
 {
+
 	if (data_->finished) return true;
 
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
@@ -241,7 +242,8 @@ bool Record::finish(bool is_generic)
     {
     	if (it->key_ != "TYPE") {
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-            data_->finished = data_->finished && it->type_->finish(is_generic);
+			if (!is_generic && it->type_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
+           	data_->finished = data_->finished && it->type_->finish(is_generic);
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
@@ -378,6 +380,12 @@ const Record &Record::add_parent(AbstractRecord &parent) const {
 }
 
 
+Record &Record::root_of_generic_subtree() {
+	root_of_generic_subtree_ = true;
+	return *this;
+}
+
+
 
 /**********************************************************************************
  * implementation of Type::Record::RecordData
@@ -406,6 +414,8 @@ void Record::RecordData::declare_key(const string &key,
                          boost::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description)
 {
+    ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
+
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
 
     if (key!="TYPE" && ! TypeBase::is_valid_identifier(key))
@@ -428,6 +438,13 @@ void Record::RecordData::declare_key(const string &key,
 
 }
 
+Record &Record::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
+                        const Default &default_value, const string &description)
+{
+    check_key_default_value(default_value, *type, key);
+    data_->declare_key(key, type, default_value, description);
+    return *this;
+}
 
 
 template <class KeyType>
@@ -437,14 +454,8 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
-    if (data_->closed_)
-        xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
-
-	check_key_default_value(default_value, type, key);
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
-	data_->declare_key(key, type_copy, default_value, description);
-
-    return *this;
+	return declare_key(key, type_copy, default_value, description);
 }
 
 
@@ -510,10 +521,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, child_data_->description_);
-    // TODO temporary hack, should be removed after implementation of generic types
-    if (child_data_->element_input_selection != nullptr) {
-    	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
-    }
+    //boost::hash_combine(seed, child_data_->generic_content_hash_);
     attribute_content_hash(seed);
     //for( Record &key : child_data_->list_of_childs) {
     //    boost::hash_combine(seed, key.content_hash() );
@@ -593,8 +601,9 @@ bool AbstractRecord::finish(bool is_generic) {
 	child_data_->finished_ = true;
 
 	for (auto &child : child_data_->list_of_childs) {
+		if (!is_generic && child.is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
 		child.add_parent(*this);
-		child_data_->finished_ = child_data_->finished_ && child.finish(is_generic);
+       	child_data_->finished_ = child_data_->finished_ && child.finish(is_generic);
 	}
 
     // check validity of possible default value of TYPE key
@@ -613,14 +622,6 @@ bool AbstractRecord::finish(bool is_generic) {
 AbstractRecord &AbstractRecord::close() {
 	child_data_->closed_=true;
     return *( Input::TypeRepository<AbstractRecord>::get_instance().add_type( *this ) );
-}
-
-
-AbstractRecord &AbstractRecord::set_element_input(const Selection * element_input) {
-	if (element_input != NULL ) {
-		child_data_->element_input_selection = element_input;
-	}
-	return *this;
 }
 
 
@@ -691,6 +692,18 @@ AbstractRecord AbstractRecord::deep_copy() const {
 	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	return abstract;
 }
+
+
+AbstractRecord &AbstractRecord::root_of_generic_subtree() {
+	root_of_generic_subtree_ = true;
+	return *this;
+}
+
+
+/*AbstractRecord &AbstractRecord::set_generic_content_hash(TypeHash generic_content_hash) {
+	child_data_->generic_content_hash_ = generic_content_hash;
+	return *this;
+}*/
 
 
 AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {

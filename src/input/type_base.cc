@@ -47,12 +47,12 @@ using namespace std;
 
 
 TypeBase::TypeBase()
-: attributes_( boost::make_shared<attribute_map>() ) {}
+: attributes_( boost::make_shared<attribute_map>() ), root_of_generic_subtree_(false) {}
 
 
 
 TypeBase::TypeBase(const TypeBase& other)
-: attributes_(other.attributes_) {}
+: attributes_(other.attributes_), root_of_generic_subtree_(other.root_of_generic_subtree_) {}
 
 
 
@@ -67,7 +67,7 @@ bool TypeBase::is_valid_identifier(const string& key) {
 
 string TypeBase::desc() const {
     stringstream ss;
-    ss << OutputText(this,1);
+    ss << OutputText(this);
     return ss.str();
 }
 
@@ -75,8 +75,10 @@ string TypeBase::desc() const {
 
 void TypeBase::lazy_finish() {
 	Input::TypeRepository<Instance>::get_instance().finish();
-	Input::TypeRepository<Record>::get_instance().finish();
+	Input::TypeRepository<AbstractRecord>::get_instance().finish(true);
+	Input::TypeRepository<Record>::get_instance().finish(true);
 	Input::TypeRepository<AbstractRecord>::get_instance().finish();
+	Input::TypeRepository<Record>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
 }
 
@@ -147,7 +149,7 @@ void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
 
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
-    return ( stream << OutputText(&type, 1) );
+    return ( stream << OutputText(&type) );
 }
 
 
@@ -177,6 +179,9 @@ bool Array::finish(bool is_generic) {
 bool Array::ArrayData::finish(bool is_generic)
 {
 	if (finished) return true;
+
+	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) type_of_values_ = type_of_values_->make_instance().first;
+	if (!is_generic && type_of_values_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
 
 	return (finished = type_of_values_->finish(is_generic) );
 }
@@ -453,6 +458,12 @@ string FileName::type_name() const {
 
 bool FileName::match(const string &str) const {
     return (type_ == ::FilePath::input_file) || (str[0] != DIR_DELIMITER); // output files can not be absolute
+}
+
+
+
+TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<FileName>(*this), ParameterMap() );
 }
 
 

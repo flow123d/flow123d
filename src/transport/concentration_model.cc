@@ -44,6 +44,31 @@ using namespace Input::Type;
 
 
 
+const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
+	return Selection("SoluteTransport_BC_Type", "Types of boundary conditions for solute transport model.")
+              .add_value(bc_inflow, "inflow",
+            		  "Default transport boundary condition.\n"
+            		  "On water inflow (($(q_w \\le 0)$)), total flux is given by the reference concentration 'bc_conc'. "
+            		  "On water outflow we prescribe zero diffusive flux, "
+            		  "i.e. the mass flows out only due to advection.")
+              .add_value(bc_dirichlet, "dirichlet",
+            		  "Dirichlet boundary condition (($ c = c_D $)).\n"
+            		  "The prescribed concentration (($c_D$)) is specified by the field 'bc_conc'.")
+              .add_value(bc_total_flux, "total_flux",
+            		  "Total mass flux boundary condition.\n"
+            		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(c-c_R) )+q_wc_A$)), "
+            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+            		  "the advected concentration (($c_A$)) by 'bc_ad_conc', "
+            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
+              .add_value(bc_diffusive_flux, "diffusive_flux",
+            		  "Diffusive flux boundary condition.\n"
+            		  "The prescribed mass flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(c-c_R) )$)), "
+            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
+			  .close();
+}
 
 
 
@@ -51,12 +76,32 @@ using namespace Input::Type;
 ConcentrationTransportModel::ModelEqData::ModelEqData()
 : TransportEqData()
 {
-    *this+=bc_conc
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Type of boundary condition.")
+            .units( UnitSI::dimensionless() )
+            .input_default("\"inflow\"")
+            .input_selection( &get_bc_type_selection() )
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+    *this+=bc_dirichlet_value
             .name("bc_conc")
             .units( UnitSI().kg().m(-3) )
             .description("Dirichlet boundary condition (for each substance).")
             .input_default("0.0")
             .flags_add( in_rhs );
+	*this+=bc_flux
+			.name("bc_flux")
+			.description("Flux in Neumann boundary condition.")
+			.units( UnitSI().kg().m().s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs);
+	*this+=bc_robin_sigma
+			.name("bc_robin_sigma")
+			.description("Conductivity coefficient in Robin boundary condition.")
+			.units( UnitSI().m(4).s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=init_conc
             .name("init_conc")
             .units( UnitSI().kg().m(-3) )
@@ -187,12 +232,31 @@ void ConcentrationTransportModel::compute_init_cond(const std::vector<arma::vec3
 	data().init_conc.value_list(point_list, ele_acc, init_values);
 }
 
-
-void ConcentrationTransportModel::compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_values)
+void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types)
 {
-	data().bc_conc.value_list(point_list, ele_acc, bc_values);
+	// Currently the bc types for ConcentrationTransport are numbered in the same way as in TransportDG.
+	// In general we should use some map here.
+	bc_types = data().bc_type.value(ele_acc.centre(), ele_acc);
+}
+
+
+void ConcentrationTransportModel::get_flux_bc_data(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_flux,
+		std::vector< arma::vec > &bc_sigma,
+		std::vector< arma::vec > &bc_ref_value)
+{
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+}
+
+void ConcentrationTransportModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_sigma)
+{
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 }
 
 

@@ -43,8 +43,21 @@ public:
 	class ModelEqData : public FieldSet {
 	public:
 
+		enum Heat_bc_types {
+			bc_inflow,
+			bc_dirichlet,
+			bc_total_flux,
+			bc_diffusive_flux
+		};
+
+		/// Type of boundary condition (see also BC_Type)
+        BCField<3, FieldValue<3>::Enum > bc_type;
 		/// Dirichlet boundary condition for temperature.
-		BCField<3, FieldValue<3>::Scalar> bc_temperature;
+		BCField<3, FieldValue<3>::Vector> bc_dirichlet_value;
+		/// Flux value in total/diffusive flux b.c.
+		BCField<3, FieldValue<3>::Vector > bc_flux;
+		/// Transition coefficient in total/diffusive flux b.c.
+		BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
 		/// Initial temperature.
 		Field<3, FieldValue<3>::Scalar> init_temperature;
 		/// Porosity of solid.
@@ -92,6 +105,8 @@ public:
 
 		static string default_output_field() { return "temperature"; }
 
+        static const Input::Type::Selection & get_bc_type_selection();
+
 		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
 	};
 
@@ -118,9 +133,18 @@ public:
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &init_values) override;
 
-	void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
+	void get_bc_type(const ElementAccessor<3> &ele_acc,
+				arma::uvec &bc_types) override;
+
+	void get_flux_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_values) override;
+			std::vector< arma::vec > &bc_flux,
+			std::vector< arma::vec > &bc_sigma,
+			std::vector< arma::vec > &bc_ref_value) override;
+
+	void get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_sigma) override;
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
