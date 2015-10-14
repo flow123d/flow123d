@@ -145,17 +145,8 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
             );
 
         double init_dt=input.val<double>("init_dt");
-        if (init_dt > 0.0) {
-            // set first time step suggested by user
-            //time_step_=min(init_dt, time_step_);
-            
-            time_constraints_.set(lower_constraint_,"Initial", init_dt);
-            time_constraints_.set(upper_constraint_,"Initial", init_dt);
-        } else {
-            // apply constraints
-            //time_step_=min(time_step_, upper_constraint_);
-            //time_step_=max(time_step_, lower_constraint_);
-        }
+        time_constraints_.set(lower_constraint_,"Initial", init_dt);
+        time_constraints_.set(upper_constraint_,"Initial", init_dt);
 
 
     } catch(ExcTimeGovernorMessage &exc) {
@@ -279,9 +270,9 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
 }
 
 
-void TimeGovernor::define_constraint(string name, string message, double value)
+bool TimeGovernor::define_constraint(string name, string message, double value)
 {
-    time_constraints_.define_constraint(name, message, value);
+    return time_constraints_.define_constraint(name, message, value);
 }
 
 void TimeGovernor::print_time_constraints(ostream& stream)

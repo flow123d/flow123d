@@ -277,8 +277,10 @@ public:
     * @param max_dt is the maximal value allowed for time step
     */
    void set_permanent_constraint( double min_dt, double max_dt);
-    
-   void define_constraint(std::string name, std::string message, double value=0.0);
+   
+   /// Defines a new time constraint and adds it to the list. Forwards TimeConstraintList functionality.
+   bool define_constraint(std::string name, std::string message, double value=0.0);
+   /// Prints all time constraint into a given @p stream. Forwards TimeConstraintList functionality.
    void print_time_constraints(std::ostream &stream);
    
     /**
@@ -514,11 +516,6 @@ private:
     TimeConstraintList time_constraints_;
     TimeConstraint upper_constraint_,   ///< Upper constraint for the choice of the next time step.
                    lower_constraint_;   ///< Lower constraint for the choice of the next time step.
-
-    /// Permanent upper limit for the time step.
-//     double max_time_step_;
-    /// Permanent lower limit for the time step.
-//     double min_time_step_;
 
     /**
      * When the next time is chosen we need only the lowest fix time. Therefore we use

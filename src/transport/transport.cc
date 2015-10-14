@@ -483,7 +483,7 @@ void ConvectionTransport::zero_time_step()
 }
 
 
-bool ConvectionTransport::assess_time_constraint(double& time_constraint)
+bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
     ASSERT(mh_dh, "Null MH object.\n" );
     data_.set_time(time_->step()); // set to the last computed time

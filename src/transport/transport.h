@@ -120,9 +120,12 @@ public:
 	 */
     void zero_time_step() override;
     /**
-     * 
+     * Assembles the transport matrix and vector (including sources, bc terms).
+     * Evaluates CFL condition.
+     * @param time_constraint is the value CFL constraint (return parameter)
+     * @return true if CFL is changed since previous step, false otherwise
      */
-    bool assess_time_constraint(double &time_constraint);
+    bool evaluate_time_constraint(double &time_constraint);
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
@@ -130,7 +133,7 @@ public:
 
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
-     * In particular the velocity field dosn't change over this interval.
+     * In particular the velocity field doesn't change over this interval.
      *
      * Dependencies:
      *
@@ -209,11 +212,10 @@ private:
 	void set_initial_condition();
 	void read_concentration_sources();
 	void set_boundary_conditions();
-  
-  //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-// 	void compute_concentration_sources(unsigned int sbi);
 
-    //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+    /** @brief Assembles concentration sources for each substance.
+     * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+     */
     void compute_concentration_sources();
     
 	/**
@@ -233,7 +235,7 @@ private:
 
     //@{
     /**
-     * Flag indicates the state of object (transport matrix or source term).
+     * Flag indicates the state of object (transport matrix or source or boundary term).
      * If false, the object is freshly assembled and not rescaled.
      * If true, the object is scaled (not necessarily with the current time step).
      */
@@ -244,7 +246,7 @@ private:
     Vec *v_sources_corr;
     
 
-    const TimeConstraintName time_constraint_cfl;
+    const TimeConstraintName time_constraint_cfl;   ///< Name of the TimeConstrant of this equation.
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;    ///< Time step constraint coming from CFL condition.
     
