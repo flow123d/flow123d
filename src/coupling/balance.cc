@@ -56,7 +56,7 @@ const Selection & Balance::get_format_selection_input_type() {
 const Record & Balance::get_input_type() {
 	return Record("Balance", "Balance of a conservative quantity, boundary fluxes and sources.")
 		.declare_key("balance_on", Bool(), Default("true"), "Balance is computed if the value is true.")
-		.declare_key("format", Balance::get_format_selection_input_type(), Default("txt"), "Format of output file.")
+		.declare_key("format", Balance::get_format_selection_input_type(), Default("\"txt\""), "Format of output file.")
 		.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
 				"If true, then balance is calculated at each computational time step, which can slow down the program.")
 		.declare_key("file", FileName::output(), Default::read_time("FileName balance.*"), "File name for output of balance.")

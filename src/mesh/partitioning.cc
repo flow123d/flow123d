@@ -33,11 +33,14 @@ const IT::Selection & Partitioning::get_tool_sel() {
 }
 
 const IT::Record & Partitioning::get_input_type() {
-    return IT::Record("Partition","Setting for various types of mesh partitioning." )
-		.declare_key("tool", Partitioning::get_tool_sel(), IT::Default("METIS"),  "Software package used for partitioning. See corresponding selection.")
-		.declare_key("graph_type", Partitioning::get_graph_type_sel(), IT::Default("any_neighboring"), "Algorithm for generating graph and its weights from a multidimensional mesh.")
+    static IT::Record input_type = IT::Record("Partition","Setting for various types of mesh partitioning." )
+		.declare_key("tool", Partitioning::get_tool_sel(), IT::Default("\"METIS\""),  "Software package used for partitioning. See corresponding selection.")
+		.declare_key("graph_type", Partitioning::get_graph_type_sel(), IT::Default("\"any_neighboring\""), "Algorithm for generating graph and its weights from a multidimensional mesh.")
 		.allow_auto_conversion("graph_type") // mainly in order to allow Default value for the whole record Partition
 		.close();
+    input_type.finish();
+
+    return input_type;
 }
 
 

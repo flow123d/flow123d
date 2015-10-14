@@ -124,7 +124,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 				"Linear solver for MH problem.")
 		.declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
 				"Parameters of output form MH module.")
-		.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("None"),
+		.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions." )
 		.declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
 				"Settings for computing mass balance.")

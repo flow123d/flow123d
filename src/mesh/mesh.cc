@@ -75,7 +75,7 @@ const IT::Record & Mesh::get_input_type() {
 		.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
 				"List of region set definitions. There are three region sets implicitly defined:\n\n"
 				" - ALL (all regions of the mesh)\n - BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
-		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
+		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
 		.close();
 }
 

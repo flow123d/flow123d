@@ -91,12 +91,12 @@ const Record & TransportDG<Model>::get_input_type() {
 		.declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
 				"Linear solver for MH problem.")
 		.declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
-		.declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("non-symmetric"),
+		.declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("\"non-symmetric\""),
 				"Variant of interior penalty discontinuous Galerkin method.")
 		.declare_key("dg_order", Integer(0,3), Default("1"),
 				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
 		.declare_key("output_fields", Array(EqData::get_output_selection()),
-				Default(Model::ModelEqData::default_output_field()),
+				Default("\""+Model::ModelEqData::default_output_field()+"\""),
 				"List of fields to write to output file.")
 		.close();
 }

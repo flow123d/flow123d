@@ -72,7 +72,7 @@ const it::Record & DarcyFlowMHOutput::get_input_type() {
 						"Parameters of output stream.")
 		.declare_key("output_fields", it::Array(OutputFields::get_output_selection()),
 				it::Default::obligatory(), "List of fields to write to output file.")
-//        .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
+//        .declare_key("balance_output", it::FileName::output(), it::Default("\"water_balance.txt\""),
 //                        "Output file for water balance table.")
 		.declare_key("compute_errors", it::Bool(), it::Default("false"),
 						"SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
