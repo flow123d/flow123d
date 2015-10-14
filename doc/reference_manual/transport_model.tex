@@ -72,7 +72,7 @@ One has to pay attention when prescribing the source, namely to determine whethe
 \paragraph{Initial and boundary conditions.}
 At time $t=0$ the concentration is determined by the \hyperA{SoluteTransport-DG-Data::init-conc}{initial condition}
 $$ c^i(0,\vc x) = c^i_0(\vc x). $$
-The physical boundary $\partial\Omega_d$ is decomposed into the parts $\Gamma_I\cup\Gamma_D\cup\Gamma_N\cup\Gamma_R$, which may change during simulation time.
+The physical boundary $\partial\Omega_d$ is decomposed into the parts $\Gamma_I\cup\Gamma_D\cup\Gamma_{TF}\cup\Gamma_{DF}$, which may change during simulation time.
 The first part $\Gamma_I$ is further divided into two segments:
 \begin{align*}
 \Gamma_I^+(t) &= \{\vc x\in \partial\Omega_d\where \vc q(t,\vc x)\cdot\vc n(\vc x)<0\},\\
@@ -80,16 +80,31 @@ The first part $\Gamma_I$ is further divided into two segments:
 \end{align*}
 where $\vc n$ stands for the unit outward normal vector to $\partial\Omega_d$.
 We prescribe the following \hyperA{SoluteTransport-DG-Data::bc-type}{boundary conditions}:
-On $\Gamma_D$, the Dirichlet condition is imposed via \hyperA{SoluteTransport-DG-Data::bc-conc}{prescribed concentration} $c_D^i$:
-$$ c^i = c^i_D \mbox{ on }\Gamma_D. $$
-On the inflow $\Gamma_I^+$ the \hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c_D^i$ is enforced through total flux:
+\begin{itemize}
+\item \textbf{inflow} Default transport boundary condition. On the inflow $\Gamma_I^+$ the \hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c_D^i$ \units{1}{-3}{} is enforced through total flux:
 $$ (\vc q c^i - \th\delta\D^i\nabla c^i)\cdot\vc n = \vc q\cdot\vc n c_D^i \mbox{ on }\Gamma_I^+, $$
-on $\Gamma_I^-$ we impose homogeneous Neumann condition:
-$$ -\th\delta\D^i\nabla c^i\cdot\vc n = 0 \mbox{ on }\Gamma_I^-, $$
-on $\Gamma_N$ we impose Neumann condition with user-defined \hyperA{SoluteTransport-DG-Data::bc-flux}{concentration flux} $f^i_N$:
-$$ -\th\delta\D^i\nabla c^i\cdot\vc n = f^i_N \mbox{ on }\Gamma_N, $$
-and finally on $\Gamma_R$ we impose Robin condition through \hyperA{SoluteTransport-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^i_R$ and \hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c^i_D$:
-$$ -\th\delta\D^i\nabla c^i\cdot\vc n = \sigma^i_R(c^i-c^i_D) \mbox{ on }\Gamma_R. $$
+while on the outflow $\Gamma_I^-$ we prescribe zero diffusive flux:
+$$ -\th\delta\D^i\nabla c^i\cdot\vc n = 0 \mbox{ on }\Gamma_I^-. $$
+\item \textbf{dirichlet} On $\Gamma_D$, the Dirichlet condition is imposed via \hyperA{SoluteTransport-DG-Data::bc-conc}{prescribed concentration} $c_D^i$:
+$$ c^i = c^i_D \mbox{ on }\Gamma_D. $$
+\item \textbf{total\_flux}
+On $\Gamma_{TF}$ we impose total mass flux condition:
+$$ (\vc q c^i - \th\delta\D^i\nabla c^i)\cdot\vc n = \delta(f^i_N + \sigma^i_R(c^i-c^i_D)), $$
+with user-defined \hyperA{SoluteTransport-DG-Data::bc-flux}{concentration flux} $f^i_N$ \units{1}{-2}{-1},
+\hyperA{SoluteTransport-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^i_R$ \units{}{1}{-1},
+and \hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c^i_D$ \units{1}{-3}{}.
+\item \textbf{diffusive\_flux} Finally on $\Gamma_{DF}$ we prescribe diffusive mass flux (analogously to the previous case):
+$$ -\th\delta\D^i\nabla c^i\cdot\vc n = \delta(f^i_N+\sigma^i_R(c^i-c^i_D)). $$
+\end{itemize}
+We mention several typical uses of boundary conditions:
+\begin{itemize}
+\item natural inflow: Use dirichlet or inflow b.c. (the later type is useful when the location of liquid inflow is not known a priori) and specify $c_D^i$.
+\item natural outflow: The substance leaves the domain only due to advection by the liquid. Use zero diffusive\_flux or inflow (the latter in case that the outflow boundary is not known a priori).
+\item boundary with known mass flux: Use total\_flux and $f_N^i$.
+\item impermeable boundary: Use zero total\_flux.
+\item partially permeable boundary: When the exterior of the domain represents a reservoir with known concentration and the Darcy flux is reasonably small, the mass exchange is proportional to the concentration difference inside and outside the domain.
+Use diffusive\_flux, $c_D^i$ and $\sigma_R^i$. 
+\end{itemize}
 
 
 

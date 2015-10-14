@@ -61,24 +61,6 @@ const Selection & TransportDG<Model>::get_dg_variant_selection_input_type() {
 }
 
 template<class Model>
-const Selection & TransportDG<Model>::EqData::get_bc_type_selection() {
-	return Selection("TransportDG_BC_Type", "Types of boundary condition supported by the transport DG model (solute transport or heat transfer).")
-              .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
-              .add_value(dirichlet, "dirichlet",
-                       "Dirichlet boundary condition."
-                       //"Specify the pressure head through the 'bc_pressure' field "
-                       //"or the piezometric head through the 'bc_piezo_head' field."
-                      )
-               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
-                       //"Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
-                       //"through 'bc_pressure' and 'bc_piezo_head' respectively."
-                       )
-              .add_value(inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
-			  .close();
-}
-
-template<class Model>
 const Selection & TransportDG<Model>::EqData::get_output_selection() {
 	return Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
 		.copy_values(EqData().make_output_field_selection("").close())
@@ -229,28 +211,6 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             "Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.")
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
-            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
-
-    *this+=bc_type
-            .name("bc_type")
-            .description(
-            "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
-            .units( UnitSI::dimensionless() )
-            .input_default("\"inflow\"")
-            .input_selection( &get_bc_type_selection() )
-            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
-
-    *this+=bc_flux
-            .name("bc_flux")
-            .description("Flux in Neumann boundary condition.")
-            .units( UnitSI().kg().m().s(-1).md() )
-            .input_default("0.0")
-            .flags_add(FieldFlag::in_rhs);
-    *this+=bc_robin_sigma
-            .name("bc_robin_sigma")
-            .description("Conductivity coefficient in Robin boundary condition.")
-            .units( UnitSI().m(4).s(-1).md() )
-            .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
     *this += region_id.name("region_id")
@@ -1047,6 +1007,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     PetscScalar local_matrix[ndofs*ndofs];
     vector<arma::vec3> side_velocity;
     vector<arma::vec> robin_sigma(qsize, arma::vec(n_substances()));
+    vector<double> csection(qsize);
     arma::vec dg_penalty;
     double gamma_l;
 
@@ -1070,8 +1031,10 @@ void TransportDG<Model>::assemble_fluxes_boundary()
         calculate_velocity(cell, side_velocity, fsv_rt);
         Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, ele_acc, ad_coef, dif_coef);
         dg_penalty = data_.dg_penalty.value(cell->centre(), ele_acc);
-        arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), side->cond()->element_accessor());
-        data_.bc_robin_sigma.value_list(fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
+        arma::uvec bc_type;
+        Model::get_bc_type(side->cond()->element_accessor(), bc_type);
+        Model::get_flux_bc_sigma(fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
+        data_.cross_section.value_list(fe_values_side.point_list(), ele_acc, csection);
 
         for (unsigned int sbi=0; sbi<n_subst_; sbi++)
         {
@@ -1086,7 +1049,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 				side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
 			double transport_flux = side_flux/side->measure();
 
-			if (bc_type[sbi] == EqData::dirichlet)
+			if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
 			{
 				// set up the parameters for DG method
 				set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), dg_penalty[sbi], gamma_l);
@@ -1098,9 +1061,11 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 			for (unsigned int k=0; k<qsize; k++)
 			{
 				double flux_times_JxW;
-				if (bc_type[sbi] == EqData::robin)
-					flux_times_JxW = (transport_flux + robin_sigma[k][sbi])*fe_values_side.JxW(k);
-				else if (bc_type[sbi] == EqData::inflow && side_flux < 0)
+				if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+					flux_times_JxW = csection[k]*robin_sigma[k][sbi]*fe_values_side.JxW(k);
+				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+					flux_times_JxW = (transport_flux + csection[k]*robin_sigma[k][sbi])*fe_values_side.JxW(k);
+				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
 					flux_times_JxW = 0;
 				else
 					flux_times_JxW = transport_flux*fe_values_side.JxW(k);
@@ -1113,7 +1078,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 						local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
 
 						// flux due to diffusion (only on dirichlet and inflow boundary)
-						if (bc_type[sbi] == EqData::dirichlet)
+						if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
 							local_matrix[i*ndofs+j] -= (arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(j,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
 									+ arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(j,k)*dg_variant
 									)*fe_values_side.JxW(k);
@@ -1273,7 +1238,9 @@ void TransportDG<Model>::set_boundary_conditions()
     PetscScalar local_flux_balance_rhs;
     vector<arma::vec> bc_values(qsize, arma::vec(n_substances())),
     		bc_fluxes(qsize, arma::vec(n_substances())),
-			bc_sigma(qsize, arma::vec(n_substances()));
+			bc_sigma(qsize, arma::vec(n_substances())),
+			bc_ref_values(qsize, arma::vec(n_substances()));
+    vector<double> csection(qsize);
 	vector<arma::vec3> velocity;
 
     for (unsigned int loc_el = 0; loc_el < feo->dh()->el_ds()->lsize(); loc_el++)
@@ -1298,16 +1265,19 @@ void TransportDG<Model>::set_boundary_conditions()
 			typename DOFHandlerBase::CellIterator cell = mesh().element.full_iter(side->element());
 			ElementAccessor<3> ele_acc = side->cond()->element_accessor();
 
-			arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), ele_acc);
+			arma::uvec bc_type;
+			Model::get_bc_type(ele_acc, bc_type);
 
 			fe_values_side.reinit(cell, side->el_idx());
 			fsv_rt.reinit(cell, side->el_idx());
 			calculate_velocity(cell, velocity, fsv_rt);
 
 			Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element()->element_accessor(), ad_coef, dif_coef);
-			Model::compute_dirichlet_bc(fe_values_side.point_list(), ele_acc, bc_values);
-			data_.bc_flux.value_list(fe_values_side.point_list(), ele_acc, bc_fluxes);
-			data_.bc_robin_sigma.value_list(fe_values_side.point_list(), ele_acc, bc_sigma);
+			data_.cross_section.value_list(fe_values_side.point_list(), side->element()->element_accessor(), csection);
+			// The b.c. data are fetched for all possible b.c. types since we allow
+			// different bc_type for each substance.
+			data_.bc_dirichlet_value.value_list(fe_values_side.point_list(), ele_acc, bc_values);
+			Model::get_flux_bc_data(fe_values_side.point_list(), ele_acc, bc_fluxes, bc_sigma, bc_ref_values);
 
 			feo->dh()->get_dof_indices(cell, (unsigned int *)&(side_dof_indices[0]));
 
@@ -1322,7 +1292,7 @@ void TransportDG<Model>::set_boundary_conditions()
 					side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
 				double transport_flux = side_flux/side->measure();
 
-				if (bc_type[sbi] == EqData::inflow && side_flux < 0)
+				if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
@@ -1334,7 +1304,7 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int i=0; i<ndofs; i++)
 							local_flux_balance_rhs -= local_rhs[i];
 				}
-				else if (bc_type[sbi] == EqData::dirichlet)
+				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
@@ -1360,11 +1330,11 @@ void TransportDG<Model>::set_boundary_conditions()
 								local_flux_balance_rhs -= local_rhs[i];
 					}
 				}
-				else if (bc_type[sbi] == EqData::neumann)
+				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
-						double bc_term = -bc_fluxes[k][sbi]*fe_values_side.JxW(k);
+						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]-bc_fluxes[k][sbi])*fe_values_side.JxW(k);
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
@@ -1374,16 +1344,16 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int i=0; i<ndofs; i++)
 						{
 							for (unsigned int k=0; k<qsize; k++)
-								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+								local_flux_balance_vector[i] += csection[k]*bc_sigma[k][sbi]*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
 							local_flux_balance_rhs -= local_rhs[i];
 						}
 					}
 				}
-				else if (bc_type[sbi] == EqData::robin)
+				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
-						double bc_term = bc_sigma[k][sbi]*bc_values[k][sbi]*fe_values_side.JxW(k);
+						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]-bc_fluxes[k][sbi])*fe_values_side.JxW(k);
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
@@ -1393,12 +1363,12 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int i=0; i<ndofs; i++)
 						{
 							for (unsigned int k=0; k<qsize; k++)
-								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+								local_flux_balance_vector[i] += csection[k]*(arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
 							local_flux_balance_rhs -= local_rhs[i];
 						}
 					}
 				}
-				else if (bc_type[sbi] == EqData::none || (bc_type[sbi] == EqData::inflow && side_flux >= 0))
+				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
 				{
 					if (balance_ != nullptr)
 					{
