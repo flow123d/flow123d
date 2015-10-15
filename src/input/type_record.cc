@@ -392,7 +392,7 @@ const Record &Record::add_parent(AbstractRecord &parent) const {
 	// finish inheritance
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
 				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
-	data_->keys[0].default_ = Default( type_name() );
+	data_->keys[0].default_ = Default( "\""+type_name()+"\"" );
 
 	return *this;
 }
