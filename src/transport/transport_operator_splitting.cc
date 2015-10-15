@@ -286,8 +286,17 @@ void TransportOperatorSplitting::update_solution() {
 	    	END_TIMER("TOS-balance");
 	    }
 
-        if(reaction) reaction->update_solution();
+        if(reaction) {
+        	convection->calculate_concentration_matrix();
+        	reaction->update_solution();
+        	convection->update_after_reactions(true);
+        }
+        else
+        	convection->update_after_reactions(false);
+
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
+
+
 
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {

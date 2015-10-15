@@ -215,10 +215,17 @@ public:
 	const Vec &get_solution(unsigned int sbi)
 	{ return ls[sbi]->get_solution(); }
 
+	double **get_concentration_matrix()
+	{ return solution_elem_; }
+
+	void calculate_concentration_matrix();
+
+	void update_after_reactions(bool solution_changed);
+
     void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 
     int *get_row_4_el()
-    {  }
+    { return row_4_el; }
 
 
 
@@ -449,6 +456,11 @@ private:
 
 	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
 	LinSys *ls_dt;
+
+	/// Element averages of solution (the array is passed to reactions in operator splitting).
+	double **solution_elem_;
+
+	int *row_4_el;
 
 	// @}
 

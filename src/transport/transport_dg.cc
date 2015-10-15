@@ -254,6 +254,10 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
 
     data_.set_limit_side(LimitSide::left);
+
+    row_4_el = new int[feo->dh()->el_ds()->lsize()];
+    for (unsigned int i=0; i<feo->dh()->el_ds()->lsize(); ++i)
+    	row_4_el[i] = i;
 }
 
 
@@ -320,14 +324,17 @@ void TransportDG<Model>::initialize()
     ls    = new LinSys*[Model::n_substances()];
     ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( input_rec.val<Input::Record>("solver") );
+    solution_elem_ = new double*[Model::n_substances()];
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
+    	solution_elem_[sbi] = new double[feo->dh()->el_ds()->lsize()];
     }
     stiffness_matrix = new Mat[Model::n_substances()];
     rhs = new Vec[Model::n_substances()];
     mass_vec = new Vec[Model::n_substances()];
+
 
     // initialization of balance object
     if (Model::balance_ != nullptr)
@@ -359,15 +366,18 @@ TransportDG<Model>::~TransportDG()
     for (unsigned int i=0; i<Model::n_substances(); i++)
     {
     	delete ls[i];
+    	delete[] solution_elem_[i];
     	MatDestroy(&stiffness_matrix[i]);
     	VecDestroy(&rhs[i]);
     	VecDestroy(&mass_vec[i]);
     }
     delete[] ls;
+    delete[] solution_elem_;
     delete[] stiffness_matrix;
     delete[] rhs;
     delete[] mass_vec;
     delete feo;
+    delete[] row_4_el;
 
     gamma.clear();
 }
@@ -406,11 +416,12 @@ void TransportDG<Model>::zero_time_step()
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++)
     	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
 
-    // during preallocation we assemble the matrices and vectors required for mass balance
+    // check first time assembly - needs preallocation
+    if (!allocation_done) preallocate();
+
+    // after preallocation we assemble the matrices and vectors required for mass balance
     if (Model::balance_ != nullptr)
     {
-        if (!allocation_done) preallocate();
-
 		for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
 		{
 			Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution());
@@ -459,9 +470,6 @@ void TransportDG<Model>::update_solution()
     data_.set_time(Model::time_->step());
     END_TIMER("data reinit");
     
-    // check first time assembly - needs preallocation
-    if (!allocation_done) preallocate();
-
 	// assemble mass matrix
     if (mass_matrix == NULL || data_.subset(FieldFlag::in_time_term).changed() )
 	{
@@ -476,8 +484,8 @@ void TransportDG<Model>::update_solution()
 		  for (unsigned int i=0; i<Model::n_substances(); i++)
 		  {
 		    VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
-                    MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
-                  }
+		    MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
+		  }
 		}
 		
 		mass_matrix = *(ls_dt->get_matrix());
@@ -563,14 +571,50 @@ void TransportDG<Model>::update_solution()
 		MatDestroy(&m);
 
 		ls[i]->solve();
-		
-		MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
 
     calculate_cumulative_balance();
 
     END_TIMER("DG-ONE STEP");
+}
+
+
+template<class Model>
+void TransportDG<Model>::calculate_concentration_matrix()
+{
+    // calculate element averages of solution
+    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    {
+    	typename DOFHandlerBase::CellIterator elem = Model::mesh_->element(feo->dh()->el_index(i_cell));
+
+    	unsigned int n_dofs;
+    	switch (elem->dim())
+    	{
+    	case 1:
+    		n_dofs = feo->fe<1>()->n_dofs();
+    		break;
+    	case 2:
+			n_dofs = feo->fe<2>()->n_dofs();
+			break;
+    	case 3:
+			n_dofs = feo->fe<3>()->n_dofs();
+			break;
+    	}
+
+    	unsigned int dof_indices[n_dofs];
+    	feo->dh()->get_dof_indices(elem, dof_indices);
+
+    	for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+    	{
+    		solution_elem_[sbi][i_cell] = 0;
+
+    		for (unsigned int j=0; j<n_dofs; ++j)
+    			solution_elem_[sbi][i_cell] += ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()];
+
+			solution_elem_[sbi][i_cell] /= n_dofs;
+    	}
+    }
 }
 
 
@@ -1623,6 +1667,52 @@ void TransportDG<Model>::get_par_info(int * &el_4_loc, Distribution * &el_ds)
 	el_4_loc = feo->dh()->get_el_4_loc();
 	el_ds = feo->dh()->el_ds();
 }
+
+
+template<class Model>
+void TransportDG<Model>::update_after_reactions(bool solution_changed)
+{
+	if (solution_changed)
+	{
+		for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+		{
+			typename DOFHandlerBase::CellIterator elem = Model::mesh_->element(feo->dh()->el_index(i_cell));
+
+			unsigned int n_dofs;
+			switch (elem->dim())
+			{
+			case 1:
+				n_dofs = feo->fe<1>()->n_dofs();
+				break;
+			case 2:
+				n_dofs = feo->fe<2>()->n_dofs();
+				break;
+			case 3:
+				n_dofs = feo->fe<3>()->n_dofs();
+				break;
+			}
+
+			unsigned int dof_indices[n_dofs];
+			feo->dh()->get_dof_indices(elem, dof_indices);
+
+			for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+			{
+				double old_average = 0;
+				for (unsigned int j=0; j<n_dofs; ++j)
+					old_average += ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()];
+				old_average /= n_dofs;
+
+				for (unsigned int j=0; j<n_dofs; ++j)
+					ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()] += solution_elem_[sbi][i_cell] - old_average;
+			}
+		}
+	}
+    // update mass_vec for the case that mass matrix changes in next time step
+    for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+    	MatMult(*(ls_dt->get_matrix()), ls[sbi]->get_solution(), mass_vec[sbi]);
+}
+
+
 
 
 

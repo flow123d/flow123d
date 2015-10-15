@@ -135,6 +135,10 @@ public:
 	 */
 	void update_solution() override;
 
+	void calculate_concentration_matrix() override {};
+
+	void update_after_reactions(bool solution_changed) override {};
+
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
      * In particular the velocity field dosn't change over this interval.

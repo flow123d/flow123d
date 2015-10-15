@@ -85,6 +85,10 @@ public:
      */
     virtual void calculate_instant_balance() = 0;
 
+    virtual void calculate_concentration_matrix() = 0;
+
+    virtual void update_after_reactions(bool solution_changed) = 0;
+
 
     virtual std::shared_ptr<OutputTime> &output_stream() = 0;
 

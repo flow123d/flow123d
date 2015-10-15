@@ -171,9 +171,6 @@ public:
 	std::shared_ptr<OutputTime> &output_stream() override
 	{ return output_stream_; }
 
-    double **get_concentration_matrix() override {}
-
-
 
 
 protected:
