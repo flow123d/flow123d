@@ -63,27 +63,33 @@ TEST(InputTypeScalar, all_types) {
 	using namespace Input::Type;
 
 
-    // from_default methods
+    // Default::check_validity methods
     // Bool
-    EXPECT_TRUE( Bool().from_default("true") );
-    EXPECT_FALSE( Bool().from_default("false") );
-    EXPECT_THROW_WHAT( { Bool().from_default("yes"); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("true").check_validity( Bool() ) );
+    EXPECT_TRUE( Default("false").check_validity( Bool() ) );
+    EXPECT_FALSE( Default::obligatory().check_validity(Bool()) );
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( Bool() ); }, ExcWrongDefault,
             "Default value 'yes' do not match type: 'Bool';" );
 
     // Integer
-    EXPECT_EQ(10, Integer().from_default("10") );
-    EXPECT_THROW_WHAT( { Integer(0,4).from_default("10"); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("10").check_validity( Integer() ) );
+    EXPECT_THROW_WHAT( { Default("10").check_validity( Integer(0,4) ); }, ExcWrongDefault,
             "Default value '10' do not match type: 'Integer';" );
-    EXPECT_THROW_WHAT( { Integer().from_default("yes"); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( Integer() ); }, ExcWrongDefault,
             "Default value 'yes' do not match type: 'Integer';" );
 
     // Double
-    EXPECT_EQ(3.14, Double().from_default("3.14") );
-    EXPECT_EQ(-5.67e-23, Double().from_default("-5.67E-23") );
-    EXPECT_THROW_WHAT( { Double(0,4.4).from_default("-1e-10"); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("3.14").check_validity( Double() ) );
+    EXPECT_TRUE( Default("-5.67E-23").check_validity( Double() ) );
+    EXPECT_THROW_WHAT( { Default("-1e-10").check_validity( Double(0,4.4) ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
-    EXPECT_THROW_WHAT( { Double().from_default("-3.6t5"); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( Double() ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
+
+    // String
+    EXPECT_TRUE( Default("\"ahoj\"").check_validity( String() ) );
+    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( String() ); }, ExcWrongDefault,
+            "Default value .* do not match type: 'String';" );
 
 
     // test equivalence operator
@@ -139,10 +145,10 @@ using namespace Input::Type;
 
     // valid default
     // no death
-    arr_int.valid_default("100");
-    EXPECT_THROW_WHAT( {arr_int.valid_default("1.5");}, ExcWrongDefault,
+    Default("100").check_validity( arr_int );
+    EXPECT_THROW_WHAT( {Default("1.5").check_validity( arr_int );}, ExcWrongDefault,
             "Default value '1.5' do not match type:" );
-    EXPECT_THROW_WHAT( {Array( Double(), 2 ).valid_default("3.2"); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { Default("3.2").check_validity( Array( Double(), 2 ) ); }, ExcWrongDefault,
                   "Default value '3.2' do not match type: 'array_of_Double';"
                  );
 
@@ -200,18 +206,18 @@ using namespace Input::Type;
 
 
     // Integer selection
-    Selection int_sel("Integer selection");
-    int_sel.add_value(10, "ten");
-    int_sel.add_value(0,"zero");
-    int_sel.close();
+    Selection int_sel = Selection("Integer selection")
+    	.add_value(10, "ten")
+    	.add_value(0,"zero")
+    	.close();
 
 
     // Selection defaults
-    EXPECT_EQ(10, int_sel.from_default("ten") );
-    EXPECT_EQ(0, int_sel.from_default("zero") );
-    EXPECT_THROW_WHAT( { int_sel.from_default("two"); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("\"ten\"").check_validity( int_sel ) );
+    EXPECT_TRUE( Default("\"zero\"").check_validity( int_sel ) );
+    EXPECT_THROW_WHAT( { Default("\"two\"").check_validity( int_sel ); }, ExcWrongDefault,
             "Default value .* do not match type: " );
-    EXPECT_THROW_WHAT( { int_sel.from_default("10"); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { Default("10").check_validity( int_sel ); }, ExcWrongDefault,
             "Default value .* do not match type: " );
 
     EXPECT_EQ(10, int_sel.name_to_int("ten"));
