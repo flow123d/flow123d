@@ -261,7 +261,7 @@
       - build-name:
           name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
-      - shell:
+      - shell: |
           # remove all build directories safe the latest five
           rm -rf `ls -dt ./build-* |tail -n +6 `
           cd flow123d
