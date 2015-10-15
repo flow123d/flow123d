@@ -175,7 +175,7 @@ EquationB::EquationB(Input::Record rec) {
     int param = rec.val<int>("parameter_b");
     EXPECT_EQ(314, param);
 
-    EXPECT_EQ("\"str value\"", rec.val<string>("default_str"));
+    EXPECT_EQ("str value", rec.val<string>("default_str"));
     EXPECT_TRUE( rec.find<string>("default_str"));
 
     Array array( rec.val<Array>("substances") );

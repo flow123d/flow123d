@@ -844,7 +844,7 @@ TEST_F(InputReaderToStorageTest, default_values) {
         EXPECT_TRUE( storage_->get_item(1)->get_bool() );
         EXPECT_EQ(2, storage_->get_item(2)->get_int() );
         EXPECT_EQ(1.23, storage_->get_item(3)->get_double() );
-        EXPECT_EQ("\"ahoj\"", storage_->get_item(4)->get_string() );
+        EXPECT_EQ("ahoj", storage_->get_item(4)->get_string() );
         EXPECT_EQ(123 , storage_->get_item(5)->get_item(0)->get_int() );
         EXPECT_FALSE( storage_->get_item(6)->get_item(0)->get_bool() );
         EXPECT_EQ(321 , storage_->get_item(6)->get_item(1)->get_int() );
