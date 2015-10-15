@@ -161,6 +161,9 @@ protected:
     /// Root of the declaration tree of the data in the storage.
     const Type::TypeBase *root_type_;
 
+    /// Format used in reader (JSON or YAML)
+    FileFormat reader_file_format_;
+
     friend class Type::Default;
 
 };
