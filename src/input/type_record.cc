@@ -232,17 +232,12 @@ bool Record::is_closed() const {
 
 bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const
 {
-    if ( dflt.has_value_at_declaration() ) {
-
-        try {
-            return type.valid_default( dflt.value() );
-        } catch (ExcWrongDefault & e) {
-            e << EI_KeyName(k_name);
-            throw;
-        }
-    }
-
-    return false;
+	try {
+		return dflt.check_validity(type);
+	} catch (ExcWrongDefault & e) {
+		e << EI_KeyName(k_name);
+		throw;
+	}
 }
 
 
@@ -556,7 +551,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
 
 AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_default) {
     if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
-    child_data_->selection_default_=Default(type_default); // default record is closed; other constructor creates the zero item
+    child_data_->selection_default_=Default("\""+type_default+"\""); // default record is closed; other constructor creates the zero item
     return *this;
 }
 
@@ -583,7 +578,9 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 
 const Record * AbstractRecord::get_default_descendant() const {
     if ( have_default_descendant() ) {
-        return &( get_descendant( child_data_->selection_default_.value() ) );
+    	string s(child_data_->selection_default_.value());
+    	s.erase( std::remove( s.begin(), s.end(), '\"' ),s.end() );
+        return &( get_descendant(s) );
     }
     return NULL;
 }
@@ -619,7 +616,7 @@ bool AbstractRecord::finish(bool is_generic) {
 
 	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
 
-	child_data_->selection_of_childs->close();
+	const Selection &selection_ref = child_data_->selection_of_childs->close();
 
 	child_data_->finished_ = true;
 
@@ -632,7 +629,7 @@ bool AbstractRecord::finish(bool is_generic) {
     // check validity of possible default value of TYPE key
     if ( have_default_descendant() ) {
 		try {
-			child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
+			child_data_->selection_default_.check_validity(selection_ref);
 		} catch (ExcWrongDefault & e) {
 			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
 		}

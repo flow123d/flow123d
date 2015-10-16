@@ -49,7 +49,7 @@ using namespace Input::Type;
     a_rec.finish();
 
     // auto conversion - default value for TYPE
-    EXPECT_EQ("EqDarcy", a_rec.get_selection_default().value() );
+    EXPECT_EQ("\"EqDarcy\"", a_rec.get_selection_default().value() );
     // no more allow_auto_conversion for a_rec
     EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed.");
 
@@ -85,7 +85,7 @@ using namespace Input::Type;
     AbstractRecord x = AbstractRecord("AR","")
     	.allow_auto_conversion("BR")
 		.close();
-    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
+    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value '\"BR\"' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
 
 }
 
