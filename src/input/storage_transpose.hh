@@ -9,8 +9,7 @@
 #define STORAGE_TRANSPOSE_HH_
 
 #include "input/storage.hh"
-#include "input/type_base.hh"
-#include "input/type_record.hh"
+#include "input/input_type.hh"
 
 namespace Input {
 

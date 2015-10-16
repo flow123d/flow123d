@@ -24,11 +24,9 @@
 #include <boost/functional/hash.hpp>
 
 
-#include "type_base.hh"
-#include "type_record.hh"
+#include "input_type.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
-#include "type_generic.hh"
 #include "json_spirit/json_spirit.h"
 #include <boost/algorithm/string.hpp>
 
