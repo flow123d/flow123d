@@ -707,12 +707,9 @@ Abstract::ChildDataIter Abstract::end_child_data() const {
  */
 
 AdHocAbstract::AdHocAbstract(const Abstract &ancestor)
-: Abstract("Derived AdHocAbstract", "This description doesn't have print out.")
+: Abstract("Derived AdHocAbstract", "This description doesn't have print out."),
+  ancestor_(ancestor)
 {
-	parent_data_ = ancestor.child_data_;
-	parent_name_ = ancestor.type_name();
-	tmp_ancestor_ = NULL;
-
 	//test default descendant of ancestor
 	const Record * default_desc = ancestor.get_default_descendant();
 	if (default_desc) {
@@ -736,30 +733,15 @@ bool AdHocAbstract::finish(bool is_generic)
 {
 	if (child_data_->finished_) return true;
 
-	if (tmp_ancestor_ != 0) {
-		const_cast<Abstract *>(tmp_ancestor_)->finish(is_generic);
+	const_cast<Abstract &>(ancestor_).finish(is_generic);
 
-        parent_data_ = tmp_ancestor_->child_data_;
-        parent_name_ = tmp_ancestor_->type_name();
-
-		//test default descendant of ancestor
-		const Record * default_desc = tmp_ancestor_->get_default_descendant();
-		if (default_desc) {
-			allow_auto_conversion( default_desc->type_name() );
-		}
-
-		tmp_ancestor_ = NULL;
+	//test default descendant of ancestor
+	const Record * default_desc = ancestor_.get_default_descendant();
+	if (default_desc) {
+		allow_auto_conversion( default_desc->type_name() );
 	}
 
-	while (unconstructed_childs_.size()) {
-		const Record * rec = *(unconstructed_childs_.begin());
-
-	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), rec->type_name());
-	    child_data_->list_of_childs.push_back(*rec);
-	    unconstructed_childs_.pop_front();
-	}
-
-	for (Abstract::ChildDataIter it = parent_data_->list_of_childs.begin(); it != parent_data_->list_of_childs.end(); ++it) {
+	for (Abstract::ChildDataIter it = ancestor_.child_data_->list_of_childs.begin(); it != ancestor_.child_data_->list_of_childs.end(); ++it) {
 	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), (*it).type_name());
 	    child_data_->list_of_childs.push_back(*it);
 	}
@@ -773,7 +755,7 @@ TypeBase::TypeHash AdHocAbstract::content_hash() const {
     boost::hash_combine(seed, "AdHocAbstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, child_data_->description_);
-    boost::hash_combine(seed, parent_name_);
+    boost::hash_combine(seed, ancestor_.type_name());
 
     attribute_content_hash(seed);
     return seed;

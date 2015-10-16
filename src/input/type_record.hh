@@ -724,20 +724,8 @@ public:
     AdHocAbstract &add_child(const Record &subrec);
 
 protected:
-    /// Pointer to actual data of the parent Abstract.
-    boost::shared_ptr<ChildData> parent_data_;
-
-    /// Temporary value of ancestor Abstract
-    const Abstract *tmp_ancestor_;
-
-    /*
-     * Temporary list of unconstructed descendants of AdHocAbstract.
-     * Items are checked and added to child_data_ in finish() method.
-     */
-    std::deque< const Record * > unconstructed_childs_;
-
-    /// Name of parent Abstract, used in printout
-    string parent_name_;
+    /// Reference to ancestor Abstract
+    const Abstract &ancestor_;
 };
 
 

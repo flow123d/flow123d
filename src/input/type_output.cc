@@ -125,13 +125,13 @@ const string & OutputBase::get_selection_description(const Selection *sel) {
 }
 
 
-const string & OutputBase::get_adhoc_parent_name(const AdHocAbstract *a_rec) {
-	return a_rec->parent_name_;
+void OutputBase::get_adhoc_parent_name(const AdHocAbstract *a_rec, string &parent_name) {
+	parent_name = a_rec->ancestor_.type_name();
 }
 
 
 Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstract *a_rec) {
-	return a_rec->parent_data_->list_of_childs.begin();
+	return a_rec->ancestor_.child_data_->list_of_childs.begin();
 }
 
 
@@ -445,9 +445,11 @@ void OutputText::print_impl(ostream& stream, const Abstract *type, unsigned int 
 void OutputText::print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
 	if (doc_type_ == key_record) {
+		string parent_name;
+		get_adhoc_parent_name(type, parent_name);
 		stream << "AdHocAbstract" << endl;
 		stream << setw(padding_size + size_setw_) << "";
-		stream << "#### Derived from Abstract '" << get_adhoc_parent_name(type) << "', ";
+		stream << "#### Derived from Abstract '" << parent_name << "', ";
 		stream << "added Records: ";
 
 		{
@@ -1151,8 +1153,10 @@ void OutputLatex::print_impl(ostream& stream, const Abstract *type, unsigned int
 void OutputLatex::print_impl(ostream& stream, const AdHocAbstract *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
 	if (doc_type_ == key_record) {
+		string parent_name;
+		get_adhoc_parent_name(type, parent_name);
         stream << "adhoc abstract type}";
-        stream << "\\Ancestor{" << internal::hyper_link( "IT", get_adhoc_parent_name(type) ) << "}";
+        stream << "\\Ancestor{" << internal::hyper_link( "IT", parent_name ) << "}";
 
 		{
 			Abstract::ChildDataIter parent_it = get_adhoc_parent_data(type);
@@ -1399,10 +1403,12 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstract *type, u
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
+	string parent_name;
+	get_adhoc_parent_name(type, parent_name);
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"AdHocAbstract\"," << endl;
-    stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
+    stream << "\"parent\" : \"" << parent_name << "\"," << endl;
     type->write_attributes(stream);
     stream << "," << endl;
 

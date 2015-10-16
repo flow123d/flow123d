@@ -98,9 +98,9 @@ protected:
     void get_default(Record::KeyIter it, string &type, string &value);
     /// Gets description of the given selection type.
     const string & get_selection_description(const Selection *sel);
-    /// Gets parent_name_ of the given AdHocAbstract type.
-    const string & get_adhoc_parent_name(const AdHocAbstract *a_rec);
-    /// Gets iterator to begin of parent_data_ of the given AdHocAbstract type.
+    /// Gets ancestor_.type_name of the given AdHocAbstract type.
+    void get_adhoc_parent_name(const AdHocAbstract *a_rec, string &parent_name);
+    /// Gets iterator to begin of ancestor_.child_data_ of the given AdHocAbstract type.
     Abstract::ChildDataIter get_adhoc_parent_data(const AdHocAbstract *a_rec);
 
 
