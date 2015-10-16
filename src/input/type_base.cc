@@ -292,21 +292,11 @@ TypeBase::TypeHash Bool::content_hash() const
 
 
 bool Bool::valid_default(const string &str) const {
-    from_default(str);
-    return true;
-}
-
-
-
-bool Bool::from_default(const string &str) const {
-    if (str == "true" )  {
-        return true;
-    } else
-    if (str == "false") {
-        return false;
-    } else {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-    }
+	if ((str == "true") || (str == "false")) {
+		return true;
+	} else {
+		THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+	}
 }
 
 
@@ -340,24 +330,19 @@ bool Integer::match(std::int64_t value) const {
 
 
 
-int Integer::from_default(const string &str) const {
+bool Integer::valid_default(const string &str) const
+{
     std::istringstream stream(str);
     int value;
     stream >> value;
 
     if (stream && stream.eof() && match(value)) {
-        return value;
+        return true;
     } else {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
     }
-}
 
-
-
-bool Integer::valid_default(const string &str) const
-{
-    from_default(str);
-    return true;
+    return false;
 }
 
 
@@ -394,24 +379,19 @@ bool Double::match(double value) const {
 
 
 
-double Double::from_default(const string &str) const {
+bool Double::valid_default(const string &str) const
+{
     std::istringstream stream(str);
     double value;
     stream >> value;
 
     if (stream && stream.eof() && match(value)) {
-        return value;
+        return true;
     } else {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
     }
-}
 
-
-
-bool Double::valid_default(const string &str) const
-{
-    from_default(str);
-    return true;
+    return false;
 }
 
 
@@ -493,13 +473,6 @@ bool String::valid_default(const string &str) const {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
     }
     return true;
-}
-
-
-
-string String::from_default(const string &str) const {
-    valid_default(str);
-    return str;
 }
 
 

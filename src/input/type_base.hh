@@ -371,8 +371,6 @@ public:
     TypeHash content_hash() const   override;
 
 
-    bool from_default(const string &str) const;
-
     string type_name() const override;
 
     bool valid_default(const string &str) const override;
@@ -408,10 +406,6 @@ public:
      */
     bool match(std::int64_t value) const;
 
-    /**
-     * As before but also returns converted integer in @p value.
-     */
-    int from_default(const string &str) const;
     /// Implements  @p Type::TypeBase::valid_defaults.
     bool valid_default(const string &str) const override;
 
@@ -455,11 +449,6 @@ public:
     /// Implements  @p Type::TypeBase::valid_defaults.
     bool valid_default(const string &str) const override;
 
-    /**
-     * As before but also returns converted integer in @p value.
-     */
-    double from_default(const string &str) const;
-
     string type_name() const override;
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
@@ -483,9 +472,6 @@ public:
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const   override;
-
-
-    string from_default(const string &str) const;
 
     /**
      * Particular descendants can check validity of the string.

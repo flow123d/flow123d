@@ -134,18 +134,6 @@ Selection &Selection::copy_values(const Selection &sel)
 
 
 
-int Selection::from_default(const string &str) const {
-	string s(str);
-    try {
-    	s.erase( std::remove( s.begin(), s.end(), '\"' ),s.end() );
-        return name_to_int(s);
-    } catch (ExcSelectionKeyNotFound &e) {
-        THROW( ExcWrongDefault() << EI_DefaultStr( s ) << EI_TypeName( type_name() + " with values: "+key_list() ));
-    }
-    return -1;
-}
-
-
 string Selection::key_list() const {
     ostringstream os;
     for(unsigned int i=0; i<size(); i++) os << "'" <<data_->keys_[i].key_ << "' ";

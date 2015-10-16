@@ -148,11 +148,6 @@ public:
 
     Selection &copy_values(const Selection &sel);
 
-    /**
-     * Same as \p Selection::name_to_int, but throws different exception, when string comes from default value.
-     */
-    int from_default(const string &str) const;
-
     /// Implements  @p Type::TypeBase::valid_defaults.
     bool valid_default(const string &str) const override;
 
