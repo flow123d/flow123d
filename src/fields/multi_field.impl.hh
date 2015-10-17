@@ -28,11 +28,12 @@ MultiField<spacedim, Value>::MultiField()
 
 
 template<int spacedim, class Value>
-it::Abstract &  MultiField<spacedim,Value>::get_input_type() {
+const it::Instance &  MultiField<spacedim,Value>::get_input_type() {
 	ASSERT(false, "This method can't be used for MultiField");
 
-	static it::Abstract a_rec = it::Abstract();
-	return a_rec;
+	static it::Abstract abstract = it::Abstract();
+	static it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
+	return inst;
 }
 
 

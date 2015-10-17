@@ -39,7 +39,7 @@ namespace Type {
 class Default {
 	friend class Record;
 	friend class OutputBase;
-	friend class OutputJSONTemplate;
+	//friend class OutputJSONTemplate;
 
 private:
     /**
@@ -58,6 +58,9 @@ public:
      */
     Default(const std::string & value);
 
+    /**
+     * Hash of the Default specification, counted of type_ and value_.
+     */
     TypeBase::TypeHash content_hash() const;
 
     /**
@@ -218,12 +221,25 @@ public:
     Record(const string & type_name_in, const string & description);
 
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, description, auto conversion key, hash of keys and attributes.
+     */
     TypeHash content_hash() const  override;
 
 
     /**
-     * Method to derive new Record from an Abstract @p parent. This copy all keys from the @p parent and register the newly created Record
-     * in the @p parent. You are free to overwrite copied keys, but you can not delete them.
+     * Method to derive new Record from an AbstractRecord @p parent. This register the @p parent in the newly
+     * created Record. Method creates TYPE key of Record and must be call before declaration of keys.
+     *
+     * Mechanism of set parent to derived Record and child to parent Abstract is a bit more complicated. For
+     * correct finish it must be done in these steps:
+     *
+     * - in derive_from is set @p parent to derived Record
+     * - in \p close is set derived Record to parent (or to all parents for multiple inheritance) and registered
+     *   parents in derived Record are erased
+     * - in \p AbstractRecord::finish is re-registered parents to descendant (through \p add_parent method)
      */
     Record &derive_from(Abstract &parent);
 
@@ -243,11 +259,17 @@ public:
     Record &allow_auto_conversion(const string &from_key);
 
     /**
+     * Declares a key of the Record with name given by parameter @p key, the type given by target of pointer @p type,
+     * default value by parameter @p default_value, and with given @p description.
+     * The parameter @p type points to a descendant of TypeBase.
+     */
+    Record &declare_key(const string &key, boost::shared_ptr<TypeBase> type,
+                            const Default &default_value, const string &description);
+
+    /**
      * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type,
      * default value by parameter @p default_value, and with given @p description.
-     * The parameter @p type has a descendant of TypeBase. If @p type is an instance of Record, Selection, or Abstract,
-     * we support references to static objects of these types that may not be yet constructed at the point when the declare_key method
-     * is called. This method can detect this case and postpone completion of the key.
+     * The parameter @p type has a descendant of TypeBase.
      */
     template <class KeyType>
     Record &declare_key(const string &key, const KeyType &type,
@@ -261,8 +283,13 @@ public:
     Record &declare_key(const string &key, const KeyType &type,
                             const string &description);
 
+
     /**
-     *  Can be used to close the Record for further declarations of keys.
+     * Close the Record for further declarations of keys.
+     *
+     * Add Record to type repository (see @p TypeRepository::add_type) and set Record
+     * as descendant of parent if Record is derived (for mechanism of set parent and
+     * descendant see \p derive_from)
      */
     const Record &close() const;
 
@@ -270,22 +297,22 @@ public:
     /**
      * Implements @p TypeBase::is_finished.
      */
-    virtual bool is_finished() const override;
+    bool is_finished() const override;
 
     /// Returns true if @p data_ is closed.
-    virtual bool is_closed() const override;
+    bool is_closed() const override;
 
     /// Record type name getter.
-    virtual string type_name() const override;
+    string type_name() const override;
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
      */
-    virtual bool valid_default(const string &str) const override;
+    bool valid_default(const string &str) const override;
 
     /// Class comparison and Record type name comparision.
-    virtual bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const;
 
     /**
      * Interface to mapping key -> index in record. Returns index (in continuous array) for given key.
@@ -344,10 +371,13 @@ public:
     Record &has_obligatory_type_key();
 
     /// Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;
+
+    /// Set flag @p root_of_generic_subtree_ to true
+    Record &root_of_generic_subtree();
 
 
 protected:
@@ -375,7 +405,8 @@ protected:
      * Set parent Abstract of Record.
      *
      * This method is created for correct functionality of generic types. It must be called
-     * in Abstract::finish() and refill @p parent_vec_ vector of correct parents.
+     * in Abstract::finish() and refill @p parent_vec_ vector of correct parents (for complete
+     * mechanism of set parent and descendant see \p derive_from)
      */
     const Record &add_parent(Abstract &parent) const;
 
@@ -493,7 +524,6 @@ protected:
     public:
         ChildData(const string &name, const string &description)
         : selection_of_childs( boost::make_shared<Selection> (name + "_TYPE_selection") ),
-		  element_input_selection(nullptr),
 		  description_(description),
 		  type_name_(name),
 		  finished_(false),
@@ -511,9 +541,6 @@ protected:
          * Vector of derived Records (proxies) in order of derivation.
          */
         vector< Record > list_of_childs;
-
-        // TODO: temporary hack, should be removed after implementation of generic types
-        const Selection * element_input_selection;
 
         /// Description of the whole Abstract type.
         const string description_;
@@ -533,6 +560,19 @@ protected:
          * If default value isn't set, selection_default_ is set to obligatory.
          */
         Default selection_default_;
+
+        /**
+         * Allow store hash of part of generic subtree.
+         *
+         * This hash can be typically used if descendants of Abstract contains different
+         * structure of parameter location.
+         * For example we have have Records with key represents generic part of subtree:
+         *  - in first descendant this key is of the type Parameter
+         *  - in second descendant this key is of the type Array of Parameter
+         *  - in third descendant this key is of the type Array of Parameter with fixed size
+         *  etc.
+         */
+        //TypeHash generic_content_hash_;
 
     };
 
@@ -559,6 +599,11 @@ public:
      */
     Abstract(const string & type_name_in, const string & description);
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, description and hash of attributes.
+     */
     TypeHash content_hash() const   override;
 
     /**
@@ -576,6 +621,9 @@ public:
 
     /**
      *  Finish declaration of the Abstract type.
+     *
+     *  Set Abstract as parent of derived Records (for mechanism of
+     *  set parent and descendant see \p Record::derive_from)
      */
     bool finish(bool is_generic = false) override;
 
@@ -659,9 +707,6 @@ public:
      */
     int add_child(const Record &subrec);
 
-    // TODO: temporary hack, should be removed after implementation of generic types
-    Abstract &set_element_input(const Selection * element_input);
-
     // Get default value of selection_of_childs
     Default &get_selection_default() const;
 
@@ -670,6 +715,12 @@ public:
 
     /// Create deep copy of Abstract (copy all data stored in shared pointers etc.)
     Abstract deep_copy() const;
+
+    /// Set flag @p root_of_generic_subtree_ to true
+    Abstract &root_of_generic_subtree();
+
+    /// Set @p generic_content_hash_
+    //Abstract &set_generic_content_hash(TypeHash generic_content_hash);
 
 protected:
     /**

@@ -55,8 +55,8 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef Value ValueType;
 
-    static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
     static const unsigned int space_dim = spacedim;
 
 
@@ -119,7 +119,7 @@ public:
      * @p meka_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::Abstract &get_input_type() override;
+    const IT::Instance &get_input_type() override;
 
     IT::Record &get_multifield_input_type() override;
 
@@ -230,15 +230,6 @@ public:
     void add_factory(std::shared_ptr<FactoryBase> factory);
 
 protected:
-    /**
-     * For fields returning "enum", i.e. with @p Value == FieldEnum, the input type (meaning whole input_Type tree of the field) depends on the
-     * Input::Type::Selection object that represents particular C enum type. Therefore, we have to create whole tree for the selection
-     * that was set through @p FieldBaseCommon::set_selection() method.
-     */
-    IT::Abstract & make_input_tree();
-
-
-
 
     /**
      * Read input into @p regions_history_ possibly pop some old values from the

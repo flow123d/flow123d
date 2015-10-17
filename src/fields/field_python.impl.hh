@@ -16,15 +16,15 @@
 
 namespace it = Input::Type;
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_python)
+
 
 
 template <int spacedim, class Value>
-const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type(
-        Input::Type::Abstract &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
-		.derive_from(a_type)
+		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
 		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
 				"Python script given as in place string")
 		.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
@@ -38,7 +38,8 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldPython<spacedim, Value>::registrar =
-		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython");
+		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython") +
+		FieldPython<spacedim, Value>::get_input_type().size();
 
 
 

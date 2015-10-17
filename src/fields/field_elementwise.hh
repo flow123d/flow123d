@@ -52,7 +52,7 @@ public:
      */
     FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data, unsigned int n_components);
 
-    static const Input::Type::Record & get_input_type(Input::Type::Abstract &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type();
 
     virtual void init_from_input(const Input::Record &rec);
 

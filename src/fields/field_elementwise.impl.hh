@@ -19,13 +19,14 @@
 
 namespace IT = Input::Type;
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_elementwise)
+
+
 template <int spacedim, class Value>
-const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type(
-        Input::Type::Abstract &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
-        .derive_from(a_type)
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
@@ -36,7 +37,8 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldElementwise<spacedim, Value>::registrar =
-		Input::register_class< FieldElementwise<spacedim, Value>, unsigned int >("FieldElementwise");
+		Input::register_class< FieldElementwise<spacedim, Value>, unsigned int >("FieldElementwise") +
+		FieldElementwise<spacedim, Value>::get_input_type().size();
 
 
 

@@ -47,16 +47,61 @@ using namespace Input::Type;
 
 
 
+const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
+	return Selection("HeatTransfer_BC_Type", "Types of boundary conditions for heat transfer model.")
+            .add_value(bc_inflow, "inflow",
+          		  "Default heat transfer boundary condition.\n"
+          		  "On water inflow (($(q_w \\le 0)$)), total energy flux is given by the reference temperature 'bc_temperature'. "
+          		  "On water outflow we prescribe zero diffusive flux, "
+          		  "i.e. the energy flows out only due to advection.")
+            .add_value(bc_dirichlet, "dirichlet",
+          		  "Dirichlet boundary condition (($T = T_D $)).\n"
+          		  "The prescribed temperature (($T_D$)) is specified by the field 'bc_temperature'.")
+            .add_value(bc_total_flux, "total_flux",
+          		  "Total energy flux boundary condition.\n"
+          		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )+q_wT_A$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the advected temperature (($T_A$)) by 'bc_ad_temperature', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+            .add_value(bc_diffusive_flux, "diffusive_flux",
+          		  "Diffusive flux boundary condition.\n"
+          		  "The prescribed energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+			  .close();
+}
+
 
 HeatTransferModel::ModelEqData::ModelEqData()
 {
-
-    *this+=bc_temperature
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Type of boundary condition.")
+            .units( UnitSI::dimensionless() )
+            .input_default("\"inflow\"")
+            .input_selection( &get_bc_type_selection() )
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+    *this+=bc_dirichlet_value
             .name("bc_temperature")
             .description("Boundary value of temperature.")
             .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
+	*this+=bc_flux
+			.name("bc_flux")
+			.description("Flux in Neumann boundary condition.")
+			.units( UnitSI().kg().m().s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs);
+	*this+=bc_robin_sigma
+			.name("bc_robin_sigma")
+			.description("Conductivity coefficient in Robin boundary condition.")
+			.units( UnitSI().m(4).s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
     *this+=init_temperature
             .name("init_temperature")
@@ -289,14 +334,31 @@ void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_l
 }
 
 
-void HeatTransferModel::compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_values)
+void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types)
 {
-	vector<double> bc_value(point_list.size());
-	data().bc_temperature.value_list(point_list, ele_acc, bc_value);
-	for (unsigned int i=0; i<point_list.size(); i++)
-		bc_values[i] = bc_value[i];
+	// Currently the bc types for HeatTransfer are numbered in the same way as in TransportDG.
+	// In general we should use some map here.
+	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) };
+}
+
+
+void HeatTransferModel::get_flux_bc_data(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_flux,
+		std::vector< arma::vec > &bc_sigma,
+		std::vector< arma::vec > &bc_ref_value)
+{
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+}
+
+void HeatTransferModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_sigma)
+{
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 }
 
 

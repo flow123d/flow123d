@@ -39,7 +39,7 @@ public:
     FieldFormula(unsigned int n_comp=0);
 
 
-    static const Input::Type::Record & get_input_type(Input::Type::Abstract &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type();
 
     virtual void init_from_input(const Input::Record &rec);
 
