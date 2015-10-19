@@ -185,6 +185,12 @@ public:
 
 
     /**
+     * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
+     * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
+     */
+    void setup_topology();
+    
+    /**
      * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
     vector<int> const & elements_id_maps( bool boundary_domain) const;
@@ -294,12 +300,6 @@ protected:
      * Returns true if side @p si has same nodes as in the list @p side_nodes.
      */
     bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
-
-    /**
-     * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
-     * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
-     */
-    void setup_topology();
 
 
     void element_to_neigh_vb();

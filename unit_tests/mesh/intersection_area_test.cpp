@@ -92,16 +92,40 @@ TEST(area_intersections, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(auto &fname : filenames)
     {
-        xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
-        string mesh_file = dir_name + fname;
-        
-        Mesh mesh;
-        ifstream ifs(mesh_file.c_str());
-        mesh.read_gmsh_from_stream(ifs);
-        
-        xprintf(Msg, "==============\n");
-        compute_intersection_area(&mesh);
-        xprintf(Msg, "==============\n");
+        unsigned int permutations[6][3] = {{0,1,2},{0,2,1},{1,0,2},{1,2,0},{2,0,1},{2,1,0}};
+        for(unsigned int p=0; p<6; p++)
+        {
+            xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
+            FilePath mesh_file(dir_name + fname, FilePath::input_file);
+            
+            Mesh mesh;
+            // read mesh with gmshreader
+            GmshMeshReader reader(mesh_file);
+            reader.read_mesh(&mesh);
+            
+            // permute nodes:
+            FOR_ELEMENTS(&mesh,ele)
+            {
+                if(ele->dim() == 2)
+                {
+                    Node* tmp[3];
+                    for(unsigned int i=0; i<ele->n_nodes(); i++)
+                    {
+                        tmp[i] = ele->node[permutations[p][i]];
+                    }
+                    for(unsigned int i=0; i<ele->n_nodes(); i++)
+                    {
+                        ele->node[i] = tmp[i];
+                        ele->node[i]->point().print(cout);
+                    }
+                }
+            }
+            mesh.setup_topology();
+            
+            xprintf(Msg, "==============\n");
+            compute_intersection_area(&mesh);
+            xprintf(Msg, "==============\n");
+        }
     }
 
     
