@@ -44,11 +44,11 @@ private:
 
 	// for case side prolongation, there will be
 	// always 9 Plucker products
-	std::vector<double> pluckerProducts;
+	//std::vector<double> pluckerProducts;
 
 	// for case side prolongation, there will be
 	// always 3 PC for 3D side and 3 PC for triangle
-	std::vector<Plucker> pluckers;
+	//std::vector<Plucker> pluckers;
 
 
 	// for case triangle prolongation, there will be
@@ -59,21 +59,6 @@ public:
 	ProlongationLine(unsigned int element_2D,unsigned int element_3D, unsigned int dictionary, int element_2D_old = -1, int element_3D_old = -1);
 	ProlongationLine();
 
-	inline void setPluckerProducts(double pp, unsigned int index){
-		pluckerProducts[index] = pp;
-	};
-
-	inline void setPlucker(Plucker p, unsigned int index){
-		pluckers[index] = p;
-	};
-
-	inline double getPluckerProducts(unsigned int index) const{
-		return pluckerProducts[index];
-	};
-
-	inline Plucker getPlucker(unsigned int index) const{
-		return pluckers[index];
-	};
 
 	inline ~ProlongationLine(){};
 

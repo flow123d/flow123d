@@ -9,35 +9,28 @@
 using namespace std;
 namespace computeintersection{
 
-//class ProlongationPoint;
-
 /**
- * Class doc.
- * Naming convention.
- *
  * Have separate class template for IntersectionPoint as it appears at output
  * and other internal class template e.g. TriangleLineIntersection for internal
  * intersections with additional info.
  *
- * Describe data attributes.
  * 
- * TODO: 
- * - comment
- * - comment template parameters M,N
- * 
+ * Represents a point from simplex<N> and simplex<M> intersection
+ * contains bary coords of a point on simplex<N> and simplex<M>
+ *
  */
 template<int N, int M> class IntersectionPoint {
 
-	arma::vec::fixed<N+1> local_coords1;
-	arma::vec::fixed<M+1> local_coords2;
+	arma::vec::fixed<N+1> local_coords1; // bary coords of a point on simplex<N>
+	arma::vec::fixed<M+1> local_coords2; // bary coords of a point on simplex<M>
 
-	int side_idx1;
-	int side_idx2;
+	int side_idx1; // For case N = 2, M = 3 -> index of a triangle line
+	int side_idx2; // For case N = 1 or N = 2, M = 3 -> index of a tetrahedron side
 
-	unsigned int orientation;
+	unsigned int orientation; // orientation from intersection using plucker coords
 
-	bool is_vertex_;
-	bool is_patological_;
+	bool is_vertex_; // point is a vertex of triangle
+	bool is_patological_; // points is a vertex of tetrahedron or it is in side of tetrahedron or it is in edge of tetrahedron
 
 	public:
 
@@ -124,7 +117,9 @@ template<int N, int M> class IntersectionPoint {
 	inline bool is_patological() const{
 		return is_patological_;
 	};
-
+	/**
+	 * For convex hull polygon tracing
+	 */
 	bool operator<(const IntersectionPoint<N,M> &ip) const;
 };
 

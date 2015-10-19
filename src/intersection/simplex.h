@@ -41,21 +41,28 @@ template<int N> class Simplex;
  */
 template<> class Simplex<0> {
 private:
-	//arma::vec3 coordinates;
+
 	arma::vec3* coords;
 public:
 	inline Simplex(){
 		coords = NULL;
 	};
+	/**
+	 * @param field - array of pointers to point coordinates in mesh
+	 * array contains one element for case Simplex<0>
+	 */
 	inline Simplex(arma::vec3 **field){coords = field[0];};
 	inline ~Simplex(){};
 
+	/**
+	 * Same as constructor
+	 */
 	inline void setSimplices(arma::vec3 **field){
 		coords = field[0];
 	};
 
 	inline arma::vec3 &getPointCoordinates(){
-		return *coords;//inates;
+		return *coords;
 	};
 
 	inline void setPointCoordinates(arma::vec3 &point){
@@ -73,19 +80,20 @@ public:
 	}
 };
 
-
-/**
- * TODO: comment
- */
 template<int N> class Simplex {
 private:
     /**
+     * Every simplex<N> has (N+1) simplices of dimension (N-1)
      * TODO: (idea - when used in new mesh) replace with references 
      */
 	Simplex<N - 1> Simplices[N + 1];
 public:
 	inline Simplex(){};
 
+	/**
+	 * @param field - array of pointers to point coordinates in mesh
+	 * array contains (N+1) elements for case Simplex<N>
+	 */
 	inline Simplex(arma::vec3 **field_of_pointers_to_coordinates){
 
 		setSimplices(field_of_pointers_to_coordinates);
@@ -95,14 +103,14 @@ public:
 	inline void setSimplices(arma::vec3 **field_of_pointers_to_coordinates){
 		arma::vec3 *temporary_pointers[N];
 
+		// filling temporary array of size N from array of size (N+1)
 		for (int i = 0; i < N; i++) {
 			temporary_pointers[i] = field_of_pointers_to_coordinates[i];
 		};
+		// Creating sub-simplices in lexicografic order
 		Simplices[0].setSimplices(temporary_pointers);
-		//Simplices[0] = Simplex<N - 1>(temporary_pointers);
 		for (int i = 1; i < N + 1; i++) {
 			temporary_pointers[N - i] = field_of_pointers_to_coordinates[N - i + 1];
-			//Simplices[i] = Simplex<N - 1>(temporary_pointers);
 			Simplices[i].setSimplices(temporary_pointers);
 		}
 	}
