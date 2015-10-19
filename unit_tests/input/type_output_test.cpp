@@ -6,6 +6,7 @@
 
 #include "input/type_base.hh"
 #include "input/type_output.hh"
+#include "input/type_generic.hh"
 
 // Set version of program and other base data. Simulate data got from rev_num.h.
 Input::Type::RevNumData get_rev_num_data() {
