@@ -571,6 +571,9 @@ void TransportDG<Model>::update_solution()
 		MatDestroy(&m);
 
 		ls[i]->solve();
+
+		// update mass_vec due to possible changes in mass matrix
+		MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
 
