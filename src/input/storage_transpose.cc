@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "input/storage_transpose.hh"
+#include "input/input_type.hh"
 
 
 namespace Input {

@@ -9,12 +9,18 @@
 #define TYPE_OUTPUT_HH_
 
 
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
+#include "input/type_record.hh"
+#include <string>
+#include <ostream>
+#include <boost/shared_ptr.hpp>
 
 
 namespace Input {
 
 namespace Type {
+
+using namespace std;
 
 /// Stores version of program and other base data of application
 struct RevNumData {

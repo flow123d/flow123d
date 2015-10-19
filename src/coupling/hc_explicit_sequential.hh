@@ -31,7 +31,7 @@
 #ifndef HC_EXPLICIT_SEQUENTIAL_HH_
 #define HC_EXPLICIT_SEQUENTIAL_HH_
 
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 #include "input/accessors.hh"
 
 #include "coupling/equation.hh"

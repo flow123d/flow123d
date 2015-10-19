@@ -69,7 +69,7 @@
 
 #include "system/global_defs.h"
 #include "la/distribution.hh"
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 #include "input/accessors.hh"
 
 

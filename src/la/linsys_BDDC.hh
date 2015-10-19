@@ -35,7 +35,7 @@
 // derived from base linsys
 #include "mesh/mesh.h"
 #include "la/linsys.hh"
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 #include "input/accessors.hh"
 
 #include <vector>

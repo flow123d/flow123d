@@ -8,7 +8,7 @@
 #ifndef SRC_FLOW_DARCY_FLOW_INTERFACE_HH_
 #define SRC_FLOW_DARCY_FLOW_INTERFACE_HH_
 
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 
 class MH_DofHandler;
 

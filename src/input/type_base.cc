@@ -28,7 +28,6 @@
 #include "type_output.hh"
 #include "type_repository.hh"
 #include "json_spirit/json_spirit.h"
-#include <boost/algorithm/string.hpp>
 
 
 namespace Input {

@@ -9,7 +9,7 @@
 #define SRC_TRANSPORT_ADVECTION_PROCESS_BASE_HH_
 
 #include "coupling/equation.hh"
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 
 class Mesh;
 class MH_DofHandler;

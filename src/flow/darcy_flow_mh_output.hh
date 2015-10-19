@@ -37,7 +37,7 @@
 #include <vector>
 
 #include "io/output_time.hh"
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 #include "input/accessors.hh"
 
 #include "fem/mapping_p1.hh"

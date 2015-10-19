@@ -37,6 +37,7 @@
 
 #include "system/exc_common.hh"
 #include "config.h"
+#include "mpi.h"
 
 /*! @brief Debugging macros.
  *

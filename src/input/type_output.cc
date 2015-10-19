@@ -4,6 +4,8 @@
 
 #include "input/type_output.hh"
 #include "input/type_repository.hh"
+#include "input/type_generic.hh"
+#include "system/system.hh"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/concepts.hpp>

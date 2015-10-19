@@ -36,7 +36,7 @@
 #include "la/linsys.hh"
 
 #include "la/distribution.hh"
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 #include "input/accessors.hh"
 
 class LinSys_PETSC : public LinSys

@@ -10,6 +10,9 @@
 #include "input/path_yaml.hh"
 #include "input/reader_to_storage.hh"
 
+#include "system/global_defs.h"
+#include "system/system.hh"
+
 
 namespace Input {
 using namespace std;
