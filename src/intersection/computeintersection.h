@@ -40,6 +40,8 @@ public:
 
 	void clear_all();
     //TODO: why this is not done in constructor?
+    //TODO: document both cases
+    // IP is intersection of triangle and whole line (bisector)
 	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
 	void init_plucker_to_compute();
 	void set_data(Simplex<1> *abs, Simplex<2> *triang);
@@ -98,6 +100,7 @@ public:
 	void clear_all();
 	void init();
 	void set_data(Simplex<1> *abs, Simplex<3> *tetr);
+    //TODO comment cases in implementation
 	int compute(std::vector<IntersectionPoint<1,3>> &IP13s);
 
 	inline void set_pc_abscissa(Plucker *p){

@@ -98,6 +98,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 
 	}*/
 
+    //TODO use reference element to get orientation of sides
 	if(((*plucker_products[0] > epsilon) && (*plucker_products[1] < -epsilon) && (*plucker_products[2] > epsilon)) ||
 	   ((*plucker_products[0] < -epsilon) && (*plucker_products[1] > epsilon) && (*plucker_products[2] < -epsilon))){
 		double c = *plucker_products[0]; //c = -c;
@@ -138,6 +139,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 		//IP12s[0] = IP;
 		IP12s.push_back(IP);
 		return true;
+        //TODO try removing the seocond part of the following condition
 	}else if(compute_zeros_plucker_products && (fabs(*plucker_products[0]) <= epsilon || fabs(*plucker_products[1]) <= epsilon || fabs(*plucker_products[2]) <= epsilon)){
 
 		//xprintf(Msg, "pocita se patlogicky\n");
@@ -152,15 +154,26 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 		for(unsigned int i = 0; i < 3;i++){
 			//cout << "PP: " << *plucker_products[i] << endl;
 			if(fabs(*plucker_products[i]) <= epsilon){
+                // starting point of abscissa
 				arma::vec3 A = (*abscissa)[0].getPointCoordinates();
 				//arma::vec3 B("9 5 0");
+                // direction vector of abscissa
 				arma::vec3 U = plucker_coordinates_abscissa[0]->get_u_vector();
 				arma::vec3 C = (*triangle)[i][i%2].getPointCoordinates();
 				//arma::vec3 C = (*triangle)[i][0].getPointCoordinates();
 				//arma::vec3 D("4 4 0");
+                // direction vector of triangle side
 				arma::vec3 V = plucker_coordinates_triangle[i]->get_u_vector();
 				arma::vec3 K = C - A;
+                // normal vector to common plane of U and V
 				arma::vec3 Det = -arma::cross(U,V);
+                
+                // we solve following equation for parameters s,t:
+                /* A + sU = C + tV
+                 * sU - tV = C - A
+                 */
+                
+                //TODO armadillo function for max ??
 				//Det.print();
 				unsigned int max_index = 0;
 				double maximum = Det[0];
@@ -172,6 +185,8 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					maximum = Det[2];
 					max_index = 2;
 				}
+				//abscissa is parallel to triangle side
+				//TODO compare with epsilon (~ rounding error)
 				if(maximum == 0){
 					//continue;
 					return false;
@@ -183,12 +198,13 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 			    double DetY = K[(max_index+2)%3]*U[(max_index+1)%3]
 							-K[(max_index+1)%3]*U[(max_index+2)%3];
 
-				double s;
-				double t;
+				double s;   //parameter on abscissa
+				double t;   //parameter on triangle side
 
 				s = DetX/Det[max_index];
 				t = DetY/Det[max_index];
 
+                //TODO get from reference element
 				if(i == 1){
 					t = -t;
 				}
@@ -196,6 +212,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 				//cout << "s,t: " << s << "," << t << endl;
 				//xprintf(Msg, "s,t : %f,%f \n",s,t);
 
+				// IP is outside of triangle side
 				if(t > 1+epsilon || t < -epsilon){// || s > 1+epsilon || s < -epsilon){
 					//xprintf(Msg,"hoohoo\n");
 					//return false;
@@ -335,18 +352,25 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 	unsigned int pocet_pruniku = 0;
 	double epsilon = 64*numeric_limits<double>::epsilon();
 
+    // loop over sides of tetrahedron 
+    //TODO rename i to side
 	for(unsigned int i = 0;i < 4 && pocet_pruniku < 2;i++){
 
+        // update plucker products of the side
+        //TODO depends on reference element: loop over edges of the side; 
+        // possibly can be removed after passing plucker products
 		for(unsigned int j = 0; j < i;j++){
 			CI12[i].set_plucker_product(CI12[j].get_plucker_product(i-1),j);
 		}
 		if(!CI12[i].is_computed() && CI12[i].compute(IP12s, true)){
 			//xprintf(Msg,"Prunik13\n");
 
+            //TODO IP12s[IP12s.size() - 1] --->  IP12s.back()
 			if(IP12s[IP12s.size() - 1].is_patological()){
 				//xprintf(Msg, "\tPatologicky\n");
 				// Nastavování stěn, které se už nemusí počítat
 
+                //TODO depends on reference element
 				if(i == 0){
 					if(IP12s[IP12s.size() - 1].get_local_coords2()[0] == 1){
 						CI12[1].set_computed();
@@ -392,9 +416,16 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 		}
 
 	}else if(pocet_pruniku > 1){
+        
+        /* simplitfy like in NGH
+         * intersection.cpp:796
+         */
+        
 		double first_theta = IP13s[IP13s.size()-2].get_local_coords1()[1];
 		double second_theta = IP13s[IP13s.size()-1].get_local_coords1()[1];
 
+        //TODO translate comments
+        // - compare theta with 1,0 everywhere (without epsilon)
 		  // Nejedná se o průnik - celá usečka leží mimo čtyřstěn
 		if(((first_theta > 1) && (second_theta > 1)) ||
 		   ((first_theta < 0) && (second_theta < 0))){
