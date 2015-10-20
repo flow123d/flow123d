@@ -36,7 +36,7 @@
 #include "mesh/mesh.h"
 #include "la/linsys.hh"
 #include "input/input_type_forward.hh"
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
 
 #include <vector>
 

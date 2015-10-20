@@ -15,6 +15,8 @@
 
 #include "fields/unit_si.hh"
 
+using namespace std;
+
 /**
  * \brief Common parent class for templated OutputData.
  *

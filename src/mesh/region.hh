@@ -25,7 +25,8 @@
 #include "system/global_defs.h"
 #include "system/exceptions.hh"
 
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
+#include "input/input_exception.hh"
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>

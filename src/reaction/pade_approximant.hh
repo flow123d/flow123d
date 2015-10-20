@@ -7,7 +7,7 @@
 #ifndef PADE_APPROXIMANT_H_
 #define PADE_APPROXIMANT_H_
 
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
 #include "reaction/linear_ode_solver.hh"
 #include "armadillo"
 

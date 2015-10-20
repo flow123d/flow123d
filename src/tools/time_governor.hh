@@ -38,7 +38,8 @@
 
 #include "system/global_defs.h"
 #include "system/system.hh"
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
+#include "input/input_exception.hh"
 #include "tools/time_marks.hh"
 
 namespace Input {

@@ -27,7 +27,7 @@
 #include <boost/type_traits.hpp>
 
 #include "input/input_type_forward.hh"
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
 
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"

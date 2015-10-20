@@ -25,6 +25,7 @@ using namespace std;
 
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
+#include "input/accessors.hh"
 
 
 namespace it = Input::Type;

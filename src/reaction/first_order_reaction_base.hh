@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "reaction/reaction_term.hh"
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
 
 #include "armadillo"
 
