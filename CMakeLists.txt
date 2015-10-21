@@ -492,9 +492,9 @@ if (BDDCML_ROOT)
     find_package(BDDCML)
 
     if (NOT BDDCML_FOUND)
-        set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
+        set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_petsc_3.6_build)
         include(InstallBLOPEX)
-        set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_build)
+        set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_petsc_3.6_build)
         include(InstallBDDCML)
 
         set(BDDCML_bddcml_config_current "NO")
