@@ -54,44 +54,46 @@ template<> const unsigned int RefElement<1>::side_nodes[][1] = {
 };
 
 template<> const unsigned int RefElement<2>::side_nodes[][2] = {
-/*		{ 0, 1 },
+		{ 0, 1 },
 		{ 0, 2 },
-		{ 1, 2 }*/
-        { 0, 1},
-        { 1, 2},
-        { 0, 2}
+		{ 1, 2 }
 };
 
 template<> const unsigned int RefElement<3>::side_nodes[][3] = {
-/*		{ 0, 1, 2 },
+		{ 0, 1, 2 },
 		{ 0, 1, 3 },
 		{ 0, 2, 3 },
-		{ 1, 2, 3 }*/
-        {1,2,3},
-        {0,2,3},
-        {0,1,3},
-        {0,1,2}
+		{ 1, 2, 3 }
 };
 
 
 
 template<> const unsigned int RefElement<3>::side_lines[][3] = {
-        {3,4,5},
-        {1,2,5},
-        {0,2,4},
-        {0,1,3}
+        {0,1,2},
+        {0,3,4},
+        {1,3,5},
+        {2,4,5}
+//         {3,4,5},
+//         {1,2,5},
+//         {0,2,4},
+//         {0,1,3}
 };
 
 //template<unsigned int dim>
 //const unsigned int RefElement<dim>::side_lines[][0] = {{}};
 
 
+template<> const unsigned int RefElement<2>::line_nodes[][2] = {
+        {0,1},
+        {0,2},
+        {1,2}
+};
 
 template<> const unsigned int RefElement<3>::line_nodes[][2] = {
         {0,1},
         {0,2},
-        {0,3},
         {1,2},
+        {0,3},
         {1,3},
         {2,3}
 };
@@ -99,21 +101,59 @@ template<> const unsigned int RefElement<3>::line_nodes[][2] = {
 //const unsigned int RefElement<dim>::line_nodes[][0] = {};
 
 
+/**
+ * Indexes of sides for each line - with right orientation
+ */
+
+template<> const unsigned int RefElement<3>::line_sides[][2] = {
+     {0,1},
+     {2,0},
+     {0,3},
+     {1,2},
+     {3,1},
+     {2,3}
+};
+
+/**
+ * Indexes of sides for each line - for Simplex<2>, with right orientation
+ */
+template<> const unsigned int RefElement<2>::line_sides[][2] = {
+     {1,0},
+     {0,2},
+     {2,1}
+};
 
 template<unsigned int dim>
-vec::fixed<dim+1> RefElement<dim>::node_coords(unsigned int nid)
+vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
 {
 	ASSERT(nid < n_nodes, "Vertex number is out of range!");
 
-	vec::fixed<dim+1> p;
+	vec::fixed<dim> p;
 	p.zeros();
 
-	if (nid == 0)
-		p(dim) = 1;
-	else
-		p(nid-1) = 1;
+    if (nid > 0)
+        p(nid-1) = 1;
 
 	return p;
+}
+
+
+template<unsigned int dim>
+vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
+{
+    ASSERT(nid < n_nodes, "Vertex number is out of range!");
+
+    vec::fixed<dim+1> p;
+    p.zeros();
+
+    p(nid) = 1;
+    
+//     if (nid == 0)
+//         p(dim) = 1;
+//     else
+//         p(nid-1) = 1;
+
+    return p;
 }
 
 
@@ -169,6 +209,21 @@ unsigned int RefElement<dim>::permutation_index(unsigned int p[n_nodes_per_side]
 	return 0;
 }
 
+
+/**
+     * Basic line interpolation
+     */
+template<unsigned int dim>
+arma::vec::fixed<dim+1> RefElement<dim>::line_barycentric_interpolation(
+                                                       arma::vec::fixed<dim+1> first_coords, 
+                                                       arma::vec::fixed<dim+1> second_coords, 
+                                                       double first_theta, double second_theta, double theta){
+
+    arma::vec::fixed<dim+1> bary_interpolated_coords;
+    bary_interpolated_coords = ((theta - first_theta) * second_coords + (second_theta - theta) * first_coords)
+                               /(second_theta - first_theta);
+    return bary_interpolated_coords;
+};
 
 template class RefElement<1>;
 template class RefElement<2>;

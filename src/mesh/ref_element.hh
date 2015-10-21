@@ -95,7 +95,7 @@
  *                                                                          .
  *                                                                        ,/
  *                                                                       /
- *                                                                    2
+ *                                                                    3
  *                             y                                    ,/|`\
  *                             ^                                  ,/  |  `\
  *                             |                                ,/    '.   `\
@@ -106,7 +106,7 @@
  *                             |      `\                       `\.      |    ,/
  *                             |        `\                        `\.   '. ,/
  * 0----------1 --> x          0----------1 --> x                    `\. |/
- *                                                                      `3
+ *                                                                      `2
  *                                                                         `\.
  *                                                                            ` z
  *
@@ -117,10 +117,17 @@
  *                                                         3        0,1,2      IN
  *
  *
- *
- *
- *
- *
+ * nodes:
+ * 0        [0]                0        [0,0]              0        [0,0,0]
+ * 1        [1]                1        [1,0]              1        [1,0,0]
+ *                             2        [0,1]              2        [0,0,1]
+ *                                                         3        [0,1,0]
+ * 
+ * barycentric coordinates of nodes:
+ * 0        [1,0]              0        [1,0,0]            0        [1,0,0,0]
+ * 1        [0,1]              1        [0,1,0]            1        [0,1,0,0]
+ *                             2        [0,0,1]            2        [0,0,1,0]
+ *                                                         3        [0,0,0,1]
  */
 template<unsigned int dim>
 class RefElement
@@ -128,11 +135,17 @@ class RefElement
 public:
 
 	/**
-	 * Return barycentric coordinates of given node.
+	 * Return coordinates of given node.
 	 * @param nid Node number.
 	 */
-	static arma::vec::fixed<dim+1> node_coords(unsigned int nid);
-
+	static arma::vec::fixed<dim> node_coords(unsigned int nid);
+    
+    /**
+     * Return barycentric coordinates of given node.
+     * @param nid Node number.
+     */
+    static arma::vec::fixed<dim+1> node_barycentric_coords(unsigned int nid);
+    
 	/**
 	 * Compute normal vector to a given side.
 	 * @param sid Side number.
@@ -144,7 +157,6 @@ public:
 	 * Implemented only for @p dim == 3.
 	 */
 	static unsigned int line_between_faces(unsigned int f1, unsigned int f2);
-
 
 	/**
 	 * Number of sides.
@@ -162,10 +174,10 @@ public:
 	static const unsigned int n_nodes_per_side = dim;
 
 	/// Number of lines on boundary of one side.
-	static const unsigned int n_lines_per_side = ( dim == 3 ? 3 : 0);
+	static const unsigned int n_lines_per_side = (unsigned int)((dim * (dim - 1)) / 2);//( dim == 3 ? 3 : 0);// Kombinační číslo dim nad dvěma
 
 	/// Number of lines, i.e. @p object of dimension @p dim-2 on the boundary of the reference element.
-	static const unsigned int n_lines = ( dim == 3 ? 6 : 0);
+	static const unsigned int n_lines = (unsigned int)((dim * (dim + 1)) / 2); //( dim == 3 ? 6 : dim == 2 ? 3 : dim == 1 ? 1 : 0); součet posloupnosti
 
 	/**
 	 * Node numbers for each side.
@@ -181,6 +193,12 @@ public:
 	 * Nodes of 1D lines of the tetrahedron.
 	 */
     static const unsigned int line_nodes[n_lines][2];
+    
+    /**
+     * TODO Question: it is not used anywhere for 3D; why?
+     * Indices of sides for each line. Nonempty only for @p dim==3 and @p dim==2.
+     */
+    static const unsigned int line_sides[n_lines][2];
 
 	/**
 	 * Number of permutations of nodes on sides.
@@ -202,6 +220,47 @@ public:
 	 * @param p Permutation of nodes.
 	 */
 	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
+    
+    /**
+     * @param sid - index of a sub-simplex in a simplex
+     * return an array of barycentric coordinates on <dim> simplex from <subdim> simplex
+     * for example: simplex<3> - ABCD and its subsubsimplex<1> AD (line index: 3)
+     * AD has barycoords for A (1,0), for D (0,1), but A in ABCD is (1,0,0,0) and D is (0,0,0,1)
+     * this method creates array ((1,0,0,0),(0,0,0,1))
+     */
+    template<unsigned int subdim> inline static std::array<arma::vec::fixed<dim+1>,subdim+1> bary_coords(unsigned int sid){
+            //ASSERT(subdim < dim, "Sub-dimension is bigger than dimension!");
+            std::array<arma::vec::fixed<dim+1>,subdim+1> bary_c;
+
+            for(unsigned int i = 0; i < subdim+1; i++){
+                if((dim-subdim) == 2){
+                    bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::line_nodes[sid][i]);
+                }else{
+                    bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::side_nodes[sid][i]);
+                }
+            }
+            return bary_c;
+    };
+
+    /** Interpolate barycentric coords to a higher dimension of a simplex.
+     * @param coord - barycentric coords of a point on a sub-simplex
+     * @param sub_simplex_idx - id of sub-simplex on a simplex
+     */
+    template<unsigned int subdim> inline static arma::vec::fixed<dim+1> interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx){
+
+        std::array<arma::vec::fixed<dim+1>, subdim+1> simplex_M_vertices = RefElement<dim>::bary_coords<subdim>(sub_simplex_idx);
+        arma::vec::fixed<dim+1> sum;
+        sum.zeros();
+        for(int i=0; i<subdim+1; i++) sum += coord[i]*simplex_M_vertices[i];
+        return sum;
+    };
+
+    /**
+     * Basic line interpolation.
+     */
+    static arma::vec::fixed<dim+1> line_barycentric_interpolation(arma::vec::fixed<dim+1> first_coords, 
+                                                                  arma::vec::fixed<dim+1> second_coords, 
+                                                                  double first_theta, double second_theta, double theta);
 
 };
 
