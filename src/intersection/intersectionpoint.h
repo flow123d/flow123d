@@ -4,7 +4,6 @@
 #include <armadillo>
 #include <array>
 #include "system/system.hh"
-#include "refsimplex.h"
 
 using namespace std;
 namespace computeintersection{

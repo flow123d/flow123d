@@ -3,6 +3,7 @@
  */
 
 #include "computeintersection.h"
+#include "mesh/ref_element.hh"
 #include "system/system.hh"
 
 namespace computeintersection{
@@ -332,7 +333,7 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
 
 	for(unsigned int j = 0; j < 4;j++){
 		for(unsigned int i = 0; i < 3;i++){
-			CI12[j].set_pc_triangle(plucker_coordinates_tetrahedron[RefSimplex<3>::side_lines[j][i]], i);
+			CI12[j].set_pc_triangle(plucker_coordinates_tetrahedron[RefElement<3>::side_lines[j][i]], i);
 		}
 	}
 
@@ -439,7 +440,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 			// První souřadnice leží uvnitř čtyřstěnu
 			if(first_theta > 1+epsilon || first_theta < -epsilon){
 				double theta = first_theta > 1 ? 1 : 0;
-				arma::vec::fixed<4> interpolovane = RefSimplex<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta);
+				arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta);
 				arma::vec::fixed<2> inter; inter[0] = 1 - theta; inter[1] = theta;
 				IntersectionPoint<1,3> IP13(inter, interpolovane,-1,IP13s[IP13s.size()-2].get_side2(),IP13s[IP13s.size()-2].get_orientation(),true, IP13s[IP13s.size()-2].is_patological());
 				IP13s[IP13s.size()-2] = IP13;
@@ -454,7 +455,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 			if(second_theta > 1+epsilon || second_theta < -epsilon){
 				double theta2 = second_theta > 1 ? 1 : 0;
 				arma::vec::fixed<2> inter2; inter2[0] = 1 - theta2; inter2[1] = theta2;
-				arma::vec::fixed<4> interpolovane2 = RefSimplex<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta2);
+				arma::vec::fixed<4> interpolovane2 = RefElement<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta2);
 				IntersectionPoint<1,3> IP13(inter2, interpolovane2,-1,IP13s[IP13s.size()-1].get_side2(),IP13s[IP13s.size()-1].get_orientation(),true, IP13s[IP13s.size()-1].is_patological());
 				IP13s[IP13s.size()-1] = IP13;
 			}else if(fabs(1-second_theta) < epsilon || fabs(second_theta) < epsilon){

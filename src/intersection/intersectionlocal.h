@@ -14,7 +14,7 @@
 #include "system/system.hh"
 #include "mesh/mesh.h"
 #include <queue>
-
+#include "mesh/ref_element.hh"
 
 using namespace std;
 namespace computeintersection{
@@ -64,9 +64,9 @@ public:
         	//cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-1 << "> na <" << sd << "," <<  d << ">" << endl;
             //TODO: PE; try to replace if cases; interpolate<d-1>
         	if(d == 3){
-        		interpolovane = RefSimplex<3>::interpolate<2>(IP.get_local_coords2(), IP.get_side2());
+        		interpolovane = RefElement<3>::interpolate<2>(IP.get_local_coords2(), IP.get_side2());
         	}else if(d == 2){
-        		interpolovane = RefSimplex<2>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
+        		interpolovane = RefElement<2>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
         	}else{
                 //TODO: ASSERT
         		cout << "zakazany stav" << endl;
@@ -87,7 +87,7 @@ public:
              	arma::vec::fixed<d+1> interpolovane;
              	//cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-2 << "> na <" << sd << "," <<  d << ">" << endl;
              	if(d == 3){
-             		interpolovane = RefSimplex<3>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
+             		interpolovane = RefElement<3>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
              	}else{
                     //TODO: ASSERT
              		cout << "zakazany stav" << endl;

@@ -8,7 +8,6 @@
 //#include <armadillo>
 #include "plucker.h"
 #include "simplex.h"
-#include "refsimplex.h"
 
 #include "intersectionpoint.h"
 #include "intersectionline.h"

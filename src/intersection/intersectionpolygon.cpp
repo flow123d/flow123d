@@ -6,6 +6,7 @@
  */
 
 #include "intersectionpolygon.h"
+#include "mesh/ref_element.hh"
 #include <algorithm>
 
 namespace computeintersection{
@@ -105,8 +106,8 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 					// bod je vrcholem trohúhelníku - zjistíme o jaký vrchol se jedná
 					// Jelikož polygon orientujeme ve směru trojúhelníku -> budeme mít fixní uspořádání jen podle indexu vrcholu trojúhelníku
 					unsigned int vertex_index = (i_points[i].get_local_coords1()[0] == 1 ? 0 : (i_points[i].get_local_coords1()[1] == 1 ? 1 : 2));
-					unsigned int triangle_side_in = RefSimplex<2>::line_sides[vertex_index][1];
-					unsigned int triangle_side_out = RefSimplex<2>::line_sides[vertex_index][0];
+					unsigned int triangle_side_in = RefElement<2>::line_sides[vertex_index][1];
+					unsigned int triangle_side_out = RefElement<2>::line_sides[vertex_index][0];
 					// Body typu H-H se mohou vyskytovat duplicitně, touto podmínkou duplicity zrušíme
 					if(trace_table(4+triangle_side_in,1) == -1){
 						trace_table(4+triangle_side_in,0) = triangle_side_out+4;
@@ -117,8 +118,8 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 				// TYP bodu S-S
 				// Pokračujeme ze stěny na stěnu
 				unsigned int tetrahedron_line = i_points[i].get_side2();
-				unsigned int tetrahedron_side_in = RefSimplex<3>::line_sides[tetrahedron_line][i_points[i].get_orientation()];
-				unsigned int tetrahedron_side_out = RefSimplex<3>::line_sides[tetrahedron_line][1 - i_points[i].get_orientation()];
+				unsigned int tetrahedron_side_in = RefElement<3>::line_sides[tetrahedron_line][i_points[i].get_orientation()];
+				unsigned int tetrahedron_side_out = RefElement<3>::line_sides[tetrahedron_line][1 - i_points[i].get_orientation()];
 				trace_table(tetrahedron_side_in,0) = tetrahedron_side_out;
 				trace_table(tetrahedron_side_in,1) = i;
 			}
