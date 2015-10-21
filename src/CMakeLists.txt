@@ -109,10 +109,10 @@ set(sources_mesh_lib
     mesh/ngh/src/vertex.cpp
 )
 
-set(sources_intersections
+set(sources_intersections_lib
 	intersection/plucker.cpp
 	intersection/simplex.cpp
-	intersection/refsimplex.cpp
+	# intersection/refsimplex.cpp
 	intersection/prolongationpoint.cpp
 	intersection/prolongationline.cpp
 	intersection/intersectionpoint.cpp
@@ -241,8 +241,8 @@ add_library(mesh_lib ${sources_mesh_lib})
 target_link_libraries(mesh_lib
     input_lib system_lib la_lib armadillo ${Boost_LIBRARIES})
 
-# intersection_2_3_lib
-add_library(intersections_lib ${sources_intersections})
+# intersections_lib
+add_library(intersections_lib ${sources_intersections_lib})
 target_link_libraries(intersections_lib
     mesh_lib system_lib armadillo ${Boost_LIBRARIES})
     
@@ -265,7 +265,7 @@ target_link_libraries(coupling_lib
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib system_lib interpolation_lib
+    fem_lib mesh_lib la_lib semchem  input_lib system_lib interpolation_lib intersections_lib
     coupling_lib fparser  armadillo ${PETSC_LIBRARIES} ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
