@@ -73,10 +73,6 @@ template<> const unsigned int RefElement<3>::side_lines[][3] = {
         {0,3,4},
         {1,3,5},
         {2,4,5}
-//         {3,4,5},
-//         {1,2,5},
-//         {0,2,4},
-//         {0,1,3}
 };
 
 //template<unsigned int dim>

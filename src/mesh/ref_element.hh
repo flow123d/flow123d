@@ -111,10 +111,10 @@
  *                                                                            ` z
  *
  * side id  node ids           side id  node ids           side id  node ids   normal
- * 0        1                  0        1,2                0        1,2,3      OUT
- * 1        0                  1        0,2                1        0,2,3      IN
- *                             2        0,1                2        0,1,3      OUT
- *                                                         3        0,1,2      IN
+ * 0        0                  0        0,1                0        0,1,2      OUT
+ * 1        1                  1        0,2                1        0,1,3      IN
+ *                             2        1,2                2        0,2,3      OUT
+ *                                                         3        1,2,3      IN
  *
  *
  * nodes:
