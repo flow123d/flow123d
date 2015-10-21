@@ -32,6 +32,11 @@ private:
 
 public:
 	Plucker();
+	/**
+	 * @param a - A point from AB line
+	 * @param b - B point from AB line
+	 * creates plucker coordinates of a line AB
+	 */
 	Plucker(const arma::vec3 &a, const arma::vec3 &b);
 	/// copy constructor
 	Plucker(const Plucker &p);

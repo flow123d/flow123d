@@ -78,10 +78,6 @@ template<> const unsigned int RefSimplex<3>::side_lines[][3] = {
 		{2,4,5}
 };
 
-//template<unsigned int dim>
-//const unsigned int RefElement<dim>::side_lines[][0] = {{}};
-
-
 /*
  * Indexes of nodes for each line
  * */
@@ -121,31 +117,6 @@ template<> const unsigned int RefSimplex<2>::line_sides[][2] = {
 		{0,2},
 		{2,1}
 };
-
-
-//template<unsigned int dim>
-//const unsigned int RefElement<dim>::line_nodes[][0] = {};
-
-
-//template<> static std::array< arma::vec::fixed<dim+1>, subdim+1 > bary_coords(unsigned int sid){
-
-//};
-
-/*template<unsigned int dim>
-template<unsigned int subdim>
-std::array< arma::vec::fixed<dim+1>,subdim+1> RefSimplex<dim>::bary_coords(){
-
-	//ASSERT(subdim < dim, "Sub-dimension is bigger than dimension!");
-	xprintf(Msg, "barycoods \n");
-
-	std::array<arma::vec::fixed<dim+1>,subdim+1> bary_c;
-	for(unsigned int i = 0; i < dim; i++){
-		bary_c[i] = RefSimplex<dim>::node_coords(RefSimplex<dim>::side_nodes[sid][i]);
-	}
-
-	return bary_c;
-};*/
-
 
 template<unsigned int dim>
 vec::fixed<dim+1> RefSimplex<dim>::node_coords(unsigned int nid)

@@ -35,9 +35,6 @@ namespace computeintersection{
  *                             2        1,2                2        0,2,3      OUT
  *                                                         3        1,2,3      IN
  *
- *
- * TODO:
- * - comment all the members - i/o parameters
  */
 
 template<unsigned int dim>
@@ -45,9 +42,15 @@ class RefSimplex
 {
 public:
 
+	/**
+	 * @param sid - index of a sub-simplex in a simplex
+	 * return an array of barycentric coordinates on <dim> simplex from <subdim> simplex
+	 * for example: simplex<3> - ABCD and its subsubsimplex<1> AD (line index: 3)
+	 * AD has barycoords for A (1,0), for D (0,1), but A in ABCD is (1,0,0,0) and D is (0,0,0,1)
+	 * this method creates array ((1,0,0,0),(0,0,0,1))
+	 */
 	template<unsigned int subdim> inline static std::array<arma::vec::fixed<dim+1>,subdim+1> bary_coords(unsigned int sid){
 		    //ASSERT(subdim < dim, "Sub-dimension is bigger than dimension!");
-			//xprintf(Msg, "barycoods \n");
 			std::array<arma::vec::fixed<dim+1>,subdim+1> bary_c;
 
 
@@ -57,12 +60,16 @@ public:
 				}else{
 					bary_c[i] = RefSimplex<dim>::node_coords(RefSimplex<dim>::side_nodes[sid][i]);
 				}
-				//bary_c[i] = RefSimplex<dim>::node_coords(RefSimplex<dim>::line_nodes[sid][i] : RefSimplex<dim>::side_nodes[sid][i]);
 			}
 
 			return bary_c;
 	};
 
+	/**
+	 * @param coord - barycentric coords of a point on a sub-simplex
+	 * @param sub_simplex_idx - id of sub-simplex on a simplex
+	 * Interpolate barycentric coords to a higher dimension of a simplex
+	 */
 	template<unsigned int subdim> inline static arma::vec::fixed<dim+1> interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx){
 
 		std::array<arma::vec::fixed<dim+1>, subdim+1> simplex_M_vertices = RefSimplex<dim>::bary_coords<subdim>(sub_simplex_idx);
@@ -72,9 +79,10 @@ public:
 		return sum;
 	};
 
+	/**
+	 * Basic line interpolation
+	 */
 	inline static arma::vec::fixed<dim+1> line_barycentric_interpolation(arma::vec::fixed<dim+1> first_coords, arma::vec::fixed<dim+1> second_coords, double first_theta, double second_theta, double theta){
-
-		//cout << "Barycentric interpolation (first theta, theta, second theta) - (" << first_theta << "," << theta << "," << second_theta << ")" << endl;
 
 		arma::vec::fixed<dim+1> bary_interpolated_coords;
 
@@ -82,8 +90,6 @@ public:
 
 		return bary_interpolated_coords;
 	};
-
-	//inline static arma::vec::fixed<dim+1> point_interpolation(arma::vec3 &point_coords, Simplex<3> &tetrahedron){};
 
 	/**
 	 * Return barycentric coordinates of given node.
