@@ -24,20 +24,17 @@ using namespace std;
 namespace computeintersection {
 
 /**
-* TODO: comment
-* 
-* clear functions duplicities
-* use only algotrithm 2 (with BIHTree)
+* Main class, which takes mesh and you can call method for computing intersections for different dimensions of elements
+* It can compute whole polygon area.
+* It can create a mesh file with intersections
 */
 class InspectElements {
 
-	/* Possibly replace IntersectionLocal by index of ProlongationLine
-	 * in the prolongation_line_queue, which should rather be std::deque
-	 * to support both queue and random access operations.
-	 */
-	//
+	// For case 2D-3D - list of intersectionpolygon
 	std::vector<std::vector<IntersectionPolygon>> intersection_list;
+	// For case 1D-3D - list of intersectionline
 	std::vector<std::vector<IntersectionLine>> intersection_line_list;
+	// Array of flags, which elements are computed
 	std::vector<bool> closed_elements;
 	std::vector<int> flag_for_3D_elements;
 
@@ -72,6 +69,9 @@ public:
 	InspectElements(Mesh *_mesh);
 	~InspectElements();
 
+	/**
+	 * Every method needs to be implemented for different type of mesh intersection
+	 */
 	template<unsigned int subdim, unsigned int dim> inline void compute_intersections(){
 		cout << "Warning - method compute_intersections "<< subdim<<"D with "<< dim<<"D is not implemented yet" << endl;
 	};
@@ -81,15 +81,11 @@ public:
 	};
 
 
-	void computeIntersections2d3d();
-	void computeIntersections2d3dProlongation(const ProlongationLine &pl);
-	void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele);
+	void computeIntersections2d3d(); // set private
+	void computeIntersections2d3dProlongation(const ProlongationLine &pl); // set private
+	void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele); // set private
 
-	bool intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
-
-
-	void ComputeIntersections23();
-	void ComputeIntersections13();
+	bool intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx); // set private
 
 	void print_mesh_to_file(string name);
 	void print_mesh_to_file_1D(string name);

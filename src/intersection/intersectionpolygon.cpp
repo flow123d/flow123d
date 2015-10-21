@@ -46,6 +46,11 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 		return;
 	}
 
+	/**
+	 * Vytvoříme tabulku 7x2, první 4 řádky pro stěny čtyřstěnu, další 3 pro hrany trojúhelníku
+	 * 1. sloupeček označuje index dalšího řádku na který se pokračuje
+	 * 2. sloupeček obsahuje index bodu v původním poli
+	 */
 	arma::Mat<int>::fixed<7,2> trace_table;
 	for(unsigned int i = 0; i < 7;i++){
 		for(unsigned int j = 0; j < 2;j++){
@@ -66,16 +71,25 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 	 * H1 has opossite orientation
 	 * */
 
+	// Procházíme všechny body polygonu
+	// H - hrana trojúhelníku
+	// S - stěna čtyřstěnu
 	for(unsigned int i = 0; i < i_points.size();i++){
-			// TYP bodu H-S nebo H-H
+			// Známe index hrany trojúhelníku, na které bod vznikl,
+			// jedná se tedy o TYP bodu H-S nebo H-H (bod spojuje hranu-stěnu nebo hranu-hranu)
 			if(i_points[i].get_side1() != -1){
-				// TYP bodu H-S
+				// Bod není vrcholem - musí být TYPu H-S
 				if(!i_points[i].is_vertex()){
 
+					// Směr hran polygonu závisí na 3ch faktorech:
+					// indexu hrany trojúhelníku (hranu s indexem 1. otáčíme)
+					// indexu stěnu čtyřstěnu
+					// orientaci bodu (směr bodu průniku, který vznikne při výpočtu průniku pomocí Plückerových souřadnic)
 					unsigned int j = (i_points[i].get_side2() + i_points[i].get_orientation()+ i_points[i].get_side1())%2;
 
 
 					if(j == 1){
+						// bod je vstupní na stěně a pokračuje na hranu trojúhelníku
 						trace_table(i_points[i].get_side2(),0) = i_points[i].get_side1()+4;
 						trace_table(i_points[i].get_side2(),1) = i;
 					}else{
@@ -88,9 +102,12 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 
 				}else{
 					// TYP bodu H-H
+					// bod je vrcholem trohúhelníku - zjistíme o jaký vrchol se jedná
+					// Jelikož polygon orientujeme ve směru trojúhelníku -> budeme mít fixní uspořádání jen podle indexu vrcholu trojúhelníku
 					unsigned int vertex_index = (i_points[i].get_local_coords1()[0] == 1 ? 0 : (i_points[i].get_local_coords1()[1] == 1 ? 1 : 2));
 					unsigned int triangle_side_in = RefSimplex<2>::line_sides[vertex_index][1];
 					unsigned int triangle_side_out = RefSimplex<2>::line_sides[vertex_index][0];
+					// Body typu H-H se mohou vyskytovat duplicitně, touto podmínkou duplicity zrušíme
 					if(trace_table(4+triangle_side_in,1) == -1){
 						trace_table(4+triangle_side_in,0) = triangle_side_out+4;
 						trace_table(4+triangle_side_in,1) = i;
@@ -98,6 +115,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 				}
 			}else{
 				// TYP bodu S-S
+				// Pokračujeme ze stěny na stěnu
 				unsigned int tetrahedron_line = i_points[i].get_side2();
 				unsigned int tetrahedron_side_in = RefSimplex<3>::line_sides[tetrahedron_line][i_points[i].get_orientation()];
 				unsigned int tetrahedron_side_out = RefSimplex<3>::line_sides[tetrahedron_line][1 - i_points[i].get_orientation()];
@@ -106,6 +124,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 			}
 	}
 
+	// Procházení trasovací tabulky a přeuspořádání bodů do nového pole
 	int first_row_index = -1;
 	int next_row = -1;
 	for(unsigned int i = 0; i < 7;i++){
@@ -122,6 +141,8 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 		}
 	}
 
+	// Naplnění prodlužovací tabulky
+	// Prodlužovací tabulka obsahuje indexy stěn a (indexy+4) hran
 	prolongation_table.push_back((unsigned int)trace_table(first_row_index,0));
 
 	while(first_row_index != next_row){
@@ -172,9 +193,7 @@ void IntersectionPolygon::trace_polygon_convex_hull(std::vector<unsigned int> &p
 
 	H.resize(k-1);
 	i_points = H;
-	/*if((int)i_points.size() != n){
-		xprintf(Msg, "Velikost před a po (%d, %d)\n", n, i_points.size());
-	}*/
+
 
 	// Filling prolongation table
 	if(i_points.size() > 1){
@@ -272,18 +291,7 @@ int IntersectionPolygon::side_content_prolongation() const{
 
 }
 
-/* split the polygon into triangles according to the first point
- * for every triangle compute area from barycentric coordinates
- * 				Barycentric coords. 		Local coords.
- * Point A		[A0,A1,A2]					[A1,A2,0]
- * Point B	    [B0,B1,B2]					[B1,B2,0]
- * Point C		[C0,C1,C2]					[C1,C2,0]
- *
- *  triangle area: (B-A)x(C-A)/2 => ((B1-A1)(C2-A2) - (B2-A2)(C1-A1))/2
- *  => (A1(B2-C2) + B1(C2-A2) + C1(A2-B2))/2
- *
- *  final polygon area is sum of triangle areas
- */
+
 double IntersectionPolygon::get_area() const{
 	double subtotal = 0.0;
 	for(unsigned int j = 2; j < i_points.size();j++){

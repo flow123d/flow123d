@@ -16,9 +16,10 @@
 using namespace std;
 namespace computeintersection{
 
-    /**
-     * TODO: comment
-     */
+/**
+ * IntersectionLine represents a line from computing intersection of a line(Simplex<1>) and a tetrahedron(Simplex<3>)
+ * Contains array of points (necessary not in order at first)
+ */
 class IntersectionLine{
 
 	std::vector<IntersectionPoint<1,3>> i_points;
@@ -39,6 +40,9 @@ public:
 		return i_points;
 	}
 
+	/**
+	 * switches points if they are not in right order
+	 */
 	inline void trace_line(){
 
 		if(i_points.size() > 1){
