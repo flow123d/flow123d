@@ -25,9 +25,12 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = true,
+
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-07
       }
     }, 
     
@@ -62,18 +65,21 @@
       },
       
       reaction_term = {
-        TYPE="LinearReactions",
+        TYPE="FirstOrderReaction",
 
-        decays = [
+        reactions = [
           {
-            parent = "D",
-            kinetic = 0.277258872,
-            products = [
-              "E"
-            ]
+            reactants = "D",
+            reaction_rate = 0.277258872,
+            products = "E"
           }
         ]
-      } 
+      },
+
+      balance = {
+        cumulative = true
+      }
+
     }
   },
   

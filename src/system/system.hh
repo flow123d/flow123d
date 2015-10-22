@@ -38,13 +38,6 @@
 #include "system/exc_common.hh"
 
 
-//instead of #include "mpi.h"
-//typedef int MPI_Comm;
-
-
-// for a linux system we assume glibc library
-// with support of ISOC99 functions
-//#define _ISOC99_SOURCE
 #ifndef _BSD_SOURCE
    #define _BSD_SOURCE
 #endif
@@ -62,11 +55,10 @@
 #define strcmpi strcasecmp
 #define DIR_DELIMITER '/'
 
-#ifdef HAVE_CXX11_FULL
-  #define OPERATOR_NEW_THROW_EXCEPTION
-#else
-  #define OPERATOR_NEW_THROW_EXCEPTION throw(std::bad_alloc)
-#endif
+
+// Assuming all compilers supports CXX11 features
+#define OPERATOR_NEW_THROW_EXCEPTION
+
 
 
 using namespace std;
@@ -99,7 +91,6 @@ typedef struct SystemInfo {
 extern SystemInfo sys_info;
 
 
-void    system_set_from_options();
 char * 	get_log_fname( void );
 char * 	get_log_file( void );
 void	resume_log_file( void );
@@ -115,8 +106,6 @@ void * xrealloc( void * ptr, size_t size );
 #ifndef xfree
     #define xfree(p) \
     do { if (p) { free(p); (p)=NULL; } \
-         else {/*DBGMSG("Freeing NULL pointer?\n")*/; \
-              } \
     } while (0) /// test & free memory
 #endif
 
@@ -145,7 +134,6 @@ int     xchdir( const char *s );  ///< Change directory (GLIBC function, origina
 int     xremove( const char *s ); ///< Remove file or directory (function)
 char *  xgetcwd( void );          ///< Get current working directory (GLIBC function, original in <unistd.h>)
 int     xrename( const char * oldname, const char * newname ); ///< Rename file (function)
-//#define tmpfile xtmpfile  NOT_USED    ///< Open a temporary file (function)
 //! @}
 
 // string operations

@@ -54,9 +54,7 @@ public:
 	/**
 	 * Declare Input type.
 	 */
-	static Input::Type::Record input_type;
-
-	static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
+	static const Input::Type::Record & get_input_type();
 
 	/**
 	 * Initialization from the input interface.
@@ -66,7 +64,7 @@ public:
     /**
      * Update time and possibly update data from GMSH file.
      */
-    virtual bool set_time(double time);
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -83,11 +81,11 @@ protected:
 	/// mesh, which is interpolated
 	Mesh* source_mesh_;
 
-	/// mesh reader
-	GmshMeshReader *reader_;
+	/// mesh reader file
+	FilePath reader_file_;
 
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
-    double *data_;
+	std::shared_ptr< std::vector<typename Value::element_type> > data_;
 
 	/// vector stored suspect elements in calculating the intersection
 	std::vector<unsigned int> searched_elements_;

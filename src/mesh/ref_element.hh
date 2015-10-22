@@ -91,7 +91,7 @@
  *
  * 1D element (line segment)   2D element (triangle)        3D element (tetrahedron)
  *
- *                                                                            y
+ *                                                                            y (local z)
  *                                                                          .
  *                                                                        ,/
  *                                                                       /
@@ -108,7 +108,7 @@
  * 0----------1 --> x          0----------1 --> x                    `\. |/
  *                                                                      `2
  *                                                                         `\.
- *                                                                            ` z
+ *                                                                            ` z (local y)
  *
  * side id  node ids           side id  node ids           side id  node ids   normal
  * 0        0                  0        0,1                0        0,1,2      OUT
@@ -117,11 +117,11 @@
  *                                                         3        1,2,3      IN
  *
  *
- * nodes:
- * 0        [0]                0        [0,0]              0        [0,0,0]
- * 1        [1]                1        [1,0]              1        [1,0,0]
- *                             2        [0,1]              2        [0,0,1]
- *                                                         3        [0,1,0]
+ * nodes coordinates:                                                          in local:     
+ * 0        [0]                0        [0,0]              0        [0,0,0]    [0,0,0] 
+ * 1        [1]                1        [1,0]              1        [1,0,0]    [1,0,0]
+ *                             2        [0,1]              2        [0,0,1]    [0,1,0]     
+ *                                                         3        [0,1,0]    [0,0,1]
  * 
  * barycentric coordinates of nodes:
  * 0        [1,0]              0        [1,0,0]            0        [1,0,0,0]
@@ -135,13 +135,17 @@ class RefElement
 public:
 
 	/**
-	 * Return coordinates of given node.
+	 * Return local coordinates of given node.
+     * 'Local' means in the coordinate system of the reference element according to node numbering.
+     * @see the class documentation @p RefElement
 	 * @param nid Node number.
+     * NOTE: Implementation is dependent on current node and side numbering.
 	 */
 	static arma::vec::fixed<dim> node_coords(unsigned int nid);
     
     /**
      * Return barycentric coordinates of given node.
+     * @see the class documentation @p RefElement
      * @param nid Node number.
      */
     static arma::vec::fixed<dim+1> node_barycentric_coords(unsigned int nid);
@@ -151,6 +155,16 @@ public:
 	 * @param sid Side number.
 	 */
 	static arma::vec::fixed<dim> normal_vector(unsigned int sid);
+
+	static double side_measure(unsigned int sid);
+    
+    /**
+     * Returns index of the node that is oposite to side of given index @p sid.
+     * Note: It is dependent on current node and side numbering.
+     * @param sid Side number.
+     * NOTE: Implementation is dependent on current node and side numbering.
+     */
+    static unsigned int oposite_node(unsigned int sid);
 
 	/**
 	 * Return index of 1D line, shared by two faces @p f1 and @p f2 of the reference tetrahedron.
@@ -263,11 +277,6 @@ public:
                                                                   double first_theta, double second_theta, double theta);
 
 };
-
-
-
-
-
 
 
 #endif /* REF_ELEMENT_HH_ */

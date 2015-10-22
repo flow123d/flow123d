@@ -71,7 +71,6 @@ Element::Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg)
 
 void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
     pid=0;
-//    material=NULL;
     n_neighs_vb=0;
     neigh_vb=NULL;
     dim_=dim;
@@ -91,13 +90,8 @@ void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
 
 
 Element::~Element() {
-/*
-    if (node) { delete[] node; node=NULL;}
-    if (edge_idx_) { delete[] edge_idx_; edge_idx_=NULL;}
-    if (permutation_idx_) { delete[] permutation_idx_; permutation_idx_=NULL;}
-    if (boundary_idx_) { delete[] boundary_idx_; boundary_idx_ = NULL; }
-    */
-
+    // Can not make deallocation here since then resize of
+    // vectors of elements deallocates what should be keeped.
 }
 
 
@@ -145,7 +139,6 @@ arma::vec3 Element::centre() const {
         centre += node[ li ]->point();
     }
     centre /= (double) n_nodes();
-    //DBGMSG("%d: %f %f %f\n",ele.id(),ele->centre[0],ele->centre[1],ele->centre[2]);
     return centre;
 }
 

@@ -44,7 +44,10 @@
 #include "transport/transport_operator_splitting.hh"
 
 #include "fields/field_algo_base.hh"
+#include "fields/bc_field.hh"
 #include "fields/field_values.hh"
+#include "fields/multi_field.hh"
+#include "fields/vec_seq_double.hh"
 
 
 class SorptionImmob;
@@ -56,12 +59,6 @@ class ConvectionTransport;
 //=============================================================================
 // TRANSPORT
 //=============================================================================
-#define MOBILE 0
-#define IMMOBILE 1
-#define MOBILE_SORB 2
-#define IMMOBILE_SORB 3
-
-#define MAX_PHASES 4
 
 /**
  * TODO:
@@ -84,9 +81,7 @@ public:
 
     class EqData : public TransportBase::TransportEqData {
     public:
-        static Input::Type::Selection sorption_type_selection;
-
-        static Input::Type::Selection output_selection;
+        static const Input::Type::Selection & get_output_selection();
 
         EqData();
         virtual ~EqData() {};
@@ -103,7 +98,9 @@ public:
 		/// Initial concentrations.
 		Field<3, FieldValue<3>::Vector> init_conc;
 
+		Field<3, FieldValue<3>::Integer> region_id;
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
+
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         FieldSet output_fields;
@@ -112,7 +109,7 @@ public:
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec);
+        ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec);
 	/**
 	 * TODO: destructor
 	 */
@@ -122,6 +119,10 @@ public:
 	 * Initialize solution at zero time.
 	 */
     void zero_time_step() override;
+    /**
+     * 
+     */
+    bool assess_time_constraint(double &time_constraint);
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
@@ -145,6 +146,25 @@ public:
      */
     void set_target_time(double target_time);
 
+    /**
+     * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
+     */
+    void set_balance_object(boost::shared_ptr<Balance> balance);
+
+    const vector<unsigned int> &get_subst_idx()
+	{ return subst_idx; }
+
+    /**
+     * Calculate quantities necessary for cumulative balance (over time).
+     * This method is called at each (sub)iteration of the time loop.
+     */
+    void calculate_cumulative_balance();
+
+    /**
+     * Calculate instant quantities at output times.
+     */
+    void calculate_instant_balance();
+
 	/**
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
@@ -161,14 +181,13 @@ public:
 	 */
 	inline EqData *get_data() { return &data_; }
 
-	inline OutputTime *output_stream() { return output_stream_; }
+	inline std::shared_ptr<OutputTime> output_stream() { return output_stream_; }
 
-	double ***get_concentration_matrix();
+	double **get_concentration_matrix();
+	Vec *get_concentration_vector() { return vconc; }
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	int *get_el_4_loc();
 	int *get_row_4_el();
-
-	TimeIntegrationScheme time_scheme() override { return explicit_euler; }
 
 private:
 
@@ -192,9 +211,11 @@ private:
 	void set_boundary_conditions();
   
   //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-	void compute_concentration_sources(unsigned int sbi);
-	void compute_concentration_sources_for_mass_balance(unsigned int sbi);
+// 	void compute_concentration_sources(unsigned int sbi);
 
+    //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+    void compute_concentration_sources();
+    
 	/**
 	 * Finish explicit transport matrix (time step scaling)
 	 */
@@ -203,14 +224,6 @@ private:
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
-    /**
-     * Implements the virtual method EquationForMassBalance::calc_fluxes().
-     */
-    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-    /**
-     * Implements the virtual method EquationForMassBalance::calc_elem_sources().
-     */
-    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
 
     /**
@@ -218,44 +231,42 @@ private:
      */
     EqData data_;
 
+    //@{
     /**
-     * Indicates if we finished the matrix and add vector by scaling with timestep factor.
+     * Flag indicates the state of object (transport matrix or source term).
+     * If false, the object is freshly assembled and not rescaled.
+     * If true, the object is scaled (not necessarily with the current time step).
      */
-	bool is_convection_matrix_scaled, need_time_rescaling;
-
-    //TODO: remove this and make concentration_matrix only two-dimensional
-    int sub_problem;    // 0-only transport,1-transport+dual porosity,
-                        // 2-transport+sorption
-                        // 3-transport+dual porosity+sorption
-
-
-    double *sources_corr;
-    Vec v_sources_corr;
+	bool is_convection_matrix_scaled, is_src_term_scaled;
+    //@}
     
-    ///temporary arrays to store constant values of fields over time interval
-    //(avoiding calling "field.value()" too often)
-    double **sources_density, 
-           **sources_conc,
-           **sources_sigma;
+    double **sources_corr;
+    Vec *v_sources_corr;
+    
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
-    double cfl_max_step;
-            // only local part
-
+    double cfl_max_step;    ///< Time step constraint coming from CFL condition.
+    
+    Vec vcfl_flow_,     ///< Parallel vector for flow contribution to CFL condition.
+        vcfl_source_;   ///< Parallel vector for source term contribution to CFL condition.
+    double *cfl_flow_, *cfl_source_;
 
 
     VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
+    Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
+    double **tm_diag;
 
     /// Time when the transport matrix was created.
     /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
     /// necessity for matrix update
     double transport_matrix_time;
+    double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 
     /// Concentration vectors for mobile phase.
     Vec *vconc; // concentration vector
     /// Concentrations for phase, substance, element
-    double ***conc;
+    double **conc;
 
     ///
     Vec *vpconc; // previous concentration vector
@@ -263,18 +274,20 @@ private:
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
-    Vec *vconc_out; // concentration vector output (gathered)
-    double ***out_conc;
+    std::vector<VectorSeqDouble> out_conc;
 
 	/// Record with output specification.
 	Input::Record output_rec;
 
-	OutputTime *output_stream_;
+	std::shared_ptr<OutputTime> output_stream_;
 
 
-            int *row_4_el;
-            int *el_4_loc;
-            Distribution *el_ds;
+	int *row_4_el;
+	int *el_4_loc;
+	Distribution *el_ds;
+
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
 
             friend class TransportOperatorSplitting;
 };

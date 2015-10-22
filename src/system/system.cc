@@ -41,7 +41,6 @@
 #include "mpi.h"
 
 #include "system/system.hh"
-//#include "io/read_ini.h"
 #include "system/xio.h"
 #include "system/file_path.hh"
 
@@ -52,13 +51,6 @@
 
 
 SystemInfo sys_info;
-
-
-void system_set_from_options()
-{
-    //sys_info.verbosity = OptGetInt( "Run", "Screen_verbosity", "0" );
-
-}
 
 
 /// @brief INTERNAL DEFINITIONS FOR XPRINTF
@@ -85,10 +77,10 @@ static struct MsgFmt msg_fmt[] = {
 	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "    DBG (%s, %s(), %d):"},
 	{MsgLog,	true,  false,   SCR_NONE,	false,	NULL},
 	{MsgVerb,	false, false,   SCR_STDOUT,	false,	NULL},
-	{Warn,		true,  false,   SCR_STDERR,	false,	"Warning (%s, %s(), %d):\n"},
-	{UsrErr,	true,  false,   SCR_NONE,	true,	"User Error (%s, %s(), %d):\n"},
-	{Err,		true,  false,   SCR_NONE,	true,	"Error (%s, %s(), %d):\n"},
-	{PrgErr,	true,  false,   SCR_NONE,	true,	"Internal Error (%s, %s(), %d):\n"}
+	{Warn,		true,  false,   SCR_STDERR,	false,	"\nWarning (%s, %s(), %d):\n"},
+	{UsrErr,	true,  false,   SCR_NONE,	true,	"\nUser Error (%s, %s(), %d):\n"},
+	{Err,		true,  false,   SCR_NONE,	true,	"\nError (%s, %s(), %d):\n"},
+	{PrgErr,	true,  false,   SCR_NONE,	true,	"\nInternal Error (%s, %s(), %d):\n"}
 };
 
 /// @}
@@ -170,7 +162,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
             fprintf(sys_info.log,"[msg_id=%d] ", mpi_msg_id );
         mpi_msg_id++;
     }
-#ifndef DEBUG_MESSAGES
+#ifndef FLOW123D_DEBUG_MESSAGES
     if (type == Warn) mf.head="\nWarning: ";
 #endif
 	// print head
@@ -220,7 +212,6 @@ void *xmalloc( size_t size )
 
 
 	if (size == 0 ) size++;
-	//ASSERT( size != 0 ,"Bad requested size (%u bytes) for memory allocation\n", size );
 	rc = malloc( size );
 	if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
 

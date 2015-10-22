@@ -35,9 +35,8 @@
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
-#include "input/type_output.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 #include <iostream>
 #include <fstream>
@@ -46,7 +45,6 @@
 #include <boost/program_options/options_description.hpp>
 
 #include "main.h"
-//#include "io/read_ini.h"
 
 #include "rev_num.h"
 
@@ -61,27 +59,24 @@
     #define _PROGRAM_BRANCH_ "(unknown branch)"
 #endif
 
-#ifndef _COMPILER_FLAGS_
-    #define _COMPILER_FLAGS_ "(unknown compiler flags)"
+#ifndef FLOW123D_COMPILER_FLAGS_
+    #define FLOW123D_COMPILER_FLAGS_ "(unknown compiler flags)"
 #endif
-
-//static void main_convert_to_output();
 
 
 namespace it = Input::Type;
 
 // this should be part of a system class containing all support information
-//static Record system_rec("System", "Record with general support data.");
-//system_rec.finish();
-it::Record Application::input_type
-    = it::Record("Root", "Root record of JSON input for Flow123d.")
-    //main_rec.declare_key("system", system_rec, "");
-    .declare_key("problem", CouplingBase::input_type, it::Default::obligatory(),
+it::Record & Application::get_input_type() {
+    static it::Record type = it::Record("Root", "Root record of JSON input for Flow123d.")
+    .declare_key("problem", CouplingBase::get_input_type(), it::Default::obligatory(),
     		"Simulation problem to be solved.")
     .declare_key("pause_after_run", it::Bool(), it::Default("false"),
-    		"If true, the program will wait for key press before it terminates.");
-//    .declare_key("output_streams", it::Array( OutputTime::input_type ),
-//    		"Array of formated output streams to open.");
+    		"If true, the program will wait for key press before it terminates.")
+	.close();
+
+    return type;
+}
 
 
 
@@ -95,7 +90,7 @@ Application::Application( int argc,  char ** argv)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     PythonLoader::initialize(argv[0]);
 #endif
 
@@ -116,23 +111,32 @@ void Application::split_path(const string& path, string& directory, string& file
     }
 }
 
+
+Input::Type::RevNumData Application::get_rev_num_data() {
+	Input::Type::RevNumData rev_num_data;
+	rev_num_data.version = string(_VERSION_NAME_);
+	rev_num_data.revision = string(_GIT_REVISION_);
+	rev_num_data.branch = string(_GIT_BRANCH_);
+	rev_num_data.url = string(_GIT_URL_);
+
+	return rev_num_data;
+}
+
+
 void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
-    string version(_VERSION_NAME_);
-    string revision(_GIT_REVISION_);
-    string branch(_GIT_BRANCH_);
-    string url(_GIT_URL_);
-    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
-    
+	Input::Type::RevNumData rev_num_data = this->get_rev_num_data();
+    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
+
+    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", rev_num_data.version.c_str(), rev_num_data.revision.c_str());
     xprintf(Msg,
     	 "Branch: %s\n"
 		 "Build: %s\n"
 		 "Fetch URL: %s\n",
-		 branch.c_str(), build.c_str() , url.c_str() );
-    Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
+		 rev_num_data.branch.c_str(), build.c_str() , rev_num_data.url.c_str() );
+    Profiler::instance()->set_program_info("Flow123d", rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 }
 
 
@@ -143,22 +147,17 @@ Input::Record Application::read_input() {
         cout << program_arguments_desc_ << "\n";
         exit( exit_failure );
     }
-    
+
     // read main input file
-    string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    std::ifstream in_stream(fname.c_str());
-    if (! in_stream) {
-        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
-    }
+    FilePath fpath(main_input_filename_, FilePath::FileType::input_file);
     try {
-    	Input::JSONToStorage json_reader(in_stream, input_type );
+    	Input::ReaderToStorage json_reader(fpath, get_input_type() );
         root_record = json_reader.get_root_interface<Input::Record>();
-    } catch (Input::JSONToStorage::ExcInputError &e ) {
-      e << Input::JSONToStorage::EI_File(fname); throw;
-    } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
-      e << Input::JSONToStorage::EI_File(fname); throw;
+    } catch (Input::ReaderToStorage::ExcInputError &e ) {
+      e << Input::ReaderToStorage::EI_File(fpath); throw;
+    } catch (Input::ReaderToStorage::ExcNotJSONFormat &e) {
+      e << Input::ReaderToStorage::EI_File(fpath); throw;
     }  
-    
     return root_record;
 }
 
@@ -180,10 +179,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
-        ("full_doc", "Prints full structure of the main input file.")
-        ("JSON_template", "Prints description of the main input file as a valid CON file.")
-        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
-    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.")
+        ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
         ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
 
     ;
@@ -220,31 +216,27 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // if there is "full_doc" option
-    if (vm.count("full_doc")) {
+    /*if (vm.count("full_doc")) {
         Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputText type_output(&input_type);
+        Input::Type::OutputText type_output(&get_input_type());
         type_output.set_filter(":Field:.*");
         cout << type_output;
         exit( exit_output );
-    }
+    }*/
 
-    if (vm.count("JSON_template")) {
-        Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONTemplate(&input_type);
-        exit( exit_output );
-    }
-
-    if (vm.count("latex_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputLatex type_output(&input_type);
-        type_output.set_filter("");
-        cout << type_output;
-        exit( exit_output );
-    }
-
+    // if there is "JSON_machine" option
     if (vm.count("JSON_machine")) {
-        Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONMachine(&input_type);
+        // write ist to json file
+        string json_filename = vm["JSON_machine"].as<string>();
+        ofstream json_stream(json_filename);
+        // check open operation
+        if (json_stream.fail()) {
+    		cerr << "Failed to open file '" << json_filename << "'" << endl;
+        } else {
+	        Input::Type::TypeBase::lazy_finish();
+	        json_stream << Input::Type::OutputJSONMachine( this->get_rev_num_data() );
+	        json_stream.close();
+        }
         exit( exit_output );
     }
 
@@ -256,7 +248,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (vm.count("solve")) {
         string input_filename = vm["solve"].as<string>();
         split_path(input_filename, main_input_dir_, main_input_filename_);
-    } 
+    }
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;
@@ -291,10 +283,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
 void Application::run() {
-    //use_profiler=true;
 
-
-    display_version();
+	display_version();
 
     Input::Record i_rec = read_input();
 
@@ -309,7 +299,7 @@ void Application::run() {
         // read record with problem configuration
         Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
 
-        if (i_problem.type() == HC_ExplicitSequential::input_type ) {
+        if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
 
             HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
 
@@ -339,7 +329,14 @@ void Application::after_run() {
 
 Application::~Application() {
     if (use_profiler && Profiler::is_initialized()) {
-        Profiler::instance()->output(PETSC_COMM_WORLD);
+        // log profiler data to this stream
+        Profiler::instance()->output (PETSC_COMM_WORLD);
+
+        // call python script which transforms json file at given location
+        // Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");
+        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
+
+        // finally uninitialize
         Profiler::uninitialize();
     }
 }
@@ -365,344 +362,3 @@ int main(int argc, char **argv) {
     // Say Goodbye
     return ApplicationBase::exit_success;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * FUNCTION "MAIN" FOR CONVERTING FILES TO POS
- */
-/*void main_convert_to_output() {
-    // TODO: implement output of input data fields
-    // Fields to output:
-    // 1) volume data (simple)
-    //    sources (Darcy flow and transport), initial condition, material id, partition id
-    // 2) boundary data (needs "virtual fractures" in output mesh)
-    //    flow and transport bcd
-
-    xprintf(Err, "Not implemented yet in this version\n");
-}*/
-#if 0
-/**
- * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM
- */
-void main_compute_mh(struct Problem *problem) {
-    int type=OptGetInt("Global", "Problem_type", NULL);
-    switch (type) {
-        case STEADY_SATURATED:
-            main_compute_mh_steady_saturated(problem);
-            break;
-        case UNSTEADY_SATURATED:
-            main_compute_mh_unsteady_saturated(problem);
-            break;
-        case PROBLEM_DENSITY:
-           // main_compute_mh_density(problem);
-            break;
-        default:
-            xprintf(UsrErr,"Unsupported problem type: %d.",type);
-    }
-}
-
-/**
- * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
- */
-void main_compute_mh_unsteady_saturated(struct Problem *problem)
-{
-
-    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
-    MeshReader* meshReader = new GmshMeshReader();
-
-    Mesh* mesh = new Mesh();
-    meshReader->read(mesh_file_name, mesh);
-    mesh->setup_topology();
-    mesh->setup_materials(* problem->material_database);
-    Profiler::instance()->set_task_size(mesh->n_elements());
-    OutputTime *output_time;
-    TimeMarks * main_time_marks = new TimeMarks();
-    int i;
-
-    // setup output
-    string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
-    output_time = new OutputTime(mesh, output_file);
-
-    DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(main_time_marks,mesh, problem->material_database);
-    DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(water);
-    const TimeGovernor &water_time=water->get_time();
-
-    // set output time marks
-    TimeMark::Type output_mark_type = main_time_marks->new_strict_mark_type();
-    main_time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), water_time.end_time(), output_mark_type );
-
-    while (! water_time.is_end()) {
-        water->compute_one_step();
-        water_output->postprocess();
-
-        if ( main_time_marks->is_current(water_time, output_mark_type) )  {
-            output_time->get_data_from_mesh();
-            // call output_time->register_node_data(name, unit, 0, data) to register other data on nodes
-            // call output_time->register_elem_data(name, unit, 0, data) to register other data on elements
-            output_time->write_data(water_time.t());
-            output_time->free_data_from_mesh();
-        }
-    }
-}
-
-/**
- * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR STEADY SATURATED FLOW
- */
-void main_compute_mh_steady_saturated(struct Problem *problem)
-{
-    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
-    MeshReader* meshReader = new GmshMeshReader();
-
-    Mesh* mesh = new Mesh();
-    meshReader->read(mesh_file_name, mesh);
-    mesh->setup_topology();
-    mesh->setup_materials(* problem->material_database);
-    Profiler::instance()->set_task_size(mesh->n_elements());
-
-    TimeMarks * main_time_marks = new TimeMarks();
-
-    /*
-       Mesh* mesh;
-       ElementIter elm;
-       struct Side *sde;
-       FILE *out;
-       int i;
-       mesh=problem->mesh;
-     */
-
-    problem->water=new DarcyFlowMH_Steady(main_time_marks, mesh, problem->material_database);
-    // Pointer at Output should be in this object
-    DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(problem->water);
-
-    problem->water->compute_one_step();
-
-    if (OptGetBool("Transport", "Transport_on", "no") == true) {
-        problem->otransport = new ConvectionTransport(problem->material_database, mesh);
-        problem->transport_os = new TransportOperatorSplitting(problem->material_database, mesh);
-    }
-
-
-    water_output->postprocess();
-
-    /* Write static data to output file */
-	string out_fname =  IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
-	Output *output = new Output(mesh, out_fname);
-	output->get_data_from_mesh();
-	// call output->register_node_data(name, unit, data) here to register other data on nodes
-	// call output->register_elem_data(name, unit, data) here to register other data on elements
-	output->write_data();
-	output->free_data_from_mesh();
-	delete output;
-
-    // pracovni vystup nekompatibilniho propojeni
-    // melo by to byt ve water*
-    /*
-       {
-            ElementIter ele;
-            Element *ele2;
-            int ngi;
-            Neighbour *ngh;
-            Mesh* mesh = problem->mesh;
-
-            double sum1,sum2;
-            DarcyFlowMH *w=problem->water;
-            double *x = w->schur0->vx;
-
-
-            FOR_ELEMENTS_IT( ele ) {
-                FOR_ELM_NEIGHS_VV( ele, ngi ) {
-                    ngh = ele->neigh_vv[ ngi ];
-                    // get neigbour element, and set appropriate column
-               ele2 = ( ngh->element[ 0 ] == &(*ele) ) ? ngh->element[ 1 ] : ngh->element[ 0 ];
-
-               double out_flux=0.0;
-               for(i=0;i<=ele->dim;i++) out_flux+=x[w->side_row_4_id[ele->side[i]->id]];
-               xprintf(Msg,"El 1 (%f,%f) %d %f %g\n",
-                       ele->centre[0],
-                       ele->centre[1],
-                       ele->dim,
-                       x[w->el_row_4_id[ele->id]],out_flux);
-
-               out_flux=0.0;
-               for(i=0;i<=ele2->dim;i++) out_flux+=x[w->side_row_4_id[ele2->side[i]->id]];
-
-               xprintf(Msg,"El 2 (%f,%f) %d %f %g\n",
-                                  ele2->centre[0],
-                                  ele2->centre[1],
-                                  ele2->dim,
-                                  x[w->el_row_4_id[ele2->id]],out_flux);
-                }
-            }
-       }
-
-        out = xfopen("pepa.txt","wt");
-
-        FOR_ELEMENTS(elm)
-                    elm->aux = 0;
-
-        FOR_ELEMENTS(elm)
-            FOR_ELEMENT_SIDES(elm,i)
-                            if(elm->side[i]->type == EXTERNAL)
-                                    if((elm->side[i]->centre[2] - elm->centre[2]) > 0.0)
-                                            if(elm->side[i]->normal[2] != 0.0)
-                                                    if((elm->side[i]->centre[2]) > 300.0)
-                                                            if((elm->material->id == 2200) || (elm->material->id == 2207) || (elm->material->id == 2212) || (elm->material->id == 2217) || (elm->material->id == 9100) || (elm->material->id == 9107) || (elm->material->id == 9112) || (elm->material->id == 9117))
-                                                                    elm->aux = 1;
-
-        FOR_ELEMENTS(elm)
-                    if(elm->aux == 1)
-                            xfprintf(out,"%d\n",elm->id);
-
-        xfclose(out);
-     */
-
-    if (OptGetBool("Transport", "Transport_on", "no") == true) {
-    	problem->otransport->convection();
-    }
-
-    /*
-        if (OptGetBool("Transport",  "Reactions", "no") == true) {
-            read_reaction_list(transport);
-        }
-*/
-        //if (rank == 0) {
-
-        //}
-
-        // TODO: there is an uncoditioned jump in open_temp_files
-        // also this function should be moved to btc.*
-        // btc should be documented and have an clearly defined interface
-        // not strictly dependent on Transport.
-        //btc_check(transport);
-
-
-
-        /*
-                if(problem->cross_section == true)
-                {
-                    elect_cross_section_element(problem);
-                    output_transport_init_CS(problem);
-                    output_transport_time_CS(problem, 0 * problem->time_step);
-                }
-         */
-}
-//-----------------------------------------------------------------------------
-// vim: set cindent:
-//-----------------------------------------------------------------------------
-#endif
-#if 0
-
-/**
- * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
- */
-void main_compute_mh_density(struct Problem *problem)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-    int i, j, dens_step, n_step, frame = 0, rank;
-    double save_step, stop_time; // update_dens_time
-    char statuslog[255];
-    FILE *log;
-    OutputTime *output_time = NULL;
-
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-/*
-    transport_output_init(problem->otransport->transport_out_fname);
-    transport_output(problem->otransport->out_conc,problem->otransport->substance_name ,problem->otransport->n_substances, 0.0, ++frame,problem->otransport->transport_out_fname);
-*/
-
-    if(rank == 0) {
-        output_time = new OutputTime(mesh, problem->otransport->transport_out_fname);
-    }
-
-    //save_step = problem->save_step;
-    //stop_time = problem->stop_time;
-    //trans->update_dens_time = problem->save_step / (ceil(problem->save_step / trans->dens_step));
-    //dens_step = (int) ceil(problem->stop_time / trans->update_dens_time);
-    //n_step = (int) (problem->save_step / trans->update_dens_time);
-
-    // DF problem - I don't understend to this construction !!!
-    //problem->save_step = problem->stop_time = trans->update_dens_time;
-
-
-    /*
-
-
-
-    //------------------------------------------------------------------------------
-    //      Status LOG head
-    //------------------------------------------------------------------------------
-    //sprintf( statuslog,"%s.txt",problem->log_fname);
-    sprintf(statuslog, "density_log.txt");
-    log = xfopen(statuslog, "wt");
-
-    xfprintf(log, "Stop time = %f (%f) \n", trans->update_dens_time * dens_step, stop_time);
-    xfprintf(log, "Save step = %f \n", save_step);
-    xfprintf(log, "Density  step = %f (%d) \n\n", trans->update_dens_time, trans->dens_step);
-    xfprintf(log, "Time\t Iteration number\n");
-    //------------------------------------------------------------------------------
-
-    for (i = 0; i < dens_step; i++) {
-        xprintf(Msg, "dens step %d \n", i);
-        save_time_step_C(problem);
-
-        for (j = 0; j < trans->max_dens_it; j++) {
-            xprintf(Msg, "dens iter %d \n", j);
-            save_restart_iteration_H(problem);
-            //restart_iteration(problem);
-            //calculation_mh(problem);
-            //problem->water=new DarcyFlowMH(*mesh);
-            //problem->water->solve();
-            restart_iteration_C(problem);
-            //postprocess(problem);
-            convection(trans, output_time);
-
-            if (trans->dens_implicit == 0) {
-                xprintf(Msg, "no density iterations (explicit)", j);
-                break;
-            }
-            if (compare_dens_iter(problem) && (j > 0)) {
-                break; //at least one repeat of iteration is necessary to update both conc and pressure
-            }
-        }
-
-        xprintf(Msg, "step %d finished at %d density iterations\n", i, j);
-        xfprintf(log, "%f \t %d\n", (i + 1) * trans->update_dens_time, j); // Status LOG
-    }
-
-    if(rank == 0) {
-        delete output_time;
-    }
-
-    xfclose(log); */
-//}
-#endif
-

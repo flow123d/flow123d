@@ -24,6 +24,10 @@
  * - move raw access resolution functions from FieldValues_ into FieldElementwise
  * - allow elementwise int or FieldEnum data with optimal storage buffer, this needs
  *   templated GMSH reader
+ * - After this do following cleanup:
+ *   Partitioning::subdomain_id_field_data should return vector<int>
+ *   pertitioning_test.cpp should make correct test.
+ *
  * - allow initialization of multiple fields by one reader
  * - allow common storage for more elementwise fields to have values for one element on one place
  */
@@ -44,21 +48,11 @@ public:
     FieldElementwise(unsigned int n_comp=0);
 
     /**
-     * Temporary solution (as well as the whole this class before we use DofHandlers) how to
-     * build FiledElementwise on an existing array of values on elements.
-     */
-    FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size );
-
-    /**
      * Alternative to previous constructor.
      */
-    FieldElementwise(vector<double> &data, unsigned int n_components)
-    : FieldElementwise(&(data[0]), n_components, data.size() )
-    {}
+    FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data, unsigned int n_components);
 
-    static Input::Type::Record input_type;
-
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type();
 
     virtual void init_from_input(const Input::Record &rec);
 
@@ -70,7 +64,7 @@ public:
     /**
      * Update time and possibly update data from GMSH file.
      */
-    virtual bool set_time(double time);
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Has to be set before calling init_from_input. This also
@@ -104,18 +98,14 @@ private:
      * TODO: temporary solution until we have separate mesh for the boundary part
      */
     bool boundary_domain_;
-    /// number of bulk data lines in the buffer
-    //unsigned int bulk_size_;
-    /// Allocated size of data_ buffer
-    unsigned int data_size_;
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
-    double *data_;
+    std::shared_ptr< std::vector<typename Value::element_type> > data_;
     /// Number of rows in @p data_ buffer.
     unsigned int n_entities_;
     /// Size of Value
     unsigned int n_components_;
 
-    GmshMeshReader *reader_;
+    FilePath reader_file_;
     const Mesh *mesh_;
     std::string field_name_;
     /// Registrar of class to factory

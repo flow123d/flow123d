@@ -1,0 +1,5 @@
+"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"2d_fraction"	"water_volume"	0	0	0	0	-2	0	-2	0	0	0	0	0
+0	"3d_cube"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".2d_fraction"	"water_volume"	-3.61098e-10	-3.61098e-10	0	0	0	0	0	0	0	0	0	0
+0	".3d_cube"	"water_volume"	-2	-2	0	0	0	0	0	0	0	0	0	0

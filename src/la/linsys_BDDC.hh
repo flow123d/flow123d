@@ -40,9 +40,6 @@
 
 #include <vector>
 
-//#include <boost/numeric/ublas/matrix.hpp>
-//#include <boost/numeric/ublas/vector.hpp>
-
 namespace la {
     class BddcmlWrapper; 
 };
@@ -51,7 +48,9 @@ class LinSys_BDDC : public LinSys
 {
 
 public:
-    static Input::Type::Record input_type;
+	typedef LinSys FactoryBaseType;
+
+    static const Input::Type::Record & get_input_type();
 
     LinSys_BDDC( const unsigned numDofsSub,
                  const Distribution * rows_ds,
@@ -86,21 +85,19 @@ public:
 
     int solve();
 
-    void get_whole_solution( std::vector<double> & globalSolution );
-
-    void set_whole_solution( std::vector<double> & globalSolution );
-
     void set_from_input(const Input::Record in_rec);
 
     double get_solution_precision();
 
     ~LinSys_BDDC( );
 
-private:
+//private:
 
-    void gatherSolution_( );
+    //void gatherSolution_( );
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
     //! parameters expected from input file:
     int  max_nondecr_it_;         //!< maximum number of iterations of linear solver with non-decreasing residual

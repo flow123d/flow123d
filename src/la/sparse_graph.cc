@@ -176,16 +176,11 @@ void SparseGraph::finalize()
 
    /////////////////////////////////////
    // construct local adj and rows arrays
-   //DBGMSG("construct adj\n");
    Edge *edges= (Edge *) recvbuf;
    int size=total_size/edge_size;
    std::sort(edges, edges + size);
 
    allocate_sparse_graph(vtx_distr.lsize() + 1, size+1);
-/*   adj = (int *) xmalloc( (size+1) * sizeof(int) );
-   rows = (int *) xmalloc( (vtx_distr.lsize() + 1) * sizeof(int) );
-   adj_weights = (int *) xmalloc( (size+1) * sizeof(int) );
-*/
    rows[0]=0;
 
    if (size != 0) {
@@ -410,11 +405,9 @@ void SparseGraphMETIS::partition(int *part)
                     printf("ERROR in GRAPH_DIVIDE_C: Wrong type of integers for METIS.\n");
                     abort();
                   }
-                  /*printf(" METIS >=5.0 recognized.\n");*/
                   int ncon = 1;
                   real_t ubvec[1];
                   ubvec[0] = 1.001;
-                  /*int *options = NULL;*/
                   int options[METIS_NOPTIONS];
 
                   for (unsigned int i = 0;i < METIS_NOPTIONS;i++) options[i] = -1;
@@ -436,16 +429,11 @@ void SparseGraphMETIS::partition(int *part)
                   /*options[METIS_OPTION_DBGLVL]    = METIS_DBG_INFO;*/
                   options[METIS_OPTION_DBGLVL]    = 0;
 #else
-                  /*printf(" METIS < 5.0 recognized.\n");*/
                   /* weights */
                   int wgtflag=3;
                   int options[5];
                   for (unsigned int  i = 0; i < 5; i++ )  options[i] = 0;
               
-              //                options[0]=0;
-              //            options[4]=255;  //dbg_lvl
-
-
 #endif
                   
 

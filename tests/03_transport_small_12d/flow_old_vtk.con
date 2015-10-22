@@ -37,6 +37,9 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = true,
+
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-12,
@@ -80,7 +83,6 @@
           TYPE = "SorptionMobile",
           solvent_density= 1.0,
           substances = ["age", "U235"],
-          molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
           
           input_fields= [
@@ -98,7 +100,6 @@
           TYPE = "SorptionImmobile",
           solvent_density= 1.0,
           substances = ["age", "U235"],
-          molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
           
           input_fields= [
@@ -121,7 +122,7 @@
       time = {
         end_time = 1.0
       },
-      mass_balance = {
+      balance = {
         cumulative = true
       }
     }

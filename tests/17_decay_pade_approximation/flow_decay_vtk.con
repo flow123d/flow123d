@@ -25,9 +25,12 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = true,
+
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-07
       }
     },
     
@@ -60,41 +63,47 @@
       },
       
       reaction_term = {
-        TYPE="PadeApproximant",
-        matrix_exp_on = true,
-        nom_pol_deg = 3,
-        den_pol_deg = 3,
+        TYPE="RadioactiveDecay",
+        ode_solver = { 
+          TYPE = "PadeApproximant",
+          nominator_degree = 3,
+          denominator_degree = 3
+        },
 
         decays = [
           {
-            parent = "A",
+            radionuclide = "A",
             half_life = 1.3863,
             products = [
               "B"
             ]
           },
           {
-            parent = "B",
+            radionuclide = "B",
             half_life = 2.3105,
             products = [
               "C"
             ]
           },
           {
-            parent = "C",
+            radionuclide = "C",
             half_life = 1.5403,
             products = [
               "D"
             ]
           },
           {
-            parent = "D",
+            radionuclide = "D",
             half_life = 1.1552,
             products = [
               "E"
             ]
           }
         ]
+      },
+
+      balance = {
+        cumulative = true
       }
     }
   },

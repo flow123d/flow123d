@@ -34,7 +34,7 @@
 
 #include "system/system.hh"
 #include "system/xio.h"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
 
@@ -58,7 +58,6 @@
 // concentrations is in fact reimplemented in transport REMOVE it HERE
 
 // After removing non-geometrical things from mesh, this should be part of mash initializing.
-#include "mesh/msh_reader.h"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
@@ -67,17 +66,18 @@
 namespace IT = Input::Type;
 
 
-IT::Record Mesh::input_type
-	= IT::Record("Mesh","Record with mesh related data." )
-	.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
-			"Input file with mesh description.")
-	.declare_key("regions", IT::Array( RegionDB::region_input_type ), IT::Default::optional(),
-	        "List of additional region definitions not contained in the mesh.")
-	.declare_key("sets", IT::Array( RegionDB::region_set_input_type), IT::Default::optional(),
-	        "List of region set definitions. There are three region sets implicitly defined:\n"
-	        "ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
-	.declare_key("partitioning", Partitioning::input_type, IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
-	.close();
+const IT::Record & Mesh::get_input_type() {
+	return IT::Record("Mesh","Record with mesh related data." )
+		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
+				"Input file with mesh description.")
+		.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
+				"List of additional region definitions not contained in the mesh.")
+		.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
+				"List of region set definitions. There are three region sets implicitly defined:\n\n"
+				" - ALL (all regions of the mesh)\n - BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
+		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
+		.close();
+}
 
 
 
@@ -87,7 +87,7 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
 
-    Input::JSONToStorage reader( input_str, Mesh::input_type );
+    Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);
@@ -149,6 +149,27 @@ void Mesh::reinit(Input::Record in_record)
 }
 
 
+Mesh::~Mesh() {
+    for(Edge &edg : this->edges)
+        if (edg.side_) delete[] edg.side_;
+
+    FOR_ELEMENTS( this, ele ) {
+        if (ele->node) delete[] ele->node;
+        if (ele->edge_idx_) delete[] ele->edge_idx_;
+        if (ele->permutation_idx_) delete[] ele->permutation_idx_;
+        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+    }
+
+    for(unsigned int idx=0; idx < this->bc_elements.size(); idx++) {
+        Element *ele=&(bc_elements[idx]);
+        if (ele->node) delete[] ele->node;
+        if (ele->edge_idx_) delete[] ele->edge_idx_;
+        if (ele->permutation_idx_) delete[] ele->permutation_idx_;
+        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+    }
+}
+
+
 unsigned int Mesh::n_sides()
 {
     if (n_sides_ == NDEF) {
@@ -158,7 +179,15 @@ unsigned int Mesh::n_sides()
     return n_sides_;
 }
 
-
+unsigned int Mesh::n_corners() {
+    unsigned int li, count = 0;
+    FOR_ELEMENTS(this, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            count++;
+        }
+    }
+    return count;
+}
 
 Partitioning *Mesh::get_part() {
     return part_.get();
@@ -246,9 +275,6 @@ void Mesh::count_side_types()
 
     n_insides = 0;
     n_exsides = 0;
-    //FOR_SIDES(this,  sde ) {
-    //    DBGMSG( "ele: %d edge: %d\n", sde->element().index(), sde->edge_idx());
-    //}
     FOR_SIDES(this,  sde ) {
         if (sde->is_external()) n_exsides++;
         else n_insides++;
@@ -386,8 +412,19 @@ void Mesh::make_neighbours_and_edges()
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     SideIter si = elem->side(ecs);
                     if ( same_sides( si, side_nodes) ) {
-                        edg->side_[ edg->n_sides++ ] = si;
+                        if (elem->edge_idx_[ecs] != Mesh::undef_idx) {
+                            ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
+                            int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
+                            int new_bc_ele_idx=bc_ele.index();
+                            THROW( ExcDuplicateBoundary()
+                                    << EI_ElemLast(this->bc_elements.get_id(last_bc_ele_idx))
+                                    << EI_RegLast(this->bc_elements[last_bc_ele_idx].region().label())
+                                    << EI_ElemNew(this->bc_elements.get_id(new_bc_ele_idx))
+                                    << EI_RegNew(this->bc_elements[new_bc_ele_idx].region().label())
+                                    );
+                        }
                         elem->edge_idx_[ecs] = last_edge_idx;
+                        edg->side_[ edg->n_sides++ ] = si;
 
                         if (elem->boundary_idx_ == NULL) {
                             elem->boundary_idx_ = new unsigned int [ elem->n_sides() ];
@@ -565,91 +602,6 @@ void Mesh::make_edge_permutations()
 
 
 
-/**
- * Set Element->boundaries_ for all external sides. (temporary solution)
- */
-void Mesh::create_external_boundary()
-{
-    /*
-    // set to non zero all pointers including boundary connected to lower dim elements
-    // these have only one side per edge
-    Boundary empty_boundary;
-
-
-    FOR_ELEMENTS(this, ele) {
-        // is there any outer side
-        bool outer=false;
-        FOR_ELEMENT_SIDES(ele, si)
-        {
-            if ( ele->side(si)->edge()->n_sides == 1) {
-                outer=true;
-                break;
-            }
-        }
-       if (outer) {
-           // for elements on the boundary set boundaries_
-           FOR_ELEMENT_SIDES(ele,si)
-                if ( ele->side(si)->edge()->n_sides == 1)
-                    ele->boundaries_[si] = &empty_boundary;
-                else
-                    ele->boundaries_[si] = NULL;
-
-       } else {
-           // can delete boundaries on internal elements !!
-            delete ele->boundaries_;
-            ele->boundaries_=NULL;
-       }
-    }
-
-    int count=0;
-    // pass through neighbours and set to NULL internal interfaces
-    FOR_NEIGHBOURS(this,  ngh ) {
-        SideIter s = ngh->side();
-        if (s->element()->boundaries_ == NULL) continue;
-        s->element()->boundaries_[ s->el_idx() ] = NULL;
-    }
-
-    // count remaining
-    unsigned int n_boundaries=0;
-    FOR_ELEMENTS(this, ele) {
-        if (ele->boundaries_ == NULL) continue;
-        FOR_ELEMENT_SIDES(ele, si)
-            if (ele->boundaries_[si]) n_boundaries ++;
-    }
-
-    // fill boundaries
-    BoundaryFullIter bcd(boundary);
-    unsigned int ni;
-
-    boundary.reserve(n_boundaries);
-    DBGMSG("bc_elements size after read: %d\n", bc_elements.size());
-    bc_elements.reserve(n_boundaries);
-    FOR_ELEMENTS(this, ele) {
-         if (ele->boundaries_ == NULL) continue;
-         FOR_ELEMENT_SIDES(ele, si)
-             if (ele->boundaries_[si]) {
-                 // add boundary object
-                 bcd = boundary.add_item();
-
-
-                 // fill boundary element
-                 Element * bc_ele = bc_elements.add_item( -bcd.index() ); // use negative bcd index as ID,
-                 bc_ele->dim_ = ele->dim()-1;
-                 bc_ele->node = new Node * [bc_ele->n_nodes()];
-                 FOR_ELEMENT_NODES(bc_ele, ni) {
-                     bc_ele->node[ni] = (Node *)ele->side(si)->node(ni);
-                 }
-
-                 // fill Boudary object
-                 bcd->side = ele->side(si);
-                 bcd->bc_element_ = bc_ele;
-                 ele->boundaries_[si] = bcd;
-
-             }
-    }*/
-}
-
-
 //=============================================================================
 //
 //=============================================================================
@@ -704,21 +656,18 @@ void Mesh::make_intersec_elements() {
 
 		if (ele.dim() == 1) {
 			vector<unsigned int> candidate_list;
-			//bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
-			//DBGMSG("1d el: %d n_cand: %d\n", ele.index(), candidate_list.size() );
-			//for(int i_elm: candidate_list) {
-			for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
+                        bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+                        
+			//for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
+                        for(unsigned int i_elm : candidate_list) {
 				ElementFullIter elm = this->element( i_elm );
 				if (elm->dim() == 2) {
 					IntersectionLocal *intersection;
 					GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
-					//DBGMSG("2d el: %d %p\n", elm->index(), intersection);
 					if (intersection && intersection->get_type() == IntersectionLocal::line) {
 
 						master_elements[i_ele].push_back( intersections.size() );
 						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
-						//DBGMSG("isec: %d %d %g\n" , ele.index(), elm->index(),
-						//		intersections.back().intersection_true_size() );
 				    }
 				}
 
@@ -749,7 +698,6 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
         	int id = element.get_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
-//            DBGMSG("bulk map: %d\n", *map_it);
         }
 
         boundary_elements_id_.resize(bc_elements.size());
@@ -765,7 +713,6 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
                 if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
                 last_id=*map_it = id;
             }
-//            DBGMSG("bc map: %d\n", *map_it);
         }
     }
 

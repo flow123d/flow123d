@@ -12,8 +12,6 @@
 
 #include "system/exceptions.hh"
 
-//#include "input/json_to_storage.hh"
-
 using namespace std;
 
 
@@ -47,7 +45,10 @@ public:
     /**
      * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
      */
-    FilePath() : abs_file_path("/__NO_FILE_NAME_GIVEN__") {}
+    FilePath()
+        : abs_file_path("/__NO_FILE_NAME_GIVEN__"),
+          file_type_(output_file)
+    {}
 
     /**
      * Translates the given absolute or relative path to a file @p file_path depending on the file type @p ft.
@@ -60,7 +61,7 @@ public:
      * - Forbids absolute output paths.
      * - For relative output path prepends it by the output directory given at the command line.
      */
-    FilePath(const string file_path, const  FileType ft);
+    FilePath(string file_path, const  FileType ft);
 
     /**
      * Set:
@@ -98,6 +99,16 @@ public:
      */
     static const string get_absolute_working_dir();
 
+    /// Equality comparison operators for regions.
+    inline bool operator ==(const FilePath &other) const
+        {return abs_file_path == string(other); }
+
+
+    /**
+     * For an output filepath, the directory part (up to last separator) is
+     * extracted and all subdirectories are created if doesn't exist yet.
+     */
+    void create_output_dir();
 
 private:
     /**
@@ -115,7 +126,7 @@ private:
     /**
      * Check if directory stored in output_dir doesn't exist and create its
      */
-    static bool create_output_dir();
+    static void create_dir(string dir);
 
 
     /**
@@ -126,6 +137,9 @@ private:
 
     /// Final absolute path to the file.
     string abs_file_path;
+
+    /// File type
+    FileType file_type_;
 
     /// dictionary of placeholders
     static std::map<string,string> placeholder;

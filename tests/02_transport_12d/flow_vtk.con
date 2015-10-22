@@ -33,11 +33,13 @@
         }
       ],
 
+      balance = true,
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0", "region_id" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -64,6 +66,8 @@
       output_stream = {
         REF = "/system/output_streams/1"
       },
+      
+      output_fields=["conc", "region_id"],
 
       substances = [
         "A", 
@@ -72,7 +76,7 @@
       time = {
         end_time = 5.0
       },
-        mass_balance = {
+      balance = {
         cumulative = true
       },
       
@@ -93,7 +97,6 @@
           TYPE = "SorptionMobile",
           solvent_density= 1.0,
           substances = ["A", "B"],
-          molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
           input_fields= [
             {
@@ -110,7 +113,6 @@
           TYPE = "SorptionImmobile",
           solvent_density= 1.0,
           substances = ["A", "B"],
-          molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
           input_fields= [
             {

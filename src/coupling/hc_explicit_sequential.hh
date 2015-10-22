@@ -36,12 +36,10 @@
 
 #include "coupling/equation.hh"
 
-class DarcyFlowMH;
-class DarcyFlowMHOutput;
+class DarcyFlowInterface;
 class Mesh;
 class EquationBase;
 class AdvectionProcessBase;
-class MaterialDatabase;
 
 
 /**
@@ -49,7 +47,7 @@ class MaterialDatabase;
  */
 class CouplingBase {
 public:
-    static Input::Type::AbstractRecord input_type;
+    static Input::Type::AbstractRecord & get_input_type();
 
 };
 
@@ -60,7 +58,7 @@ public:
  */
 class HC_ExplicitSequential : public CouplingBase {
 public:
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     HC_ExplicitSequential(Input::Record in_record);
     void run_simulation();
@@ -68,17 +66,16 @@ public:
 
 private:
 
+    static const int registrar;
+
     /// mesh common to darcy flow and transport
     Mesh *mesh;
 
-    /// Material database to provide various material dependent data
-    //MaterialDatabase *material_database;
-
     /// steady or unsteady water flow simulator based on MH scheme
-    DarcyFlowMH *water;
+    std::shared_ptr<DarcyFlowInterface> water;
 
     /// explicit transport with chemistry through operator splitting
-    AdvectionProcessBase *transport_reaction;
+    std::shared_ptr<AdvectionProcessBase> transport_reaction;
 
 };
 

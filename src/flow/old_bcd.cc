@@ -13,29 +13,24 @@
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
 
+OldBcdInput::OldBcdInput()
+: flow_type_factory(
+		std::make_shared<FieldFactory<3, FieldValue<3>::Enum> >(&(this->flow_type)) ),
+  flow_pressure_factory(
+		std::make_shared<FieldFactory<3, FieldValue<3>::Scalar> >(&(this->flow_pressure)) ),
+  flow_flux_factory(
+		std::make_shared<FieldFactory<3, FieldValue<3>::Scalar> >(&(this->flow_flux)) ),
+  flow_sigma_factory(
+		std::make_shared<FieldFactory<3, FieldValue<3>::Scalar> >(&(this->flow_sigma)) ),
+  trans_conc_factory(
+		std::make_shared<FieldFactory<3, FieldValue<3>::Vector> >(&(this->trans_conc)) ),
+  mesh_(NULL)
+{}
+
 OldBcdInput * OldBcdInput::instance() {
     static OldBcdInput *obcd = new OldBcdInput;
     return obcd;
 }
-/*
-// set all regions of the given Field<...> @p target
-template <int spacedim, class Value>
-void OldBcdInput::set_all( Field<spacedim,Value> &target, const Mesh *mesh) {
-    boost::shared_ptr< FieldElementwise<spacedim, Value> > in_field
-        = boost::make_shared< FieldElementwise<spacedim, Value> >(target.n_comp());
-
-    target.set_field( mesh->region_db().get_region_set("BOUNDARY"), in_field);
-    target.set_mesh(*mesh);
-
-}
-
-template <int spacedim, class Value>
-void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val) {
-    boost::static_pointer_cast< FieldElementwise<spacedim, Value> >(
-            target[ some_bc_region_ ]
-            )->set_data_row(bcd_ele_idx, val);
-}
-*/
 
 #define DIRICHLET   1
 #define NEUMANN     2
@@ -52,9 +47,9 @@ void OldBcdInput::read_flow(const Mesh &mesh, const FilePath &flow_bcd)
     old_to_new_side_numbering.push_back( sides_0 );
     unsigned int sides_1 [2] = {0,1};
     old_to_new_side_numbering.push_back(  sides_1 );
-    unsigned int sides_2 [3] = {0,1,2}; //{0,2,1};
+    unsigned int sides_2 [3] = {0,2,1};     // {0,1,2};
     old_to_new_side_numbering.push_back(  sides_2 );
-    unsigned int sides_3 [4] = {0,1,2,3}; //{3,2,1,0};
+    unsigned int sides_3 [4] = {3,2,1,0};   // {0,1,2,3};
     old_to_new_side_numbering.push_back(  sides_3 );
 
     // check that all fields has same mesh, reuse it for reader
@@ -148,30 +143,6 @@ void OldBcdInput::read_flow(const Mesh &mesh, const FilePath &flow_bcd)
                 case 3: // SIDE_E - BC given only by element, apply to all its sides
 
                     xprintf(UsrErr, "Element only BCD are not supported.\n");
-                    /*
-                    eid = atoi( xstrtok( NULL) );
-
-                    // find and set all exterior sides, possibly add more boundaries
-                    ele = mesh->element.find_id( eid );
-                    n_exterior=0;
-                    FOR_ELEMENT_SIDES(ele, li) {
-                        sde = ele->side( li );
-                        if ( bcd=sde->cond() ) {
-
-                            if (n_exterior > 0) {
-                                xprintf(UsrErr, "Implicitly setting BC %d on more then one exterior sides of the element %d.\n", bcd_id, eid);
-                                //BoundaryFullIter new_bcd = mesh->boundary.add_item();
-                                // *new_bcd = *bcd;
-                                //bcd=new_bcd;
-                            }
-                            bcd->type = type;
-                            bcd->flux = flux;
-                            bcd->scalar = scalar;
-                            bcd->sigma = sigma;
-                            n_exterior++;
-                        }
-                    }
-                    */
                     break;
                 default:
                     xprintf(UsrErr,"Unknown entity for boundary condition - cond # %d, ent. %c\n", id, where );
@@ -180,23 +151,6 @@ void OldBcdInput::read_flow(const Mesh &mesh, const FilePath &flow_bcd)
             unsigned int n_tags  = lexical_cast<unsigned int>(*tok); ++tok;
             while (n_tags>0) ++tok, --n_tags; // skip remaining tags
 
-
-
-            // There was possibility to set group IDs for boundary faces (like regions for boundary elements)
-            // It is probably not used so we do not implement it as it is DEPRECATED
-            /*
-            n_tags  = atoi( xstrtok( NULL) );
-            if( n_tags > 0 ) {
-                int group_id = atoi( xstrtok( NULL) );
-                flow::VectorId<int>::FullIter group_iter( mesh->bcd_group_id.find_id(group_id) );
-
-                if ( group_iter == mesh->bcd_group_id.end() ) {
-                    // not found -> create new group
-                    group_iter = mesh->bcd_group_id.add_item(group_id);
-                }
-                bcd->group = group_iter.index();   // in fact we do not use integres stored in the vector, but we use index
-            }
-            */
         }
         xprintf(MsgLog, "DONE\n");
     } catch (bad_lexical_cast &) {

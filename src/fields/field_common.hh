@@ -8,19 +8,22 @@
 #ifndef FIELD_COMMON_HH_
 #define FIELD_COMMON_HH_
 
-//#include <memory>
 #include <vector>
 using namespace std;
 
 #include "system/exceptions.hh"
 #include "fields/field_values.hh"
 #include "input/accessors.hh"
-#include "coupling/time_marks.hh"
-#include "coupling/time_governor.hh"
+#include "input/type_generic.hh"
+#include "tools/time_marks.hh"
+#include "tools/time_governor.hh"
 
 #include "fields/field_flag.hh"
+#include "fields/unit_si.hh"
 #include "io/output_time.hh"
 
+
+class Region;
 
 namespace IT=Input::Type;
 
@@ -73,11 +76,6 @@ public:
       return *this;
     }
     /**
-     * Mark field to be used only as a copy of other field (do not produce key in record, do not set input list).
-     */
-    //FieldCommonBase &just_copy()
-    //{is_copy_=true; return *this;}
-    /**
      * Set description of the field, used for description of corresponding key in documentation.
      */
     FieldCommon & description(const string & description)
@@ -105,7 +103,7 @@ public:
      * Possibly this allow using Boost::Units library, however, it seems to introduce lot of boilerplate code.
      * But can increase correctness of the calculations.
      */
-    FieldCommon & units(const string & units)
+    FieldCommon & units(const UnitSI & units)
     { shared_->units_ = units; return *this;}
 
     /**
@@ -144,13 +142,16 @@ public:
     { flags().add(mask); return *this; }
 
     /**
+     * Set vector of component names.
      * Set number of components for run-time sized vectors. This is used latter when we construct
      * objects derived from FieldBase<...>.
      *
      * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
      */
-    void set_n_components( unsigned int n_comp)
-    { shared_->n_comp_ = (shared_->n_comp_ ? n_comp : 0);}
+    void set_components(const std::vector<string> &names) {
+        shared_->comp_names_ = names;
+        shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
+    }
 
 
     /**
@@ -168,11 +169,14 @@ public:
 
     /**
      * Set side of limit when calling @p set_time
-     * with jump time. This method invalidate result of
+     * with jump time, i.e. time where the field change implementation on some region.
+     * Wee assume that implementations prescribe only smooth fields.
+     * This method invalidate result of
      * @p changed() so it should be called just before @p set_time.
      * Can be different for different field copies.
      */
-    virtual void set_limit_side(LimitSide side) = 0;
+    void set_limit_side(LimitSide side)
+    { this->limit_side_=side; }
 
     /**
      * Getters.
@@ -189,7 +193,7 @@ public:
     const std::string &input_default() const
     { return shared_->input_default_;}
 
-    const std::string &units() const
+    const UnitSI &units() const
     { return shared_->units_;}
 
     OutputTime::DiscreteSpace output_type() const
@@ -210,9 +214,6 @@ public:
     FieldFlag::Flags &flags()
     { return flags_; }
 
-    //bool is_just_copy() const
-    //{ return is_copy_;}
-
     /**
      * Returns time set by last call of set_time method.
      * Can be different for different field copies.
@@ -229,15 +230,21 @@ public:
     static IT::Record field_descriptor_record(const string& record_name);
 
     /**
+     * Create description of field descriptor record.
+     */
+    static const std::string field_descriptor_record_decsription(const string& record_name);
+
+    /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
      * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */
-    virtual IT::AbstractRecord &get_input_type() =0;
+    virtual const IT::Instance &get_input_type() =0;
 
     /**
-     * Abstract method for initialization of the field on one region.
+     * Returns input type for MultiField instance.
+     * TODO: temporary solution, see @p multifield_
      */
-    //virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
+    virtual IT::Record &get_multifield_input_type() =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
@@ -261,7 +268,7 @@ public:
      *
      * Different field copies can be set to different times.
      */
-    virtual  bool set_time(const TimeGovernor &time) =0;
+    virtual  bool set_time(const TimeStep &time) =0;
 
     /**
      * Check that @p other is instance of the same Field<..> class and
@@ -274,7 +281,7 @@ public:
      * The parameter @p output_fields is checked for value named by the field name. If the key exists,
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
-    virtual void output(OutputTime *stream) =0;
+    virtual void output(std::shared_ptr<OutputTime> stream) =0;
 
 
     /**
@@ -299,6 +306,23 @@ public:
     }
 
     /**
+     * Sets @p component_index_
+     */
+    void set_component_index(unsigned int idx)
+    {
+    	this->component_index_ = idx;
+    }
+
+    /**
+     * Return @p multifield_ flag.
+     * TODO: temporary solution
+     */
+    inline bool is_multifield() const
+    {
+    	return this->multifield_;
+    }
+
+    /**
      * Virtual destructor.
      */
     virtual ~FieldCommon();
@@ -316,8 +340,6 @@ protected:
      * Field<...>
      */
     FieldCommon(const FieldCommon & other);
-
-    //FieldCommonBase &FieldCommonBase::operator=(const FieldCommonBase &other) delete;
 
     /**
      * Invalidate last time in order to force set_time method
@@ -338,6 +360,11 @@ protected:
      *  sharing common input field descriptor array and common history.
      */
     struct SharedData {
+    	/**
+    	 * Empty constructor.
+    	 */
+    	SharedData() {};
+
         /**
          * True for boundary fields.
          */
@@ -346,6 +373,10 @@ protected:
          * Number of components for fields that return variable size vectors. Zero in other cases.
          */
         unsigned int n_comp_;
+        /**
+         * Names of field components.
+         */
+        std::vector< std::string > comp_names_;
         /**
          * Name of the particular field. Used to name the key in the Field list Record.
          */
@@ -357,7 +388,7 @@ protected:
         /**
          * Units of the field values. Currently just a string description.
          */
-        std::string units_;
+        UnitSI units_;
         /**
          * For Enum valued fields this is the input type selection that should be used
          * to read possible values of the field (e.g. for FieldConstant the key 'value' has this selection input type).
@@ -440,12 +471,20 @@ protected:
     OutputTime::DiscreteSpace type_of_output_data_ = OutputTime::ELEM_DATA;
 
     /**
+     * Specify if the field is part of a MultiField and which component it is
+     */
+    unsigned int component_index_;
+
+    /**
+     * Flag determining if object is Multifield or Field.
+     * TODO: temporary solution, goal is to make these two classes to behave similarly
+     */
+    bool multifield_;
+
+    /**
      * Maximum number of FieldBase objects we store per one region.
      */
     static const unsigned int history_length_limit_=3;
-
-    /// Flag field that has to be set as a copy of other field using copy_from method.
-    //bool is_copy_=false;
 
     /// Field flags. Default setting is "an equation input field, that can read from user input, and can be written to output"
     FieldFlag::Flags   flags_ = FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output;

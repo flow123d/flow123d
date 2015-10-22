@@ -26,6 +26,8 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
+      balance = true,
+
       solver = { 
         TYPE = "Petsc",
         a_tol = 1e-7 
@@ -58,7 +60,6 @@
         TYPE = "Sorption",
         solvent_density= 1.0,
         substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
-        molar_mass= [1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0],
         input_fields= [
           {
@@ -71,8 +72,10 @@
           }
         ],
         output_fields = []
+      },
+      balance = {
+        cumulative = true
       }
-          
     } 
   }, 
   

@@ -143,8 +143,6 @@ struct ExcName : public virtual ::ExceptionBase {                           \
      virtual ~ExcName() throw () {}                                         \
 }
 
-/* ExcName const &_exc=*this; */
-
 
 
 /**
@@ -270,14 +268,14 @@ public:
     {
         return pf(*this);
     }
-/*
-    // treat other manipulators ( This doesn't work. Why?? )
-    template <class T>
-    ExcStream & operator<<(T & (*pf) (T &) )
-    {
-        pf(stream_);
-        return (*this);
-    }*/
+    /*
+        // treat other manipulators ( This doesn't work. Why?? )
+        template <class T>
+        ExcStream & operator<<(T & (*pf) (T &) )
+        {
+            pf(stream_);
+            return (*this);
+        }*/
 };
 
 
@@ -358,7 +356,7 @@ Type const * EI<Tag, Type>::ptr( ExceptionBase const &e)
  * Assertion that results in an exception.
  */
 /*
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
 
 #define ASSERT_THROW( condition, exception ) \
     (condition) ? : throw

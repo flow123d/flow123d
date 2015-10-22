@@ -15,8 +15,8 @@ using namespace std;
 
 #include "system/exceptions.hh"
 #include "input/accessors.hh"
-#include "coupling/time_marks.hh"
-#include "coupling/time_governor.hh"
+#include "tools/time_marks.hh"
+#include "tools/time_governor.hh"
 
 #include "fields/field_common.hh"
 #include "fields/field_algo_base.hh"
@@ -35,6 +35,10 @@ namespace IT=Input::Type;
  * real vector of fixed (compile time) size, real vector of runtime size, or a matrix of fixed dimensions.
  * Extensions to vectors or matrices of integers, or to variable tensors are possible. For vector and matrix values
  * we use classes provided by Armadillo library for linear algebra.
+ * The @p Value template parameter should FieldValue<> template, usual choices are:
+ * FieldValue<spacedim>::Scalar, FieldValue<spacedim>::Integer, FieldValue<spacedim>::Enum,
+ * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed
+ * deprecated choices: FieldValue<spacedim>::Vector, FieldValue<spacedim>::VectorEnum.
  *
  * This class assign particular fields (instances of descendants of FiledBase) to the regions. It keeps a table of pointers to fields for every possible bulk
  * region index (very same functionality, but for boundary regions is provided by @p BCField class). This class has interface very similar to  FiledBase, however
@@ -51,24 +55,40 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef Value ValueType;
 
-    static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
     static const unsigned int space_dim = spacedim;
 
 
     /**
-     * Pointer to function that creates an instance of FieldBase for
-     * field with name @p field_name based on data in field descriptor @p rec.
+     * Factory class that creates an instance of FieldBase for field
+     * with name @p field_name based on data in field descriptor @p rec.
      *
-     * Default implementation in method @p read_field_descriptor  just reads key given by
+     * Default implementation in method @p create_field just reads key given by
      * @p field_name and creates instance using @p FieldBase<...>::function_factory.
      * Function should return empty SharedField (that is shared_ptr to FieldBase).
      *
-     * Hooks are necessary to implement:
-     * 1) backward compatibility with old BCD input files
-     * 2) setting pressure values are piezometric head values
+     * Implementation of these descendants is necessary:
+     * 1) for backward compatibility with old BCD input files
+     * 2) for setting pressure values are piezometric head values
      */
-    FieldBasePtr (*read_field_descriptor_hook)(Input::Record rec, const FieldCommon &field);
+    /**
+     * Note for future:
+     * We pass through parameter @p field information about field that holds the factory which are necessary
+     * for interpreting user input and create particular field instance. It would be clearer to pass these information
+     * when the factory is assigned to a field. Moreover some information may not be set to field at all but directly passed
+     * to the factory.
+     */
+    class FactoryBase {
+    public:
+    	/**
+    	 * Default method that creates an instance of FieldBase for field.
+    	 *
+    	 * Reads key given by @p field_name and creates the field instance using
+    	 * @p FieldBase<...>::function_factory.
+    	 */
+    	virtual FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
+    };
 
     /**
      * Default constructor.
@@ -87,6 +107,8 @@ public:
      * Assignment operator. Same properties as copy constructor.
      *
      * Question: do we really need this, isn't copy constructor enough?
+     * Answer: It is necessary in (usual) case when Field instance is created as the class member
+     * but is filled later by assignment possibly from other class.
      */
     Field &operator=(const Field &other);
 
@@ -97,7 +119,9 @@ public:
      * @p meka_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::AbstractRecord &get_input_type() override;
+    const IT::Instance &get_input_type() override;
+
+    IT::Record &get_multifield_input_type() override;
 
 
     /**
@@ -148,23 +172,12 @@ public:
     void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time=0.0);
 
     /**
-     * Default implementation of @p read_field_descriptor_hook.
-     *
-     * Reads key given by @p field_name and creates the field instance using
-     * @p FieldBase<...>::function_factory.
-     */
-    static FieldBasePtr read_field_descriptor(Input::Record rec, const FieldCommon &field);
-
-    void set_limit_side(LimitSide side) override
-    { this->limit_side_=side; }
-
-    /**
      * Check that whole field list is set, possibly use default values for unset regions
      * and call set_time for every field in the field list.
      *
      * Returns true if the field has been changed.
      */
-    bool set_time(const TimeGovernor &time) override;
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Check that other has same type and assign from it.
@@ -174,7 +187,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void output(OutputTime *stream) override;
+    void output(std::shared_ptr<OutputTime> stream) override;
 
 
     /**
@@ -204,22 +217,25 @@ public:
     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list) const;
 
-protected:
     /**
-     * For fields returning "enum", i.e. with @p Value == FieldEnum, the input type (meaning whole input_Type tree of the field) depends on the
-     * Input::Type::Selection object that represents particular C enum type. Therefore, we have to create whole tree for the selection
-     * that was set through @p FieldBaseCommon::set_selection() method.
+     * Add a new factory for creating Field algorithms on individual regions.
+     * The last factory is tried first, the last one is always the default implementation
+     * Field<...>::FactoryBase.
+     *
+     * The Field<...> object keeps a list of such factories. When the instance of a new field algorithm
+     * has to be created from the input field descriptor, we pass through the list of factories backward
+     * and let factories to create the field algorithm instance from the actual input field descriptor.
+     * The first instance (non-null pointer) is used.
      */
-    IT::AbstractRecord make_input_tree();
+    void add_factory(std::shared_ptr<FactoryBase> factory);
 
-
-
+protected:
 
     /**
      * Read input into @p regions_history_ possibly pop some old values from the
      * history queue to keep its size less then @p history_length_limit_.
      */
-    void update_history(const TimeGovernor &time);
+    void update_history(const TimeStep &time);
 
 
 
@@ -262,131 +278,17 @@ protected:
      */
     std::vector< FieldBasePtr > region_fields_;
 
+    std::vector<std::shared_ptr<FactoryBase> >  factories_;
 
+
+
+    template<int dim, class Val>
+    friend class MultiField;
 
 };
 
 
 
-
-
-/**
- * Same as Field<...> but for boundary regions.
- */
-template<int spacedim, class Value>
-class BCField : public Field<spacedim, Value> {
-public:
-    BCField() : Field<spacedim,Value>("anonymous_bc", true) {}
-};
-
-
-
-
-/**
- * @brief Class for representation of a vector of fields of the same physical quantity.
- *
- * When solving a system of same equations with the number of components given at runtime
- * (as in the case of transport equation for runtime given number of substances) we need means how to work with the whole
- * vector of fields at once. This is the aim of this class. It provides the interface given by the parent class @p FieldCommonBase,
- * but principally it is just a vector of Field<Value,dim> objects. The sub-fields or components of a @p MultiField are independent
- * objects, how ever the setters propagates the values from the MultiFields to the individual fields. The only exception is the
- * @p set_name method which in conjunction with @p MultiField::set_subfield_names can set unique name to each component.
- *
- * Template parameters are used for every subfield.
- *
- *  TODO:
- *  - general mechanism how to convert a Field< dim, Vector> to MultiField< dim, Value>
- *  - implement set_from_input
- *  - implement set_Time
- *  - implement set_complemented_vector_field
- *
- *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of AbstractRecords
- *    simplest solution - test that in EqDataBase and have more methods in FieldCommonBase, or somehow detach input handling from
- *    Fields
- *
- */
-template<int spacedim, class Value>
-class MultiField : public FieldCommon {
-public:
-    //typedef FieldBase<spacedim, Value> SubFieldBaseType;
-    typedef Field<spacedim, Value> SubFieldType;
-    typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
-
-    /**
-     * Default constructor.
-     */
-    MultiField();
-
-    /**
-     * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
-     * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
-     * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
-     */
-    IT::AbstractRecord &get_input_type() override;
-
-    void set_limit_side(LimitSide side) override;
-
-    /**
-     * Abstract method to update field to the new time level.
-     * Implemented by in class template Field<...>.
-     *
-     * Return true if the value of the field was changed on some region.
-     * The returned value is also stored in @p changed_during_set_time data member.
-     */
-    bool set_time(const TimeGovernor &time) override;
-
-    /**
-     * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
-     */
-    void set_mesh(const Mesh &mesh) override;
-
-
-    /**
-     * Polymorphic copy. Check correct type, allows copy of MultiField or Field.
-     */
-    void copy_from(const FieldCommon & other) override;
-
-    /**
-     * Implementation of @p FieldCommonBase::output().
-     */
-    void output(OutputTime *stream) override;
-
-    /**
-     * Implementation of @p FieldCommonBase::is_constant().
-     */
-    bool is_constant(Region reg) override;
-
-    /**
-     * Virtual destructor.
-     */
-    inline virtual ~MultiField() {}
-
-    /// Number of subfields that compose the multi-field.
-    inline unsigned int size() const
-    { return sub_fields_.size(); }
-
-    /**
-     * Initialize MultiField to the number of components given by the size of @p names
-     * and use this vector  to name individual components. Should be called after the setters derived from
-     * FieldCommonBase.
-     */
-    void init( const vector<string> &names);
-
-    /**
-     * Allows set Field<dim, Vector> that can be used for alternative initialization in "transposed" form.
-     */
-    void set_complemented_vector_field( TransposedField &complemented);
-
-    /**
-     * Returns reference to the sub-field (component) of given index @p idx.
-     */
-    inline SubFieldType &operator[](unsigned int idx)
-    { return sub_fields_[idx]; }
-
-private:
-    std::vector< SubFieldType > sub_fields_;
-    std::vector< std::string > sub_names_;
-};
 
 
 

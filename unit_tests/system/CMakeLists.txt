@@ -37,11 +37,11 @@ add_test_directory("${libs}")
     define_test(application_base)
     define_test(flag_array)
     define_test(check_error)
+    define_test(python_loader)
     
-    if (CMAKE_HAVE_CXX11)
-        # reqires raw strings  
-        define_test(tokenizer)
-    endif (CMAKE_HAVE_CXX11)  
+    # reqires raw strings  
+    define_test(tokenizer)
+    define_mpi_test(tokenizer_speed 1)
 
 
 

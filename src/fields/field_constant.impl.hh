@@ -12,40 +12,33 @@
 #include "input/input_type.hh"
 
 
-//#include <boost/type_traits.hpp>
-
 /// Implementation.
 
 namespace it = Input::Type;
 
-template <int spacedim, class Value>
-it::Record FieldConstant<spacedim, Value>::input_type
-    = FieldConstant<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
+FLOW123D_FORCE_LINK_IN_CHILD(field_constant)
 
 
 template <int spacedim, class Value>
-Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
 {
-    it::Record type=
-        it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
-        .derive_from(a_type)
-        .declare_key("value", Value::get_input_type(eit), it::Default::obligatory(),
+    return it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .declare_key("value", Value::get_input_type(), it::Default::obligatory(),
                                     "Value of the constant field.\n"
                                     "For vector values, you can use scalar value to enter constant vector.\n"
-                                    "For square NxN-matrix values, you can use:\n"
-                                    "* vector of size N to enter diagonal matrix\n"
-                                    "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
-                                    "* scalar to enter multiple of the unit matrix." )
-        .allow_auto_conversion("value");
-
-    return type;
+                                    "For square (($N\\times N$))-matrix values, you can use:\n"
+                                    " - vector of size (($N$)) to enter diagonal matrix\n\n"
+                                    " - vector of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
+                                    " - scalar to enter multiple of the unit matrix." )
+        .allow_auto_conversion("value")
+		.close();
 }
 
 template <int spacedim, class Value>
 const int FieldConstant<spacedim, Value>::registrar =
-		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant");
+		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant") +
+		FieldConstant<spacedim, Value>::get_input_type().size();
 
 
 template <int spacedim, class Value>

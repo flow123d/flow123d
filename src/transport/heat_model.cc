@@ -30,9 +30,10 @@
 #include "input/input_type.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-#include "flow/darcy_flow_mh.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
+#include "fields/unit_si.hh"
+#include "coupling/balance.hh"
 
 
 
@@ -46,132 +47,205 @@ using namespace Input::Type;
 
 
 
+const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
+	return Selection("HeatTransfer_BC_Type", "Types of boundary conditions for heat transfer model.")
+            .add_value(bc_inflow, "inflow",
+          		  "Default heat transfer boundary condition.\n"
+          		  "On water inflow (($(q_w \\le 0)$)), total energy flux is given by the reference temperature 'bc_temperature'. "
+          		  "On water outflow we prescribe zero diffusive flux, "
+          		  "i.e. the energy flows out only due to advection.")
+            .add_value(bc_dirichlet, "dirichlet",
+          		  "Dirichlet boundary condition (($T = T_D $)).\n"
+          		  "The prescribed temperature (($T_D$)) is specified by the field 'bc_temperature'.")
+            .add_value(bc_total_flux, "total_flux",
+          		  "Total energy flux boundary condition.\n"
+          		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )+q_wT_A$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the advected temperature (($T_A$)) by 'bc_ad_temperature', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+            .add_value(bc_diffusive_flux, "diffusive_flux",
+          		  "Diffusive flux boundary condition.\n"
+          		  "The prescribed energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+			  .close();
+}
+
 
 HeatTransferModel::ModelEqData::ModelEqData()
 {
-
-    *this+=bc_temperature
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Type of boundary condition.")
+            .units( UnitSI::dimensionless() )
+            .input_default("\"inflow\"")
+            .input_selection( &get_bc_type_selection() )
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+    *this+=bc_dirichlet_value
             .name("bc_temperature")
             .description("Boundary value of temperature.")
+            .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
+	*this+=bc_flux
+			.name("bc_flux")
+			.description("Flux in Neumann boundary condition.")
+			.units( UnitSI().kg().m().s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs);
+	*this+=bc_robin_sigma
+			.name("bc_robin_sigma")
+			.description("Conductivity coefficient in Robin boundary condition.")
+			.units( UnitSI().m(4).s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
     *this+=init_temperature
             .name("init_temperature")
             .description("Initial temperature.")
+            .units( UnitSI().K() )
             .input_default("0.0");
 
     *this+=porosity
             .name("porosity")
             .description("Porosity.")
+            .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_density
             .name("fluid_density")
             .description("Density of fluid.")
+            .units( UnitSI().kg().m(-3) )
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_heat_capacity
             .name("fluid_heat_capacity")
             .description("Heat capacity of fluid.")
+            .units( UnitSI::J() * UnitSI().kg(-1).K(-1) )
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_heat_conductivity
             .name("fluid_heat_conductivity")
             .description("Heat conductivity of fluid.")
+            .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
             .flags_add(in_main_matrix);
 
 
     *this+=solid_density
             .name("solid_density")
             .description("Density of solid (rock).")
+            .units( UnitSI().kg().m(-3) )
             .flags_add(in_time_term);
 
     *this+=solid_heat_capacity
             .name("solid_heat_capacity")
             .description("Heat capacity of solid (rock).")
+            .units( UnitSI::J() * UnitSI().kg(-1).K(-1) )
             .flags_add(in_time_term);
 
     *this+=solid_heat_conductivity
             .name("solid_heat_conductivity")
             .description("Heat conductivity of solid (rock).")
+            .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
             .flags_add(in_main_matrix);
 
     *this+=disp_l
             .name("disp_l")
             .description("Longitudal heat dispersivity in fluid.")
+            .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add(in_main_matrix);
 
     *this+=disp_t
             .name("disp_t")
             .description("Transversal heat dispersivity in fluid.")
+            .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add(in_main_matrix);
 
     *this+=fluid_thermal_source
             .name("fluid_thermal_source")
             .description("Thermal source density in fluid.")
+            .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_thermal_source
             .name("solid_thermal_source")
             .description("Thermal source density in solid.")
+            .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=fluid_heat_exchange_rate
             .name("fluid_heat_exchange_rate")
             .description("Heat exchange rate in fluid.")
+            .units( UnitSI().s(-1) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_heat_exchange_rate
             .name("solid_heat_exchange_rate")
             .description("Heat exchange rate of source in solid.")
+            .units( UnitSI().s(-1) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=fluid_ref_temperature
             .name("fluid_ref_temperature")
             .description("Reference temperature of source in fluid.")
+            .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_ref_temperature
             .name("solid_ref_temperature")
             .description("Reference temperature in solid.")
+            .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=cross_section
             .name("cross_section")
+            .units( UnitSI().m(3).md() )
             .flags(input_copy & in_time_term & in_main_matrix);
 
     *this+=output_field
             .name("temperature")
-            .units("M/L^3")
+            .units( UnitSI().K() )
             .flags(equation_result);
 }
 
 
-IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
+UnitSI HeatTransferModel::balance_units()
 {
-	static IT::Record input_type = IT::Record(ModelEqData::name() + "_" + implementation, description + " for heat transfer.")
-			.derive_from(AdvectionProcessBase::input_type);
+	return UnitSI().m(2).kg().s(-2);
+}
 
-	return input_type;
-
+IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
+{
+	return IT::Record(
+				std::string(ModelEqData::name()) + "_" + implementation,
+				description + " for heat transfer.")
+			.derive_from(AdvectionProcessBase::get_input_type())
+			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+					"Time governor setting for the secondary equation.")
+			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
+					"Settings for computing balance.")
+			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+					"Parameters of output stream.");
 }
 
 
-IT::Selection &HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection input_type = IT::Selection(ModelEqData::name() + "_" + implementation + "_Output", "Selection for output fields of " + description + " for heat transfer.");
-
-	return input_type;
+	return IT::Selection(
+				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
+				"Selection for output fields of " + description + " for heat transfer.");
 }
 
 
@@ -180,10 +254,9 @@ HeatTransferModel::HeatTransferModel() :
 {}
 
 
-void HeatTransferModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
+void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
-	names.clear();
-	names.push_back("");
+	substances.initialize({""});
 }
 
 
@@ -236,10 +309,10 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 		// Note that the velocity vector is in fact the Darcian flux,
 		// so to obtain |v| we have to divide vnorm by porosity and cross_section.
 		double vnorm = arma::norm(velocity[k], 2);
-		if (fabs(vnorm) > sqrt(numeric_limits<double>::epsilon()))
+		if (fabs(vnorm) > 0)
 			for (int i=0; i<3; i++)
 				for (int j=0; j<3; j++)
-					dif_coef[0][k](i,j) = (velocity[k][i]*velocity[k][j]/(vnorm*vnorm)*(disp_l[k]-disp_t[k]) + disp_t[k]*(i==j?1:0))
+					dif_coef[0][k](i,j) = ((velocity[k][i]/vnorm)*(velocity[k][j]/vnorm)*(disp_l[k]-disp_t[k]) + disp_t[k]*(i==j?1:0))
 											*vnorm*f_rho[k]*f_cond[k];
 		else
 			dif_coef[0][k].zeros();
@@ -261,14 +334,31 @@ void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_l
 }
 
 
-void HeatTransferModel::compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_values)
+void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types)
 {
-	vector<double> bc_value(point_list.size());
-	data().bc_temperature.value_list(point_list, ele_acc, bc_value);
-	for (unsigned int i=0; i<point_list.size(); i++)
-		bc_values[i] = bc_value[i];
+	// Currently the bc types for HeatTransfer are numbered in the same way as in TransportDG.
+	// In general we should use some map here.
+	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) };
+}
+
+
+void HeatTransferModel::get_flux_bc_data(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_flux,
+		std::vector< arma::vec > &bc_sigma,
+		std::vector< arma::vec > &bc_ref_value)
+{
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+}
+
+void HeatTransferModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_sigma)
+{
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 }
 
 

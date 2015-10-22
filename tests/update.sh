@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Syntax:
-#  update.sh  dir_to_update  source_dir
+#  update.sh  source_dir dir_to_update  
 #
 #  Recursively updates all files in <dir_to_update> by corresponding files in <source_dir>
 #  Reports an error if the file or irectory in <source_dir> doesn't exist.
@@ -10,27 +10,33 @@
 
 function update_dir {
   
-  local target_dir=$1
-  local source_dir=$2
+  local target_dir=$2
+  local source_dir=$1
   
   for item in `ls ${target_dir}/`
   do
     if [ -d "${target_dir}/${item}" ]
     then 
-      if [ ! -d "${source_dir}/${item}" ]
+      dir_item=
+      if [ -d "${source_dir}/${item}" ]
       then
-        echo "Missing directory in test result."
+        update_dir "${source_dir}/${item}" "${target_dir}/${item}"
+      elif [ -d "${source_dir}/${item}.1" ]  
+      then
+        update_dir "${source_dir}/${item}.1" "${target_dir}/${item}"
+      else  
+        echo "Missing source directory '${source_dir}/${item}.*' "
         return 1
       fi  
-      update_dir "${target_dir}/${item}" "${source_dir}/${item}"
+      
     else
       if [ ! -e "${source_dir}/${item}" ]
       then
-        echo "Missing file '${source_dir}/${item}' in test result."
+        echo "Missing source file '${source_dir}/${item}' "
         return 1
       fi
       
-      echo "Copping ${source_dir}/${item} -> ${target_dir}/${item}"
+      echo "Copying ${source_dir}/${item} -> ${target_dir}/${item}"
       cp ${source_dir}/${item} ${target_dir}/${item}
     fi
   done

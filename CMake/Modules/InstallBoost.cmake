@@ -4,6 +4,11 @@
 #     Author: jb
 #
 
+
+# set flags for BOOTS, user specified are first choice, if not specified external libs flags will be used
+SET_VALID_VALUE ("BOOTS_CXX_FLAGS" ${BOOTS_CXX_FLAGS} ${EXTERNAL_LIBS_CXX_FLAGS} ${CMAKE_CXX_FLAGS})
+
+
 if (NOT EXTERNAL_BOOST_DIR)
     set(EXTERNAL_BOOST_DIR "${PROJECT_BINARY_DIR}/boost_build")
 endif()    
@@ -19,7 +24,7 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(Boost
     DOWNLOAD_DIR ${EXTERNAL_BOOST_DIR} 
-    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/boost_1_55_0.tar.gz\"
+    URL \"http://flow.nti.tul.cz/libraries/boost_1_55_0.tar.gz\"
     SOURCE_DIR ${EXTERNAL_BOOST_DIR}/src
     BINARY_DIR ${EXTERNAL_BOOST_DIR}/src
     CONFIGURE_COMMAND ${EXTERNAL_BOOST_DIR}/src/bootstrap.sh ${Boost_CONFIG_FLAGS} --prefix=${EXTERNAL_BOOST_DIR} --with-libraries=program_options,serialization,regex,filesystem,system

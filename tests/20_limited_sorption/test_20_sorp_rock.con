@@ -28,6 +28,8 @@
         velocity_p0 = "flow_output_stream"
       }, 
 
+      balance = true,
+
       solver = { 
         TYPE = "Petsc",
         a_tol = 1e-7 
@@ -63,7 +65,6 @@
       adsorptions = {
         solvent_density= 1.0,
         species = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
-        molar_mass= [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         input_fields= [
           {
@@ -74,6 +75,10 @@
 	    isotherm_other= [0, 0, 0, 0.6, 0, 0.4]
           }
         ]
+      },
+
+      balance = {
+        cumulative = true
       }
     } 
   }, 

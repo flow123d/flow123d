@@ -15008,7 +15008,7 @@ fi
 fi
  if test "$PYTHON" != ":"; then
   HAVE_PYTHON_TRUE=
-  HAVE_PYTHON_FALSE='#'
+  AVE_PYTHON_FALSE='#'
 else
   HAVE_PYTHON_TRUE='#'
   HAVE_PYTHON_FALSE=

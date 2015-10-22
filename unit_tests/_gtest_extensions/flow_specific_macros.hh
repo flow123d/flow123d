@@ -13,7 +13,7 @@
  * - it sets exception type to ExcAssertMsg
  * - it is defined empty if ASSERTS are off
  */
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
 #define	EXPECT_ASSERT_DEATH(statement, pattern) EXPECT_THROW_WHAT(statement,ExcAssertMsg, pattern)
 #else
 #define	EXPECT_ASSERT_DEATH(statement, pattern)

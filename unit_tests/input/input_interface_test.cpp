@@ -58,39 +58,43 @@ protected:
 
         FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
 
-        abstr_rec_ptr = new  AbstractRecord("AbstractRecord", "desc");
-        abstr_rec_ptr->finish();
+        abstr_rec_ptr = new AbstractRecord("AbstractRecord", "desc");
+        abstr_rec_ptr->close();
 
         selection_ptr = new Selection("NameOfSelectionType");
         selection_ptr->add_value(value_a, "A", "");
         selection_ptr->add_value(value_b, "B", "");
         selection_ptr->add_value(value_c, "C", "");
-        selection_ptr->finish();
+        selection_ptr->close();
 
         desc_a_ptr = new Record("DescendantA","");
         desc_a_ptr->derive_from(*abstr_rec_ptr);
         desc_a_ptr->declare_key("some_int", Integer(),Default("1"),"");
-        desc_a_ptr->finish();
+        abstr_rec_ptr->add_child(*desc_a_ptr);
+        desc_a_ptr->close();
 
         desc_b_ptr = new Record("DescendantB","");
         desc_b_ptr->derive_from(*abstr_rec_ptr);
         desc_b_ptr->declare_key("some_int", Integer(),Default("2"),"");
         desc_b_ptr->declare_key("some_double", Double(),Default::obligatory(),"");
-        desc_b_ptr->finish();
+        abstr_rec_ptr->add_child(*desc_b_ptr);
+        desc_b_ptr->close();
 
-        abstr_rec_ptr->no_more_descendants();
+        abstr_rec_ptr->finish();
+        desc_a_ptr->finish();
+		desc_b_ptr->finish();
 
         {
         // declare structure of input file
         this->main = new Record("MainRecord","desc");
 
-        Record sub_record("SubRecord","desc");
-        sub_record.declare_key("array_of_int", Array(Integer()), "desc");
-        sub_record.declare_key("some_integer", Integer(), Default::obligatory(), "desc");
-        sub_record.declare_key("some_double", Double(), "desc");
-        sub_record.declare_key("some_bool", Bool(), Default("true"), "desc");
-        sub_record.declare_key("some_string", String(), "desc");
-        sub_record.finish();
+        Record sub_record = Record("SubRecord","desc")
+        	.declare_key("array_of_int", Array(Integer()), "desc")
+        	.declare_key("some_integer", Integer(), Default::obligatory(), "desc")
+        	.declare_key("some_double", Double(), "desc")
+        	.declare_key("some_bool", Bool(), Default("true"), "desc")
+        	.declare_key("some_string", String(), "desc")
+        	.close();
 
 
 
@@ -109,8 +113,10 @@ protected:
         main->declare_key("selection", *selection_ptr, Default::obligatory(), "");
         main->declare_key("default_int", Integer(), Default("1234"), "");
         main->declare_key("optional_int2", Integer(), "");
-        main->finish();
+        main->close();
         }
+
+        main->finish();
 
         // construct some storage
 
@@ -134,11 +140,11 @@ protected:
             sub_array_sub_rec->new_item(1, sub_rec->deep_copy());
 
             StorageArray * desc_a = new StorageArray(2);
-            desc_a->new_item(0,new StorageInt(0));
+            desc_a->new_item(0,new StorageString("DescendantA"));
             desc_a->new_item(1,new StorageInt(234));
 
             StorageArray * desc_b = new StorageArray(3);
-            desc_b->new_item(0,new StorageInt(1));
+            desc_b->new_item(0,new StorageString("DescendantB"));
             desc_b->new_item(1,new StorageInt(345));
             desc_b->new_item(2,new StorageDouble(3.45));
 
@@ -173,7 +179,6 @@ protected:
 
     virtual void TearDown() {
         delete main;
-        //delete storage; // deleted by ~AddressData
         delete desc_a_ptr;
         delete desc_b_ptr;
         delete abstr_rec_ptr;
@@ -208,8 +213,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
     int i;
         i = record.val<int>("some_integer");
         EXPECT_EQ(456,i);
-        i = record.val<char>("some_integer");
-        EXPECT_EQ((char)(456),i);
+        EXPECT_THROW_WHAT({ record.val<char>("some_integer"); }, Input::ExcInputMessage, "Value out of bounds.");
         i = record.val<short int>("some_integer");
         EXPECT_EQ((short int)(456),i);
 
@@ -245,7 +249,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
             "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='Ss';");
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
     EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, ExcAssertMsg,
             "The key 'optional_int' is declared as optional .*you have to use Record::find instead.");
 #endif
@@ -312,7 +316,7 @@ struct Data {
 };
 
 TEST_F(InputInterfaceTest, ReadFromArray) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);
@@ -358,11 +362,11 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 
 //        if (it->has_key("some_int", data_array[idx].i) ) {
 //            EXPECT_EQ(123,data_array[idx].i);
- //       }
- //       it->has_key("some_double", data_array[idx].d);
- //       EXPECT_EQ(1.23, data_array[idx].d);
- //       it->has_key("some_string", data_array[idx].s);
- //       EXPECT_EQ("123", data_array[idx].s);
+//        }
+//        it->has_key("some_double", data_array[idx].d);
+//        EXPECT_EQ(1.23, data_array[idx].d);
+//        it->has_key("some_string", data_array[idx].s);
+//        EXPECT_EQ("123", data_array[idx].s);
     }
 
     // check creation of empty accessor and defautl iterator
@@ -376,7 +380,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 }
 
 TEST_F(InputInterfaceTest, ReadFromAbstract) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);

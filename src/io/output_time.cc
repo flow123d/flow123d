@@ -28,96 +28,106 @@
  */
 
 #include <string>
-#include <typeinfo>
-#include <petsc.h>
-#include <boost/any.hpp>
-#include <assert.h>
 
-#include "system/xio.h"
-#include "io/output_data.hh"
-#include "io/output_vtk.h"
-#include "io/output_msh.h"
+#include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
 #include "input/accessors.hh"
+#include "output_time.impl.hh"
+#include "output_vtk.hh"
+#include "output_msh.hh"
+
+
+FLOW123D_FORCE_LINK_IN_PARENT(vtk)
+FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 
 
 using namespace Input::Type;
 
-Record OutputTime::input_type
-    = Record("OutputStream", "Parameters of output.")
-    // The stream
-    .declare_key("file", FileName::output(), Default::obligatory(),
-            "File path to the connected output file.")
-            // The format
-	.declare_key("format", OutputTime::input_format_type, Default::optional(),
-			"Format of output stream and possible parameters.")
-	.declare_key("time_step", Double(0.0),
-			"Time interval between outputs.\n"
-			"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
-			"The start time and the end time are always added. ")
-	.declare_key("time_list", Array(Double(0.0)),
-			"Explicit array of output time points (can be combined with 'time_step'.")
-	.declare_key("add_input_times", Bool(), Default("false"),
-			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.");
-
-
-AbstractRecord OutputTime::input_format_type
-    = AbstractRecord("OutputTime",
-            "Format of output stream and possible parameters.");
-
-/**
- * \brief This method add right suffix to .pvd VTK file
- */
-static inline void fix_VTK_file_name(string *fname)
-{
-    // When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
-    if(fname->compare(fname->size()-4, 4, ".pvd") != 0) {
-        xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n", fname->c_str(), fname->c_str());
-        *fname = *fname + ".pvd";
-    }
-}
-
-/**
- * \brief This method add right suffix to .msh GMSH file
- */
-static inline void fix_GMSH_file_name(string *fname)
-{
-    // When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
-    if(fname->compare(fname->size()-4, 4, ".msh") != 0) {
-        xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n", fname->c_str(), fname->c_str());
-        *fname = *fname + ".msh";
-    }
+const Record & OutputTime::get_input_type() {
+    return Record("OutputStream", "Parameters of output.")
+		// The stream
+		.declare_key("file", FileName::output(), Default::obligatory(),
+				"File path to the connected output file.")
+				// The format
+		.declare_key("format", OutputTime::get_input_format_type(), Default::optional(),
+				"Format of output stream and possible parameters.")
+		.declare_key("time_step", Double(0.0),
+				"Time interval between outputs.\n"
+				"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
+				"The start time and the end time are always added. ")
+		.declare_key("time_list", Array(Double(0.0)),
+				Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
+				"Explicit array of output time points (can be combined with 'time_step'.")
+		.declare_key("add_input_times", Bool(), Default("false"),
+				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
+		.close();
 }
 
 
-OutputDataBase *OutputTime::output_data_by_field_name
-		(const std::string &field_name, DiscreteSpace ref_type)
-{
-    std::vector<OutputDataBase*> *data_vector;
-
-    switch(ref_type) {
-    case NODE_DATA:
-        data_vector = &this->node_data;
-        break;
-    case CORNER_DATA:
-        data_vector = &this->corner_data;
-        break;
-    case ELEM_DATA:
-        data_vector = &this->elem_data;
-        break;
-    }
-
-    /* Try to find existing data */
-    for(auto &data : *data_vector)
-        if (data->field_name == field_name)     return data;
-
-    return nullptr;
+AbstractRecord & OutputTime::get_input_format_type() {
+	return AbstractRecord("OutputTime", "Format of output stream and possible parameters.")
+		.close();
 }
+
+
+OutputTime::OutputTime()
+: _mesh(nullptr)
+{}
+
+
+
+OutputTime::OutputTime(const Input::Record &in_rec)
+: input_record_(in_rec)
+{
+
+    this->_base_filename = in_rec.val<FilePath>("file");
+    this->current_step = 0;
+    this->_mesh = NULL;
+    this->time = -1.0;
+    this->write_time = -1.0;
+
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+
+}
+
+
+
+OutputTime::~OutputTime(void)
+{
+    /* It's possible now to do output to the file only in the first process */
+     //if(rank != 0) {
+     //    /* TODO: do something, when support for Parallel VTK is added */
+     //    return;
+    // }
+
+    if (this->_base_file.is_open()) this->_base_file.close();
+
+     xprintf(MsgLog, "O.K.\n");
+}
+
+
+
+
+
+
+
+void OutputTime::fix_main_file_extension(std::string extension)
+{
+    if(this->_base_filename.compare(this->_base_filename.size()-extension.size(), extension.size(), extension) != 0) {
+        string new_name = this->_base_filename + extension;
+        xprintf(Warn, "Renaming output file: %s to %s\n",
+                this->_base_filename.c_str(), new_name.c_str());
+        this->_base_filename = new_name;
+    }
+}
+
 
 /* Initialize static member of the class */
-std::vector<OutputTime*> OutputTime::output_streams;
+//std::vector<OutputTime*> OutputTime::output_streams;
 
-// Destroy all objects
+
+/*
 void OutputTime::destroy_all(void)
 {
     // Delete all objects
@@ -130,202 +140,41 @@ void OutputTime::destroy_all(void)
 
     OutputTime::output_streams.clear();
 }
+    */
 
-/*
-OutputTime *OutputTime::output_stream_by_name(string name)
+
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record &in_rec)
 {
-	OutputTime *output_time;
-    // Try to find existing object
-    for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
-            output_iter != OutputTime::output_streams.end();
-            ++output_iter)
-    {
-        output_time = (*output_iter);
-        if( output_time->name == name) {
-            return output_time;
-        }
-    }
-
-    return NULL;
-}
-*/
-
-/*
-OutputTime *OutputTime::output_stream_by_key_name(const Input::Record &in_rec, const string key_name)
-{
-	// TODO: do not try to find empty string and raise exception
-
-	// Try to find record with output stream (the key is name of data)
-	Input::Iterator<string> stream_name_iter = in_rec.find<string>(key_name);
-
-	// If record was not found, then throw exception
-	if(!stream_name_iter) {
-		return nullptr;
-	}
-
-	// Try to find existing output stream
-	return output_stream_by_name(*stream_name_iter);
-}
-*/
-
-OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
-{
-    OutputTime* output_time;
+	std::shared_ptr<OutputTime> output_time;
 
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
 
     if(format) {
-        if((*format).type() == OutputVTK::input_type) {
-            output_time = new OutputVTK(in_rec);
-        } else if ( (*format).type() == OutputMSH::input_type) {
-            output_time = new OutputMSH(in_rec);
-        } else {
-            xprintf(Warn, "Unsupported file format, using default VTK\n");
-            output_time = new OutputVTK(in_rec);
-        }
+    	output_time = (*format).factory< OutputTime, const Input::Record & >(in_rec);
+        output_time->format_record_ = *format;
     } else {
-        output_time = new OutputVTK(in_rec);
+        output_time = Input::Factory< OutputTime, const Input::Record & >::instance()->create("OutputVTK", in_rec);
     }
 
     return output_time;
 }
 
-/*
-OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
+
+void OutputTime::add_admissible_field_names(const Input::Array &in_array)
 {
-    // testing rank of process
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
+    vector<Input::FullEnum> field_ids;
+    in_array.copy_to(field_ids);
 
-    // It's possible now to do output to the file only in the first process
-    //if(rank != 0) {
-    //    xprintf(MsgLog, "NOT MASTER PROC\n");
-    //    // TODO: do something, when support for Parallel VTK is added
-    //    return NULL;
-    //}
-
-    OutputTime *output_time;
-    string name = in_rec.val<string>("name");
-
-    xprintf(MsgLog, "Trying to find output_stream: %s ... ", name.c_str());
-
-    output_time = OutputTime::output_stream_by_name(name);
-    if(output_time != NULL) {
-        xprintf(MsgLog, "FOUND\n");
-        return output_time;
+    for (auto field_full_enum: field_ids) {
+        /* Setting flags to zero means use just discrete space
+         * provided as default in the field.
+         */
+        DiscreteSpaceFlags flags = 0;
+        this->output_names[(std::string)field_full_enum]=flags;
     }
-
-    xprintf(MsgLog, "NOT FOUND. Creating new ... ");
-
-    output_time = OutputTime::create_output_stream(in_rec);
-    OutputTime::output_streams.push_back(output_time);
-
-    xprintf(MsgLog, "DONE\n");
-
-    ASSERT(output_time == OutputTime::output_stream_by_name(name),"Wrong stream push back.\n");
-    return output_time;
-}
-*/
-
-void OutputTime::add_admissible_field_names(const Input::Array &in_array, const Input::Type::Selection &in_sel)
-{
-	vector<Input::Enum> field_ids;
-	in_array.copy_to(field_ids);
-
-	// first copy all possible field names from selection
-	for (auto it = in_sel.begin(); it != in_sel.end(); ++it)
-		//output_names.emplace(it->key_, false);        //introduced in gcc4.8 (C++11) - does not work with gcc4.7
-                output_names.insert(std::pair<std::string, bool>(it->key_,false));
-
-	// then mark those fields that will be saved
-	for (auto it: field_ids)
-		if (in_sel.has_value(it))
-			output_names[in_sel.int_to_name(it)] = true;
 }
 
 
-OutputTime::OutputTime(const Input::Record &in_rec)
-: input_record_(in_rec)
-{
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    //ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-    
-    /* It's possible now to do output to the file only in the first process */
-    //if(rank!=0) {
-    //    /* TODO: do something, when support for Parallel VTK is added */
-    //    return;
-    //}
-
-    Mesh *mesh = NULL;  // This is set, when first register_* method is called
-
-    ofstream *base_file;
-    string *base_filename;
-
-    string fname = in_rec.val<FilePath>("file");
-    //string stream_name = in_rec.val<string>("name");
-
-    Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
-
-    // TODO: move this part to OutputVTK.cc and OutputMSH.cc
-    // Check if file suffix is suffix of specified file format
-    if(format) {
-        if((*format).type() == OutputVTK::input_type) {
-            // This should be pvd file format
-            fix_VTK_file_name(&fname);
-        } else if((*format).type() == OutputMSH::input_type) {
-            // This should be msh file format
-            fix_GMSH_file_name(&fname);
-        } else {
-            // Unsuported file format
-            fix_VTK_file_name(&fname);
-        }
-    } else {
-        // Default file format is VTK
-        fix_VTK_file_name(&fname);
-    }
-
-    base_file = new ofstream;
-
-    if (rank==0) {
-    	base_file->open(fname.c_str());
-    	INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    	xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
-    }
-
-    base_filename = new string(fname);
-
-   //this->name = stream_name;
-    this->current_step = 0;
-
-    set_base_file(base_file);
-    this->_base_filename = base_filename;
-    set_mesh(mesh);
-
-    this->time = -1.0;
-    this->write_time = -1.0;
-
-}
-
-OutputTime::~OutputTime(void)
-{
-    /* It's possible now to do output to the file only in the first process */
-     //if(rank != 0) {
-     //    /* TODO: do something, when support for Parallel VTK is added */
-     //    return;
-    // }
-
-     if(this->_base_filename != NULL) {
-         delete this->_base_filename;
-     }
-
-     if(base_file != NULL) {
-         base_file->close();
-         delete base_file;
-     }
-
-     xprintf(MsgLog, "O.K.\n");
-}
 
 
 void OutputTime::mark_output_times(const TimeGovernor &tg)
@@ -342,6 +191,8 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 		vector<double> list;
 		time_list.copy_to(list);
 		for( double time : list) tg.marks().add(TimeMark(time, output_mark_type));
+	} else {
+	    tg.marks().add( TimeMark(tg.init_time(), output_mark_type) );
 	}
 
 	bool add_flag;
@@ -361,75 +212,29 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 
 void OutputTime::write_time_frame()
 {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    //ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-
+	START_TIMER("write_time_frame");
     /* TODO: do something, when support for Parallel VTK is added */
-    if (rank == 0) {
+    if (this->rank == 0) {
     	// Write data to output stream, when data registered to this output
 		// streams were changed
 		if(write_time < time) {
-			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n", _base_filename->c_str(), time);
+			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n",
+			        this->_base_filename.c_str(), time);
 			write_data();
 			// Remember the last time of writing to output stream
 			write_time = time;
 			current_step++;
 		} else {
-			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n", _base_filename->c_str(), time);
+			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
+			        this->_base_filename.c_str(), time);
 		}
     }
     clear_data();
 }
-/*
-void OutputTime::write_all_data(void)
-{
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-
-    OutputTime *output_time = NULL;
-
-    // It's possible now to do output to the file only in the first process
-//if(rank != 0) {
-//        // TODO: do something, when support for Parallel VTK is added
-//        return;
-//    }
-    if (rank == 0) {
-		// Go through all OutputTime objects
-		for(std::vector<OutputTime*>::iterator stream_iter = OutputTime::output_streams.begin();
-				stream_iter != OutputTime::output_streams.end();
-				++stream_iter)
-		{
-			// Write data to output stream, when data registered to this output
-			// streams were changed
-			output_time = (*stream_iter);
-			if(output_time->write_time < output_time->time) {
-				xprintf(MsgLog, "Write output to output stream: %s for time: %f\n",
-						output_time->name.c_str(),
-						output_time->time);
-				output_time->write_data();
-				// Remember the last time of writing to output stream
-				output_time->write_time = output_time->time;
-				output_time->current_step++;
-			} else {
-				xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
-						output_time->name.c_str(),
-						output_time->time);
-			}
-		}
-    }
-
-    // Free all registered data
-    for(auto *stream : OutputTime::output_streams) stream->clear_data();
-}
-*/
 
 void OutputTime::clear_data(void)
 {
-	node_data.clear();
-    corner_data.clear();
-    elem_data.clear();
+    for(auto &map : output_data_vec_)  map.clear();
 }
 
 
@@ -447,19 +252,18 @@ void OutputTime::clear_data(void)
 	template class OutputData<value>;
 
 
-#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to)                      \
-		MACRO(dim_from, FieldValue<dim_to>::VectorFixed )                       \
+#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to) \
+		MACRO(dim_from, FieldValue<dim_to>::VectorFixed ) \
 		MACRO(dim_from, FieldValue<dim_to>::TensorFixed )
 
 #define INSTANCE_TO_ALL( MACRO, dim_from) \
 		MACRO(dim_from, FieldValue<0>::Enum ) \
-		MACRO(dim_from, FieldValue<0>::EnumVector)                \
-		MACRO(dim_from, FieldValue<0>::Integer)                \
-		MACRO(dim_from, FieldValue<0>::Scalar)                  \
-		MACRO(dim_from, FieldValue<0>::Vector)                  \
-\
-INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
-INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
+		MACRO(dim_from, FieldValue<0>::EnumVector) \
+		MACRO(dim_from, FieldValue<0>::Integer) \
+		MACRO(dim_from, FieldValue<0>::Scalar) \
+		MACRO(dim_from, FieldValue<0>::Vector) \
+        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
+        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
 
 #define INSTANCE_ALL(MACRO) \
 		INSTANCE_TO_ALL( MACRO, 3) \

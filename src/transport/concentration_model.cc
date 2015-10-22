@@ -30,9 +30,12 @@
 #include "input/input_type.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-#include "flow/darcy_flow_mh.hh"
+//#include "flow/darcy_flow_mh.hh"
+
 #include "transport/transport_operator_splitting.hh"
 #include "concentration_model.hh"
+#include "fields/unit_si.hh"
+#include "coupling/balance.hh"
 
 
 
@@ -41,6 +44,31 @@ using namespace Input::Type;
 
 
 
+const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
+	return Selection("SoluteTransport_BC_Type", "Types of boundary conditions for solute transport model.")
+              .add_value(bc_inflow, "inflow",
+            		  "Default transport boundary condition.\n"
+            		  "On water inflow (($(q_w \\le 0)$)), total flux is given by the reference concentration 'bc_conc'. "
+            		  "On water outflow we prescribe zero diffusive flux, "
+            		  "i.e. the mass flows out only due to advection.")
+              .add_value(bc_dirichlet, "dirichlet",
+            		  "Dirichlet boundary condition (($ c = c_D $)).\n"
+            		  "The prescribed concentration (($c_D$)) is specified by the field 'bc_conc'.")
+              .add_value(bc_total_flux, "total_flux",
+            		  "Total mass flux boundary condition.\n"
+            		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(c-c_R) )+q_wc_A$)), "
+            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+            		  "the advected concentration (($c_A$)) by 'bc_ad_conc', "
+            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
+              .add_value(bc_diffusive_flux, "diffusive_flux",
+            		  "Diffusive flux boundary condition.\n"
+            		  "The prescribed mass flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(c-c_R) )$)), "
+            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
+			  .close();
+}
 
 
 
@@ -48,56 +76,91 @@ using namespace Input::Type;
 ConcentrationTransportModel::ModelEqData::ModelEqData()
 : TransportBase::TransportEqData()
 {
-    *this+=bc_conc
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Type of boundary condition.")
+            .units( UnitSI::dimensionless() )
+            .input_default("\"inflow\"")
+            .input_selection( &get_bc_type_selection() )
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+    *this+=bc_dirichlet_value
             .name("bc_conc")
+            .units( UnitSI().kg().m(-3) )
             .description("Dirichlet boundary condition (for each substance).")
             .input_default("0.0")
             .flags_add( in_rhs );
+	*this+=bc_flux
+			.name("bc_flux")
+			.description("Flux in Neumann boundary condition.")
+			.units( UnitSI().kg().m().s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs);
+	*this+=bc_robin_sigma
+			.name("bc_robin_sigma")
+			.description("Conductivity coefficient in Robin boundary condition.")
+			.units( UnitSI().m(4).s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=init_conc
             .name("init_conc")
+            .units( UnitSI().kg().m(-3) )
             .description("Initial concentrations.")
             .input_default("0.0");
     *this+=disp_l
             .name("disp_l")
             .description("Longitudal dispersivity (for each substance).")
+            .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
     *this+=disp_t
             .name("disp_t")
             .description("Transversal dispersivity (for each substance).")
+            .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
     *this+=diff_m
             .name("diff_m")
             .description("Molecular diffusivity (for each substance).")
+            .units( UnitSI().m(2).s(-1) )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
 
 	*this+=output_field
 	        .name("conc")
-	        .units("M/L^3")
+	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
 }
 
 
 
-
-
-IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
+UnitSI ConcentrationTransportModel::balance_units()
 {
-	static IT::Record rec = IT::Record(ModelEqData::name() + "_" + implementation, description + " for solute transport.")
-			.derive_from(AdvectionProcessBase::input_type)
-			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
-					"Names of transported substances.");
-
-	return rec;
+	return UnitSI().kg();
 }
 
-IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
-{
-	static IT::Selection sel = IT::Selection(ModelEqData::name() + "_" + implementation + "_Output", "Output record for " + description + " for solute transport.");
 
-	return sel;
+IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
+{
+	return IT::Record(
+				std::string(ModelEqData::name()) + "_" + implementation,
+				description + " for solute transport.")
+			.derive_from(AdvectionProcessBase::get_input_type())
+			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+					"Time governor setting for the secondary equation.")
+			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
+					"Settings for computing balance.")
+			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+					"Parameters of output stream.")
+			.declare_key("substances", IT::Array( Substance::get_input_type() ), IT::Default::obligatory(),
+					"Names of transported substances.");
+}
+
+IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+{
+	return IT::Selection(
+				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
+				"Output record for " + description + " for solute transport.");
 }
 
 
@@ -106,9 +169,9 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 {}
 
 
-void ConcentrationTransportModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
+void ConcentrationTransportModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
-	in_rec.val<Input::Array>("substances").copy_to(names);
+	substances.initialize(in_rec.val<Input::Array>("substances"));
 }
 
 
@@ -131,10 +194,10 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 {
     double vnorm = arma::norm(velocity, 2);
 
-	if (fabs(vnorm) > sqrt(numeric_limits<double>::epsilon()))
+	if (fabs(vnorm) > 0)
 		for (int i=0; i<3; i++)
 			for (int j=0; j<3; j++)
-				K(i,j) = velocity[i]*velocity[j]/(vnorm*vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
+				K(i,j) = (velocity[i]/vnorm)*(velocity[j]/vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
 	else
 		K.zeros();
 
@@ -181,12 +244,31 @@ void ConcentrationTransportModel::compute_init_cond(const std::vector<arma::vec3
 	data().init_conc.value_list(point_list, ele_acc, init_values);
 }
 
-
-void ConcentrationTransportModel::compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_values)
+void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types)
 {
-	data().bc_conc.value_list(point_list, ele_acc, bc_values);
+	// Currently the bc types for ConcentrationTransport are numbered in the same way as in TransportDG.
+	// In general we should use some map here.
+	bc_types = data().bc_type.value(ele_acc.centre(), ele_acc);
+}
+
+
+void ConcentrationTransportModel::get_flux_bc_data(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_flux,
+		std::vector< arma::vec > &bc_sigma,
+		std::vector< arma::vec > &bc_ref_value)
+{
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+}
+
+void ConcentrationTransportModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_sigma)
+{
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 }
 
 

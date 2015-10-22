@@ -96,8 +96,6 @@ public:
     //    return region().id();
     //}
 
-    //const BoundingBox &bounding_box();
-
     inline bool is_boundary() const {
         return boundary_;
     }

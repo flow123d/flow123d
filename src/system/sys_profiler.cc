@@ -30,17 +30,26 @@
 
 #include <fstream>
 #include <iomanip>
-
 #include <sys/param.h>
+#include "Python.h"
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
+#include "Python.h"
+#include "system/python_loader.hh"
 #include <boost/format.hpp>
+#include <iostream>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include "system/file_path.hh"
-
-
+#include "system/python_loader.hh"
 #include "mpi.h"
+#include "time_point.hh"
+
+// namespace alias
+namespace property_tree = boost::property_tree;
+
 /*
  * These should be replaced by using boost MPI interface
  */
@@ -81,14 +90,14 @@ double MPI_Functions::max(double* val, MPI_Comm comm) {
     }
 
 
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 /*********************************************************************************************
  * Implementation of class Timer
  */
 
 Timer::Timer(const CodePoint &cp, int parent)
-: start_time(0),
-  cumul_time(0),
+: start_time(TimePoint()),
+  cumul_time(0.0),
   call_count(0),
   start_count(0),
   code_point_(&cp),
@@ -102,39 +111,19 @@ Timer::Timer(const CodePoint &cp, int parent)
 }
 
 
-/*
- * Standard C++ clock() function measure the time spent in calling process, not the wall time,
- * that is exactly what I want. Disadvantage is that it has small resolution about 10 ms.
- *
- * For more precise wall clock timer one can use:
- * time(&begin);
- * time(&end);
- * cout << "Time elapsed: " << difftime(end, begin) << " seconds"<< endl;
- */
-Timer::TimeData Timer::get_time() {
-    return clock();
-}
 
-
-
-double Timer::cumulative_time() const
-{
-    return 1000.0 * double(cumul_time) / CLOCKS_PER_SEC;
+double Timer::cumulative_time() const {
+    return cumul_time;
 }
 
 
 
 void Timer::start() {
-    if (start_count == 0) start_time = get_time();
+    if (start_count == 0) {
+        start_time = TimePoint();
+    }
     call_count++;
     start_count++;
-}
-
-
-
-void Timer::update() {
-    TimeData time = get_time();
-    cumul_time += time - start_time;
 }
 
 
@@ -144,8 +133,7 @@ bool Timer::stop(bool forced) {
     if (forced) start_count=1;
 
     if (start_count == 1) {
-        TimeData time = get_time();
-        cumul_time += time - start_time;
+        cumul_time += (TimePoint() - start_time);
         start_count--;
         return true;
     } else {
@@ -164,7 +152,7 @@ void Timer::add_child(int child_index, const Timer &child)
         do {
             i=( i < max_n_childs ? i+1 : 0);
         } while (i!=idx && child_timers[i] >0);
-        ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag() );
+        ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag().c_str());
         idx=i;
     }
     child_timers[idx] = child_index;
@@ -189,15 +177,11 @@ string Timer::code_point_str() const {
 Profiler* Profiler::_instance = NULL;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
-
-
 void Profiler::initialize()
 {
 
     if (!_instance)
         _instance = new Profiler();
-    //else
-    //    xprintf(Warn, "The profiler already initialized.\n");
 
 }
 
@@ -208,7 +192,7 @@ Profiler::Profiler()
   start_time( time(NULL) )
 
 {
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
     timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
@@ -272,12 +256,12 @@ int Profiler::find_child(const CodePoint &cp) {
 
 
 void Profiler::stop_timer(const CodePoint &cp) {
-#ifdef Flow123d_DEBUG
+#ifdef FLOW123D_DEBUG
     // check that all childrens are closed
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] >0)
-            ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag(), timer.tag() );
+            ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
 #endif
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
         // timer to close is not actual - we search for it above actual
@@ -285,7 +269,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
             if ( cp.hash_ == timers_[node].full_hash_) {
                 // found above - close all nodes between
                 for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", cp.tag_, timers_[actual_node].tag());
+                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", cp.tag_, timers_[actual_node].tag().c_str());
                     timers_[actual_node].stop(true);
                 }
                 // close 'node' itself
@@ -316,7 +300,7 @@ void Profiler::stop_timer(int timer_index) {
             if ( (unsigned int)(timer_index) == node) {
                 // found above - close all nodes between
                 for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_index].tag(), timers_[actual_node].tag());
+                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_index].tag().c_str(), timers_[actual_node].tag().c_str());
                     timers_[actual_node].stop(true);
                 }
                 // close 'node' itself
@@ -352,190 +336,336 @@ void Profiler::notify_free(const size_t size) {
 }
 
 
+double Profiler::get_resolution () {
+    const int measurements = 100;
+    double result = 0;
+
+    // perform 100 measurements
+    for (unsigned int i = 1; i < measurements; i++) {
+        TimePoint t1 = TimePoint ();
+        TimePoint t2 = TimePoint ();
+
+        // double comparison should be avoided
+        while ((t2 - t1) == 0) t2 = TimePoint ();
+        // while ((t2.ticks - t1.ticks) == 0) t2 = TimePoint ();
+
+        result += t2 - t1;
+    }
+
+    return (result / measurements) * 1000; // ticks to seconds to microseconds conversion
+}
 
 
 
+std::string common_prefix( std::string a, std::string b ) {
+    if( a.size() > b.size() ) std::swap(a,b) ;
+    return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
+}
 
-void Profiler::add_timer_info(MPI_Comm comm, vector<vector<string> > &timers_info, int timer_idx, int indent, double parent_time) {
 
+
+template<typename ReduceFunctor>
+void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder, int timer_idx, double parent_time) {
+
+    // get timer and check preconditions
     Timer &timer = timers_[timer_idx];
-
     ASSERT( timer_idx >=0, "Wrong timer index %d.\n", timer_idx);
     ASSERT( timer.parent_timer >=0 , "Inconsistent tree.\n");
 
-    int numproc;
-    MPI_Comm_size(comm, &numproc);
+    // fix path
+    string filepath = timer.code_point_->file_;
 
-    int call_count = timer.call_count;
-    int call_count_min = MPI_Functions::min(&call_count, comm);
-    int call_count_max = MPI_Functions::max(&call_count, comm);
-    int call_count_sum = MPI_Functions::sum(&call_count, comm);
+    // if constant FLOW123D_SOURCE_DIR is defined, we try to erase it from beginning of each CodePoint's filepath
+    #ifdef FLOW123D_SOURCE_DIR
+        string common_path = common_prefix (string(FLOW123D_SOURCE_DIR), filepath);
+        filepath.erase (0, common_path.size());
+    #endif
 
-    double cumul_time = timer.cumulative_time() / 1000; // in seconds
-    double cumul_time_min = MPI_Functions::min(&cumul_time, comm);
-    double cumul_time_max = MPI_Functions::max(&cumul_time, comm);
-    double cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
 
+    // generate node representing this timer
+    // add basic information
+    property_tree::ptree node;
+    double cumul_time_sum;
+    node.put ("tag",        (timer.tag()) );
+    node.put ("file-path",  (filepath) );
+    node.put ("file-line",  (timer.code_point_->line_) );
+    node.put ("function",   (timer.code_point_->func_) );
+    cumul_time_sum = reduce (timer, node);
+
+
+    // statistical info
     if (timer_idx == 0) parent_time = cumul_time_sum;
-
-    vector<string> info;
     double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
-    string tree_info = string(2*indent, ' ') +
-                       boost::str( boost::format("[%.1f] ") % percent )+
-                       timer.tag();
-    info.push_back( tree_info );
+    node.put<double> ("percent", 	percent);
 
-    info.push_back( boost::str(boost::format("%i%s") % call_count % (call_count_min != call_count_max ? "*" : " ")) );
-    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_max) ) );
-    info.push_back( boost::str(boost::format("%.2f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1)) );
-    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_sum / call_count_sum) ) );
-    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_sum) ) );
-    info.push_back( timer.code_point_str() );
+    // write times children timers
+    property_tree::ptree children;
+    bool has_children = false;
+    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
+		if (timer.child_timers[i] > 0) {
+			add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
+			has_children = true;
+		}
+    }
 
-    timers_info.push_back(info);
+    // add children tag and other info if present
+    if (has_children)
+    	node.add_child ("children", children);
 
-    for (unsigned int i = 0; i < Timer::max_n_childs; i++)
-        if (timer.child_timers[i] > 0)
-            add_timer_info(comm, timers_info, timer.child_timers[i], indent + 1, cumul_time_sum);
+    // push itself to root ptree 'array'
+	holder->push_back (std::make_pair ("", node));
 }
 
 
 
 void Profiler::update_running_timers() {
     for(int node=actual_node; node !=0; node = timers_[node].parent_timer)
-        timers_[node].update();
-    timers_[0].update();
+        timers_[node].cumul_time += (TimePoint() - timers_[node].start_time);
+    timers_[0].cumul_time += (TimePoint() - timers_[0].start_time);
 }
 
 
-
+#ifdef FLOW123D_HAVE_MPI
 void Profiler::output(MPI_Comm comm, ostream &os) {
-
-    const int column_space = 3;
-
-    //wait until profiling on all processors is finished
-    MPI_Barrier(comm);
-    update_running_timers();
-    
-    int ierr, mpi_rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank); 
+    int ierr, mpi_rank, mpi_size;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
+    MPI_Comm_size(comm, &mpi_size);
 
-    vector < vector<string> > timers_info(1);
+    // output header
+    property_tree::ptree root, children;
+    output_header (root, mpi_size);
 
-    // add header into timers_info table !!
-    timers_info[0].push_back( "tag tree");
-    timers_info[0].push_back( "calls");
-    timers_info[0].push_back( "Tmax");
-    timers_info[0].push_back( "max/min");
-    timers_info[0].push_back( "T/calls");
-    timers_info[0].push_back( "Ttotal");
-    timers_info[0].push_back( "code_point");
+    // recursively add all timers info
+    // define lambda function which reduces timer from multiple processors
+    // MPI implementation uses MPI call to reduce values
+    auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
+        int call_count = timer.call_count;
+        double cumul_time = timer.cumulative_time () / 1000;
+        double cumul_time_sum;
 
-    add_timer_info(comm, timers_info, 0, 0, 0.0);
+        node.put ("call-count", call_count);
+        node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
+        node.put ("call-count-max", MPI_Functions::max(&call_count, comm));
+        node.put ("call-count-sum", MPI_Functions::sum(&call_count, comm));
 
-    //create profiler output only once (on the first processor)
+        cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
+
+        node.put ("cumul-time", boost::format("%1.9f") % cumul_time);
+        node.put ("cumul-time-min", boost::format("%1.9f") % MPI_Functions::min(&cumul_time, comm));
+        node.put ("cumul-time-max", boost::format("%1.9f") % MPI_Functions::max(&cumul_time, comm));
+        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time_sum);
+        return cumul_time_sum;
+    };
+
+    add_timer_info (reduce, &children, 0, 0.0);
+    root.add_child ("children", children);
+
+
+    // create profiler output only once (on the first processor)
+    // only active communicator should be the one with mpi_rank 0
     if (mpi_rank == 0) {
-
-        // compute with of columns
-        vector<unsigned int> width(timers_info[0].size(),0);
-        for (unsigned int i = 0; i < timers_info.size(); i++)
-            for (unsigned int j = 0; j < timers_info[i].size(); j++) width[j] = max( width[j] , (unsigned int)timers_info[i][j].size() );
-        // detect common path of code points
-        unsigned int common_length=timers_info[1].back().size();
-        for (unsigned int i = 2; i < timers_info.size(); i++) {
-            common_length = min( common_length, (unsigned int) timers_info[i].back().size() );
-            for (unsigned int j = 0; j < common_length; j++ ) {
-                if (timers_info[1].back().at(j) != timers_info[i].back().at(j)) {
-                    common_length = j;
-                    break;
-                }
-            }
-        }
-        // remove common path
-        for (unsigned int i = 1; i < timers_info.size(); i++) timers_info[i].back().erase(0, common_length);
-
-
-        int mpi_size;
-        MPI_Comm_size(comm, &mpi_size);
-
-        time_t end_time = time(NULL);
-
-        const char format[] = "%x %X";
-        char start_time_string[BUFSIZ] = {0};
-        strftime(start_time_string, sizeof (start_time_string) - 1, format, localtime(&start_time));
-
-        char end_time_string[BUFSIZ] = {0};
-        strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
-
-        //create a file where the output will be written to
-
-        os << "Program name: " << flow_name_ << endl
-           << "Program version: " << flow_version_ << endl
-           << "Program branch: " << flow_branch_ << endl
-           << "Program revision: " << flow_revision_ << endl
-           << "Program build: " << flow_build_ << endl << endl;
-
-
-        os << "Task description: " << task_description_ << endl
-           << "Task size: " << task_size_ << endl << endl;
-
-        //print some information about the task at the beginning
-        os << "Run processes count: " << mpi_size << endl;
-        os << "Run started at: " << start_time_string << endl;
-        os << "Run finished at: " << end_time_string << endl;
-
-        os << setfill ('-') << setw (80) << "" << endl;
-        os.fill(' ');
-
-        // print header
-        for(unsigned int j=0; j< timers_info[0].size(); j++)
-            os << left << setw(width[j]) << timers_info[0][j] << setw(column_space) << "";
-        os << endl;
-
-        os << setfill ('-') << setw (80) << "" << endl;
-        os.fill(' ');
-
-        for (unsigned int i = 1; i < timers_info.size(); i++) {
-            for(unsigned int j=0; j< timers_info[i].size(); j++) {
-                // first and last item are left aligned
-                if (j==0 || j==timers_info[i].size()-1 ) os << left; else os<<right;
-                os << setw(width[j]) << timers_info[i][j] << setw(column_space) << "";
-            }
-
-            os << endl;
-        }
-
+        /**
+         * Flag to property_tree::write_json method
+         * resulting in json human readable format (indents, newlines)
+         */
+        const int FLOW123D_JSON_HUMAN_READABLE = 1;
+        // write result to stream
+        property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
     }
 }
 
 
-
 void Profiler::output(MPI_Comm comm) {
-            char filename[PATH_MAX];
-            strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
-            string full_fname =  FilePath(string(filename), FilePath::output_file);
+    //wait until profiling on all processors is finished
+    MPI_Barrier(comm);
+    update_running_timers();
+    int ierr, mpi_rank, mpi_size;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    MPI_Comm_size(comm, &mpi_size);
 
-            xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-            ofstream os(full_fname.c_str());
-            output(comm, os);
-            os.close();
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
+    json_filepath = FilePath(string(filename), FilePath::output_file);
+
+    xprintf(MsgLog, "output into: %s\n", json_filepath.c_str());
+    ofstream os(json_filepath.c_str());
+    output(comm, os);
+    os.close();
+}
+
+#endif /* FLOW123D_HAVE_MPI */
+
+void Profiler::output(ostream &os) {
+    // last update
+    update_running_timers();
+
+    // output header
+    property_tree::ptree root, children;
+    /**
+     * Constant representing number of MPI processes
+     * where there is no MPI to work with (so 1 process)
+     */
+    const int FLOW123D_MPI_SINGLE_PROCESS = 1;
+    output_header (root, FLOW123D_MPI_SINGLE_PROCESS);
+
+
+    // recursively add all timers info
+    // define lambda function which reduces timer from multiple processors
+    // non-MPI implementation is just dummy repetition of initial value
+    auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
+        int call_count = timer.call_count;
+        double cumul_time = timer.cumulative_time () / 1000;
+
+        node.put ("call-count",     call_count);
+        node.put ("call-count-min", call_count);
+        node.put ("call-count-max", call_count);
+        node.put ("call-count-sum", call_count);
+
+        node.put ("cumul-time",     boost::format("%1.9f") % cumul_time);
+        node.put ("cumul-time-min", boost::format("%1.9f") % cumul_time);
+        node.put ("cumul-time-max", boost::format("%1.9f") % cumul_time);
+        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time);
+        return cumul_time;
+    };
+
+    add_timer_info (reduce, &children, 0, 0.0);
+    root.add_child ("children", children);
+
+
+    /**
+     * Flag to property_tree::write_json method
+     * resulting in json human readable format (indents, newlines)
+     */
+    const int FLOW123D_JSON_HUMAN_READABLE = 1;
+    // write result to stream
+    property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
 }
 
 
+void Profiler::output() {
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
+    json_filepath = FilePath(string(filename), FilePath::output_file);
 
-void Profiler::uninitialize()
-{
+    xprintf(MsgLog, "output into: %s\n", this->json_filepath.c_str());
+    ofstream os(json_filepath.c_str());
+    output(os);
+    os.close();
+}
+
+void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
+    update_running_timers();
+    time_t end_time = time(NULL);
+
+    const char format[] = "%x %X";
+    char start_time_string[BUFSIZ] = {0};
+    strftime(start_time_string, sizeof (start_time_string) - 1, format, localtime(&start_time));
+
+    char end_time_string[BUFSIZ] = {0};
+    strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
+
+    // generate current run details
+
+    root.put ("program-name",       flow_name_);
+    root.put ("program-version",    flow_version_);
+    root.put ("program-branch",     flow_branch_);
+    root.put ("program-revision",   flow_revision_);
+    root.put ("program-build",      flow_build_);
+    root.put ("timer-resolution",   boost::format("%1.9f") % Profiler::get_resolution());
+    // if constant FLOW123D_SOURCE_DIR is defined, we add this information to profiler (later purposes)
+    #ifdef FLOW123D_SOURCE_DIR
+    #endif
+
+    // print some information about the task at the beginning
+    root.put ("task-description",   task_description_);
+    root.put ("task-size",          task_size_);
+
+    //print some information about the task at the beginning
+    root.put ("run-process-count",  mpi_size);
+    root.put ("run-started-at",     start_time_string);
+    root.put ("run-finished-at",    end_time_string);
+}
+
+
+void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
+    PyObject * python_module;
+    PyObject * convert_method;
+    PyObject * arguments;
+    PyObject * return_value;
+    PyObject * tmp;
+    int argument_index = 0;
+
+
+
+    // debug info
+    // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
+    // cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
+    // cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
+    // cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
+    // cout << "Py_GetPath:            " << Py_GetPath() << endl;
+    // cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
+    // cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
+
+
+    // grab module and function by importing module profiler_formatter_module.py
+    python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+    convert_method  = PythonLoader::get_callable (python_module, "convert" );
+
+    //
+    // def convert (json_location, output_file, formatter):
+    //
+
+    arguments = PyTuple_New (3);
+
+    // set json path location as first argument
+    tmp = PyString_FromString (json_filepath.c_str());
+    PyTuple_SetItem (arguments, argument_index++, tmp);
+
+    // set output path location as second argument
+    tmp = PyString_FromString ((json_filepath + output_file_suffix).c_str());
+    PyTuple_SetItem (arguments, argument_index++, tmp);
+
+    // set Formatter class as third value
+    tmp = PyString_FromString (formatter.c_str());
+    PyTuple_SetItem (arguments, argument_index++, tmp);
+
+    // execute method with arguments
+    return_value = PyObject_CallObject (convert_method, arguments);
+    //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
+
+
+    if (PyBool_Check (return_value)) {
+        // is boolean
+
+        if (return_value == Py_True) {
+            cout << "Python execution was successful" << endl;
+        }else{
+            cout << "Error when executing Python" << endl;
+        }
+    } else if (PyString_Check (return_value)) {
+        // is string (holds error)
+
+        char* error_msg = PyString_AsString (return_value);
+        cout << "Error when executing Python: " << error_msg << endl;
+    } else {
+        cout << "Unknown result when executing Python: "<< endl;
+    }
+}
+
+
+void Profiler::uninitialize() {
     if (_instance) {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
-                _instance->timers_[_instance->actual_node].tag());
+                _instance->timers_[_instance->actual_node].tag().c_str());
         _instance->stop_timer(0);
         delete _instance;
         _instance = NULL;
     }
 }
 
-#else // def DEBUG_PROFILER
+#else // def FLOW123D_DEBUG_PROFILER
 
 Profiler* Profiler::_instance = NULL;
 
@@ -551,6 +681,4 @@ void Profiler::uninitialize() {
 }
 
 
-#endif // def DEBUG_PROFILER
-
-
+#endif // def FLOW123D_DEBUG_PROFILER

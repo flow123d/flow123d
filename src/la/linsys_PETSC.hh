@@ -43,7 +43,9 @@ class LinSys_PETSC : public LinSys
 {
 
 public:
-    static Input::Type::Record input_type;
+	typedef LinSys FactoryBaseType;
+
+    static const Input::Type::Record & get_input_type();
 
     LinSys_PETSC(const  Distribution * rows_ds);
 
@@ -125,8 +127,6 @@ public:
        return a_tol_;
     };
 
-    void get_whole_solution( std::vector<double> & globalSolution );
-
     void view( );
 
     /**
@@ -139,6 +139,9 @@ public:
     ~LinSys_PETSC( );
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     // make a pointer to the data array out of a std::vector
     template<typename T> 
     T *  makePetscPointer_( std::vector<T> & array )
@@ -155,8 +158,6 @@ private:
             return static_cast<double>( arg );
         }
     };
-
-    void gatherSolution_( );
 
 protected:
 

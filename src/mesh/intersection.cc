@@ -83,7 +83,6 @@ arma::vec Intersection::map_to_slave(const arma::vec &point) const
 	int result_dim = slave->dim();
 	arma::vec result(result_dim+1);
 	result(0)=1.0;
-	//DBGMSG("s dim: %d dim:%d\n", master->dim, )
 	result.subvec(1, result_dim) = (slave_map * point + slave_shift);
 	return result;
 }

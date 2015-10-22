@@ -40,9 +40,6 @@
 
 
 
-
-
-
 //template<unsigned int dim, unsigned int spacedim> inline
 //DOFHandler<dim,spacedim>::DOFHandler(Mesh & _mesh)
 //: DOFHandlerBase(_mesh),
@@ -349,21 +346,45 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 void DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, unsigned int indices[]) const
 {
 	unsigned int dim = cell->dim();
+    unsigned int n_objects_dofs;
+    
 	switch (dim)
 	{
 	case 1:
-		for (unsigned int k=0; k<fe1d_->n_object_dofs(dim,DOF_SINGLE); k++)
-			indices[k] = object_dofs[cell.index()][dim][k];
+		n_objects_dofs = fe1d_->n_object_dofs(dim,DOF_SINGLE);
 		break;
 	case 2:
-		for (unsigned int k=0; k<fe2d_->n_object_dofs(dim,DOF_SINGLE); k++)
-			indices[k] = object_dofs[cell.index()][dim][k];
+		n_objects_dofs = fe2d_->n_object_dofs(dim,DOF_SINGLE);
 		break;
 	case 3:
-		for (unsigned int k=0; k<fe3d_->n_object_dofs(dim,DOF_SINGLE); k++)
-			indices[k] = object_dofs[cell.index()][dim][k];
+		n_objects_dofs = fe3d_->n_object_dofs(dim,DOF_SINGLE);
 		break;
 	}
+	
+	for (unsigned int k = 0; k < n_objects_dofs; k++)
+        indices[k] = object_dofs[cell.index()][dim][k];
+}
+
+void DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const
+{
+    unsigned int dim = cell->dim();
+    unsigned int n_objects_dofs;
+    
+    switch (dim)
+    {
+    case 1:
+        n_objects_dofs = fe1d_->n_object_dofs(dim,DOF_SINGLE);
+        break;
+    case 2:
+        n_objects_dofs = fe2d_->n_object_dofs(dim,DOF_SINGLE);
+        break;
+    case 3:
+        n_objects_dofs = fe3d_->n_object_dofs(dim,DOF_SINGLE);
+        break;
+    }    
+
+    for (unsigned int k = 0; k < n_objects_dofs; k++)
+        indices[k] = object_dofs[cell.index()][dim][k] - loffset_;
 }
 
 void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &values, double local_values[]) const
@@ -453,8 +474,8 @@ template<> FiniteElement<1,3> *DOFHandlerMultiDim::fe<1>() const { return fe1d_;
 template<> FiniteElement<2,3> *DOFHandlerMultiDim::fe<2>() const { return fe2d_; }
 template<> FiniteElement<3,3> *DOFHandlerMultiDim::fe<3>() const { return fe3d_; }
 
+
 //template class DOFHandler<0,3>;
 //template class DOFHandler<1,3>;
 //template class DOFHandler<2,3>;
 //template class DOFHandler<3,3>;
-

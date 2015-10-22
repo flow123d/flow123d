@@ -30,6 +30,8 @@
         },
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0", "conductivity", "anisotropy" ]
       }, 
+
+      balance = true,
       
       solver = {
         TYPE = "Petsc", 
@@ -71,7 +73,6 @@
           TYPE = "SorptionMobile",
           solvent_density = 1.0,
           substances = ["age", "U235"],
-          molar_mass = [1.0, 1.0],
           solubility = [1.0, 1.0],
           
           input_fields= [
@@ -89,7 +90,6 @@
           TYPE = "SorptionImmobile",
           solvent_density = 1.0,
           substances = ["age", "U235"],
-          molar_mass = [1.0, 1.0],
           solubility = [1.0, 1.0],
           input_fields = { REF="../../reaction_mobile/input_fields" },
           output_fields = []
@@ -104,7 +104,7 @@
       },
 
       time = { end_time = 1.0 },
-      mass_balance = { cumulative = true }
+      balance = { cumulative = true }
     } // secondary_equation
   }, // problem
  

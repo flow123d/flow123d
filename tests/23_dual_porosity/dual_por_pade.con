@@ -26,6 +26,8 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
+      balance = true,
+
       solver = { 
         TYPE = "Petsc",
         a_tol = 1e-7 
@@ -71,13 +73,16 @@
         scheme_tolerance = 0.0,
         
         reaction_mobile = {
-          TYPE="PadeApproximant",
-          nom_pol_deg = 3,
-          den_pol_deg = 3,
+          TYPE="RadioactiveDecay",
+          ode_solver = {
+            TYPE="PadeApproximant",
+            nom_pol_deg = 3,
+            den_pol_deg = 3
+          },
       
           decays = [
             {
-              parent = "A",
+              radionuclide = "A",
               half_life = 1.3863,
               products = [ "B" ]
             }
@@ -87,8 +92,10 @@
         reaction_immobile = {
           REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
         }
+      },
+      balance = {
+        cumulative = true
       }
-          
     } 
   }, 
   

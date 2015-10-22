@@ -4,12 +4,15 @@
 #include "coupling/equation.hh"
 
 #include <limits>
-#include "io/output_data.hh"
-#include "flow/darcy_flow_mh.hh"
+
+#include "io/output_time.hh"
+//#include "flow/darcy_flow_mh.hh"
 #include "flow/mh_dofhandler.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
-#include "transport/mass_balance.hh"
+#include "fields/field_set.hh"
+#include "transport/substance.hh"
+#include "transport/advection_process_base.hh"
 
 
 /// external types:
@@ -17,36 +20,14 @@ class Mesh;
 class ReactionTerm;
 class ConvectionTransport;
 class Semchem_interface;
+class Balance;
 
 
 
 
 
-class AdvectionProcessBase : public EquationBase, public EquationForMassBalance {
-
-public:
-
-	AdvectionProcessBase(Mesh &mesh, const Input::Record in_rec) : EquationBase(mesh, in_rec) {};
-
-    /**
-     * This method takes sequential PETSc vector of side velocities and update
-     * transport matrix. The ordering is same as ordering of sides in the mesh.
-     * We just keep the pointer, but do not destroy the object.
-     *
-     * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
-     */
-    virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
-
-    virtual unsigned int n_substances() = 0;
-
-    virtual vector<string> &substance_names() = 0;
 
 
-	/// Common specification of the input record for secondary equations.
-    static Input::Type::AbstractRecord input_type;
-
-
-};
 
 
 
@@ -82,12 +63,6 @@ public:
 
 	};
 
-    /**
-     * Specification of the output record. Need not to be used by all transport models, but they should
-     * allow output of similar fields.
-     */
-    static Input::Type::Record input_type_output_record;
-
     TransportBase(Mesh &mesh, const Input::Record in_rec);
     virtual ~TransportBase();
 
@@ -95,16 +70,12 @@ public:
     	mh_dh=&dh;
     }
 
-    /**
-     * Getter for mass balance class
-     */
-    MassBalance *mass_balance() { return mass_balance_; }
 
     /// Returns number of trnasported substances.
     inline unsigned int n_substances() override { return n_subst_; }
 
     /// Returns reference to the vector of substnace names.
-    inline vector<string> &substance_names() override { return subst_names_; }
+    inline SubstanceList &substances() override { return substances_; }
 
     virtual void set_concentration_vector(Vec &vec){};
 
@@ -117,8 +88,8 @@ protected:
     /// Number of transported substances.
     unsigned int n_subst_;
 
-    /// Names of transported substances.
-    std::vector<string> subst_names_;
+    /// Transported substances.
+    SubstanceList substances_;
 
     /**
      * Temporary solution how to pass velocity field form the flow model.
@@ -127,8 +98,8 @@ protected:
      */
     const MH_DofHandler *mh_dh;
 
-    /// object for calculation and writing the mass balance to file.
-    MassBalance *mass_balance_;
+    /// (new) object for calculation and writing the mass balance to file.
+    boost::shared_ptr<Balance> balance_;
 };
 
 
@@ -151,12 +122,6 @@ public:
 
     inline virtual void output_data() override {};
 
-    TimeIntegrationScheme time_scheme() override { return none; }
-
-private:
-
-    inline void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) override {};
-    inline void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) override {};
 
 };
 
@@ -175,7 +140,6 @@ private:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
      *
@@ -183,10 +147,10 @@ public:
      * (e.g. allow coupling TranportDG with reactions even if it is not good idea for numerical reasons.)
      * To make this a coupling class we should modify all main input files for transport problems.
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
-    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
+    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec);
     /// Destructor.
     virtual ~TransportOperatorSplitting();
 
@@ -200,22 +164,15 @@ public:
     void output_data() override ;
 
    
-    TimeIntegrationScheme time_scheme() override { return none; }
-
 
 private:
-    /**
-     * Implements the virtual method EquationForMassBalance::calc_fluxes().
-     */
-    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) override;
-    /**
-     * Implements the virtual method EquationForMassBalance::calc_elem_sources().
-     */
-    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) override;
+    /// Registrar of class to factory
+    static const int registrar;
 
     ConvectionTransport *convection;
-    ReactionTerm *reaction;
+    std::shared_ptr<ReactionTerm> reaction;
 
+    double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
     Semchem_interface *Semchem_reactions;
 
 };

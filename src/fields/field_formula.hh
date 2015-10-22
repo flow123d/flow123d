@@ -39,16 +39,14 @@ public:
     FieldFormula(unsigned int n_comp=0);
 
 
-    static Input::Type::Record input_type;
-
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type();
 
     virtual void init_from_input(const Input::Record &rec);
 
     /**
      * For time dependent formulas returns always true. For time independent formulas returns true only for the first time.
      */
-    virtual bool set_time(double time);
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.

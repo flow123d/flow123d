@@ -33,8 +33,8 @@
 
 
 #include <limits>
-#include "time_governor.hh"
-#include "time_marks.hh"
+#include "tools/time_governor.hh"
+#include "tools/time_marks.hh"
 #include "input/accessors.hh"
 
 #include <petscvec.h>
@@ -116,15 +116,6 @@ public:
       else DBGMSG("Method 'initialize' of '%s' is not implemented.\n",typeid(*this).name());      
     }
     
-    /**
-     *  Computation of one time step is split into update_solution() and choose_next_time() in order to allow dependency of the next time step
-     *  on other coupled models.
-     */
-//    virtual void compute_one_step() {
-//        update_solution();
-//        choose_next_time();
-//    }
-
     /**
      * Fix the next discrete time for computation.
      * Can be rewritten in child class to set possible constrains
@@ -226,7 +217,6 @@ protected:
     bool equation_empty_;       ///< flag is true if only default constructor was called
     Mesh * mesh_;
     TimeGovernor *time_;
-    //TimeMark::Type equation_mark_type_;
     Input::Record input_record_;
     
     /**
@@ -236,31 +226,6 @@ protected:
      */
     FieldSet *eq_data_;
 };
-
-
-
-
-
-
-/** OBSOLETE
- * Demonstration of empty equation class, which can be used if user turns off some equation in the model.
- */
-// class EquationNothing : public EquationBase {
-// 
-// public:
-//     EquationNothing(Mesh &mesh);
-// 
-//     void get_solution_vector(double * &vector, unsigned int &size) override
-//     {
-//         vector = NULL;
-//         size = 0;
-//     }
-// 
-//     void get_parallel_solution_vector(Vec &vector) override {};
-// 
-//     virtual ~EquationNothing() {};
-// 
-// };
 
 
 #endif /* EQUATION_HH_ */

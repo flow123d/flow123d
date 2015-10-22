@@ -25,9 +25,12 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = true,
+
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-07
       }
     }, 
     
@@ -48,6 +51,7 @@
       output_stream = {
         REF = "/system/output_streams/1"
       }, 
+      
       substances = [
         "A", 
         "B", 
@@ -61,25 +65,30 @@
       },
       
       reaction_term = {
-        TYPE="LinearReactions",
+        TYPE="RadioactiveDecay",
 
         decays = [
           {
-            parent = "D",
+            radionuclide = "D",
             half_life = 2.5,
             products = [
               "F"
             ]
           },
           {
-            parent = "F",
+            radionuclide = "F",
             half_life = 2.5,
             products = [
               "B"
             ]
           }
         ]
+      },
+
+      balance = {
+        cumulative = true
       }
+
     } 
   }, 
   

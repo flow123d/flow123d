@@ -49,9 +49,11 @@
         }, 
         name = "flow_output_stream"
         },
-        balance_output = "water_balance.out",  
         output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = true,
+
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-07

@@ -45,6 +45,8 @@ using namespace std;
  *
  */
 class OldBcdInput {
+private:
+
 public:
 
 	/**
@@ -61,15 +63,7 @@ public:
 	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
 	typedef FieldElementwise<3, FieldValue<3>::Vector> FieldVector;
 
-	typedef Field<3, FieldValue<3>::Scalar> Field_Scalar;
-	typedef Field<3, FieldValue<3>::Enum> Field_Enum;
-	typedef Field<3, FieldValue<3>::Vector> Field_Vector;
-
-	typedef Field_Scalar::FieldBasePtr FieldBaseScalar;
-	typedef Field_Enum::FieldBasePtr FieldBaseEnum;
-	typedef Field_Vector::FieldBasePtr FieldBaseVector;
-
-    shared_ptr<FieldEnum>	flow_type;
+	shared_ptr<FieldEnum>	flow_type;
     shared_ptr<FieldScalar>  flow_pressure;
     shared_ptr<FieldScalar>  flow_flux;
     shared_ptr<FieldScalar>  flow_sigma;
@@ -77,52 +71,47 @@ public:
 
     static OldBcdInput * instance();
 
-    // hooks
-    static FieldBaseEnum flow_type_hook(Input::Record rec, const FieldCommon &field) {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr=Field_Enum::read_field_descriptor(rec, field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_flow_record(rec, field);
-    		return old_bcd->flow_type;
+
+    /**
+     * Factory class (descendant of @p Field<...>::FactoryBase) that is necessary
+     * for backward compatibility with old BCD input files.
+     */
+    template<int spacedim, class Value>
+    class FieldFactory : public Field<spacedim, Value>::FactoryBase {
+    public:
+
+        typedef FieldElementwise<spacedim, Value> FieldElementwiseType;
+        typedef std::shared_ptr< FieldElementwiseType > FieldPtr;
+
+        /**
+         * Constructor.
+         *
+         * We need pointer to std::shared_ptr. Object stored to shared_ptr
+         * doesn't exist during construction.
+         */
+    	FieldFactory( FieldPtr * field )
+    	: field_(field)
+    	{}
+
+    	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
+			OldBcdInput *old_bcd = OldBcdInput::instance();
+			if (rec.record_type_name() == "DarcyFlowMH_Data") {
+				old_bcd->read_flow_record(rec, field);
+			} else if (rec.record_type_name() == "TransportOperatorSplitting_Data") {
+				old_bcd->read_transport_record(rec, field);
+			}
+			return *field_;
     	}
-    }
-    static FieldBaseScalar flow_pressure_hook(Input::Record rec, const FieldCommon &field) {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr= Field_Scalar::read_field_descriptor(rec, field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_flow_record(rec, field);
-    		return old_bcd->flow_pressure;
-    	}
-    }
-    static FieldBaseScalar flow_flux_hook(Input::Record rec, const FieldCommon &field) {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr = Field_Scalar::read_field_descriptor(rec, field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_flow_record(rec, field);
-    		return old_bcd->flow_flux;
-    	}
-    }
-    static FieldBaseScalar flow_sigma_hook(Input::Record rec, const FieldCommon &field)  {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr = Field_Scalar::read_field_descriptor(rec, field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_flow_record(rec, field);
-    		return old_bcd->flow_sigma;
-    	}
-    }
-    static FieldBaseVector trans_conc_hook(Input::Record rec, const FieldCommon &field)  {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr = Field_Vector::read_field_descriptor(rec,field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_transport_record( rec, field);
-    		return old_bcd->trans_conc;
-    	}
-    }
+
+    	FieldPtr * field_;
+
+    };
+
+    std::shared_ptr< OldBcdInput::FieldFactory<3, FieldValue<3>::Enum> > flow_type_factory;
+    std::shared_ptr< OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> > flow_pressure_factory;
+    std::shared_ptr< OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> > flow_flux_factory;
+    std::shared_ptr< OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> > flow_sigma_factory;
+    std::shared_ptr< OldBcdInput::FieldFactory<3, FieldValue<3>::Vector> > trans_conc_factory;
 
     void read_flow_record(Input::Record rec, const FieldCommon &field) {
     	FilePath bcd_file;
@@ -136,7 +125,6 @@ public:
 
 
     inline void read_transport_record(Input::Record rec, const FieldCommon &field);
-
 
     /**
      * Create flow_* fields from given input file.
@@ -152,13 +140,8 @@ public:
     map<unsigned int, unsigned int> id_2_bcd_;
 
 private:
- /*
-    template <int spacedim, class Value>
-    void set_all( Field<spacedim,Value> &target, const Mesh *mesh);
+    OldBcdInput();
 
-    template <int spacedim, class Value>
-    void set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val);
-*/
     const Mesh *mesh_;
     Region  some_bc_region_;
 
@@ -179,5 +162,6 @@ void OldBcdInput::read_transport_record(Input::Record rec, const FieldCommon &fi
 		transport_input_file_ = string(bcd_file);
 	}
 }
+
 
 #endif /* OLD_BCD_HH_ */

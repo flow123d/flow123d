@@ -51,9 +51,9 @@ using namespace std;
 GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 : tok_(file_name)
 {
+	current_cache_ = new ElementDataCacheBase();
     tok_.set_comment_pattern( "#");
-    last_header.time=-numeric_limits<double>::infinity();
-    last_header.actual=false;
+    make_header_table();
 }
 
 
@@ -61,9 +61,9 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 GmshMeshReader::GmshMeshReader(std::istream &in)
 : tok_(in)
 {
+	current_cache_ = new ElementDataCacheBase();
     tok_.set_comment_pattern( "#");
-    last_header.time=-numeric_limits<double>::infinity();
-    last_header.actual=false;
+    make_header_table();
 }
 
 
@@ -235,8 +235,7 @@ void GmshMeshReader::read_physical_names(Tokenizer &tok, Mesh * mesh) {
             unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
             string name = *tok; ++tok;
 
-            bool boundary =  ( name.size() != 0 && name[0] == '.' );
-            mesh->region_db_.add_region(id, name, dim, boundary);
+            mesh->region_db_.add_region(id, name, dim);
         }
 
     } catch (bad_lexical_cast &) {
@@ -295,6 +294,7 @@ void GmshMeshReader::read_data_header(Tokenizer &tok, GMSH_DataHeader &head) {
             head.n_entities=lexical_cast<unsigned int>(*tok); ++tok;
         }
         for(;n_int>0;n_int--) tok.next_line(false);
+        head.position = tok_.get_position();
     } catch (bad_lexical_cast &) {
                 xprintf(UsrErr, "Wrong format of the $ElementData header, %s.\n", tok.position_msg().c_str());
     }
@@ -302,96 +302,164 @@ void GmshMeshReader::read_data_header(Tokenizer &tok, GMSH_DataHeader &head) {
 
 
 
-void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
-        double *data, std::vector<int> const & el_ids)
+template<typename T>
+typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data( GMSH_DataHeader &search_header,
+		std::vector<int> const & el_ids, unsigned int component_idx)
 {
-
     using namespace boost;
 
-    unsigned int id, idx, n_read;
-    vector<int>::const_iterator id_iter;
-    double * data_ptr;
+    GMSH_DataHeader actual_header = find_header(search_header.time, search_header.field_name);
+    if ( !current_cache_->is_actual(actual_header.time, search_header.field_name) ) {
 
-    while ( last_header.time <= search_header.time*(1.0 + 2.0*numeric_limits<double>::epsilon()) ) {
-        // @p data buffer is not actual anymore
+	    unsigned int id, idx, i_row;
+	    unsigned int n_read = 0;
+    	unsigned int size_of_cache; // count of vectors stored in cache
+	    vector<int>::const_iterator id_iter = el_ids.begin();
 
-        if (last_header.actual) {
-            // read @p data buffer as we have correct header with already passed time
-            // we assume that @p data buffer is big enough
+	    // check that the header is valid, try to correct
+	    if (actual_header.n_entities != search_header.n_entities) {
+	        xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of entities: %d, using %d instead.\n",
+	                tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, actual_header.n_entities, search_header.n_entities);
+	        // actual_header.n_entities=search_header.n_entities;
+	    }
 
-            n_read = 0;
-            id_iter=el_ids.begin();
-            unsigned int i_row;
-            for (i_row = 0; i_row < last_header.n_entities; ++i_row)
-                try {
-                    tok_.next_line();
-//                    DBGMSG("data line: %d %d '%s'\n", i_row, last_header.n_entities, tok_.line().c_str());
-                    id = lexical_cast<unsigned int>(*tok_); ++tok_;
-                    while (id_iter != el_ids.end() && *id_iter < (int)id) {
-//                        DBGMSG("get id: %u %d\n", id, *id_iter);
-                        ++id_iter; // skip initialization of some rows in data if ID is missing
-                    }
-                    if (id_iter == el_ids.end()) {
-                        xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is not in order. Skipping rest of data.\n",
-                                tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, id);
-                        break;
-                    }
-                    // save data from the line if ID was found
-                    if (*id_iter == (int)id) {
-                        idx = id_iter - el_ids.begin();
-                        data_ptr = data + idx * search_header.n_components;
-                        for (unsigned int i_col =0; i_col < search_header.n_components; ++i_col, ++data_ptr) {
-                            *(data_ptr) = lexical_cast<double>(*tok_); ++tok_;
-                        }
-                        n_read++;
-                    }
-                    // skip the line if ID on the line  < actual ID in the map el_ids
-                } catch (bad_lexical_cast &) {
-                    xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
-                }
-            // possibly skip remaining lines after break
-            while (i_row < last_header.n_entities) tok_.next_line(false), ++i_row;
+	    if (search_header.n_components == 1) {
+	    	// read for MultiField to 'n_comp' vectors
+	    	// or for Field if ElementData contains only one value
+	    	size_of_cache = actual_header.n_components;
+	    }
+	    else {
+	    	// read for Field if more values is stored to one vector
+	    	size_of_cache = 1;
+	    	if (actual_header.n_components != search_header.n_components) {
+		        xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of components: %d, using %d instead.\n",
+		                tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, actual_header.n_components, search_header.n_components);
+		        actual_header.n_components=search_header.n_components;
+	    	}
+	    }
 
-            xprintf(Msg, "time: %f; %d entities of field %s read.\n",
-                    last_header.time, n_read, last_header.field_name.c_str());
+	    // create vector of shared_ptr for cache
+	    typename ElementDataCache<T>::CacheData data_cache(size_of_cache);
+	    for (unsigned int i=0; i<size_of_cache; ++i) {
+			typename ElementDataCache<T>::ComponentDataPtr row_vec = std::make_shared<std::vector<T>>();
+			row_vec->resize(search_header.n_components*search_header.n_entities);
+			data_cache[i] = row_vec;
+	    }
 
-            search_header.actual = true; // use input header to indicate modification of @p data buffer
-        }
+	    // read @p data buffer as we have correct header with already passed time
+	    // we assume that @p data buffer is big enough
+	    tok_.set_position(actual_header.position);
 
-        // find next the data section of corresponding field name
-        last_header.field_name="";
-        while (! tok_.eof() && last_header.field_name != search_header.field_name) {
-            if ( tok_.skip_to("$ElementData") )
-                read_data_header(tok_, last_header);
-        }
+	    // read data
+	    for (i_row = 0; i_row < actual_header.n_entities; ++i_row)
+	        try {
+	            tok_.next_line();
+	            id = lexical_cast<unsigned int>(*tok_); ++tok_;
+	            //skip_element = false;
+	            while (id_iter != el_ids.end() && *id_iter < (int)id) {
+	                ++id_iter; // skip initialization of some rows in data if ID is missing
+	            }
+	            if (id_iter == el_ids.end()) {
+	                xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is not in order. Skipping rest of data.\n",
+	                        tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, id);
+	                break;
+	            }
+	            // save data from the line if ID was found
+	            if (*id_iter == (int)id) {
+	            	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
+	            		idx = (id_iter - el_ids.begin()) * search_header.n_components;
+	            		std::vector<T> &vec = *( data_cache[i_vec].get() );
+	            		for (unsigned int i_col=0; i_col < search_header.n_components; ++i_col, ++idx) {
+	            			vec[idx] = lexical_cast<T>(*tok_);
+	            			++tok_;
+	            		}
+	            	}
+	                n_read++;
+	            }
+	            // skip the line if ID on the line  < actual ID in the map el_ids
+	        } catch (bad_lexical_cast &) {
+	            xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
+	        }
+	    // possibly skip remaining lines after break
+	    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
 
-        if (tok_.eof()) {
-            if (! last_header.actual) {
-                // first call of the method, no data read
-                xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s'.\n",
-                        tok_.f_name().c_str(), search_header.field_name.c_str());
-                return;
-            } else {
-                // mark data as actual until inf
-                last_header.time=numeric_limits<double>::infinity(); //
-                return;
-            }
-        } else {
-            // check that the header is valid, try to correct
-            if (last_header.n_components != search_header.n_components) {
-                xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of components: %d, using %d instead.\n",
-                        tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, last_header.n_components, search_header.n_components);
-                last_header.n_components=search_header.n_components;
-            }
-            if (last_header.n_entities != search_header.n_entities) {
-                xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of entities: %d, using %d instead.\n",
-                        tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, last_header.n_entities, search_header.n_entities);
-                // last_header.n_entities=search_header.n_entities;
-            }
+    xprintf(MsgLog, "time: %f; %d entities of field %s read.\n",
+	    		actual_header.time, n_read, actual_header.field_name.c_str());
 
-        }
-        last_header.actual=true;
+	    search_header.actual = true; // use input header to indicate modification of @p data buffer
 
-    } // time loop
+	    // set new cache
+	    delete current_cache_;
+	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, data_cache);
+	}
+
+    if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
+	return static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(component_idx);
 }
 
+
+
+void GmshMeshReader::make_header_table()
+{
+	header_table_.clear();
+	GMSH_DataHeader header;
+	while ( !tok_.eof() ) {
+        if ( tok_.skip_to("$ElementData") ) {
+            read_data_header(tok_, header);
+            HeaderTable::iterator it = header_table_.find(header.field_name);
+
+            if (it == header_table_.end()) {  // field doesn't exists, insert new vector to map
+            	std::vector<GMSH_DataHeader> vec;
+            	vec.push_back(header);
+            	header_table_[header.field_name]=vec;
+            } else if ( header.time <= it->second.back().time ) { // time is in wrong order. can't be add
+            	xprintf(Warn,
+            		"Wrong time order: field '%s', time '%d', file '%s'. Skipping this '$ElementData' section.\n",
+            		header.field_name.c_str(), header.time, tok_.f_name().c_str() );
+            } else {  // add new time step
+            	it->second.push_back(header);
+            }
+        }
+	}
+
+	tok_.set_position( Tokenizer::Position() );
+}
+
+
+
+GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_name)
+{
+	HeaderTable::iterator table_it = header_table_.find(field_name);
+
+	if (table_it == header_table_.end()) {
+		// no data found
+        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_GMSHFile(tok_.f_name()));
+	}
+
+	auto comp = [](double t, const GMSH_DataHeader &a) {
+		return t * (1.0 + 2.0*numeric_limits<double>::epsilon()) < a.time;
+	};
+
+	std::vector<GMSH_DataHeader>::iterator headers_it = std::upper_bound(table_it->second.begin(),
+			table_it->second.end(),
+			time,
+			comp);
+
+	if (headers_it == table_it->second.begin()) {
+		THROW( ExcFieldNameNotFound() << EI_FieldName(field_name)
+				                      << EI_GMSHFile(tok_.f_name()) << EI_Time(time));
+	}
+
+	--headers_it;
+	return *headers_it;
+}
+
+
+// explicit instantiation of template methods
+#define READER_GET_ELEMENT_DATA(TYPE) \
+template typename ElementDataCache<TYPE>::ComponentDataPtr GmshMeshReader::get_element_data<TYPE>(GMSH_DataHeader &search_header, \
+	std::vector<int> const & el_ids, unsigned int component_idx)
+
+READER_GET_ELEMENT_DATA(int);
+READER_GET_ELEMENT_DATA(unsigned int);
+READER_GET_ELEMENT_DATA(double);

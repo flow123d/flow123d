@@ -16,34 +16,30 @@
 
 namespace it = Input::Type;
 
-template <int spacedim, class Value>
-it::Record FieldPython<spacedim, Value>::input_type= get_input_type( FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
+FLOW123D_FORCE_LINK_IN_CHILD(field_python)
 
 
 
 template <int spacedim, class Value>
-Input::Type::Record FieldPython<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 {
-    it::Record type
-    = it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
-    .derive_from(a_type)
-    .declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
-            "Python script given as in place string")
-    .declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
-            "Python script given as external file")
-    .declare_key("function", it::String(), it::Default::obligatory(),
-            "Function in the given script that returns tuple containing components of the return type.\n"
-            "For NxM tensor values: tensor(row,col) = tuple( M*row + col ).");
-
-    return type;
+    return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
+		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
+				"Python script given as in place string")
+		.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
+				"Python script given as external file")
+		.declare_key("function", it::String(), it::Default::obligatory(),
+				"Function in the given script that returns tuple containing components of the return type.\n"
+				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+		.close();
 }
 
 
 template <int spacedim, class Value>
 const int FieldPython<spacedim, Value>::registrar =
-		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython");
+		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython") +
+		FieldPython<spacedim, Value>::get_input_type().size();
 
 
 
@@ -51,14 +47,14 @@ template <int spacedim, class Value>
 FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>( n_comp)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     p_func_=NULL;
     p_module_=NULL;
     p_args_=NULL;
     p_value_=NULL;
 #else
     xprintf(UsrErr, "Flow123d compiled without support for Python, FieldPython can not be used.\n");
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -66,10 +62,10 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_string(const string &python_source, const string &func_name)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, python_source);
     set_func(func_name);
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -93,10 +89,10 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec) {
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_file(const FilePath &file_name, const string &func_name)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     p_module_ = PythonLoader::load_module_from_file( string(file_name) );
     set_func(func_name);
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -105,23 +101,8 @@ void FieldPython<spacedim, Value>::set_python_field_from_file(const FilePath &fi
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(const string &func_name)
 {
-#ifdef HAVE_PYTHON
-    char func_char[func_name.size()+2];
-    std::strcpy(func_char, func_name.c_str());
-    p_func_ = PyObject_GetAttrString(p_module_, func_char );
-    if (! p_func_) {
-        if (PyErr_Occurred()) PyErr_Print();
-        xprintf(UsrErr, "Field '%s' not found in the python module: %s\n", func_name.c_str(), PyModule_GetName(p_module_) );
-        Py_XDECREF(p_func_);
-        Py_XDECREF(p_module_);
-
-    }
-    if (! PyCallable_Check(p_func_)) {
-        xprintf(UsrErr, "Field '%s' from the python module: %s is not callable.\n", func_name.c_str(), PyModule_GetName(p_module_) );
-        Py_XDECREF(p_func_);
-        Py_XDECREF(p_module_);
-
-    }
+#ifdef FLOW123D_HAVE_PYTHON
+	p_func_ = PythonLoader::get_callable(p_module_, func_name);
 
     p_args_ = PyTuple_New( spacedim );
 
@@ -131,15 +112,12 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
         PyTuple_SetItem(p_args_, i, p_value_);
     }
     p_value_ = PyObject_CallObject(p_func_, p_args_);
-
-    if (p_value_ == NULL) {
-        PyErr_Print();
-        // TODO: use cout to output also field arguments
-        xprintf(Err,"Failed to call field '%s' from the python module: %s\n", func_name.c_str(), PyModule_GetName(p_module_) );
-    }
+    PythonLoader::check_error();
 
     if ( ! PyTuple_Check( p_value_)) {
-        xprintf(UsrErr, "Field '%s' from the python module: %s doesn't return Tuple.\n", func_name.c_str(), PyModule_GetName(p_module_) );
+    	stringstream ss;
+    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(p_module_) << " doesn't return Tuple." << endl;
+        THROW( ExcMessage() << EI_Message( ss.str() ));
     }
 
     unsigned int size = PyTuple_Size( p_value_);
@@ -150,7 +128,7 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
                 ,func_name.c_str(), PyModule_GetName(p_module_), size, value_size);
     }
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 
 }
 
@@ -188,17 +166,13 @@ void FieldPython<spacedim, Value>::value_list (const std::vector< Point >  &poin
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     for(unsigned int i = 0; i < spacedim; i++) {
         p_value_ = PyFloat_FromDouble( p[i] );
         PyTuple_SetItem(p_args_, i, p_value_);
     }
     p_value_ = PyObject_CallObject(p_func_, p_args_);
-
-    if (p_value_ == NULL) {
-        PyErr_Print();
-        xprintf(Err,"FieldPython call failed\n");
-    }
+    PythonLoader::check_error();
 
     unsigned int pos =0;
     for(unsigned int row=0; row < value.n_rows(); row++)
@@ -206,7 +180,7 @@ void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccess
             if ( boost::is_integral< typename Value::element_type >::value ) value(row,col) = PyLong_AsLong( PyTuple_GetItem( p_value_, pos ) );
             else value(row,col) = PyFloat_AsDouble( PyTuple_GetItem( p_value_, pos ) );
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -214,12 +188,12 @@ void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccess
 
 template <int spacedim, class Value>
 FieldPython<spacedim, Value>::~FieldPython() {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     Py_CLEAR(p_module_);
     Py_CLEAR(p_func_);
     Py_CLEAR(p_value_);
     Py_CLEAR(p_args_);
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 

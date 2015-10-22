@@ -21,19 +21,23 @@
 
 #include <vector>
 #include <string>
+#include <memory>
+#include <cstdint>
 #include <boost/type_traits.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/static_assert.hpp>
-#include <boost/shared_ptr.hpp>
+//#include <boost/shared_ptr.hpp>
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
 
-#include "input/input_type.hh"
+#include "input/type_base.hh"
+#include "input/type_selection.hh"
+#include "input/type_record.hh"
 #include "input/factory.hh"
 #include "input/storage.hh"
 
-
+#include "input/input_exception.hh"
 
 
 
@@ -44,57 +48,6 @@ namespace Input {
 using std::string;
 
 
-/**
- * @brief Base of exceptions due to user input.
- *
- * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
- * not by an internal error.
- *
- * @ingroup exceptions
- */
-class Exception : public virtual ExceptionBase
-{
-public:
-    const char * what () const throw ();
-    virtual ~Exception() throw () {};
-};
-
-
-/**
- *  Declaration of error info class for passing Input::Address through exceptions.
- *  Is returned by input accessors : Input::Record, Input::Array, etc.
- *
- *  TODO: if Address class is persistent (every copy is self contented, we can use Address instead of std::string.
- *  see also ei_address methods.
- */
-TYPEDEF_ERR_INFO( EI_Address, const std::string);
-
-
-/**
- * @brief Macro for simple definition of input exceptions.
- *
- * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
- * @p InputException. Meant to be used for exceptions due to wrong input from user.
- *
- * @ingroup exceptions
- */
-#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
-struct ExcName : public virtual ::Input::Exception {                          \
-     virtual void print_info(std::ostringstream &out) const {                 \
-         using namespace internal;                                            \
-         ::internal::ExcStream estream(out, *this);                           \
-         estream Format														  \
-      	  	  	  << "\nAt input address: " 			   					\
-      	  	  	  << ::Input::EI_Address::val; 								\
-      	 out << std::endl;													\
-     }                                                                      \
-     virtual ~ExcName() throw () {}                                         \
-}
-
-/**
- * Simple input exception that accepts just string message.
- */
-DECLARE_INPUT_EXCEPTION(ExcInputMessage, << EI_Message::val );
 
 
 
@@ -148,12 +101,23 @@ private:
     int val_;
 };
 
+class FullEnum {
+public:
+    FullEnum() : val_(0) {}
+    FullEnum(int v, Input::Type::Selection sel) :val_(v), sel_(sel) { this->sel_ = sel; }
+    operator int() const {return this->val_;}
+    operator unsigned int() const {return this->val_;}
+    operator string() const {return this->sel_.int_to_name(this->val_); }
+private:
+    int val_;
+    Input::Type::Selection sel_;
+};
 
 // Forward declaration
 class IteratorBase;
 template <class T> class Iterator;
 
-class JSONToStorage;
+class ReaderToStorage;
 
 /**
  * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
@@ -234,7 +198,7 @@ public:
      * Dive deeper in the storage tree following index @p idx. Assumes that actual node
      * is an StorageArray, has to be asserted.
      */
-    const Address * down(unsigned int idx) const;
+    std::shared_ptr<Address> down(unsigned int idx) const;
 
     /**
      * Getter. Returns actual storage node.
@@ -393,6 +357,11 @@ public:
      */
     string address_string() const;
 
+    /**
+     * Get name of record_type_
+     */
+    string record_type_name();
+
 
 
 protected:
@@ -400,10 +369,11 @@ protected:
      * Set address (currently necessary for creating root accessor)
      */
     void set_address(const Address &address);
-    friend class JSONToStorage;
+    friend class ReaderToStorage;
 
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
+    friend class AbstractRecord;
 
     /// Contains address and relationships with record ancestor
     Address address_;
@@ -472,6 +442,18 @@ public:
      * Get address as string.
      */
     string address_string() const;
+
+    /**
+     * Transpose storage of target record.
+     *
+     * Replace part representing MultiField in source AbstractRecord with Array of individual items.
+     * *this is source AbstractRecord, target_rec.val(target_key) is Array of target records.
+     *
+     * @param target_rec parent record of MutliField
+     * @param target_key replaced key
+     * @param vec_size size of MultiField data and target Array
+     */
+    void transpose_to(Input::Record &target_rec, string target_key, unsigned int vec_size);
 
 
     /**
@@ -628,37 +610,12 @@ private:
 
 namespace internal {
 
-/**
- *  This is primary type dispatch template. For given type it defines type that will be read from the storage.
- *  i.e. short int, char, and int are all translated to int.
- *
- *  TODO: us boost type traits to have this dispatch complete.
- *  following could work, but then the second dispatch do not work and probably has to be
- *  also implemented by mpl. The problem is, that TD<short int>::OT is not 'int', but unprocessed
- *  mpl construct. I don't know how to force compiler to process it before using it for the second dispatch.
- *
- @code
-    template<class T>
-    struct TD {
-        typedef typename
-                boost::mpl::if_< boost::is_integral<T>, int,
-                    boost::mpl::if_< boost::is_floating_point<T>, double,
-                        T
-                    >
-                >::type OT;
-    };
-  @endcode
-  */
-    template<class T>
-    struct TD {
-        typedef T OT;
-    };
     /**
-     * Secondary type dispatch. For every intermediate C++ type that can be read from input we have to define
+     * Primary type dispatch. For every intermediate C++ type that can be read from input we have to define
      * read function from a given storage and Input type i.e. descendant of Input::Type::TypeBase.
      */
 
-    template<class T>
+    template<class T, class Enable = void>
     struct TypeDispatch;
 } // close namespace internal
 
@@ -723,7 +680,7 @@ template <class T>
 class Iterator : public IteratorBase {
 public:
     /// Converts C++ type @p T (template parameter) to 'DispatchType' from smaller set of types.
-    typedef typename internal::TD<T>::OT DispatchType;
+    typedef T DispatchType;
     /**
      * For small set of C++ types and accessor classes Record, AbstractRecord, and Array,
      * returns type of value given by dereference of the iterator (just add const to C++ types).
@@ -796,24 +753,18 @@ private:
 namespace internal {
 
 /**
- *  Template specializations for primary type dispatch.
- */
-template<> struct TD<short int> { typedef int OT; };
-template<> struct TD<unsigned short int> { typedef int OT; };
-template<> struct TD<unsigned int> { typedef int OT; };
-template<> struct TD<char> { typedef int OT; };
-template<> struct TD<float> { typedef double OT; };
-
-/**
- *  Template specializations for secondary type dispatch.
+ *  Template specializations for type dispatch.
  */
 
-// generic implementation accepts only enum types
-template< class T>
+// Generic implementation can't be accepted.
+template< class T, class Enable >
 struct TypeDispatch {
-    BOOST_STATIC_ASSERT( ( boost::is_enum<T>::value || boost::is_same<T, Enum>::value ) );
-    //BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
+    class some_nonexisting_type;
+    static_assert( std::is_same<T, some_nonexisting_type>::value, "Wrong TypeDispatch type.");
+};
 
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_enum<T> >::type> {
     typedef T TmpType;
 
     typedef Input::Type::Selection InputType;
@@ -821,13 +772,37 @@ struct TypeDispatch {
     static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
 };
 
+template<>
+struct TypeDispatch<Enum> {
+    typedef Enum TmpType;
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+};
 
 template<>
-struct TypeDispatch<int> {
+struct TypeDispatch<FullEnum> {
+    typedef FullEnum TmpType;
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType &t) { return ReadType( a.storage_head()->get_int(), t ); }
+};
+
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_integral<T> >::type> {
     typedef Input::Type::Integer InputType;
     typedef const int ReadType;
     typedef int TmpType;
-    static inline ReadType value(const Address &a, const InputType&) { return a.storage_head()->get_int(); }
+    static inline ReadType value(const Address &a, const InputType&t) {
+    	std::int64_t val = a.storage_head()->get_int();
+    	if (val >= std::numeric_limits<T>::min() &&
+				val <= std::numeric_limits<T>::max() ) {
+        	return val;
+    	} else {
+    		THROW( ExcInputMessage()
+    				<< EI_Message("Error in input file at address " + a.make_full_address() + ".\nValue out of bounds.") );
+    	}
+    }
 };
 
 template<>
@@ -838,8 +813,8 @@ struct TypeDispatch<bool> {
     static inline ReadType value(const Address &a, const InputType&) { return a.storage_head()->get_bool(); }
 };
 
-template<>
-struct TypeDispatch<double> {
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_float<T> >::type> {
     typedef Input::Type::Double InputType;
     typedef const double ReadType;
     typedef int TmpType;

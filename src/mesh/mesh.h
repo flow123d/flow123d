@@ -42,16 +42,18 @@
 #include "mesh/neighbours.h"
 #include "mesh/boundaries.h"
 #include "mesh/intersection.hh"
+#include "mesh/partitioning.hh"
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "boost/shared_ptr.hpp"
+#include "system/exceptions.hh"
 
 // Forward declarations
 template <int spacedim>
 class ElementAccessor;
 class GmshMeshReader;
-class Partitioning;
+
 
 
 #define ELM  0
@@ -107,8 +109,19 @@ public:
 
 class Mesh {
 public:
+    TYPEDEF_ERR_INFO( EI_ElemLast, int);
+    TYPEDEF_ERR_INFO( EI_ElemNew, int);
+    TYPEDEF_ERR_INFO( EI_RegLast, std::string);
+    TYPEDEF_ERR_INFO( EI_RegNew, std::string);
+    DECLARE_EXCEPTION(ExcDuplicateBoundary,
+            << "Duplicate boundary elements! \n"
+            << "Element id: " << EI_ElemLast::val << " on region name: " << EI_RegLast::val << "\n"
+            << "Element id: " << EI_ElemNew::val << " on region name: " << EI_RegNew::val << "\n");
+
+
+
     static const unsigned int undef_idx=-1;
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
 
 
@@ -130,6 +143,9 @@ public:
      */
     void reinit(Input::Record in_record);
 
+    /// Destructor.
+    ~Mesh();
+
     inline unsigned int n_nodes() const {
         return node_vector.size();
     }
@@ -145,6 +161,9 @@ public:
     inline unsigned int n_edges() const {
         return edges.size();
     }
+
+    unsigned int n_corners();
+
     inline const RegionDB &region_db() const {
         return region_db_;
     }
@@ -232,7 +251,6 @@ public:
      * Vector of compatible neighbourings.
      */
     vector<Neighbour> vb_neighbours_;
-    //int n_materials; // # of materials
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
@@ -303,7 +321,6 @@ protected:
 
 
     void element_to_neigh_vb();
-    void create_external_boundary();
 
     void count_element_types();
     void count_side_types();
@@ -413,8 +430,6 @@ for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \
 
 #define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
 #define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
-
-//int *max_entry();
 
 
 #endif

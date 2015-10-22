@@ -34,15 +34,27 @@
 #include "petscvec.h"
 #include "petscksp.h"
 #include "petscmat.h"
+#include "system/sys_profiler.hh"
 
-#include <boost/bind.hpp>
+
+//#include <boost/bind.hpp>
 
 namespace it = Input::Type;
 
-it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
-    .derive_from(LinSys::input_type)
-    .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"), "Absolute residual tolerance.")
-    .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
+const it::Record & LinSys_PETSC::get_input_type() {
+	return it::Record("Petsc", "Solver setting.")
+		.derive_from(LinSys::get_input_type())
+		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
+					"Relative residual tolerance (to initial error).")
+		.declare_key("max_it", it::Integer(0), it::Default("10000"),
+					"Maximum number of outer iterations of the linear solver.")
+		.declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"), "Absolute residual tolerance.")
+		.declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.")
+		.close();
+}
+
+
+const int LinSys_PETSC::registrar = LinSys_PETSC::get_input_type().size();
 
 
 LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
@@ -50,9 +62,6 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
           init_guess_nonzero(false),
           matrix_(0)
 {
-    // set type
-    //type = LinSys::PETSC;
-
     // create PETSC vectors:
     PetscErrorCode ierr;
     // rhs
@@ -303,7 +312,6 @@ int LinSys_PETSC::solve()
     KSPConvergedReason reason;
 
     const char *petsc_dflt_opt;
-    //const char *petsc_str;
     int nits;
     
     // -mat_no_inode ... inodes are usefull only for
@@ -311,26 +319,24 @@ int LinSys_PETSC::solve()
     if (rows_ds_->np() > 1) {
         // parallel setting
        if (this->is_positive_definite())
+           //petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
            petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
-           //petsc_dflt_opt="-ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps -mat_mumps_sym 1";
-           // -ksp_type preonly -pc_type lu 
        else
-           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3";
+           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
     
     } 
     else {
         // serial setting
        if (this->is_positive_definite())
-           petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
+           //petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+    	   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
        else
-           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite";
+           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     }
 
     if (params_ == "") params_ = petsc_dflt_opt;
-    //petsc_str = params.c_str();
     xprintf(MsgLog,"inserting petsc options: %s\n",params_.c_str());
     PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
-    //xfree(petsc_str);
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
@@ -338,10 +344,6 @@ int LinSys_PETSC::solve()
     KSPSetOperators(system, matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
-    //double solver_accurany = OptGetDbl("Solver","Solver_accurancy","1.0e-7");
-    //double r_tol           = OptGetDbl("Solver", "r_tol", "-1" );
-    //if (r_tol < 0) r_tol=solver_accuracy;
-    //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
     KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
     KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero
@@ -355,10 +357,14 @@ int LinSys_PETSC::solve()
     		KSPSetInitialGuessNonzero(system, PETSC_TRUE);
     }
 
-    KSPSolve(system, rhs_, solution_ );
-    KSPGetConvergedReason(system,&reason);
-    KSPGetIterationNumber(system,&nits);
-
+    {
+		START_TIMER("PETSC linear solver");
+		START_TIMER("PETSC linear iteration");
+		KSPSolve(system, rhs_, solution_ );
+		KSPGetConvergedReason(system,&reason);
+		KSPGetIterationNumber(system,&nits);
+		ADD_CALLS(nits);
+    }
     // substitute by PETSc call for residual
     VecNorm(rhs_, NORM_2, &residual_norm_);
     
@@ -374,13 +380,6 @@ int LinSys_PETSC::solve()
 
     return static_cast<int>(reason);
 
-}
-
-void LinSys_PETSC::get_whole_solution( std::vector<double> & globalSolution )
-{
-    this -> gatherSolution_( );
-    globalSolution.resize( globalSolution_.size( ) );
-    std::copy( globalSolution_.begin(), globalSolution_.end(), globalSolution.begin() );
 }
 
 void LinSys_PETSC::view( )
@@ -418,48 +417,6 @@ LinSys_PETSC::~LinSys_PETSC( )
 
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
-
-void LinSys_PETSC::gatherSolution_( )
-{
-    // unsigned
-    unsigned globalSize = rows_ds_->size( );
-
-    // create a large local solution vector for gathering 
-    PetscErrorCode ierr;
-    Vec solutionGathered;              //!< large vector of global solution stored locally
-    //ierr = VecCreateSeq( PETSC_COMM_SELF, globalSize, &solutionGathered ); CHKERRV( ierr );
-
-    // prepare gathering scatter
-    VecScatter VSdistToLarge;          //!< scatter for gathering local parts into large vector
-    ierr = VecScatterCreateToAll( solution_, &VSdistToLarge, &solutionGathered ); CHKERRV( ierr );
-    //ierr = VecScatterCreate( solution_, PETSC_NULL, solutionGathered, PETSC_NULL, &VSdistToLarge ); CHKERRV( ierr ); 
-
-    // get global solution vector at each process
-    ierr = VecScatterBegin( VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr );
-    ierr = VecScatterEnd(   VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr );
-
-    // extract array of global solution for copy
-    PetscScalar *solutionGatheredArray;
-    ierr = VecGetArray( solutionGathered, &solutionGatheredArray );
-
-    // copy the result to calling routine
-    //std::transform( &(solutionGatheredArray[0]), &(solutionGatheredArray[ globalSize ]), sol_disordered.begin( ), 
-    //                LinSys_PETSC::PetscScalar2Double_( ) ) ;
-
-    //reorder solution
-    globalSolution_.resize( globalSize );
-    for ( unsigned int i = 0; i < globalSize; i++ ) {
-        globalSolution_[i] = static_cast<double>( solutionGatheredArray[i] );
-    }
-
-    // release array
-    ierr = VecRestoreArray( solutionGathered, &solutionGatheredArray );
-
-    // destroy PETSc objects
-    ierr = VecDestroy( &solutionGathered );     CHKERRV( ierr );
-    ierr = VecScatterDestroy( &VSdistToLarge ); CHKERRV( ierr );
-}
-
 
 void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 {

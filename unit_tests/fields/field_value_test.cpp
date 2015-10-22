@@ -31,45 +31,6 @@ TEST(FieldValue_, all) {
 }
 
 
-/**
- * Speed results:
- * debug (-g -O0 -NODEBUG) (100 M steps):
- * interface: 1747ms
- * direct   :  361ms
- *
- * optimized -O3 (100 M steps):
- * interface: 123ms
- * direct   : 121ms
- */
-
-#define STEPS (100*1000*1000)
-
-TEST(FieldValue_, speed_test_interface) {
-
-    typedef FieldValue_<1,1, double> T;
-   double r_val;
-
-
-   for(int step=0;step < STEPS; step++) {
-       T val(r_val);
-
-       for(unsigned int row=0;row< val.n_cols(); ++row)
-           for(unsigned int col=0;col< val.n_rows(); ++col)
-               val(row,col)+=step;
-   }
-   cout << r_val << endl;
-}
-
-TEST(FieldValue_, speed_test_direct) {
-
-   double val;
-
-   for(int step=0;step < STEPS; step++) {
-       val+=step;
-   }
-   cout << val << endl;
-}
-
 TEST(FieldValue_, construction_from_raw) {
 
     double raw_data[6]={1,2,3,4,5,6};
@@ -164,40 +125,56 @@ double_fix_tensor_cdiag=1.3
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
+
+
+template <class Value>
+Input::Type::TypeBase::MakeInstanceReturnType get_instance(const Input::Type::Selection *sel = NULL) {
+	std::vector<Input::Type::TypeBase::ParameterPair> param_vec;
+	if (sel) {
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<Input::Type::Selection>(*sel)) );
+	} else {
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
+	}
+
+	static auto value_type = Value::get_input_type();
+	return value_type.make_instance(param_vec);
+}
+
 
 TEST(FieldValue_, init_from_input) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    Input::Type::Selection aux_sel("AuxSel");
-    aux_sel.add_value(0,"zero","");
-    aux_sel.add_value(1,"one","");
+    Input::Type::Selection aux_sel = Input::Type::Selection("AuxSel")
+    	.add_value(0,"zero","")
+    	.add_value(1,"one","")
+		.close();
 
-    Input::Type::Record  rec_type("FieldValueTest","");
-    rec_type.declare_key("double_scalar",FieldValue_<1,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("int_scalar",FieldValue_<1,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("enum_scalar",aux_sel, Input::Type::Default::obligatory(),"" );
+    Input::Type::Record rec_type = Input::Type::Record("FieldValueTest","")
+    	.declare_key("double_scalar",get_instance< FieldValue_<1,1,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("int_scalar",get_instance< FieldValue_<1,1,int> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("enum_scalar",aux_sel, Input::Type::Default::obligatory(),"" )
 
-    rec_type.declare_key("double_fix_vector_full",FieldValue_<3,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("int_fix_vector_full",FieldValue_<3,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_fix_vector_const",FieldValue_<3,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("int_fix_vector_const",FieldValue_<3,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    	.declare_key("double_fix_vector_full",get_instance< FieldValue_<3,1,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("int_fix_vector_full",get_instance< FieldValue_<3,1,int> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_vector_const",get_instance< FieldValue_<3,1,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("int_fix_vector_const",get_instance< FieldValue_<3,1,int> >().first, Input::Type::Default::obligatory(),"" )
 
-    rec_type.declare_key("double_vector_full",FieldValue_<0,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("int_vector_full",FieldValue_<0,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("enum_vector_full",FieldValue_<0,1,FieldEnum>::get_input_type(&aux_sel), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_vector_const",FieldValue_<0,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("int_vector_const",FieldValue_<0,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    	.declare_key("double_vector_full",get_instance< FieldValue_<0,1,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("int_vector_full",get_instance< FieldValue_<0,1,int> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("enum_vector_full",get_instance< FieldValue_<0,1,FieldEnum> >(&aux_sel).first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_vector_const",get_instance< FieldValue_<0,1,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("int_vector_const",get_instance< FieldValue_<0,1,int> >().first, Input::Type::Default::obligatory(),"" )
 
-    rec_type.declare_key("double_fix_tensor_full",FieldValue_<2,3,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_fix_tensor_symm",FieldValue_<2,2,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_fix_tensor_diag",FieldValue_<2,2,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_fix_tensor_cdiag",FieldValue_<2,2,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    	.declare_key("double_fix_tensor_full",get_instance< FieldValue_<2,3,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_symm",get_instance< FieldValue_<2,2,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_diag",get_instance< FieldValue_<2,2,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_cdiag",get_instance< FieldValue_<2,2,double> >().first, Input::Type::Default::obligatory(),"" )
 
-    rec_type.finish();
+    	.close();
 
     // read input string
-    Input::JSONToStorage reader( input, rec_type );
+    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 
@@ -316,24 +293,24 @@ TEST(FieldValue_, string_values_init_from_input) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Type::Record  rec_type("FieldValueTest","");
-    rec_type.declare_key("double_scalar",FieldValue_<1,1,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    Input::Type::Record rec_type = Input::Type::Record("FieldValueTest","")
+		.declare_key("double_scalar",get_instance< FieldValue_<1,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
 
-    rec_type.declare_key("double_fix_vector_full",FieldValue_<3,1,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_fix_vector_const",FieldValue_<3,1,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    	.declare_key("double_fix_vector_full",get_instance< FieldValue_<3,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_vector_const",get_instance< FieldValue_<3,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
 
-    rec_type.declare_key("double_vector_full",FieldValue_<0,1,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_vector_const",FieldValue_<0,1,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    	.declare_key("double_vector_full",get_instance< FieldValue_<0,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_vector_const",get_instance< FieldValue_<0,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
 
-    rec_type.declare_key("double_fix_tensor_full",FieldValue_<2,3,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_fix_tensor_symm",FieldValue_<2,2,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_fix_tensor_diag",FieldValue_<2,2,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("double_fix_tensor_cdiag",FieldValue_<2,2,std::string>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    	.declare_key("double_fix_tensor_full",get_instance< FieldValue_<2,3,std::string> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_symm",get_instance< FieldValue_<2,2,std::string> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_diag",get_instance< FieldValue_<2,2,std::string> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_cdiag",get_instance< FieldValue_<2,2,std::string> >().first, Input::Type::Default::obligatory(),"" )
 
-    rec_type.finish();
+    	.close();
 
     // read input string
-    Input::JSONToStorage reader( formula_input, rec_type );
+    Input::ReaderToStorage reader( formula_input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 

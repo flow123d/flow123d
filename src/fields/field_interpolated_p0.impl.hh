@@ -33,46 +33,36 @@
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
+#include "mesh/reader_instances.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
 #include "system/sys_profiler.hh"
-//#include "boost/lexical_cast.hpp"
-//#include "system/tokenizer.hh"
-//#include "system/xio.h"
 
 
 namespace it = Input::Type;
 
-
-
-template <int spacedim, class Value>
-it::Record FieldInterpolatedP0<spacedim, Value>::input_type
-    = FieldInterpolatedP0<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
+FLOW123D_FORCE_LINK_IN_CHILD(field_interpolated)
 
 
 
 template <int spacedim, class Value>
-Input::Type::Record FieldInterpolatedP0<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type()
 {
-    it::Record type=
-        it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
-        .derive_from(a_type)
+    return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
-                "The values of the Field are read from the $ElementData section with field name given by this key.")
+                "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .close();
-
-    return type;
 }
 
 
 
 template <int spacedim, class Value>
 const int FieldInterpolatedP0<spacedim, Value>::registrar =
-		Input::register_class< FieldInterpolatedP0<spacedim, Value>, unsigned int >("FieldInterpolatedP0");
+		Input::register_class< FieldInterpolatedP0<spacedim, Value>, unsigned int >("FieldInterpolatedP0") +
+		FieldInterpolatedP0<spacedim, Value>::get_input_type().size();
 
 
 template <int spacedim, class Value>
@@ -88,16 +78,16 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	// read mesh, create tree
     {
        source_mesh_ = new Mesh();
-       reader_ = new GmshMeshReader( rec.val<FilePath>("gmsh_file") );
-       reader_->read_mesh( source_mesh_ );
+       reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
+       ReaderInstances::instance()->get_reader(reader_file_)->read_mesh( source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
 	bih_tree_ = new BIHTree( source_mesh_ );
 
     // allocate data_
 	unsigned int data_size = source_mesh_->element.size() * (this->value_.n_rows() * this->value_.n_cols());
-    data_ = new double[data_size];
-    std::fill(data_, data_ + data_size, 0.0);
+	data_ = std::make_shared<std::vector<typename Value::element_type>>();
+	data_->resize(data_size);
 
 	field_name_ = rec.val<std::string>("field_name");
 }
@@ -106,14 +96,13 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 
 
 template <int spacedim, class Value>
-bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
+bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
-    ASSERT(data_, "Null data pointer.\n");
-    if (reader_ == NULL) return false;
+    if ( reader_file_ == FilePath() ) return false;
     
     //walkaround for the steady time governor - there is no data to be read in time==infinity
     //TODO: is it possible to check this before calling set_time?
-    if (time == numeric_limits< double >::infinity()) return false;
+    //if (time == numeric_limits< double >::infinity()) return false;
     
     // value of last computed element must be recalculated if time is changed
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
@@ -123,12 +112,11 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     search_header.field_name = field_name_;
     search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
     search_header.n_entities = source_mesh_->element.size();
-    search_header.time = time;
+    search_header.time = time.end();
     
     bool boundary_domain_ = false;
-    //DBGMSG("reading data for interpolation: name: %s \t time: %f \t n: %d\n", field_name_.c_str(), time, source_mesh_->element.size());
-    reader_->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
-    //DBGMSG("end of reading data for interpolation: %s\n", field_name_.c_str());
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,
+    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
 
     return search_header.actual;
 }
@@ -151,8 +139,6 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 
 		// gets suspect elements
 		if (elm.dim() == 0) {
-			//Point point;
-			//for (unsigned int i=0; i<3; i++) point(i) = elm.element()->node[0]->point()(i);
 			searched_elements_.clear();
 			((BIHTree *)bih_tree_)->find_point(elm.element()->node[0]->point(), searched_elements_);
 		} else {
@@ -213,18 +199,9 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 				//adds values to value_ object if intersection exists
 				if (measure > epsilon) {
 					unsigned int index = this->value_.n_rows() * this->value_.n_cols() * (*it);
-			        typename Value::element_type * ele_data_ptr = (typename Value::element_type *)(data_+index);
-			        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  ele_data_ptr) );
+			        std::vector<typename Value::element_type> &vec = *( data_.get() );
+			        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  (typename Value::element_type *)(&vec[index])) );
 					Value tmp_value = Value( ret_type_value );
-
-					/*cout << "n_rows, n_cols = " << tmp_value.n_rows() << ", " << tmp_value.n_cols() << endl;
-					for (unsigned int i=0; i < tmp_value.n_rows(); i++) {
-						for (unsigned int j=0; j < tmp_value.n_cols(); j++) {
-							cout << "(" << i << "," << j << ") = " << tmp_value(i,j) << ", ";
-						}
-						cout << endl;
-					}
-					cout << endl;*/
 
 					for (unsigned int i=0; i < this->value_.n_rows(); i++) {
 						for (unsigned int j=0; j < this->value_.n_cols(); j++) {
@@ -268,4 +245,4 @@ void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >
 
 
 
-#endif
+#endif /* FIELD_INTERPOLATED_P0_IMPL_HH_ */

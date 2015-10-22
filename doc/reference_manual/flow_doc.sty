@@ -1,10 +1,26 @@
 % Various macros and environments for Flow123d manual
-
+\RequirePackage{textcomp}
 \RequirePackage{packages/etoolbox}
 \RequirePackage[backref]{hyperref}   % hypertext capabilities, should by last package
 \hypersetup{colorlinks=true, raiselinks=true}  %setup hyperef package
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%%%%%% USAGE OF HYPERLINK MACROS %%%%%%
+
+% * use the \hyperA link if you want to create bidirectional link which will create target where
+%   \hyperA is placed. 
+%   Typical usage: I want to link 'conductivity' in mathematical description to its record in automatically
+%   generated part (that is B target).
+%   Remember: \hyperA should be used only once!
+%             The link back from the B target to target A will always point the first appearance of \hyperA.
+%
+% * do not use \hyperB. 
+%   This is used in automatically generated part to create B targets which can be then linked.
+%
+% * use \Alink if you want to reference B target but not created the back link
+%   Typical usage: I link 'conductivity' in tutorial to its record in automatically generated part,
+%   but I do not want the back link. (I want the back link to point to mathematical description)
+%
 
 % define a target command to check that target is defined 
 \def\RegisterTarget#1{%
@@ -28,6 +44,10 @@
         \hyperlink{#1::A}{#2}%
     }% 
     {#2}%
+}
+\def\Alink#1#2{%
+    %not setting the back target
+    \hyperlink{#1::B}{#2}%
 }
 
 
@@ -91,7 +111,7 @@
         \vskip 0.3ex
         %\hrule%
         \noindent%
-        \hspace{-3em}{\bf\tt ##1} = {\it \textless ##2\textgreater}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
+        \hspace{-3em}{\bf\tt ##1} = {\textlangle {\it ##2 }\textrangle}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
         \par
         Default: {##3}
         \par

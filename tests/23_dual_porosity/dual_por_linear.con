@@ -26,6 +26,8 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
+      balance = true,
+
       solver = { 
         TYPE = "Petsc",
         a_tol = 1e-7 
@@ -72,12 +74,12 @@
         scheme_tolerance = 0.0,
         
         reaction_mobile = {
-          TYPE="LinearReactions",
-          decays = [
+          TYPE="FirstOrderReaction",
+          reactions = [
             {
-              parent = "A",
-              half_life = 2.5,
-              products = [ "B" ]
+              reactants = "A",
+              reaction_rate = 0.277258872,
+              products = "B"
             }
           ]
         },
@@ -85,8 +87,10 @@
         reaction_immobile = {
           REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
         }
+      },
+      balance = {
+        cumulative = true
       }
-          
     } 
   }, 
   

@@ -7,13 +7,19 @@ verification of:
 setting:
 
 rectangle (0,1)x(0,16)
-flow: zero dirichlet BC for x=0, zero Neuman else, source = -x
-conductivity 1.0
-storativity 1.0 - WRONG - there is no storativity used
-near x=0 pressure is = -tx
-         velocity is = t
+flow: 
+  zero dirichlet BC for x=0, zero Neuman else, source = -x
+  conductivity 1.0
+  storativity 1.0
+  initial piezo head =0
+  (i.e. initial pressure = 0)
+  
+  solution:
+    pressure = -tx
+    velocity = t
 
-transport: dirichlet BC = 10.0 on the inflow (on left) for time interval (0,0.1)
+transport: 
+  dirichlet BC = 10.0 on the inflow (on left) for time interval (0,0.1)
 
-exact solution for t>0.1: conc = 10.0 on (0,0.005) + t^2/2 and zero elsewhere
+  solution for t>0.1: conc = 10.0 on (0,0.005) + t^2/2 and zero elsewhere
 

@@ -12,7 +12,10 @@
 #include "fields/field_constant.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
+
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
 
 string input = R"INPUT(
@@ -36,13 +39,13 @@ TEST(FieldFormula, read_from_input) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Type::Record  rec_type("FieldFormulaTest","");
-    rec_type.declare_key("conductivity_3d", TensorField::input_type, Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("init_conc", VectorField::input_type, Input::Type::Default::obligatory(), "" );
-    rec_type.finish();
+    Input::Type::Record rec_type = Input::Type::Record("FieldFormulaTest","")
+        .declare_key("conductivity_3d", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
+        .declare_key("init_conc", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
+        .close();
 
     // read input string
-    Input::JSONToStorage reader( input, rec_type );
+    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     Space<3>::Point point_1, point_2;
@@ -127,10 +130,11 @@ TEST(FieldFormula, set_time) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Type::Array  input_type(VectorField::input_type);
+    Input::Type::Array  input_type(VectorField::get_input_type_instance());
+    input_type.finish();
 
     // read input string
-    Input::JSONToStorage reader( set_time_input, input_type );
+    Input::ReaderToStorage reader( set_time_input, input_type, Input::FileFormat::format_JSON );
     Input::Array in_array=reader.get_root_interface<Input::Array>();
 
     auto it = in_array.begin<Input::AbstractRecord>();

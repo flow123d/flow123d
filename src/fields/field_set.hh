@@ -113,6 +113,7 @@ public:
 	 * 		Record("SomeEquation","equation's description")
 	 * 		.declare_key("data",Input::Type::Array(EqData().make_field_descriptor_type()),"List of field descriptors.");
 	 * @endcode
+	 *
 	 */
     Input::Type::Record make_field_descriptor_type(const std::string &equation_name) const;
 
@@ -143,13 +144,13 @@ public:
     FieldCommon &operator[](const std::string &field_name) const;
 
     /**
-     * Collective interface to @p FieldCommonBase::set_n_components().
+     * Collective interface to @p FieldCommonBase::set_components().
      * It is safe to call this for field sets containing also fields
      * with return value other then variable vector as long as all variable
      * vector fields should be set to the same number of components.
      */
-    void set_n_components(unsigned int n_comp) {
-        for(auto field : field_list) field->set_n_components(n_comp);
+    void set_components(const std::vector<string> &names) {
+        for(auto field : field_list) field->set_components(names);
     }
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
@@ -159,17 +160,17 @@ public:
     }
 
     /**
-     * Collective interface to @p FieldCommonBase::set_mesh().
+     * Collective interface to @p FieldCommon::set_mesh().
      */
     void set_input_list(Input::Array input_list) {
     	for(auto field : field_list) field->set_input_list(input_list);
     }
 
     /**
-     * Collective interface to @p FieldCommonBase::set_mesh().
+     * Collective interface to @p FieldCommon::set_limit_side().
      */
     void set_limit_side(LimitSide side) {
-    	for(auto field : field_list) field->set_limit_side(side);
+    	for(FieldCommon *field : field_list) field->set_limit_side(side);
     }
 
     /**
@@ -183,7 +184,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    void set_time(const TimeGovernor &time) {
+    void set_time(const TimeStep &time) {
         for(auto field : field_list) field->set_time(time);
     }
 
@@ -215,7 +216,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::output().
      */
-    void output(OutputTime *stream);
+    void output(std::shared_ptr<OutputTime> stream);
 
     /**
      * OBSOLETE

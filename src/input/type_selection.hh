@@ -103,17 +103,23 @@ public:
      */
     const Selection &close() const;
 
+
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, description, hash of keys and attributes.
+     */
+    TypeHash content_hash() const   override;
+
+
     /// Implements \p TypeBase::is_finished
-    virtual bool is_finished() const;
+    bool is_finished() const override;
 
     /// Implements \p TypeBase::type_name
-    virtual string type_name() const;
-
-    /// Implements \p TypeBase::full_type_name
-    virtual string full_type_name() const;
+    string type_name() const override;
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
-    virtual bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const override;
 
     /**
      * Container-like access to the keys of the Record. Returns iterator to the first key.
@@ -148,7 +154,7 @@ public:
     int from_default(const string &str) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const;
+    bool valid_default(const string &str) const override;
 
     /**
      * Just check if there is a particular name in the Selection.
@@ -166,8 +172,16 @@ public:
     inline unsigned int size() const;
 
 
-    bool finish()
-        { close(); return true; }
+    bool finish(bool is_generic = false) override
+        { ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
+
+
+    /// Implements \p TypeBase::is_closed
+    bool is_closed() const override;
+
+
+    // Implements @p TypeBase::make_instance.
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
     /**
@@ -187,7 +201,7 @@ private:
     public:
 
         SelectionData(const string &name)
-        : type_name_(name), /*made_extensive_doc(false),*/ finished(false)
+        : type_name_(name), closed_(false)
         {}
 
         void add_value(const int value, const std::string &key, const std::string &description);
@@ -210,8 +224,8 @@ private:
         /// Text description of the whole Selection object.
         std::string description_;
 
-        /// Indicator of finished Selection.
-        mutable bool finished;
+        /// Indicator of closed Selection.
+        mutable bool closed_;
     };
 
     /// Handle to actual Selection data.
@@ -244,8 +258,8 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    //ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
-    //        "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
+    ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
+            "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
     ASSERT_EQUAL( data_->keys_.size(), data_->key_to_index_.size());
     return data_->keys_.size();
 }
@@ -254,7 +268,7 @@ inline unsigned int Selection::size() const {
 
 
 inline void Selection::finished_check() const {
-    ASSERT(data_->finished, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
+    ASSERT(data_->closed_, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
 }
 
 

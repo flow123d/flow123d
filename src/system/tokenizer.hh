@@ -48,8 +48,31 @@ public:
      * Shortcut for boost tokenizer.
      */
     typedef boost::escaped_list_separator<char> Separator;
-    //typedef boost::tokenizer<boost::char_separator<char> > BT;
     typedef boost::tokenizer<Separator> BT;
+
+    /**
+     * Struct represents actual position of Tokenizer in file.
+     *
+     * It is necessary to check if stored values are correct. Out of Tokenizer values can be set
+     * only during construction. Entered file_position_ must correspond with values line_counter_
+     * and line_position_. Unfortunately, any control mechanism of entered values doesn't exist.
+     * If Position object is returned out of Tokenizer, value of file_position_ must be set
+     * according to the position of Tokenizer.
+     */
+    struct Position {
+        std::streampos file_position_;     ///< Actual (global) position in file.
+        unsigned int line_counter_;        ///< Actual line in file.
+        unsigned int line_position_;       ///< Actual position in line.
+
+        /// Empty constructor
+        Position():
+        	file_position_(0), line_counter_(0), line_position_(0) {}
+
+        /// Constructor
+        Position(std::streampos file_pos, unsigned int line, unsigned int line_pos):
+        	file_position_(file_pos), line_counter_(line), line_position_(line_pos) {}
+    };
+
 
     /**
      * Opens a file given by file path @p fp. And construct the tokenizer over the
@@ -112,9 +135,9 @@ public:
      * Moves to the next token on the line.
      */
     inline BT::iterator & operator ++() {
-      if (! eol()) {position_++; ++tok_;}
+      if (! eol()) {position_.line_position_++; ++tok_;}
       // skip empty tokens (consecutive separators)
-      while (! eol() && (*tok_).size()==0 ) {position_++; ++tok_;}
+      while (! eol() && (*tok_).size()==0 ) {position_.line_position_++; ++tok_;}
       return tok_;
     }
 
@@ -134,14 +157,14 @@ public:
      * Returns position on line.
      */
     inline unsigned int pos() const
-        { return position_;}
+        { return position_.line_position_;}
 
     /**
      * Returns number of lines read by the tokenizer.
      * After first call of @p next_line this returns '1'.
      */
     inline unsigned int line_num() const
-        {return line_counter_;}
+        {return position_.line_counter_;}
 
     /**
      * Returns file name.
@@ -159,6 +182,19 @@ public:
      */
     inline const std::string &line() const
         { return line_;}
+
+    /**
+     * Returns actual position in file.
+     */
+    const Tokenizer::Position get_position();
+
+    /**
+     * Set new position of tokenizer in file.
+     *
+     * Warning! Actual file_position_ must correspond with values line_counter_
+     * and line_position_. Method can't check if the values are entered correctly.
+     */
+    void set_position(const Tokenizer::Position pos);
 
     /**
      * Destructor close the file if it was opened by tokenizer itself.
@@ -181,8 +217,7 @@ private:
     std::string comment_pattern_;
 
     /// Number of liner read by the tokenizer.
-    unsigned int line_counter_;
-    unsigned int position_;
+    Position position_;
 
     /// Line token iterator
     BT::iterator tok_;

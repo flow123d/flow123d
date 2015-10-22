@@ -31,10 +31,13 @@
 #include "input/input_type.hh"
 #include "input/type_output.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
+#include "fields/unit_si.hh"
+#include "fields/bc_field.hh"
+#include "fields/multi_field.hh"
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
@@ -46,55 +49,8 @@
 using namespace std;
 namespace IT=Input::Type;
 
-// Test input for 'values' test
-const string eq_data_input = R"JSON(
-{ 
-  data=[
-      { rid=37,
-        init_pressure={
-            TYPE="FieldConstant",
-            value=1.1
-          },
-        init_conc = [ 1, 2, 3, 4]  
-      },
-      { region="2D XY diagonal",
-        init_pressure=2.2
-      },
-      { r_set="BULK",
-        bulk_set_field=5.7
-      },
-
-      // boundary          
-      { rid=101,
-        bc_type={TYPE="FieldConstant", value = "dirichlet"},
-        bc_pressure={
-            TYPE="FieldConstant",
-            value=1.23
-        }
-      },
-      { rid=102,
-        bc_type="dirichlet",
-        bc_piezo_head=1.23
-      }
-  ] 
-}
-)JSON";
 
 
-// Test input for old_bcd
-const string eq_data_old_bcd = R"JSON(
-{ 
-  data=[
-      { r_set="BOUNDARY",
-        flow_old_bcd_file="coupling/simplest_cube.fbc",
-        transport_old_bcd_file="coupling/transport.fbc"  
-      },
-      { r_set="BULK",
-        bulk_set_field=0.0
-      } 
-  ] 
-}
-)JSON";
 
 
 class SomeEquationBase : public EquationBase {
@@ -109,65 +65,95 @@ protected:
             total_flux=4
         };
 
-        static IT::Selection bc_type_selection;
+        static const IT::Selection & get_bc_type_selection();
 
-        inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
-        	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
-        {
-        		arma::vec4 gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
+        template<int spacedim, class Value>
+        class FieldFactory : public OldBcdInput::FieldFactory<spacedim, Value> {
+        public:
+        	FieldFactory( typename OldBcdInput::FieldFactory<spacedim, Value>::FieldPtr * field, bool read_flow = true )
+        	: OldBcdInput::FieldFactory<spacedim, Value>(field),
+        	  read_flow_(read_flow)
+        	{}
 
-            	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
-                Input::AbstractRecord field_a_rec;
-            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
-            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
-            	} else {
-            		return field_ptr;
+        	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
+        		Input::AbstractRecord field_record;
+        		if (rec.opt_val(field.input_name(), field_record)) {
+        			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
+        		}
+            	else {
+            		OldBcdInput *old_bcd = OldBcdInput::instance();
+            		if (read_flow_) {
+            			old_bcd->read_flow_record(rec, field);
+            		} else  {
+            			old_bcd->read_transport_record(rec, field);
+            		}
+            		return *(this->field_);
             	}
-        }
+        	}
 
-        EqData()  {
+        	/// Set true if field needs flow record, false if needs transport record
+        	bool read_flow_;
+        };
+
+        EqData()
+        {
+        	arma::vec4 gravity = arma::vec4("3.0 2.0 1.0 -5.0");
+
             ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", "1.0");
+            anisotropy.units( UnitSI::dimensionless() );
+
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
-                      bc_type.input_selection(&bc_type_selection);
-            bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
+                      bc_type.input_selection(&get_bc_type_selection());
+            bc_type.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Enum> >
+            					 (&(OldBcdInput::instance()->flow_type)) );
+            bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
             bc_pressure.disable_where( bc_type, {none, neumann} );
-        	bc_pressure.read_field_descriptor_hook = bc_piezo_head_hook;
+        	bc_pressure.add_factory(std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory >
+        			                (gravity, "bc_piezo_head"));
+
+            bc_pressure.units( UnitSI::dimensionless() );
 
         	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
             bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
-        	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
+        	bc_flux.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Scalar> >
+        						 (&(OldBcdInput::instance()->flow_flux)) );
+            bc_flux.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
-        	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
+        	bc_robin_sigma.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Scalar> >
+        								(&(OldBcdInput::instance()->flow_sigma)) );
+            bc_robin_sigma.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
-            bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+            bc_conc.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Vector> >
+            					 (&(OldBcdInput::instance()->trans_conc), false) );
+            bc_conc.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
-        BCField<3, FieldValue<3>::Scalar > bc_pressure; // ?? jak pridat moznost zadat piezo_head, coz by melo initializovat pressure
-                                                     // na AddGradient(..)
-                                                     // jednak jak deklatovat ten klic, dale jak behem cteni inicializovat pressure
-                                                     // tj. potrebuju umet pridat dalsi klice a dalsi inicializace i po generickych funkcich
+        BCField<3, FieldValue<3>::Scalar > bc_pressure;
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
         BCField<3, FieldValue<3>::Vector > bc_conc;
+
     };
 
     void output_data() override {}
 };
 
-IT::Selection SomeEquationBase::EqData::bc_type_selection =
-              IT::Selection("EqData_bc_Type")
-               .add_value(none, "none")
-               .add_value(dirichlet, "dirichlet")
-               .add_value(neumann, "neumann")
-               .add_value(robin, "robin")
-               .add_value(total_flux, "total_flux");
+const IT::Selection & SomeEquationBase::EqData::get_bc_type_selection() {
+	return IT::Selection("EqData_bc_Type")
+             .add_value(none, "none")
+             .add_value(dirichlet, "dirichlet")
+             .add_value(neumann, "neumann")
+             .add_value(robin, "robin")
+             .add_value(total_flux, "total_flux")
+			 .close();
+}
 
 
 
@@ -181,16 +167,25 @@ public:
             ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
+            ADD_FIELD(conc_mobile, "");
+
+            init_pressure.units( UnitSI::dimensionless() );
+            init_conc.units( UnitSI::dimensionless() );
+            bulk_set_field.units( UnitSI::dimensionless() );
+            conc_mobile.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Vector > init_conc;
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
+        MultiField<3, FieldValue<3>::Scalar > conc_mobile;
     };
 
 protected:
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
+    static MultiField<3, FieldValue<3>::Scalar> empty_mf;
     EqData data;
+    std::vector<string> component_names;
 
     virtual void SetUp() {
         Profiler::initialize();
@@ -201,18 +196,19 @@ protected:
         mesh= new Mesh;
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
+        component_names = { "comp_0", "comp_1", "comp_2", "comp_3" };
 
     }
 
     void read_input(const string &input) {
         // read input string
-        Input::JSONToStorage reader( input, input_type );
+        Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_JSON );
         Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
         TimeGovernor tg(0.0, 1.0);
 
-        data.init_conc.set_n_components(4);        // set number of substances posibly read from elsewhere
-        data.bc_conc.set_n_components(4);
+        data.set_components(component_names);        // set number of substances posibly read from elsewhere
+        //data.bc_conc.set_components(component_names);
 
         /* Regions in the test mesh:
          * $PhysicalNames
@@ -230,7 +226,7 @@ protected:
         data.set_mesh(*mesh);
         data.set_input_list( in_rec.val<Input::Array>("data"));
         data.set_limit_side(LimitSide::right);
-        data.set_time(tg);
+        data.set_time(tg.step());
     }
 
     virtual void TearDown() {
@@ -243,21 +239,75 @@ protected:
 
 
 
-IT::Record SomeEquation::input_type=
-        IT::Record("SomeEquation","")
-        .declare_key("data", IT::Array(
-                SomeEquation::EqData().make_field_descriptor_type("SomeEquation")
-                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::input_type, "" )
-                .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
-                .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
-                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::input_type, "" )
-                ), IT::Default::obligatory(), ""  );
+MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
+
+const IT::Record & SomeEquation::get_input_type() {
+	return IT::Record("SomeEquation","")
+	        .declare_key("data", IT::Array(
+	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_decsription("SomeEquation_Data") )
+	                .copy_keys( SomeEquation::EqData().make_field_descriptor_type("SomeEquation") )
+	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+	                .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
+	                .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
+	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+					.close()
+	                ), IT::Default::obligatory(), ""  )
+			.close();
+}
 
 
 
 TEST_F(SomeEquation, values) {
+    // Test input for 'values' test
+    string eq_data_input = R"JSON(
+    { 
+      data=[
+          { rid=37,
+            init_pressure={
+                TYPE="FieldConstant",
+                value=1.1
+              },
+            init_conc = [ 1, 2, 3, 4],
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
+                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+              }
+          },
+          { region="2D XY diagonal",
+            init_pressure=2.2,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          },
+          { r_set="BULK",
+            bulk_set_field=5.7,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          },
+
+          // boundary          
+          { rid=101,
+            bc_type={TYPE="FieldConstant", value = "dirichlet"},
+            bc_pressure={
+                TYPE="FieldConstant",
+                value=1.23
+            },
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[5, 6, 7, 8]},
+                components=[ {TYPE="FieldConstant", value=5}, {TYPE="FieldConstant", value=6}, {TYPE="FieldConstant", value=7}, {TYPE="FieldConstant", value=8}]
+              }
+          },
+          { rid=102,
+            bc_type="dirichlet",
+            bc_piezo_head=1.23,
+            conc_mobile={REF="/data/3/conc_mobile"}
+          }
+      ] 
+    }
+    )JSON";
+
     read_input(eq_data_input);
-    // cout << Input::Type::OutputText(&SomeEquation::input_type) << endl;
 
     Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
@@ -278,6 +328,9 @@ TEST_F(SomeEquation, values) {
 
     // bulk fields
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
+    for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
+        EXPECT_DOUBLE_EQ( 1.0 + i, data.conc_mobile[i].value(p, el_1d) );
+    }
 
     FieldValue<3>::TensorFixed::return_type value = data.anisotropy.value(p, el_1d);
     EXPECT_DOUBLE_EQ( 1.0, value.at(0,0) );
@@ -293,6 +346,9 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ( 1.0, value.at(2,2) );
 
     EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_2d) );
+    for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
+        EXPECT_DOUBLE_EQ( 1.0 + i, data.conc_mobile[i].value(p, el_2d) );
+    }
 
     // init_conc - variable length vector
     FieldValue<3>::Vector::return_type conc = data.init_conc.value(p, el_1d);
@@ -314,11 +370,34 @@ TEST_F(SomeEquation, values) {
 
     EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_bottom) );
     EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, el_bc_bottom) );    // piezo_head
+
 }
 
 
 
 TEST_F(SomeEquation, old_bcd_input) {
+    // Test input for old_bcd
+    string eq_data_old_bcd = R"JSON(
+    { 
+      data=[
+          { r_set="BOUNDARY",
+            flow_old_bcd_file="coupling/simplest_cube.fbc",
+            transport_old_bcd_file="coupling/transport.fbc",
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
+                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+              }
+          },
+          { r_set="BULK",
+            bulk_set_field=0.0,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          } 
+      ] 
+    }
+    )JSON";
+
     read_input(eq_data_old_bcd);
 
     Space<3>::Point p;
@@ -353,4 +432,26 @@ TEST_F(SomeEquation, old_bcd_input) {
     EXPECT_DOUBLE_EQ(37.0, value(3) );
     }
 
+}
+
+
+
+TEST_F(SomeEquation, wrong_time_order) {
+    // Test input for old_bcd
+    string eq_data = R"JSON(
+    { 
+      data=[
+          { r_set="BULK",
+            time=1.0,
+            bulk_set_field=0.0
+          }, 
+          { r_set="BULK",
+            time=0.0,
+            bulk_set_field=1.0
+          } 
+      ] 
+    }
+    )JSON";
+
+    EXPECT_THROW({read_input(eq_data);}, FieldCommon::ExcNonascendingTime);
 }

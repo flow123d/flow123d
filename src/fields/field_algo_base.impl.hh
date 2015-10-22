@@ -23,10 +23,13 @@ using namespace std;
 
 #include "fields/field_values.hh"
 
+#include "tools/time_governor.hh"
 #include "input/factory.hh"
 
 
 namespace it = Input::Type;
+
+
 
 
 /******************************************************************************************
@@ -35,8 +38,8 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
-: time_( -numeric_limits<double>::infinity() ),
-  value_(r_value_)
+: value_(r_value_),
+  component_idx_(std::numeric_limits<unsigned int>::max())
 {
     value_.set_n_comp(n_comp);
 }
@@ -45,32 +48,31 @@ FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 
 template <int spacedim, class Value>
 string FieldAlgorithmBase<spacedim, Value>::template_name() {
-    return boost::str(boost::format("R%i -> %s") % spacedim % Value::type_name() );
+	return boost::str(boost::format("R%i -> %s") % spacedim % Value::type_name() );
 }
 
 
 
 template <int spacedim, class Value>
-it::AbstractRecord FieldAlgorithmBase<spacedim, Value>::input_type
-    = it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
-          .allow_auto_conversion("FieldConstant");
-
+Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
+	return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+			.allow_auto_conversion("FieldConstant")
+			.root_of_generic_subtree()
+			.close();
+}
 
 
 template <int spacedim, class Value>
-Input::Type::AbstractRecord FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
-    it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.");
-    type.allow_auto_conversion("FieldConstant");
+const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(const Input::Type::Selection *value_selection) {
+	std::vector<it::TypeBase::ParameterPair> param_vec;
+	if (is_enum_valued) {
+		ASSERT(value_selection, "Not defined 'value_selection' for enum element type.\n");
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::Selection>(*value_selection)) );
+	} else {
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
+	}
 
-    FieldConstant<spacedim,Value>::get_input_type(type, element_input_type);
-    FieldFormula<spacedim,Value>::get_input_type(type, element_input_type);
-#ifdef HAVE_PYTHON
-    FieldPython<spacedim,Value>::get_input_type(type, element_input_type);
-#endif
-    FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
-    FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type);
-
-    return type;
+	return it::Instance(get_input_type(), param_vec).close();
 }
 
 
@@ -96,7 +98,7 @@ void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &r
 
 
 template <int spacedim, class Value>
-bool FieldAlgorithmBase<spacedim, Value>::set_time(double time) {
+bool FieldAlgorithmBase<spacedim, Value>::set_time(const TimeStep &time) {
     time_ = time;
     return false; // no change
 }
@@ -155,12 +157,6 @@ template class field<dim_from, FieldValue<0>::Vector >;                         
 INSTANCE_DIM_DEP_VALUES( field, dim_from, 2) \
 INSTANCE_DIM_DEP_VALUES( field, dim_from, 3) \
 
-/*#define INSTANCE_ALL(field) \
-INSTANCE_TO_ALL(field, 0) \
-INSTANCE_TO_ALL( field, 1) \
-INSTANCE_TO_ALL( field, 2) \
-INSTANCE_TO_ALL( field, 3) */
-
 // All instances of one field class template @p field.
 // currently we need only fields on 3D ambient space (and 2D for some tests)
 // so this is to save compilation time and avoid memory problems on the test server
@@ -168,7 +164,6 @@ INSTANCE_TO_ALL( field, 3) */
 INSTANCE_TO_ALL( field, 3) \
 INSTANCE_TO_ALL( field, 2)
 // currently we use only 3D ambient space
-// INSTANCE_TO_ALL( field, 2)
 
 
 

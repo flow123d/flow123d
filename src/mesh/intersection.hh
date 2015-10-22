@@ -40,7 +40,6 @@
 
 #include "mesh/mesh_types.hh"
 #include <armadillo>
-//#include <boost/tokenizer.hpp>
 
 #include "mesh/ngh/include/intersectionLocal.h"
 
@@ -132,6 +131,7 @@
  *
  */
 
+#include <iostream>
 
 class Intersection {
 public:

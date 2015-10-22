@@ -25,9 +25,12 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = true,
+
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-07
       }
     }, 
     
@@ -62,25 +65,30 @@
       },
       
       reaction_term = {
-        TYPE="LinearReactions",
+        TYPE="RadioactiveDecay",
 
         decays = [
           {
-            parent = "D",
+            radionuclide = "D",
             half_life = 2.5,
             products = [
-              "F"
+              { name = "F", energy = 0.0, branching_ratio = 1.0 }
             ]
           },
           {
-            parent = "F",
+            radionuclide = "F",
             half_life = 2.5,
             products = [
-              "B"
+              { name = "B", energy = 0.0, branching_ratio = 1.0 }
             ]
           }
         ]
+      },
+
+      balance = {
+        cumulative = true
       }
+
     } 
   },
   

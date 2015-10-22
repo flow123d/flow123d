@@ -9,20 +9,31 @@
 
 #include <flow_gtest_mpi.hh>
 
+#include "system/global_defs.h"
+
+
+#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
+
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
 #include "fields/field_python.hh"
 #include "fields/field_elementwise.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
+#include "fields/field_values.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+
+#include <iostream>
+
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
 
 using namespace std;
@@ -161,6 +172,7 @@ public:
 
 	void set_values() {
         n_comp_ = 3;
+        component_names_ = { "component_0", "component_1", "component_2" };
 
         point_ = Point("1 2 3");
         point_list_.reserve(list_size);
@@ -254,18 +266,19 @@ public:
 	void read_input(const string &field_name) {
 	    field_.name(field_name);
 	    field_.description("xyz");
+	    field_.units( UnitSI::dimensionless() );
 	    set_of_field_ += field_;
 
 	    Input::Type::Array list_type = Input::Type::Array(set_of_field_.make_field_descriptor_type("FieldSpeedTest"));
-	    Input::JSONToStorage reader( field_input, list_type);
+	    Input::ReaderToStorage reader( field_input, list_type, Input::FileFormat::format_JSON);
 	    Input::Array in_list=reader.get_root_interface<Input::Array>();
 	    field_.set_input_list(in_list);
 
 	    field_.set_mesh(*(this->mesh_));
-	    field_.set_n_components(n_comp_);
+	    field_.set_components(component_names_);
 	    field_.set_limit_side(LimitSide::right);
 	    TimeGovernor tg(0.0, 0.5);
-	    set_of_field_.set_time(tg);
+	    set_of_field_.set_time(tg.step());
 	}
 
 
@@ -285,6 +298,7 @@ public:
 	Point point_;
 	std::vector< Point > point_list_;
 	string input_type_name_;
+	std::vector< string > component_names_;
 	unsigned int n_comp_;
 
     inline ReturnType value(Point &p, ElementAccessor<3> &elm) {
@@ -391,7 +405,7 @@ TYPED_TEST(FieldSpeed, field_formula_full) {
 }
 
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
 TYPED_TEST(FieldSpeed, field_python) {
 	string key_name = "python_" + this->input_type_name_;
 	this->read_input(key_name);
@@ -403,7 +417,7 @@ TYPED_TEST(FieldSpeed, field_python) {
 	this->test_result( this->expect_const_val_, 21 );
 	this->profiler_output();
 }
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 
 
 TYPED_TEST(FieldSpeed, field_elementwise) {
@@ -417,3 +431,47 @@ TYPED_TEST(FieldSpeed, field_elementwise) {
 	this->test_result( this->expect_elementwise_val_, 21 );
 	this->profiler_output();
 }
+
+
+
+/**
+ * Speed results:
+ * debug (-g -O0 -NODEBUG) (100 M steps):
+ * interface: 1747ms
+ * direct   :  361ms
+ *
+ * optimized -O3 (100 M steps):
+ * interface: 123ms
+ * direct   : 121ms
+ */
+
+#define STEPS (100*1000*1000)
+
+TEST(FieldValue_, speed_test_interface) {
+
+   typedef FieldValue_<1,1, double> T;
+   double r_val;
+
+
+   for(int step=0;step < STEPS; step++) {
+       T val(r_val);
+
+       for(unsigned int row=0;row< val.n_cols(); ++row)
+           for(unsigned int col=0;col< val.n_rows(); ++col)
+               val(row,col)+=step;
+   }
+   cout << r_val << endl;
+}
+
+TEST(FieldValue_, speed_test_direct) {
+
+   double val;
+
+   for(int step=0;step < STEPS; step++) {
+       val+=step;
+   }
+   cout << val << endl;
+}
+
+#endif // FLOW123D_RUN_UNIT_BENCHMARKS
+

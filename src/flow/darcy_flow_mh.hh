@@ -55,26 +55,32 @@
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
-#include "input/input_type.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/linsys_PETSC.hh"
 
+#include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
-#include "fields/field_add_potential.hh"
-#include "flow/old_bcd.hh"
+#include "flow/darcy_flow_interface.hh"
 
 
 /// external types:
 class LinSys;
-struct Solver;
 class Mesh;
 class SchurComplement;
 class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
 class DarcyFlowMHOutput;
+class Balance;
+class VectorSeqDouble;
 
+template<unsigned int dim, unsigned int spacedim> class FE_RT0;
+template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
+template<unsigned int dim, unsigned int spacedim> class MappingP1;
+template<unsigned int dim, unsigned int spacedim> class FEValues;
+template<unsigned int dim, unsigned int spacedim> class FESideValues;
+template<unsigned int dim> class QGauss;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -89,17 +95,20 @@ class DarcyFlowMHOutput;
  *
  */
 
-class DarcyFlowMH : public EquationBase {
+class DarcyFlowMH : public DarcyFlowInterface {
 public:
+
+
+    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
     enum MortarMethod {
         NoMortar = 0,
         MortarP0 = 1,
         MortarP1 = 2
     };
     
-    /** @brief Data for Darcy flow equation.
-     *  
-     */
+    /// Class with all fields used in the equation DarcyFlow.
+    /// This is common to all implementations since this provides interface
+    /// to this equation for possible coupling.
     class EqData : public FieldSet {
     public:
 
@@ -113,27 +122,14 @@ public:
             robin=3,
             total_flux=4
         };
-        static Input::Type::Selection bc_type_selection;
 
-        /// Collect all fields
+        /// Return a Selection corresponding to enum BC_Type.
+        static const Input::Type::Selection & get_bc_type_selection();
+
+        /// Creation of all fields.
         EqData();
 
 
-        /**
-         * Hook for processing "bc_piezo_head" key.
-         */
-        inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
-        	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
-        {
-            	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
-                Input::AbstractRecord field_a_rec;
-            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
-            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
-            	} else {
-            		return field_ptr;
-            	}
-        }
-       
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
@@ -145,43 +141,36 @@ public:
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
         
-        //TODO: these belong to Unsteady flow classes
-        //as long as Unsteady is descendant from Steady, these cannot be transfered..
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
          * to pressure head and vice versa.
-         *
-         * TODO: static method bc_piezo_head_hook needs static @p gravity_ vector. Other solution is to
-         * introduce some kind of context pointer into @p FieldCommonBase.
          */
-        static arma::vec4 gravity_;
+        arma::vec4 gravity_;
 
-        FieldSet	time_term_fields;
-        FieldSet	main_matrix_fields;
-        FieldSet	rhs_fields;
+        //FieldSet	time_term_fields;
+        //FieldSet	main_matrix_fields;
+        //FieldSet	rhs_fields;
     };
+
+
+    static const Input::Type::Selection & get_mh_mortar_selection();
+
 
 
     /**
      * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
      *
      * TODO:
-     * - how we can reuse values computed during assembly
-     *   we want to make this class see values in
+     * - how we can reuse field values computed during assembly
      *
      */
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
-    : EquationBase(mesh, in_rec)
+    : DarcyFlowInterface(mesh, in_rec)
     {}
 
-    static Input::Type::Selection mh_mortar_selection;
-    static Input::Type::AbstractRecord input_type;
-    static Input::Type::Record bc_segment_rec;
-    static Input::Type::AbstractRecord bc_input_type;
-    static std::vector<Input::Type::Record> bc_input_types;
 
     void get_velocity_seq_vector(Vec &velocity_vec)
         { velocity_vec = velocity_vector; }
@@ -203,10 +192,6 @@ public:
        return mh_dh;
     }
     
-    virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
-
-    virtual void set_concentration_vector(Vec &vc){};
-
 
 protected:
     void setup_velocity_vector() {
@@ -218,19 +203,18 @@ protected:
 
     }
 
-    //virtual void postprocess() =0;
-
     virtual double solution_precision() const = 0;
 
-    //virtual void balance();
-    //virtual void integrate_sources();
-
-    
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
+
+    /// object for calculation and writing the water balance to file.
+    boost::shared_ptr<Balance> balance_;
+    /// index of water balance within the Balance object.
+    unsigned int water_balance_idx_;
 };
 
 
@@ -257,12 +241,11 @@ protected:
  *   where @f$ c_i @f$ is concentration in @f$ kg m^{-3} @f$.
  *
  *
- *   TODO:
- *   - consider create auxiliary classes for creation of inverse of block A
  */
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
+
   
     class EqData : public DarcyFlowMH::EqData {
     public:
@@ -273,12 +256,11 @@ public:
     
     DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec, bool make_tg=true);
 
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
-    void get_partitioning_vector(int * &elem_part, unsigned &lelem_part);
     
     /// postprocess velocity field (add sources)
     virtual void postprocess();
@@ -288,6 +270,67 @@ public:
 
 
 protected:
+    //class AssemblyBase;
+    //template<unsigned int dim> class Assembly;
+    
+    struct AssemblyData
+    {
+        Mesh *mesh;
+        EqData* data;
+        MH_DofHandler *mh_dh;
+    };
+    
+    class AssemblyBase
+    {
+    public:
+        // assembly just A block of local matrix
+        virtual void assembly_local_matrix(arma::mat &local_matrix, 
+                                           ElementFullIter ele) = 0;
+
+        // assembly compatible neighbourings
+        virtual void assembly_local_vb(double *local_vb, 
+                                       ElementFullIter ele,
+                                       Neighbour *ngh) = 0;
+
+        // compute velocity value in the barycenter
+        // TOTO: implement and use general interpolations between discrete spaces
+        virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
+    };
+    
+    template<unsigned int dim>
+    class Assembly : public AssemblyBase
+    {
+    public:
+        Assembly<dim>(AssemblyData ad);
+        ~Assembly<dim>();
+        void assembly_local_matrix(arma::mat &local_matrix, 
+                                   ElementFullIter ele) override;
+        void assembly_local_vb(double *local_vb, 
+                               ElementFullIter ele,
+                               Neighbour *ngh
+                              ) override;
+        arma::vec3 make_element_vector(ElementFullIter ele) override;
+
+        // assembly volume integrals
+        FE_RT0<dim,3> fe_rt_;
+        MappingP1<dim,3> map_;
+        QGauss<dim> quad_;
+        FEValues<dim,3> fe_values_;
+        
+        // assembly face integrals (BC)
+        QGauss<dim-1> side_quad_;
+        FE_P_disc<0,dim,3> fe_p_disc_;
+        FESideValues<dim,3> fe_side_values_;
+
+        // Interpolation of velocity into barycenters
+        QGauss<dim> velocity_interpolation_quad_;
+        FEValues<dim,3> velocity_interpolation_fv_;
+
+        // data shared by assemblers of different dimension
+        AssemblyData d;
+
+    };
+    
     void make_serial_scatter();
     virtual void modify_system()
     { ASSERT(0, "Modify system called for Steady darcy.\n"); };
@@ -295,7 +338,6 @@ protected:
     { ASSERT(0, "Setup time term called for Steady darcy.\n"); };
 
 
-    //void set_R() {};
     void prepare_parallel( const Input::AbstractRecord in_rec);
     void make_row_numberings();
 
@@ -322,6 +364,10 @@ protected:
      *
      */
     void assembly_steady_mh_matrix();
+    
+
+    /// Source term is implemented differently in LMH version.
+    virtual void assembly_source_term();
 
     /**
      * Assembly or update whole linear system.
@@ -340,10 +386,10 @@ protected:
 
 
 	LinSys *schur0;  		//< whole MH Linear System
-	//LinSys_PETSC *schur1;  	//< first schur compl.
-	//LinSys_PETSC *schur2;  	//< second ..
 
-
+	AssemblyData *assembly_data_;
+	std::vector<AssemblyBase *> assembly_;
+	
 	// parallel
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
@@ -358,8 +404,6 @@ protected:
 	int	*row_4_edge;		//< edge index to matrix row
 
 	// MATIS related arrays
-        std::vector<double>   solution_;                 //< sequantial scattered solution vector
-        std::vector<unsigned> solver_indices_;           //< renumbering of unknowns in the global vector
         boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
@@ -371,6 +415,10 @@ protected:
   friend class DarcyFlowMHOutput;
   friend class P0_CouplingAssembler;
   friend class P1_CouplingAssembler;
+
+private:
+  /// Registrar of class to factory
+  static const int registrar;
 };
 
 
@@ -444,9 +492,6 @@ private:
 
 
 
-//void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
-//void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
-//        int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
 void mat_count_off_proc_values(Mat m, Vec v);
 
 
@@ -462,31 +507,20 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-  
-    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
-    class EqData : public DarcyFlowMH::EqData{
-    public:
-      EqData();
-        
-      Field<3, FieldValue<3>::Scalar > init_pressure;
-      Field<3, FieldValue<3>::Scalar > storativity;
-    };
-    //*/
-    
+
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
-    //returns reference to equation data
-    //virtual DarcyFlowMH::DarcyFlowMH::EqData &get_data()
-    //{return data;}
-    
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 protected:
     void read_init_condition() override;
     void modify_system() override;
     void setup_time_term();
     
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
@@ -494,50 +528,6 @@ private:
 
 };
 
-/**
- * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.
- *
- * The time term and sources are evenly distributed form an element to its edges.
- * This applies directly to the second Schur complement. After this system for pressure traces is solved we reconstruct pressures and side flows as follows:
- *
- * -# Element pressure is  average of edge pressure. This is in fact same as the MH for steady case so we let SchurComplement class do its job.
- *
- * -# We let SchurComplement to reconstruct fluxes and then account time term and sources which are evenly distributed from an element to its sides.
- *    It can be proved, that this keeps continuity of the fluxes over the edges.
- *
- * This lumping technique preserves discrete maximum principle for any time step provided one use acute mesh. But in practice even worse meshes are tractable.
- */
-class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
-{
-public:
-  
-    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
-    class EqData : public DarcyFlowMH::EqData{
-    public:
-      
-      EqData();
-        
-      Field<3, FieldValue<3>::Scalar > init_pressure;
-      Field<3, FieldValue<3>::Scalar > storativity;
-    };
-    //*/
-    
-    DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
-    DarcyFlowLMH_Unsteady();
-    
-    static Input::Type::Record input_type;
-protected:
-    void read_init_condition() override;
-    void modify_system() override;
-    void setup_time_term();
-    virtual void postprocess();
-private:
-    Vec steady_diagonal;
-    Vec steady_rhs;
-    Vec new_diagonal;
-    Vec previous_solution;
-    //Vec time_term;
-};
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------

@@ -166,7 +166,7 @@ endmacro()
 
 add_subdirectory("scripts")
 add_subdirectory("input")
-add_subdirectory("interpolation")
+add_subdirectory("tools")
 add_subdirectory("la")
 add_subdirectory("system")
 add_subdirectory("fields")
@@ -174,6 +174,7 @@ add_subdirectory("fem")
 add_subdirectory("mesh")
 add_subdirectory("coupling")
 add_subdirectory("output")
+add_subdirectory("dealii")
 
 
 #################################################################################################
