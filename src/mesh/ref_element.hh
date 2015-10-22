@@ -27,7 +27,7 @@
  * @author Jan Stebel
  *
  *
- * TODO:
+ * TODO:  reconsider following whether it is actual...
  *
  * - design interface in such a way, that we can change numbering
  * - design numbering and orientations on ref element that is consistent (orientation and numbering od 2d el. match sides of 3d),
@@ -89,9 +89,11 @@
  * Ordering of nodes and sides in reference elements
  * =================================================
  *
+ * TODO we want the following (22.10.):
+ * 
  * 1D element (line segment)   2D element (triangle)        3D element (tetrahedron)
  *
- *                                                                            y (local z)
+ *                                                                            z
  *                                                                          .
  *                                                                        ,/
  *                                                                       /
@@ -108,7 +110,7 @@
  * 0----------1 --> x          0----------1 --> x                    `\. |/
  *                                                                      `2
  *                                                                         `\.
- *                                                                            ` z (local y)
+ *                                                                            `y
  *
  * side id  node ids           side id  node ids           side id  node ids   normal
  * 0        0                  0        0,1                0        0,1,2      OUT
@@ -117,17 +119,17 @@
  *                                                         3        1,2,3      IN
  *
  *
- * nodes coordinates:                                                          in local:     
- * 0        [0]                0        [0,0]              0        [0,0,0]    [0,0,0] 
- * 1        [1]                1        [1,0]              1        [1,0,0]    [1,0,0]
- *                             2        [0,1]              2        [0,0,1]    [0,1,0]     
- *                                                         3        [0,1,0]    [0,0,1]
+ * nodes coordinates:                                                               
+ * 0        [0]                0        [0,0]              0        [0,0,0]    
+ * 1        [1]                1        [1,0]              1        [1,0,0]    
+ *                             2        [0,1]              2        [0,1,0]       
+ *                                                         3        [0,0,1]    
  * 
  * barycentric coordinates of nodes:
- * 0        [1,0]              0        [1,0,0]            0        [1,0,0,0]
- * 1        [0,1]              1        [0,1,0]            1        [0,1,0,0]
- *                             2        [0,0,1]            2        [0,0,1,0]
- *                                                         3        [0,0,0,1]
+ * 0        [0,1]              0        [0,0,1]            0        [0,0,0,1]
+ * 1        [1,0]              1        [1,0,0]            1        [1,0,0,0]
+ *                             2        [0,1,0]            2        [0,1,0,0]
+ *                                                         3        [0,0,1,0]
  */
 template<unsigned int dim>
 class RefElement
@@ -135,8 +137,7 @@ class RefElement
 public:
 
 	/**
-	 * Return local coordinates of given node.
-     * 'Local' means in the coordinate system of the reference element according to node numbering.
+	 * Return coordinates of given node.
      * @see the class documentation @p RefElement
 	 * @param nid Node number.
      * NOTE: Implementation is dependent on current node and side numbering.
@@ -209,7 +210,6 @@ public:
     static const unsigned int line_nodes[n_lines][2];
     
     /**
-     * TODO Question: it is not used anywhere for 3D; why?
      * Indices of sides for each line. Nonempty only for @p dim==3 and @p dim==2.
      */
     static const unsigned int line_sides[n_lines][2];
@@ -242,32 +242,13 @@ public:
      * AD has barycoords for A (1,0), for D (0,1), but A in ABCD is (1,0,0,0) and D is (0,0,0,1)
      * this method creates array ((1,0,0,0),(0,0,0,1))
      */
-    template<unsigned int subdim> inline static std::array<arma::vec::fixed<dim+1>,subdim+1> bary_coords(unsigned int sid){
-            //ASSERT(subdim < dim, "Sub-dimension is bigger than dimension!");
-            std::array<arma::vec::fixed<dim+1>,subdim+1> bary_c;
-
-            for(unsigned int i = 0; i < subdim+1; i++){
-                if((dim-subdim) == 2){
-                    bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::line_nodes[sid][i]);
-                }else{
-                    bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::side_nodes[sid][i]);
-                }
-            }
-            return bary_c;
-    };
+    template<unsigned int subdim> static std::array<arma::vec::fixed<dim+1>,subdim+1> bary_coords(unsigned int sid);
 
     /** Interpolate barycentric coords to a higher dimension of a simplex.
      * @param coord - barycentric coords of a point on a sub-simplex
      * @param sub_simplex_idx - id of sub-simplex on a simplex
      */
-    template<unsigned int subdim> inline static arma::vec::fixed<dim+1> interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx){
-
-        std::array<arma::vec::fixed<dim+1>, subdim+1> simplex_M_vertices = RefElement<dim>::bary_coords<subdim>(sub_simplex_idx);
-        arma::vec::fixed<dim+1> sum;
-        sum.zeros();
-        for(int i=0; i<subdim+1; i++) sum += coord[i]*simplex_M_vertices[i];
-        return sum;
-    };
+    template<unsigned int subdim> static arma::vec::fixed<dim+1> interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx);
 
     /**
      * Basic line interpolation.
@@ -279,4 +260,34 @@ public:
 };
 
 
+/************************* template implementation ****************************/
+
+template<unsigned int dim>
+template<unsigned int subdim> 
+std::array<arma::vec::fixed<dim+1>,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
+        //ASSERT(subdim < dim, "Sub-dimension is bigger than dimension!");
+        std::array<arma::vec::fixed<dim+1>,subdim+1> bary_c;
+
+        for(unsigned int i = 0; i < subdim+1; i++){
+            if((dim-subdim) == 2){
+                bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::line_nodes[sid][i]);
+            }else{
+                bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::side_nodes[sid][i]);
+            }
+        }
+        return bary_c;
+};
+
+
+template<unsigned int dim>
+template<unsigned int subdim> 
+arma::vec::fixed<dim+1> RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx){
+    std::array<arma::vec::fixed<dim+1>, subdim+1> simplex_M_vertices = RefElement<dim>::bary_coords<subdim>(sub_simplex_idx);
+    arma::vec::fixed<dim+1> sum;
+    sum.zeros();
+    for(int i=0; i<subdim+1; i++) sum += coord[i]*simplex_M_vertices[i];
+    return sum;
+};
+    
+    
 #endif /* REF_ELEMENT_HH_ */
