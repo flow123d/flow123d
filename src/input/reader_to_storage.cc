@@ -478,11 +478,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
     	// default strings must be valid JSON
-    	//ReaderToStorage  tmp_storage(dflt_str, *type, reader_file_format_);
-    	istringstream is(dflt_str);
-    	ReaderToStorage tmp_storage;
-    	tmp_storage.read_stream(is, *type, reader_file_format_);
-    	return tmp_storage.storage_;
+    	Type::Default dflt(dflt_str);
+    	return dflt.get_storage(*type);
 
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration

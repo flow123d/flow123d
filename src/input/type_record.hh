@@ -12,6 +12,7 @@
 
 #include "type_base.hh"
 #include "type_selection.hh"
+#include "storage.hh"
 
 
 namespace Input {
@@ -149,9 +150,15 @@ public:
      */
     bool check_validity(const TypeBase &type) const;
 
+    /**
+     * Return @p storage_, if storage_ is NULL, call check_validity method
+     */
+    Input::StorageBase *get_storage(const TypeBase &type) const;
+
 private:
-    string value_;              ///< Stored value.
-    enum DefaultType type_;     ///< Type of the Default.
+    string value_;                          ///< Stored value.
+    enum DefaultType type_;                 ///< Type of the Default.
+    mutable Input::StorageBase *storage_;   ///< Storage of default value read by reader
 
     /**
      * Forbids default constructor.

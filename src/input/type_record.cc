@@ -39,11 +39,11 @@ using namespace std;
  */
 
 Default::Default()
-: value_("OPTIONAL"), type_(no_default_optional_type)
+: value_("OPTIONAL"), type_(no_default_optional_type), storage_(NULL)
 {}
 
 Default::Default(const std::string & value)
-: value_(value), type_(default_at_declaration)
+: value_(value), type_(default_at_declaration), storage_(NULL)
 {
     boost::algorithm::trim(value_);
 }
@@ -51,7 +51,7 @@ Default::Default(const std::string & value)
 
 
 Default::Default(enum DefaultType type, const std::string & value)
-: value_(value), type_(type)
+: value_(value), type_(type), storage_(NULL)
 {}
 
 TypeBase::TypeHash Default::content_hash() const
@@ -65,18 +65,27 @@ TypeBase::TypeHash Default::content_hash() const
 
 bool Default::check_validity(const TypeBase &type) const
 {
+	if ( storage_ ) return true;
 	if ( !has_value_at_declaration() ) return false;
 
 	try {
 		istringstream is(value_);
 		Input::ReaderToStorage reader;
 		reader.read_stream(is, type, FileFormat::format_JSON);
+		storage_ = reader.get_storage();
 		return true;
 	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
 		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type.type_name()));
 	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
 		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type.type_name()));
 	}
+}
+
+
+Input::StorageBase *Default::get_storage(const TypeBase &type) const
+{
+	if ( !storage_ ) this->check_validity(type);
+	return storage_;
 }
 
 
@@ -569,9 +578,8 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 
 const Record * AbstractRecord::get_default_descendant() const {
     if ( have_default_descendant() ) {
-    	string s(child_data_->selection_default_.value());
-    	s.erase( std::remove( s.begin(), s.end(), '\"' ),s.end() );
-        return &( get_descendant(s) );
+    	int sel_val = child_data_->selection_default_.get_storage( *(child_data_->selection_of_childs) )->get_int();
+        return &( get_descendant( child_data_->selection_of_childs->int_to_name(sel_val) ) );
     }
     return NULL;
 }

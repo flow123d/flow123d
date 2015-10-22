@@ -124,7 +124,7 @@ protected:
     /**
      * Getter for root of the storage tree.
      */
-    const StorageBase *get_storage()
+    StorageBase *get_storage()
     { return storage_;}
 
 
