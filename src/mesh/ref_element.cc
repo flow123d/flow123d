@@ -114,19 +114,6 @@ template<> const unsigned int RefElement<2>::line_sides[][2] = {
      {2,1}
 };
 
-// template<>
-// vec::fixed<3> RefElement<3>::node_coords(unsigned int nid)
-// {
-//     ASSERT(nid < n_nodes, "Vertex number is out of range!");
-// 
-//     vec::fixed<3> p;
-//     p.zeros();
-// 
-//     if (nid > 0)
-//         p((2*nid-2)%3) = 1;
-// 
-//     return p;
-// }
 
 template<unsigned int dim>
 vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
@@ -136,6 +123,7 @@ vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
 	vec::fixed<dim> p;
 	p.zeros();
 
+    // these are real coordinates in x,y,z as we want
     if (nid > 0)
         p(nid-1) = 1;
 
@@ -151,8 +139,15 @@ vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
     vec::fixed<dim+1> p;
     p.zeros();
 
-    p(nid) = 1;
+// this is by VF    
+//     p(nid) = 1;
 
+    // this is what we want
+    if (nid == 0)
+        p(dim) = 1;
+    else
+        p(nid-1) = 1;
+    
     return p;
 }
 
@@ -162,29 +157,6 @@ inline unsigned int RefElement<dim>::oposite_node(unsigned int sid)
 {
     return n_sides - sid - 1;
 }
-
-// template<unsigned int dim>
-// vec::fixed<dim> RefElement<dim>::normal_vector(unsigned int sid)
-// {
-// 	ASSERT(sid < n_sides, "Side number is out of range!");
-// 	vec::fixed<dim> p;
-// 	unsigned int new_sid = sid;
-// 
-// 	if (dim==1)
-// 		new_sid = (sid+1)%2;
-// 	else if (dim==2)
-// 		new_sid = (sid+2)%3;
-// 
-// 	if (new_sid == 0)
-// 		p.fill(1./sqrt(dim));
-// 	else
-// 	{
-// 		p.zeros();
-// 		p(new_sid-1) = -1;
-// 	}
-// 
-// 	return p;
-// }
 
 
 template<>
