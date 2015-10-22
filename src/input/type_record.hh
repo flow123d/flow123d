@@ -388,10 +388,6 @@ public:
 
 protected:
 
-
-    /// Check that given default value is valid for given type of the key.
-    bool check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const;
-
     /**
      * Assertion for finished Type::Record.
      */

@@ -230,19 +230,6 @@ bool Record::is_closed() const {
 
 
 
-bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const
-{
-	try {
-		return dflt.check_validity(type);
-	} catch (ExcWrongDefault & e) {
-		e << EI_KeyName(k_name);
-		throw;
-	}
-}
-
-
-
-
 bool Record::finish(bool is_generic)
 {
 
@@ -260,7 +247,12 @@ bool Record::finish(bool is_generic)
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
-            check_key_default_value(it->default_, *(it->type_), it->key_);
+        	try {
+        		it->default_.check_validity( *(it->type_) );
+        	} catch (ExcWrongDefault & e) {
+        		e << EI_KeyName(it->key_);
+        		throw;
+        	}
         }
     }
 
@@ -459,7 +451,6 @@ void Record::RecordData::declare_key(const string &key,
 Record &Record::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
                         const Default &default_value, const string &description)
 {
-    check_key_default_value(default_value, *type, key);
     data_->declare_key(key, type, default_value, description);
     return *this;
 }
