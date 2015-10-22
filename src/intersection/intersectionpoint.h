@@ -16,7 +16,7 @@ namespace computeintersection{
  * 
  * Represents a point from simplex<N> and simplex<M> intersection
  * contains bary coords of a point on simplex<N> and simplex<M>
- *
+ * Considering N < M. TODO Assert this condition.
  */
 template<int N, int M> class IntersectionPoint {
 
@@ -26,8 +26,16 @@ template<int N, int M> class IntersectionPoint {
 	int side_idx1; // For case N = 2, M = 3 -> index of a triangle line
 	int side_idx2; // For case N = 1 or N = 2, M = 3 -> index of a tetrahedron side
 
+	//TODO comment on what the orientation really is (relation to orientation of side,line,plucker)
 	unsigned int orientation; // orientation from intersection using plucker coords
 
+	//TODO can be removed?
+	/**
+     * Introduce setter functions
+     * H-S:     
+     * H-H:
+     * S-S:
+     */
 	bool is_vertex_; // point is a vertex of triangle
 	bool is_patological_; // points is a vertex of tetrahedron or it is in side of tetrahedron or it is in edge of tetrahedron
 
@@ -36,6 +44,10 @@ template<int N, int M> class IntersectionPoint {
 	inline IntersectionPoint(){
 		clear();
 	};
+    
+    /**
+     * TODO can be split into two setters ? coordinate data x topolopgy data
+     */
 	inline IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
 					  const arma::vec::fixed<M+1> &lc2,
 					  int side1 = -1,

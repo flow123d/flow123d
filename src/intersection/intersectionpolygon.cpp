@@ -86,6 +86,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 					// indexu hrany trojúhelníku (hranu s indexem 1. otáčíme)
 					// indexu stěnu čtyřstěnu
 					// orientaci bodu (směr bodu průniku, který vznikne při výpočtu průniku pomocí Plückerových souřadnic)
+                    // TODO where the following term comes from??
 					unsigned int j = (i_points[i].get_side2() + i_points[i].get_orientation()+ i_points[i].get_side1())%2;
 
 
@@ -105,6 +106,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 					// TYP bodu H-H
 					// bod je vrcholem trohúhelníku - zjistíme o jaký vrchol se jedná
 					// Jelikož polygon orientujeme ve směru trojúhelníku -> budeme mít fixní uspořádání jen podle indexu vrcholu trojúhelníku
+                    //TODO we must provide a function in reference element: node coordinates -> node index
 					unsigned int vertex_index = (i_points[i].get_local_coords1()[0] == 1 ? 0 : (i_points[i].get_local_coords1()[1] == 1 ? 1 : 2));
 					unsigned int triangle_side_in = RefElement<2>::line_sides[vertex_index][1];
 					unsigned int triangle_side_out = RefElement<2>::line_sides[vertex_index][0];
