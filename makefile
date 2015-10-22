@@ -1,31 +1,20 @@
 # 
 # Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
 #
-# Please make a following refer to Flow123d on your project site if you use the program for any purpose,
-# especially for academic research:
-# Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
-#
-# This program is free software; you can redistribute it and/or modify it under the terms
-# of the GNU General Public License version 3 as published by the Free Software Foundation.
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License version 3 as published by the
+# Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
 # 
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along with this program; if not,
-# write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
-#
-# $Id$
-# $Revision$
-# $LastChangedBy$
-# $LastChangedDate$
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 #
 # This makefile just provide main rules for: build, documentation and testing
 # Build itself takes place in ../<branch>-build
 #
 
 # following depends on git_post_checkout_hook
-# every target using var. BUILD_DIR has to depend on 'update-build-tree'
+# every target using var. BUILD_DIR has to depend on 'build_tree'
 BUILD_DIR=$(shell cd -P ./build_tree && pwd)
 SOURCE_DIR=$(shell pwd)
 
@@ -33,54 +22,102 @@ SOURCE_DIR=$(shell pwd)
 DOC_DIR=$(SOURCE_DIR)/doc/reference_manual
 
 
-.PHONY : all
-all:  install-hooks build-flow123d 
 
-# this is prerequisite for every target using BUILD_DIR variable
-update-build-tree: update-submodules
-	@-bin/git_post_checkout_hook	# do not print command, ignore return code
+# All target will build entire Flow123d project
+.PHONY: all
+all: build-flow123d 
 
-# Just build flow123d with existing configuration.
-fast-flow123d:
-	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
 
-# Build flow, update configuration and dependencies.
-.PHONY : build-flow123d
-build-flow123d: update-build-tree cmake fast-flow123d
-	
+# Target will prepare files/folders structure for build
+#   copy git post checkout hook
+#   makes sure correct link is set in build_tree
+#   updates submodules
+.PHONY: prepare-for-build
+prepare-for-build: build_tree install-hooks update-submodules
+
 
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
-.PHONY : cmake
-cmake:  update-build-tree
+# Target is not .PHONY so if directory with name CMakeFiles exists
+#   it will not be performed again
+CMakeFiles:  prepare-for-build
 	@if [ ! -d "$(BUILD_DIR)" ]; then mkdir -p $(BUILD_DIR); fi
 	@cd $(BUILD_DIR); cmake "$(SOURCE_DIR)"
 
-	
-# add post-checkout hook
+
+# Adds post-checkout hook to git/hooks folder causing following:
+#   hook is invoked when a git checkout is run after having updated the worktree
+#   hook will make sure that correct link is set to build_tree symlink
 install-hooks:
 	if [ ! -e .git/hooks/post-checkout ];\
-	then cp bin/git_post_checkout_hook .git/hooks/post-checkout;\
-	fi	
-		
+		then cp bin/git_post_checkout_hook .git/hooks/post-checkout;\
+	fi
 
-# Save config.cmake from working dir to the build dir.
-save-config: update-build-tree
-	cp -f $(SOURCE_DIR)/config.cmake $(BUILD_DIR)
+# Target will fix build_tree path if necessarily so variable $(BUILD_DIR)
+#   points to correct location
+# Target is not .PHONY so if directory with name build_tree exists
+#   it will not be performed again
+build_tree: update-submodules
+	@-bin/git_post_checkout_hook
+
+
+# initialize submodules in safe way
+# check which kind of access use this repository use same type for submodules
+# to this end one have to set key "https_url" in the .gitmodules to the alternative https URL.
+.PHONY: update-submodules
+update-submodules: 
+	git submodule init
+	origin_url=$$( git config --get remote.origin.url ) ;\
+	if [ "$${origin_url}" != "$${origin_url#https}" ]; \
+	then \
+		cp .gitmodules_https .gitmodules; \
+	fi
+	git submodule sync
+	git checkout .gitmodules
+	git submodule update
 	
-# Restore config.cmake from build dir, possibly overwrite the current one.	
-load-config: update-build-tree
-	cp -f $(BUILD_DIR)/config.cmake $(SOURCE_DIR)
+
+# Let every submodule checkout branch it track. 
+# This may be useful to make some patches in submodule repository.
+# Note, however, you have to make: git add <submodule> in order to change 
+# the submodule's commit refered in the flow123d repository.
+.PHONY: checkout-submodule-branches
+checkout-submodule-branches:
+	git submodule foreach -q --recursive 'branch="$$(git config -f $${toplevel}/.gitmodules submodule.$${name}.branch)"; git checkout $${branch}'
+	
+# Target causes Flow123d build, to ensure correct build $(BUILD_DIR) 
+#   must exists, and CMakeFiles target was called in the past
+.PHONY: fast-flow123d
+fast-flow123d: prepare-for-build
+	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
+
+
+# Target will build Flow123d project by first calling cmake script
+#   and next by invoking fast-flow123d target
+# Configuration will also be updated and all dependecies will be upholded
+.PHONY: build-flow123d
+build-flow123d: CMakeFiles
+	$(MAKE) fast-flow123d
+
+
+
+# Save config.CMakeFiles from working dir to the build dir.
+save-config: build_tree
+	cp -f $(SOURCE_DIR)/config.CMakeFiles $(BUILD_DIR)
+	
+# Restore config.CMakeFiles from build dir, possibly overwrite the current one.	
+load-config: build_tree
+	cp -f $(BUILD_DIR)/config.CMakeFiles $(SOURCE_DIR)
 
 	
 # Remove all generated files
 .PHONY: clean
-clean: update-build-tree cmake
+clean: build_tree CMakeFiles
 	make -C $(BUILD_DIR) clean
 
 # Remove all links in source and whole build tree
 .PHONY: clean-all
-clean-all: update-build-tree
+clean-all: build_tree
 	# remove all symlinks in the source tree
 	rm -f `find . -type l` 
 	rm -rf $(BUILD_DIR)
@@ -102,21 +139,21 @@ clean-tests:
 
 # Create html documentation
 .PHONY: html-doc
-html-doc: cmake update-build-tree
+html-doc: CMakeFiles build_tree
 	make -C $(BUILD_DIR)/htmldoc htmldoc
 	$(BUILD_DIR)/bin/flow123d --JSON_machine "$(DOC_DIR)/input_reference.json"
 	python $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(BUILD_DIR)/htmldoc/html/src/index.html --format=html
 
 
-# Create doxygen documentation; use makefile generated by cmake
+# Create doxygen documentation; use makefile generated by CMakeFiles
 .PHONY: doxy-doc
-doxy-doc: cmake update-build-tree
+doxy-doc: CMakeFiles build_tree
 	make -C $(BUILD_DIR)/doc doxy-doc
 
-# Create user manual using LaTeX sources and generated input reference; use makefile generated by cmake
+# Create user manual using LaTeX sources and generated input reference; use makefile generated by CMakeFiles
 # It does not generate new input reference file.
 .PHONY: ref-doc
-ref-doc: cmake update-build-tree
+ref-doc: CMakeFiles build_tree
 	# generate json format specification (also contains flow123d open message text)
 	# remove flow123d open message text by searching for character '['
 	$(BUILD_DIR)/bin/flow123d --JSON_machine "$(DOC_DIR)/input_reference.json"
@@ -132,31 +169,6 @@ petsc-doc: #build-flow123d
 	"$(BUILD_DIR)/bin/flow123d" -s flow_vtk.con -help --petsc_redirect "$(BUILD_DIR)/doc/petsc_help" >/dev/null
 
 
-# initialize submodules in safe way
-# check which kind of access use this repository use same type for submodules
-# to this end one have to set key "https_url" in the .gitmodules to the alternative https URL.
-.PHONY: update-submodules
-update-submodules:
-	git submodule init
-	origin_url=$$( git config --get remote.origin.url ) ;\
-	if [ "$${origin_url}" != "$${origin_url#https}" ]; \
-	then \
-		cp .gitmodules_https .gitmodules; \
-	fi
-	git submodule sync
-	git checkout .gitmodules
-	git submodule update
-	
-
-# Let every submodule checkout branch it track. 
-# This may be useful to make some patches in submodule repository.
-# Note, however, you have to make: git add <submodule> in order to change 
-# the submodule's commit refered in the flow123d repository.
-.PHONY: checkout-submodule-branches
-checkout-submodule-branches:
-	git submodule foreach -q --recursive 'branch="$$(git config -f $${toplevel}/.gitmodules submodule.$${name}.branch)"; git checkout $${branch}'
-	
-
 ############################################################################################
 #Input file generation.
 
@@ -169,7 +181,7 @@ checkout-submodule-branches:
 #
 
 # call flow123d and make file flow_version.tex
-#$(DOC_DIR)/flow_version.tex: update-build-tree build-flow123d
+#$(DOC_DIR)/flow_version.tex: build_tree build-flow123d
 #	$(BUILD_DIR)/bin/flow123d --version | grep "This is Flow123d" | head -n1 | cut -d" " -f4-5 \
 #	  > $(DOC_DIR)/flow_version.tex
 
@@ -195,7 +207,7 @@ inputref: $(DOC_DIR)/input_reference_raw.tex update_add_doc
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
 	@echo "... all (builds the whole library)"
-	@echo "... cmake (configures the build process, useful for running unit_tests without building the whole library)"
+	@echo "... CMakeFiles (configures the build process, useful for running unit_tests without building the whole library)"
 	@echo "... test-all (runs all tests)"
 	@echo "... %.test (runs selected test, e.g. 01.test)"
 	@echo "... clean (removes generated files in build directory)"
