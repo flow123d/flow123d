@@ -21,26 +21,29 @@ string FilePath::root_dir="";
 FilePath::FilePath(string file_path, const  FileType ft)
 : file_type_(ft)
 {
+	abs_file_path_ = file_path;
     if (output_dir == "") {
         xprintf(Warn, "Creating FileName object before set_io_dirs is called. No file path resolving.\n");
-        abs_file_path = file_path;
         return;
     }
 
+    substitute_value();
     if (ft == input_file) {
-        abs_file_path = root_dir + DIR_DELIMITER + file_path;
-        substitute_value();
+    	if ( FilePath::is_absolute_path(abs_file_path_) ) {
+    	} else {
+            abs_file_path_ = root_dir + DIR_DELIMITER + abs_file_path_;
+    	}
     } else if (ft == output_file) {
-        if ( FilePath::is_absolute_path(file_path) ) {
-            if (file_path.substr(0, output_dir.size()) == output_dir) {
-                file_path=file_path.substr(output_dir.size()+1);
+        if ( FilePath::is_absolute_path(abs_file_path_) ) {
+            if (abs_file_path_.substr(0, output_dir.size()) == output_dir) {
+            	abs_file_path_=abs_file_path_.substr(output_dir.size()+1);
             } else {
-                THROW( ExcAbsOutputPath() << EI_Path( file_path ) );
+                THROW( ExcAbsOutputPath() << EI_Path( abs_file_path_ ) );
             }
         }
-        abs_file_path = output_dir + DIR_DELIMITER + file_path;
-        substitute_value();
+        abs_file_path_ = output_dir + DIR_DELIMITER + abs_file_path_;
     }
+
 }
 
 
@@ -95,10 +98,10 @@ void FilePath::add_placeholder(string key,string value) {
 
 void FilePath::substitute_value() {
     for (std::map<std::string,std::string>::const_iterator it = this->placeholder.begin(); it != this->placeholder.end(); ++it) {
-        size_t i = abs_file_path.find(it->first,0);
+        size_t i = abs_file_path_.find(it->first,0);
         if (i != std::string::npos) {
             if (it->second == "" ) xprintf(Warn, "Substituting placeholder %s with empty value.\n", it->first.c_str());
-            abs_file_path.replace(i, it->first.size(), it->second);
+            abs_file_path_.replace(i, it->first.size(), it->second);
         }
     }
 }
@@ -116,7 +119,7 @@ bool FilePath::is_absolute_path(const string path) {
 
 
 const string FilePath::get_absolute_working_dir() {
-    string abs_path = boost::filesystem::current_path().string();
+    string abs_path = boost::filesystem::current_path().string() + "/";
 #ifdef FLOW123D_HAVE_CYGWIN
     boost::replace_all(abs_path, "\\", "/");
 #endif // FLOW123D_HAVE_CYGWIN
@@ -128,7 +131,7 @@ const string FilePath::get_absolute_working_dir() {
 void FilePath::create_output_dir() {
     if (file_type_ == output_file) {
         boost::filesystem::create_directories(
-                boost::filesystem::path(abs_file_path).parent_path()
+                boost::filesystem::path(abs_file_path_).parent_path()
                 );
     }
 }
