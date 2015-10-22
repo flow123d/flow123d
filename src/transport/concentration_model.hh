@@ -65,7 +65,7 @@ public:
 
 		static constexpr const char * name() { return "SoluteTransport"; }
 
-		static string default_output_field() { return "conc"; }
+		static string default_output_field() { return "\"conc\""; }
 
 		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
 

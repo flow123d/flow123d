@@ -90,7 +90,7 @@ public:
 
 		static  constexpr const char *  name() { return "HeatTransfer"; }
 
-		static string default_output_field() { return "temperature"; }
+		static string default_output_field() { return "\"temperature\""; }
 
 		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
 	};

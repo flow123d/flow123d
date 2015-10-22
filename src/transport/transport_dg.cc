@@ -96,7 +96,7 @@ const Record & TransportDG<Model>::get_input_type() {
 		.declare_key("dg_order", Integer(0,3), Default("1"),
 				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
 		.declare_key("output_fields", Array(EqData::get_output_selection()),
-				Default("\""+Model::ModelEqData::default_output_field()+"\""),
+				Default(Model::ModelEqData::default_output_field()),
 				"List of fields to write to output file.")
 		.close();
 }
