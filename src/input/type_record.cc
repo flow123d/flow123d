@@ -301,19 +301,6 @@ string Record::type_name() const {
 
 
 
-bool Record::valid_default(const string &str) const
-{
-    if (data_->auto_conversion_key_idx >=0) {
-        unsigned int idx=key_index(data_->auto_conversion_key);
-        if ( data_->keys[idx].type_ ) return data_->keys[idx].type_->valid_default(str);
-    } else {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
-    }
-    return false;
-}
-
-
-
 bool Record::operator==(const TypeBase &other) const
 { return  typeid(*this) == typeid(other) &&
                  (type_name() == static_cast<const Record *>(&other)->type_name() );
@@ -555,17 +542,6 @@ AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_defaul
     return *this;
 }
 
-
-
-bool AbstractRecord::valid_default(const string &str) const
-{
-	// obligatory value if default is not set, see @p selection_default_
-	if ( !child_data_->selection_default_.is_obligatory() )  {
-        if (! child_data_->selection_of_childs->is_finished()) return false;
-        if ( child_data_->selection_default_.has_value_at_declaration() ) return get_default_descendant()->valid_default(str);
-    }
-    THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
-}
 
 
 const Record  & AbstractRecord::get_descendant(const string& name) const

@@ -50,9 +50,6 @@ public:
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const  override;
 
-    /// Implements @p TypeBase::valid_default.
-    bool valid_default(const string &str) const override;
-
     /// Implements @p TypeBase::make_instance.
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
@@ -79,9 +76,6 @@ public:
 	 * Hash is calculated by hash of generic type and hash of parameters.
 	 */
     TypeHash content_hash() const  override;
-
-    /// Implements @p TypeBase::valid_default.
-    bool valid_default(const string &str) const override;
 
     /// Used for set Instance to TypeRepository
     const Instance &close() const;

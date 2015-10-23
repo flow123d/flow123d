@@ -153,14 +153,6 @@ public:
     { return true; };
 
     /**
-     * For types that can be initialized from a default string, this method check
-     * validity of the default string. For invalid string an exception is thrown.
-     *
-     * Return false if the validity can not be decided due to presence of unconstructed types (Record, Selection)
-     */
-    virtual bool valid_default(const string &str) const =0;
-
-    /**
      * Hash of the type specification. Provides unique id computed from its
      * content (definition) so that same types have same hash.
      *
@@ -321,13 +313,6 @@ public:
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     bool operator==(const TypeBase &other) const override;
 
-    /**
-     *  Default values for an array creates array containing one element
-     *  that is initialized by given default value. So this method check
-     *  if the default value is valid for the sub type of the array.
-     */
-    bool valid_default(const string &str) const override;
-
     // Implements @p TypeBase::make_instance.
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
@@ -373,8 +358,6 @@ public:
 
     string type_name() const override;
 
-    bool valid_default(const string &str) const override;
-
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };
 
@@ -405,9 +388,6 @@ public:
      * Returns true if the given integer value conforms to the Type::Integer bounds.
      */
     bool match(std::int64_t value) const;
-
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    bool valid_default(const string &str) const override;
 
     string type_name() const override;
 
@@ -446,9 +426,6 @@ public:
      */
     bool match(double value) const;
 
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    bool valid_default(const string &str) const override;
-
     string type_name() const override;
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
@@ -477,9 +454,6 @@ public:
      * Particular descendants can check validity of the string.
      */
     virtual bool match(const string &value) const;
-
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const override;
 
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };

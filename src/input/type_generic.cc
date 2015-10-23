@@ -44,12 +44,6 @@ TypeBase::TypeHash Parameter::content_hash() const {
 }
 
 
-bool Parameter::valid_default(const string &str) const {
-    ASSERT(false, "Method valid_default can't be called for Parameter '%s'.\n", this->name_.c_str());
-    return true;
-}
-
-
 TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterPair> vec) const {
 	ParameterMap parameter_map;
 	for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
@@ -87,12 +81,6 @@ TypeBase::TypeHash Instance::content_hash() const {
 	}
 
 	return seed;
-}
-
-
-bool Instance::valid_default(const string &str) const {
-    ASSERT(false, "Method valid_default can't be called for Instance type.\n");
-    return true;
 }
 
 

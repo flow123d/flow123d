@@ -201,15 +201,6 @@ bool Array::operator==(const TypeBase &other) const    {
 
 
 
-bool Array::valid_default(const string &str) const {
-    if ( this->match_size( 1 ) ) {
-        return get_sub_type().valid_default( str );
-    } else {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-    }
-}
-
-
 TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec) const {
 	// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
 	Array arr = this->deep_copy();
@@ -291,15 +282,6 @@ TypeBase::TypeHash Bool::content_hash() const
 }
 
 
-bool Bool::valid_default(const string &str) const {
-	if ((str == "true") || (str == "false")) {
-		return true;
-	} else {
-		THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-	}
-}
-
-
 string Bool::type_name() const {
     return "Bool";
 }
@@ -326,23 +308,6 @@ TypeBase::TypeHash Integer::content_hash() const
 
 bool Integer::match(std::int64_t value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
-}
-
-
-
-bool Integer::valid_default(const string &str) const
-{
-    std::istringstream stream(str);
-    int value;
-    stream >> value;
-
-    if (stream && stream.eof() && match(value)) {
-        return true;
-    } else {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-    }
-
-    return false;
 }
 
 
@@ -376,24 +341,6 @@ TypeBase::TypeHash Double::content_hash() const
 bool Double::match(double value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
 }
-
-
-
-bool Double::valid_default(const string &str) const
-{
-    std::istringstream stream(str);
-    double value;
-    stream >> value;
-
-    if (stream && stream.eof() && match(value)) {
-        return true;
-    } else {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-    }
-
-    return false;
-}
-
 
 
 
@@ -465,15 +412,6 @@ string String::type_name() const {
     return "String";
 }
 
-
-
-
-bool String::valid_default(const string &str) const {
-    if (! match(str)) {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-    }
-    return true;
-}
 
 
 

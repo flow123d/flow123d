@@ -69,15 +69,6 @@ TypeBase::TypeHash Selection::content_hash() const
 
 
 
-bool Selection::valid_default(const string &str) const {
-	string s(str);
-	s.erase( std::remove( s.begin(), s.end(), '\"' ),s.end() );
-    if (! has_name(s))
-        THROW( ExcWrongDefault() << EI_DefaultStr( s ) << EI_TypeName( type_name() + " with values: "+key_list() ));
-    return true;
-}
-
-
 bool Selection::is_finished() const {
     return is_closed();
 }

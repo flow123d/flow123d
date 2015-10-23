@@ -318,12 +318,6 @@ public:
     /// Record type name getter.
     string type_name() const override;
 
-    /**
-     * The default string can initialize an Record if the record is auto-convertible
-     * and the string is valid default value for the auto conversion key.
-     */
-    bool valid_default(const string &str) const override;
-
     /// Class comparison and Record type name comparision.
     bool operator==(const TypeBase &other) const;
 
@@ -635,12 +629,6 @@ public:
      *  set parent and descendant see \p Record::derive_from)
      */
     bool finish(bool is_generic = false) override;
-
-    /**
-     * The default string can initialize an Record if the record is auto-convertible
-     * and the string is valid default value for the auto conversion key.
-     */
-    virtual bool valid_default(const string &str) const override;
 
     /**
      * Returns reference to the inherited Record with given name.

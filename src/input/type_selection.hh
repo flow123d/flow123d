@@ -148,9 +148,6 @@ public:
 
     Selection &copy_values(const Selection &sel);
 
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    bool valid_default(const string &str) const override;
-
     /**
      * Just check if there is a particular name in the Selection.
      */
