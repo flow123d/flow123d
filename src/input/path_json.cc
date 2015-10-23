@@ -26,7 +26,7 @@ PathJSON::PathJSON(istream &in)
     io::filtering_istream filter_in;
 
 	std::stringstream wrapped_stream;
-	wrapped_stream << "[ " << in.rdbuf() << " ]";
+	wrapped_stream << "[\n" << in.rdbuf() << "\n]";
 
 	filter_in.push(uncommenting_filter());
     filter_in.push(wrapped_stream);
