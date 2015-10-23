@@ -336,12 +336,15 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // register output fields
     output_rec = in_rec.val<Input::Record>("output_stream");
 	output_vec.resize(n_subst_);
-	output_solution.resize(n_subst_);
+	//output_solution.resize(n_subst_);
+	int rank;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	unsigned int output_vector_size= (rank==0)?feo->dh()->n_global_dofs():0;
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// for each substance we allocate output array and vector
-		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
-		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
+		//output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
+		VecCreateSeq(PETSC_COMM_SELF, output_vector_size, &output_vec[sbi]);
 	}
 	data_.output_field.set_components(substances_.names());
 	data_.output_field.set_mesh(*mesh_);
@@ -407,7 +410,7 @@ TransportDG<Model>::~TransportDG()
 		for (unsigned int i=0; i<n_subst_; i++)
 		{
 			VecDestroy(&output_vec[i]);
-			delete[] output_solution[i];
+			//delete[] output_solution[i];
 		}
     }
 
@@ -437,12 +440,13 @@ void TransportDG<Model>::output_vector_gather()
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// gather solution to output_vec[sbi]
-		ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(), 1, idx, PETSC_COPY_VALUES, &is);
-		VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
-		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		//ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(),1 , idx, PETSC_COPY_VALUES, &is);
+		//VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
+		VecScatterCreateToZero(ls[sbi]->get_solution(), &output_scatter, PETSC_NULL);
+	    VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterDestroy(&(output_scatter));
-		ISDestroy(&(is));
+		//ISDestroy(&(is));
 	}
 }
 

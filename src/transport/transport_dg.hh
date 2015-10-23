@@ -466,7 +466,7 @@ private:
 	// @{
 
 	/// Array for storing the output solution data.
-	vector<double*> output_solution;
+	//vector<double*> output_solution;
 
 	/// Vector of solution data.
 	vector<Vec> output_vec;
