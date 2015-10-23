@@ -77,6 +77,9 @@ TEST(PathJSON, errors) {
     path.go_to_root();
     path.down(12); // "REF":"/6/key"
     EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "key 'key' not found" );
+
+    istringstream empty_in_str("");
+    EXPECT_THROW_WHAT( { PathJSON empty_path(empty_in_str);}, ReaderToStorage::ExcNotJSONFormat, "not an array" );
 }
 
 

@@ -67,7 +67,7 @@ using namespace Input::Type;
    	   	   	   	   	  }, ExcXprintfMsg, "Re-declaration of the key:");
 
    EXPECT_THROW_WHAT( { Record("yy","")
-   	   	   	   				.declare_key("wrong_double", Double(), Default("\"ahoj\""),"")
+   	   	   	   				.declare_key("wrong_double", Double(), Default("1.23 4"),"")
 							.close();
    	   	   	   	   	  }, ExcWrongDefault, "Default value .* do not match type: 'Double';");
 

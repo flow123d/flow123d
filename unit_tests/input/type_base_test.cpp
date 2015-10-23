@@ -83,7 +83,7 @@ TEST(InputTypeScalar, all_types) {
     EXPECT_TRUE( Default("-5.67E-23").check_validity( Double() ) );
     EXPECT_THROW_WHAT( { Default("-1e-10").check_validity( Double(0,4.4) ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
-    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( Double() ); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { Default("-3.6t5").check_validity( Double() ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
 
     // String
