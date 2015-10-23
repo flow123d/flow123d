@@ -78,10 +78,9 @@ ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_
 void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
     ASSERT(storage_==nullptr," ");
-    reader_file_format_ = format;
 
     PathBase * root_path;
-	if (reader_file_format_ == FileFormat::format_JSON) {
+	if (format == FileFormat::format_JSON) {
 		root_path = new PathJSON(in);
 	} else {
 		root_path = new PathYAML(in);
