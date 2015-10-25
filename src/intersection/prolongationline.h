@@ -21,7 +21,21 @@ namespace computeintersection{
  * - split prolongationline into Prolongation2D (neighbor is 2D) and Prolongation3D (neighbor is 3D)
  * - replace with struct, remove .cpp file
  */
-class ProlongationLine {
+
+struct ProlongationLine{
+	unsigned int elm_2D_idx;
+	unsigned int elm_3D_idx;
+	unsigned int dictionary_idx; // index to dictionary with all intersections associated with index of 2D element
+	int elm_2D_idx_old;
+	int elm_3D_idx_old;
+};
+
+/*struct ProlongationLine3D{
+
+
+};*/
+
+/*class ProlongationLine {
 private:
 
 	// idx sousedniho elementu - podle typu je to 2D
@@ -74,7 +88,7 @@ public:
 		return elm_3D_idx;
 	};
 
-};
+};*/
 
 }
 #endif /* PROLONGATIONLINE */

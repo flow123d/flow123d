@@ -335,7 +335,8 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<u
 							IntersectionPolygon il_other(sousedni_element, elm_2D);
 							intersection_list[sousedni_element].push_back(il_other);
 
-							ProlongationLine pl2(sousedni_element, elm_2D, intersection_list[sousedni_element].size() - 1);
+							//ProlongationLine pl2(sousedni_element, elm_2D, intersection_list[sousedni_element].size() - 1);
+							ProlongationLine pl2 = {sousedni_element, elm_2D, intersection_list[sousedni_element].size() - 1, -1, -1};
 							prolongation_line_queue_2D.push(pl2);
 						}
 				}
@@ -363,7 +364,8 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<u
 						IntersectionPolygon il_other(elm.index(), sousedni_element);
 						intersection_list[elm.index()].push_back(il_other);
 
-						ProlongationLine pl2(elm.index(), sousedni_element, intersection_list[elm.index()].size() - 1);
+						//ProlongationLine pl2(elm.index(), sousedni_element, intersection_list[elm.index()].size() - 1);
+						ProlongationLine pl2 = {elm.index(), sousedni_element, intersection_list[elm.index()].size() - 1, -1, -1};
 						prolongation_line_queue_3D.push(pl2);
 
 					}
@@ -378,26 +380,26 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<u
 void InspectElements::computeIntersections2d3dProlongation(const ProlongationLine &pl){
 
 	// Měly bychom být vždy ve stejném trojúhelníku, tudíž updateTriangle by měl být zbytečný
-	ElementFullIter elm = mesh->element(pl.getElement2DIdx());
-	ElementFullIter ele = mesh->element(pl.getElement3DIdx());
+	ElementFullIter elm = mesh->element(pl.elm_2D_idx);
+	ElementFullIter ele = mesh->element(pl.elm_3D_idx);
 
 	update_triangle(elm);
 	update_tetrahedron(ele);
 
 
-	element_2D_index = pl.getElement2DIdx();
+	element_2D_index = pl.elm_2D_idx;
 
 
 	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
 	CI_23.init();
-	CI_23.compute(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
+	CI_23.compute(intersection_list[pl.elm_2D_idx][pl.dictionary_idx]);
 
 
 
-	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].size() > 2){
+	if(intersection_list[pl.elm_2D_idx][pl.dictionary_idx].size() > 2){
 
 		std::vector<unsigned int> prolongation_table;
-		intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].trace_generic_polygon(prolongation_table);
+		intersection_list[pl.elm_2D_idx][pl.dictionary_idx].trace_generic_polygon(prolongation_table);
 		computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
 	}
 };
