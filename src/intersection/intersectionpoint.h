@@ -53,6 +53,60 @@ template<int N, int M> class IntersectionPoint {
 					    is_patological_(patological){};
 	inline ~IntersectionPoint(){};
 
+	/// Fliping dimension of an intersectionpoint
+	inline IntersectionPoint(IntersectionPoint<M, N> &IP){
+		local_coords1 = IP.get_local_coords2();
+		local_coords2 = IP.get_local_coords1();
+		side_idx1 = IP.get_side2();
+		side_idx2 = IP.get_side1();
+		orientation = IP.get_orientation();
+		is_vertex_ = IP.is_vertex();
+		is_patological_ = IP.is_patological();
+	};
+
+	/* Constructor interpolates the second bary coords of IntersectionPoint<N,M-1> to IntersectionPoint<N,M>
+     * Allowed only from dimension 1 to 2 and from 2 to 3
+     * */
+	inline IntersectionPoint(IntersectionPoint<N,M-1> &IP){
+		arma::vec::fixed<M+1> interpolated;
+		//TODO: PE; try to replace if cases; interpolate<M-1>
+		if(M == 3){
+			interpolated = RefSimplex<3>::interpolate<2>(IP.get_local_coords2(), IP.get_side2());
+		}else if(M == 2){
+			interpolated = RefSimplex<2>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
+		}else{
+			ASSERT(false,"Wrong the second dimension in an IntersectionPoint (allowed 2 and 3 only)");
+			interpolated.zeros();
+		}
+		local_coords1 = IP.get_local_coords1();
+		local_coords2 = interpolated;
+		side_idx1 = IP.get_side1();
+		side_idx2 = IP.get_side2();
+		orientation = IP.get_orientation();
+		is_vertex_ = IP.is_vertex();
+		is_patological_ = IP.is_patological();
+	}
+
+	/* Constructor interpolates the second bary coords of IntersectionPoint<N,M-2> to IntersectionPoint<N,M>
+	 * Allowed only from dimension 1 to 3
+	 * */
+	inline IntersectionPoint(IntersectionPoint<N,M-2> &IP){
+     	arma::vec::fixed<M+1> interpolated;
+     	if(M == 3){
+     		interpolated = RefSimplex<3>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
+     	}else{
+     		ASSERT(false,"Wrong the second dimension in an IntersectionPoint (allowed 3 only)");
+     		interpolated.zeros();
+     	}
+     	local_coords1 = IP.get_local_coords1();
+		local_coords2 = interpolated;
+		side_idx1 = IP.get_side1();
+		side_idx2 = IP.get_side2();
+		orientation = IP.get_orientation();
+		is_vertex_ = IP.is_vertex();
+		is_patological_ = IP.is_patological();
+	}
+
 	inline void clear(){
 		local_coords1.zeros();
 		local_coords2.zeros();
@@ -117,22 +171,17 @@ template<int N, int M> class IntersectionPoint {
 	inline bool is_patological() const{
 		return is_patological_;
 	};
+
+	inline friend ostream& operator<<(ostream& os, const IntersectionPoint<N,M>& IP){
+		os << "test";
+		return os;
+	};
 	/**
 	 * For convex hull polygon tracing
 	 */
 	bool operator<(const IntersectionPoint<N,M> &ip) const;
 };
 
-/*class TriangleLineIntersections{
-
-	int side_idx1;
-	int side_idx2;
-
-	unsigned int orientation;
-
-	bool is_vertex;
-	bool is_patological;
-};*/
 
 } // END namespace
 #endif /* INTERSECTIONPOINT_H_ */
