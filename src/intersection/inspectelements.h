@@ -90,21 +90,17 @@ public:
 	void print_mesh_to_file(string name);
 	void print_mesh_to_file_1D(string name);
 
-	inline double polygonArea(){
-		double subtotal = 0.0;
+    /** @brief Computes the area of 2d-3d polygonal intersection.
+     * @return the polygonal area
+     * TODO: probably remove dependence on @class TTriangle in NGH
+     */
+	double polygonArea();
 
-		for(unsigned int i = 0; i < intersection_list.size(); i++){
-			for(unsigned int j = 0; j < intersection_list[i].size();j++){
-				Element efi = *mesh->element(intersection_list[i][j].idx_2D());
-				 TTriangle t2d(efi);
-				 double t2dArea = t2d.GetArea();
-				 double localArea = intersection_list[i][j].get_area();//il.getArea();
-				 subtotal += 2*localArea*t2dArea;
-			}
-		}
-		return subtotal;
-	};
-
+    /** @brief Computes the length of 1d-3d line intersection.
+     * @return the line length
+     * TODO: probably remove dependence on @class TAbscissa in NGH
+     */
+    double line_length();
 };
 
 } // END namespace

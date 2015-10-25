@@ -23,7 +23,7 @@ using namespace std;
 using namespace computeintersection;
 
 
-void compute_intersection_area(Mesh *mesh)
+void compute_intersection_area_23d(Mesh *mesh)
 {
     double area1, area2 = 0;
 
@@ -57,6 +57,45 @@ void compute_intersection_area(Mesh *mesh)
 //     EXPECT_NEAR(area1, area2, 1e-12);
     EXPECT_DOUBLE_EQ(area1,area2);
 }
+
+
+void compute_intersection_area_13d(Mesh *mesh)
+{
+    double length1, length2 = 0;
+
+    // compute intersection
+    xprintf(Msg, "Computing intersection length by NEW algorithm\n");
+    InspectElements ie(mesh);
+    ie.compute_intersections<1,3>();
+    
+    length1 = ie.line_length();
+
+    // compute intersection by NGH
+    xprintf(Msg, "Computing intersection length by NGH algorithm\n");
+    TAbscissa tabs;
+    TTetrahedron tte;
+    TIntersectionType it = line;
+
+    FOR_ELEMENTS(mesh, elm) {
+        if (elm->dim() == 1) {
+        tabs.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+                       TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)));
+        }
+        else if(elm->dim() == 3){
+        tte.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
+                     TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
+        }
+    }
+    GetIntersection(tabs, tte, it, length2); // get only relative length of the intersection to the abscissa
+    length2 *= tabs.Length(); 
+    
+    xprintf(Msg,"Lenght of intersection line: (intersections) %.16e,\t(NGH) %.16e\n", length1, length2);
+//     EXPECT_NEAR(area1, area2, 1e-12);
+    EXPECT_DOUBLE_EQ(length1,length2);
+}
+
 
 TEST(area_intersections, all) {
     Profiler::initialize();
@@ -123,7 +162,7 @@ TEST(area_intersections, all) {
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
-            compute_intersection_area(&mesh);
+            compute_intersection_area_23d(&mesh);
             xprintf(Msg, "==============\n");
         }
     }
@@ -132,6 +171,58 @@ TEST(area_intersections, all) {
     Profiler::uninitialize();
 }
 
+
+TEST(area_intersections_13d, all) {
+    Profiler::initialize();
+    
+    // directory with testing meshes
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/site_13d/";
+    std::vector<string> filenames;
+    
+    // read mesh file names
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir (dir_name.c_str())) != NULL) {
+        /* print all the files and directories within directory */
+        xprintf(Msg,"Testing mesh files: \n");
+        while ((ent = readdir (dir)) != NULL) {
+            string fname = ent->d_name;
+            // test extension ".msh"
+            if(fname.size() >= 4)
+            {
+                string ext = fname.substr(fname.size()-4);
+//                 xprintf(Msg,"%s\n",ext.c_str());
+                if(ext == ".msh"){
+                    filenames.push_back(ent->d_name);
+                    xprintf(Msg,"%s\n",ent->d_name);
+                }
+            }
+        }
+        closedir (dir);
+    } else {
+        ASSERT(0,"Could not open directory with testing meshes.");
+    }
+    
+    // for each mesh, compute intersection area and compare with old NGH
+    for(auto &fname : filenames)
+    {
+            xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
+            FilePath mesh_file(dir_name + fname, FilePath::input_file);
+            
+            Mesh mesh;
+            // read mesh with gmshreader
+            GmshMeshReader reader(mesh_file);
+            reader.read_mesh(&mesh);
+            mesh.setup_topology();
+            
+            xprintf(Msg, "==============\n");
+            compute_intersection_area_13d(&mesh);
+            xprintf(Msg, "==============\n");
+    }
+
+    
+    Profiler::uninitialize();
+}
 
 
 

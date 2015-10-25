@@ -685,4 +685,38 @@ void InspectElements::print_mesh_to_file_1D(string name){
 
 };
 
+double InspectElements::polygonArea()
+{
+    double subtotal = 0.0;
+
+    for(unsigned int i = 0; i < intersection_list.size(); i++){
+        for(unsigned int j = 0; j < intersection_list[i].size();j++){
+            Element efi = *mesh->element(intersection_list[i][j].idx_2D());
+             TTriangle t2d(efi);
+             double t2dArea = t2d.GetArea();
+             double localArea = intersection_list[i][j].get_area();//il.getArea();
+             subtotal += 2*localArea*t2dArea;
+        }
+    }
+    return subtotal;
+}
+
+double InspectElements::line_length()
+{
+    double subtotal = 0.0;
+
+    for(unsigned int i = 0; i < intersection_line_list.size(); i++){
+        for(unsigned int j = 0; j < intersection_line_list[i].size();j++){
+            Element efi = *mesh->element(intersection_line_list[i][j].get_elm1D_idx());
+            TAbscissa t1d(efi);
+            double t1d_length = t1d.Length();
+            DBGMSG("t1d length %f\n",t1d_length);
+            double local_length = intersection_line_list[i][j].compute_length();
+            subtotal += local_length*t1d_length;
+        }
+    }
+    return subtotal;
+}
+
+
 } // END namespace

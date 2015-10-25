@@ -70,6 +70,7 @@ public:
 		i_points = points;
 	};
 
+    //TODO rename consistently with polygon
 	inline unsigned int get_elm1D_idx() const{
 		return element_1D_idx;
 	};
@@ -82,6 +83,9 @@ public:
 	{
 		 return i_points[index];
 	};
+    
+    /// Computes the relative length of intersection line.
+    double compute_length();
 
 };
 
