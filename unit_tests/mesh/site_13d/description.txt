@@ -1,0 +1,7 @@
+
+line_tetrahedron00              - no intersection, line on the same bisector as one of the edges
+line_tetrahedron01              - rectangular tetrahedron, one common vertex, length = sqrt(3)/3
+line_tetrahedron02              - rectangular tetrahedron, one common vertex, intersection is only the vertex, length = 0
+line_tetrahedron03              - rectangular tetrahedron, two common vertices, intersection is an edge of the tetrahedron, length = 2
+line_tetrahedron04              - intersection is in one of the sides, parallel with an edge, length = 0.5 
+line_tetrahedron05              - intersection is in one of the sides, length = sqrt(2)/0.5
