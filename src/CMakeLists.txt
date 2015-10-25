@@ -197,7 +197,6 @@ add_library(intersections_lib
     intersection/intersectionpoint.cpp
     intersection/intersectionline.cpp
     intersection/intersectionpolygon.cpp
-    intersection/intersectionlocal.cpp
     intersection/computeintersection.cpp
     intersection/inspectelements.cpp
 )

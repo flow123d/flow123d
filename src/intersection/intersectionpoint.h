@@ -2,7 +2,7 @@
 #define INTERSECTIONPOINT_H_
 
 #include <armadillo>
-#include <array>
+//#include <array>
 #include "system/system.hh"
 
 using namespace std;
@@ -41,28 +41,36 @@ template<int N, int M> class IntersectionPoint {
 
 	public:
 
-	inline IntersectionPoint(){
-		clear();
-	};
+    /// Desctructor.
+    ~IntersectionPoint(){};
+    
+    /// Default constructor.
+	IntersectionPoint();
     
     /**
      * TODO can be split into two setters ? coordinate data x topolopgy data
      */
-	inline IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
+	IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
 					  const arma::vec::fixed<M+1> &lc2,
 					  int side1 = -1,
 					  int side2 = -1,
 					  unsigned int ori = 1,
 					  bool vertex = false,
-					  bool patological = false)
-					  : local_coords1(lc1),
-					    local_coords2(lc2),
-					    side_idx1(side1),
-					    side_idx2(side2),
-					    orientation(ori),
-					    is_vertex_(vertex),
-					    is_patological_(patological){};
-	inline ~IntersectionPoint(){};
+					  bool patological = false);
+	
+
+	/// Constructor - fliping dimension of an intersectionpoint
+	IntersectionPoint(IntersectionPoint<M, N> &IP);
+
+	/* Constructor interpolates the second bary coords of IntersectionPoint<N,M-1> to IntersectionPoint<N,M>
+     * Allowed only from dimension 1 to 2 and from 2 to 3
+     * */
+	IntersectionPoint(IntersectionPoint<N,M-1> &IP);
+
+	/* Constructor interpolates the second bary coords of IntersectionPoint<N,M-2> to IntersectionPoint<N,M>
+	 * Allowed only from dimension 1 to 3
+	 * */
+	IntersectionPoint(IntersectionPoint<N,M-2> &IP);
 
 	inline void clear(){
 		local_coords1.zeros();
@@ -128,22 +136,17 @@ template<int N, int M> class IntersectionPoint {
 	inline bool is_patological() const{
 		return is_patological_;
 	};
+
+	inline friend ostream& operator<<(ostream& os, const IntersectionPoint<N,M>& IP){
+		os << "test";
+		return os;
+	};
 	/**
 	 * For convex hull polygon tracing
 	 */
 	bool operator<(const IntersectionPoint<N,M> &ip) const;
 };
 
-/*class TriangleLineIntersections{
-
-	int side_idx1;
-	int side_idx2;
-
-	unsigned int orientation;
-
-	bool is_vertex;
-	bool is_patological;
-};*/
 
 } // END namespace
 #endif /* INTERSECTIONPOINT_H_ */

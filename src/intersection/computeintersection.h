@@ -12,7 +12,6 @@
 #include "intersectionpoint.h"
 #include "intersectionline.h"
 #include "intersectionpolygon.h"
-#include "intersectionlocal.h"
 #include "system/system.hh"
 
 using namespace std;
@@ -169,8 +168,6 @@ public:
 	ComputeIntersection<Simplex<1>, Simplex<3>> CI13[3];
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];
 
-	// Intersection objects
-	//std::vector<IntersectionLocal> intersections;
 
 
 };

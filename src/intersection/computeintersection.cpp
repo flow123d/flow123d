@@ -400,7 +400,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 			//if((IP.get_local_coords1())[0] <= 1 && (IP.get_local_coords1())[0] >= 0){
 				//IP.print();
 				//xprintf(Msg, "Interpolace dimenzi");
-				IntersectionPoint<1,3> IP13 = IntersectionLocal::interpolateDimension<1,3>(IP12s[IP12s.size() - 1]);
+				IntersectionPoint<1,3> IP13(IP12s[IP12s.size() - 1]);
 				//IP13.print();
 				IP13s.push_back(IP13);
 
@@ -573,24 +573,26 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 			// Vždy by měl být počet průniku 2 nebo 0
 			if(pocet_13_pruniku == 1){
 				IP13s[IP13s.size() - 1].set_side1((3-i)%3);
-				IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 1]);
-				IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
-				IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
+				IntersectionPoint<3,1> IP31(IP13s[IP13s.size() - 1]);
+				IntersectionPoint<3,2> IP32(IP31);
+				IntersectionPoint<2,3> IP23(IP32);
 				lokalni_mnohouhelnik.add_ipoint(IP23);
 
 			}else if(pocet_13_pruniku == 2){
 
 				IP13s[IP13s.size() - 2].set_side1((3-i)%3);
-				IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 2]);
-				IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
-				IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
+				//IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 2]);
+				IntersectionPoint<3,1> IP31(IP13s[IP13s.size() - 2]);
+				//IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
+				IntersectionPoint<3,2> IP32(IP31);
+				IntersectionPoint<2,3> IP23(IP32);
 				lokalni_mnohouhelnik.add_ipoint(IP23);
 
 				IP13s[IP13s.size() - 1].set_side1((3-i)%3);
-				IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 1]);
-				IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
-				IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
-				lokalni_mnohouhelnik.add_ipoint(IP23);
+				IntersectionPoint<3,1> IP31_2(IP13s[IP13s.size() - 1]);
+				IntersectionPoint<3,2> IP32_2(IP31_2);
+				IntersectionPoint<2,3> IP23_2(IP32_2);
+				lokalni_mnohouhelnik.add_ipoint(IP23_2);
 
 			}else if(pocet_13_pruniku > 2){
 				// Todo: nahradit Assertem
@@ -623,8 +625,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 						IP12s[IP12s.size() - 1].setIsPatological(true);
 					}*/
 					//IP.print();
-									IntersectionPoint<2,1> IP21 = IntersectionLocal::flipDimension<2,1>(IP12s[IP12s.size() - 1]);
-									IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,3>(IP21);
+									IntersectionPoint<2,1> IP21(IP12s[IP12s.size() - 1]);
+									IntersectionPoint<2,3> IP23(IP21);
 									//IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,2>(IP22);
 									//IP23.print();
 									lokalni_mnohouhelnik.add_ipoint(IP23);

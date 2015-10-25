@@ -44,8 +44,6 @@ class InspectElements {
 
 	std::queue<ProlongationPoint> prolongation_point_queue;
 
-	//IntersectionLocal temporary_intersection;
-
 	int element_2D_index;
 
 	Simplex<1> abscissa;
