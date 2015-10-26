@@ -100,16 +100,15 @@
  * usage of macros. And make robust "system" part, that
  * is MPI aware, but not MPI dependent.
  */
-#ifdef FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
-#define MPI_Comm_rank(A, B)
-#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
+//#ifdef FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
+//#define MPI_Comm_rank(A, B)
+//#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 
 #define ASSERT(i,...)   do {\
     if (!(i))  {\
         char msg[1024];\
         sprintf( msg, __VA_ARGS__);\
         int rank=-1;\
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);\
         THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
     }} while (0)
 
