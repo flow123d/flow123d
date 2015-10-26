@@ -503,6 +503,9 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
 	if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
+	RegionSet region_set;
+	region_set.push_back( Region(index, *this) );
+	add_set(label, region_set);
 	return Region(index, *this);
 }
 
