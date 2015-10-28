@@ -224,14 +224,19 @@ void RegionDB::close() {
     // set default sets
    for(unsigned int i=0; i< size(); i++) {
        Region reg(i, *this);
+   	   RegionSet region_set;
+   	   region_set.push_back( reg );
+
 
        if (reg.is_boundary() && (reg.boundary_idx() < boundary_size()) ) {
            add_to_set("BOUNDARY", reg );
            add_to_set("ALL", reg);
+       	   add_set(reg.label(), region_set);
        } else
        if ( (! reg.is_boundary()) && (reg.bulk_idx() < bulk_size()) ) {
            add_to_set("BULK", reg );
            add_to_set("ALL", reg);
+       	   add_set(reg.label(), region_set);
        }
     }
 }
@@ -503,9 +508,6 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
 	if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
-	RegionSet region_set;
-	region_set.push_back( Region(index, *this) );
-	add_set(label, region_set);
 	return Region(index, *this);
 }
 
