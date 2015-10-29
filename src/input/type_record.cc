@@ -253,15 +253,6 @@ bool Record::finish(bool is_generic)
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
 			if (!is_generic && it->type_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
            	data_->finished = data_->finished && it->type_->finish(is_generic);
-
-            // we check once more even keys that was already checked, otherwise we have to store
-            // result of validity check in every key
-        	try {
-        		it->default_.check_validity( *(it->type_) );
-        	} catch (ExcWrongDefault & e) {
-        		e << EI_KeyName(it->key_);
-        		throw;
-        	}
         }
     }
 
@@ -416,6 +407,7 @@ void Record::RecordData::declare_key(const string &key,
                          const Default &default_value, const string &description)
 {
     ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
+    // validity test of default value
     try {
     	default_value.check_validity(*type);
     } catch (ExcWrongDefault & e) {
