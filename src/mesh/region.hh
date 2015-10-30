@@ -183,6 +183,7 @@ private:
     const RegionDB *db_;
 
     friend class RegionDB;
+    friend class Mesh;
 };
 
 
