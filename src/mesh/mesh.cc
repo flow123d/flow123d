@@ -231,20 +231,37 @@ void Mesh::init_from_input() {
     Input::Array region_list;
     RegionDB::MapElementIDToRegionID el_to_reg_map;
 
+    // read raw mesh, add regions from GMSH file
+    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
+    reader.read_mesh(this, &el_to_reg_map);
+    // possibly add implicit_boundary region.
+    setup_topology();
     // create regions from our input
     if (in_record_.opt_val("regions", region_list)) {
         region_db_.read_regions_from_input(region_list, el_to_reg_map);
     }
-    // read raw mesh, add regions from GMSH file
-    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-    reader.read_mesh(this, &el_to_reg_map);
-    // possibly add implicit_boundary region, close region_db_.
-    setup_topology();
+    modify_element_ids(&el_to_reg_map);
+    //close region_db_.
+    region_db_.close();
     // create sets
     Input::Array set_list;
     if (in_record_.opt_val("sets", set_list)) {
         region_db_.read_sets_from_input(set_list);
     }
+}
+
+
+
+
+void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID *map) {
+	if (map) {
+		FOR_ELEMENTS(this, ele) {
+			RegionDB::MapElementIDToRegionID::const_iterator it = map->find(ele->id());
+			if (it != map->end()) {
+				element[ele->index()].region_idx_ = region_db_.add_region( it->second, ele->dim() );
+			}
+		}
+	}
 }
 
 
@@ -264,7 +281,6 @@ void Mesh::setup_topology() {
     make_edge_permutations();
     count_side_types();
 
-    region_db_.close();
     part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 }
 
