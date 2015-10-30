@@ -136,6 +136,12 @@ Region RegionDB::add_region(unsigned int id, const std::string &label) {
         THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->get_id()) );
     }
 
+    OnlyIDIter it_only_id = region_set_.get<OnlyID>().find(id);
+    if (it_only_id != region_set_.get<OnlyID>().end() ) {
+    	// replace region label
+    	return replace_region_label(it_only_id, label, boundary);
+    }
+
     return insert_region(id, label, undefined_dim, boundary);
 }
 
@@ -526,6 +532,22 @@ Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bo
     // check boundary
     if ( r_id.is_boundary() != boundary )
         THROW(ExcInconsistentBoundary() << EI_Label(it_undef_dim->label) << EI_ID(it_undef_dim->get_id()) );
+
+    return r_id;
+}
+
+Region RegionDB::replace_region_label(OnlyIDIter it_only_id, const std::string &label, bool boundary) {
+	unsigned int index = it_only_id->index;
+
+	RegionItem item(index, it_only_id->get_id(), label, it_only_id->dim());
+	region_set_.replace(
+            region_set_.get<Index>().find(index),
+            item);
+
+	Region r_id=Region(index, *this);
+    // check boundary
+    if ( r_id.is_boundary() != boundary )
+        THROW(ExcInconsistentBoundary() << EI_Label(label) << EI_ID(it_only_id->get_id()) );
 
     return r_id;
 }
