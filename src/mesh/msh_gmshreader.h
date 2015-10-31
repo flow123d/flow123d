@@ -128,7 +128,7 @@ public:
      *  Optional map el_to_reg_map can be used to override region of some elements provided by GMSH file.
      *  Input of the mesh allows changing regions within the input CON file.
      */
-    void read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map=NULL);
+    void read_mesh(Mesh* mesh);
 
     /**
      *  Reads ElementData sections of opened GMSH file. The file is serached for the \\$ElementData section with header
@@ -162,11 +162,10 @@ private:
     void read_nodes(Tokenizer &in, Mesh*);
     /**
      *  Method for reading of elements.
-     *  Optional map el_to_reg_map can be used to override region of some elements provided by GMSH file.
      *  Input of the mesh allows changing regions within the input CON file.
      *
      */
-    void read_elements(Tokenizer &in, Mesh*, const RegionDB::MapElementIDToRegionID *el_to_reg_map=NULL);
+    void read_elements(Tokenizer &in, Mesh*);
     /**
      * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */

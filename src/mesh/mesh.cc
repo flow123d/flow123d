@@ -233,7 +233,7 @@ void Mesh::init_from_input() {
 
     // read raw mesh, add regions from GMSH file
     GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-    reader.read_mesh(this, &el_to_reg_map);
+    reader.read_mesh(this);
     // possibly add implicit_boundary region.
     setup_topology();
     // create regions from our input
