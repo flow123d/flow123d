@@ -6,6 +6,9 @@
  */
 
 #include "inspectelements.h"
+#include "prolongationpoint.h"
+#include "prolongationline.h"
+
 namespace computeintersection {
 
 InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
@@ -144,7 +147,7 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
 
 					if(flag_for_3D_elements[sousedni_element] == -1){ // || (flag_for_3D_elements[sousedni_element] != (int)elm->index() && !intersectionExists(elm->index(),sousedni_element))){
 						flag_for_3D_elements[sousedni_element] = elm->index();
-						ProlongationPoint pp(elm->index(), sousedni_element, ele->index());
+						ProlongationPoint pp = {elm->index(), sousedni_element, ele->index()};
 						prolongation_point_queue.push(pp);
 					}
 				}
@@ -268,8 +271,8 @@ void InspectElements::prolongate_1D_element(const ElementFullIter &elm, const El
 
 void InspectElements::prolongate(const ProlongationPoint &pp){
 
-	ElementFullIter elm = mesh->element(pp.get_elm_1D_idx());
-	ElementFullIter ele = mesh->element(pp.get_elm_3D_idx());
+	ElementFullIter elm = mesh->element(pp.elm_1D_idx);
+	ElementFullIter ele = mesh->element(pp.elm_3D_idx);
 
 	update_abscissa(elm);
 	update_tetrahedron(ele);

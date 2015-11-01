@@ -8,9 +8,6 @@
 #ifndef PROLONGATIONLINE_H_
 #define PROLONGATIONLINE_H_
 
-#include "plucker.h"
-
-using namespace std;
 namespace computeintersection{
 
 /**
@@ -18,8 +15,8 @@ namespace computeintersection{
  * 
  * TODO:
  * - comment
+ * - is the old index needed?
  * - split prolongationline into Prolongation2D (neighbor is 2D) and Prolongation3D (neighbor is 3D)
- * - replace with struct, remove .cpp file
  */
 
 struct ProlongationLine{

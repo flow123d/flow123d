@@ -14,8 +14,6 @@
 #include "fields/field_interpolated_p0.hh"
 
 #include "computeintersection.h"
-#include "prolongationpoint.h"
-#include "prolongationline.h"
 #include "intersectionpolygon.h"
 
 
@@ -23,6 +21,10 @@
 using namespace std;
 namespace computeintersection {
 
+    
+struct ProlongationLine;
+struct ProlongationPoint;
+    
 /**
 * Main class, which takes mesh and you can call method for computing intersections for different dimensions of elements
 * It can compute whole polygon area.
