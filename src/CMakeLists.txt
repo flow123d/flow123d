@@ -192,8 +192,6 @@ target_link_libraries(mesh_lib
 add_library(intersections_lib 
     intersection/plucker.cpp
     intersection/simplex.cpp
-    intersection/prolongationpoint.cpp
-    intersection/prolongationline.cpp
     intersection/intersectionpoint.cpp
     intersection/intersectionline.cpp
     intersection/intersectionpolygon.cpp
