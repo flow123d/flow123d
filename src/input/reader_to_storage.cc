@@ -210,7 +210,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
                             << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
                 } else if (it->default_.has_value_at_declaration() ) {
                    storage_array->new_item(it->key_index,
-                           make_storage_from_default( it->default_.value(), it->type_.get() ) );
+                           make_storage_from_default( it->default_.value(), it->type_ ) );
                 } else { // defalut - optional or default at read time
                     // set null
                     storage_array->new_item(it->key_index, new StorageNull() );
@@ -244,7 +244,7 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 				} else if (it->default_.has_value_at_declaration() ) {
 					// other key from default values
 					storage_array->new_item(it->key_index,
-							make_storage_from_default( it->default_.value(), it->type_.get() ) );
+							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
 					 ASSERT( ! it->default_.is_obligatory() ,
 							 "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
@@ -474,11 +474,11 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 
 
 
-StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
+StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, boost::shared_ptr<Type::TypeBase> type) {
     try {
     	// default strings must be valid JSON
     	Type::Default dflt(dflt_str);
-    	return dflt.get_storage(*type);
+    	return dflt.get_storage(type);
 
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration

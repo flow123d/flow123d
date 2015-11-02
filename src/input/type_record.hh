@@ -148,12 +148,12 @@ public:
      * Check validity of @p value_ using the JSON reader
      * if default type is default_at_declaration.
      */
-    bool check_validity(const TypeBase &type) const;
+    bool check_validity(boost::shared_ptr<TypeBase> type) const;
 
     /**
      * Return @p storage_, if storage_ is NULL, call check_validity method
      */
-    Input::StorageBase *get_storage(const TypeBase &type) const;
+    Input::StorageBase *get_storage(boost::shared_ptr<TypeBase> type) const;
 
 private:
     string value_;                          ///< Stored value.

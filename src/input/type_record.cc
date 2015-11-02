@@ -63,26 +63,26 @@ TypeBase::TypeHash Default::content_hash() const
 }
 
 
-bool Default::check_validity(const TypeBase &type) const
+bool Default::check_validity(boost::shared_ptr<TypeBase> type) const
 {
 	if ( storage_ ) return true;
 	if ( !has_value_at_declaration() ) return false;
 
 	try {
-		istringstream is(value_);
+		istringstream is("[\n" + value_ + "\n]");
 		Input::ReaderToStorage reader;
-		reader.read_stream(is, type, FileFormat::format_JSON);
-		storage_ = reader.get_storage();
+		reader.read_stream(is, Array(type), FileFormat::format_JSON);
+		storage_ = const_cast<Input::StorageBase *>( reader.get_storage()->get_item(0) );
 		return true;
 	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
-		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type.type_name()));
+		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
 	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
-		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type.type_name()));
+		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
 	}
 }
 
 
-Input::StorageBase *Default::get_storage(const TypeBase &type) const
+Input::StorageBase *Default::get_storage(boost::shared_ptr<TypeBase> type) const
 {
 	if ( !storage_ ) this->check_validity(type);
 	return storage_;
@@ -409,7 +409,7 @@ void Record::RecordData::declare_key(const string &key,
     ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
     // validity test of default value
     try {
-    	default_value.check_validity(*type);
+    	default_value.check_validity(type);
     } catch (ExcWrongDefault & e) {
         e << EI_KeyName(key);
         throw;
@@ -546,7 +546,7 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 
 const Record * AbstractRecord::get_default_descendant() const {
     if ( have_default_descendant() ) {
-    	int sel_val = child_data_->selection_default_.get_storage( *(child_data_->selection_of_childs) )->get_int();
+    	int sel_val = child_data_->selection_default_.get_storage( child_data_->selection_of_childs )->get_int();
         return &( get_descendant( child_data_->selection_of_childs->int_to_name(sel_val) ) );
     }
     return NULL;
@@ -583,7 +583,7 @@ bool AbstractRecord::finish(bool is_generic) {
 
 	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
 
-	const Selection &selection_ref = child_data_->selection_of_childs->close();
+	child_data_->selection_of_childs->close();
 
 	child_data_->finished_ = true;
 
@@ -596,7 +596,7 @@ bool AbstractRecord::finish(bool is_generic) {
     // check validity of possible default value of TYPE key
     if ( have_default_descendant() ) {
 		try {
-			child_data_->selection_default_.check_validity(selection_ref);
+			child_data_->selection_default_.check_validity(child_data_->selection_of_childs);
 		} catch (ExcWrongDefault & e) {
 			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
 		}

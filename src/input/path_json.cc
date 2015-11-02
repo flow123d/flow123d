@@ -25,11 +25,8 @@ PathJSON::PathJSON(istream &in)
 {
     io::filtering_istream filter_in;
 
-	std::stringstream wrapped_stream;
-	wrapped_stream << "[\n" << in.rdbuf() << "\n]";
-
-	filter_in.push(uncommenting_filter());
-    filter_in.push(wrapped_stream);
+    filter_in.push(uncommenting_filter());
+    filter_in.push(in);
 
     root_node_ = std::make_shared<Node>();
 
@@ -40,8 +37,7 @@ PathJSON::PathJSON(istream &in)
         	<< ReaderToStorage::EI_JSONReason(e.reason_));
     }
 
-    const json_spirit::mArray &array = root_node_->get_array();
-    nodes_.push_back( &( array[0] ) );
+    nodes_.push_back( root_node_.get() );
 }
 
 

@@ -152,7 +152,7 @@ protected:
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.
      */
-    StorageBase * make_storage_from_default( const string &dflt_str, const Type::TypeBase *type);
+    StorageBase * make_storage_from_default( const string &dflt_str, boost::shared_ptr<Type::TypeBase> type);
 
 
     /// Storage of the read and checked input data
