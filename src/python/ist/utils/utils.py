@@ -72,7 +72,7 @@ class AttributeDict(dict):
         :return: self
         """
         for attribute in lst:
-            self[attribute['name']] = self.cls().parse(attribute) if self.cls else attribute
+            self[attribute] = lst[attribute]
 
         return self
 
