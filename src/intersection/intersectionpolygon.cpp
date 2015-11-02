@@ -107,6 +107,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 					// bod je vrcholem trohúhelníku - zjistíme o jaký vrchol se jedná
 					// Jelikož polygon orientujeme ve směru trojúhelníku -> budeme mít fixní uspořádání jen podle indexu vrcholu trojúhelníku
                     //TODO we must provide a function in reference element: node coordinates -> node index
+                    //TODO we should save vertex_index when computed
 					unsigned int vertex_index = (i_points[i].get_local_coords1()[0] == 1 ? 0 : (i_points[i].get_local_coords1()[1] == 1 ? 1 : 2));
 					unsigned int triangle_side_in = RefElement<2>::line_sides[vertex_index][1];
 					unsigned int triangle_side_out = RefElement<2>::line_sides[vertex_index][0];
@@ -126,7 +127,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 				trace_table(tetrahedron_side_in,1) = i;
 			}
 	}
-
+    trace_table.print();
 	// Procházení trasovací tabulky a přeuspořádání bodů do nového pole
 	int first_row_index = -1;
 	int next_row = -1;
@@ -149,6 +150,8 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 	prolongation_table.push_back((unsigned int)trace_table(first_row_index,0));
 
 	while(first_row_index != next_row){
+        unsigned int i_ip_orig = (unsigned int)trace_table(next_row,1);
+        ASSERT_LESS(i_ip_orig, i_points.size());
 		new_points.push_back(i_points[(unsigned int)trace_table(next_row,1)]);
 		prolongation_table.push_back((unsigned int)trace_table(next_row,0));
 		next_row = trace_table(next_row,0);

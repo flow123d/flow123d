@@ -9,7 +9,7 @@
 #define INTERSECTIONPOLYGON_H_
 
 #include "intersectionpoint.h"
-#include "prolongationline.h"
+#include "prolongation.h"
 #include "system/system.hh"
 #include "mesh/mesh.h"
 #include <queue>

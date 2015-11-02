@@ -6,8 +6,7 @@
  */
 
 #include "inspectelements.h"
-#include "prolongationpoint.h"
-#include "prolongationline.h"
+#include "prolongation.h"
 
 namespace computeintersection {
 
