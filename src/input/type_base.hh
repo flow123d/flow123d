@@ -287,6 +287,11 @@ public:
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /**
+     * Constructor with a shared pointer @p type of array.
+     */
+    Array(boost::shared_ptr<TypeBase> type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
+
+    /**
      * Implements @p TypeBase::content_hash.
      *
      * Hash is calculated by type name, bounds, hash of stored type and hash of attributes.

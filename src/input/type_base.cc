@@ -230,6 +230,16 @@ Array Array::deep_copy() const {
 }
 
 
+Array::Array(boost::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
+: data_(boost::make_shared<ArrayData>(min_size, max_size))
+{
+    ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
+    ASSERT( type->is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type->type_name().c_str());
+
+	data_->type_of_values_ = type;
+}
+
+
 /**********************************************************************************
  * implementation and explicit instantiation of Array constructor template
  */
