@@ -1,7 +1,6 @@
 #include <armadillo>
-#include <iostream>
+// #include <iostream>
 
-using namespace std;
 namespace computeintersection{
 
 #ifndef _PLUCKER_H
@@ -27,55 +26,74 @@ namespace computeintersection{
 class Plucker{
 private:
 
-	arma::vec6 coordinates;
-	bool computed;
+	arma::vec6 coordinates; ///< Plucker coordinates.
+	bool computed;          ///< True, if Plucker coordinates are computed; false otherwise.
 
 public:
+    /** Default constructor.
+     * Plucker coordinates are not computed.
+     */
 	Plucker();
 	/**
+     * Creates Plucker coordinates of a line AB.
 	 * @param a - A point from AB line
 	 * @param b - B point from AB line
-	 * creates plucker coordinates of a line AB
 	 */
 	Plucker(const arma::vec3 &a, const arma::vec3 &b);
-	/// copy constructor
+	/// Copy constructor.
 	Plucker(const Plucker &p);
-	inline ~Plucker(){};
+    /// Destructor.
+	~Plucker(){};
 
-	inline double operator[](const unsigned int index) const{
-		return coordinates[index];
-	};
+    /// Returns Plucker coordinate of @p index.
+	double operator[](const unsigned int index) const;
 
-	/// Compute product of two Plücker coordinates
+	/// Compute product of two Plucker coordinates.
 	double operator*(const Plucker &b);
 
-	inline void clear(){computed = false;};
+    /// Sets the flag computed on false.
+	void clear();
 
-	inline bool is_computed() const{
-		return computed;
-	};
+    /// Return true if Plucker coordinates have been computed already.
+	bool is_computed() const;
 
-
-	// Compute Plücker coordinates and set computed to true
+	/// Compute Plucker coordinates and set computed to true.
 	void compute(const arma::vec3 &a, const arma::vec3 &b);
 
-	/// get directional vector U
-	inline arma::vec3 get_u_vector() const{
-		return coordinates(arma::span(0,2));
-	};
+	/// Gets directional vector U.
+	arma::vec3 get_u_vector() const;
 
-	/// get cross product vector UxA
-	inline arma::vec3 get_ua_vector() const{
-		return coordinates(arma::span(3,5));
-	};
+	/// Gets cross product vector UxA.
+	arma::vec3 get_ua_vector() const;
 
-	inline arma::vec6 get_plucker_coords() const{
-		return coordinates;
-	};
+    /// Gets Plucker coordinates.
+	arma::vec6 get_plucker_coords() const;
 
     ///TODO: convert to operator <<
 	void toString();
 };
+
+
+
+/****************** inline implementation *****************************/
+inline double Plucker::operator[](const unsigned int index) const
+{ return coordinates[index]; }
+
+
+inline void Plucker::clear()
+{ computed = false; }
+
+inline bool Plucker::is_computed() const
+{ return computed; }
+
+inline arma::vec3 Plucker::get_u_vector() const
+{ return coordinates(arma::span(0,2)); }
+
+inline arma::vec3 Plucker::get_ua_vector() const
+{ return coordinates(arma::span(3,5)); }
+
+inline arma::vec6 Plucker::get_plucker_coords() const
+{ return coordinates; }
 
 #endif
 

@@ -8,6 +8,7 @@ namespace computeintersection{
  * Simple class defines indices of elements for later processing of computing intersection 1D-3D
  * TODO:
  * - is the old index needed?
+ * - would not be better to have ElementFullIterator instead of index?
  */
 struct ProlongationPoint{
     unsigned int elm_1D_idx;        ///< Index of 1d element.
