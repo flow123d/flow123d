@@ -770,7 +770,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Parameter *type) {
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Parameter\"," << endl;
-    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"" << endl;
 	stream << "},";
 
 	boost::hash_combine(full_hash_, hash);
