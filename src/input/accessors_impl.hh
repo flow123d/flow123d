@@ -184,7 +184,7 @@ inline bool IteratorBase::operator != (const IteratorBase &that) const
 
 
 inline IteratorBase::operator bool() const {
-	const StorageBase *s = address_.storage_head()->get_item(index_);
+	StorageBase *s = address_.storage_head()->get_item(index_);
     return ( s && ! s->is_null() );
 }
 

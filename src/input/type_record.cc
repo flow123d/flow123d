@@ -72,7 +72,7 @@ bool Default::check_validity(boost::shared_ptr<TypeBase> type) const
 		istringstream is("[\n" + value_ + "\n]");
 		Input::ReaderToStorage reader;
 		reader.read_stream(is, Array(type), FileFormat::format_JSON);
-		storage_ = const_cast<Input::StorageBase *>( reader.get_storage()->get_item(0) );
+		storage_ = reader.get_storage()->get_item(0);
 		return true;
 	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
 		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));

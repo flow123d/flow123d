@@ -61,7 +61,7 @@ public:
     virtual double get_double() const;
     virtual bool get_bool() const;
     virtual const std::string &get_string() const;
-    virtual const StorageBase * get_item(const unsigned int index) const;
+    virtual StorageBase * get_item(const unsigned int index) const;
     virtual bool is_null() const =0;
     virtual unsigned int get_array_size() const;
 
@@ -82,7 +82,7 @@ public:
     StorageArray(const StorageArray &); // deep copy for test purpose
     void new_item(unsigned int index, StorageBase* item);
     void set_item(unsigned int index, StorageBase* item);
-    virtual const StorageBase * get_item(const unsigned int index) const;
+    virtual StorageBase * get_item(const unsigned int index) const;
     virtual unsigned int get_array_size() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy() const;
