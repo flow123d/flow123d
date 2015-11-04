@@ -34,11 +34,9 @@ DOC_DIR=$(SOURCE_DIR)/doc/reference_manual
 
 
 .PHONY : all
-all:  install-hooks build-flow123d 
+all: build-flow123d 
 
-# this is prerequisite for every target using BUILD_DIR variable
-update-build-tree: update-submodules
-	@-bin/git_post_checkout_hook	# do not print command, ignore return code
+
 
 # Just build flow123d with existing configuration.
 fast-flow123d:
@@ -46,41 +44,34 @@ fast-flow123d:
 
 # Build flow, update configuration and dependencies.
 .PHONY : build-flow123d
-build-flow123d: update-build-tree cmake fast-flow123d
+build-flow123d: cmake fast-flow123d
 	
 
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
 .PHONY : cmake
-cmake:  update-build-tree
+cmake:  prepare-build
 	@if [ ! -d "$(BUILD_DIR)" ]; then mkdir -p $(BUILD_DIR); fi
 	@cd $(BUILD_DIR); cmake "$(SOURCE_DIR)"
 
-	
-# add post-checkout hook
-install-hooks:
-	if [ ! -e .git/hooks/post-checkout ];\
-	then cp bin/git_post_checkout_hook .git/hooks/post-checkout;\
-	fi	
-		
 
 # Save config.cmake from working dir to the build dir.
-save-config: update-build-tree
+save-config: prepare-build
 	cp -f $(SOURCE_DIR)/config.cmake $(BUILD_DIR)
 	
 # Restore config.cmake from build dir, possibly overwrite the current one.	
-load-config: update-build-tree
+load-config: prepare-build
 	cp -f $(BUILD_DIR)/config.cmake $(SOURCE_DIR)
 
 	
 # Remove all generated files
 .PHONY: clean
-clean: update-build-tree cmake
+clean: prepare-build cmake
 	make -C $(BUILD_DIR) clean
 
 # Remove all links in source and whole build tree
 .PHONY: clean-all
-clean-all: update-build-tree
+clean-all: prepare-build
 	# remove all symlinks in the source tree
 	rm -f `find . -type l` 
 	rm -rf $(BUILD_DIR)
@@ -130,6 +121,28 @@ petsc-doc: #build-flow123d
 	cd tests/02*; \
 	mkdir output; \
 	"$(BUILD_DIR)/bin/flow123d" -s flow_vtk.con -help --petsc_redirect "$(BUILD_DIR)/doc/petsc_help" >/dev/null
+
+######################################################################################
+
+# Prepare infrastructure for build:
+# - copy post-checkout hook into .git/hooks
+# - update build_tree link to current branch (call the post-checkout hook)
+# - update submodules
+.PHONY: prepare-build
+prepare-build:  install-hooks update-build-tree update-submodules
+
+	
+# add post-checkout hook
+.PHONY: install-hooks
+install-hooks:
+	if [ ! -e .git/hooks/post-checkout ];\
+	then cp bin/git_post_checkout_hook .git/hooks/post-checkout;\
+	fi	
+
+# this is prerequisite for every target using BUILD_DIR variable
+.PHONY: update-build-tree
+update-build-tree:
+	@-bin/git_post_checkout_hook	# do not print command, ignore return code
 
 
 # initialize submodules in safe way
