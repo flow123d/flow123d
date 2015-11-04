@@ -78,7 +78,7 @@ public:
 
 		static constexpr const char * name() { return "SoluteTransport"; }
 
-		static string default_output_field() { return "conc"; }
+		static string default_output_field() { return "\"conc\""; }
 
         static const Input::Type::Selection & get_bc_type_selection();
 

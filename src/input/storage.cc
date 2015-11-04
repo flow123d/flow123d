@@ -47,7 +47,7 @@ const std::string & StorageBase::get_string() const {
 
 
 
-const StorageBase * StorageBase::get_item(const unsigned int index) const {
+StorageBase * StorageBase::get_item(const unsigned int index) const {
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("array") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }
@@ -107,7 +107,7 @@ StorageArray::StorageArray(unsigned int size)
 
 
 
-const StorageBase * StorageArray::get_item(const unsigned int index) const {
+StorageBase * StorageArray::get_item(const unsigned int index) const {
     if ( index >= array_.size() )
         xprintf(Err, "Index %d out of array of size: %d", index, array_.size());
     ASSERT( array_[index] != NULL, "Null pointer in storage.");

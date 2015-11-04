@@ -124,7 +124,7 @@ protected:
     /**
      * Getter for root of the storage tree.
      */
-    const StorageBase *get_storage()
+    StorageBase *get_storage()
     { return storage_;}
 
 
@@ -152,7 +152,7 @@ protected:
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.
      */
-    StorageBase * make_storage_from_default( const string &dflt_str, const Type::TypeBase *type);
+    StorageBase * make_storage_from_default( const string &dflt_str, boost::shared_ptr<Type::TypeBase> type);
 
 
     /// Storage of the read and checked input data
@@ -160,6 +160,8 @@ protected:
 
     /// Root of the declaration tree of the data in the storage.
     const Type::TypeBase *root_type_;
+
+    friend class Type::Default;
 
 };
 

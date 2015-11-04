@@ -52,6 +52,7 @@ define_test(factory)
 define_test(type_dispatch)
 
 define_test(yaml_lib)
+define_test(json_spirit)
 
 
 

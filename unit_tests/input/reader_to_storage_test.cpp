@@ -182,6 +182,7 @@ protected:
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
+    	Type::TypeBase::lazy_finish();
     	ReaderToStorage::read_stream(in, root_type, format);
     }
 };
@@ -542,7 +543,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	static Type::Record copy_rec = Type::Record("Copy","")
-       	.declare_key("mesh", Type::String(), Type::Default("input.msh"), "Comp. mesh.")
+       	.declare_key("mesh", Type::String(), Type::Default("\"input.msh\""), "Comp. mesh.")
        	.declare_key("a_val", Type::String(), Type::Default::obligatory(), "")
 		.close();
 
@@ -823,9 +824,9 @@ TEST_F(InputReaderToStorageTest, default_values) {
     static Type::Record rec_type = Type::Record( "SomeRec","desc.")
     	.declare_key("int_key", Type::Integer(0,5), Type::Default("4"), "")
     	.declare_key("bool_key", Type::Bool(), Type::Default("true"),"")
-    	.declare_key("sel_key", sel_type, Type::Default("two"),"")
+    	.declare_key("sel_key", sel_type, Type::Default("\"two\""),"")
     	.declare_key("double_key", Type::Double(), Type::Default("1.23"),"")
-    	.declare_key("str_key", Type::String(), Type::Default("ahoj"),"")
+    	.declare_key("str_key", Type::String(), Type::Default("\"ahoj\""),"")
     	.declare_key("array_key", Type::Array( Type::Integer() ), Type::Default("123"), "")
 	    .declare_key("rec_key", sub_rec, Type::Default("321"), "")
 		.close();

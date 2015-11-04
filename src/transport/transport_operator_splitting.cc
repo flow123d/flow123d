@@ -77,7 +77,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				.close()
 				), IT::Default::obligatory(), "")
 		.declare_key("output_fields", Array(ConvectionTransport::EqData::get_output_selection()),
-				Default("conc"),
+				Default("\"conc\""),
 				"List of fields to write to output file.")
 		.close();
 }

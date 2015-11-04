@@ -69,13 +69,6 @@ TypeBase::TypeHash Selection::content_hash() const
 
 
 
-bool Selection::valid_default(const string &str) const {
-    if (! has_name(str))
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName( type_name() + " with values: "+key_list() ));
-    return true;
-}
-
-
 bool Selection::is_finished() const {
     return is_closed();
 }
@@ -130,16 +123,6 @@ Selection &Selection::copy_values(const Selection &sel)
 	return *this;
 }
 
-
-
-int Selection::from_default(const string &str) const {
-    try {
-        return name_to_int(str);
-    } catch (ExcSelectionKeyNotFound &e) {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName( type_name() + " with values: "+key_list() ));
-    }
-    return -1;
-}
 
 
 string Selection::key_list() const {
