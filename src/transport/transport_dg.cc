@@ -1177,7 +1177,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
 	vector<arma::vec3> velocity_higher, velocity_lower;
 	vector<arma::vec> frac_sigma(qsize, arma::vec(n_substances()));
-	vector<double> csection_lower(qsize), csection_higher(qsize), mm_coef_lower(qsize), mm_coef_higher(qsize);
+	vector<double> csection_lower(qsize), csection_higher(qsize), mm_coef_lower(qsize), mm_coef_higher(qsize), por_lower(qsize), por_higher(qsize);
     PetscScalar local_matrix[4*ndofs*ndofs];
     double comm_flux[2][2];
 
@@ -1219,6 +1219,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
+		data_.porosity.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), por_lower);
+		data_.porosity.value_list(fe_values_vb.point_list(), cell->element_accessor(), por_higher);
 
 		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		{
@@ -1242,7 +1244,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 
 				// Since mm_coef_* contains cross section, we have to divide by it.
 				double transport_flux = arma::dot(ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
-				double por_lower_over_higher = mm_coef_lower[k]*csection_higher[k]/(mm_coef_higher[k]*csection_lower[k]);
+				double por_lower_over_higher = //por_lower[k]/por_higher[k];
+					mm_coef_lower[k]*csection_higher[k]/(mm_coef_higher[k]*csection_lower[k]);
 
 				comm_flux[0][0] =  (sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
 				comm_flux[0][1] = -(sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
