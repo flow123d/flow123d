@@ -227,13 +227,12 @@ int  Profiler::start_timer(const CodePoint &cp) {
 
 int Profiler::find_child(const CodePoint &cp) {
     Timer &timer =timers_[actual_node];
-    int idx = cp.hash_idx_;
-    int child_idx;
+    unsigned int idx = cp.hash_idx_;
+    unsigned int child_idx;
     do {
+        if (timer.child_timers[idx] < 0) break; // tag is not there
+
         child_idx=timer.child_timers[idx];
-
-        if (child_idx < 0) break; // tag is not there
-
         ASSERT_LESS( child_idx, timers_.size());
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
         idx = ( (unsigned int)(idx)==Timer::max_n_childs ? 0 : idx+1 );
@@ -277,18 +276,21 @@ void Profiler::stop_timer(const CodePoint &cp) {
 
 
 void Profiler::stop_timer(int timer_index) {
-    if (timer_index <0) timer_index=actual_node;
-    ASSERT_LESS( timer_index, timers_.size() );
+    unsigned int timer_idx;
+    if (timer_index <0) timer_idx=actual_node;
+    else timer_idx = timer_index;
 
-    if (! timers_[timer_index].running() ) return;
+    ASSERT_LESS( timer_idx, timers_.size() );
 
-    if ( timer_index != actual_node ) {
+    if (! timers_[timer_idx].running() ) return;
+
+    if ( timer_idx != actual_node ) {
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer)
-            if ( (unsigned int)(timer_index) == node) {
+            if ( (unsigned int)(timer_idx) == node) {
                 // found above - close all nodes between
                 for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_index].tag().c_str(), timers_[actual_node].tag().c_str());
+                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_idx].tag().c_str(), timers_[actual_node].tag().c_str());
                     timers_[actual_node].stop(true);
                 }
                 // close 'node' itself
@@ -342,7 +344,6 @@ double Profiler::get_resolution () {
 
     return (result / measurements) * 1000; // ticks to seconds to microseconds conversion
 }
-
 
 
 std::string common_prefix( std::string a, std::string b ) {
@@ -405,17 +406,23 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 }
 
 
+std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
+     json_filepath = FilePath(string(filename), FilePath::output_file);
 
-void Profiler::update_running_timers() {
-    for(int node=actual_node; node !=0; node = timers_[node].parent_timer)
-        timers_[node].cumul_time += (TimePoint() - timers_[node].start_time);
-    timers_[0].cumul_time += (TimePoint() - timers_[0].start_time);
+    //xprintf(MsgLog, "output into: %s\n", json_filepath.c_str());
+    return make_shared<ofstream>(json_filepath.c_str());
 }
 
 
 #ifdef FLOW123D_HAVE_MPI
 void Profiler::output(MPI_Comm comm, ostream &os) {
     int ierr, mpi_rank, mpi_size;
+    //wait until profiling on all processors is finished
+    MPI_Barrier(comm);
+    stop_timer(0);
+
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
@@ -429,17 +436,17 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     // MPI implementation uses MPI call to reduce values
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
-        double cumul_time = timer.cumulative_time () / 1000;
+        double cumul_time = timer.cumulative_time ();
         double cumul_time_sum;
 
-        node.put ("call-count", call_count);
+        //node.put ("call-count", call_count);
         node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
         node.put ("call-count-max", MPI_Functions::max(&call_count, comm));
         node.put ("call-count-sum", MPI_Functions::sum(&call_count, comm));
 
         cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
 
-        node.put ("cumul-time", boost::format("%1.9f") % cumul_time);
+        //node.put ("cumul-time", boost::format("%1.9f") % cumul_time);
         node.put ("cumul-time-min", boost::format("%1.9f") % MPI_Functions::min(&cumul_time, comm));
         node.put ("cumul-time-max", boost::format("%1.9f") % MPI_Functions::max(&cumul_time, comm));
         node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time_sum);
@@ -465,29 +472,14 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
 
 void Profiler::output(MPI_Comm comm) {
-    //wait until profiling on all processors is finished
-    MPI_Barrier(comm);
-    update_running_timers();
-    int ierr, mpi_rank, mpi_size;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
-    MPI_Comm_size(comm, &mpi_size);
-
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-    json_filepath = FilePath(string(filename), FilePath::output_file);
-
-    xprintf(MsgLog, "output into: %s\n", json_filepath.c_str());
-    ofstream os(json_filepath.c_str());
-    output(comm, os);
-    os.close();
+    output(comm, *get_default_output_stream());
 }
 
 #endif /* FLOW123D_HAVE_MPI */
 
 void Profiler::output(ostream &os) {
     // last update
-    update_running_timers();
+    stop_timer(0);
 
     // output header
     property_tree::ptree root, children;
@@ -504,14 +496,14 @@ void Profiler::output(ostream &os) {
     // non-MPI implementation is just dummy repetition of initial value
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
-        double cumul_time = timer.cumulative_time () / 1000;
+        double cumul_time = timer.cumulative_time ();
 
-        node.put ("call-count",     call_count);
+        //node.put ("call-count",     call_count);
         node.put ("call-count-min", call_count);
         node.put ("call-count-max", call_count);
         node.put ("call-count-sum", call_count);
 
-        node.put ("cumul-time",     boost::format("%1.9f") % cumul_time);
+        //node.put ("cumul-time",     boost::format("%1.9f") % cumul_time);
         node.put ("cumul-time-min", boost::format("%1.9f") % cumul_time);
         node.put ("cumul-time-max", boost::format("%1.9f") % cumul_time);
         node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time);
@@ -533,18 +525,10 @@ void Profiler::output(ostream &os) {
 
 
 void Profiler::output() {
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-    json_filepath = FilePath(string(filename), FilePath::output_file);
-
-    xprintf(MsgLog, "output into: %s\n", this->json_filepath.c_str());
-    ofstream os(json_filepath.c_str());
-    output(os);
-    os.close();
+    output(*get_default_output_stream());
 }
 
 void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
-    update_running_timers();
     time_t end_time = time(NULL);
 
     const char format[] = "%x %X";
