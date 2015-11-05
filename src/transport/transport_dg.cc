@@ -1177,7 +1177,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
 	vector<arma::vec3> velocity_higher, velocity_lower;
 	vector<arma::vec> frac_sigma(qsize, arma::vec(n_substances()));
-	vector<double> csection_lower(qsize), csection_higher(qsize), mm_coef_lower(qsize), mm_coef_higher(qsize), por_lower(qsize), por_higher(qsize);
+	vector<double> csection_lower(qsize), csection_higher(qsize), por_lower(qsize), por_higher(qsize);
     PetscScalar local_matrix[4*ndofs*ndofs];
     double comm_flux[2][2];
 
@@ -1214,8 +1214,6 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		calculate_velocity(cell_sub, velocity_lower, fv_rt);
 		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, cell_sub->element_accessor(), ad_coef_edg[0], dif_coef_edg[0]);
 		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, cell->element_accessor(), ad_coef_edg[1], dif_coef_edg[1]);
-		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell_sub->element_accessor(), mm_coef_lower);
-		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell->element_accessor(), mm_coef_higher);
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
@@ -1242,10 +1240,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 				double sigma = frac_sigma[k][sbi]*arma::dot(dif_coef_edg[0][sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*
 				        2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
 
-				// Since mm_coef_* contains cross section, we have to divide by it.
 				double transport_flux = arma::dot(ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
-				double por_lower_over_higher = //por_lower[k]/por_higher[k];
-					mm_coef_lower[k]*csection_higher[k]/(mm_coef_higher[k]*csection_lower[k]);
+				double por_lower_over_higher = por_lower[k]/por_higher[k];
 
 				comm_flux[0][0] =  (sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
 				comm_flux[0][1] = -(sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
