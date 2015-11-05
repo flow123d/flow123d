@@ -44,8 +44,9 @@ fast-flow123d:
 
 # Build flow, update configuration and dependencies.
 .PHONY : build-flow123d
-build-flow123d: cmake fast-flow123d
-	
+build-flow123d: cmake
+	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
+
 
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
