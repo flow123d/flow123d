@@ -177,7 +177,7 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
 
 void DarcyFlowMHOutput::output()
 {
-    START_TIMER("Darcy output");
+    START_TIMER("Darcy fields output");
 
     if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {
 
@@ -190,9 +190,16 @@ void DarcyFlowMHOutput::output()
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
-	  output_fields.fields_for_output.set_time(darcy_flow->time().step());
-	  output_fields.fields_for_output.output(output_stream);
-	  output_stream->write_time_frame();
+      {
+          START_TIMER("evaluate output fields");
+          output_fields.fields_for_output.set_time(darcy_flow->time().step());
+          output_fields.fields_for_output.output(output_stream);
+      }
+
+      {
+          START_TIMER("write time frame");
+          output_stream->write_time_frame();
+      }
 
       output_internal_flow_data();
 
@@ -206,6 +213,7 @@ void DarcyFlowMHOutput::output()
 //=============================================================================
 
 void DarcyFlowMHOutput::make_element_scalar() {
+    START_TIMER("DarcyFlowMHOutput::make_element_scalar");
     unsigned int sol_size;
     double *sol;
 
@@ -226,6 +234,7 @@ void DarcyFlowMHOutput::make_element_scalar() {
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
+    START_TIMER("DarcyFlowMHOutput::make_element_vector");
     // need to call this to create mh solution vector
     darcy_flow->get_mh_dofhandler();
 
@@ -244,6 +253,7 @@ void DarcyFlowMHOutput::make_element_vector() {
 
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
+    START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
 	unsigned int ndofs = max(dh->fe<1>()->n_dofs(), max(dh->fe<2>()->n_dofs(), dh->fe<3>()->n_dofs()));
 	unsigned int indices[ndofs];
 	unsigned int i_node;
@@ -273,6 +283,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 //=============================================================================
 
 void DarcyFlowMHOutput::make_node_scalar_param() {
+    START_TIMER("DarcyFlowMHOutput::make_node_scalar_param");
 
 	vector<double> scalars(mesh_->n_nodes());
 
@@ -492,6 +503,7 @@ void DarcyFlowMHOutput::water_balance() {
  */
 void DarcyFlowMHOutput::output_internal_flow_data()
 {
+    START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     if (raw_output_file == NULL) return;
