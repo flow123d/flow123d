@@ -433,6 +433,7 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 template<unsigned int dim>
 void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_matrix, ElementFullIter ele)
 {
+    //START_TIMER("Assembly<dim>::assembly_local_matrix");
     fe_values_.reinit(ele);
     const unsigned int ndofs = fe_values_.get_fe()->n_dofs(), qsize = fe_values_.get_quadrature()->size();
     local_matrix.zeros(ndofs, ndofs);
@@ -460,6 +461,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
 template<unsigned int dim>
 void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, ElementFullIter ele, Neighbour *ngh)
 {
+    //START_TIMER("Assembly<dim>::assembly_local_vb");
     // compute normal vector to side
     arma::vec3 nv;
     ElementFullIter ele_higher = d.mesh->element.full_iter(ngh->side()->element());
@@ -483,6 +485,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, Elem
 template<unsigned int dim>
 arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIter ele)
 {
+    //START_TIMER("Assembly<dim>::make_element_vector");
     arma::vec3 flux_in_center;
     flux_in_center.zeros();
     
