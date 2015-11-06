@@ -83,6 +83,8 @@ double MPI_Functions::max(double* val, MPI_Comm comm) {
  * Implementation of class Timer
  */
 
+const int timer_no_child=-1;
+
 Timer::Timer(const CodePoint &cp, int parent)
 : start_time(TimePoint()),
   cumul_time(0.0),
@@ -95,7 +97,7 @@ Timer::Timer(const CodePoint &cp, int parent)
   total_allocated_(0),
   total_deallocated_(0)
 {
-    for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=-1;
+    for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
 }
 
 
@@ -135,14 +137,16 @@ bool Timer::stop(bool forced) {
 void Timer::add_child(int child_index, const Timer &child)
 {
     unsigned int idx = child.hash_idx_;
-    if (child_timers[idx] >0) {
+    if (child_timers[idx] != timer_no_child) {
+        // hash collision, find first empty place
         unsigned int i=idx;
         do {
             i=( i < max_n_childs ? i+1 : 0);
-        } while (i!=idx && child_timers[i] >0);
+        } while (i!=idx && child_timers[i] != timer_no_child);
         ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag().c_str());
         idx=i;
     }
+    //DBGMSG("Adding child %d at index: %d\n", child_index, idx);
     child_timers[idx] = child_index;
 }
 
@@ -208,9 +212,10 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 
 int  Profiler::start_timer(const CodePoint &cp) {
-
+    //DBGMSG("Start timer: %s\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
+        //DBGMSG("Adding timer: %s\n", cp.tag_);
         // tag not present - create new timer
         child_idx=timers_.size();
         timers_.push_back( Timer(cp, actual_node) );
@@ -230,7 +235,7 @@ int Profiler::find_child(const CodePoint &cp) {
     unsigned int idx = cp.hash_idx_;
     unsigned int child_idx;
     do {
-        if (timer.child_timers[idx] < 0) break; // tag is not there
+        if (timer.child_timers[idx] == timer_no_child) break; // tag is not there
 
         child_idx=timer.child_timers[idx];
         ASSERT_LESS( child_idx, timers_.size());
@@ -247,7 +252,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
     // check that all childrens are closed
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
-        if (timer.child_timers[i] >0)
+        if (timer.child_timers[i] != timer_no_child)
             ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
 #endif
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
@@ -391,7 +396,7 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     property_tree::ptree children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-		if (timer.child_timers[i] > 0) {
+		if (timer.child_timers[i] != timer_no_child) {
 			add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
 			has_children = true;
 		}
