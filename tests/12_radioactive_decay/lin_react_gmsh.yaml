@@ -1,0 +1,57 @@
+problem: !SequentialCoupling
+  description: Test12 - radioactive decay simulation, long decay chain with biffurcation
+  mesh:
+    mesh_file: ./input/flow_lin_react/sit_lin_react.msh
+  primary_equation: !Steady_MH
+    input_fields:
+    - rid: 1
+      anisotropy: 0.01
+    - region: IMPLICIT BOUNDARY
+      flow_old_bcd_file: ./input/flow_lin_react/sit_lin_react.fbc
+    output:
+      output_stream: 
+        file: ./lin_react.msh
+        format: !gmsh
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-07
+  secondary_equation: !TransportOperatorSplitting
+    input_fields:
+    - rid: 1
+      init_conc:
+      - 0.01
+      - 0.02
+      - 0.03
+      - 0.04
+      - 0.05
+      - 0.06
+    - region: IMPLICIT BOUNDARY
+      transport_old_bcd_file: ./input/flow_lin_react/sit_lin_react.tbc
+    output_stream: 
+      file: ./transport_lin_react.msh
+      format: !gmsh
+        variant: ascii
+      time_step: 0.5
+      name: transport_output_stream
+    substances:
+    - A
+    - B
+    - C
+    - D
+    - E
+    - F
+    time:
+      end_time: 10.0
+    reaction_term: !FirstOrderReaction
+      reactions:
+      - reactants: D
+        reaction_rate: 0.277258872
+        products: E
+    balance:
+      cumulative: true
