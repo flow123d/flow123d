@@ -17,7 +17,8 @@ from .autoconversion import autoconvert
 
 __author__ = ['Pavel Richter', 'Tomas Krizek']
 
-__resource_dir__ = os.path.join(os.getcwd(), 'resources')
+__resource_dir__ = os.path.join(os.path.split(
+    os.path.dirname(os.path.realpath(__file__)))[0], 'resources')
 __format_dir__ = os.path.join(__resource_dir__, 'format')
 __transformation_dir__ = os.path.join(__resource_dir__, 'transformation')
 
