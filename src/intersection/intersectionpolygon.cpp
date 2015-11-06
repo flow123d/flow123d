@@ -43,9 +43,10 @@ void IntersectionPolygon::trace_generic_polygon(std::vector<unsigned int> &prolo
 
 void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongation_table){
 
-	if(is_patological_ || i_points.size() < 2){
-		return;
-	}
+    ASSERT(!is_patological_, "Cannot call this polygonal tracing in pathologic case.");
+    
+    // avoid tracing (none is needed) if the intersection is just single point
+	if(i_points.size() < 2) return;
 
 	/**
 	 * Vytvoříme tabulku 7x2, první 4 řádky pro stěny čtyřstěnu, další 3 pro hrany trojúhelníku
@@ -76,12 +77,12 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 	// H - hrana trojúhelníku
 	// S - stěna čtyřstěnu
 	for(unsigned int i = 0; i < i_points.size();i++){
-			// Známe index hrany trojúhelníku, na které bod vznikl,
-			// jedná se tedy o TYP bodu H-S nebo H-H (bod spojuje hranu-stěnu nebo hranu-hranu)
-			if(i_points[i].get_side1() != -1){
-				// Bod není vrcholem - musí být TYPu H-S
-				if(!i_points[i].is_vertex()){
-
+			if(i_points[i].get_side1() != -1 ){
+                // Známe index hrany trojúhelníku, na které bod vznikl,
+                // jedná se tedy o TYP bodu H-S nebo H-H (bod spojuje hranu-stěnu nebo hranu-hranu)
+                
+				if(!i_points[i].is_vertex()){   // Bod není vrcholem - musí být TYPu H-S
+                    DBGMSG("Intersection type E-S.\n");
 					// Směr hran polygonu závisí na 3ch faktorech:
 					// indexu hrany trojúhelníku (hranu s indexem 1. otáčíme)
 					// indexu stěnu čtyřstěnu
@@ -92,39 +93,50 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 
 					if(j == 1){
 						// bod je vstupní na stěně a pokračuje na hranu trojúhelníku
-						trace_table(i_points[i].get_side2(),0) = i_points[i].get_side1()+4;
-						trace_table(i_points[i].get_side2(),1) = i;
+                        unsigned int row = i_points[i].get_side2();
+						trace_table(row,0) = i_points[i].get_side1()+4;
+						trace_table(row,1) = i;
+                        DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, i_points[i].get_side1()+4, i);
 					}else{
 						// bod je vstupní na hraně a vchází do čtyřstěnu
-						trace_table(4+i_points[i].get_side1(),0) = i_points[i].get_side2();
-						trace_table(4+i_points[i].get_side1(),1) = i;
+                        unsigned int row = 4+i_points[i].get_side1();
+						trace_table(row,0) = i_points[i].get_side2();
+						trace_table(row,1) = i;
+                        DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, i_points[i].get_side2(), i);
 					}
 
 
 
-				}else{
-					// TYP bodu H-H
+				}else{  // TYP bodu H-H
+                    DBGMSG("Intersection type E-E.\n");
 					// bod je vrcholem trohúhelníku - zjistíme o jaký vrchol se jedná
 					// Jelikož polygon orientujeme ve směru trojúhelníku -> budeme mít fixní uspořádání jen podle indexu vrcholu trojúhelníku
                     //TODO we must provide a function in reference element: node coordinates -> node index
                     //TODO we should save vertex_index when computed
 					unsigned int vertex_index = (i_points[i].get_local_coords1()[0] == 1 ? 0 : (i_points[i].get_local_coords1()[1] == 1 ? 1 : 2));
-					unsigned int triangle_side_in = RefElement<2>::line_sides[vertex_index][1];
-					unsigned int triangle_side_out = RefElement<2>::line_sides[vertex_index][0];
+                    // using ref element, but we still want to get rid of this...
+//                     unsigned int vertex_index;//i_points[i].get_side1();
+//                     RefElement<2>::vertex_index(i_points[i].get_local_coords1(),vertex_index);
+                    DBGMSG("E-E: vertex_index: %d \n",vertex_index);
+					unsigned int triangle_side_in = RefElement<2>::line_sides[vertex_index][0];
+					unsigned int triangle_side_out = RefElement<2>::line_sides[vertex_index][1];
 					// Body typu H-H se mohou vyskytovat duplicitně, touto podmínkou duplicity zrušíme
-					if(trace_table(4+triangle_side_in,1) == -1){
-						trace_table(4+triangle_side_in,0) = triangle_side_out+4;
-						trace_table(4+triangle_side_in,1) = i;
-					}
+                    if(trace_table(4+triangle_side_in,1) == -1){
+                        unsigned int row = 4+triangle_side_in;
+                        trace_table(row,0) = triangle_side_out+4;
+                        trace_table(row,1) = i;
+                        DBGMSG("E-E: row: %d, to edge: %d, ip: %d \n",row, triangle_side_out+4, i);
+                    }
 				}
-			}else{
-				// TYP bodu S-S
+			}else{  // TYP bodu S-S
+                DBGMSG("Intersection type S-S.\n");
 				// Pokračujeme ze stěny na stěnu
 				unsigned int tetrahedron_line = i_points[i].get_side2();
 				unsigned int tetrahedron_side_in = RefElement<3>::line_sides[tetrahedron_line][i_points[i].get_orientation()];
 				unsigned int tetrahedron_side_out = RefElement<3>::line_sides[tetrahedron_line][1 - i_points[i].get_orientation()];
 				trace_table(tetrahedron_side_in,0) = tetrahedron_side_out;
 				trace_table(tetrahedron_side_in,1) = i;
+                DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",tetrahedron_side_in, tetrahedron_side_out, i);
 			}
 	}
     trace_table.print();
@@ -150,9 +162,10 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 	prolongation_table.push_back((unsigned int)trace_table(first_row_index,0));
 
 	while(first_row_index != next_row){
+        DBGMSG("next_row = %d\n",next_row);
         unsigned int i_ip_orig = (unsigned int)trace_table(next_row,1);
         ASSERT_LESS(i_ip_orig, i_points.size());
-		new_points.push_back(i_points[(unsigned int)trace_table(next_row,1)]);
+		new_points.push_back(i_points[i_ip_orig]);
 		prolongation_table.push_back((unsigned int)trace_table(next_row,0));
 		next_row = trace_table(next_row,0);
 	}
