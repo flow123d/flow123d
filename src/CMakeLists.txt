@@ -164,6 +164,7 @@ add_library(mesh_lib
     mesh/intersection.cc
     mesh/ref_element.cc
     mesh/partitioning.cc
+    mesh/region_types.cc
     
     mesh/bounding_box.cc
     mesh/bih_tree.cc

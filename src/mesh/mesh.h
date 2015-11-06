@@ -43,6 +43,7 @@
 #include "mesh/boundaries.h"
 #include "mesh/intersection.hh"
 #include "mesh/partitioning.hh"
+#include "mesh/region_types.hh"
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -366,6 +367,7 @@ protected:
     MPI_Comm comm_;
 
     friend class GmshMeshReader;
+    friend class RegionBase;
 };
 
 
