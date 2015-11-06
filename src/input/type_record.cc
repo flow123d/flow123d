@@ -1,11 +1,19 @@
-/*
- * input_type.cc
+/*!
  *
- *  Created on: Mar 29, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
+ * 
+ * @file    type_record.cc
+ * @brief   
  */
-
 
 #include "input_type.hh"
 #include "type_repository.hh"
@@ -19,6 +27,7 @@
 
 #include "system/system.hh"
 #include "input/type_generic.hh"
+#include "input/reader_to_storage.hh"
 
 #include <boost/typeof/typeof.hpp>
 #include <boost/type_traits.hpp>
@@ -38,11 +47,11 @@ using namespace std;
  */
 
 Default::Default()
-: value_("OPTIONAL"), type_(no_default_optional_type)
+: value_("OPTIONAL"), type_(no_default_optional_type), storage_(NULL)
 {}
 
 Default::Default(const std::string & value)
-: value_(value), type_(default_at_declaration)
+: value_(value), type_(default_at_declaration), storage_(NULL)
 {
     boost::algorithm::trim(value_);
 }
@@ -50,7 +59,7 @@ Default::Default(const std::string & value)
 
 
 Default::Default(enum DefaultType type, const std::string & value)
-: value_(value), type_(type)
+: value_(value), type_(type), storage_(NULL)
 {}
 
 TypeBase::TypeHash Default::content_hash() const
@@ -59,6 +68,32 @@ TypeBase::TypeHash Default::content_hash() const
     boost::hash_combine(seed, type_);
     boost::hash_combine(seed, value_);
     return seed;
+}
+
+
+bool Default::check_validity(boost::shared_ptr<TypeBase> type) const
+{
+	if ( storage_ ) return true;
+	if ( !has_value_at_declaration() ) return false;
+
+	try {
+		istringstream is("[\n" + value_ + "\n]");
+		Input::ReaderToStorage reader;
+		reader.read_stream(is, Array(type), FileFormat::format_JSON);
+		storage_ = reader.get_storage()->get_item(0);
+		return true;
+	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
+		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
+	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
+		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
+	}
+}
+
+
+Input::StorageBase *Default::get_storage(boost::shared_ptr<TypeBase> type) const
+{
+	if ( !storage_ ) this->check_validity(type);
+	return storage_;
 }
 
 
@@ -137,7 +172,7 @@ void Record::make_copy_keys(Record &origin) {
 		// we have to copy TYPE also since there should be place in storage for it
 		// however we change its Default to name of actual Record
 		if (tmp_key.key_=="TYPE")
-			tmp_key.default_=Default( type_name() );
+			tmp_key.default_=Default( "\""+type_name()+"\"" );
 
 		// check for duplicate keys, override keys of the parent record by the child record
 		RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
@@ -182,7 +217,7 @@ Record &Record::derive_from(Abstract &parent) {
 	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
 
 	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", boost::make_shared<String>(), Default( type_name() ), "Sub-record Selection.");
+    	data_->declare_key("TYPE", boost::make_shared<String>(), Default( "\""+type_name()+"\"" ), "Sub-record Selection.");
     }
 
 	return *this;
@@ -212,24 +247,6 @@ bool Record::is_closed() const {
 
 
 
-bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const
-{
-    if ( dflt.has_value_at_declaration() ) {
-
-        try {
-            return type.valid_default( dflt.value() );
-        } catch (ExcWrongDefault & e) {
-            e << EI_KeyName(k_name);
-            throw;
-        }
-    }
-
-    return false;
-}
-
-
-
-
 bool Record::finish(bool is_generic)
 {
 
@@ -244,10 +261,6 @@ bool Record::finish(bool is_generic)
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
 			if (!is_generic && it->type_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
            	data_->finished = data_->finished && it->type_->finish(is_generic);
-
-            // we check once more even keys that was already checked, otherwise we have to store
-            // result of validity check in every key
-            check_key_default_value(it->default_, *(it->type_), it->key_);
         }
     }
 
@@ -283,19 +296,6 @@ const Record &Record::close() const {
 
 string Record::type_name() const {
     return data_->type_name_;
-}
-
-
-
-bool Record::valid_default(const string &str) const
-{
-    if (data_->auto_conversion_key_idx >=0) {
-        unsigned int idx=key_index(data_->auto_conversion_key);
-        if ( data_->keys[idx].type_ ) return data_->keys[idx].type_->valid_default(str);
-    } else {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
-    }
-    return false;
 }
 
 
@@ -374,7 +374,7 @@ const Record &Record::add_parent(Abstract &parent) const {
 	// finish inheritance
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
 				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
-	data_->keys[0].default_ = Default( type_name() );
+	data_->keys[0].default_ = Default( "\""+type_name()+"\"" );
 
 	return *this;
 }
@@ -415,7 +415,13 @@ void Record::RecordData::declare_key(const string &key,
                          const Default &default_value, const string &description)
 {
     ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
-
+    // validity test of default value
+    try {
+    	default_value.check_validity(type);
+    } catch (ExcWrongDefault & e) {
+        e << EI_KeyName(key);
+        throw;
+    }
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
 
     if (key!="TYPE" && ! TypeBase::is_valid_identifier(key))
@@ -441,7 +447,6 @@ void Record::RecordData::declare_key(const string &key,
 Record &Record::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
                         const Default &default_value, const string &description)
 {
-    check_key_default_value(default_value, *type, key);
     data_->declare_key(key, type, default_value, description);
     return *this;
 }
@@ -533,21 +538,10 @@ TypeBase::TypeHash Abstract::content_hash() const
 
 Abstract & Abstract::allow_auto_conversion(const string &type_default) {
     if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the Abstract '%s' is closed.\n", type_name().c_str());
-    child_data_->selection_default_=Default(type_default); // default record is closed; other constructor creates the zero item
+    child_data_->selection_default_=Default("\""+type_default+"\""); // default record is closed; other constructor creates the zero item
     return *this;
 }
 
-
-
-bool Abstract::valid_default(const string &str) const
-{
-	// obligatory value if default is not set, see @p selection_default_
-	if ( !child_data_->selection_default_.is_obligatory() )  {
-        if (! child_data_->selection_of_childs->is_finished()) return false;
-        if ( child_data_->selection_default_.has_value_at_declaration() ) return get_default_descendant()->valid_default(str);
-    }
-    THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
-}
 
 
 const Record  & Abstract::get_descendant(const string& name) const
@@ -560,7 +554,8 @@ const Record  & Abstract::get_descendant(const string& name) const
 
 const Record * Abstract::get_default_descendant() const {
     if ( have_default_descendant() ) {
-        return &( get_descendant( child_data_->selection_default_.value() ) );
+    	int sel_val = child_data_->selection_default_.get_storage( child_data_->selection_of_childs )->get_int();
+        return &( get_descendant( child_data_->selection_of_childs->int_to_name(sel_val) ) );
     }
     return NULL;
 }
@@ -609,7 +604,7 @@ bool Abstract::finish(bool is_generic) {
     // check validity of possible default value of TYPE key
     if ( have_default_descendant() ) {
 		try {
-			child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
+			child_data_->selection_default_.check_validity(child_data_->selection_of_childs);
 		} catch (ExcWrongDefault & e) {
 			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of Abstract '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
 		}

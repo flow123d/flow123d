@@ -20,6 +20,7 @@ class Abstract;
 class AdHocAbstract;
 class Array;
 class Bool;
+class Default;
 class Double;
 class FileName;
 class Instance;

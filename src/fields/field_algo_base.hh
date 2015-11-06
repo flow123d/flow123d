@@ -1,22 +1,26 @@
-/*
- * field_algo_base.hh
+/*!
  *
- *  Created on: Aug 31, 2012
- *      Author: jb
- */
-
-/**
- * TODO:
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_algo_base.hh
+ * @brief   
+ * @todo
  * - better tests:
  *   - common set of quantities with different kind of values (scalar, vector, tensor, discrete, ..),
  *     common points and elements for evaluation
  *   - for individual Field implementations have:
  *     - different input
  *     - possibly different EPETCT_EQ tests, but rather have majority common
- *
- *
  */
-
 
 #ifndef field_algo_base_HH_
 #define field_algo_base_HH_

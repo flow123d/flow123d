@@ -1,8 +1,18 @@
-/*
- * file_name.hh
+/*!
  *
- *  Created on: May 23, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    file_path.hh
+ * @brief   
  */
 
 #ifndef FILE_NAME_HH_
@@ -34,7 +44,7 @@ public:
 
 
     TYPEDEF_ERR_INFO( EI_Path, string);
-    DECLARE_EXCEPTION( ExcAbsOutputPath, << "Can not set absolute path " << EI_Path::qval << "for an output file."  );
+    DECLARE_EXCEPTION( ExcAbsOutputPath, << "Can not set absolute path " << EI_Path::qval << " for an output file."  );
 
     /// Possible types of file.
     enum FileType {
@@ -46,7 +56,7 @@ public:
      * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
      */
     FilePath()
-        : abs_file_path("/__NO_FILE_NAME_GIVEN__"),
+        : abs_file_path_("/__NO_FILE_NAME_GIVEN__"),
           file_type_(output_file)
     {}
 
@@ -76,7 +86,7 @@ public:
      * This class is implicitly convertible to string.
      */
     inline operator string() const
-        {return abs_file_path;}
+        {return abs_file_path_;}
 
     /*!
      * @brief Add new item to place holder.
@@ -101,7 +111,7 @@ public:
 
     /// Equality comparison operators for regions.
     inline bool operator ==(const FilePath &other) const
-        {return abs_file_path == string(other); }
+        {return abs_file_path_ == string(other); }
 
 
     /**
@@ -112,7 +122,7 @@ public:
 
 private:
     /**
-     * Substitutes placeholders in @p abs_file_path.
+     * Substitutes placeholders in @p abs_file_path_.
      */
     void substitute_value();
 
@@ -136,7 +146,7 @@ private:
 
 
     /// Final absolute path to the file.
-    string abs_file_path;
+    string abs_file_path_;
 
     /// File type
     FileType file_type_;

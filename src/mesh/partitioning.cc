@@ -1,8 +1,18 @@
-/*
- * partitioning.cc
+/*!
  *
- *  Created on: May 3, 2013
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    partitioning.cc
+ * @brief   
  */
 
 #include "mesh/partitioning.hh"
@@ -33,11 +43,14 @@ const IT::Selection & Partitioning::get_tool_sel() {
 }
 
 const IT::Record & Partitioning::get_input_type() {
-    return IT::Record("Partition","Setting for various types of mesh partitioning." )
-		.declare_key("tool", Partitioning::get_tool_sel(), IT::Default("METIS"),  "Software package used for partitioning. See corresponding selection.")
-		.declare_key("graph_type", Partitioning::get_graph_type_sel(), IT::Default("any_neighboring"), "Algorithm for generating graph and its weights from a multidimensional mesh.")
+    static IT::Record input_type = IT::Record("Partition","Setting for various types of mesh partitioning." )
+		.declare_key("tool", Partitioning::get_tool_sel(), IT::Default("\"METIS\""),  "Software package used for partitioning. See corresponding selection.")
+		.declare_key("graph_type", Partitioning::get_graph_type_sel(), IT::Default("\"any_neighboring\""), "Algorithm for generating graph and its weights from a multidimensional mesh.")
 		.allow_auto_conversion("graph_type") // mainly in order to allow Default value for the whole record Partition
 		.close();
+    input_type.finish();
+
+    return input_type;
 }
 
 

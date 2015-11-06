@@ -1,11 +1,25 @@
-/** @brief Class Dual_por_exchange implements the model of dual porosity.
+/*!
  *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    dual_porosity.hh
+ * @brief   Class Dual_por_exchange implements the model of dual porosity.
+ * 
  * It can be part of the transport model and it computes the concentrations of substances both in 
  * mobile and immobile zone. This model can also work above the sorption model - the sorbed concentration
  * is then computed both from mobile and immobile concentrations. Linear reactions can be define 
  * also in both zones.
- *
  */
+
 #ifndef DUAL_POROSITY_H_
 #define DUAL_POROSITY_H_
 

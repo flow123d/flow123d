@@ -35,14 +35,10 @@ class TypedList(list):
         if self.cls is None:
             for o in lst:
                 input_type = o.get('input_type', '')
-                found = False
-                for node_type, cls in registered_nodes.iteritems():
-                    if input_type == node_type:
-                        self.append(cls().parse(o))
-                        found = True
-                        break
-
-                if not found:
+                cls = registered_nodes.get(input_type, None)
+                if cls:
+                    self.append(cls().parse(o))
+                else:
                     self.append(o)
         else:
             for o in lst:
@@ -72,7 +68,7 @@ class AttributeDict(dict):
         :return: self
         """
         for attribute in lst:
-            self[attribute['name']] = self.cls().parse(attribute) if self.cls else attribute
+            self[attribute] = lst[attribute]
 
         return self
 

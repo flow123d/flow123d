@@ -1,8 +1,18 @@
-/*
- * type_record.hh
+/*!
  *
- *  Created on: May 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_record.hh
+ * @brief   
  */
 
 #ifndef TYPE_RECORD_HH_
@@ -12,6 +22,7 @@
 
 #include "type_base.hh"
 #include "type_selection.hh"
+#include "storage.hh"
 
 
 namespace Input {
@@ -143,9 +154,21 @@ public:
     inline bool has_same_type(const Default &other) const
         {return type_ == other.type_; }
 
+    /**
+     * Check validity of @p value_ using the JSON reader
+     * if default type is default_at_declaration.
+     */
+    bool check_validity(boost::shared_ptr<TypeBase> type) const;
+
+    /**
+     * Return @p storage_, if storage_ is NULL, call check_validity method
+     */
+    Input::StorageBase *get_storage(boost::shared_ptr<TypeBase> type) const;
+
 private:
-    string value_;              ///< Stored value.
-    enum DefaultType type_;     ///< Type of the Default.
+    string value_;                          ///< Stored value.
+    enum DefaultType type_;                 ///< Type of the Default.
+    mutable Input::StorageBase *storage_;   ///< Storage of default value read by reader
 
     /**
      * Forbids default constructor.
@@ -305,12 +328,6 @@ public:
     /// Record type name getter.
     string type_name() const override;
 
-    /**
-     * The default string can initialize an Record if the record is auto-convertible
-     * and the string is valid default value for the auto conversion key.
-     */
-    bool valid_default(const string &str) const override;
-
     /// Class comparison and Record type name comparision.
     bool operator==(const TypeBase &other) const;
 
@@ -381,10 +398,6 @@ public:
 
 
 protected:
-
-
-    /// Check that given default value is valid for given type of the key.
-    bool check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const;
 
     /**
      * Assertion for finished Type::Record.
@@ -626,12 +639,6 @@ public:
      *  set parent and descendant see \p Record::derive_from)
      */
     bool finish(bool is_generic = false) override;
-
-    /**
-     * The default string can initialize an Record if the record is auto-convertible
-     * and the string is valid default value for the auto conversion key.
-     */
-    virtual bool valid_default(const string &str) const override;
 
     /**
      * Returns reference to the inherited Record with given name.

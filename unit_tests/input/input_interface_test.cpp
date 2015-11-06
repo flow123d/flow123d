@@ -229,7 +229,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
 
     EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ(FilePath::get_absolute_working_dir()+"/json_root_dir/output_root/output_subdir/output.vtk",
+    EXPECT_EQ(FilePath::get_absolute_working_dir()+"json_root_dir/output_root/output_subdir/output.vtk",
     			(string) record.val<FilePath>("file_output") );
     EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
 

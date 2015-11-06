@@ -1,31 +1,18 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id: output_vtk.cc 2505 2013-09-13 14:52:27Z jiri.hnidek $
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
+ * 
  * @file    output_vtk.cc
  * @brief   The functions for outputs to VTK files.
- *
  */
 
 #include "output_vtk.hh"
@@ -45,13 +32,13 @@ const Record & OutputVTK::get_input_type() {
     return Record("vtk", "Parameters of vtk output format.")
 		// It is derived from abstract class
 		.derive_from(OutputTime::get_input_format_type())
-		.declare_key("variant", OutputVTK::get_input_type_variant(), Default("ascii"),
+		.declare_key("variant", OutputVTK::get_input_type_variant(), Default("\"ascii\""),
 			"Variant of output stream file format.")
 		// The parallel or serial variant
 		.declare_key("parallel", Bool(), Default("false"),
 			"Parallel or serial version of file format.")
 		// Type of compression
-		.declare_key("compression", OutputVTK::get_input_type_compression(), Default("none"),
+		.declare_key("compression", OutputVTK::get_input_type_compression(), Default("\"none\""),
 			"Compression used in output stream file format.")
 		.close();
 }

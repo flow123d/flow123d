@@ -1,8 +1,18 @@
-/*
- * type_base.hh
+/*!
  *
- *  Created on: May 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_base.hh
+ * @brief   
  */
 
 #ifndef TYPE_BASE_HH_
@@ -153,14 +163,6 @@ public:
     { return true; };
 
     /**
-     * For types that can be initialized from a default string, this method check
-     * validity of the default string. For invalid string an exception is thrown.
-     *
-     * Return false if the validity can not be decided due to presence of unconstructed types (Record, Selection)
-     */
-    virtual bool valid_default(const string &str) const =0;
-
-    /**
      * Hash of the type specification. Provides unique id computed from its
      * content (definition) so that same types have same hash.
      *
@@ -295,6 +297,11 @@ public:
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /**
+     * Constructor with a shared pointer @p type of array.
+     */
+    Array(boost::shared_ptr<TypeBase> type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
+
+    /**
      * Implements @p TypeBase::content_hash.
      *
      * Hash is calculated by type name, bounds, hash of stored type and hash of attributes.
@@ -320,13 +327,6 @@ public:
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     bool operator==(const TypeBase &other) const override;
-
-    /**
-     *  Default values for an array creates array containing one element
-     *  that is initialized by given default value. So this method check
-     *  if the default value is valid for the sub type of the array.
-     */
-    bool valid_default(const string &str) const override;
 
     // Implements @p TypeBase::make_instance.
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
@@ -369,11 +369,7 @@ public:
     TypeHash content_hash() const   override;
 
 
-    bool from_default(const string &str) const;
-
     string type_name() const override;
-
-    bool valid_default(const string &str) const override;
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };
@@ -405,13 +401,6 @@ public:
      * Returns true if the given integer value conforms to the Type::Integer bounds.
      */
     bool match(std::int64_t value) const;
-
-    /**
-     * As before but also returns converted integer in @p value.
-     */
-    int from_default(const string &str) const;
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    bool valid_default(const string &str) const override;
 
     string type_name() const override;
 
@@ -450,14 +439,6 @@ public:
      */
     bool match(double value) const;
 
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    bool valid_default(const string &str) const override;
-
-    /**
-     * As before but also returns converted integer in @p value.
-     */
-    double from_default(const string &str) const;
-
     string type_name() const override;
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
@@ -482,16 +463,10 @@ public:
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const   override;
 
-
-    string from_default(const string &str) const;
-
     /**
      * Particular descendants can check validity of the string.
      */
     virtual bool match(const string &value) const;
-
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const override;
 
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };

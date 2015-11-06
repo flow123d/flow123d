@@ -1,5 +1,18 @@
-/**
- * type_output.cc
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_output.cc
+ * @brief   
  */
 
 #include "input/type_output.hh"
@@ -780,7 +793,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Parameter *type) {
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Parameter\"," << endl;
-    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"" << endl;
 	stream << "},";
 
 	boost::hash_combine(full_hash_, hash);

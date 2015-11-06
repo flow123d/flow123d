@@ -21,7 +21,7 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	Record copy_rec = Record("Copy","")
-       	.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.")
+       	.declare_key("mesh", String(), Default("\"input.msh\""), "Comp. mesh.")
        	.declare_key("a_val", String(), Default::obligatory(), "")
 		.close();
 
@@ -49,7 +49,7 @@ using namespace Input::Type;
     a_rec.finish();
 
     // auto conversion - default value for TYPE
-    EXPECT_EQ("EqDarcy", a_rec.get_selection_default().value() );
+    EXPECT_EQ("\"EqDarcy\"", a_rec.get_selection_default().value() );
     // no more allow_auto_conversion for a_rec
     EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the Abstract 'EqBase' is closed.");
 
@@ -58,7 +58,7 @@ using namespace Input::Type;
 
     // test default value for an auto convertible abstract record key
     Record xx_rec = Record("XX", "")
-    		.declare_key("ar_key", a_rec, Default("ahoj"), "")
+    		.declare_key("ar_key", a_rec, Default("\"ahoj\""), "")
 			.close();
     xx_rec.finish();
 
@@ -85,7 +85,7 @@ using namespace Input::Type;
     Abstract x = Abstract("AR","")
     	.allow_auto_conversion("BR")
 		.close();
-    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of Abstract 'AR'.");
+    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value '\"BR\"' for TYPE key do not match any descendant of Abstract 'AR'.");
 
 }
 
@@ -117,7 +117,7 @@ protected:
 
 const IT::Record & AdHocDataTest::get_in_rec1() {
 	return IT::Record("Record 1","")
-		.declare_key("TYPE", IT::String(), IT::Default("Record 1"), "")
+		.declare_key("TYPE", IT::String(), IT::Default("\"Record 1\""), "")
 		.declare_key("val_1", IT::Integer(0), "value 1" )
 		.close();
 }
@@ -151,7 +151,7 @@ const IT::Abstract & AdHocDataTest::get_ancestor() {
 
 const IT::Record & AdHocDataTest::get_in_rec2() {
 	return IT::Record("Record 2","")
-		.declare_key("TYPE", IT::String(), IT::Default("Record 2"), "")
+		.declare_key("TYPE", IT::String(), IT::Default("\"Record 2\""), "")
 		.declare_key("val_2", IT::Integer(0), "value 2" )
 		.close();
 }

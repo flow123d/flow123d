@@ -1,8 +1,18 @@
-/*
- * storage.cc
+/*!
  *
- *  Created on: May 5, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    storage.cc
+ * @brief   
  */
 
 #include "system/global_defs.h"
@@ -47,7 +57,7 @@ const std::string & StorageBase::get_string() const {
 
 
 
-const StorageBase * StorageBase::get_item(const unsigned int index) const {
+StorageBase * StorageBase::get_item(const unsigned int index) const {
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("array") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }
@@ -107,7 +117,7 @@ StorageArray::StorageArray(unsigned int size)
 
 
 
-const StorageBase * StorageArray::get_item(const unsigned int index) const {
+StorageBase * StorageArray::get_item(const unsigned int index) const {
     if ( index >= array_.size() )
         xprintf(Err, "Index %d out of array of size: %d", index, array_.size());
     ASSERT( array_[index] != NULL, "Null pointer in storage.");
