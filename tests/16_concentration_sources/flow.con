@@ -35,7 +35,7 @@
         r_tol = 1e-12
       }, 
       time = {
-        REF = "../../time"
+        end_time = 5.7
       }
     }, 
     secondary_equation = {
@@ -77,14 +77,11 @@
         "conc"
       ], 
       time = {
-        REF = "../../time"
+        end_time = 5.7
       },
       balance = {
         cumulative = true
       }
-    }, 
-    time = {
-      end_time = 5.7
     }
   }, 
   system = {
@@ -100,9 +97,7 @@
       {
         file = "./transport_test16.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.8,

@@ -40,8 +40,13 @@
 
       output = {
         output_stream = {
-          REF = "/system/output_streams/0"
-        }, 
+          file = "./test2.msh", 
+          format = {
+            TYPE = "gmsh", 
+            variant = "ascii"
+          }, 
+          name = "flow_output_stream"
+        },
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
@@ -54,8 +59,14 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       output_stream = {
-          REF = "/system/output_streams/1"
-      }, 
+        file = "./transport.msh", 
+        format = {
+          TYPE = "gmsh", 
+          variant = "ascii"
+        }, 
+        time_step = 0.5,
+        name = "transport_output_stream"
+      },
 	
       substances = [
         "A", 
@@ -119,29 +130,5 @@
         }
       }
     }
-  }, 
-
-  system = {
-    output_streams = [
-      {
-        file = "./test2.msh", 
-        format = {
-          TYPE = "gmsh", 
-          variant = "ascii"
-        }, 
-        name = "flow_output_stream"
-      }, 
-      {
-        file = "./transport.msh", 
-        format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
-          variant = "ascii"
-        }, 
-        time_step = 0.5,
-        name = "transport_output_stream"
-      }
-    ] 
   }
 }
