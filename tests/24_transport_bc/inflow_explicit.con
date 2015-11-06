@@ -11,7 +11,7 @@
 
       input_fields= [
         { r_set = "BOUNDARY",
-          bc_type = "dirichlet"
+          bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value="(x-0.5)*y" }
         }
       ],
@@ -30,7 +30,7 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       }
-    }
+    },
 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 

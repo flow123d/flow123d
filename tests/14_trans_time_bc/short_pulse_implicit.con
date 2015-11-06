@@ -1,9 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = 
-"Test14 - 2D transport with time variable boundary, 
- test matching input/output times even if prescribed initial and maximal time step is larger.", 
+    description = "Test14 - 2D transport with time variable boundary, test matching input/output times even if prescribed initial and maximal time step is larger.", 
     mesh = {
       mesh_file = "./input/rectangle_with_bc_.msh"
     }, 

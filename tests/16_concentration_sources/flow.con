@@ -1,5 +1,4 @@
 {
-  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Steady flow + transport with source", 
@@ -110,18 +109,5 @@
         name = "transport_output_stream"
       }
     ]
-  }, 
-  zz_not_supported = {
-    constants = {
-      g = 9.81, 
-      rho = 1000
-    }, 
-    input = {
-      file_type = 1
-    }, 
-    output = {
-      output_file_2 = "./flow_test16.tmp", 
-      output_file_type = "1"
-    }
   }
 }

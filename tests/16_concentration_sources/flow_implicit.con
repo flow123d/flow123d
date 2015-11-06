@@ -1,5 +1,5 @@
 {
-  COMMENT_Stop_time = "1275", 
+//  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Steady flow + transport with source", 
@@ -41,7 +41,7 @@
     }, 
     secondary_equation = {
       TYPE = "SoluteTransport_DG", 
-      dual_porosity = false, 
+//      dual_porosity = false, 
       
       input_fields= [
         { region = "IMPLICIT BOUNDARY",
@@ -122,18 +122,5 @@
         name = "transport_output_stream"
       }
     ]
-  }, 
-  zz_not_supported = {
-    constants = {
-      g = 9.81, 
-      rho = 1000
-    }, 
-    input = {
-      file_type = 1
-    }, 
-    output = {
-      output_file_2 = "./flow_test16.tmp", 
-      output_file_type = "1"
-    }
   }
 }

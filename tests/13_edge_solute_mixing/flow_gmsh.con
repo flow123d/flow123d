@@ -1,8 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Test13 - mixing of substances on edges and 
-		   quantitative test on trivial transport problem.", 
+    description = "Test13 - mixing of substances on edges and quantitative test on trivial transport problem.", 
     mesh = {
       mesh_file = "input/test13.msh"
     }, 
