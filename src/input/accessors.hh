@@ -37,9 +37,7 @@
 #include "system/system.hh"
 #include "system/exceptions.hh"
 
-#include "input/type_base.hh"
-#include "input/type_selection.hh"
-#include "input/type_record.hh"
+#include "input/input_type.hh"
 #include "input/factory.hh"
 #include "input/storage.hh"
 

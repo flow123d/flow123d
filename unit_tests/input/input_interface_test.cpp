@@ -14,7 +14,6 @@
 
 #include <input/accessors.hh>
 #include <input/input_type.hh>
-#include <input/type_record.hh>
 
 #include "system/file_path.hh"
 

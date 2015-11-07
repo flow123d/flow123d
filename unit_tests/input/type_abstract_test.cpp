@@ -8,7 +8,7 @@
 
 #include <flow_gtest.hh>
 
-#include <input/type_record.hh>
+#include <input/input_type.hh>
 
 
 
