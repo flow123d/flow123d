@@ -59,6 +59,7 @@
 #include "type_base.hh"
 #include "type_selection.hh"
 #include "type_record.hh"
+#include "type_abstract.hh"
 #include "type_generic.hh"
 
 #endif /* INPUTTYPE_HH_ */

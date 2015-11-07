@@ -21,6 +21,7 @@
 
 #include "input/input_type_forward.hh"
 #include "input/type_record.hh"
+#include "input/type_abstract.hh"
 #include <string>
 #include <ostream>
 #include <boost/shared_ptr.hpp>
