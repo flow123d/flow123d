@@ -477,7 +477,14 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
 
 void Profiler::output(MPI_Comm comm) {
-    output(comm, *get_default_output_stream());
+    int mpi_rank, ierr;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    if (mpi_rank == 0) {
+        output(comm, *get_default_output_stream());
+    } else {
+        ostringstream os;
+        output(comm, os );
+    }
 }
 
 #endif /* FLOW123D_HAVE_MPI */
@@ -567,14 +574,8 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
 
 
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-    PyObject * python_module;
-    PyObject * convert_method;
-    PyObject * arguments;
-    PyObject * return_value;
-    PyObject * tmp;
-    int argument_index = 0;
 
-
+    if (json_filepath=="") return;
 
     // debug info
     // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
@@ -587,17 +588,17 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 
     // grab module and function by importing module profiler_formatter_module.py
-    python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
-    convert_method  = PythonLoader::get_callable (python_module, "convert" );
-
+    PyObject * python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
     //
     // def convert (json_location, output_file, formatter):
     //
+    PyObject * convert_method  = PythonLoader::get_callable (python_module, "convert" );
 
-    arguments = PyTuple_New (3);
+    int argument_index = 0;
+    PyObject * arguments = PyTuple_New (3);
 
     // set json path location as first argument
-    tmp = PyString_FromString (json_filepath.c_str());
+    PyObject * tmp = PyString_FromString (json_filepath.c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // set output path location as second argument
@@ -609,28 +610,10 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // execute method with arguments
-    return_value = PyObject_CallObject (convert_method, arguments);
+    PyObject * return_value = PyObject_CallObject (convert_method, arguments);
     //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
 
-
     PythonLoader::check_error();
-    /*
-    if (PyBool_Check (return_value)) {
-        // is boolean
-
-        if (return_value == Py_True) {
-            cout << "Python execution was successful" << endl;
-        }else{
-            cout << "Error when executing Python" << endl;
-        }
-    } else if (PyString_Check (return_value)) {
-        // is string (holds error)
-
-        char* error_msg = PyString_AsString (return_value);
-        cout << "Error when executing Python: " << error_msg << endl;
-    } else {
-        cout << "Unknown result when executing Python: "<< endl;
-    }*/
 }
 
 
