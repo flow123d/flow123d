@@ -142,8 +142,8 @@ void PythonLoader::check_error() {
         }
 
  		string py_message =
-		             "Error type: " + string(PyString_AsString(PyObject_Str(ptype))) + "\n"
-		           + "Error message: " + string(PyString_AsString(PyObject_Str(pvalue))) + "\n"
+		             "\nType: " + string(PyString_AsString(PyObject_Str(ptype))) + "\n"
+		           + "Message: " + string(PyString_AsString(PyObject_Str(pvalue))) + "\n"
 		           + "Traceback: " + str_traceback;
 
 		THROW(ExcPythonError() << EI_PythonMessage( py_message ));
