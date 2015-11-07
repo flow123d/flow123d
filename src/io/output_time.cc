@@ -52,8 +52,8 @@ const Record & OutputTime::get_input_type() {
 }
 
 
-AbstractRecord & OutputTime::get_input_format_type() {
-	return AbstractRecord("OutputTime", "Format of output stream and possible parameters.")
+Abstract & OutputTime::get_input_format_type() {
+	return Abstract("OutputTime", "Format of output stream and possible parameters.")
 		.close();
 }
 

@@ -22,8 +22,8 @@
 
 using namespace Input::Type;
 
-AbstractRecord & LinearODESolverBase::get_input_type() {
-	return AbstractRecord("LinearODESolver",
+Abstract & LinearODESolverBase::get_input_type() {
+	return Abstract("LinearODESolver",
 			"Solver of a linear system of ODEs.")
 			.close();
 }

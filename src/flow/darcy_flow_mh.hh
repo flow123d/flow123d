@@ -34,7 +34,7 @@
 #define DARCY_FLOW_MH_HH
 
 #include <memory>
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 
 #include <petscmat.h>
 #include "system/sys_vector.hh"

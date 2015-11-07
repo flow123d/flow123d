@@ -25,6 +25,7 @@
 
 #include "system/exc_common.hh"
 #include "config.h"
+#include "mpi.h"
 
 /*! @brief Debugging macros.
  *
@@ -200,12 +201,12 @@ static const int debug_asserts_view = 0;
 
 
 /**
- * These macros are necessary in classes that contain Input::Type::AbstractRecord (PARENT macro)
- * and in classes contain descendant of this AbstractRecord (CHILD macro) if these descendants
+ * These macros are necessary in classes that contain Input::Type::Abstract (PARENT macro)
+ * and in classes contain descendant of this Abstract (CHILD macro) if these descendants
  * are initialized through methods of @p Input::Factory class.
  *
  * These macros are necessary for initializing of static variables in classes that contain
- * descendants of parent AbstractRecord.
+ * descendants of parent Abstract.
  */
 #define FLOW123D_FORCE_LINK_IN_CHILD(x) int force_link_##x = 0;
 #define FLOW123D_FORCE_LINK_IN_PARENT(x) extern int force_link_##x; void func_##x() { force_link_##x = 1; }

@@ -24,7 +24,7 @@ using namespace std;
 #include <boost/circular_buffer.hpp>
 
 #include "system/exceptions.hh"
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
 #include "tools/time_marks.hh"
 #include "tools/time_governor.hh"
 

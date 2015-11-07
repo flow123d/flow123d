@@ -19,8 +19,7 @@
 #define STORAGE_TRANSPOSE_HH_
 
 #include "input/storage.hh"
-#include "input/type_base.hh"
-#include "input/type_record.hh"
+#include "input/input_type_forward.hh"
 
 namespace Input {
 
@@ -40,7 +39,7 @@ private:
 
     StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Record *source_type,
     		StorageBase const *source_storage, unsigned int index);
-    StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::AbstractRecord *source_type,
+    StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Abstract *source_type,
     		StorageBase const *source_storage, unsigned int index);
     StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Array *source_type,
     		StorageBase const *source_storage, unsigned int index);

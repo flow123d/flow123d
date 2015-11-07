@@ -20,6 +20,7 @@
 #include "mesh/mesh.h"
 #include "output_data_base.hh"
 #include "input/factory.hh"
+#include "input/accessors_forward.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(vtk)
