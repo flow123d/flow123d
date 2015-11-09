@@ -44,23 +44,13 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
         is_patological_ = IP.is_patological();
     };
 
-/* Constructor interpolates the second bary coords of IntersectionPoint<N,M-1> to IntersectionPoint<N,M>
- * Allowed only from dimension 1 to 2 and from 2 to 3
- * */
+
 template<int N, int M>
 IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP){
-    arma::vec::fixed<M+1> interpolated;
-    //TODO: PE; try to replace if cases; interpolate<M-1>
-    if(M == 3){
-        interpolated = RefElement<3>::interpolate<2>(IP.get_local_coords2(), IP.get_side2());
-    }else if(M == 2){
-        interpolated = RefElement<2>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
-    }else{
-        ASSERT(false,"Wrong the second dimension in an IntersectionPoint (allowed 2 and 3 only)");
-        interpolated.zeros();
-    }
+    ASSERT(M>1 && M<4,"Wrong the second dimension in an IntersectionPoint (allowed 2 and 3 only)");
+    
     local_coords1 = IP.get_local_coords1();
-    local_coords2 = interpolated;
+    local_coords2 = RefElement<M>::template interpolate<M-1>(IP.get_local_coords2(), IP.get_side2());
     side_idx1 = IP.get_side1();
     side_idx2 = IP.get_side2();
     orientation = IP.get_orientation();
@@ -68,20 +58,13 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP){
     is_patological_ = IP.is_patological();
 };
 
-/* Constructor interpolates the second bary coords of IntersectionPoint<N,M-2> to IntersectionPoint<N,M>
- * Allowed only from dimension 1 to 3
- * */
+
 template<int N, int M>
 IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP){
-    arma::vec::fixed<M+1> interpolated;
-    if(M == 3){
-        interpolated = RefElement<3>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
-    }else{
-        ASSERT(false,"Wrong the second dimension in an IntersectionPoint (allowed 3 only)");
-        interpolated.zeros();
-    }
+    ASSERT(M == 3,"Wrong the second dimension in an IntersectionPoint (allowed 3 only)");
+
     local_coords1 = IP.get_local_coords1();
-    local_coords2 = interpolated;
+    local_coords2 = RefElement<3>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
     side_idx1 = IP.get_side1();
     side_idx2 = IP.get_side2();
     orientation = IP.get_orientation();
