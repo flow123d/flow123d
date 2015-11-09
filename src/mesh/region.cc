@@ -290,7 +290,7 @@ void RegionDB::add_set( const string& set_name, const RegionSet & set) {
 }
 
 
-RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_name_2) {
+RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_name_2) const {
 	RegionSet set_union;
 	RegionSet set_1, set_2;
 	RegionSet::iterator it;
@@ -304,7 +304,7 @@ RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_na
 }
 
 
-RegionSet RegionDB::intersection( const string & set_name_1, const string & set_name_2) {
+RegionSet RegionDB::intersection( const string & set_name_1, const string & set_name_2) const {
 	RegionSet set_insec;
 	RegionSet set_1, set_2;
 	RegionSet::iterator it;
@@ -318,7 +318,7 @@ RegionSet RegionDB::intersection( const string & set_name_1, const string & set_
 }
 
 
-RegionSet RegionDB::difference( const string & set_name_1, const string & set_name_2) {
+RegionSet RegionDB::difference( const string & set_name_1, const string & set_name_2) const {
 	RegionSet set_diff;
 	RegionSet set_1, set_2;
 	RegionSet::iterator it;
@@ -333,9 +333,9 @@ RegionSet RegionDB::difference( const string & set_name_1, const string & set_na
 
 
 void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_2,
-		RegionSet & set_1, RegionSet & set_2) {
-	std::map<std::string, RegionSet>::iterator it_1 = sets_.find(set_name_1);
-	std::map<std::string, RegionSet>::iterator it_2 = sets_.find(set_name_2);
+		RegionSet & set_1, RegionSet & set_2) const {
+	std::map<std::string, RegionSet>::const_iterator it_1 = sets_.find(set_name_1);
+	std::map<std::string, RegionSet>::const_iterator it_2 = sets_.find(set_name_2);
 
 	if ( it_1 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_1)); }
 	if ( it_2 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_2)); }
@@ -349,7 +349,7 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 
 
 
-pair<string,string> RegionDB::get_and_check_operands(const Input::Array & operands)
+pair<string,string> RegionDB::get_and_check_operands(const Input::Array & operands) const
 {
 	vector<string> names;
 	operands.copy_to(names);

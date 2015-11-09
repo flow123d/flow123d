@@ -450,7 +450,7 @@ public:
      * @param set_name_2 Name of second RegionSet
      * @return RegionSet created of union operation
      */
-    RegionSet union_sets( const string & set_name_1, const string & set_name_2);
+    RegionSet union_sets( const string & set_name_1, const string & set_name_2) const;
 
     /**
      * Get RegionSets of specified names and create their intersection.
@@ -460,7 +460,7 @@ public:
      * @param set_name_2 Name of second RegionSet
      * @return RegionSet created of intersection operation
      */
-    RegionSet intersection( const string & set_name_1, const string & set_name_2);
+    RegionSet intersection( const string & set_name_1, const string & set_name_2) const;
 
     /**
      * Get RegionSets of specified names and create their difference
@@ -470,7 +470,7 @@ public:
      * @param set_name_2 Name of second RegionSet
      * @return RegionSet created of difference operation
      */
-    RegionSet difference( const string & set_name_1, const string & set_name_2);
+    RegionSet difference( const string & set_name_1, const string & set_name_2) const;
 
     /**
      * Get region set of specified name. Three sets are defined by default:
@@ -499,6 +499,12 @@ public:
      * @param map Map to which is loaded data
      */
     void read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map);
+
+    /**
+     * Read two operands from input array of strings and check if given names
+     * are existing sets. Return pair of checked set names.
+     */
+    pair<string,string> get_and_check_operands(const Input::Array & operands) const;
 
 
 private:
@@ -579,13 +585,7 @@ private:
      * Get sets of names set_name_1 and set_name_2 and sort them.
      * Throws ExcUnknownSet if the set with given name does not exist.
      */
-    void prepare_sets( const string & set_name_1, const string & set_name_2, RegionSet & set_1, RegionSet & set_2);
-
-    /**
-     * Read two operands from input array of strings and check if given names
-     * are existing sets. Return pair of checked set names.
-     */
-    pair<string,string> get_and_check_operands(const Input::Array & operands);
+    void prepare_sets( const string & set_name_1, const string & set_name_2, RegionSet & set_1, RegionSet & set_2) const;
 
     /**
      * Create label of region in format: "region_"+id
