@@ -5,6 +5,9 @@
 # The transformations have to be defined in the file
 # "src/python/GeoMop/ModelEditor/resources/transformations/main.json".
 
+echo "Transformation python scripts depends on packages: python3, python3-yaml, python3-markdown"
+echo "Transformation list: src/python/GeoMop/ModelEditor/resources/transformations/main.json"
+
 # Relative path to "tests" directory from directory,
 # where this script is placed
 TESTS_DIR="../../tests"
