@@ -1,4 +1,4 @@
-INI_FILES="./flow_implicit.con flow_implicit_elementwise.con"
+INI_FILES="./flow_implicit.yaml flow_implicit_elementwise.yaml"
 NPROC="1 2"
 FLOW_PARAMS="-o output"
 

@@ -1,8 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Test13 - mixing of substances on edges and 
-		   quantitative test on trivial transport problem.", 
+    description = "Test13 - mixing of substances on edges and quantitative test on trivial transport problem.", 
     mesh = {
       mesh_file = "input/test13.msh"
     }, 
@@ -94,9 +93,7 @@
       {
         file = "transport.msh", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "gmsh", 
           variant = "ascii"
         }, 
         time_step = 0.5, 

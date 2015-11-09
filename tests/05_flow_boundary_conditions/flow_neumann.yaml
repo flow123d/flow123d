@@ -1,0 +1,38 @@
+problem: !SequentialCoupling
+  description: Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition
+  mesh:
+    mesh_file: ${INPUT}/test05.msh
+  primary_equation: !Steady_MH
+    n_schurs: 2
+    input_fields:
+    - region: plane
+      anisotropy: 1
+    - region: .bc_south
+      bc_type: neumann
+      bc_flux: !FieldFormula
+        value: x
+    - region: .bc_east
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: y
+    - region: .bc_north
+      bc_type: neumann
+      bc_flux: !FieldFormula
+        value: -x
+    - region: .bc_west
+      bc_type: dirichlet
+      bc_pressure: 0
+    output:
+      output_stream: 
+        file: ./test05.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - piezo_head_p0
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-07
