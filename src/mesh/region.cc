@@ -560,3 +560,39 @@ Region RegionDB::find_by_dimid(DimIDIter it_id, unsigned int id, const std::stri
 
     return r_id;
 }
+
+void RegionDB::print_region_table(ostream& stream) const {
+	ASSERT(closed_, "RegionDB not closed yet.\n");
+
+	// print header
+	stream << endl << "----------- Table of all regions: -----------" << endl;
+	stream << std::setfill(' ') << setw(6) << "id" << " dim label" << setw(12) << "" << "contains regions" << endl;
+	// print data
+	for (std::map<std::string, RegionSet>::const_iterator it = sets_.begin(); it != sets_.end(); ++it) { // iterates through RegionSets
+		unsigned int reg_id = RegionIdx::undefined;
+		string rset_label = it->first;
+		LabelIter label_it = region_set_.get<Label>().find(rset_label);
+		if ( label_it != region_set_.get<Label>().end() ) { // checks if Region with same label as RegionSet exists
+			reg_id = label_it->get_id(); // stores ID of Region - used if RegionSet contains only one Region
+			stream << setw(6) << reg_id << setw(4) << label_it->dim();
+		} else {
+			stream << "     -   -";
+		}
+		unsigned int indent = 17 - rset_label.length();
+		stream << " " << rset_label << setw(indent) << "";
+		if (it->second.size() > 1) {
+			// prints IDs of Regions (if their count is 2 or more)
+			for (RegionSet::const_iterator set_it = it->second.begin(); set_it!=it->second.end(); ++set_it) {
+				if (set_it != it->second.begin()) stream << ", ";
+				stream << set_it->id();
+			}
+		} else if ( it->second.size() == 1 && (it->second)[0].id() != reg_id ) {
+			// for one Region in RegionSet prints ID only if RegionSet is not wrapper of Region
+			stream << (it->second)[0].id();
+		} else {
+			stream << "-";
+		}
+		stream << endl;
+	}
+	stream << "---------------------------------------------" << endl << endl;
+}

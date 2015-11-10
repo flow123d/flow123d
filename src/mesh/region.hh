@@ -506,6 +506,11 @@ public:
      */
     pair<string,string> get_and_check_operands(const Input::Array & operands) const;
 
+    /**
+     * Print table with base information of all regions stored in RegionDB.
+     */
+    void print_region_table(ostream& stream) const;
+
 
 private:
 
