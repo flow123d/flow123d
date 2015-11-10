@@ -47,10 +47,10 @@ void RegionBase::add_set(Mesh *mesh, const string& set_name, const RegionSet & s
  */
 
 RegionFromId::RegionFromId(const Input::Record &rec, Mesh *mesh)
+: RegionBase(rec.val<unsigned int>("id"), mesh->region_db())
 {
 	string region_label = rec.val<string>("name");
-	unsigned int region_id = rec.val<unsigned int>("id");
-	this->add_region(mesh, region_id, region_label);
+	this->add_region(mesh, this->idx_, region_label);
 }
 
 

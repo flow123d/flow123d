@@ -165,7 +165,7 @@ public:
         return *db_;
     }
 
-private:
+protected:
     /**
      * Create accessor from the index. Should be private since implementation specific.
      * We need some way how to iterate over: all regions, boundary regions, bulk regions -
