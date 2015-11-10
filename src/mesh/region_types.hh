@@ -9,6 +9,7 @@
 #define REGION_TYPES_HH_
 
 #include "mesh/mesh.h"
+#include "mesh/region.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
 
@@ -21,7 +22,7 @@
  *  - constructor what adds region to RegionDB
  *  - static generating function created Input Type Record
  */
-class RegionBase {
+class RegionBase : public Region {
 public:
 	/**
      * Returns whole tree of input types for Region with all descendants.
@@ -36,6 +37,7 @@ public:
     Region add_region(Mesh *mesh, unsigned int id, const std::string &label);
     Region add_region(Mesh *mesh, unsigned int id, const std::string &label, unsigned int dim);
     Region add_region(Mesh *mesh, unsigned int id, unsigned int dim);
+    void add_set(Mesh *mesh, const string& set_name, const RegionSet & set);
 
 };
 

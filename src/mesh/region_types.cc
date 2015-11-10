@@ -36,6 +36,11 @@ Region RegionBase::add_region(Mesh *mesh, unsigned int id, unsigned int dim) {
 }
 
 
+void RegionBase::add_set(Mesh *mesh, const string& set_name, const RegionSet & set) {
+	mesh->region_db_.add_set(set_name, set);
+}
+
+
 
 /*******************************************************************
  * implementation of RegionFromId
@@ -161,7 +166,15 @@ const IT::Record & RegionFromElements::get_region_input_type()
  * implementation of RegionUnion
  */
 
-RegionUnion::RegionUnion(const Input::Record &rec, Mesh *mesh) {}
+RegionUnion::RegionUnion(const Input::Record &rec, Mesh *mesh)
+{
+	string set_name = rec.val<string>("name");
+	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
+
+	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
+	RegionSet region_set = mesh->region_db().union_sets( set_names.first, set_names.second );
+	add_set(mesh, set_name, region_set);
+}
 
 
 
@@ -171,12 +184,8 @@ const IT::Record & RegionUnion::get_region_input_type()
         .derive_from(RegionBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
-		.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
-				"The ID of the region to which you assign label.")
-		.declare_key("region_labels", IT::Array( IT::String() ),
-				"List of labels of the regions that has to be added to the region.")
-		.declare_key("region_ids", IT::Array( IT::Integer() ),
-				"List of IDs of the regions that has to be added to the region.")
+		.declare_key("region_labels", IT::Array( IT::String(), 2,2 ), IT::Default::obligatory(),
+				"Defines region as a union of given pair of regions.")
 		.close();
 }
 
@@ -186,7 +195,15 @@ const IT::Record & RegionUnion::get_region_input_type()
  * implementation of RegionDifference
  */
 
-RegionDifference::RegionDifference(const Input::Record &rec, Mesh *mesh) {}
+RegionDifference::RegionDifference(const Input::Record &rec, Mesh *mesh)
+{
+	string set_name = rec.val<string>("name");
+	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
+
+	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
+	RegionSet region_set = mesh->region_db().difference( set_names.first, set_names.second );
+	add_set(mesh, set_name, region_set);
+}
 
 
 
@@ -196,10 +213,8 @@ const IT::Record & RegionDifference::get_region_input_type()
         .derive_from(RegionBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
-		.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
-				"The ID of the region to which you assign label.")
-		.declare_key("region_labels", IT::Array( IT::String(), 2, 2 ),
-				"Defines given pair of regions.")
+		.declare_key("region_labels", IT::Array( IT::String(), 2, 2 ), IT::Default::obligatory(),
+				"Defines region as a difference of given pair of regions.")
 		.close();
 }
 
@@ -209,7 +224,15 @@ const IT::Record & RegionDifference::get_region_input_type()
  * implementation of RegionIntersection
  */
 
-RegionIntersection::RegionIntersection(const Input::Record &rec, Mesh *mesh) {}
+RegionIntersection::RegionIntersection(const Input::Record &rec, Mesh *mesh)
+{
+	string set_name = rec.val<string>("name");
+	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
+
+	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
+	RegionSet region_set = mesh->region_db().intersection( set_names.first, set_names.second );
+	add_set(mesh, set_name, region_set);
+}
 
 
 
@@ -219,12 +242,8 @@ const IT::Record & RegionIntersection::get_region_input_type()
         .derive_from(RegionBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
-		.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
-				"The ID of the region to which you assign label.")
-		.declare_key("region_labels", IT::Array( IT::String() ),
-				"List of labels of the regions that define intersection of the region.")
-		.declare_key("region_ids", IT::Array( IT::Integer() ),
-				"List of IDs of the regions that define intersection of the region.")
+		.declare_key("region_labels", IT::Array( IT::String(), 2,2 ), IT::Default::obligatory(),
+				"Defines region as an intersection of given pair of regions.")
 		.close();
 }
 
