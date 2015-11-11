@@ -40,24 +40,31 @@ public:
     //TODO: why this is not done in constructor?
     //TODO: document both cases
     // IP is intersection of triangle and whole line (bisector)
+    /**
+     * @return true, if intersection is found; false otherwise
+     */
 	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
 	void init_plucker_to_compute();
 	void set_data(Simplex<1> *abs, Simplex<2> *triang);
 
 
+    /// Sets the pointer to Plucker coordinates of the abscissa.
 	inline void set_pc_abscissa(Plucker *p){
 		plucker_coordinates_abscissa[0] = p;
 	}
-	inline void set_pc_triangle(Plucker *p, unsigned int index){
-		plucker_coordinates_triangle[index] = p;
+	
+	/// Sets the pointer to Plucker coordinates of the triangle side of given @p side_idx.
+	inline void set_pc_triangle(Plucker *p, unsigned int side_idx){
+		plucker_coordinates_triangle[side_idx] = p;
 	}
 
 	inline Plucker *get_pc_abscissa(){
 		return plucker_coordinates_abscissa[0];
 	}
 
-	inline Plucker *get_pc_triangle(unsigned int index){
-		return plucker_coordinates_triangle[index];
+	/// Sets the pointer to Plucker coordinates of the triangle side of given @p side_idx.
+	inline Plucker *get_pc_triangle(unsigned int side_idx){
+		return plucker_coordinates_triangle[side_idx];
 	}
 
 	void to_string_plucker_coordinates();

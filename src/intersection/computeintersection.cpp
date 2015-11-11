@@ -50,21 +50,34 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::clear_all(){
 };
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::init_plucker_to_compute(){
-	// Spočtení pluckerovych souradnic
 
+    // if not already computed, compute plucker coordinates of abscissa
 	if(!plucker_coordinates_abscissa[0]->is_computed()){
 		plucker_coordinates_abscissa[0]->compute((*abscissa)[0].getPointCoordinates(),
 												 (*abscissa)[1].getPointCoordinates());
 	}
-	for(unsigned int i = 0; i < 3; i++){
-		if(!plucker_coordinates_triangle[i]->is_computed()){
-			plucker_coordinates_triangle[i]->compute((*triangle)[i][0].getPointCoordinates(), (*triangle)[i][1].getPointCoordinates());
+	// if not already computed, compute plucker coordinates of triangle sides
+	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
+		if(!plucker_coordinates_triangle[side]->is_computed()){
+			plucker_coordinates_triangle[side]->compute((*triangle)[side][0].getPointCoordinates(), (*triangle)[side][1].getPointCoordinates());
 		}
 	}
 
-	for(unsigned int i = 0; i < 3; i++){
-		if(plucker_products[i] == NULL){
-			plucker_products[i] = new double((*plucker_coordinates_abscissa[0])*(*plucker_coordinates_triangle[i]));
+	DBGMSG("Abscissa:\n");
+    (*abscissa)[0].getPointCoordinates().print();
+    (*abscissa)[1].getPointCoordinates().print();
+    
+	// compute Plucker products (abscissa X triangle side)
+	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
+		if(plucker_products[side] == NULL){
+            (*plucker_coordinates_abscissa[0]).toString();
+            (*plucker_coordinates_triangle[side]).toString();
+			plucker_products[side] = new double((*plucker_coordinates_abscissa[0])*(*plucker_coordinates_triangle[side]));
+            
+            DBGMSG("triangle side:\n");
+            (*triangle)[side][0].getPointCoordinates().print();
+            (*triangle)[side][1].getPointCoordinates().print();
+            DBGMSG("Plucker product = %f\n", *(plucker_products[side]));
 		}
 	}
 
@@ -143,7 +156,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
         //TODO try removing the seocond part of the following condition
 	}else if(compute_zeros_plucker_products && (fabs(*plucker_products[0]) <= epsilon || fabs(*plucker_products[1]) <= epsilon || fabs(*plucker_products[2]) <= epsilon)){
 
-		//xprintf(Msg, "pocita se patlogicky\n");
+		DBGMSG("Intersections - Pathologic case.\n");
 
 
 		// Pokud je 1 nula = jeden patologický průsečík
@@ -327,12 +340,13 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::clear_all(){
 };
 
 void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
+    
 	for(unsigned int i = 0; i < 4;i++){
 		CI12[i].set_pc_abscissa(plucker_coordinates_abscissa[0]);
 	}
 
-	for(unsigned int j = 0; j < 4;j++){
-		for(unsigned int i = 0; i < 3;i++){
+	for(unsigned int j = 0; j < 4;j++){ // for each side of tetrahedron
+		for(unsigned int i = 0; i < 3;i++){ // for each side of triangle
 			CI12[j].set_pc_triangle(plucker_coordinates_tetrahedron[RefElement<3>::side_lines[j][i]], i);
 		}
 	}
@@ -354,54 +368,51 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 	double epsilon = 64*numeric_limits<double>::epsilon();
 
     // loop over sides of tetrahedron 
-    //TODO rename i to side
-	for(unsigned int i = 0;i < 4 && pocet_pruniku < 2;i++){
+	for(unsigned int side = 0;side < RefElement<3>::n_sides && pocet_pruniku < 2;side++){
 
         // update plucker products of the side
         //TODO depends on reference element: loop over edges of the side; 
         // possibly can be removed after passing plucker products
-		for(unsigned int j = 0; j < i;j++){
-			CI12[i].set_plucker_product(CI12[j].get_plucker_product(i-1),j);
+		for(unsigned int j = 0; j < side;j++){
+			CI12[side].set_plucker_product(CI12[j].get_plucker_product(side-1),j);
 		}
-		if(!CI12[i].is_computed() && CI12[i].compute(IP12s, true)){
+		if(!CI12[side].is_computed() // if not computed yet
+            && CI12[side].compute(IP12s, true)){    // compute; if intersection exists then continue
 			//xprintf(Msg,"Prunik13\n");
 
-            //TODO IP12s[IP12s.size() - 1] --->  IP12s.back()
-			if(IP12s[IP12s.size() - 1].is_patological()){
-				//xprintf(Msg, "\tPatologicky\n");
+			if(IP12s.back().is_patological()){   // resolve pathologic cases
 				// Nastavování stěn, které se už nemusí počítat
 
                 //TODO depends on reference element
-				if(i == 0){
-					if(IP12s[IP12s.size() - 1].get_local_coords2()[0] == 1){
+				if(side == 0){
+					if(IP12s.back().get_local_coords2()[0] == 1){
 						CI12[1].set_computed();
 						CI12[2].set_computed();
-					}else if(IP12s[IP12s.size() - 1].get_local_coords2()[1] == 1){
+					}else if(IP12s.back().get_local_coords2()[1] == 1){
 						CI12[1].set_computed();
 						CI12[3].set_computed();
-					}else if(IP12s[IP12s.size() - 1].get_local_coords2()[2] == 1){
+					}else if(IP12s.back().get_local_coords2()[2] == 1){
 						CI12[2].set_computed();
 						CI12[3].set_computed();
 					}else{
-						CI12[IP12s[IP12s.size() - 1].get_side2() + 1].set_computed();
+						CI12[IP12s.back().get_side2() + 1].set_computed();
 					}
-				}else if(i == 1 && IP12s[IP12s.size() - 1].get_local_coords2()[2] == 1){
+				}else if(side == 1 && IP12s.back().get_local_coords2()[2] == 1){
 					CI12[2].set_computed();
 					CI12[3].set_computed();
 				}else{
-					CI12[IP12s[IP12s.size() - 1].get_side2() + 1].set_computed();
+					CI12[IP12s.back().get_side2() + 1].set_computed();
 				}
-				IP12s[IP12s.size() - 1].set_side2(i);
+				IP12s.back().set_side2(side);
 			}else{
-				IP12s[IP12s.size() - 1].set_side2(i);
+				IP12s.back().set_side2(side);
 			}
 			pocet_pruniku++;
 
 			//if((IP.get_local_coords1())[0] <= 1 && (IP.get_local_coords1())[0] >= 0){
-				//IP.print();
-				//xprintf(Msg, "Interpolace dimenzi");
-				IntersectionPoint<1,3> IP13(IP12s[IP12s.size() - 1]);
-				//IP13.print();
+// 				IP12s.back().print();
+				IntersectionPoint<1,3> IP13(IP12s.back());
+// 				IP13.print();
 				IP13s.push_back(IP13);
 
 			//}
@@ -435,7 +446,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 			IP13s.pop_back();
 			IP13s.pop_back();
 		}else{
-
+            DBGMSG("Intersection interpolation.\n");
 			// Jedná se o průnik
 			// První souřadnice leží uvnitř čtyřstěnu
 			if(first_theta > 1+epsilon || first_theta < -epsilon){
@@ -523,10 +534,12 @@ ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(Simplex<2> &tri
 	plucker_coordinates_triangle.reserve(3);
 	plucker_coordinates_tetrahedron.reserve(6);
 
+    // set CI object for 1D-2D intersection 'tetrahedron edge - triangle'
 	for(unsigned int i = 0; i < 6;i++){
 		plucker_coordinates_tetrahedron[i] = new Plucker();
 		CI12[i].set_data(&tetrahedron->getAbscissa(i), triange);
 	}
+	// set CI object for 1D-3D intersection 'triangle side - tetrahedron'
 	for(unsigned int i = 0; i < 3;i++){
 		plucker_coordinates_triangle[i] = new Plucker();
 		CI13[i].set_data(&triange->getAbscissa(i) , tetrahedron);
@@ -543,13 +556,15 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::clear_all(){
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 
+    // set pointers to Plucker coordinates for 1D-2D
 	for(unsigned int i = 0; i < 6;i++){
-
 		CI12[i].set_pc_abscissa(plucker_coordinates_tetrahedron[i]);
 		for(unsigned int j = 0; j < 3;j++){
 			CI12[i].set_pc_triangle(plucker_coordinates_triangle[j],j);
 		}
 	}
+	
+	// set pointers to Plucker coordinates for 1D-3D
 	for(unsigned int i = 0; i < 3;i++){
 		CI13[i].set_pc_abscissa(plucker_coordinates_triangle[i]);
 		for(unsigned int j = 0; j < 6;j++){
@@ -569,6 +584,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 	//cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
 		for(unsigned int i = 0; i < 3;i++){
 			pocet_13_pruniku = CI13[(3-i)%3].compute(IP13s);
+            DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
 			//(triange->getAbscissa(i)).toString();
 			// Vždy by měl být počet průniku 2 nebo 0
 			if(pocet_13_pruniku == 1){
@@ -595,7 +611,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 				lokalni_mnohouhelnik.add_ipoint(IP23_2);
 
 			}else if(pocet_13_pruniku > 2){
-				// Todo: nahradit Assertem
+				// TODO: nahradit Assertem
 				xprintf(Msg, "JINY POCET PRUNIKU\n");
 			}
 
