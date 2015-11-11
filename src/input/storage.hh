@@ -1,8 +1,18 @@
-/*
- * storage.hh
+/*!
  *
- *  Created on: May 5, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    storage.hh
+ * @brief   
  */
 
 #ifndef STORAGE_HH_
@@ -61,7 +71,7 @@ public:
     virtual double get_double() const;
     virtual bool get_bool() const;
     virtual const std::string &get_string() const;
-    virtual const StorageBase * get_item(const unsigned int index) const;
+    virtual StorageBase * get_item(const unsigned int index) const;
     virtual bool is_null() const =0;
     virtual unsigned int get_array_size() const;
 
@@ -82,7 +92,7 @@ public:
     StorageArray(const StorageArray &); // deep copy for test purpose
     void new_item(unsigned int index, StorageBase* item);
     void set_item(unsigned int index, StorageBase* item);
-    virtual const StorageBase * get_item(const unsigned int index) const;
+    virtual StorageBase * get_item(const unsigned int index) const;
     virtual unsigned int get_array_size() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy() const;

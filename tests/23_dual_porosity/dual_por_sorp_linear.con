@@ -101,7 +101,7 @@
         
         reaction_immobile = {
           TYPE = "SorptionImmobile",
-          solvent_density = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/solvent_density" },
+          solvent_density = 1.0,
           substances = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/substances" },
           solubility = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/solubility" },
           input_fields= { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/input_fields" },

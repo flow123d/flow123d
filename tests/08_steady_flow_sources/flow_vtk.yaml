@@ -1,0 +1,27 @@
+problem: !SequentialCoupling
+  description: Test8 - Steady flow with sources
+  mesh:
+    mesh_file: ${INPUT}/test08.msh
+  primary_equation: !Steady_MH
+    input_fields:
+    - region: plane
+      anisotropy: 1
+      water_source_density: !FieldFormula
+        value: 2*(1-x^2)+2*(1-y^2)
+    - region: .plane_boundary
+      bc_type: dirichlet
+      bc_pressure: 0
+    balance: true
+    output:
+      output_stream: 
+        file: ./flow.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    solver: !Petsc
+      r_tol: 1.0e-10
+      a_tol: 1.0e-10

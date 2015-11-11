@@ -11,7 +11,7 @@
 
       input_fields= [
         { r_set = "BOUNDARY",
-          bc_type = "dirichlet"
+          bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value="(1-x)/10" }
         }
       ],
@@ -30,30 +30,30 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       }
-    }
+    },
 
     secondary_equation = {
       TYPE = "SoluteTransport_DG", 
     
       input_fields= [
         { region = "domain",
-          diff_m = 1e-2
+          diff_m = 1e-2,
           sources_density = 0
         },
         { region = ".left",
-          bc_type = "dirichlet"
+          bc_type = "dirichlet",
           bc_conc = { TYPE="FieldFormula", value="2-((y-0.5)*2)^8" }
         },
         { region = ".right",
-          bc_type = "dirichlet"
+          bc_type = "dirichlet",
           bc_conc = { TYPE="FieldFormula", value="((y-0.5)*2)^8" }
         },
         { region = ".top",
-          bc_type = "dirichlet"
+          bc_type = "dirichlet",
           bc_conc = 1
         },
         { region = ".bottom",
-          bc_type = "dirichlet"
+          bc_type = "dirichlet",
           bc_conc = 1
         }
       ],
@@ -91,12 +91,10 @@
       {
         file = "./transport.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
-        time_step = 1
+        time_step = 1,
         name = "transport_output_stream"
       }
     ]

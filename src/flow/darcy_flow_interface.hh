@@ -8,7 +8,7 @@
 #ifndef SRC_FLOW_DARCY_FLOW_INTERFACE_HH_
 #define SRC_FLOW_DARCY_FLOW_INTERFACE_HH_
 
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 
 class MH_DofHandler;
 
@@ -17,8 +17,8 @@ public:
     /// Typedef for usage of Input::Factory in child classes.
     typedef DarcyFlowInterface FactoryBaseType;
 
-    static Input::Type::AbstractRecord & get_input_type() {
-        return Input::Type::AbstractRecord("DarcyFlow",
+    static Input::Type::Abstract & get_input_type() {
+        return Input::Type::Abstract("DarcyFlow",
                 "Darcy flow model. Abstraction of various porous media flow models.")
                 .close();
     }

@@ -1,8 +1,18 @@
-/*
- * type_repository.hh
+/*!
  *
- *  Created on: May 7, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_repository.hh
+ * @brief   
  */
 
 #ifndef TYPE_REPOSITORY_HH_
@@ -19,8 +29,8 @@ namespace Input {
 /**
  * The Singleton class TypeRepository serves for handling the lazy-evaluated input types, derived from the base class
  * LazyType. When all static variables are initialized, the method TypeRepository::instance().finish() can be called
- * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
- * Selections have to be finished after all other types since they are used by AbstractRecords to register all
+ * in order to finish initialization of lazy types such as Records, Abstracts, Arrays and Selections.
+ * Selections have to be finished after all other types since they are used by Abstracts to register all
  * derived types. For this reason TypeRepository contains two arrays - one for Selections, one for the rest.
  *
  * This is list of unique instances that may contain raw pointers to possibly not yet constructed

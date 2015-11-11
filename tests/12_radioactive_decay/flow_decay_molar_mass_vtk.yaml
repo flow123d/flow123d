@@ -1,0 +1,59 @@
+problem: !SequentialCoupling
+  description: Test12 - narrow radioaoctive decay chain, with transport switched enabled
+    but with zero pressure gradient
+  mesh:
+    mesh_file: ./input/flow_decay/sit_decay.msh
+  primary_equation: !Steady_MH
+    input_fields:
+    - rid: 1
+      conductivity: 0.01
+    - region: IMPLICIT BOUNDARY
+      flow_old_bcd_file: ./input/flow_decay/sit_decay.fbc
+    output:
+      output_stream: 
+        file: ./flow.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-07
+  secondary_equation: !TransportOperatorSplitting
+    input_fields:
+    - rid: 1
+      init_conc:
+      - 1
+      - 0
+      - 0
+    - region: IMPLICIT BOUNDARY
+      transport_old_bcd_file: ./input/flow_decay/sit_decay.tbc
+    output_stream: 
+      file: ./transport_decay.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 0.5
+      name: transport_output_stream
+    substances:
+    - name: A
+      molar_mass: 10
+    - name: B
+      molar_mass: 5
+    - name: C
+      molar_mass: 1
+    time:
+      end_time: 10.0
+    reaction_term: !RadioactiveDecay
+      decays:
+      - radionuclide: A
+        half_life: 2.5
+        products:
+        - name: B
+          branching_ratio: 0.9
+        - name: C
+          branching_ratio: 0.1
+    balance:
+      cumulative: true

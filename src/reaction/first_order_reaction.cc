@@ -1,3 +1,20 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    first_order_reaction.cc
+ * @brief   
+ */
+
 #include "reaction/first_order_reaction.hh"
 #include "reaction/reaction_term.hh"
 #include "reaction/linear_ode_solver.hh"
@@ -5,6 +22,7 @@
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
 #include "input/factory.hh"
+#include "input/accessors.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(firstOrderReaction)
 

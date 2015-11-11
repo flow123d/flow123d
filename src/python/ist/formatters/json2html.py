@@ -5,12 +5,22 @@ from ist.nodes import Integer, String, DescriptionNode, ISTNode, ComplexNode
 from ist.utils.htmltree import htmltree
 
 
+class NotImplementedException(Exception):
+    pass
+
+
 class HTMLItemFormatter(htmltree):
     """
     Simple formatter class
     """
     def __init__(self, cls):
         super(HTMLItemFormatter, self).__init__('section', cls)
+
+    def format_as_child(self, *args, **kwargs):
+        raise NotImplementedException('Not implemented yet')
+
+    def format(self, *args, **kwargs):
+        raise NotImplementedException('Not implemented yet')
 
 
 class HTMLUniversal(HTMLItemFormatter):
@@ -24,7 +34,7 @@ class HTMLUniversal(HTMLItemFormatter):
         self.h(record_key.key, record.type_name)
 
     def _format_as_child(self, self_object, record_key, record):
-        raise Exception('Not implemented yet')
+        raise NotImplementedException('Not implemented yet')
 
     def _end_format_as_child(self, self_object, record_key, record):
         # HTMLRecordKeyDefault(self).format_as_child(record_key.default, record_key, record)
@@ -344,9 +354,9 @@ class HTMLRecordKey(HTMLItemFormatter):
             fmt = HTMLFormatter.get_formatter_for(reference)
             fmt.format_as_child(reference, record_key, record)
             self.add(fmt.current())
-        except Exception as e:
+        except NotImplementedException as e:
             print ' <<Missing formatter for {}>>'.format(type(reference))
-            print e
+            raise e
 
 
 class HTMLFormatter(object):
@@ -389,9 +399,9 @@ class HTMLFormatter(object):
                     fmt = HTMLFormatter.get_formatter_for(item)
                     fmt.format(item)
                     html.add(fmt.current())
-                except Exception as e:
-                    # print e
-                    continue
+                except NotImplementedException as e:
+                    # NotImplementedException
+                    pass
 
         return html
 

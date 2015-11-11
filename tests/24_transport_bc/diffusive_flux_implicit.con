@@ -11,7 +11,7 @@
 
       input_fields= [
         { r_set = "BOUNDARY",
-          bc_type = "dirichlet"
+          bc_type = "dirichlet",
           bc_pressure = 0
         }
       ],
@@ -30,32 +30,32 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       }
-    }
+    },
 
     secondary_equation = {
       TYPE = "SoluteTransport_DG", 
     
       input_fields= [
         { region = "domain",
-          diff_m = 1e-2
-          sources_density = 0
+          diff_m = 1e-2,
+          sources_density = 0,
           init_conc = 5
         },
         { region = ".left",
-          bc_type = "diffusive_flux"
+          bc_type = "diffusive_flux",
           bc_flux = 1e-1
         },
         { region = ".right",
-          bc_type = "diffusive_flux"
-          bc_conc = 10
+          bc_type = "diffusive_flux",
+          bc_conc = 10,
           bc_robin_sigma = 1
         },
         { region = ".top",
-          bc_type = "diffusive_flux"
+          bc_type = "diffusive_flux",
           bc_flux = -1e-1
         },
         { region = ".bottom",
-          bc_type = "diffusive_flux"
+          bc_type = "diffusive_flux",
           bc_flux = -1e-1
         }
       ],
@@ -93,12 +93,10 @@
       {
         file = "./transport.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
-        time_step = 1
+        time_step = 1,
         name = "transport_output_stream"
       }
     ]
