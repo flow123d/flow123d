@@ -10,6 +10,7 @@
 #include "input/type_base.hh"
 #include "input/type_output.hh"
 #include "input/reader_to_storage.hh"
+#include "input/accessors.hh"
 #include <map>
 
 #include <boost/lexical_cast.hpp>

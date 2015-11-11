@@ -1,18 +1,26 @@
-/*
- * InputType.hh
+/*!
  *
- *  Created on: Mar 28, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- *  todo:
-
+ * 
+ * @file    input_type.hh
+ * @brief   
+ * @todo
  *  - explicit instantiation of templates in accessors - not so easy
  *
- *  - TYPE is obligatory key of descendants of an AbstractRecord, for consistent documentation it should be reported as
+ *  - TYPE is obligatory key of descendants of an Abstract, for consistent documentation it should be reported as
  *    a obligatory key in these Records, however it is quite complicated to have it there , and it is not necessary for
  *    check of the input since we shall look for it explicitely.
  *
- *  - Documentation of AbstractRecord should contain TYPE and common keys, descendants should report only nonderived keys.
+ *  - Documentation of Abstract should contain TYPE and common keys, descendants should report only nonderived keys.
  *
  *  - better Doxygen doc
  *
@@ -25,8 +33,8 @@
  *  - have global list of Record and selection names and guarantee the they are unique, otherwise == can be incorrect.
  *
  *  - when creating a "unique instance" of a lazy type we should check that its name is unique (in derived records we should
- *    distinguish short_name used in AbstractRecord TYPE selection, and full_name that includes name of the parent AbstractRecord.
- *    This is important to prevent Record derive from different local instances of AbstractRecord.
+ *    distinguish short_name used in Abstract TYPE selection, and full_name that includes name of the parent Abstract.
+ *    This is important to prevent Record derive from different local instances of Abstract.
  *
  *  When C++11 specification become more supported, we can introduce class Key  that should be constructed form
  *  constant string during compilation, in particular it should check validity of the key string and compute the hash.
@@ -51,6 +59,7 @@
 #include "type_base.hh"
 #include "type_selection.hh"
 #include "type_record.hh"
+#include "type_abstract.hh"
 #include "type_generic.hh"
 
 #endif /* INPUTTYPE_HH_ */

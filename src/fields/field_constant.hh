@@ -1,10 +1,19 @@
-/*
- * field_constant.hh
+/*!
  *
- *  Created on: Dec 15, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_constant.hh
+ * @brief   
  */
-
 
 #ifndef FIELD_CONSTANT_HH_
 #define FIELD_CONSTANT_HH_
@@ -33,7 +42,7 @@ public:
 
 
     /**
-     * Return Record for initialization of FieldConstant that is derived from AbstractRecord given by @p a_type
+     * Return Record for initialization of FieldConstant that is derived from Abstract given by @p a_type
      * and the individual elements of the possible Value (vector, tensor) have Input::Type @p eit.
      */
     static const Input::Type::Record & get_input_type();

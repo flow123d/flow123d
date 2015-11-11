@@ -6,6 +6,8 @@
     mesh = {
       mesh_file = "./input/test15_with_boundary.msh" 
     }, 
+    
+    
 
     primary_equation = {
       TYPE = "Unsteady_LMH", 
@@ -41,12 +43,13 @@
 
       solver = {
         TYPE = "Petsc", 
-        a_tol = 1e-07
+        a_tol = 1e-07,
         r_tol = 1e-07
       }, 
 
       time = {
-        REF = "../../time"
+        end_time = 2.0, 
+        max_dt = 0.1
       }
     }, 
 
@@ -79,7 +82,8 @@
         "conc"
       ], 
       time = {
-        REF = "../../time"
+        end_time = 2.0, 
+        max_dt = 0.1
       },
       solver = {
         TYPE = "Petsc", 
@@ -90,13 +94,6 @@
       balance = {
         cumulative = true
       }
-    }, 
-    
-    dg_order = 2,
-
-    time = {
-      end_time = 2.0, 
-      max_dt = 0.1
     }
   },
  
@@ -114,9 +111,7 @@
       {
         file = "./transport-implicit.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.1,

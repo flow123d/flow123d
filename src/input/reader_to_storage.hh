@@ -1,9 +1,18 @@
-/*
- * reader_to_storage.hh
+/*!
  *
- *  Created on: May 7, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
+ * 
+ * @file    reader_to_storage.hh
+ * @brief   
  */
 
 #ifndef READER_TO_STORAGE_HH_
@@ -12,14 +21,18 @@
 
 #include <sstream>
 
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 
 #include "input/input_exception.hh"
 #include "input/storage.hh"
 #include "input/path_base.hh"
 
+#include "system/file_path.hh"
+
 
 namespace Input {
+
+using namespace std;
 
 
 
@@ -124,7 +137,7 @@ protected:
     /**
      * Getter for root of the storage tree.
      */
-    const StorageBase *get_storage()
+    StorageBase *get_storage()
     { return storage_;}
 
 
@@ -136,7 +149,7 @@ protected:
     StorageBase * make_storage(PathBase &p, const Type::TypeBase *type);
 
     StorageBase * make_storage(PathBase &p, const Type::Record *record);
-    StorageBase * make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * make_storage(PathBase &p, const Type::Abstract *abstr_rec);
     StorageBase * make_storage(PathBase &p, const Type::Array *array);
 
     StorageBase * make_selection_storage_without_catch(PathBase &p, const Type::Selection *selection);
@@ -147,12 +160,12 @@ protected:
     StorageBase * make_storage(PathBase &p, const Type::String *string_type);
 
     StorageBase * record_automatic_conversion(PathBase &p, const Type::Record *record);
-    StorageBase * abstract_rec_automatic_conversion(PathBase &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * abstract_automatic_conversion(PathBase &p, const Type::Abstract *abstr_rec);
 
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.
      */
-    StorageBase * make_storage_from_default( const string &dflt_str, const Type::TypeBase *type);
+    StorageBase * make_storage_from_default( const string &dflt_str, boost::shared_ptr<Type::TypeBase> type);
 
 
     /// Storage of the read and checked input data
@@ -160,6 +173,8 @@ protected:
 
     /// Root of the declaration tree of the data in the storage.
     const Type::TypeBase *root_type_;
+
+    friend class Type::Default;
 
 };
 
