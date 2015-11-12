@@ -209,9 +209,9 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
             // check that tetrahedron element is numbered correctly and is not degenerated
             if(ele->dim() == 3)
             {
-//                 DBGMSG("J = %f\n",ele->tetrahedron_jacobian());
-                if( ! (ele->tetrahedron_jacobian() > 0) )
-                    xprintf(Warn, "Tetrahedron element with id %d has wrong numbering or is degenerated (Jacobian <= 0).");
+                double jac = ele->tetrahedron_jacobian();
+                if( ! (jac > 0) )
+                    xprintf(Warn, "Tetrahedron element with id %d has wrong numbering or is degenerated (Jacobian = %f).",ele->index(),jac);
             }
         }
 
