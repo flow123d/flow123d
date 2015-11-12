@@ -44,6 +44,10 @@ public:
      * @return true, if intersection is found; false otherwise
      */
 	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
+    
+    /**
+     * TODO: rename; it also actually computes plucker coords and products
+     */
 	void init_plucker_to_compute();
 	void set_data(Simplex<1> *abs, Simplex<2> *triang);
 

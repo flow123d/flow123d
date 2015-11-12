@@ -63,22 +63,22 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::init_plucker_to_compute(){
 		}
 	}
 
-	DBGMSG("Abscissa:\n");
-    (*abscissa)[0].getPointCoordinates().print();
-    (*abscissa)[1].getPointCoordinates().print();
+// 	DBGMSG("Abscissa:\n");
+//     (*abscissa)[0].getPointCoordinates().print();
+//     (*abscissa)[1].getPointCoordinates().print();
     
 	// compute Plucker products (abscissa X triangle side)
 	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
 		if(plucker_products[side] == NULL){
-            (*plucker_coordinates_abscissa[0]).toString();
-            (*plucker_coordinates_triangle[side]).toString();
+//             (*plucker_coordinates_abscissa[0]).toString();
+//             (*plucker_coordinates_triangle[side]).toString();
 			plucker_products[side] = new double((*plucker_coordinates_abscissa[0])*(*plucker_coordinates_triangle[side]));
             
-            DBGMSG("triangle side:\n");
-            (*triangle)[side][0].getPointCoordinates().print();
-            (*triangle)[side][1].getPointCoordinates().print();
-            DBGMSG("Plucker product = %f\n", *(plucker_products[side]));
+//             DBGMSG("triangle side:\n");
+//             (*triangle)[side][0].getPointCoordinates().print();
+//             (*triangle)[side][1].getPointCoordinates().print();
 		}
+// 		DBGMSG("Plucker product = %f\n", *(plucker_products[side]));
 	}
 
 };
@@ -101,16 +101,8 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::set_computed(){
 bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products){
 
 	init_plucker_to_compute();
-
 	computed = true;
 
-	//cout << "Plucker_products: " << *plucker_products[0] << "," << *plucker_products[1] << "," << *plucker_products[2] << endl;
-	/*if((*plucker_products[1] > epsilon)){
-		cout << *plucker_products[1] << " je vetsi nez " << epsilon << endl;
-	}else{
-		cout << *plucker_products[1] << " neni vetsi nez " << epsilon << endl;
-
-	}*/
 
     //TODO use reference element to get orientation of sides
 	if(((*plucker_products[0] > epsilon) && (*plucker_products[1] < -epsilon) && (*plucker_products[2] > epsilon)) ||
@@ -584,7 +576,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 	//cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
 		for(unsigned int i = 0; i < 3;i++){
 			pocet_13_pruniku = CI13[(3-i)%3].compute(IP13s);
-            DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
+//             DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
 			//(triange->getAbscissa(i)).toString();
 			// Vždy by měl být počet průniku 2 nebo 0
 			if(pocet_13_pruniku == 1){
@@ -595,7 +587,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 				lokalni_mnohouhelnik.add_ipoint(IP23);
 
 			}else if(pocet_13_pruniku == 2){
-
+//                 DBGMSG("i=%d,  set side1 %d, side2 %d\n",i, (3-i)%3, IP13s[IP13s.size() - 2].get_side2());
 				IP13s[IP13s.size() - 2].set_side1((3-i)%3);
 				//IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 2]);
 				IntersectionPoint<3,1> IP31(IP13s[IP13s.size() - 2]);
@@ -604,6 +596,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 				IntersectionPoint<2,3> IP23(IP32);
 				lokalni_mnohouhelnik.add_ipoint(IP23);
 
+//                 DBGMSG("i=%d,  set side1 %d, side2 %d\n",i, (3-i)%3, IP13s[IP13s.size() - 1].get_side2());
 				IP13s[IP13s.size() - 1].set_side1((3-i)%3);
 				IntersectionPoint<3,1> IP31_2(IP13s[IP13s.size() - 1]);
 				IntersectionPoint<3,2> IP32_2(IP31_2);
@@ -633,15 +626,16 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 	//double epsilon = 64*numeric_limits<double>::epsilon();
 	for(unsigned int i = 0; i < 6;i++){
 			if(CI12[i].compute(IP12s, false)){
-				//xprintf(Msg,"Prunik21 %d\n", IP12s.size());
 				pocet_pruniku++;
-				IP12s[IP12s.size() - 1].set_side1(i);
-				if((IP12s[IP12s.size() - 1].get_local_coords1())[0] <= 1 && (IP12s[IP12s.size() - 1].get_local_coords1())[0] >= 0){
-					/*if(fabs(1-IP12s[IP12s.size() - 1].get_local_coords1()[0]) < epsilon || fabs(IP12s[IP12s.size() - 1].get_local_coords1()[0]) < epsilon){
-						IP12s[IP12s.size() - 1].setIsPatological(true);
+				IP12s.back().set_side1(i);
+				if((IP12s.back().get_local_coords1())[0] <= 1 && (IP12s.back().get_local_coords1())[0] >= 0){
+					/*if(fabs(1-IP12s.back().get_local_coords1()[0]) < epsilon || fabs(IP12s.back().get_local_coords1()[0]) < epsilon){
+						IP12s.back().setIsPatological(true);
 					}*/
 					//IP.print();
-									IntersectionPoint<2,1> IP21(IP12s[IP12s.size() - 1]);
+// 					DBGMSG("CI23: number of 1-2 intersections = %d\n",pocet_pruniku);
+//                     DBGMSG("i=%d,  set side1 %d, side2 %d ori %d\n",i, IP12s.back().get_side1(), IP12s.back().get_side2(), IP12s.back().get_orientation());
+									IntersectionPoint<2,1> IP21(IP12s.back());
 									IntersectionPoint<2,3> IP23(IP21);
 									//IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,2>(IP22);
 									//IP23.print();

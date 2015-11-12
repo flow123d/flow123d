@@ -77,7 +77,7 @@ void InspectElements::compute_intersections<1,3>(){
 
 	FOR_ELEMENTS(mesh, elm) {
 		if (elm->dim() == 1 && !closed_elements[elm->index()]&& elements_bb[elm->index()].intersect(mesh_3D_bb)) {
-			xprintf(Msg, "-----Nalezen 1D element------ \n");
+            DBGMSG("-----Nalezen 1D element------ \n");
 
 			update_abscissa(elm);
 			std::vector<unsigned int> searchedElements;
@@ -195,7 +195,8 @@ void InspectElements::compute_intersections<2,3>(){
 
 							intersection_list[elm.index()].push_back(il);
 							flag_for_3D_elements[ele->index()] = elm.index();
-							xprintf(Msg,"Velikost intersection_list(%d), pocet IL v konkretnim listu(%d)\n", intersection_list.size(), intersection_list[elm.index()].size());
+                            DBGMSG("Velikost intersection_list(%d), pocet IL v konkretnim listu(%d)\n", 
+                                   intersection_list.size(), intersection_list[elm.index()].size());
 
 							// PRODLUŽOVÁNÍ
 							computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
