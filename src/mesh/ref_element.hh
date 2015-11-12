@@ -113,10 +113,10 @@
  *                                                                            `y
  *
  * side id  node ids           side id  node ids           side id  node ids   normal
- * 0        0                  0        0,1                0        0,1,2      OUT
- * 1        1                  1        0,2                1        0,1,3      IN
- *                             2        1,2                2        0,2,3      OUT
- *                                                         3        1,2,3      IN
+ * 0        0                  0        0,1                0        0,1,2      IN
+ * 1        1                  1        0,2                1        0,1,3      OUT
+ *                             2        1,2                2        0,2,3      IN
+ *                                                         3        1,2,3      OUT
  *
  *
  * nodes coordinates:                                                               
@@ -157,6 +157,11 @@ public:
 	 */
 	static arma::vec::fixed<dim> normal_vector(unsigned int sid);
 
+    /** Returns orientation of the normal of side @p sid. 0 -> OUT, 1 -> IN.
+     * NOTE: Implementation is dependent on current node and side numbering.
+     */
+    static unsigned int normal_orientation(unsigned int sid);
+    
 	static double side_measure(unsigned int sid);
     
     /**
@@ -194,6 +199,30 @@ public:
 	/// Number of lines, i.e. @p object of dimension @p dim-2 on the boundary of the reference element.
 	static const unsigned int n_lines = (unsigned int)((dim * (dim + 1)) / 2); //( dim == 3 ? 6 : dim == 2 ? 3 : dim == 1 ? 1 : 0); součet posloupnosti
 
+    /**
+     *  TODO replace side_nodes, side lines, line nodes, line sides with templates:
+     * idea:
+     * N - dimension of leading object
+     * M - dimension of following object
+     * N,M <= dim
+     * returns indices on the dim-object
+     * template<unsigned int N, unsigned int M> std::vector<unsigned int> interact(unsigned int index)
+     * 
+     * 
+     * examples:
+     *  dim    N       M
+     * 1,2,3   0       1       - give me indices of nodes of line of given index
+     *   2,3   0       2       - give me indices of nodes of triangle of given index
+     *   3     0       3       - give me indices of nodes of tetrahedron of given index (for completness)  
+     * 
+     *   2,3   1       2       - give me indices of lines of triangle of given index
+     *   3     1       3       - give me indices of lines of tetrahedron of given index (for completness)
+     * 
+     *   3     2       1       - give me indices of triangles with common line of given index
+     *   3     2       0       - give me indices of triangles with common vertex of given index
+     *   3     2       1       - give me indices of triangles in which the line of given index
+     */
+    
 	/**
 	 * Node numbers for each side.
 	 */
@@ -234,6 +263,9 @@ public:
 	 * @param p Permutation of nodes.
 	 */
 	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
+    
+    
+    static bool vertex_index(arma::vec::fixed<dim+1> vertex_bary_coords, unsigned int &vertex_index);
     
     /**
      * @param sid - index of a sub-simplex in a simplex
