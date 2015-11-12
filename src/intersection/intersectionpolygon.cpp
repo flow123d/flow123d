@@ -63,77 +63,94 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 	std::vector<IntersectionPoint<2,3>> new_points;
 	new_points.reserve(i_points.size());
 	prolongation_table.reserve(i_points.size());
-	/*
-	 * Point orientation
-	 * S0 + 1 => IN , S0 + 0 => OUT
-	 * S1 + 0 => IN
-	 * S2 + 1 => IN
-	 * S3 + 0 => IN
-	 *
-	 * H1 has opossite orientation
-	 * */
 
-	// Procházíme všechny body polygonu
-	// H - hrana trojúhelníku
-	// S - stěna čtyřstěnu
+//     for(unsigned int i = 0; i < i_points.size();i++)
+//         i_points[i].print();
+
+    // go through all intersection points (vertices of polygon)
 	for(unsigned int i = 0; i < i_points.size();i++){
-			if(i_points[i].get_side1() != -1 ){
-                // Známe index hrany trojúhelníku, na které bod vznikl,
-                // jedná se tedy o TYP bodu H-S nebo H-H (bod spojuje hranu-stěnu nebo hranu-hranu)
+            IntersectionPoint<2,3> ip = i_points[i];
+			if(ip.get_side1() != -1 ){ 
+                // if the edge of triangle is set, it must be
+                // intersection S-E or E-S or E-E
                 
-				if(!i_points[i].is_vertex()){   // Bod není vrcholem - musí být TYPu H-S
-                    DBGMSG("Intersection type E-S.\n");
-					// Směr hran polygonu závisí na 3ch faktorech:
-					// indexu hrany trojúhelníku (hranu s indexem 1. otáčíme)
-					// indexu stěnu čtyřstěnu
-					// orientaci bodu (směr bodu průniku, který vznikne při výpočtu průniku pomocí Plückerových souřadnic)
-                    // TODO where the following term comes from??
-					unsigned int j = (i_points[i].get_side2() + i_points[i].get_orientation()+ i_points[i].get_side1())%2;
-
+				if(!ip.is_vertex()){   // IP is not a vertex of triangle -> cannot be E-E
+                    DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.get_side1(),ip.get_side2(),ip.get_orientation());
+                    /* directions of polygon edges depends on three aspects:
+                     * - normal orientation of the tetrahedron side (OUT...0, IN...1)
+                     * - orientation of the edge of the triangle (according to direction of other edges of triangle or opposite)
+                     * - orientation of the intersection point ... Plucker product (P>0...1, P<0...0)
+                     * 
+                     * we can obtain this XOR table: XOR(XOR(S,P),E)
+                     *  S   P   E   RES
+                     *  0   0   0   0
+                     *  0   0   1   1
+                     *  0   1   0   1
+                     *  0   1   1   0
+                     *  1   0   0   1
+                     *  1   0   1   0
+                     *  1   1   0   0
+                     *  1   1   1   1
+                     * 
+                     * -> this can be expressed as sum(S,P,E)%2
+                     * 
+                     * if RES == 1 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
+                     * if RES == 0 -> intersection direction is E-S
+                     */
+					unsigned int j = (RefElement<3>::normal_orientation(ip.get_side2()) + 
+                                      RefElement<2>::normal_orientation(ip.get_side1()) +
+                                      ip.get_orientation()
+                                     ) % 2;
 
 					if(j == 1){
 						// bod je vstupní na stěně a pokračuje na hranu trojúhelníku
-                        unsigned int row = i_points[i].get_side2();
-						trace_table(row,0) = i_points[i].get_side1()+4;
+                        unsigned int row = ip.get_side2();
+						trace_table(row,0) = ip.get_side1()+4;
 						trace_table(row,1) = i;
-                        DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, i_points[i].get_side1()+4, i);
+                        DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, ip.get_side1()+4, i);
 					}else{
 						// bod je vstupní na hraně a vchází do čtyřstěnu
-                        unsigned int row = 4+i_points[i].get_side1();
-						trace_table(row,0) = i_points[i].get_side2();
+                        unsigned int row = 4+ip.get_side1();
+						trace_table(row,0) = ip.get_side2();
 						trace_table(row,1) = i;
-                        DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, i_points[i].get_side2(), i);
+                        DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, ip.get_side2(), i);
 					}
 
 
-
-				}else{  // TYP bodu H-H
+				}else{  // type E-E
                     DBGMSG("Intersection type E-E.\n");
-					// bod je vrcholem trohúhelníku - zjistíme o jaký vrchol se jedná
-					// Jelikož polygon orientujeme ve směru trojúhelníku -> budeme mít fixní uspořádání jen podle indexu vrcholu trojúhelníku
+                    // IP is the vertex of triangle,
+                    // the directions of triangle edges determines the directions of polygon edges
                     //TODO we must provide a function in reference element: node coordinates -> node index
-                    //TODO we should save vertex_index when computed
-					unsigned int vertex_index = (i_points[i].get_local_coords1()[0] == 1 ? 0 : (i_points[i].get_local_coords1()[1] == 1 ? 1 : 2));
+                    //TODO even better: we should save vertex_index when computed
+// 					unsigned int vertex_index = (ip.get_local_coords1()[0] == 1 ? 0 : (ip.get_local_coords1()[1] == 1 ? 1 : 2));
                     // using ref element, but we still want to get rid of this...
-//                     unsigned int vertex_index;//i_points[i].get_side1();
-//                     RefElement<2>::vertex_index(i_points[i].get_local_coords1(),vertex_index);
+                    unsigned int vertex_index;
+                    RefElement<2>::vertex_index(ip.get_local_coords1(),vertex_index);
                     DBGMSG("E-E: vertex_index: %d \n",vertex_index);
+                    // <2>::line_sides[vertex_index][0 = line index IN, or 1 = line index OUT]
 					unsigned int triangle_side_in = RefElement<2>::line_sides[vertex_index][0];
 					unsigned int triangle_side_out = RefElement<2>::line_sides[vertex_index][1];
-					// Body typu H-H se mohou vyskytovat duplicitně, touto podmínkou duplicity zrušíme
-                    if(trace_table(4+triangle_side_in,1) == -1){
-                        unsigned int row = 4+triangle_side_in;
+                    unsigned int row = 4+triangle_side_in;
+                    
+                    if(trace_table(row,1) == -1)    // this ignores duplicit IP
+                    {
                         trace_table(row,0) = triangle_side_out+4;
                         trace_table(row,1) = i;
                         DBGMSG("E-E: row: %d, to edge: %d, ip: %d \n",row, triangle_side_out+4, i);
                     }
 				}
-			}else{  // TYP bodu S-S
-                DBGMSG("Intersection type S-S.\n");
-				// Pokračujeme ze stěny na stěnu
-				unsigned int tetrahedron_line = i_points[i].get_side2();
-				unsigned int tetrahedron_side_in = RefElement<3>::line_sides[tetrahedron_line][i_points[i].get_orientation()];
-				unsigned int tetrahedron_side_out = RefElement<3>::line_sides[tetrahedron_line][1 - i_points[i].get_orientation()];
+			}else{  // type S-S, IP is on the edge between two sides
+                DBGMSG("Intersection type S-S, ori %d.\n", ip.get_orientation());
+				/** here the side2 contains number of edge of the tetrahedron where the IP lies
+                 * sides: let edge be oriented up and let us see the tetrahedron from outside ->
+                 *  then the right side [0] is in and left side [1] is out
+                 *  - this is determined by IP orientation
+                 */
+                unsigned int tetrahedron_line = ip.get_side2();
+                unsigned int tetrahedron_side_in = RefElement<3>::line_sides[tetrahedron_line][1-ip.get_orientation()];
+                unsigned int tetrahedron_side_out = RefElement<3>::line_sides[tetrahedron_line][ip.get_orientation()];
+                
 				trace_table(tetrahedron_side_in,0) = tetrahedron_side_out;
 				trace_table(tetrahedron_side_in,1) = i;
                 DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",tetrahedron_side_in, tetrahedron_side_out, i);
