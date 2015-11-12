@@ -27,12 +27,6 @@ void compute_intersection_area_23d(Mesh *mesh)
 {
     double area1, area2 = 0;
 
-    // compute intersection
-    xprintf(Msg, "Computing polygon area by NEW algorithm\n");
-    InspectElements ie(mesh);
-    ie.compute_intersections<2,3>();
-    area1 = ie.polygonArea();
-
     // compute intersection by NGH
     xprintf(Msg, "Computing polygon area by NGH algorithm\n");
     TTriangle ttr;
@@ -49,13 +43,29 @@ void compute_intersection_area_23d(Mesh *mesh)
                      TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
                      TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
                      TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
+//         elm->node[0]->point().print();
+//         elm->node[1]->point().print();
+//         elm->node[2]->point().print();
+//         elm->node[3]->point().print();
+//         
+//         elm->side(0)->node(0)->point().print();
+//         elm->side(0)->node(1)->point().print();
+//         elm->side(0)->node(2)->point().print();
         }
     }
     GetIntersection(ttr, tte, it, area2);
     
+    
+    // compute intersection
+    xprintf(Msg, "Computing polygon area by NEW algorithm\n");
+    InspectElements ie(mesh);
+    ie.compute_intersections<2,3>();
+    area1 = ie.polygonArea();
+//     ie.print_mesh_to_file("output_intersection");
+    
     xprintf(Msg,"Polygon area: (intersections) %.16e,\t(NGH) %.16e\n", area1, area2);
-//     EXPECT_NEAR(area1, area2, 1e-12);
-    EXPECT_DOUBLE_EQ(area1,area2);
+    EXPECT_NEAR(area1, area2, 1e-14);
+//     EXPECT_DOUBLE_EQ(area1,area2);
 }
 
 
@@ -92,7 +102,7 @@ void compute_intersection_area_13d(Mesh *mesh)
     length2 *= tabs.Length(); 
     
     xprintf(Msg,"Lenght of intersection line: (intersections) %.16e,\t(NGH) %.16e\n", length1, length2);
-//     EXPECT_NEAR(area1, area2, 1e-12);
+//     EXPECT_NEAR(length1, length2, 1e-12);
     EXPECT_DOUBLE_EQ(length1,length2);
 }
 
@@ -101,7 +111,7 @@ TEST(area_intersections, all) {
     Profiler::initialize();
     
     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/site/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/site/";//notfunctional/
     std::vector<string> filenames;
     
     // read mesh file names
@@ -135,6 +145,7 @@ TEST(area_intersections, all) {
         for(unsigned int p=0; p<6; p++)
         {
             xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
+            FilePath::set_io_dirs(".","","",".");
             FilePath mesh_file(dir_name + fname, FilePath::input_file);
             
             Mesh mesh;
@@ -207,6 +218,7 @@ TEST(area_intersections_13d, all) {
     for(auto &fname : filenames)
     {
             xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
+            FilePath::set_io_dirs(".","","",".");
             FilePath mesh_file(dir_name + fname, FilePath::input_file);
             
             Mesh mesh;
