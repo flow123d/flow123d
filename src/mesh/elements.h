@@ -64,7 +64,18 @@ public:
     ///Gets ElementAccessor of this element
     ElementAccessor<3> element_accessor() const;
     
+    /// Computes the measure of the element.
     double measure() const;
+    
+    /** Computes the Jacobian of the element.
+     * J = det ( 1  1  1  1 )
+     *           x1 x2 x3 x4
+     *           y1 y2 y3 y4
+     *           z1 z2 z3 z4
+     */
+    double tetrahedron_jacobian() const;
+    
+    /// Computes the barycenter.
     arma::vec3 centre() const;
     /**
 * Quality of the element based on the smooth and scale-invariant quality measures proposed in:
