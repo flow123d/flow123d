@@ -166,7 +166,7 @@ TEST(area_intersections, all) {
                     for(unsigned int i=0; i<ele->n_nodes(); i++)
                     {
                         ele->node[i] = tmp[i];
-                        ele->node[i]->point().print(cout);
+//                         ele->node[i]->point().print(cout);
                     }
                 }
             }
@@ -217,6 +217,12 @@ TEST(area_intersections_13d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(auto &fname : filenames)
     {
+        unsigned int permutations[24][4] = {{0,1,2,3},{0,1,3,2},{0,3,1,2},{0,3,2,1},{0,2,3,1},{0,2,1,3},
+                                            {1,0,2,3},{1,0,3,2},{1,3,0,2},{1,3,2,0},{1,2,3,0},{1,2,0,3},
+                                            {2,1,0,3},{2,1,3,0},{2,3,1,0},{2,3,0,1},{2,0,3,1},{2,0,1,3},
+                                            {3,1,2,0},{3,1,0,2},{3,0,1,2},{3,0,2,1},{3,2,0,1},{3,2,1,0}};
+        for(unsigned int p=0; p<6; p++)
+        {
             xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
             FilePath::set_io_dirs(".","","",".");
             FilePath mesh_file(dir_name + fname, FilePath::input_file);
@@ -225,11 +231,31 @@ TEST(area_intersections_13d, all) {
             // read mesh with gmshreader
             GmshMeshReader reader(mesh_file);
             reader.read_mesh(&mesh);
+        
+            // permute nodes:
+            FOR_ELEMENTS(&mesh,ele)
+            {
+                if(ele->dim() == 3)
+                {
+                    Node* tmp[4];
+                    for(unsigned int i=0; i<ele->n_nodes(); i++)
+                    {
+                        tmp[i] = ele->node[permutations[p][i]];
+                    }
+                    for(unsigned int i=0; i<ele->n_nodes(); i++)
+                    {
+                        ele->node[i] = tmp[i];
+//                         ele->node[i]->point().print(cout);
+                    }
+                }
+            }
+            
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
             compute_intersection_area_13d(&mesh);
             xprintf(Msg, "==============\n");
+        }
     }
 
     
