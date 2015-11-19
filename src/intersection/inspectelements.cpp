@@ -425,17 +425,17 @@ bool InspectElements::intersectionExists(unsigned int elm_2D_idx, unsigned int e
 
 void InspectElements::update_abscissa(const ElementFullIter &element_1D){
 	arma::vec3 *field_of_points[2] = {&element_1D->node[0]->point(),&element_1D->node[1]->point()};
-	abscissa.setSimplices(field_of_points);
+	abscissa.set_simplices(field_of_points);
 };
 
 void InspectElements::update_triangle(const ElementFullIter &element_2D){
 	arma::vec3 *field_of_points[3] = {&element_2D->node[0]->point(),&element_2D->node[1]->point(),&element_2D->node[2]->point()};
-	triangle.setSimplices(field_of_points);
+	triangle.set_simplices(field_of_points);
 };
 
 void InspectElements::update_tetrahedron(const ElementFullIter &element_3D){
 	arma::vec3 *field_of_points[4] = {&element_3D->node[0]->point(),&element_3D->node[1]->point(),&element_3D->node[2]->point(),&element_3D->node[3]->point()};
-	tetrahedron.setSimplices(field_of_points);
+	tetrahedron.set_simplices(field_of_points);
 };
 
 void InspectElements::print_mesh_to_file(string name){

@@ -2,8 +2,8 @@
 #define SIMPLEX_H_
 
 #include <armadillo>
+#include "system/system.hh"
 
-using namespace std;
 namespace computeintersection {
 
 /**
@@ -32,8 +32,10 @@ namespace computeintersection {
  *
  * https://en.wikipedia.org/wiki/Simplex
  */
-template<int N> class Simplex;
+template<unsigned int N> class Simplex;
 
+/// Operator for printing Simplex<N>.
+template<unsigned int N> std::ostream& operator<<(std::ostream& os, const Simplex<N>& s);
 
 /**
  * Simplex<0> represents a point in 3D
@@ -41,101 +43,94 @@ template<int N> class Simplex;
  */
 template<> class Simplex<0> {
 private:
-
-	arma::vec3* coords;
+	arma::vec3* coords_;    ///< Point coordinates.
 public:
-	inline Simplex(){
-		coords = NULL;
-	};
-	/**
-	 * @param field - array of pointers to point coordinates in mesh
-	 * array contains one element for case Simplex<0>
+	Simplex();  /// Default constructor. Does not set coordinates pointer.
+	
+    /** Constuctor that sets the point coordinates.
+	 * @param field - array of pointers to point coordinates;
+	 * it takes just the first element of the input array for case of Simplex<0>
 	 */
-	inline Simplex(arma::vec3 **field){coords = field[0];};
-	inline ~Simplex(){};
+	Simplex(arma::vec3 **field);
+    
+	~Simplex(); ///< Destructor.
 
 	/**
-	 * Same as constructor
+	 * Setter for point coordinates
 	 */
-	inline void setSimplices(arma::vec3 **field){
-		coords = field[0];
-	};
+	void set_simplices(arma::vec3 **field);
 
-	inline arma::vec3 &getPointCoordinates(){
-		return *coords;
-	};
+    /// Returns the point coordinates.
+	arma::vec3 &point_coordinates();
 
-	inline void setPointCoordinates(arma::vec3 &point){
-		if(coords == NULL){
-			coords = &point;
-		}else{
-			(*coords)[0] = point[0];
-			(*coords)[1] = point[1];
-			(*coords)[2] = point[2];
-		}
-	}
-
-	inline void to_string(){
-		cout << "Simplex<0>(" << (*coords)[0] << "," << (*coords)[1] << ","	<< (*coords)[2] << ")" << endl;
-	}
+	/// Friend output operator.
+	friend std::ostream& operator<< <>(std::ostream& os, const Simplex<0>& s);
 };
 
-template<int N> class Simplex {
+template<unsigned int N> class Simplex {
 private:
     /**
      * Every simplex<N> has (N+1) simplices of dimension (N-1)
      * TODO: (idea - when used in new mesh) replace with references 
      */
-	Simplex<N - 1> Simplices[N + 1];
+	Simplex<N - 1> simplices_[N + 1];
 public:
-	inline Simplex(){};
+	Simplex();  ///< Default (empty) constructor.
 
-	/**
-	 * @param field - array of pointers to point coordinates in mesh
-	 * array contains (N+1) elements for case Simplex<N>
+	/** Constuctor that sets the coordinates of all vertices.
+	 * @param field - array of pointers to point coordinates of the vertices
+	 * array must contain (N+1) elements for case Simplex<N>
 	 */
-	inline Simplex(arma::vec3 **field_of_pointers_to_coordinates){
+	Simplex(arma::vec3 **field_of_pointers_to_coordinates);
 
-		setSimplices(field_of_pointers_to_coordinates);
-	};
-
+    ~Simplex();    ///< Destructor.
+    
 	/// Creating sub-simplices in lexicografic order
-	inline void setSimplices(arma::vec3 **field_of_pointers_to_coordinates){
-		arma::vec3 *temporary_pointers[N];
+	void set_simplices(arma::vec3 **field_of_pointers_to_coordinates);
 
-		// filling temporary array of size N from array of size (N+1)
-		for (int i = 0; i < N; i++) {
-			temporary_pointers[i] = field_of_pointers_to_coordinates[i];
-		};
-		// Creating sub-simplices in lexicografic order
-		Simplices[0].setSimplices(temporary_pointers);
-		for (int i = 1; i < N + 1; i++) {
-			temporary_pointers[N - i] = field_of_pointers_to_coordinates[N - i + 1];
-			Simplices[i].setSimplices(temporary_pointers);
-		}
-	}
-
-	inline ~Simplex(){};
-
-	inline Simplex<N - 1> &operator[](int a){
-		return Simplices[a];
-	};
-
-    ///TODO: convert to operator <<
-	inline void to_string(){
-		cout << "Simplex<" << N << ">:" << endl;
-		for (int i = 0; i < N + 1; i++) {
-			for (int j = 3; N <= j; j--) {
-				cout << "  ";
-			}
-			Simplices[i].to_string();
-		}
-	}
+    /// Returns subsimplex of index @p idx.
+	Simplex<N - 1> &operator[](unsigned int idx);
 
 	/// Get simplex of abscissa from different simplices - if it has own implementation in .cpp file
-	Simplex<1> &getAbscissa(unsigned int index);
+	Simplex<1> &abscissa(unsigned int idx);
+    
+    /// Friend output operator.
+    friend std::ostream& operator<< <>(std::ostream& os, const Simplex<N>& s);
 };
 
+
+
+/********************************************* IMPLEMENTATION ***********************************************/
+
+inline Simplex< 0 >::Simplex()
+{   coords_ = nullptr; }
+
+inline Simplex< 0  >::Simplex(arma::vec3** field)
+{   ASSERT(field != nullptr, "Null pointer given in the constructor.");
+    coords_ = field[0]; }
+
+inline Simplex< 0  >::~Simplex(){}
+
+inline void Simplex< 0  >::set_simplices(arma::vec3** field)
+{   ASSERT(field != nullptr, "Null pointer given in the setter.");
+    coords_ = field[0]; }
+
+inline arma::vec3& Simplex< 0  >::point_coordinates()
+{   ASSERT(coords_ != nullptr, "Null pointer given in the constructor.");
+    return *coords_; }
+
+
+
+template<unsigned int N> Simplex<N>::Simplex(){}
+
+template<unsigned int N> Simplex<N>::Simplex(arma::vec3 **field_of_pointers_to_coordinates)
+{   set_simplices(field_of_pointers_to_coordinates); }
+
+template<unsigned int N> Simplex<N>::~Simplex(){}
+
+template<unsigned int N> Simplex<N-1>& Simplex<N>::operator[](unsigned int idx)
+{   ASSERT(idx < N+1, "Index out of bounds (number of subsimplices.)");
+    return simplices_[idx]; }
 
 } // END namespace_close
 #endif /* SIMPLEX_H_ */
