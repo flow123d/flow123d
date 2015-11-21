@@ -343,7 +343,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 					else
 					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
-					e << shared_->input_list_.ei_address();
+					e << shared_->list_it_->ei_address(); //TODO is address correct? Previous value was shared_->input_list_.ei_address()
 					throw;
 				}
 			} else {
@@ -445,6 +445,45 @@ typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase:
 		return FieldBaseType::function_factory(field_record, field.n_comp() );
 	else
 		return FieldBasePtr();
+}
+
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
+    if (! flags().match(FieldFlag::declare_input)) return;
+
+	//cout << "Field::set_input_list: " << input_name() << endl;
+    // check that times forms ascending sequence
+    double time,last_time=0.0;
+
+    for (Input::Iterator<Input::Record> it = list.begin<Input::Record>();
+					it != list.end();
+					++it) {
+		if ( it->find<Input::AbstractRecord>(this->input_name()) ) {
+			shared_->input_list_.push_back( Input::Record( *it ) );
+			time = it->val<double>("time");
+			if (time < last_time) {
+				THROW( ExcNonascendingTime()
+						<< EI_Time(time)
+						<< EI_Field(input_name())
+						<< it->ei_address());
+			}
+			last_time = time;
+
+			// output
+			//cout << "   - time: " << time;
+			//Input::Iterator<string> it_reg = it->find<string>("region");
+			//if (it_reg) cout << ", region: " << (*it_reg);
+			//Input::Iterator<string> it_set = it->find<string>("r_set");
+			//if (it_set) cout << ", r_set: " << (*it_set);
+			//Input::Iterator<int> it_id = it->find<int>("rid");
+			//if (it_id) cout << ", rid: " << (*it_id);
+			//cout << endl;
+		}
+	}
+
+    shared_->list_it_ = shared_->input_list_.begin();
 }
 
 

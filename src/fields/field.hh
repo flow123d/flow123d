@@ -239,6 +239,8 @@ public:
      */
     void add_factory(std::shared_ptr<FactoryBase> factory);
 
+    void set_input_list(const Input::Array &list) override;
+
 protected:
 
     /**

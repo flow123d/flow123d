@@ -150,7 +150,7 @@ void MultiField<spacedim, Value>::set_up_components() {
     		sub_fields_[i_comp].shared_->input_name_ = name();
     	}
 
-    	sub_fields_[i_comp].set_input_list(this->shared_->input_list_);
+    	//sub_fields_[i_comp].set_input_list(this->shared_->input_list_);
     }
 }
 
@@ -180,6 +180,37 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 		}
 	}
 	return NULL;
+}
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
+    if (! flags().match(FieldFlag::declare_input)) return;
+
+	//cout << "MultiField::set_input_list: " << input_name() << endl;
+    // check that times forms ascending sequence
+    double time,last_time=0.0;
+
+	for (Input::Iterator<Input::Record> it = list.begin<Input::Record>();
+					it != list.end();
+					++it) {
+		if ( it->find<Input::Record>(this->input_name()) ) {
+		    for( SubFieldType &field : sub_fields_) {
+		    	field.shared_->input_list_.push_back(*it);
+			}
+			time = it->val<double>("time");
+			if (time < last_time) {
+				THROW( ExcNonascendingTime()
+						<< EI_Time(time)
+						<< EI_Field(input_name())
+						<< it->ei_address());
+			}
+			last_time = time;
+		}
+	}
+
+	shared_->list_it_ = shared_->input_list_.begin();
 }
 
 

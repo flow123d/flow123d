@@ -189,28 +189,15 @@ TYPED_TEST(FieldFix, get_input_type) {
 
 // test correctness of check for ascending time sequence
 TYPED_TEST(FieldFix, set_input_list) {
-    // !! independent lists are not yet supported
-    /*
 	string list_ok = "["
 			"{time=2, a=0}, "
 			"{time=1, b=0}, "
-			"{time=10, c=0},"
+			"{time=1, c=0},"
 			"{time=3, a=0}, "
 			"{time=2, b=0}, "
-			"{time=1, c=0},"
+			"{time=10, c=0},"
 			"{time=4, a=0}, "
 			"{time=5, a=0, b=0}]";
-			*/
-    string list_ok = "["
-            "{time=1, b=0}, "
-            "{time=1, c=0},"
-            "{time=2, a=0}, "
-            "{time=2, b=0}, "
-            "{time=3, a=0}, "
-            "{time=4, a=0}, "
-            "{time=5, a=0, b=0},"
-            "{time=10, c=0}"
-            "]";
 
 	string list_ko = "["
 			"{time=2, a=0},"
@@ -236,28 +223,15 @@ TYPED_TEST(FieldFix, set_input_list) {
 
 // check that it correctly introduce requered marks
 TYPED_TEST(FieldFix, mark_input_times) {
-    // !! independent lists are not yet supported
-    /*
     string list_ok = "["
             "{time=2, a=0}, "
             "{time=1, b=0}, "
-            "{time=10, c=0},"
+            "{time=1, c=0},"
             "{time=3, a=0}, "
             "{time=2, b=0}, "
-            "{time=1, c=0},"
+            "{time=10, c=0},"
             "{time=4, a=0}, "
             "{time=5, a=0, b=0}]";
-            */
-    string list_ok = "["
-            "{time=1, b=0}, "
-            "{time=1, c=0},"
-            "{time=2, a=0}, "
-            "{time=2, b=0}, "
-            "{time=3, a=0}, "
-            "{time=4, a=0}, "
-            "{time=5, a=0, b=0},"
-            "{time=10, c=0}"
-            "]";
 
 	if (this->is_enum_valued) {
 		boost::regex e("=0");

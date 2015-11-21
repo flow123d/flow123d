@@ -142,6 +142,8 @@ public:
      */
     void set_up_components();
 
+    void set_input_list(const Input::Array &list) override;
+
 private:
     std::vector< SubFieldType > sub_fields_;
 

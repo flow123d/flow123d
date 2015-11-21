@@ -67,55 +67,6 @@ const std::string FieldCommon::field_descriptor_record_decsription(const string&
 }
 
 
-void FieldCommon::set_input_list(const Input::Array &list)
-{
-    if (! flags().match(FieldFlag::declare_input)) return;
-
-    shared_->input_list_ = list;
-
-    // check that times forms ascending sequence
-    double time,last_time=0.0;
-
-    if (list.size() == 0) return;
-    for( auto it = list.begin<Input::Record>();
-            it != list.end(); ++it) {
-// Interleaving of field time sequences can not be done by just filtering
-// fields by name. There is some problem in update_history. 
-// So we require correct ordering of whole list.            
-/*
-       	bool found;
-    	if (this->multifield_) {
-    		found = it->find<Input::Record>(input_name());
-    	}
-    	else if (this->component_index_ == std::numeric_limits<unsigned int>::max()) {
-    		found = it->find<Input::AbstractRecord>(input_name());
-    	}
-    	else {
-    		Input::Record mutlifield_rec;
-    		if (it->opt_val(input_name(), mutlifield_rec)) {
-    			found = mutlifield_rec.find<Input::Array>("components");
-    		}
-    		else found = false;
-    	}*/
-
-        bool found =true;
-        if (found) {
-            // field descriptor appropriate to the field
-
-            time = it->val<double>("time");
-            if (time < last_time) {
-                THROW( ExcNonascendingTime()
-                        << EI_Time(time)
-                        << EI_Field(input_name())
-                        << it->ei_address());
-            }
-            last_time=time;
-        }
-    }
-    shared_->list_it_ = shared_->input_list_.begin<Input::Record>();
-}
-
-
 
 void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
     if (! flags().match(FieldFlag::declare_input)) return;
@@ -123,12 +74,13 @@ void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
 
     // pass through field descriptors containing key matching field name.
     double time;
-    for( auto it = shared_->input_list_.begin<Input::Record>();
-         it != shared_->input_list_.end(); ++it)
-        if (it->find<Input::AbstractRecord>(input_name())) {
+    for( auto it = shared_->input_list_.begin();
+         it != shared_->input_list_.end(); ++it) {
+    	if (it->find<Input::Record>(input_name())) {
             time = it->val<double>("time"); // default time=0
             TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
         }
+    }
 }
 
 
