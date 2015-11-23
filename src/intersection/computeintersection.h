@@ -16,8 +16,8 @@
 
 namespace computeintersection {
 
-
-template<class A, class B> class ComputeIntersection {};
+// forward declare
+template<class A, class B> class ComputeIntersection;
 
 /******************************************************************
  * 	TŘÍDA PRO VÝPOČET SIMPLEX 1 - SIMPLEX 2
@@ -109,7 +109,7 @@ public:
 	void init();
 	void set_data(Simplex<1> *abs, Simplex<3> *tetr);
     //TODO comment cases in implementation
-	int compute(std::vector<IntersectionPoint<1,3>> &IP13s);
+	unsigned int compute(std::vector<IntersectionPoint<1,3>> &IP13s);
 
 	inline void set_pc_abscissa(Plucker *p){
 		plucker_coordinates_abscissa[0] = p;

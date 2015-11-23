@@ -70,7 +70,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
     // go through all intersection points (vertices of polygon)
 	for(unsigned int i = 0; i < i_points.size();i++){
             IntersectionPoint<2,3> ip = i_points[i];
-			if(ip.get_side1() != -1 ){ 
+			if(ip.get_side1() != unset_loc_idx ){ 
                 // if the edge of triangle is set, it must be
                 // intersection S-E or E-S or E-E
                 

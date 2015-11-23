@@ -5,6 +5,7 @@
 #include "computeintersection.h"
 #include "mesh/ref_element.hh"
 #include "system/system.hh"
+#include "intersectionpoint.h"
 
 using namespace std;
 namespace computeintersection{
@@ -142,8 +143,9 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 		local_triangle.print();
 		xprintf(Msg,"Globale:\n");
 		global_triangle.print();*/
-		IntersectionPoint<1,2> IP(theta,local_triangle,-1,-1,(*plucker_products[0] > 0 ? 1 : 0));
-		//IP12s[0] = IP;
+//         IntersectionPoint<1,2> IP(theta,local_triangle,-1,-1,(*plucker_products[0] > 0 ? 1 : 0));
+		IntersectionPoint<1,2> IP(theta,local_triangle);
+        IP.set_topology(unset_loc_idx, unset_loc_idx, (*plucker_products[0] > 0 ? 1 : 0), false);
 		IP12s.push_back(IP);
 		return true;
         //TODO try removing the seocond part of the following condition
@@ -248,8 +250,9 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					/*xprintf(Msg,"patologicky\n");
 					local_abscissa.print();
 					l_triangle.print();*/
-
-					IntersectionPoint<1,2> IP(local_abscissa,l_triangle,-1,i,1,false,true);
+//                     IntersectionPoint<1,2> IP(local_abscissa,l_triangle,-1,i,1,false,true);
+					IntersectionPoint<1,2> IP(local_abscissa,l_triangle);
+                    IP.set_topology(unset_loc_idx,i,1,true);
 					IP12s.push_back(IP);
 					return true;
 				}
@@ -354,7 +357,7 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(Simplex<1> *abs, Simp
 	}
 };
 
-int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPoint<1,3>> &IP13s){
+unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPoint<1,3>> &IP13s){
 
 	std::vector<IntersectionPoint<1,2>> IP12s;
 	unsigned int pocet_pruniku = 0;
@@ -395,19 +398,13 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 				}else{
 					CI12[IP12s.back().get_side2() + 1].set_computed();
 				}
-				IP12s.back().set_side2(side);
-			}else{
-				IP12s.back().set_side2(side);
 			}
+			
 			pocet_pruniku++;
-
-			//if((IP.get_local_coords1())[0] <= 1 && (IP.get_local_coords1())[0] >= 0){
-// 				IP12s.back().print();
-				IntersectionPoint<1,3> IP13(IP12s.back());
+            IP12s.back().set_side2(side);
+            IntersectionPoint<1,3> IP13(IP12s.back());
 // 				IP13.print();
-				IP13s.push_back(IP13);
-
-			//}
+            IP13s.push_back(IP13);
 		}
 	}
 
@@ -458,7 +455,8 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
                                                                                               t1);
             arma::vec::fixed<2> inter({1 - t1, t1});    // barycentric coords
             a1->set_coordinates(inter,interpolovane);
-            a1->set_topology(-1,a1->get_side2(),a1->get_orientation(),true, a1->is_patological());
+//             a1->set_topology_EE(unset_loc_idx, a1->is_patological());  // edge index is set later
+            a1->set_topology(unset_loc_idx, unset_loc_idx, a1->get_orientation(), a1->is_patological());
         }
         if(t2 == 1) // interpolate IP a2
         {
@@ -469,7 +467,8 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
                                                                                               t2);
             arma::vec::fixed<2> inter({1 - t2, t2});      // barycentric coords
             a2->set_coordinates(inter,interpolovane);
-            a2->set_topology(-1,a2->get_side2(),a2->get_orientation(),true, a2->is_patological());
+//             a2->set_topology_EE(unset_loc_idx, a2->is_patological());  // edge index is set later
+            a2->set_topology(unset_loc_idx, unset_loc_idx, a2->get_orientation(), a2->is_patological());
         }
     }
     return pocet_pruniku;
@@ -573,49 +572,24 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 
 	std::vector<IntersectionPoint<1,2>> IP12s;
 	std::vector<IntersectionPoint<1,3>> IP13s;
-	int pocet_pruniku = 0;
-	int pocet_13_pruniku;
+	unsigned int pocet_13_pruniku;
 
-	//cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
-		for(unsigned int i = 0; i < 3;i++){
-			pocet_13_pruniku = CI13[(3-i)%3].compute(IP13s);
-//             DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
-			//(triange->getAbscissa(i)).toString();
-			// Vždy by měl být počet průniku 2 nebo 0
-			if(pocet_13_pruniku == 1){
-				IP13s[IP13s.size() - 1].set_side1((3-i)%3);
-				IntersectionPoint<3,1> IP31(IP13s[IP13s.size() - 1]);
-				IntersectionPoint<3,2> IP32(IP31);
-				IntersectionPoint<2,3> IP23(IP32);
-				lokalni_mnohouhelnik.add_ipoint(IP23);
+	for(unsigned int i = 0; i < 3;i++){
+		pocet_13_pruniku = CI13[(3-i)%3].compute(IP13s);
+        ASSERT(pocet_13_pruniku < 3, "Impossible number of intersection.");
+//         DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
+        
+        //TODO: can there be only 1 intersection
+        for(unsigned int n=1; n <= pocet_13_pruniku; n++){
+            IP13s[IP13s.size()-n].set_side1((3-i)%3);
+            IntersectionPoint<3,1> IP31(IP13s[IP13s.size()-n]);
+            IntersectionPoint<3,2> IP32(IP31);
+            IntersectionPoint<2,3> IP23(IP32);
+            lokalni_mnohouhelnik.add_ipoint(IP23);
+        }
+    }
 
-			}else if(pocet_13_pruniku == 2){
-//                 DBGMSG("i=%d,  set side1 %d, side2 %d\n",i, (3-i)%3, IP13s[IP13s.size() - 2].get_side2());
-				IP13s[IP13s.size() - 2].set_side1((3-i)%3);
-				//IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 2]);
-				IntersectionPoint<3,1> IP31(IP13s[IP13s.size() - 2]);
-				//IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
-				IntersectionPoint<3,2> IP32(IP31);
-				IntersectionPoint<2,3> IP23(IP32);
-				lokalni_mnohouhelnik.add_ipoint(IP23);
-
-//                 DBGMSG("i=%d,  set side1 %d, side2 %d\n",i, (3-i)%3, IP13s[IP13s.size() - 1].get_side2());
-				IP13s[IP13s.size() - 1].set_side1((3-i)%3);
-				IntersectionPoint<3,1> IP31_2(IP13s[IP13s.size() - 1]);
-				IntersectionPoint<3,2> IP32_2(IP31_2);
-				IntersectionPoint<2,3> IP23_2(IP32_2);
-				lokalni_mnohouhelnik.add_ipoint(IP23_2);
-
-			}else if(pocet_13_pruniku > 2){
-				// TODO: nahradit Assertem
-				xprintf(Msg, "JINY POCET PRUNIKU\n");
-			}
-
-
-		}
-	// Optimalizace: znovu použití již vypočítaných součinů
-
-
+    // Optimalization: reusage of the Plucker coordinates products already computed
 	for(unsigned int i = 0; i < 3;i++){
 		CI12[0].set_plucker_product(CI13[i].get_plucker_product(0,0),i);
 		CI12[1].set_plucker_product(CI13[i].get_plucker_product(0,1),i);
@@ -625,33 +599,19 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 		CI12[5].set_plucker_product(CI13[i].get_plucker_product(2,2),i);
 	}
 
-	//cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges tetrahedron vs triangle" << endl;
-	//double epsilon = 64*numeric_limits<double>::epsilon();
 	for(unsigned int i = 0; i < 6;i++){
-			if(CI12[i].compute(IP12s, false)){
-				pocet_pruniku++;
-				IP12s.back().set_side1(i);
-				if((IP12s.back().get_local_coords1())[0] <= 1 && (IP12s.back().get_local_coords1())[0] >= 0){
-					/*if(fabs(1-IP12s.back().get_local_coords1()[0]) < epsilon || fabs(IP12s.back().get_local_coords1()[0]) < epsilon){
-						IP12s.back().setIsPatological(true);
-					}*/
-					//IP.print();
-// 					DBGMSG("CI23: number of 1-2 intersections = %d\n",pocet_pruniku);
-//                     DBGMSG("i=%d,  set side1 %d, side2 %d ori %d\n",i, IP12s.back().get_side1(), IP12s.back().get_side2(), IP12s.back().get_orientation());
-									IntersectionPoint<2,1> IP21(IP12s.back());
-									IntersectionPoint<2,3> IP23(IP21);
-									//IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,2>(IP22);
-									//IP23.print();
-									lokalni_mnohouhelnik.add_ipoint(IP23);
-
-
-				}
-
-				//IP12s.pop_back();
+		if(CI12[i].compute(IP12s, false)){
+			IP12s.back().set_side1(i);
+            //TODO unit test this condition - possibly remove
+			if((IP12s.back().get_local_coords1())[0] <= 1 && (IP12s.back().get_local_coords1())[0] >= 0){
+// 				DBGMSG("CI23: number of 1-2 intersections = %d\n",pocet_pruniku);
+				IntersectionPoint<2,1> IP21(IP12s.back());
+				IntersectionPoint<2,3> IP23(IP21);
+				//IP23.print();
+				lokalni_mnohouhelnik.add_ipoint(IP23);
 			}
 		}
-
-
+	}
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::print_plucker_coordinates(std::ostream &os){

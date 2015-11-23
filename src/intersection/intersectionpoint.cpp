@@ -19,7 +19,6 @@ void IntersectionPoint<N,M>::clear()
     side_idx1 = -1;
     side_idx2 = -1;
     orientation = 1;
-    is_vertex_ = false;
     is_patological_ = false;
 }
 
@@ -31,19 +30,9 @@ IntersectionPoint<N,M>::IntersectionPoint()
 
 template<unsigned int N, unsigned int M>    
 IntersectionPoint<N,M>::IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
-        const arma::vec::fixed<M+1> &lc2,
-        int side1,
-        int side2,
-        unsigned int ori,
-        bool vertex,
-        bool patological)
-        : local_coords1(lc1),
-          local_coords2(lc2),
-          side_idx1(side1),
-          side_idx2(side2),
-          orientation(ori),
-          is_vertex_(vertex),
-          is_patological_(patological) {};
+                                          const arma::vec::fixed<M+1> &lc2)
+    : local_coords1(lc1), local_coords2(lc2)
+    {};
 
 
 template<unsigned int N, unsigned int M>
@@ -53,7 +42,6 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
         side_idx1 = IP.get_side2();
         side_idx2 = IP.get_side1();
         orientation = IP.get_orientation();
-        is_vertex_ = IP.is_vertex();
         is_patological_ = IP.is_patological();
     };
 
@@ -67,7 +55,6 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP){
     side_idx1 = IP.get_side1();
     side_idx2 = IP.get_side2();
     orientation = IP.get_orientation();
-    is_vertex_ = IP.is_vertex();
     is_patological_ = IP.is_patological();
 };
 
@@ -81,7 +68,6 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP){
     side_idx1 = IP.get_side1();
     side_idx2 = IP.get_side2();
     orientation = IP.get_orientation();
-    is_vertex_ = IP.is_vertex();
     is_patological_ = IP.is_patological();
 };
 
@@ -98,7 +84,7 @@ template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const 
     s.local_coords1.print(os);
     os << "Local coords on the second element on side(" << s.side_idx2 << ")" << endl;
     s.local_coords2.print(os);
-    os << "Orientation: " << s.orientation << " Vertex: " << s.is_vertex_ << " Patological: " << s.is_patological_ << endl;
+    os << "Orientation: " << s.orientation << " Patological: " << s.is_patological_ << endl;
     return os;
 }
 
