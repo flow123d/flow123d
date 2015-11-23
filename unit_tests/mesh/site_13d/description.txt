@@ -5,3 +5,6 @@ line_tetrahedron02              - rectangular tetrahedron, one common vertex, in
 line_tetrahedron03              - rectangular tetrahedron, two common vertices, intersection is an edge of the tetrahedron, length = 2
 line_tetrahedron04              - intersection is in one of the sides, parallel with an edge, length = 0.5 
 line_tetrahedron05              - intersection is in one of the sides, length = sqrt(2)/0.5
+line_tetrahedron06              - intersection is just one point on the tetrahedron side
+line_tetrahedron07              - intersection is part of the line, one point is inside tetrahedron
+line_tetrahedron08              - intersection is the whole line, length = sqrt(2 * 0.05^2)
