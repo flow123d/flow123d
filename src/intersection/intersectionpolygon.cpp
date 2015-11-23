@@ -339,4 +339,13 @@ double IntersectionPolygon::get_area() const{
 	return fabs(subtotal/2);
 };
 
+ostream& operator<<(ostream& os, const IntersectionPolygon& polygon)
+{
+    for(unsigned int i = 0; i < polygon.i_points.size(); i++)
+        os << polygon.i_points[i];
+    
+    return os;
+}
+
+
 } // END NAMESPACE

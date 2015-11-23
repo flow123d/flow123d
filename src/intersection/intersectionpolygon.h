@@ -75,12 +75,6 @@ public:
 	 */
 	double get_area() const;
 
-	inline void print(){
-		for(unsigned int i = 0; i < i_points.size();i++){
-			i_points[i].print();
-		}
-	}
-
 	/**
 	 * Tracing generic polygon - if flag "is_patological_" is true - traces polygon by convex hull,
 	 * otherwise by optimize method
@@ -107,6 +101,9 @@ public:
 	 * @return index of side of tetrahedron - if tetrahedron has polygon on it
 	 */
 	int side_content_prolongation() const;
+    
+    /// Friend output operator.
+    friend std::ostream& operator<<(std::ostream& os, const IntersectionPolygon& polygon);
 };
 
 
