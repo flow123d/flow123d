@@ -79,8 +79,11 @@ public:
 	}
 
 	Input::Array input_list(const string& str) {
+		static std::vector<Input::Array> inputs;
+		unsigned int input_last = inputs.size(); // position of new item
 		Input::ReaderToStorage reader(str, *test_input_list, Input::FileFormat::format_JSON );
-		return reader.get_root_interface<Input::Array>();
+		inputs.push_back( reader.get_root_interface<Input::Array>() );
+		return inputs[input_last];
 	}
 
 	// RegionHistory for given region index

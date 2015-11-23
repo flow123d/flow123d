@@ -76,10 +76,8 @@ void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
     double time;
     for( auto it = shared_->input_list_.begin();
          it != shared_->input_list_.end(); ++it) {
-    	if (it->find<Input::Record>(input_name())) {
-            time = it->val<double>("time"); // default time=0
-            TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
-        }
+        time = it->val<double>("time"); // default time=0
+        TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
     }
 }
 
