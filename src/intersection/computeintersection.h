@@ -14,7 +14,6 @@
 #include "intersectionpolygon.h"
 #include "system/system.hh"
 
-using namespace std;
 namespace computeintersection {
 
 
@@ -71,7 +70,7 @@ public:
 		return plucker_coordinates_triangle[side_idx];
 	}
 
-	void to_string_plucker_coordinates();
+	void print_plucker_coordinates(std::ostream &os);
 
 	void set_plucker_product(double* number, unsigned int i);
 	double* get_plucker_product(unsigned int i);
@@ -127,8 +126,8 @@ public:
 		return plucker_coordinates_tetrahedron[index];
 	}
 
-	void to_string_plucker_coordinates();
-	void to_string_plucker_coordinates_tree();
+	void print_plucker_coordinates(std::ostream &os);
+	void print_plucker_coordinates_tree(std::ostream &os);
 
 	void set_plucker_product(double* number, unsigned int index_CI, unsigned index_edge);
 	double* get_plucker_product(unsigned int index_CI, unsigned index_edge);
@@ -160,8 +159,8 @@ public:
 	void init();
 	void compute(IntersectionPolygon &lokalni_mnohouhlenik);
 
-	void to_string_plucker_coordinates();
-	void to_string_plucker_coordinates_tree();
+	void print_plucker_coordinates(std::ostream &os);
+	void print_plucker_coordinates_tree(std::ostream &os);
 
 	inline ~ComputeIntersection() {};
 

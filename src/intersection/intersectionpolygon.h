@@ -14,7 +14,6 @@
 #include "mesh/mesh.h"
 #include <queue>
 
-using namespace std;
 namespace computeintersection{
 
     /**
