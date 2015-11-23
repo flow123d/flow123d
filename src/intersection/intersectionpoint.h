@@ -2,12 +2,12 @@
 #define INTERSECTIONPOINT_H_
 
 #include <armadillo>
-//#include <array>
-#include "system/system.hh"
 
-using namespace std;
 namespace computeintersection{
 
+template<unsigned int N, unsigned int M> class IntersectionPoint;
+template<unsigned int N, unsigned int M> std::ostream& operator<<(std::ostream& os, const IntersectionPoint<N,M>& IP);
+    
 /**
  * Have separate class template for IntersectionPoint as it appears at output
  * and other internal class template e.g. TriangleLineIntersection for internal
@@ -18,7 +18,7 @@ namespace computeintersection{
  * contains bary coords of a point on simplex<N> and simplex<M>
  * Considering N < M. TODO Assert this condition.
  */
-template<int N, int M> class IntersectionPoint {
+template<unsigned int N, unsigned int M> class IntersectionPoint {
 
 	arma::vec::fixed<N+1> local_coords1; // bary coords of a point on simplex<N>
 	arma::vec::fixed<M+1> local_coords2; // bary coords of a point on simplex<M>
@@ -41,11 +41,8 @@ template<int N, int M> class IntersectionPoint {
 
 	public:
 
-    /// Desctructor.
-    ~IntersectionPoint(){};
-    
-    /// Default constructor.
-	IntersectionPoint();
+    IntersectionPoint();    ///< Default constructor.
+    ~IntersectionPoint(){}; ///< Destructor.
     
     /**
      * TODO can be split into two setters ? coordinate data x topolopgy data
@@ -72,80 +69,116 @@ template<int N, int M> class IntersectionPoint {
 	 * */
 	IntersectionPoint(IntersectionPoint<N,M-2> &IP);
 
-	inline void clear(){
-		local_coords1.zeros();
-		local_coords2.zeros();
-		side_idx1 = -1;
-		side_idx2 = -1;
-		orientation = 1;
-		is_vertex_ = false;
-		is_patological_ = false;
-	};
+    void set_coordinates(const arma::vec::fixed<N+1> &lc1, const arma::vec::fixed<M+1> &lc2);
+    void set_topology(int side1 = -1,
+                      int side2 = -1,
+                      unsigned int ori = 1,
+                      bool vertex = false,
+                      bool patological = false);
+    
+    /// Resets the object to default values.
+    void clear();
 
-	inline void print(){
-		cout << "Local coords on the first element on side(" << side_idx1 << ")" << endl;
-		local_coords1.print();
-		cout << "Local coords on the second element on side(" << side_idx2 << ")" << endl;
-		local_coords2.print();
-		cout << "Orientation: " << orientation << " Vertex: " << is_vertex_ << " Patological: " << is_patological_ << endl;
-	};
+    /// Returns barycentric coordinates in the Simplex<N>.
+    const arma::vec::fixed<N+1> &get_local_coords1() const;
+    
+    /// Returns barycentric coordinates in the Simplex<M>.
+    const arma::vec::fixed<M+1> &get_local_coords2() const;
 
-	inline const arma::vec::fixed<N+1> &get_local_coords1() const{
-		return local_coords1;
-	};
-	inline const arma::vec::fixed<M+1> &get_local_coords2() const{
-		return local_coords2;
-	};
+    void set_side1(int s);
 
-	inline void set_side1(int s){
-		side_idx1 = s;
-	};
+    void set_side2(int s);
 
-	inline void set_side2(int s){
-		side_idx2 = s;
-	};
+//     void set_orientation(unsigned int o);
 
-	inline void set_orientation(unsigned int o){
-		orientation = o;
-	};
+    void set_is_vertex(bool iv);
 
-	inline void set_is_vertex(bool iv){
-		is_vertex_ = iv;
-	}
+    void set_is_patological(bool ip);
 
-	inline void set_is_patological(bool ip){
-		is_patological_ = ip;
-	}
+    int get_side1() const;
 
-	inline int get_side1() const{
-		return side_idx1;
-	};
+    int get_side2() const;
 
-	inline int get_side2() const{
-		return side_idx2;
-	};
+    unsigned int get_orientation() const;
 
-	inline unsigned int get_orientation() const{
-		return orientation;
-	};
+    bool is_vertex() const;
 
-	inline bool is_vertex() const{
-		return is_vertex_;
-	};
-
-	inline bool is_patological() const{
-		return is_patological_;
-	};
-
-	inline friend ostream& operator<<(ostream& os, const IntersectionPoint<N,M>& IP){
-		os << "test";
-		return os;
-	};
+    bool is_patological() const;
+    
 	/**
 	 * For convex hull polygon tracing
 	 */
 	bool operator<(const IntersectionPoint<N,M> &ip) const;
+    
+    /// Friend output operator.
+    friend std::ostream& operator<< <>(std::ostream& os, const IntersectionPoint<N,M>& IP);
 };
+
+
+/********************************************* IMPLEMENTATION ***********************************************/
+
+template<unsigned int N, unsigned int M>
+void IntersectionPoint<N,M>::set_coordinates(const arma::vec::fixed< N + 1  >& lc1, const arma::vec::fixed< M + 1  >& lc2)
+{   local_coords1 = lc1;
+    local_coords2 = lc2; }
+
+template<unsigned int N, unsigned int M>
+void IntersectionPoint<N,M>::set_topology(int side1, int side2, unsigned int ori, bool vertex, bool patological)
+{   side_idx1 = side1;
+    side_idx2 = side2;
+    orientation = ori;
+    is_vertex_ = vertex;
+    is_patological_ = patological;
+}
+    
+    
+template<unsigned int N, unsigned int M>
+const arma::vec::fixed< N + 1  >& IntersectionPoint<N,M>::get_local_coords1() const
+{   return local_coords1; }
+
+template<unsigned int N, unsigned int M>
+const arma::vec::fixed< M + 1  >& IntersectionPoint<N,M>::get_local_coords2() const
+{   return local_coords2; }
+
+template<unsigned int N, unsigned int M>
+void IntersectionPoint<N,M>::set_side1(int s)
+{   side_idx1 = s; }
+
+template<unsigned int N, unsigned int M>
+void IntersectionPoint<N,M>::set_side2(int s)
+{   side_idx2 = s; }
+
+// template<unsigned int N, unsigned int M>
+// void IntersectionPoint<N,M>::set_orientation(unsigned int o)
+// {   orientation = o; }
+
+template<unsigned int N, unsigned int M>
+void IntersectionPoint<N,M>::set_is_vertex(bool iv)
+{   is_vertex_ = iv; }
+
+template<unsigned int N, unsigned int M>
+void IntersectionPoint<N,M>::set_is_patological(bool ip)
+{   is_patological_ = ip; }
+
+template<unsigned int N, unsigned int M>
+int IntersectionPoint<N,M>::get_side1() const
+{   return side_idx1; }
+
+template<unsigned int N, unsigned int M>
+int IntersectionPoint<N,M>::get_side2() const
+{   return side_idx2; }
+
+template<unsigned int N, unsigned int M>
+unsigned int IntersectionPoint<N,M>::get_orientation() const
+{   return orientation; }
+
+template<unsigned int N, unsigned int M>
+bool IntersectionPoint<N,M>::is_vertex() const
+{   return is_vertex_; }
+
+template<unsigned int N, unsigned int M>
+bool IntersectionPoint<N,M>::is_patological() const
+{   return is_patological_; }
 
 
 } // END namespace

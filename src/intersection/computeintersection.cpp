@@ -357,7 +357,6 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 
 	std::vector<IntersectionPoint<1,2>> IP12s;
 	unsigned int pocet_pruniku = 0;
-	double epsilon = 64*numeric_limits<double>::epsilon();
 
     // loop over sides of tetrahedron 
 	for(unsigned int side = 0;side < RefElement<3>::n_sides && pocet_pruniku < 2;side++){
@@ -421,54 +420,103 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 
 	}else if(pocet_pruniku > 1){
         
-        /* simplitfy like in NGH
-         * intersection.cpp:796
-         */
+        // swap the ips in the line coordinate direction (0->1 : a1->a2)
+        IntersectionPoint<1,3> *a1, *a2;
+        double t1, t2;
+        if(IP13s[IP13s.size()-2].get_local_coords1()[1] > IP13s[IP13s.size()-1].get_local_coords1()[1])
+        {
+            a1 = &(IP13s[IP13s.size()-1]);
+            a2 = &(IP13s[IP13s.size()-2]);
+        }
+        else
+        {
+            a1 = &(IP13s[IP13s.size()-2]);
+            a2 = &(IP13s[IP13s.size()-1]);
+        }
+        // get first and second theta (coordinate of ips on the line)
+        t1 = a1->get_local_coords1()[1];
+        t2 = a2->get_local_coords1()[1];
         
-		double first_theta = IP13s[IP13s.size()-2].get_local_coords1()[1];
-		double second_theta = IP13s[IP13s.size()-1].get_local_coords1()[1];
-
-        //TODO translate comments
-        // - compare theta with 1,0 everywhere (without epsilon)
-		  // Nejedná se o průnik - celá usečka leží mimo čtyřstěn
-		if(((first_theta > 1) && (second_theta > 1)) ||
-		   ((first_theta < 0) && (second_theta < 0))){
-
-			pocet_pruniku = 0;
-			IP13s.pop_back();
-			IP13s.pop_back();
-		}else{
-            DBGMSG("Intersection interpolation.\n");
-			// Jedná se o průnik
-			// První souřadnice leží uvnitř čtyřstěnu
-			if(first_theta > 1+epsilon || first_theta < -epsilon){
-				double theta = first_theta > 1 ? 1 : 0;
-				arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta);
-				arma::vec::fixed<2> inter; inter[0] = 1 - theta; inter[1] = theta;
-				IntersectionPoint<1,3> IP13(inter, interpolovane,-1,IP13s[IP13s.size()-2].get_side2(),IP13s[IP13s.size()-2].get_orientation(),true, IP13s[IP13s.size()-2].is_patological());
-				IP13s[IP13s.size()-2] = IP13;
-
-				first_theta = theta;
-			}else if(fabs(1-first_theta) < epsilon || fabs(first_theta) < epsilon){
-				// Hraniční body
-				IP13s[IP13s.size()-2].set_is_vertex(true);
-				IP13s[IP13s.size()-2].set_is_patological(true);
-			}
-			// Druhá souřadnice leží uvnitř čtyřstěnu
-			if(second_theta > 1+epsilon || second_theta < -epsilon){
-				double theta2 = second_theta > 1 ? 1 : 0;
-				arma::vec::fixed<2> inter2; inter2[0] = 1 - theta2; inter2[1] = theta2;
-				arma::vec::fixed<4> interpolovane2 = RefElement<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta2);
-				IntersectionPoint<1,3> IP13(inter2, interpolovane2,-1,IP13s[IP13s.size()-1].get_side2(),IP13s[IP13s.size()-1].get_orientation(),true, IP13s[IP13s.size()-1].is_patological());
-				IP13s[IP13s.size()-1] = IP13;
-			}else if(fabs(1-second_theta) < epsilon || fabs(second_theta) < epsilon){
-				// hraniční body
-				IP13s[IP13s.size()-1].set_is_vertex(true);
-				IP13s[IP13s.size()-1].set_is_patological(true);
-			}
-		}
-	}
-	return pocet_pruniku;
+        // cut off the line by the abscissa points
+        if(t1 < 0) t1 = 0;
+        if(t2 > 1) t2 = 1;
+        
+        if(t2 < t1) { // then the intersection is outside the abscissa => NO intersection
+            pocet_pruniku = 0;
+            IP13s.pop_back();
+            IP13s.pop_back(); 
+            return pocet_pruniku;
+        }
+        
+        if(t1 == 0) // interpolate IP a1
+        {
+            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1->get_local_coords2(), 
+                                                                                              a2->get_local_coords2(), 
+                                                                                              a1->get_local_coords1()[1],
+                                                                                              a2->get_local_coords1()[1], 
+                                                                                              t1);
+            arma::vec::fixed<2> inter({1 - t1, t1});    // barycentric coords
+            a1->set_coordinates(inter,interpolovane);
+            a1->set_topology(-1,a1->get_side2(),a1->get_orientation(),true, a1->is_patological());
+        }
+        if(t2 == 1) // interpolate IP a2
+        {
+            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1->get_local_coords2(), 
+                                                                                              a2->get_local_coords2(), 
+                                                                                              a1->get_local_coords1()[1],
+                                                                                              a2->get_local_coords1()[1], 
+                                                                                              t2);
+            arma::vec::fixed<2> inter({1 - t2, t2});      // barycentric coords
+            a2->set_coordinates(inter,interpolovane);
+            a2->set_topology(-1,a2->get_side2(),a2->get_orientation(),true, a2->is_patological());
+        }
+    }
+    return pocet_pruniku;
+    
+// // OLD code:
+// 		double first_theta = IP13s[IP13s.size()-2].get_local_coords1()[1];
+// 		double second_theta = IP13s[IP13s.size()-1].get_local_coords1()[1];
+// 
+//         // - compare theta with 1,0 everywhere (without epsilon)
+// 		  // Nejedná se o průnik - celá usečka leží mimo čtyřstěn
+// 		if(((first_theta > 1) && (second_theta > 1)) ||
+// 		   ((first_theta < 0) && (second_theta < 0))){
+// 
+// 			pocet_pruniku = 0;
+// 			IP13s.pop_back();
+// 			IP13s.pop_back();
+// 		}else{
+//             DBGMSG("Intersection interpolation.\n");
+// 			// Jedná se o průnik
+// 			// První souřadnice leží uvnitř čtyřstěnu
+// 			if(first_theta > 1+epsilon || first_theta < -epsilon){
+// 				double theta = first_theta > 1 ? 1 : 0;
+// 				arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta);
+// 				arma::vec::fixed<2> inter; inter[0] = 1 - theta; inter[1] = theta;
+// 				IntersectionPoint<1,3> IP13(inter, interpolovane,-1,IP13s[IP13s.size()-2].get_side2(),IP13s[IP13s.size()-2].get_orientation(),true, IP13s[IP13s.size()-2].is_patological());
+// 				IP13s[IP13s.size()-2] = IP13;
+// 
+// 				first_theta = theta;
+// 			}else if(fabs(1-first_theta) < epsilon || fabs(first_theta) < epsilon){
+// 				// Hraniční body
+// 				IP13s[IP13s.size()-2].set_is_vertex(true);
+// 				IP13s[IP13s.size()-2].set_is_patological(true);
+// 			}
+// 			// Druhá souřadnice leží uvnitř čtyřstěnu
+// 			if(second_theta > 1+epsilon || second_theta < -epsilon){
+// 				double theta2 = second_theta > 1 ? 1 : 0;
+// 				arma::vec::fixed<2> inter2; inter2[0] = 1 - theta2; inter2[1] = theta2;
+// 				arma::vec::fixed<4> interpolovane2 = RefElement<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta2);
+// 				IntersectionPoint<1,3> IP13(inter2, interpolovane2,-1,IP13s[IP13s.size()-1].get_side2(),IP13s[IP13s.size()-1].get_orientation(),true, IP13s[IP13s.size()-1].is_patological());
+// 				IP13s[IP13s.size()-1] = IP13;
+// 			}else if(fabs(1-second_theta) < epsilon || fabs(second_theta) < epsilon){
+// 				// hraniční body
+// 				IP13s[IP13s.size()-1].set_is_vertex(true);
+// 				IP13s[IP13s.size()-1].set_is_patological(true);
+// 			}
+// 		}
+// 	}
+// 	return pocet_pruniku;
 
 };
 
