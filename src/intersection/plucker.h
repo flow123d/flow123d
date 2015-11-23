@@ -1,5 +1,6 @@
 #include <armadillo>
 #include <iostream>
+#include "system/system.hh"
 
 namespace computeintersection{
 
@@ -89,7 +90,8 @@ inline Plucker::Plucker(const Plucker &p)
     computed_ = p.is_computed(); }
 
 inline double Plucker::operator[](const unsigned int index) const
-{   return coordinates_[index]; }
+{   ASSERT(computed_, "Plucker coordinates not computed yet.");
+    return coordinates_[index]; }
 
 inline void Plucker::clear()
 {   computed_ = false; }
@@ -98,13 +100,16 @@ inline bool Plucker::is_computed() const
 {   return computed_; }
 
 inline arma::vec3 Plucker::get_u_vector() const
-{   return coordinates_(arma::span(0,2)); }
+{   ASSERT(computed_, "Plucker coordinates not computed yet.");
+    return coordinates_(arma::span(0,2)); }
 
 inline arma::vec3 Plucker::get_ua_vector() const
-{   return coordinates_(arma::span(3,5)); }
+{   ASSERT(computed_, "Plucker coordinates not computed yet.");
+    return coordinates_(arma::span(3,5)); }
 
 inline arma::vec6 Plucker::get_plucker_coords() const
-{   return coordinates_; }
+{   ASSERT(computed_, "Plucker coordinates not computed yet.");
+    return coordinates_; }
 
 #endif
 
