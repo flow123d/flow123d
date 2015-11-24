@@ -11,6 +11,7 @@
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
+#include "mesh/msh_gmshreader.h"
 
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
