@@ -8,85 +8,76 @@
 #ifndef INTERSECTIONLINE_H_
 #define INTERSECTIONLINE_H_
 
-#include "intersectionpoint.h"
 #include "system/system.hh"
-#include "mesh/mesh.h"
-#include <queue>
 
 namespace computeintersection{
 
+//forwward declare
+template<unsigned int, unsigned int> class IntersectionPoint;
+
 /**
- * IntersectionLine represents a line from computing intersection of a line(Simplex<1>) and a tetrahedron(Simplex<3>)
- * Contains array of points (necessary not in order at first)
+ * IntersectionLine represents an intersection of a line(Simplex<1>) and a tetrahedron(Simplex<3>).
+ * Contains array of intersection points (necessary not in specified order before calling @p trace_line).
+ * TODO: what about keeping directly ElementFullIterator ?
  */
 class IntersectionLine{
 
-	std::vector<IntersectionPoint<1,3>> i_points;
-	unsigned int element_1D_idx;
-	unsigned int element_3D_idx;
+	std::vector<IntersectionPoint<1,3>> i_points_;
+	unsigned int element_1d_idx;
+	unsigned int element_3d_idx;
 
 public:
 
-	inline IntersectionLine(){};
-	inline IntersectionLine(unsigned int ele_1D, unsigned int ele_3D):element_1D_idx(ele_1D), element_3D_idx(ele_3D){};
-	inline ~IntersectionLine(){};
+	IntersectionLine(){};                                       ///< Default constructor.
+	IntersectionLine(unsigned int ele_1D, unsigned int ele_3D)  ///< Constructor taking in element indices.
+        :element_1d_idx(ele_1D), element_3d_idx(ele_3D){};
+	~IntersectionLine(){};                                      ///< Destructor.
 
-	inline std::vector<IntersectionPoint<1,3>> &get_points(){
-		return i_points;
-	}
+	/// Returns intersection points by reference.
+	std::vector<IntersectionPoint<1,3>> &points();
 
-	inline const std::vector<IntersectionPoint<1,3>> &get_points() const{
-		return i_points;
-	}
+	/// Returns intersection points by constant reference.
+	const std::vector<IntersectionPoint<1,3>> &points() const;
 
 	/**
-	 * switches points if they are not in right order
+	 * Switches intersection points if they are not in correct order.
 	 */
-	inline void trace_line(){
+// 	void trace_line();
 
-		if(i_points.size() > 1){
-			unsigned int j = (i_points[0].get_side2() + i_points[0].get_orientation())%2;
+    /// Returns intersection point of given @p index.
+    const IntersectionPoint<1,3> &operator[](unsigned int index) const;
 
-			if(j == 0){
-				std::vector<IntersectionPoint<1,3>> new_points(2);
-				new_points[0] = i_points[1];
-				new_points[1] = i_points[0];
-				i_points = new_points;
-			}
-		}
-
-	};
-
-	inline const IntersectionPoint<1,3> &operator[](unsigned int index) const{
-		return i_points[index];
-	};
-
-	inline const unsigned int size() const{
-		return i_points.size();
-	};
-
-	inline void add_points(const std::vector<IntersectionPoint<1,3>> &points){
-		i_points = points;
-	};
-
-    //TODO rename consistently with polygon
-	inline unsigned int get_elm1D_idx() const{
-		return element_1D_idx;
-	};
-
-	inline unsigned int get_elm3D_idx() const{
-		return element_3D_idx;
-	};
-
-	inline const IntersectionPoint<1,3> &get_point(const unsigned int index) const
-	{
-		 return i_points[index];
-	};
+    
+    unsigned int size() const;          ///< Returns number of intersection points.
+    unsigned int ele_1d_idx() const;    ///< Returns index of 1D element.
+	unsigned int ele_3d_idx() const;    ///< Returns index of 3D element.
     
     /// Computes the relative length of intersection line.
     double compute_length();
 
 };
+
+/********************************************* IMPLEMENTATION ***********************************************/
+
+inline std::vector< IntersectionPoint< 1, 3 > >& IntersectionLine::points()
+{   return i_points_; }
+
+inline const std::vector< IntersectionPoint< 1, 3 > >& IntersectionLine::points() const
+{   return i_points_; }
+
+inline const IntersectionPoint< 1, 3 >& IntersectionLine::operator[](unsigned int index) const
+{   ASSERT(index < i_points_.size(), "Index out of bounds.");
+    return i_points_[index]; }
+
+inline unsigned int IntersectionLine::size() const
+{   return i_points_.size(); }
+
+inline unsigned int IntersectionLine::ele_1d_idx() const
+{   return element_1d_idx; }
+
+inline unsigned int IntersectionLine::ele_3d_idx() const
+{   return element_3d_idx; }
+
 
 } // END NAMESPACE
 #endif /* INTERSECTIONLINE_H_ */

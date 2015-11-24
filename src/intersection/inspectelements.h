@@ -4,26 +4,27 @@
  *  Created on: 13.4.2014
  *      Author: viktor
  */
+#ifndef INSPECT_ELEMENTS_H_
+#define INSPECT_ELEMENTS_H_
 
 #include "system/system.hh"
-#include "system/sys_profiler.hh"
-#include "mesh/mesh.h"
-#include "mesh/bih_tree.hh"
 
-#include "mesh/bih_tree.hh"
-#include "fields/field_interpolated_p0.hh"
+#include "mesh/bounding_box.hh"
+#include "mesh/mesh_types.hh"
 
-#include "computeintersection.h"
-#include "intersectionpolygon.h"
+#include "simplex.h"
 
+#include <queue>
 
+class Mesh; // forward declare
 
-using namespace std;
 namespace computeintersection {
 
-    
+// forward declare
 struct ProlongationLine;
 struct ProlongationPoint;
+class IntersectionLine;
+class IntersectionPolygon;
     
 /**
 * Main class, which takes mesh and you can call method for computing intersections for different dimensions of elements
@@ -63,6 +64,14 @@ class InspectElements {
 	void prolongate_elements(const IntersectionLine &il, const ElementFullIter &elm, const ElementFullIter &ele);
 	void prolongate_1D_element(const ElementFullIter &elm, const ElementFullIter &ele);
 	void prolongate(const ProlongationPoint &pp);
+    
+    void computeIntersections2d3d();
+    void computeIntersections2d3dProlongation(const ProlongationLine &pl);
+    void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, 
+                                                      const ElementFullIter &elm, 
+                                                      const ElementFullIter &ele);
+
+    bool intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
 
 public:
 
@@ -72,23 +81,14 @@ public:
 	/**
 	 * Every method needs to be implemented for different type of mesh intersection
 	 */
-	template<unsigned int subdim, unsigned int dim> inline void compute_intersections(){
-		cout << "Warning - method compute_intersections "<< subdim<<"D with "<< dim<<"D is not implemented yet" << endl;
-	};
+	template<unsigned int subdim, unsigned int dim> 
+	void compute_intersections();
 
-	template<unsigned int subdim, unsigned int dim> inline void compute_intersections_init(){
-		cout << "Warning - method compute_intersections_init "<< subdim<<"D with "<< dim<<"D is not implemented yet" << endl;
-	};
+	template<unsigned int subdim, unsigned int dim>
+	void compute_intersections_init();
 
-
-	void computeIntersections2d3d(); // set private
-	void computeIntersections2d3dProlongation(const ProlongationLine &pl); // set private
-	void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele); // set private
-
-	bool intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx); // set private
-
-	void print_mesh_to_file(string name);
-	void print_mesh_to_file_1D(string name);
+	void print_mesh_to_file(std::string name);
+	void print_mesh_to_file_1D(std::string name);
 
     /** @brief Computes the area of 2d-3d polygonal intersection.
      * @return the polygonal area
@@ -103,4 +103,23 @@ public:
     double line_length();
 };
 
+
+
+
+
+template<unsigned int subdim, unsigned int dim> 
+void InspectElements::compute_intersections()
+{
+        ASSERT(0, "Method not implemented for given dim and subdim.");
+}
+
+template<unsigned int subdim, unsigned int dim> 
+void InspectElements::compute_intersections_init()
+{
+        ASSERT(0, "Method not implemented for given dim and subdim.");
+}
+
 } // END namespace
+
+
+#endif // INSPECT_ELEMENTS_H_

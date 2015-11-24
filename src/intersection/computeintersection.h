@@ -4,20 +4,19 @@
  *
  *      Author: viktor
  */
+#ifndef COMPUTE_INTERSECTION_H_
+#define COMPUTE_INTERSECTION_H_
 
-//#include <armadillo>
-#include "plucker.h"
 #include "simplex.h"
-
-#include "intersectionpoint.h"
-#include "intersectionline.h"
-#include "intersectionpolygon.h"
 #include "system/system.hh"
 
 namespace computeintersection {
 
 // forward declare
 template<class A, class B> class ComputeIntersection;
+class IntersectionPolygon;
+class Plucker;
+template<unsigned int, unsigned int> class IntersectionPoint;
 
 /******************************************************************
  * 	TŘÍDA PRO VÝPOČET SIMPLEX 1 - SIMPLEX 2
@@ -183,3 +182,6 @@ public:
 };
 
 } // END namespace_close
+
+
+#endif  // COMPUTE_INTERSECTION_H_

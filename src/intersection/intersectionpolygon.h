@@ -8,13 +8,12 @@
 #ifndef INTERSECTIONPOLYGON_H_
 #define INTERSECTIONPOLYGON_H_
 
-#include "intersectionpoint.h"
-#include "prolongation.h"
 #include "system/system.hh"
-#include "mesh/mesh.h"
-#include <queue>
 
 namespace computeintersection{
+
+//forwward declare
+template<unsigned int, unsigned int> class IntersectionPoint;
 
     /**
      * IntersectionPolygon represents a polygon from computing intersection of a triangle(Simplex<2>) and a tetrahedron(Simplex<3>)
@@ -25,38 +24,57 @@ class IntersectionPolygon {
 
 	/// Can be replaced with global epsilon
 	static const double epsilon;
-	bool is_patological_;
+	bool pathologic_;                               ///< Pathologic flag. True if one or more ips are.
+    
+	std::vector<IntersectionPoint<2,3>> i_points_;  ///< Intersection points 2d-3d.
+	unsigned int element_2D_idx;                    ///< Index of 2d element.
+	unsigned int element_3D_idx;                    ///< Index of 3d element.
 
-	std::vector<IntersectionPoint<2,3>> i_points;
+    /// Optimized polygon tracing.
+    void trace_polygon_opt(std::vector<unsigned int> &prolongation_table);
 
-	unsigned int element_2D_idx;
-	unsigned int element_3D_idx;
-
+    /** General polygon tracing (also resolves pathologic cases). 
+     * TODO: link for wikipedia
+     */
+    void trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table);
+    
+    double convex_hull_cross(const IntersectionPoint<2,3> &O,
+                             const IntersectionPoint<2,3> &A,
+                             const IntersectionPoint<2,3> &B) const;
+                             
+//     /**
+//      * @return index of prolongation table for two points, which are on same line of triangle or side of tetrahedron
+//      */
+//     int convex_hull_prolongation_side(const IntersectionPoint<2,3> &A,
+//                                       const IntersectionPoint<2,3> &B) const;
+                                      
+    /**
+     * @return index of side of tetrahedron - if tetrahedron has polygon on it
+     */
+    int side_content_prolongation() const;
+    
 public:
-	IntersectionPolygon();
-	~IntersectionPolygon();
+	IntersectionPolygon();  ///< Default constructor.
+	~IntersectionPolygon(); ///< Destructor.
 
+    /** Constructor taking in element indices.
+     */
 	IntersectionPolygon(unsigned int elem2D,unsigned int elem3D);
 
-	/**
-	 * @param InPoint - other point of polygon inserting into the array
+	/** Adds new intersection point.
+	 * @param i_point - intersection point to be added.
 	 */
-	void add_ipoint(const IntersectionPoint<2,3> &InPoint);
+	void add_ipoint(const IntersectionPoint<2,3> &i_point);
 
-	inline bool is_patological(){
-		return is_patological_;
-	};
+    /// Returns true if the polygon is a pathologic case; false otherwise.
+    bool is_pathologic() const;
 
-	inline const IntersectionPoint<2,3> &get_point(const unsigned int index) const
-	{
-		 return i_points[index];
-	}
+    /// Returns intersection point of given @p index.
+    const IntersectionPoint<2,3> &operator[](unsigned int index) const;
 
-	inline unsigned int size(){
-		return i_points.size();
-	}
-	inline unsigned int idx_2D(){return element_2D_idx;}
-	inline unsigned int idx_3D(){return element_3D_idx;}
+    unsigned int size() const;          ///< Returns number of intersection points.
+    unsigned int ele_2d_idx() const;    ///< Returns index of 2d element.
+    unsigned int ele_3d_idx() const;    ///< Returns index of 3d element.
 
 	/** method compute local polygon area from barycentric coordinates
 	 * @return double computed local area
@@ -79,32 +97,29 @@ public:
 	 * otherwise by optimize method
 	 * it fills prolongation table
 	 */
-	void trace_generic_polygon(std::vector<unsigned int> &prolongation_table);
+	void trace_polygon(std::vector<unsigned int> &prolongation_table);
 
-	void trace_polygon_opt(std::vector<unsigned int> &prolongation_table);
-
-	/// TODO: link for wikipedia
-	void trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table);
-
-	double convex_hull_cross(const IntersectionPoint<2,3> &O,
-			const IntersectionPoint<2,3> &A,
-			const IntersectionPoint<2,3> &B) const;
-
-	/**
-	 * @return index of prolongation table for two points, which are on same line of triangle or side of tetrahedron
-	 */
-	int convex_hull_prolongation_side(const IntersectionPoint<2,3> &A,
-			const IntersectionPoint<2,3> &B) const;
-
-	/**
-	 * @return index of side of tetrahedron - if tetrahedron has polygon on it
-	 */
-	int side_content_prolongation() const;
-    
     /// Friend output operator.
     friend std::ostream& operator<<(std::ostream& os, const IntersectionPolygon& polygon);
 };
 
+/********************************************* IMPLEMENTATION ***********************************************/
+
+inline bool IntersectionPolygon::is_pathologic() const
+{   return pathologic_; }
+
+inline const IntersectionPoint< 2, 3 >& IntersectionPolygon::operator[](unsigned int index) const
+{   ASSERT(index < i_points_.size(), "Index out of bounds.");
+    return i_points_[index]; }
+
+inline unsigned int IntersectionPolygon::size() const
+{   return i_points_.size(); }
+
+inline unsigned int IntersectionPolygon::ele_2d_idx() const
+{   return element_2D_idx; }
+
+inline unsigned int IntersectionPolygon::ele_3d_idx() const
+{   return element_3D_idx; }
 
 } // END NAMESPACE
 #endif /* INTERSECTIONPOLYGON_H_ */

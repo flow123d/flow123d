@@ -5,7 +5,10 @@
 #include "computeintersection.h"
 #include "mesh/ref_element.hh"
 #include "system/system.hh"
+
+#include "plucker.h"
 #include "intersectionpoint.h"
+#include "intersectionpolygon.h"
 
 using namespace std;
 namespace computeintersection{
@@ -375,28 +378,28 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
             && CI12[side].compute(IP12s, true)){    // compute; if intersection exists then continue
 			//xprintf(Msg,"Prunik13\n");
 
-			if(IP12s.back().is_patological()){   // resolve pathologic cases
+			if(IP12s.back().is_pathologic()){   // resolve pathologic cases
 				// Nastavování stěn, které se už nemusí počítat
 
                 //TODO depends on reference element
 				if(side == 0){
-					if(IP12s.back().get_local_coords2()[0] == 1){
+					if(IP12s.back().local_coords2()[0] == 1){
 						CI12[1].set_computed();
 						CI12[2].set_computed();
-					}else if(IP12s.back().get_local_coords2()[1] == 1){
+					}else if(IP12s.back().local_coords2()[1] == 1){
 						CI12[1].set_computed();
 						CI12[3].set_computed();
-					}else if(IP12s.back().get_local_coords2()[2] == 1){
+					}else if(IP12s.back().local_coords2()[2] == 1){
 						CI12[2].set_computed();
 						CI12[3].set_computed();
 					}else{
-						CI12[IP12s.back().get_side2() + 1].set_computed();
+						CI12[IP12s.back().side_idx2() + 1].set_computed();
 					}
-				}else if(side == 1 && IP12s.back().get_local_coords2()[2] == 1){
+				}else if(side == 1 && IP12s.back().local_coords2()[2] == 1){
 					CI12[2].set_computed();
 					CI12[3].set_computed();
 				}else{
-					CI12[IP12s.back().get_side2() + 1].set_computed();
+					CI12[IP12s.back().side_idx2() + 1].set_computed();
 				}
 			}
 			
@@ -410,7 +413,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 
 	// Kontrola vytvořených průniků => zda-li není potřeba interpolovat + zda-li se o prunik vubec nejedna:
 	if(pocet_pruniku == 1){
-		double f_theta = IP13s[IP13s.size()-1].get_local_coords1()[1];
+		double f_theta = IP13s[IP13s.size()-1].local_coords1()[1];
 		if(f_theta > 1 || f_theta < 0){
 			pocet_pruniku = 0;
 			IP13s.pop_back();
@@ -421,7 +424,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
         // swap the ips in the line coordinate direction (0->1 : a1->a2)
         IntersectionPoint<1,3> *a1, *a2;
         double t1, t2;
-        if(IP13s[IP13s.size()-2].get_local_coords1()[1] > IP13s[IP13s.size()-1].get_local_coords1()[1])
+        if(IP13s[IP13s.size()-2].local_coords1()[1] > IP13s[IP13s.size()-1].local_coords1()[1])
         {
             a1 = &(IP13s[IP13s.size()-1]);
             a2 = &(IP13s[IP13s.size()-2]);
@@ -432,8 +435,8 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
             a2 = &(IP13s[IP13s.size()-1]);
         }
         // get first and second theta (coordinate of ips on the line)
-        t1 = a1->get_local_coords1()[1];
-        t2 = a2->get_local_coords1()[1];
+        t1 = a1->local_coords1()[1];
+        t2 = a2->local_coords1()[1];
         
         // cut off the line by the abscissa points
         if(t1 < 0) t1 = 0;
@@ -448,27 +451,27 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
         
         if(t1 == 0) // interpolate IP a1
         {
-            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1->get_local_coords2(), 
-                                                                                              a2->get_local_coords2(), 
-                                                                                              a1->get_local_coords1()[1],
-                                                                                              a2->get_local_coords1()[1], 
+            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1->local_coords2(), 
+                                                                                              a2->local_coords2(), 
+                                                                                              a1->local_coords1()[1],
+                                                                                              a2->local_coords1()[1], 
                                                                                               t1);
             arma::vec::fixed<2> inter({1 - t1, t1});    // barycentric coords
             a1->set_coordinates(inter,interpolovane);
-//             a1->set_topology_EE(unset_loc_idx, a1->is_patological());  // edge index is set later
-            a1->set_topology(unset_loc_idx, unset_loc_idx, a1->get_orientation(), a1->is_patological());
+//             a1->set_topology_EE(unset_loc_idx, a1->is_pathologic());  // edge index is set later
+            a1->set_topology(unset_loc_idx, unset_loc_idx, a1->orientation(), a1->is_pathologic());
         }
         if(t2 == 1) // interpolate IP a2
         {
-            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1->get_local_coords2(), 
-                                                                                              a2->get_local_coords2(), 
-                                                                                              a1->get_local_coords1()[1],
-                                                                                              a2->get_local_coords1()[1], 
+            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1->local_coords2(), 
+                                                                                              a2->local_coords2(), 
+                                                                                              a1->local_coords1()[1],
+                                                                                              a2->local_coords1()[1], 
                                                                                               t2);
             arma::vec::fixed<2> inter({1 - t2, t2});      // barycentric coords
             a2->set_coordinates(inter,interpolovane);
-//             a2->set_topology_EE(unset_loc_idx, a2->is_patological());  // edge index is set later
-            a2->set_topology(unset_loc_idx, unset_loc_idx, a2->get_orientation(), a2->is_patological());
+//             a2->set_topology_EE(unset_loc_idx, a2->is_pathologic());  // edge index is set later
+            a2->set_topology(unset_loc_idx, unset_loc_idx, a2->orientation(), a2->is_pathologic());
         }
     }
     return pocet_pruniku;
@@ -603,7 +606,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 		if(CI12[i].compute(IP12s, false)){
 			IP12s.back().set_side1(i);
             //TODO unit test this condition - possibly remove
-			if((IP12s.back().get_local_coords1())[0] <= 1 && (IP12s.back().get_local_coords1())[0] >= 0){
+			if((IP12s.back().local_coords1())[0] <= 1 && (IP12s.back().local_coords1())[0] >= 0){
 // 				DBGMSG("CI23: number of 1-2 intersections = %d\n",pocet_pruniku);
 				IntersectionPoint<2,1> IP21(IP12s.back());
 				IntersectionPoint<2,3> IP23(IP21);

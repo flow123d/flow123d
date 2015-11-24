@@ -7,6 +7,18 @@
 
 #include "inspectelements.h"
 #include "prolongation.h"
+#include "intersectionpoint.h"
+#include "intersectionline.h"
+#include "intersectionpolygon.h"
+#include "computeintersection.h"
+
+#include "system/sys_profiler.hh"
+
+#include "mesh/mesh.h"
+#include "mesh/bih_tree.hh"
+
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/abscissa.h"
 
 namespace computeintersection {
 
@@ -93,7 +105,7 @@ void InspectElements::compute_intersections<1,3>(){
 					IntersectionLine il(elm->index(), ele->index());
 					ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
 					CI_13.init();
-					CI_13.compute(il.get_points());
+					CI_13.compute(il.points());
 
 					if(il.size() > 1){
 						closed_elements[elm->index()] = true;
@@ -121,7 +133,7 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
 
 		if(il[i].is_vertex()){
 
-			SideIter elm_side = elm->side((unsigned int)(1-il[i].get_local_coords1()[0])); //ele->side(3-stena);
+			SideIter elm_side = elm->side((unsigned int)(1-il[i].local_coords1()[0])); //ele->side(3-stena);
 			Edge *edg = elm_side->edge();
 			for(int j=0; j < edg->n_sides;j++) {
 
@@ -136,7 +148,7 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
 			}
 		}else{
 
-			SideIter elm_side = ele->side((unsigned int)(3-il[i].get_side2())); //ele->side(3-stena);
+			SideIter elm_side = ele->side((unsigned int)(3-il[i].side_idx2())); //ele->side(3-stena);
 			Edge *edg = elm_side->edge();
 			for(int j=0; j < edg->n_sides;j++) {
 
@@ -188,7 +200,7 @@ void InspectElements::compute_intersections<2,3>(){
 
 							//nalezen = true;
 							std::vector<unsigned int> prolongation_table;
-							il.trace_generic_polygon(prolongation_table);
+							il.trace_polygon(prolongation_table);
 							//il.printTracingTable();
 
 							{ START_TIMER("Prochazeni vsech front");
@@ -261,7 +273,7 @@ void InspectElements::prolongate_1D_element(const ElementFullIter &elm, const El
 	IntersectionLine il(elm->index(), ele->index());
 	ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
 	CI_13.init();
-	CI_13.compute(il.get_points());
+	CI_13.compute(il.points());
 
 	if(il.size() > 1){
 		intersection_line_list[elm->index()].push_back(il);
@@ -280,7 +292,7 @@ void InspectElements::prolongate(const ProlongationPoint &pp){
 	IntersectionLine il(elm->index(), ele->index());
 	ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
 	CI_13.init();
-	CI_13.compute(il.get_points());
+	CI_13.compute(il.points());
 
 	if(il.size() > 1){
 		intersection_line_list[elm->index()].push_back(il);
@@ -402,7 +414,7 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 	if(intersection_list[pl.elm_2D_idx][pl.dictionary_idx].size() > 2){
 
 		std::vector<unsigned int> prolongation_table;
-		intersection_list[pl.elm_2D_idx][pl.dictionary_idx].trace_generic_polygon(prolongation_table);
+		intersection_list[pl.elm_2D_idx][pl.dictionary_idx].trace_polygon(prolongation_table);
 		computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
 	}
 };
@@ -414,7 +426,7 @@ bool InspectElements::intersectionExists(unsigned int elm_2D_idx, unsigned int e
 
 	for(unsigned int i = 0; i < intersection_list[elm_2D_idx].size();i++){
 
-		if(intersection_list[elm_2D_idx][i].idx_3D() == elm_3D_idx){
+		if(intersection_list[elm_2D_idx][i].ele_3d_idx() == elm_3D_idx){
 			found = true;
 			break;
 		}
@@ -477,24 +489,24 @@ void InspectElements::print_mesh_to_file(string name){
 
 				IntersectionPolygon il = intersection_list[j][k];
 
-				ElementFullIter el2D = mesh->element(il.idx_2D());
-				ElementFullIter el3D = mesh->element(il.idx_3D());
+				ElementFullIter el2D = mesh->element(il.ele_2d_idx());
+				ElementFullIter el3D = mesh->element(il.ele_3d_idx());
 
 
 				for(unsigned int l = 0; l < il.size(); l++){
 					//xprintf(Msg, "first\n");
 					number_of_nodes++;
-					IntersectionPoint<2,3> IP23 = il.get_point(l);
+					IntersectionPoint<2,3> IP23 = il[l];
 					arma::vec3 _global;
 					if(i == 0){
-						_global = (IP23.get_local_coords1())[0] * el2D->node[0]->point()
-														   +(IP23.get_local_coords1())[1] * el2D->node[1]->point()
-														   +(IP23.get_local_coords1())[2] * el2D->node[2]->point();
+						_global = (IP23.local_coords1())[0] * el2D->node[0]->point()
+														   +(IP23.local_coords1())[1] * el2D->node[1]->point()
+														   +(IP23.local_coords1())[2] * el2D->node[2]->point();
 					}else{
-						_global = (IP23.get_local_coords2())[0] * el3D->node[0]->point()
-														   +(IP23.get_local_coords2())[1] * el3D->node[1]->point()
-														   +(IP23.get_local_coords2())[2] * el3D->node[2]->point()
-														   +(IP23.get_local_coords2())[3] * el3D->node[3]->point();
+						_global = (IP23.local_coords2())[0] * el3D->node[0]->point()
+														   +(IP23.local_coords2())[1] * el3D->node[1]->point()
+														   +(IP23.local_coords2())[2] * el3D->node[2]->point()
+														   +(IP23.local_coords2())[3] * el3D->node[3]->point();
 					}
 					fprintf(file,"%d %f %f %f\n", number_of_nodes, _global[0], _global[1], _global[2]);
 				}
@@ -602,24 +614,24 @@ void InspectElements::print_mesh_to_file_1D(string name){
 				IntersectionLine il = intersection_line_list[j][k];
 				//xprintf(Msg, "Zde3.2\n");
 				//xprintf(Msg, "el %d %d\n", il.get_elm1D_idx(), il.get_elm3D_idx());
-				ElementFullIter el1D = mesh->element(il.get_elm1D_idx());
-				ElementFullIter el3D = mesh->element(il.get_elm3D_idx());
+				ElementFullIter el1D = mesh->element(il.ele_1d_idx());
+				ElementFullIter el3D = mesh->element(il.ele_3d_idx());
 				//xprintf(Msg, "Zde3.3\n");
 
 				for(unsigned int l = 0; l < il.size(); l++){
 					//xprintf(Msg, "Zde3.4\n");
 					//xprintf(Msg, "first\n");
 					number_of_nodes++;
-					IntersectionPoint<1,3> IP13 = il.get_point(l);
+					IntersectionPoint<1,3> IP13 = il[l];
 					arma::vec3 _global;
 					if(i == 0){
-						_global = (IP13.get_local_coords1())[0] * el1D->node[0]->point()
-														   +(IP13.get_local_coords1())[1] * el1D->node[1]->point();
+						_global = (IP13.local_coords1())[0] * el1D->node[0]->point()
+														   +(IP13.local_coords1())[1] * el1D->node[1]->point();
 					}else{
-						_global = (IP13.get_local_coords2())[0] * el3D->node[0]->point()
-														   +(IP13.get_local_coords2())[1] * el3D->node[1]->point()
-														   +(IP13.get_local_coords2())[2] * el3D->node[2]->point()
-														   +(IP13.get_local_coords2())[3] * el3D->node[3]->point();
+						_global = (IP13.local_coords2())[0] * el3D->node[0]->point()
+														   +(IP13.local_coords2())[1] * el3D->node[1]->point()
+														   +(IP13.local_coords2())[2] * el3D->node[2]->point()
+														   +(IP13.local_coords2())[3] * el3D->node[3]->point();
 					}
 					//xprintf(Msg, "Zde3.5\n");
 					fprintf(file,"%d %f %f %f\n", number_of_nodes, _global[0], _global[1], _global[2]);
@@ -696,7 +708,7 @@ double InspectElements::polygonArea()
 
     for(unsigned int i = 0; i < intersection_list.size(); i++){
         for(unsigned int j = 0; j < intersection_list[i].size();j++){
-            Element efi = *mesh->element(intersection_list[i][j].idx_2D());
+            Element efi = *mesh->element(intersection_list[i][j].ele_2d_idx());
              TTriangle t2d(efi);
              double t2dArea = t2d.GetArea();
              double localArea = intersection_list[i][j].get_area();//il.getArea();
@@ -712,7 +724,7 @@ double InspectElements::line_length()
 
     for(unsigned int i = 0; i < intersection_line_list.size(); i++){
         for(unsigned int j = 0; j < intersection_line_list[i].size();j++){
-            Element efi = *mesh->element(intersection_line_list[i][j].get_elm1D_idx());
+            Element efi = *mesh->element(intersection_line_list[i][j].ele_1d_idx());
             TAbscissa t1d(efi);
             double t1d_length = t1d.Length();
             DBGMSG("t1d length %f\n",t1d_length);

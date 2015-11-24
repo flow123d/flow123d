@@ -14,12 +14,12 @@ namespace computeintersection{
 
 template<unsigned int N, unsigned int M>
 void IntersectionPoint<N,M>::clear()
-{   local_coords1.zeros();
-    local_coords2.zeros();
-    side_idx1 = -1;
-    side_idx2 = -1;
-    orientation = 1;
-    is_patological_ = false;
+{   local_coords1_.zeros();
+    local_coords2_.zeros();
+    side_idx1_ = unset_loc_idx;
+    side_idx2_ = unset_loc_idx;
+    orientation_ = 1;
+    pathologic_ = false;
 }
 
 template<unsigned int N, unsigned int M>
@@ -31,18 +31,18 @@ IntersectionPoint<N,M>::IntersectionPoint()
 template<unsigned int N, unsigned int M>    
 IntersectionPoint<N,M>::IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
                                           const arma::vec::fixed<M+1> &lc2)
-    : local_coords1(lc1), local_coords2(lc2)
+    : local_coords1_(lc1), local_coords2_(lc2)
     {};
 
 
 template<unsigned int N, unsigned int M>
 IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
-        local_coords1 = IP.get_local_coords2();
-        local_coords2 = IP.get_local_coords1();
-        side_idx1 = IP.get_side2();
-        side_idx2 = IP.get_side1();
-        orientation = IP.get_orientation();
-        is_patological_ = IP.is_patological();
+        local_coords1_ = IP.local_coords2();
+        local_coords2_ = IP.local_coords1();
+        side_idx1_ = IP.side_idx2();
+        side_idx2_ = IP.side_idx1();
+        orientation_ = IP.orientation();
+        pathologic_ = IP.is_pathologic();
     };
 
 
@@ -50,12 +50,12 @@ template<unsigned int N, unsigned int M>
 IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP){
     ASSERT(M>1 && M<4,"Wrong the second dimension in an IntersectionPoint (allowed 2 and 3 only)");
     
-    local_coords1 = IP.get_local_coords1();
-    local_coords2 = RefElement<M>::template interpolate<M-1>(IP.get_local_coords2(), IP.get_side2());
-    side_idx1 = IP.get_side1();
-    side_idx2 = IP.get_side2();
-    orientation = IP.get_orientation();
-    is_patological_ = IP.is_patological();
+    local_coords1_ = IP.local_coords1();
+    local_coords2_ = RefElement<M>::template interpolate<M-1>(IP.local_coords2(), IP.side_idx2());
+    side_idx1_ = IP.side_idx1();
+    side_idx2_ = IP.side_idx2();
+    orientation_ = IP.orientation();
+    pathologic_ = IP.is_pathologic();
 };
 
 
@@ -63,28 +63,28 @@ template<unsigned int N, unsigned int M>
 IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP){
     ASSERT(M == 3,"Wrong the second dimension in an IntersectionPoint (allowed 3 only)");
 
-    local_coords1 = IP.get_local_coords1();
-    local_coords2 = RefElement<3>::interpolate<1>(IP.get_local_coords2(), IP.get_side2());
-    side_idx1 = IP.get_side1();
-    side_idx2 = IP.get_side2();
-    orientation = IP.get_orientation();
-    is_patological_ = IP.is_patological();
+    local_coords1_ = IP.local_coords1();
+    local_coords2_ = RefElement<3>::interpolate<1>(IP.local_coords2(), IP.side_idx2());
+    side_idx1_ = IP.side_idx1();
+    side_idx2_ = IP.side_idx2();
+    orientation_ = IP.orientation();
+    pathologic_ = IP.is_pathologic();
 };
 
     
 template<> bool IntersectionPoint<2,3>::operator<(const IntersectionPoint<2,3> &ip) const{
-	return local_coords1[1] < ip.get_local_coords1()[1] ||
-		(fabs((double)(local_coords1[1] - ip.get_local_coords1()[1])) < 0.00000001 &&
-		 local_coords1[2] < ip.get_local_coords1()[2]);
+	return local_coords1_[1] < ip.local_coords1()[1] ||
+		(fabs((double)(local_coords1_[1] - ip.local_coords1()[1])) < 0.00000001 &&
+		 local_coords1_[2] < ip.local_coords1()[2]);
 };
 
 template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPoint< N,M >& s)
 {
-    os << "Local coords on the first element on side(" << s.side_idx1 << ")" << endl;
-    s.local_coords1.print(os);
-    os << "Local coords on the second element on side(" << s.side_idx2 << ")" << endl;
-    s.local_coords2.print(os);
-    os << "Orientation: " << s.orientation << " Patological: " << s.is_patological_ << endl;
+    os << "Local coords on the first element on side(" << s.side_idx1_ << ")" << endl;
+    s.local_coords1_.print(os);
+    os << "Local coords on the second element on side(" << s.side_idx2_ << ")" << endl;
+    s.local_coords2_.print(os);
+    os << "Orientation: " << s.orientation_ << " Patological: " << s.pathologic_ << endl;
     return os;
 }
 
