@@ -26,11 +26,14 @@
 
 #include <fstream>
 #include <string>
+#include <map>
+#include <stdint.h>
 #include "mpi.h"
 
 #include "system/system.hh"
 #include "system/xio.h"
 #include "system/file_path.hh"
+#include "system/sys_profiler.hh"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -258,26 +261,51 @@ void operator delete[]( void *p,  const my_new_t &) throw ()
 }
 */
 
+static map<long, int> malloc_map;
+
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-    return xmalloc(size);
+	if (Profiler::is_initialized())
+		Profiler::instance()->notify_malloc(size);
+
+	void * p = xmalloc(size);
+	// cout << "Malloc  " << sizeof(p) << endl;
+	return p;
 }
 
 void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-    return xmalloc(size);
+	if (Profiler::is_initialized())
+		Profiler::instance()->notify_malloc(size);
+		
+	void * p = xmalloc(size);
+	malloc_map[(long)p] = static_cast<int>(size);
+	// cout << "Malloc[] " << sizeof(p) << endl;
+	return p;
 }
 
 void *operator new[] (std::size_t size, const std::nothrow_t&  ) throw() {
-	return xmalloc(size);
+	if (Profiler::is_initialized())
+		Profiler::instance()->notify_malloc(size);
+		
+	void * p = xmalloc(size);
+	malloc_map[(long)p] = static_cast<int>(size);
+	// cout << "Malloc[]2" << sizeof(p) << endl;
+	return p;
 }
 
-void operator delete( void *p) throw()
-{
-    xfree(p);
+void operator delete( void *p) throw() {
+	if (Profiler::is_initialized())
+		Profiler::instance()->notify_free(sizeof(p));
+		
+	// cout << "Dealloc  " << sizeof(p) << endl;
+	xfree(p);
 }
 
-void operator delete[]( void *p) throw()
-{
-    xfree(p);
+void operator delete[]( void *p) throw() {
+	if (Profiler::is_initialized())
+		Profiler::instance()->notify_free(malloc_map[(long)p]);
+		
+	// cout << "Dealloc[] " << malloc_map[(long)p] << endl;
+	xfree(p);
 }
 
 
