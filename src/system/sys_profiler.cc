@@ -312,7 +312,6 @@ void Profiler::add_calls(unsigned int n_calls) {
 }
 
 
-
 void Profiler::notify_malloc(const size_t size) {
     timers_[actual_node].total_allocated_ += size;
 }
@@ -430,7 +429,9 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
         double cumul_time = timer.cumulative_time () / 1000;
-        double cumul_time_sum;
+        double memory_allocated = (double)timer.total_allocated_;
+        double memory_deallocated = (double)timer.total_deallocated_;
+        double cumul_time_sum, memory_allocated_sum, memory_deallocated_sum;
 
         node.put ("call-count", call_count);
         node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
@@ -443,6 +444,21 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         node.put ("cumul-time-min", boost::format("%1.9f") % MPI_Functions::min(&cumul_time, comm));
         node.put ("cumul-time-max", boost::format("%1.9f") % MPI_Functions::max(&cumul_time, comm));
         node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time_sum);
+        
+        memory_allocated_sum = MPI_Functions::sum(&memory_allocated, comm);
+        
+        node.put ("memory-alloc",     (long) memory_allocated);
+        node.put ("memory-alloc-min", boost::format("%1.9f") % MPI_Functions::min(&memory_allocated, comm));
+        node.put ("memory-alloc-max", boost::format("%1.9f") % MPI_Functions::max(&memory_allocated, comm));
+        node.put ("memory-alloc-sum", boost::format("%1.9f") % memory_allocated_sum);
+        
+        memory_deallocated_sum = MPI_Functions::sum(&memory_deallocated, comm);
+        
+        node.put ("memory-dealloc",     (long) memory_deallocated);
+        node.put ("memory-dealloc-min", boost::format("%1.9f") % MPI_Functions::min(&memory_deallocated, comm));
+        node.put ("memory-dealloc-max", boost::format("%1.9f") % MPI_Functions::max(&memory_deallocated, comm));
+        node.put ("memory-dealloc-sum", boost::format("%1.9f") % memory_deallocated_sum);
+        
         return cumul_time_sum;
     };
 
@@ -504,6 +520,8 @@ void Profiler::output(ostream &os) {
     // non-MPI implementation is just dummy repetition of initial value
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
+        long memory_allocated = (long)timer.total_allocated_;
+        long memory_deallocated = (long)timer.total_deallocated_;
         double cumul_time = timer.cumulative_time () / 1000;
 
         node.put ("call-count",     call_count);
@@ -515,6 +533,17 @@ void Profiler::output(ostream &os) {
         node.put ("cumul-time-min", boost::format("%1.9f") % cumul_time);
         node.put ("cumul-time-max", boost::format("%1.9f") % cumul_time);
         node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time);
+        
+        node.put ("memory-alloc",     memory_allocated);
+        node.put ("memory-alloc-min", memory_allocated);
+        node.put ("memory-alloc-max", memory_allocated);
+        node.put ("memory-alloc-sum", memory_allocated);
+        
+        node.put ("memory-dealloc",      memory_deallocated);
+        node.put ("memory-dealloc-min",  memory_deallocated);
+        node.put ("memory-dealloc-max",  memory_deallocated);
+        node.put ("memory-dealloc-sum",  memory_deallocated);
+        
         return cumul_time;
     };
 
