@@ -84,6 +84,7 @@
 #define REF_ELEMENT_HH_
 
 #include <armadillo>
+#include "system/system.hh"
 
 /*
  * Ordering of nodes and sides in reference elements
@@ -131,11 +132,28 @@
  *                             2        [0,1,0]            2        [0,1,0,0]
  *                                                         3        [0,0,1,0]
  */
+
+/** Auxilliary class representing vector of indices (unsigned int).
+ * @tparam Size is the fixed size of the vector.
+ */
+template<unsigned int Size>
+class IdxVector{
+    unsigned int data_[Size];   ///< Array with indices.
+    
+    public:
+        /// Constructor taking in array of indices.
+        IdxVector(std::array<unsigned int,Size> data_in);
+        /// Constructor enabling creating object with initializer list {...}.
+        IdxVector(std::initializer_list<unsigned int> data_in);
+        /// Getter for index @p idx.
+        unsigned int operator[](unsigned int idx) const;
+};
+
 template<unsigned int dim>
 class RefElement
 {
 public:
-
+        
 	/**
 	 * Return coordinates of given node.
      * @see the class documentation @p RefElement
@@ -193,55 +211,37 @@ public:
 	 */
 	static const unsigned int n_nodes_per_side = dim;
 
+    /**
+     * Number of lines that go through one vertex.
+     */
+    static const unsigned int n_lines_per_node = dim;
+    
 	/// Number of lines on boundary of one side.
 	static const unsigned int n_lines_per_side = (unsigned int)((dim * (dim - 1)) / 2);//( dim == 3 ? 3 : 0);// Kombinační číslo dim nad dvěma
 
 	/// Number of lines, i.e. @p object of dimension @p dim-2 on the boundary of the reference element.
 	static const unsigned int n_lines = (unsigned int)((dim * (dim + 1)) / 2); //( dim == 3 ? 6 : dim == 2 ? 3 : dim == 1 ? 1 : 0); součet posloupnosti
 
-    /**
-     *  TODO replace side_nodes, side lines, line nodes, line sides with templates:
-     * idea:
-     * N - dimension of leading object
-     * M - dimension of following object
-     * N,M <= dim
-     * returns indices on the dim-object
-     * template<unsigned int N, unsigned int M> std::vector<unsigned int> interact(unsigned int index)
-     * 
-     * 
-     * examples:
-     *  dim    N       M
-     * 1,2,3   0       1       - give me indices of nodes of line of given index
-     *   2,3   0       2       - give me indices of nodes of triangle of given index
-     *   3     0       3       - give me indices of nodes of tetrahedron of given index (for completness)  
-     * 
-     *   2,3   1       2       - give me indices of lines of triangle of given index
-     *   3     1       3       - give me indices of lines of tetrahedron of given index (for completness)
-     * 
-     *   3     2       1       - give me indices of triangles with common line of given index
-     *   3     2       0       - give me indices of triangles with common vertex of given index
-     *   3     2       1       - give me indices of triangles in which the line of given index
-     */
     
-	/**
-	 * Node numbers for each side.
-	 */
-	static const unsigned int side_nodes[n_sides][n_nodes_per_side];
-
-	/**
-	 * Indices of 1D lines of the 2D sides of an tetrahedron. Nonempty only for @p dim==3.
-	 */
-	static const unsigned int side_lines[n_sides][n_lines_per_side];
-
-	/**
-	 * Nodes of 1D lines of the tetrahedron.
-	 */
-    static const unsigned int line_nodes[n_lines][2];
-    
-    /**
-     * Indices of sides for each line. Nonempty only for @p dim==3 and @p dim==2.
-     */
-    static const unsigned int line_sides[n_lines][2];
+// 	/**
+// 	 * Node numbers for each side.
+// 	 */
+// 	static const unsigned int side_nodes[n_sides][n_nodes_per_side];
+// 
+// 	/**
+// 	 * Indices of 1D lines of the 2D sides of an tetrahedron. Nonempty only for @p dim==3.
+// 	 */
+// 	static const unsigned int side_lines[n_sides][n_lines_per_side];
+// 
+// 	/**
+// 	 * Nodes of 1D lines of the tetrahedron.
+// 	 */
+//     static const unsigned int line_nodes[n_lines][2];
+//     
+//     /**
+//      * Indices of sides for each line. Nonempty only for @p dim==3 and @p dim==2.
+//      */
+//     static const unsigned int line_sides[n_lines][2];
 
 	/**
 	 * Number of permutations of nodes on sides.
@@ -289,6 +289,36 @@ public:
                                                                   arma::vec::fixed<dim+1> second_coords, 
                                                                   double first_theta, double second_theta, double theta);
 
+    /**
+     * This method serves as an interface to topology information of the reference element.
+     * It returns indices of OutDim-dimensional object
+     * of InDim-dimnesional object of given index
+     * in dim-dimnesional reference element.
+     * @tparam OutDim - output dimension (give me node-0, line-1, side-2), <= dim
+     * @tparam InDim - input dimension (for node-0, line-1, side-2), <= dim
+     * @return vector of indices represented by @p IdxVector object.
+     * 
+     * possible calls:
+     *  dim    OutDim  InDim  return
+     * 1,2,3   0       1      InDim+1   - give me indices of nodes of line of given index
+     *   3     0       2      InDim+1   - give me indices of nodes of a side (triangle) of given index
+     *   3     1       2      InDim+1   - give me indices of lines of side (triangle) of given index
+     *                               
+     * 1,2,3   1       0     dim-InDim  - give me indices of lines with common node of given index
+     *   3     2       0     dim-InDim  - give me indices of sides (triangles) with common node of given index
+     *   3     2       1     dim-InDim  - give me indices of sides (triangles) with common line of given index 
+     * 
+     */
+    template<unsigned int OutDim, unsigned int InDim> 
+    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact(unsigned int index);
+    
+private:
+    static const IdxVector<2>                line_nodes_[n_lines]; ///< For given line, returns its nodes indices.
+    static const IdxVector<n_lines_per_node> node_lines_[n_nodes]; ///< For given node, returns lines indices.
+    static const IdxVector<n_nodes_per_side> side_nodes_[n_sides]; ///< For given node, returns lines indices. For @p dim == 3.
+    static const IdxVector<n_nodes_per_side> node_sides_[n_nodes]; ///< For given node, returns lines indices. For @p dim == 3.
+    static const IdxVector<2>                line_sides_[n_lines]; ///< For given node, returns lines indices. For @p dim == 3.
+    static const IdxVector<3>                side_lines_[n_sides]; ///< For given node, returns lines indices. For @p dim == 3.
 };
 
 
@@ -321,5 +351,67 @@ arma::vec::fixed<dim+1> RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> 
     return sum;
 };
     
+
+
+template <unsigned int Size>
+IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)
+: data_(data_in){}
+
+template <unsigned int Size>
+IdxVector<Size>::IdxVector(std::initializer_list<unsigned int> data_in)
+{
+    ASSERT(data_in.size() == Size, "Incorrect data size.");
+    std::copy(data_in.begin(), data_in.end(), data_);
+}
+
+template <unsigned int Size>
+inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
+{   ASSERT(idx < Size, "Index out of bounds.");
+    return data_[idx]; }
+    
+
+
+template<> template<> inline const IdxVector<2> RefElement<1>::interact<0,1>(unsigned int i)
+{   ASSERT(i < RefElement<1>::n_lines, "Index out of bounds.");
+    return line_nodes_[i];}
+
+template<> template<> inline const IdxVector<2> RefElement<2>::interact<0,1>(unsigned int i)
+{   ASSERT(i < RefElement<2>::n_lines, "Index out of bounds.");
+    return line_nodes_[i];}
+    
+template<> template<> inline const IdxVector<2> RefElement<3>::interact<0,1>(unsigned int i)
+{   ASSERT(i < RefElement<3>::n_lines, "Index out of bounds.");
+    return line_nodes_[i];}
+    
+    
+template<> template<> inline const IdxVector<1> RefElement<1>::interact<1,0>(unsigned int i)
+{   ASSERT(i < RefElement<1>::n_nodes, "Index out of bounds.");
+    return node_lines_[i];}
+
+template<> template<> inline const IdxVector<2> RefElement<2>::interact<1,0>(unsigned int i)
+{   ASSERT(i < RefElement<2>::n_nodes, "Index out of bounds.");
+    return node_lines_[i];}
+    
+template<> template<> inline const IdxVector<3> RefElement<3>::interact<1,0>(unsigned int i)
+{   ASSERT(i < RefElement<3>::n_nodes, "Index out of bounds.");
+    return node_lines_[i];}
+    
+
+template<> template<> inline const IdxVector<3> RefElement<3>::interact<0,2>(unsigned int i)
+{   ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
+    return side_nodes_[i];}
+
+template<> template<> inline const IdxVector<3> RefElement<3>::interact<2,0>(unsigned int i)
+{   ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
+    return node_sides_[i];}
+    
+
+template<> template<> inline const IdxVector<2> RefElement<3>::interact<2,1>(unsigned int i)
+{   ASSERT(i < RefElement<3>::n_lines, "Index out of bounds.");
+    return line_sides_[i];}
+
+template<> template<> inline const IdxVector<3> RefElement<3>::interact<1,2>(unsigned int i)
+{   ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
+    return side_lines_[i];}
     
 #endif /* REF_ELEMENT_HH_ */

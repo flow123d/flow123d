@@ -34,6 +34,83 @@
 using namespace arma;
 using namespace std;
 
+    
+    
+template<> const IdxVector<2> RefElement<1>::line_nodes_[] = {
+        {0,1}
+};
+
+template<> const IdxVector<2> RefElement<2>::line_nodes_[] = {
+        {0,1},
+        {0,2},
+        {1,2}
+};
+
+template<> const IdxVector<2> RefElement<3>::line_nodes_[] = {
+        {0,1},
+        {0,2},
+        {1,2},
+        {0,3},
+        {1,3},
+        {2,3}
+};
+
+
+template<> const IdxVector<1> RefElement<1>::node_lines_[] = {
+     {0},
+     {0}
+};
+
+template<> const IdxVector<2> RefElement<2>::node_lines_[] = {
+     {1,0},
+     {0,2},
+     {2,1}
+};
+
+//TODO: what should be the order ??
+template<> const IdxVector<3> RefElement<3>::node_lines_[] = {
+     {0,1,3},
+     {0,2,4},
+     {1,2,5},
+     {3,4,5},
+};
+
+
+//TODO: what should be the order ??
+template<> const IdxVector<3> RefElement<3>::side_nodes_[] = {
+        { 0, 1, 2 },
+        { 0, 1, 3 },
+        { 0, 2, 3 },
+        { 1, 2, 3 }
+};
+
+//TODO: what should be the order ??
+template<> const IdxVector<3> RefElement<3>::node_sides_[] = {
+        { 0, 1, 2 },
+        { 0, 1, 3 },
+        { 0, 2, 3 },
+        { 1, 2, 3 }
+};
+
+template<> const IdxVector<2> RefElement<3>::line_sides_[] = {
+     {0,1},
+     {2,0},
+     {0,3},
+     {1,2},
+     {3,1},
+     {2,3}
+};
+
+
+template<> const IdxVector<3> RefElement<3>::side_lines_[] = {
+        {0,1,2},
+        {0,3,4},
+        {1,3,5},
+        {2,4,5}
+};
+
+
+
 template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side] = { { 0 } };
 
 template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side] = { { 0, 1 }, { 1, 0 } };
@@ -48,71 +125,75 @@ template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_sid
 };
 
 
-template<> const unsigned int RefElement<1>::side_nodes[][1] = {
-		{ 0 },
-		{ 1 }
-};
-
-template<> const unsigned int RefElement<2>::side_nodes[][2] = {
-		{ 0, 1 },
-		{ 0, 2 },
-		{ 1, 2 }
-};
-
-template<> const unsigned int RefElement<3>::side_nodes[][3] = {
-		{ 0, 1, 2 },
-		{ 0, 1, 3 },
-		{ 0, 2, 3 },
-		{ 1, 2, 3 }
-};
-
-
-
-template<> const unsigned int RefElement<3>::side_lines[][3] = {
-        {0,1,2},
-        {0,3,4},
-        {1,3,5},
-        {2,4,5}
-};
-
-
-template<> const unsigned int RefElement<2>::line_nodes[][2] = {
-        {0,1},
-        {0,2},
-        {1,2}
-};
-
-template<> const unsigned int RefElement<3>::line_nodes[][2] = {
-        {0,1},
-        {0,2},
-        {1,2},
-        {0,3},
-        {1,3},
-        {2,3}
-};
-
-
-/**
- * Indexes of sides for each line - with right orientation
- */
-
-template<> const unsigned int RefElement<3>::line_sides[][2] = {
-     {0,1},
-     {2,0},
-     {0,3},
-     {1,2},
-     {3,1},
-     {2,3}
-};
-
-/**
- * Indexes of sides for each line - for Simplex<2>, with right orientation
- */
-template<> const unsigned int RefElement<2>::line_sides[][2] = {
-     {1,0},
-     {0,2},
-     {2,1}
-};
+// template<> const unsigned int RefElement<1>::side_nodes[][1] = {
+// 		{ 0 },
+// 		{ 1 }
+// };
+// 
+// template<> const unsigned int RefElement<2>::side_nodes[][2] = {
+// 		{ 0, 1 },
+// 		{ 0, 2 },
+// 		{ 1, 2 }
+// };
+// 
+// template<> const unsigned int RefElement<3>::side_nodes[][3] = {
+// 		{ 0, 1, 2 },
+// 		{ 0, 1, 3 },
+// 		{ 0, 2, 3 },
+// 		{ 1, 2, 3 }
+// };
+// 
+// 
+// 
+// template<> const unsigned int RefElement<3>::side_lines[][3] = {
+//         {0,1,2},
+//         {0,3,4},
+//         {1,3,5},
+//         {2,4,5}
+// };
+// 
+// 
+// template<> const unsigned int RefElement<1>::line_nodes[][2] = {
+//         {0,1}
+// };
+// 
+// template<> const unsigned int RefElement<2>::line_nodes[][2] = {
+//         {0,1},
+//         {0,2},
+//         {1,2}
+// };
+// 
+// template<> const unsigned int RefElement<3>::line_nodes[][2] = {
+//         {0,1},
+//         {0,2},
+//         {1,2},
+//         {0,3},
+//         {1,3},
+//         {2,3}
+// };
+// 
+// 
+// /**
+//  * Indexes of sides for each line - with right orientation
+//  */
+// 
+// template<> const unsigned int RefElement<3>::line_sides[][2] = {
+//      {0,1},
+//      {2,0},
+//      {0,3},
+//      {1,2},
+//      {3,1},
+//      {2,3}
+// };
+// 
+// /**
+//  * Indexes of sides for each line - for Simplex<2>, with right orientation
+//  */
+// template<> const unsigned int RefElement<2>::line_sides[][2] = {
+//      {1,0},
+//      {0,2},
+//      {2,1}
+// };
 
 
 template<unsigned int dim>
@@ -322,7 +403,5 @@ arma::vec::fixed<dim+1> RefElement<dim>::line_barycentric_interpolation(
 template class RefElement<1>;
 template class RefElement<2>;
 template class RefElement<3>;
-
-
 
 
