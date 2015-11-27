@@ -850,3 +850,102 @@ TEST_F(InputReaderToStorageTest, default_values) {
 }
 
 
+TEST_F(InputReaderToStorageTest, storage_transpose) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    static Type::Selection sel_type = Type::Selection("IntSelection")
+    	.add_value(10,"ten","")
+    	.add_value(1,"one","")
+    	.add_value(2,"two","")
+		.close();
+
+    static Type::Record subrec_2 = Type::Record("TransposeSubrec2","")
+		.declare_key("key_a", Type::String(), "")
+		.declare_key("key_b", Type::Bool(), "")
+		.close();
+
+    static Type::Record subrec_1 = Type::Record("TransposeSubrec1","")
+		.declare_key("one", Type::Integer(), "")
+		.declare_key("two", Type::Array( Type::Integer(),1,10 ), "")
+		.declare_key("three", subrec_2, "")
+		.declare_key("four", Type::Double(), "")
+		.declare_key("five", sel_type, "")
+		.close();
+
+    static Type::Record root_record = Type::Record("RootTransposeRec","")
+		.declare_key("set", Type::Array(subrec_1,1,3), "")
+		.declare_key("default", Type::Bool(), "")
+		.close();
+
+    {   // Try one correct type
+        stringstream ss("{ set={ one=[1,2,3], two=[2,3], three={key_a=[\"A\",\"B\",\"C\"], key_b=[false,true,false]}, "
+        		"four=[1.5, 2.5, 3.5], five=[\"one\",\"two\",\"ten\"] }, default=true }");
+        read_stream(ss, root_record);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(3,   storage_->get_item(0)->get_array_size());
+        EXPECT_TRUE(   storage_->get_item(1)->get_bool());
+        StorageBase *substorage = storage_->get_item(0)->get_item(0);
+        EXPECT_EQ(5,   substorage->get_array_size());
+        EXPECT_EQ(1,   substorage->get_item(0)->get_int());
+        EXPECT_EQ(2,   substorage->get_item(1)->get_array_size());
+        EXPECT_EQ(2,   substorage->get_item(2)->get_array_size());
+        EXPECT_EQ("A", substorage->get_item(2)->get_item(0)->get_string());
+        EXPECT_FALSE(  substorage->get_item(2)->get_item(1)->get_bool());
+        EXPECT_EQ(1.5, substorage->get_item(3)->get_double());
+        EXPECT_EQ(1,   substorage->get_item(4)->get_int());
+        substorage = storage_->get_item(0)->get_item(1);
+        EXPECT_EQ(5,   substorage->get_array_size());
+        EXPECT_EQ(2,   substorage->get_item(0)->get_int());
+        EXPECT_EQ("B", substorage->get_item(2)->get_item(0)->get_string());
+        EXPECT_TRUE(   substorage->get_item(2)->get_item(1)->get_bool());
+        EXPECT_EQ(2.5, substorage->get_item(3)->get_double());
+        EXPECT_EQ(2,   substorage->get_item(4)->get_int());
+        substorage = storage_->get_item(0)->get_item(2);
+        EXPECT_EQ(5,   substorage->get_array_size());
+        EXPECT_EQ(3,   substorage->get_item(0)->get_int());
+        EXPECT_EQ("C", substorage->get_item(2)->get_item(0)->get_string());
+        EXPECT_FALSE(  substorage->get_item(2)->get_item(1)->get_bool());
+        EXPECT_EQ(3.5, substorage->get_item(3)->get_double());
+        EXPECT_EQ(10,  substorage->get_item(4)->get_int());
+    }
+
+    {   // Try other correct type - automatic conversion to array with one element
+        stringstream ss("{ set={ one=1, two=[2,3], three={key_a=\"A\", key_b=false}, four=1.5, five=\"one\" }, default=true }");
+        read_stream(ss, root_record);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_item(0)->get_array_size());
+        StorageBase *substorage = storage_->get_item(0)->get_item(0);
+        EXPECT_EQ(5,   substorage->get_array_size());
+        EXPECT_EQ(1,   substorage->get_item(0)->get_int());
+        EXPECT_EQ(2,   substorage->get_item(1)->get_array_size());
+        EXPECT_EQ(2,   substorage->get_item(2)->get_array_size());
+        EXPECT_EQ("A", substorage->get_item(2)->get_item(0)->get_string());
+        EXPECT_FALSE(  substorage->get_item(2)->get_item(1)->get_bool());
+        EXPECT_EQ(1.5, substorage->get_item(3)->get_double());
+    }
+
+    {   // Incorrect type - empty sub-array
+    	stringstream ss("{ set={ one=[], two=[2,3], three={key_a=[\"A\",\"B\",\"C\"], key_b=false}, four=[1.5, 2.5, 3.5], five=\"one\" }, default=true }");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Empty array during transposition.");
+    }
+
+    {   // Incorrect type - unequal sizes of sub-arrays
+    	stringstream ss("{ set={ one=[1,2,3], two=[2,3], three={key_a=[\"A\",\"B\"], key_b=false}, four=[1.5, 2.5, 3.5], five=\"one\" }, default=true }");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Unequal sizes of sub-arrays during transposition");
+    }
+
+    {   // Incorrect type - transposition of Record is not allowed
+        stringstream ss("{ set={ one=[1,2], two=[2,3], three=[{key_a=\"A\", key_b=false}, {key_a=\"B\", key_b=false}], four=1.5, five=\"one\" }, default=true }");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
+    }
+
+    {   // Incorrect type - array is greater than size limit
+        stringstream ss("{ set={ one=[1,2,3,4], two=[2,3], three={key_a=\"B\", key_b=false}, four=1.5, five=\"one\" }, default=true }");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Do not fit into size limits of the Array");
+    }
+
+}
+
+
