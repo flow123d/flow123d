@@ -346,7 +346,7 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
 
 	for(unsigned int j = 0; j < 4;j++){ // for each side of tetrahedron
 		for(unsigned int i = 0; i < 3;i++){ // for each side of triangle
-			CI12[j].set_pc_triangle(plucker_coordinates_tetrahedron[RefElement<3>::side_lines[j][i]], i);
+			CI12[j].set_pc_triangle(plucker_coordinates_tetrahedron[RefElement<3>::interact<1,2>(j)[i]], i); //[RefElement<3>::side_lines[j][i]], i);
 		}
 	}
 

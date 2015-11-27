@@ -327,19 +327,14 @@ private:
 template<unsigned int dim>
 template<unsigned int subdim> 
 std::array<arma::vec::fixed<dim+1>,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
-        //ASSERT(subdim < dim, "Sub-dimension is bigger than dimension!");
+        ASSERT(subdim < dim, "Dimension mismatch!");
         std::array<arma::vec::fixed<dim+1>,subdim+1> bary_c;
 
-        for(unsigned int i = 0; i < subdim+1; i++){
-            if((dim-subdim) == 2){
-                bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::line_nodes[sid][i]);
-            }else{
-                bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::side_nodes[sid][i]);
-            }
-        }
+        for(unsigned int i = 0; i < subdim+1; i++)
+            bary_c[i] = RefElement<dim>::node_barycentric_coords(RefElement<dim>::interact<0,subdim>(sid)[i]);
+
         return bary_c;
 };
-
 
 template<unsigned int dim>
 template<unsigned int subdim> 
@@ -370,46 +365,57 @@ inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
     return data_[idx]; }
     
 
+// This function is for "side_nodes" - for given side, give me nodes (0->0, 1->1).
+template<> template<> inline const IdxVector<1> RefElement<1>::interact<0,0>(unsigned int i)
+{   ASSERT(i < RefElement<1>::n_nodes, "Index out of bounds.");
+    return IdxVector<1>({i});}
 
+/// For line i {0}, give me indices of its nodes.
 template<> template<> inline const IdxVector<2> RefElement<1>::interact<0,1>(unsigned int i)
 {   ASSERT(i < RefElement<1>::n_lines, "Index out of bounds.");
     return line_nodes_[i];}
 
+/// For line i {0,1,2}, give me indices of its nodes.
 template<> template<> inline const IdxVector<2> RefElement<2>::interact<0,1>(unsigned int i)
 {   ASSERT(i < RefElement<2>::n_lines, "Index out of bounds.");
     return line_nodes_[i];}
-    
+
+/// For line i {0,1,2,3,4,5}, give me indices of its nodes.
 template<> template<> inline const IdxVector<2> RefElement<3>::interact<0,1>(unsigned int i)
 {   ASSERT(i < RefElement<3>::n_lines, "Index out of bounds.");
     return line_nodes_[i];}
-    
-    
+
+/// For node i {0,1}, give me indices of lines.
 template<> template<> inline const IdxVector<1> RefElement<1>::interact<1,0>(unsigned int i)
 {   ASSERT(i < RefElement<1>::n_nodes, "Index out of bounds.");
     return node_lines_[i];}
 
+/// For node i {0,1,2}, give me indices of lines.
 template<> template<> inline const IdxVector<2> RefElement<2>::interact<1,0>(unsigned int i)
 {   ASSERT(i < RefElement<2>::n_nodes, "Index out of bounds.");
     return node_lines_[i];}
-    
+
+/// For node i {0,1,2,3}, give me indices of lines.
 template<> template<> inline const IdxVector<3> RefElement<3>::interact<1,0>(unsigned int i)
 {   ASSERT(i < RefElement<3>::n_nodes, "Index out of bounds.");
     return node_lines_[i];}
     
-
+/// For side i {0,1,2}, give me indices of its nodes.
 template<> template<> inline const IdxVector<3> RefElement<3>::interact<0,2>(unsigned int i)
 {   ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
     return side_nodes_[i];}
 
+/// For node i {0,1,2,3}, give me indices of sides.
 template<> template<> inline const IdxVector<3> RefElement<3>::interact<2,0>(unsigned int i)
 {   ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
     return node_sides_[i];}
     
-
+/// For line i {0,1,2,3}, give me indices of sides.
 template<> template<> inline const IdxVector<2> RefElement<3>::interact<2,1>(unsigned int i)
 {   ASSERT(i < RefElement<3>::n_lines, "Index out of bounds.");
     return line_sides_[i];}
 
+/// For side i {0,1,2}, give me indices of its lines.
 template<> template<> inline const IdxVector<3> RefElement<3>::interact<1,2>(unsigned int i)
 {   ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
     return side_lines_[i];}

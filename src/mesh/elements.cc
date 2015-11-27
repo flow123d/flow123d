@@ -192,7 +192,8 @@ double Element::quality_measure_smooth() {
         for(unsigned int i=0;i<3;i++)
             for(unsigned int j=i+1;j<4;j++) {
                 unsigned int i_line = RefElement<3>::line_between_faces(i,j);
-                arma::vec line = *node[RefElement<3>::line_nodes[i_line][1]] - *node[RefElement<3>::line_nodes[i_line][0]];
+//                 arma::vec line = *node[RefElement<3>::line_nodes[i_line][1]] - *node[RefElement<3>::line_nodes[i_line][0]];
+                arma::vec line = *node[RefElement<3>::interact<0,1>(i_line)[1]] - *node[RefElement<3>::interact<0,1>(i_line)[0]];
                 sum_pairs += face[i]*face[j]*arma::dot(line, line);
             }
         double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron

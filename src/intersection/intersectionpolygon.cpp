@@ -127,8 +127,8 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
                     RefElement<2>::vertex_index(ip.local_coords1(),vertex_index);
                     DBGMSG("E-E: vertex_index: %d \n",vertex_index);
                     // <2>::line_sides[vertex_index][0 = line index IN, or 1 = line index OUT]
-					unsigned int triangle_side_in = RefElement<2>::line_sides[vertex_index][0];
-					unsigned int triangle_side_out = RefElement<2>::line_sides[vertex_index][1];
+					unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0]; //RefElement<2>::line_sides[vertex_index][0];
+					unsigned int triangle_side_out = RefElement<2>::interact<1,0>(vertex_index)[1]; //RefElement<2>::line_sides[vertex_index][1];
                     unsigned int row = 4+triangle_side_in;
                     
                     if(trace_table(row,1) == -1)    // this ignores duplicit IP
@@ -146,8 +146,8 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
                  *  - this is determined by IP orientation
                  */
                 unsigned int tetrahedron_line = ip.side_idx2();
-                unsigned int tetrahedron_side_in = RefElement<3>::line_sides[tetrahedron_line][1-ip.orientation()];
-                unsigned int tetrahedron_side_out = RefElement<3>::line_sides[tetrahedron_line][ip.orientation()];
+                unsigned int tetrahedron_side_in = RefElement<3>::interact<2,1>(tetrahedron_line)[1-ip.orientation()];//RefElement<3>::line_sides[tetrahedron_line][1-ip.orientation()];
+                unsigned int tetrahedron_side_out = RefElement<3>::interact<2,1>(tetrahedron_line)[ip.orientation()];
                 
 				trace_table(tetrahedron_side_in,0) = tetrahedron_side_out;
 				trace_table(tetrahedron_side_in,1) = i;

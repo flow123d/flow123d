@@ -137,15 +137,15 @@ void Mesh::reinit(Input::Record in_record)
 
     for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
     	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
-    		side_nodes[0][sid][nid] = RefElement<1>::side_nodes[sid][nid];
+            side_nodes[0][sid][nid] = RefElement<1>::interact<0,0>(sid)[nid];
 
     for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
         	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
-        		side_nodes[1][sid][nid] = RefElement<2>::side_nodes[sid][nid];
+                side_nodes[1][sid][nid] = RefElement<2>::interact<0,1>(sid)[nid];
 
     for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
         	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
-        		side_nodes[2][sid][nid] = RefElement<3>::side_nodes[sid][nid];
+        		side_nodes[2][sid][nid] = RefElement<3>::interact<0,2>(sid)[nid];
 }
 
 

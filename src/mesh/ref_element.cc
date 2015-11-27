@@ -292,11 +292,11 @@ vec::fixed<2> RefElement<2>::normal_vector(unsigned int sid)
     vec::fixed<2> barycenter, bar_side, n, t;
 
     // tangent vector along line
-    t = node_coords(side_nodes[sid][1]) - node_coords(side_nodes[sid][0]);
+    t = node_coords(line_nodes_[sid][1]) - node_coords(line_nodes_[sid][0]);
     // barycenter coordinates
     barycenter.fill(1./3);
     // vector from barycenter to the side
-    bar_side = node_coords(side_nodes[sid][0]) - barycenter;
+    bar_side = node_coords(line_nodes_[sid][0]) - barycenter;
     // normal vector to side (modulo sign)
     n(0) = -t(1);
     n(1) = t(0);
@@ -314,12 +314,12 @@ vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
     vec::fixed<3> barycenter, bar_side, n, t1, t2;
 
     // tangent vectors of side
-    t1 = node_coords(side_nodes[sid][1]) - node_coords(side_nodes[sid][0]);
-    t2 = node_coords(side_nodes[sid][2]) - node_coords(side_nodes[sid][0]);
+    t1 = node_coords(side_nodes_[sid][1]) - node_coords(side_nodes_[sid][0]);
+    t2 = node_coords(side_nodes_[sid][2]) - node_coords(side_nodes_[sid][0]);
     // baryucenter coordinates
     barycenter.fill(0.25);
     // vector from barycenter to the side
-    bar_side = node_coords(side_nodes[sid][0]) - barycenter;
+    bar_side = node_coords(side_nodes_[sid][0]) - barycenter;
     // normal vector (modulo sign)
     n = cross(t1,t2);
     n /= norm(n,2);
@@ -344,7 +344,7 @@ double RefElement<2>::side_measure(unsigned int sid)
 {
     ASSERT(sid < n_sides, "Side number is out of range!");
 
-    return norm(node_coords(side_nodes[sid][1]) - node_coords(side_nodes[sid][0]),2);
+    return norm(node_coords(line_nodes_[sid][1]) - node_coords(line_nodes_[sid][0]),2);
 }
 
 
@@ -353,18 +353,18 @@ double RefElement<3>::side_measure(unsigned int sid)
 {
     ASSERT(sid < n_sides, "Side number is out of range!");
 
-    return 0.5*norm(cross(node_coords(side_nodes[sid][1]) - node_coords(side_nodes[sid][0]),
-            node_coords(side_nodes[sid][2]) - node_coords(side_nodes[sid][0])),2);
+    return 0.5*norm(cross(node_coords(side_nodes_[sid][1]) - node_coords(side_nodes_[sid][0]),
+            node_coords(side_nodes_[sid][2]) - node_coords(side_nodes_[sid][0])),2);
 }
 
 template <>
 unsigned int RefElement<3>::line_between_faces(unsigned int f1, unsigned int f2) {
     unsigned int i,j;
     i=j=0;
-    while (side_lines[f1][i] != side_lines[f2][j])
-        if (side_lines[f1][i] < side_lines[f2][j]) i++;
+    while (side_lines_[f1][i] != side_lines_[f2][j])
+        if (side_lines_[f1][i] < side_lines_[f2][j]) i++;
         else j++;
-    return side_lines[f1][i];
+    return side_lines_[f1][i];
 }
 
 
