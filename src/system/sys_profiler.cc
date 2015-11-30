@@ -448,16 +448,20 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         memory_allocated_sum = MPI_Functions::sum(&memory_allocated, comm);
         
         node.put ("memory-alloc",     (long) memory_allocated);
-        node.put ("memory-alloc-min", boost::format("%1.9f") % MPI_Functions::min(&memory_allocated, comm));
-        node.put ("memory-alloc-max", boost::format("%1.9f") % MPI_Functions::max(&memory_allocated, comm));
-        node.put ("memory-alloc-sum", boost::format("%1.9f") % memory_allocated_sum);
+        node.put ("memory-alloc-min", boost::format("%1.0f") % MPI_Functions::min(&memory_allocated, comm));
+        node.put ("memory-alloc-max", boost::format("%1.0f") % MPI_Functions::max(&memory_allocated, comm));
+        node.put ("memory-alloc-sum", boost::format("%1.0f") % memory_allocated_sum);
         
         memory_deallocated_sum = MPI_Functions::sum(&memory_deallocated, comm);
         
         node.put ("memory-dealloc",     (long) memory_deallocated);
-        node.put ("memory-dealloc-min", boost::format("%1.9f") % MPI_Functions::min(&memory_deallocated, comm));
-        node.put ("memory-dealloc-max", boost::format("%1.9f") % MPI_Functions::max(&memory_deallocated, comm));
-        node.put ("memory-dealloc-sum", boost::format("%1.9f") % memory_deallocated_sum);
+        node.put ("memory-dealloc-min", boost::format("%1.0f") % MPI_Functions::min(&memory_deallocated, comm));
+        node.put ("memory-dealloc-max", boost::format("%1.0f") % MPI_Functions::max(&memory_deallocated, comm));
+        node.put ("memory-dealloc-sum", boost::format("%1.0f") % memory_deallocated_sum);
+        
+        // debug info
+        node.put ("memory-difference", boost::format("%1.2f kB") % ((memory_allocated - memory_deallocated)/1000.0));
+        node.put ("memory-percent",    boost::format("%1.2f %%") % (memory_allocated / memory_deallocated));
         
         return cumul_time_sum;
     };
@@ -543,6 +547,10 @@ void Profiler::output(ostream &os) {
         node.put ("memory-dealloc-min",  memory_deallocated);
         node.put ("memory-dealloc-max",  memory_deallocated);
         node.put ("memory-dealloc-sum",  memory_deallocated);
+        
+        // debug info
+        node.put ("memory-difference", boost::format("%1.2f kB") % ((memory_allocated - memory_deallocated)/1000.0));
+        node.put ("memory-percent",    boost::format("%1.2f %%") % (memory_allocated / memory_deallocated));
         
         return cumul_time;
     };
