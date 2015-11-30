@@ -253,9 +253,6 @@ public:
 	 */
 	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
     
-    
-    static bool vertex_index(arma::vec::fixed<dim+1> vertex_bary_coords, unsigned int &vertex_index);
-    
     /**
      * @param sid - index of a sub-simplex in a simplex
      * return an array of barycentric coordinates on <dim> simplex from <subdim> simplex

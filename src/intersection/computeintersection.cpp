@@ -381,19 +381,22 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 			if(IP12s.back().is_pathologic()){   // resolve pathologic cases
 				// Nastavování stěn, které se už nemusí počítat
 
+                //TODO: get index of vertex -> add to topology
+                //TODO: decide whether the IP is at vertex or a whole edge, use RE::interact<>
+                
                 //TODO depends on reference element
 				if(side == 0){
-					if(IP12s.back().local_coords2()[0] == 1){
-						CI12[1].set_computed();
+					if(IP12s.back().local_coords2()[0] == 1){   //test node 0 of tetrahedron
+						CI12[1].set_computed(); // set other two sides
 						CI12[2].set_computed();
-					}else if(IP12s.back().local_coords2()[1] == 1){
-						CI12[1].set_computed();
+					}else if(IP12s.back().local_coords2()[1] == 1){ //test node 1 of tetrahedron
+						CI12[1].set_computed(); // set other two sides
 						CI12[3].set_computed();
-					}else if(IP12s.back().local_coords2()[2] == 1){
-						CI12[2].set_computed();
+					}else if(IP12s.back().local_coords2()[2] == 1){ //test node 2 of tetrahedron
+						CI12[2].set_computed(); // set other two sides
 						CI12[3].set_computed();
 					}else{
-						CI12[IP12s.back().side_idx2() + 1].set_computed();
+						CI12[IP12s.back().side_idx2() + 1].set_computed();  // intersection is an edge, set side is computed
 					}
 				}else if(side == 1 && IP12s.back().local_coords2()[2] == 1){
 					CI12[2].set_computed();
@@ -404,13 +407,13 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 			}
 			
 			pocet_pruniku++;
-            IP12s.back().set_side2(side);
-            IntersectionPoint<1,3> IP13(IP12s.back());
+            IntersectionPoint<1,3> IP13(IP12s.back(), side);
 // 				IP13.print();
             IP13s.push_back(IP13);
 		}
 	}
 
+	// in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
 	// Kontrola vytvořených průniků => zda-li není potřeba interpolovat + zda-li se o prunik vubec nejedna:
 	if(pocet_pruniku == 1){
 		double f_theta = IP13s[IP13s.size()-1].local_coords1()[1];
@@ -419,7 +422,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 			IP13s.pop_back();
 		}
 
-	}else if(pocet_pruniku > 1){
+	}else if(pocet_pruniku > 1){    //TODO: should be == 2, even for pathologic cases
         
         // swap the ips in the line coordinate direction (0->1 : a1->a2)
         IntersectionPoint<1,3> *a1, *a2;
@@ -459,7 +462,10 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
             arma::vec::fixed<2> inter({1 - t1, t1});    // barycentric coords
             a1->set_coordinates(inter,interpolovane);
 //             a1->set_topology_EE(unset_loc_idx, a1->is_pathologic());  // edge index is set later
-            a1->set_topology(unset_loc_idx, unset_loc_idx, a1->orientation(), a1->is_pathologic());
+            // here we can set only local index of the vertex on the line
+            DBGMSG("E-E 0\n");
+            unsigned int line_node = 0;
+            a1->set_topology(line_node, unset_loc_idx, a1->orientation(), a1->is_pathologic());
         }
         if(t2 == 1) // interpolate IP a2
         {
@@ -471,7 +477,10 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
             arma::vec::fixed<2> inter({1 - t2, t2});      // barycentric coords
             a2->set_coordinates(inter,interpolovane);
 //             a2->set_topology_EE(unset_loc_idx, a2->is_pathologic());  // edge index is set later
-            a2->set_topology(unset_loc_idx, unset_loc_idx, a2->orientation(), a2->is_pathologic());
+            // here we can set only local index of the vertex on the line
+            DBGMSG("E-E 1\n");
+            unsigned int line_node = 1;
+            a2->set_topology(line_node, unset_loc_idx, a2->orientation(), a2->is_pathologic());
         }
     }
     return pocet_pruniku;
@@ -577,17 +586,26 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 	std::vector<IntersectionPoint<1,3>> IP13s;
 	unsigned int pocet_13_pruniku;
 
-	for(unsigned int i = 0; i < 3;i++){
+	for(unsigned int i = 0; i < RefElement<2>::n_lines;i++){    // go through triangle lines
 		pocet_13_pruniku = CI13[(3-i)%3].compute(IP13s);
         ASSERT(pocet_13_pruniku < 3, "Impossible number of intersection.");
 //         DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
         
-        //TODO: can there be only 1 intersection
         for(unsigned int n=1; n <= pocet_13_pruniku; n++){
-            IP13s[IP13s.size()-n].set_side1((3-i)%3);
-            IntersectionPoint<3,1> IP31(IP13s[IP13s.size()-n]);
-            IntersectionPoint<3,2> IP32(IP31);
-            IntersectionPoint<2,3> IP23(IP32);
+            IntersectionPoint<1,3> IP (IP13s[IP13s.size()-n]);
+            
+            IntersectionPoint<3,1> IP31(IP);             // switch side_idx1 and side_idx2 and coords
+            IntersectionPoint<3,2> IP32(IP31, (3-i)%3);  // interpolation uses local_coords2 and given side_idx2
+            IntersectionPoint<2,3> IP23(IP32);           // switch side_idx1 and side_idx2 and coords back
+            
+            if( IP.is_vertex() ) // if IP is vertex of triangle //TODO: later compare dim_A and dim_B instead
+            {
+                // we are on line (3-i)%3 of the triangle, and IP.side_idx1 contains local node of the line
+                // E-E, we know vertex index
+                IP23.set_topology(RefElement<2>::interact<0,1>((3-i)%3)[IP.side_idx1()],
+                                  unset_loc_idx, IP.orientation(), IP.is_pathologic());
+            }
+            
             lokalni_mnohouhelnik.add_ipoint(IP23);
         }
     }
@@ -604,12 +622,11 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 
 	for(unsigned int i = 0; i < 6;i++){
 		if(CI12[i].compute(IP12s, false)){
-			IP12s.back().set_side1(i);
             //TODO unit test this condition - possibly remove
 			if((IP12s.back().local_coords1())[0] <= 1 && (IP12s.back().local_coords1())[0] >= 0){
 // 				DBGMSG("CI23: number of 1-2 intersections = %d\n",pocet_pruniku);
 				IntersectionPoint<2,1> IP21(IP12s.back());
-				IntersectionPoint<2,3> IP23(IP21);
+				IntersectionPoint<2,3> IP23(IP21,i);
 				//IP23.print();
 				lokalni_mnohouhelnik.add_ipoint(IP23);
 			}

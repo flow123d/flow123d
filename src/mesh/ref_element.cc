@@ -232,28 +232,6 @@ vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
     return p;
 }
 
-template<unsigned int dim>
-bool RefElement<dim>::vertex_index(arma::vec::fixed< dim + 1  > vertex_bary_coords, unsigned int& vertex_index)
-{
-    DBGMSG("vertex index\n");
-    for(unsigned int i = 0; i <dim+1; i++)
-    {
-        //keep index with one
-        if(vertex_bary_coords[i] == 1) vertex_index = i;
-        //check that others are zeros
-        else if(vertex_bary_coords[i] != 0) return false;
-    }
-    // check that there are not more than one 1
-    if(arma::norm(vertex_bary_coords,2) != 1.0)  return false;
-    
-    //this is with Viktor's numbering
-
-    //TODO: our numbering
-//     if(vertex_index == dim) vertex_index = 0;
-    return true;
-}
-
-
 
 template<unsigned int dim>
 inline unsigned int RefElement<dim>::oposite_node(unsigned int sid)

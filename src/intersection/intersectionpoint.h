@@ -46,15 +46,17 @@ public:
 	/// Constructor - fliping dimension of an intersection point.
 	IntersectionPoint(IntersectionPoint<M, N> &IP);
 
-	/* Constructor interpolates the second bary coords of IntersectionPoint<N,M-1> to IntersectionPoint<N,M>
+	/** Constructor interpolates the second bary coords of IntersectionPoint<N,M-1> to IntersectionPoint<N,M>
      * Allowed only from dimension 1 to 2 and from 2 to 3.
+     * @param  side_idx2 is the index of object 2 of IntersectionPoint<N,M-1> in object 2 of IntersectionPoint<N,M>
      * */
-	IntersectionPoint(IntersectionPoint<N,M-1> &IP);
+	IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned int side_idx2);
 
-	/* Constructor interpolates the second bary coords of IntersectionPoint<N,M-2> to IntersectionPoint<N,M>
+	/** Constructor interpolates the second bary coords of IntersectionPoint<N,M-2> to IntersectionPoint<N,M>
 	 * Allowed only from dimension 1 to 3.
+     * @param  side_idx2 is the index of object 2 of IntersectionPoint<N,M-2> in object 2 of IntersectionPoint<N,M>
 	 * */
-	IntersectionPoint(IntersectionPoint<N,M-2> &IP);
+	IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned int side_idx2);
 
     /// Setter for coordinates.
     void set_coordinates(const arma::vec::fixed<N+1> &lc1, const arma::vec::fixed<M+1> &lc2);

@@ -47,26 +47,26 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP){
+IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned int side_idx2){
     ASSERT(M>1 && M<4,"Wrong the second dimension in an IntersectionPoint (allowed 2 and 3 only)");
     
     local_coords1_ = IP.local_coords1();
-    local_coords2_ = RefElement<M>::template interpolate<M-1>(IP.local_coords2(), IP.side_idx2());
+    local_coords2_ = RefElement<M>::template interpolate<M-1>(IP.local_coords2(), side_idx2);
     side_idx1_ = IP.side_idx1();
-    side_idx2_ = IP.side_idx2();
+    side_idx2_ = side_idx2;
     orientation_ = IP.orientation();
     pathologic_ = IP.is_pathologic();
 };
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP){
+IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned int side_idx2){
     ASSERT(M == 3,"Wrong the second dimension in an IntersectionPoint (allowed 3 only)");
 
     local_coords1_ = IP.local_coords1();
-    local_coords2_ = RefElement<3>::interpolate<1>(IP.local_coords2(), IP.side_idx2());
+    local_coords2_ = RefElement<3>::interpolate<1>(IP.local_coords2(), side_idx2);
     side_idx1_ = IP.side_idx1();
-    side_idx2_ = IP.side_idx2();
+    side_idx2_ = side_idx2;
     orientation_ = IP.orientation();
     pathologic_ = IP.is_pathologic();
 };

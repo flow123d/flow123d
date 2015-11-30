@@ -119,16 +119,11 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
                     DBGMSG("Intersection type E-E.\n");
                     // IP is the vertex of triangle,
                     // the directions of triangle edges determines the directions of polygon edges
-                    //TODO we must provide a function in reference element: node coordinates -> node index
-                    //TODO even better: we should save vertex_index when computed
-// 					unsigned int vertex_index = (ip.local_coords1()[0] == 1 ? 0 : (ip.local_coords1()[1] == 1 ? 1 : 2));
-                    // using ref element, but we still want to get rid of this...
-                    unsigned int vertex_index;
-                    RefElement<2>::vertex_index(ip.local_coords1(),vertex_index);
-                    DBGMSG("E-E: vertex_index: %d \n",vertex_index);
-                    // <2>::line_sides[vertex_index][0 = line index IN, or 1 = line index OUT]
-					unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0]; //RefElement<2>::line_sides[vertex_index][0];
-					unsigned int triangle_side_out = RefElement<2>::interact<1,0>(vertex_index)[1]; //RefElement<2>::line_sides[vertex_index][1];
+                    unsigned int vertex_index = ip.side_idx1();
+                    DBGMSG("E-E: vertex_index: %d %d\n", vertex_index);
+                    // <2>::lines_nodes[vertex_index][0 = line index IN, or 1 = line index OUT]
+					unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0];
+					unsigned int triangle_side_out = RefElement<2>::interact<1,0>(vertex_index)[1];
                     unsigned int row = 4+triangle_side_in;
                     
                     if(trace_table(row,1) == -1)    // this ignores duplicit IP
