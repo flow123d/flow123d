@@ -19,8 +19,8 @@
 #ifndef HC_EXPLICIT_SEQUENTIAL_HH_
 #define HC_EXPLICIT_SEQUENTIAL_HH_
 
-#include "input/input_type.hh"
-#include "input/accessors.hh"
+#include "input/input_type_forward.hh"
+#include "input/accessors_forward.hh"
 
 #include "coupling/equation.hh"
 
@@ -35,7 +35,7 @@ class AdvectionProcessBase;
  */
 class CouplingBase {
 public:
-    static Input::Type::AbstractRecord & get_input_type();
+    static Input::Type::Abstract & get_input_type();
 
 };
 

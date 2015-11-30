@@ -197,15 +197,18 @@ function check_file {
 		return 1
 	fi
 	
+	INI_FILE_DIR="${INI_FILE%.con}"
+	INI_FILE_DIR="${INI_FILE_DIR%.yaml}"
+	
 	# Print some debug information to the output of ndiff
-	echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE}" \
+	echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE_DIR}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE}" \
 	>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 	
 	echo "" >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 	
 	# Compare output file using ndiff
 	${NDIFF} \
-		"${REF_OUTPUT_DIR}/${INI_FILE}/${OUT_FILE}" \
+		"${REF_OUTPUT_DIR}/${INI_FILE_DIR}/${OUT_FILE}" \
 		"${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE}" \
 		>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 	
@@ -236,22 +239,24 @@ function check_outputs {
 		echo "Error: $0 called with wrong number of arguments: $#"
 		return 1
 	fi
-
+	
+	INI_FILE_DIR="${INI_FILE%.con}"
+	INI_FILE_DIR="${INI_FILE_DIR%.yaml}"
 	
 	# Does exist reference directory for this .ini file?
-	if [ ! -d "${REF_OUTPUT_DIR}/${INI_FILE}" ]
+	if [ ! -d "${REF_OUTPUT_DIR}/${INI_FILE_DIR}" ]
 	then
 		echo " [Failed]"
-		echo "Error: directory with reference output files doesn't exist: ${REF_OUTPUT_DIR}/${INI_FILE}"
+		echo "Error: directory with reference output files doesn't exist: ${REF_OUTPUT_DIR}/${INI_FILE_DIR}"
 		return 1
 	fi
 
-	REF_FILE_NUM=`ls "${REF_OUTPUT_DIR}/${INI_FILE}" | wc -l`
+	REF_FILE_NUM=`ls "${REF_OUTPUT_DIR}/${INI_FILE_DIR}" | wc -l`
 	# Does reference directory contain any reference file?
 	if [ ${REF_FILE_NUM} -eq 0 ]
 	then
 		echo " [Failed]"
-		echo "Error: directory ${REF_OUTPUT_DIR}/${INI_FILE} doesn't contain any reference output files."
+		echo "Error: directory ${REF_OUTPUT_DIR}/${INI_FILE_DIR} doesn't contain any reference output files."
 		return 1
 	fi
 	unset REF_FILE_NUM
@@ -270,7 +275,7 @@ function check_outputs {
         
 	# For every file in reference directory try to find generated file
 	# and do ndiff
-	for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}/"`
+	for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE_DIR}/"`
 	do
 		# Required output file exists?
 		if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
@@ -280,7 +285,7 @@ function check_outputs {
 			then
 				# If $file is directory, then check all files in this directory
 				subdir="${file}"
-				for subfile in `ls "${REF_OUTPUT_DIR}/${INI_FILE}/${subdir}/"`
+				for subfile in `ls "${REF_OUTPUT_DIR}/${INI_FILE_DIR}/${subdir}/"`
 				do
 					if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${subdir}/${subfile}" ]
 					then
@@ -327,7 +332,7 @@ function check_outputs {
 		read UPDATE
 		if [ "UPDATE" = "y" ] 
 		then
-			update_ref_results ${REF_OUTPUT_DIR}/${INI_FILE} ${TEST_RESULTS}/${INI_FILE}.${NP}
+			update_ref_results ${REF_OUTPUT_DIR}/${INI_FILE_DIR} ${TEST_RESULTS}/${INI_FILE}.${NP}
 		fi
 	fi
 	

@@ -18,10 +18,14 @@
 #ifndef OUTPUT_VTK_HH_
 #define OUTPUT_VTK_HH_
 
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
 
 #include "output_data_base.hh"
 #include "output_time.hh"
+
+#include <ostream>
+
+using namespace std;
 
 /**
  * \brief This class is used for output data to VTK file format

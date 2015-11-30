@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "reaction/first_order_reaction_base.hh"
-#include "input/accessors.hh"
+#include "input/accessors_forward.hh"
 
 class Mesh;
 

@@ -44,7 +44,7 @@ namespace IT=Input::Type;
  *  - implement set_from_input
  *  - implement set_Time
  *
- *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of AbstractRecords
+ *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of Abstracts
  *    simplest solution - test that in EqDataBase and have more methods in FieldCommonBase, or somehow detach input handling from
  *    Fields
  *

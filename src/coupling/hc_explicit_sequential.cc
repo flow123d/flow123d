@@ -29,6 +29,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
@@ -41,8 +42,8 @@ FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh);
 
 namespace it = Input::Type;
 
-it::AbstractRecord & CouplingBase::get_input_type() {
-	return it::AbstractRecord("Problem", "The root record of description of particular the problem to solve.")
+it::Abstract & CouplingBase::get_input_type() {
+	return it::Abstract("Problem", "The root record of description of particular the problem to solve.")
 		.close();
 }
 

@@ -23,6 +23,7 @@
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
 #include "input/factory.hh"
+#include "input/accessors.hh"
 
 #include "armadillo"
 

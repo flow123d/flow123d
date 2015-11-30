@@ -22,6 +22,7 @@
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
 #include "input/factory.hh"
+#include "input/accessors.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(firstOrderReaction)
 

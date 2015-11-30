@@ -33,13 +33,10 @@
 #include <boost/pointer_cast.hpp>
 
 
-#include "type_base.hh"
-#include "type_record.hh"
+#include "input_type.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
-#include "type_generic.hh"
 #include "json_spirit/json_spirit.h"
-#include <boost/algorithm/string.hpp>
 
 
 namespace Input {
@@ -84,9 +81,9 @@ string TypeBase::desc() const {
 
 void TypeBase::lazy_finish() {
 	Input::TypeRepository<Instance>::get_instance().finish();
-	Input::TypeRepository<AbstractRecord>::get_instance().finish(true);
+	Input::TypeRepository<Abstract>::get_instance().finish(true);
 	Input::TypeRepository<Record>::get_instance().finish(true);
-	Input::TypeRepository<AbstractRecord>::get_instance().finish();
+	Input::TypeRepository<Abstract>::get_instance().finish();
 	Input::TypeRepository<Record>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
 }
@@ -274,7 +271,7 @@ ARRAY_CONSTRUCT(FileName);
 ARRAY_CONSTRUCT(Selection);
 ARRAY_CONSTRUCT(Array);
 ARRAY_CONSTRUCT(Record);
-ARRAY_CONSTRUCT(AbstractRecord);
+ARRAY_CONSTRUCT(Abstract);
 ARRAY_CONSTRUCT(Parameter);
 ARRAY_CONSTRUCT(Instance);
 
