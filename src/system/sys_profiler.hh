@@ -212,7 +212,60 @@ inline CONSTEXPR_ unsigned int str_hash(const char * str, unsigned int default_v
  */
 #define CODE_POINT_EXT(tag, subtag) CodePoint(tag, subtag, __FILE__, __func__, __LINE__)
 
+/**
+ * Simple allocator which uses default malloc and free functions. Dields allocated
+ *   with this allocator will not be included in overall memory consumption.
+ */
+template<class T>
+class SimpleAllocator {
+public:
+    typedef size_t size_type;
+    typedef ptrdiff_t difference_type;
+    typedef T *pointer;
+    typedef const T *const_pointer;
+    typedef T &reference;
+    typedef const T &const_reference;
+    typedef T value_type;
 
+    SimpleAllocator() { }
+
+    SimpleAllocator(const SimpleAllocator &) { }
+
+
+    pointer allocate(size_type n, const void * = 0) {
+        T *t = (T *) malloc(n * sizeof(T));
+        return t;
+    }
+
+    void deallocate(void *p, size_type) {
+        if (p) {
+            free(p);
+        }
+    }
+
+    pointer address(reference x) const { return &x; }
+
+    const_pointer address(const_reference x) const { return &x; }
+
+    SimpleAllocator<T> &operator=(const SimpleAllocator &) { return *this; }
+
+    void construct(pointer p, const T &val) { new((T *) p) T(val); }
+
+    void destroy(pointer p) { p->~T(); }
+
+    size_type max_size() const { return size_t(-1); }
+
+    template<class U>
+    struct rebind {
+        typedef SimpleAllocator<U> other;
+    };
+
+    template<class U>
+    SimpleAllocator(const SimpleAllocator<U> &) { }
+
+    template<class U>
+    SimpleAllocator &operator=(const SimpleAllocator<U> &) { return *this; }
+};
 
 
 /**
@@ -522,6 +575,17 @@ public:
      */
     inline double actual_cumulative_time() const
         { return timers_[actual_node].cumulative_time(); }
+    /**
+     * Returns total memory allocated in current timer.
+     */
+    inline double actual_memory_alloc() const
+        { return timers_[actual_node].total_allocated_; }
+    /**
+     * Returns total memory deallocated in current timer.
+     */
+    inline double actual_memory_dealloc() const
+        { return timers_[actual_node].total_deallocated_; }
+        
 
 #ifdef FLOW123D_HAVE_MPI
     /**
@@ -604,7 +668,7 @@ private:
     static Profiler* _instance;
 
     /// Vector of all timers. Whole tree is stored in this array.
-    vector<Timer> timers_;
+    vector<Timer, SimpleAllocator<Timer>> timers_;
 
     /// Index of the actual timer node. Negative value means 'unset'.
     int actual_node;
@@ -657,9 +721,8 @@ private:
     Profiler & operator=(Profiler const&); // assignment operator is private
 };
 
-
-
-
+// create static map containing <allocation address, allocation size> pairs
+static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> malloc_map;
 
 
 /**
