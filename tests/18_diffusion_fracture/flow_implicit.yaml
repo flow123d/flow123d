@@ -9,7 +9,8 @@ problem: !SequentialCoupling
       - 45
   primary_equation: !Steady_MH
     input_fields:
-    - region: IMPLICIT BOUNDARY
+    - r_set: BOUNDARY
+      bc_type: dirichlet
       bc_pressure: 0
     - rid: 20
       cross_section: 0.01
@@ -31,7 +32,7 @@ problem: !SequentialCoupling
       r_tol: 1.0e-12
   secondary_equation: !SoluteTransport_DG
     input_fields:
-    - region: IMPLICIT BOUNDARY
+    - r_set: BOUNDARY
       bc_conc: 0
     - rid: 20
       init_conc: 0
