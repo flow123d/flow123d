@@ -721,9 +721,6 @@ private:
     Profiler & operator=(Profiler const&); // assignment operator is private
 };
 
-// create static map containing <allocation address, allocation size> pairs
-static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> malloc_map;
-
 
 /**
  *

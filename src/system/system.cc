@@ -261,51 +261,70 @@ void operator delete[]( void *p,  const my_new_t &) throw ()
 }
 */
 
-static map<long, int> malloc_map;
+
+// create static map containing <allocation address, allocation size> pairs
+static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> malloc_map;
+
 
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-	if (Profiler::is_initialized())
+	if (Profiler::is_initialized()) {
 		Profiler::instance()->notify_malloc(size);
+    }
 
-	void * p = xmalloc(size);
+	void * p = malloc(size);
 	// cout << "Malloc  " << sizeof(p) << endl;
 	return p;
 }
 
 void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-	if (Profiler::is_initialized())
+	if (Profiler::is_initialized()) {
 		Profiler::instance()->notify_malloc(size);
+    }
 		
-	void * p = xmalloc(size);
+	void * p = malloc(size);
 	malloc_map[(long)p] = static_cast<int>(size);
 	// cout << "Malloc[] " << sizeof(p) << endl;
 	return p;
 }
 
-void *operator new[] (std::size_t size, const std::nothrow_t&  ) throw() {
-	if (Profiler::is_initialized())
+void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
+	if (Profiler::is_initialized()) {
 		Profiler::instance()->notify_malloc(size);
+    }
 		
-	void * p = xmalloc(size);
+	void * p = malloc(size);
 	malloc_map[(long)p] = static_cast<int>(size);
 	// cout << "Malloc[]2" << sizeof(p) << endl;
 	return p;
 }
 
 void operator delete( void *p) throw() {
-	if (Profiler::is_initialized())
-		Profiler::instance()->notify_free(sizeof(p));
+	if (Profiler::is_initialized()) {
+		if (malloc_map[(long)p] > 0) {
+			Profiler::instance()->notify_free(malloc_map[(long)p]);
+            malloc_map.erase((long)p);
+		} else {
+			Profiler::instance()->notify_free(sizeof(p));
+		}
+    }
+			
 		
 	// cout << "Dealloc  " << sizeof(p) << endl;
-	xfree(p);
+	free(p);
 }
 
 void operator delete[]( void *p) throw() {
-	if (Profiler::is_initialized())
-		Profiler::instance()->notify_free(malloc_map[(long)p]);
+	if (Profiler::is_initialized()) {
+		if (malloc_map[(long)p] > 0) {
+			Profiler::instance()->notify_free(malloc_map[(long)p]);
+			malloc_map.erase((long)p);
+		} else {
+			Profiler::instance()->notify_free(sizeof(p));
+		}
+    }
 		
 	// cout << "Dealloc[] " << malloc_map[(long)p] << endl;
-	xfree(p);
+	free(p);
 }
 
 
