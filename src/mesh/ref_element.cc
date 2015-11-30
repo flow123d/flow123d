@@ -235,6 +235,7 @@ vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
 template<unsigned int dim>
 bool RefElement<dim>::vertex_index(arma::vec::fixed< dim + 1  > vertex_bary_coords, unsigned int& vertex_index)
 {
+    DBGMSG("vertex index\n");
     for(unsigned int i = 0; i <dim+1; i++)
     {
         //keep index with one
