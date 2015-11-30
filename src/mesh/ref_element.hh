@@ -149,6 +149,7 @@ class IdxVector{
         unsigned int operator[](unsigned int idx) const;
 };
 
+
 template<unsigned int dim>
 class RefElement
 {
@@ -196,25 +197,13 @@ public:
 	 */
 	static unsigned int line_between_faces(unsigned int f1, unsigned int f2);
 
-	/**
-	 * Number of sides.
-	 */
-	static const unsigned int n_sides = dim + 1;
-
-	/**
-	 * Number of vertices.
-	 */
-	static const unsigned int n_nodes = dim + 1;
-
-	/**
-	 * Number of nodes on one side.
-	 */
-	static const unsigned int n_nodes_per_side = dim;
-
-    /**
-     * Number of lines that go through one vertex.
-     */
-    static const unsigned int n_lines_per_node = dim;
+    
+	static const unsigned int n_sides = dim + 1;            ///< Number of sides.
+	static const unsigned int n_nodes = dim + 1;            ///< Number of nodes.
+	static const unsigned int n_nodes_per_side = dim;       ///< Number of nodes on one side.
+    static const unsigned int n_lines_per_node = dim;       ///< Number of lines with one common node.
+    static const unsigned int n_nodes_per_line = 2;         ///< Number of nodes in one line.
+    static const unsigned int n_sides_per_line = 2;         ///< Number of sides with one common line. @p dim == 3.
     
 	/// Number of lines on boundary of one side.
 	static const unsigned int n_lines_per_side = (unsigned int)((dim * (dim - 1)) / 2);//( dim == 3 ? 3 : 0);// Kombinační číslo dim nad dvěma
@@ -311,15 +300,17 @@ public:
      */
     template<unsigned int OutDim, unsigned int InDim> 
     static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact(unsigned int index);
-    
+
 private:
-    static const IdxVector<2>                line_nodes_[n_lines]; ///< For given line, returns its nodes indices.
+    static const IdxVector<n_nodes_per_line> line_nodes_[n_lines]; ///< For given line, returns its nodes indices.
     static const IdxVector<n_lines_per_node> node_lines_[n_nodes]; ///< For given node, returns lines indices.
-    static const IdxVector<n_nodes_per_side> side_nodes_[n_sides]; ///< For given node, returns lines indices. For @p dim == 3.
-    static const IdxVector<n_nodes_per_side> node_sides_[n_nodes]; ///< For given node, returns lines indices. For @p dim == 3.
-    static const IdxVector<2>                line_sides_[n_lines]; ///< For given node, returns lines indices. For @p dim == 3.
-    static const IdxVector<3>                side_lines_[n_sides]; ///< For given node, returns lines indices. For @p dim == 3.
+    static const IdxVector<n_nodes_per_side> side_nodes_[n_sides]; ///< For given side, returns nodes indices. For @p dim == 3.
+    static const IdxVector<n_nodes_per_side> node_sides_[n_nodes]; ///< For given node, returns sides indices. For @p dim == 3.
+    static const IdxVector<n_sides_per_line> line_sides_[n_lines]; ///< For given line, returns sides indices. For @p dim == 3.
+    static const IdxVector<n_lines_per_side> side_lines_[n_sides]; ///< For given side, returns lines indices. For @p dim == 3.
 };
+
+
 
 
 /************************* template implementation ****************************/
@@ -365,7 +356,9 @@ inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
     return data_[idx]; }
     
 
-// This function is for "side_nodes" - for given side, give me nodes (0->0, 1->1).
+
+
+/// This function is for "side_nodes" - for given side, give me nodes (0->0, 1->1).
 template<> template<> inline const IdxVector<1> RefElement<1>::interact<0,0>(unsigned int i)
 {   ASSERT(i < RefElement<1>::n_nodes, "Index out of bounds.");
     return IdxVector<1>({i});}
@@ -420,4 +413,9 @@ template<> template<> inline const IdxVector<3> RefElement<3>::interact<1,2>(uns
 {   ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
     return side_lines_[i];}
     
+template<unsigned int dim> template<unsigned int OutDim, unsigned int InDim> 
+inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact(unsigned int i)
+{   ASSERT_LESS(OutDim, dim);
+    ASSERT_LESS(InDim, dim);}
+
 #endif /* REF_ELEMENT_HH_ */
