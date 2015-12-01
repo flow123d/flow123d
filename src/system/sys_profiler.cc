@@ -461,7 +461,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         
         // debug info
         node.put ("memory-difference", boost::format("%1.2f kB") % ((memory_allocated - memory_deallocated)/1000.0));
-        node.put ("memory-percent",    boost::format("%1.2f %%") % (memory_allocated / memory_deallocated));
+        node.put ("memory-percent",    boost::format("%1.2f %%") % ((memory_allocated / memory_deallocated)*100));
         
         return cumul_time_sum;
     };
@@ -550,7 +550,7 @@ void Profiler::output(ostream &os) {
         
         // debug info
         node.put ("memory-difference", boost::format("%1.2f kB") % ((memory_allocated - memory_deallocated)/1000.0));
-        node.put ("memory-percent",    boost::format("%1.2f %%") % (memory_allocated / memory_deallocated));
+        node.put ("memory-percent",    boost::format("%1.2f %%") % ((memory_allocated / memory_deallocated)*100));
         
         return cumul_time;
     };
