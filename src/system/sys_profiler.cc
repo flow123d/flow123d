@@ -29,6 +29,7 @@
 #include <iostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include "petscsys.h" 
 
 #include "system/file_path.hh"
 #include "system/python_loader.hh"
@@ -52,6 +53,12 @@ double MPI_Functions::sum(double* val, MPI_Comm comm) {
         MPI_Reduce(val, &total, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
         return total;
     }
+    
+long MPI_Functions::sum(long* val, MPI_Comm comm) {
+        long total = 0;
+        MPI_Reduce(val, &total, 1, MPI_LONG, MPI_SUM, 0, comm);
+        return total;
+    }
 
 int MPI_Functions::min(int* val, MPI_Comm comm) {
         int min = 0;
@@ -64,6 +71,12 @@ double MPI_Functions::min(double* val, MPI_Comm comm) {
         MPI_Reduce(val, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
         return min;
     }
+    
+long MPI_Functions::min(long* val, MPI_Comm comm) {
+        long min = 0;
+        MPI_Reduce(val, &min, 1, MPI_LONG, MPI_MIN, 0, comm);
+        return min;
+    }
 
 int MPI_Functions::max(int* val, MPI_Comm comm) {
         int max = 0;
@@ -74,6 +87,12 @@ int MPI_Functions::max(int* val, MPI_Comm comm) {
 double MPI_Functions::max(double* val, MPI_Comm comm) {
         double max = 0;
         MPI_Reduce(val, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+        return max;
+    }
+    
+long MPI_Functions::max(long* val, MPI_Comm comm) {
+        long max = 0;
+        MPI_Reduce(val, &max, 1, MPI_LONG, MPI_MAX, 0, comm);
         return max;
     }
 
@@ -93,7 +112,14 @@ Timer::Timer(const CodePoint &cp, int parent)
   hash_idx_(cp.hash_idx_),
   parent_timer(parent),
   total_allocated_(0),
-  total_deallocated_(0)
+  total_deallocated_(0),
+  max_allocated_(0),
+  current_allocated_(0),
+  alloc_called(0),
+  dealloc_called(0),
+  petsc_start_memory(0),
+  petsc_end_memory (0),
+  petsc_peak_memory(0)
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=-1;
 }
@@ -219,6 +245,9 @@ int  Profiler::start_timer(const CodePoint &cp) {
 
     timers_[child_idx].start();
     actual_node=child_idx;
+    
+    // reset values
+    PetscMemoryGetCurrentUsage (&timers_[actual_node].petsc_start_memory);
 
     return actual_node;
 }
@@ -271,6 +300,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
     }
     // node to close match the actual
     timers_[actual_node].stop(false);
+    PetscMemoryGetCurrentUsage (&timers_[actual_node].petsc_end_memory);
     actual_node=timers_[actual_node].parent_timer;
 }
 
@@ -315,6 +345,7 @@ void Profiler::add_calls(unsigned int n_calls) {
 void Profiler::notify_malloc(const size_t size) {
     timers_[actual_node].total_allocated_ += size;
     timers_[actual_node].current_allocated_ += size;
+    timers_[actual_node].alloc_called++;
         
     if (timers_[actual_node].current_allocated_ > timers_[actual_node].max_allocated_)
         timers_[actual_node].max_allocated_ = timers_[actual_node].current_allocated_;
@@ -326,6 +357,7 @@ void Profiler::notify_malloc(const size_t size) {
 void Profiler::notify_free(const size_t size) {
     timers_[actual_node].total_deallocated_ += size;
     timers_[actual_node].current_allocated_ -= size;
+    timers_[actual_node].dealloc_called++;
     // cout << timers_[actual_node].tag() << timers_[actual_node].current_allocated_ << endl;
 }
 
@@ -418,6 +450,20 @@ void Profiler::update_running_timers() {
     timers_[0].cumul_time += (TimePoint() - timers_[0].start_time);
 }
 
+template <class T>
+void save_mpi_metric (property_tree::ptree &node, MPI_Comm comm, T * ptr, string name) {
+    node.put (name+"-min", MPI_Functions::min(ptr, comm));
+    node.put (name+"-max", MPI_Functions::max(ptr, comm));
+    node.put (name+"-sum", MPI_Functions::sum(ptr, comm));
+}
+
+template <class T>
+void save_nonmpi_metric (property_tree::ptree &node,  T * ptr, string name) {
+    node.put (name+"-min", *ptr);
+    node.put (name+"-max", *ptr);
+    node.put (name+"-sum", *ptr);
+}
+
 
 #ifdef FLOW123D_HAVE_MPI
 void Profiler::output(MPI_Comm comm, ostream &os) {
@@ -436,43 +482,31 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
         double cumul_time = timer.cumulative_time () / 1000;
-        double memory_allocated = (double)timer.total_allocated_;
-        double memory_deallocated = (double)timer.total_deallocated_;
-        double memory_peak = (double)timer.max_allocated_;
-        double cumul_time_sum, memory_allocated_sum, memory_deallocated_sum;
-
-        node.put ("call-count", call_count);
-        node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
-        node.put ("call-count-max", MPI_Functions::max(&call_count, comm));
-        node.put ("call-count-sum", MPI_Functions::sum(&call_count, comm));
-
-        cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
-
-        node.put ("cumul-time", boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-min", boost::format("%1.9f") % MPI_Functions::min(&cumul_time, comm));
-        node.put ("cumul-time-max", boost::format("%1.9f") % MPI_Functions::max(&cumul_time, comm));
-        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time_sum);
         
-        memory_allocated_sum = MPI_Functions::sum(&memory_allocated, comm);
+        long memory_allocated = (long)timer.total_allocated_;
+        long memory_deallocated = (long)timer.total_deallocated_;
+        long memory_peak = (long)timer.max_allocated_;
         
-        node.put ("memory-alloc",     (long) memory_allocated);
-        node.put ("memory-alloc-min", boost::format("%1.0f") % MPI_Functions::min(&memory_allocated, comm));
-        node.put ("memory-alloc-max", boost::format("%1.0f") % MPI_Functions::max(&memory_allocated, comm));
-        node.put ("memory-alloc-sum", boost::format("%1.0f") % memory_allocated_sum);
+        int alloc_called = timer.alloc_called;
+        int dealloc_called = timer.dealloc_called;
         
-        memory_deallocated_sum = MPI_Functions::sum(&memory_deallocated, comm);
+        long petsc_start_memory = (long)timer.petsc_start_memory;
+        long petsc_end_memory = (long)timer.petsc_end_memory;
         
-        node.put ("memory-dealloc",     (long) memory_deallocated);
-        node.put ("memory-dealloc-min", boost::format("%1.0f") % MPI_Functions::min(&memory_deallocated, comm));
-        node.put ("memory-dealloc-max", boost::format("%1.0f") % MPI_Functions::max(&memory_deallocated, comm));
-        node.put ("memory-dealloc-sum", boost::format("%1.0f") % memory_deallocated_sum);
+        save_mpi_metric<double>(node, comm, &cumul_time, "cumul-time");
+        save_mpi_metric<int>(node, comm, &call_count, "call_count");
         
-        // debug info
-        node.put ("memory-difference", boost::format("%1.2f kB") % ((memory_allocated - memory_deallocated)/1000.0));
-        node.put ("memory-percent",    boost::format("%1.2f %%") % (memory_allocated / memory_deallocated));
-        node.put ("memory-peak",       boost::format("%1.2f") % (memory_peak));
+        save_mpi_metric<long>(node, comm, &memory_allocated, "memory-alloc");
+        save_mpi_metric<long>(node, comm, &memory_deallocated, "memory-dealloc");
+        save_mpi_metric<long>(node, comm, &memory_peak, "memory-peak");
         
-        return cumul_time_sum;
+        save_mpi_metric<int>(node, comm, &alloc_called, "memory-alloc-called");
+        save_mpi_metric<int>(node, comm, &dealloc_called, "memory-dealloc-called");
+        
+        save_mpi_metric<long>(node, comm, &petsc_start_memory, "memory-petsc-start");
+        save_mpi_metric<long>(node, comm, &petsc_end_memory, "memory-petsc-end");
+        
+        return MPI_Functions::sum(&cumul_time, comm);
     };
 
     add_timer_info (reduce, &children, 0, 0.0);
@@ -533,35 +567,30 @@ void Profiler::output(ostream &os) {
     // non-MPI implementation is just dummy repetition of initial value
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
+        double cumul_time = timer.cumulative_time () / 1000;
+        
         long memory_allocated = (long)timer.total_allocated_;
         long memory_deallocated = (long)timer.total_deallocated_;
         long memory_peak = (long)timer.max_allocated_;
-        double cumul_time = timer.cumulative_time () / 1000;
-
-        node.put ("call-count",     call_count);
-        node.put ("call-count-min", call_count);
-        node.put ("call-count-max", call_count);
-        node.put ("call-count-sum", call_count);
-
-        node.put ("cumul-time",     boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-min", boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-max", boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time);
         
-        node.put ("memory-alloc",     memory_allocated);
-        node.put ("memory-alloc-min", memory_allocated);
-        node.put ("memory-alloc-max", memory_allocated);
-        node.put ("memory-alloc-sum", memory_allocated);
+        int alloc_called = timer.alloc_called;
+        int dealloc_called = timer.dealloc_called;
         
-        node.put ("memory-dealloc",      memory_deallocated);
-        node.put ("memory-dealloc-min",  memory_deallocated);
-        node.put ("memory-dealloc-max",  memory_deallocated);
-        node.put ("memory-dealloc-sum",  memory_deallocated);
+        long petsc_start_memory = (long)timer.petsc_start_memory;
+        long petsc_end_memory = (long)timer.petsc_end_memory;
         
-        // debug info
-        node.put ("memory-difference", boost::format("%1.2f kB") % ((memory_allocated - memory_deallocated)/1000.0));
-        node.put ("memory-percent",    boost::format("%1.2f %%") % (memory_allocated / memory_deallocated));
-        node.put ("memory-peak",       boost::format("%1.2f") % (memory_peak));
+        save_nonmpi_metric<double>(node, &cumul_time, "cumul-time");
+        save_nonmpi_metric<int>(node, &call_count, "call_count");
+        
+        save_nonmpi_metric<long>(node, &memory_allocated, "memory-alloc");
+        save_nonmpi_metric<long>(node, &memory_deallocated, "memory-dealloc");
+        save_nonmpi_metric<long>(node, &memory_peak, "memory-peak");
+        
+        save_nonmpi_metric<int>(node, &alloc_called, "memory-alloc-called");
+        save_nonmpi_metric<int>(node, &dealloc_called, "memory-dealloc-called");
+        
+        save_nonmpi_metric<long>(node, &petsc_start_memory, "memory-petsc-start");
+        save_nonmpi_metric<long>(node, &petsc_end_memory, "memory-petsc-end");
         
         return cumul_time;
     };
@@ -701,57 +730,12 @@ void Profiler::uninitialize() {
     }
 }
 
-map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& MemoryAlloc::malloc_map() {
-    static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> static_malloc_map;
-    return static_malloc_map;
-} 
+// Profiler* Profiler::instance() {
+//     // if (Profiler::_instance != NULL)
+//     //     Profiler::_instance = new Profiler();
+//     return Profiler::_instance;
+// }
 
-
-void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-	Profiler::instance()->notify_malloc(size);
-
-	void * p = malloc(size);
-	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
-	return p;
-}
-
-void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-	Profiler::instance()->notify_malloc(size);
-		
-	void * p = malloc(size);
-	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
-	return p;
-}
-
-void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
-	Profiler::instance()->notify_malloc(size);
-		
-	void * p = malloc(size);
-	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
-	return p;
-}
-
-void operator delete( void *p) throw() {
-	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
-		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
-		MemoryAlloc::malloc_map().erase((long)p);
-	} else {
-		Profiler::instance()->notify_free(sizeof(p));
-	}
-
-	free(p);
-}
-
-void operator delete[]( void *p) throw() {
-	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
-		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
-		MemoryAlloc::malloc_map().erase((long)p);
-	} else {
-		Profiler::instance()->notify_free(sizeof(p));
-	}
-
-	free(p);
-}
 
 #else // def FLOW123D_DEBUG_PROFILER
 
