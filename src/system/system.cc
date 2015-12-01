@@ -280,6 +280,7 @@ void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
 	}
 
 	void * p = malloc(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
 	return p;
 }
 
@@ -290,7 +291,6 @@ void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
 		
 	void * p = malloc(size);
 	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
-	// cout << "Malloc[] " << sizeof(p) << endl;
 	return p;
 }
 
@@ -301,7 +301,6 @@ void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
 		
 	void * p = malloc(size);
 	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
-	// cout << "Malloc[]2" << sizeof(p) << endl;
 	return p;
 }
 
@@ -314,9 +313,7 @@ void operator delete( void *p) throw() {
 			Profiler::instance()->notify_free(sizeof(p));
 		}
 	}
-			
-		
-	// cout << "Dealloc  " << sizeof(p) << endl;
+
 	free(p);
 }
 
@@ -329,8 +326,7 @@ void operator delete[]( void *p) throw() {
 			Profiler::instance()->notify_free(sizeof(p));
 		}
 	}
-		
-	// cout << "Dealloc[] " << malloc_map[(long)p] << endl;
+
 	free(p);
 }
 
