@@ -148,7 +148,8 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 		global_triangle.print();*/
 //         IntersectionPoint<1,2> IP(theta,local_triangle,-1,-1,(*plucker_products[0] > 0 ? 1 : 0));
 		IntersectionPoint<1,2> IP(theta,local_triangle);
-        IP.set_topology(unset_loc_idx, unset_loc_idx, (*plucker_products[0] > 0 ? 1 : 0), false);
+        IP.set_topology(unset_loc_idx, 1, unset_loc_idx, 2);
+        IP.set_plucker_flags((*plucker_products[0] > 0 ? 1 : 0), false);
 		IP12s.push_back(IP);
 		return true;
         //TODO try removing the seocond part of the following condition
@@ -255,7 +256,8 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					l_triangle.print();*/
 //                     IntersectionPoint<1,2> IP(local_abscissa,l_triangle,-1,i,1,false,true);
 					IntersectionPoint<1,2> IP(local_abscissa,l_triangle);
-                    IP.set_topology(unset_loc_idx,i,1,true);
+                    IP.set_topology(unset_loc_idx, 1, i, 2);
+                    IP.set_plucker_flags(1, true);
 					IP12s.push_back(IP);
 					return true;
 				}
@@ -464,8 +466,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 //             a1->set_topology_EE(unset_loc_idx, a1->is_pathologic());  // edge index is set later
             // here we can set only local index of the vertex on the line
             DBGMSG("E-E 0\n");
-            unsigned int line_node = 0;
-            a1->set_topology(line_node, unset_loc_idx, a1->orientation(), a1->is_pathologic());
+            a1->set_topology(0, 0, unset_loc_idx,3);
         }
         if(t2 == 1) // interpolate IP a2
         {
@@ -479,8 +480,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 //             a2->set_topology_EE(unset_loc_idx, a2->is_pathologic());  // edge index is set later
             // here we can set only local index of the vertex on the line
             DBGMSG("E-E 1\n");
-            unsigned int line_node = 1;
-            a2->set_topology(line_node, unset_loc_idx, a2->orientation(), a2->is_pathologic());
+            a2->set_topology(1, 0, unset_loc_idx,3);
         }
     }
     return pocet_pruniku;
@@ -602,8 +602,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
             {
                 // we are on line (3-i)%3 of the triangle, and IP.side_idx1 contains local node of the line
                 // E-E, we know vertex index
-                IP23.set_topology(RefElement<2>::interact<0,1>((3-i)%3)[IP.side_idx1()],
-                                  unset_loc_idx, IP.orientation(), IP.is_pathologic());
+                IP23.set_topology(RefElement<2>::interact<0,1>((3-i)%3)[IP.side_idx1()], 0,
+                                  unset_loc_idx, IP.dim_B());
             }
             
             lokalni_mnohouhelnik.add_ipoint(IP23);

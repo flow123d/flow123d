@@ -20,6 +20,8 @@ void IntersectionPoint<N,M>::clear()
     side_idx2_ = unset_loc_idx;
     orientation_ = 1;
     pathologic_ = false;
+    dim_A_ = N;
+    dim_B_ = M;
 }
 
 template<unsigned int N, unsigned int M>
@@ -30,8 +32,10 @@ IntersectionPoint<N,M>::IntersectionPoint()
 
 template<unsigned int N, unsigned int M>    
 IntersectionPoint<N,M>::IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
-                                          const arma::vec::fixed<M+1> &lc2)
-    : local_coords1_(lc1), local_coords2_(lc2)
+                                          const arma::vec::fixed<M+1> &lc2,
+                                          unsigned int dim_A, 
+                                          unsigned int dim_B)
+    : local_coords1_(lc1), local_coords2_(lc2), dim_A_(dim_A), dim_B_(dim_B)
     {};
 
 
@@ -43,6 +47,8 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
         side_idx2_ = IP.side_idx1();
         orientation_ = IP.orientation();
         pathologic_ = IP.is_pathologic();
+        dim_A_ = IP.dim_B();
+        dim_B_ = IP.dim_A();
     };
 
 
@@ -56,6 +62,8 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned
     side_idx2_ = side_idx2;
     orientation_ = IP.orientation();
     pathologic_ = IP.is_pathologic();
+    dim_A_ = IP.dim_A();
+    dim_B_ = M;
 };
 
 
@@ -69,6 +77,8 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned
     side_idx2_ = side_idx2;
     orientation_ = IP.orientation();
     pathologic_ = IP.is_pathologic();
+    dim_A_ = IP.dim_A();
+    dim_B_ = M;
 };
 
     

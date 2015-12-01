@@ -18,7 +18,7 @@ static const unsigned int unset_loc_idx = -1; ///< Value for local index that is
  * edge and side indices, pathologic flag.
  */
 template<unsigned int N, unsigned int M> class IntersectionPoint {
-
+    
 	arma::vec::fixed<N+1> local_coords1_; ///< Barycentric coordinates of a point on simplex<N>.
 	arma::vec::fixed<M+1> local_coords2_; ///< Barycentric coordinates of a point on simplex<M>.
 
@@ -29,6 +29,9 @@ template<unsigned int N, unsigned int M> class IntersectionPoint {
 	unsigned int orientation_; // orientation from intersection using plucker coords
 
 	bool pathologic_; // points is a vertex of tetrahedron or it is in side of tetrahedron or it is in edge of tetrahedron
+	
+	unsigned int dim_A_;    ///< Dimension of the object A of intersection.
+    unsigned int dim_B_;    ///< Dimension of the object B of intersection.
     
 public:
 
@@ -40,7 +43,8 @@ public:
      * @param lc1 - barycentric coordinates in Simplex<N>
      * @param lc2 - barycentric coordinates in Simplex<M>
      */
-	IntersectionPoint(const arma::vec::fixed<N+1> &lc1, const arma::vec::fixed<M+1> &lc2);
+	IntersectionPoint(const arma::vec::fixed<N+1> &lc1, const arma::vec::fixed<M+1> &lc2,
+                      unsigned int dim_A = N, unsigned int dim_B = M);
 	
 
 	/// Constructor - fliping dimension of an intersection point.
@@ -62,10 +66,14 @@ public:
     void set_coordinates(const arma::vec::fixed<N+1> &lc1, const arma::vec::fixed<M+1> &lc2);
     
     /// Setter for topology data.
-    void set_topology(unsigned int side1 = unset_loc_idx,
-                      unsigned int side2 = unset_loc_idx,
-                      unsigned int ori = 1,
-                      bool patological = false);
+    void set_topology(unsigned int side1,// = unset_loc_idx,
+                      unsigned int dim_A,// = N,
+                      unsigned int side2,// = unset_loc_idx,
+                      unsigned int dim_B// = M,
+                     );
+    
+    /// Setter for Plucker flags.
+    void set_plucker_flags(unsigned int ori, bool pathologic);
     
 //     void set_topology_SS(unsigned int edge_idx,
 //                          unsigned int ori,
@@ -95,6 +103,8 @@ public:
 
 //     void set_is_patological(bool ip);
 
+    unsigned int dim_A() const;         ///< Returns dimension of object A.
+    unsigned int dim_B() const;         ///< Returns dimension of object B.
     unsigned int side_idx1() const;     ///<  Returns the index of Simplex<N>.
     unsigned int side_idx2() const;     ///<  Returns the index of Simplex<M>.
     unsigned int orientation() const;   ///<  Returns the orientation.
@@ -130,13 +140,20 @@ void IntersectionPoint<N,M>::set_coordinates(const arma::vec::fixed< N + 1  >& l
     local_coords2_ = lc2; }
 
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_topology(unsigned int side1, unsigned int side2, unsigned int ori, bool pathologic)
+void IntersectionPoint<N,M>::set_topology(unsigned int side1,unsigned int dim_A, unsigned int side2, unsigned int dim_B)
 {   side_idx1_ = side1;
     side_idx2_ = side2;
+    dim_A_ = dim_A;
+    dim_B_ = dim_B;
+}
+    
+template<unsigned int N, unsigned int M>
+void IntersectionPoint<N,M>::set_plucker_flags(unsigned int ori, bool pathologic)
+{
     orientation_ = ori;
     pathologic_ = pathologic;
 }
-    
+
 // template<unsigned int N, unsigned int M>  
 // void IntersectionPoint<N,M>::set_topology_SS(unsigned int edge_idx, unsigned int ori, bool pathologic)
 // {
@@ -164,7 +181,14 @@ void IntersectionPoint<N,M>::set_topology(unsigned int side1, unsigned int side2
 //     is_patological_ = pathologic;
 // }
 
-    
+template<unsigned int N, unsigned int M>
+unsigned int IntersectionPoint<N,M>::dim_A() const
+{   return dim_A_; }
+
+template<unsigned int N, unsigned int M>
+unsigned int IntersectionPoint<N,M>::dim_B() const
+{   return dim_B_; }
+
 template<unsigned int N, unsigned int M>
 const arma::vec::fixed< N + 1  >& IntersectionPoint<N,M>::local_coords1() const
 {   return local_coords1_; }
