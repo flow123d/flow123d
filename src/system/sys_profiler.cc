@@ -314,12 +314,19 @@ void Profiler::add_calls(unsigned int n_calls) {
 
 void Profiler::notify_malloc(const size_t size) {
     timers_[actual_node].total_allocated_ += size;
+    timers_[actual_node].current_allocated_ += size;
+        
+    if (timers_[actual_node].current_allocated_ > timers_[actual_node].max_allocated_)
+        timers_[actual_node].max_allocated_ = timers_[actual_node].current_allocated_;
+    
 }
 
 
 
 void Profiler::notify_free(const size_t size) {
     timers_[actual_node].total_deallocated_ += size;
+    timers_[actual_node].current_allocated_ -= size;
+    // cout << timers_[actual_node].tag() << timers_[actual_node].current_allocated_ << endl;
 }
 
 
@@ -431,6 +438,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         double cumul_time = timer.cumulative_time () / 1000;
         double memory_allocated = (double)timer.total_allocated_;
         double memory_deallocated = (double)timer.total_deallocated_;
+        double memory_peak = (double)timer.max_allocated_;
         double cumul_time_sum, memory_allocated_sum, memory_deallocated_sum;
 
         node.put ("call-count", call_count);
@@ -461,7 +469,8 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         
         // debug info
         node.put ("memory-difference", boost::format("%1.2f kB") % ((memory_allocated - memory_deallocated)/1000.0));
-        node.put ("memory-percent",    boost::format("%1.2f %%") % ((memory_allocated / memory_deallocated)*100));
+        node.put ("memory-percent",    boost::format("%1.2f %%") % (memory_allocated / memory_deallocated));
+        node.put ("memory-peak",       boost::format("%1.2f") % (memory_peak));
         
         return cumul_time_sum;
     };
@@ -526,6 +535,7 @@ void Profiler::output(ostream &os) {
         int call_count = timer.call_count;
         long memory_allocated = (long)timer.total_allocated_;
         long memory_deallocated = (long)timer.total_deallocated_;
+        long memory_peak = (long)timer.max_allocated_;
         double cumul_time = timer.cumulative_time () / 1000;
 
         node.put ("call-count",     call_count);
@@ -550,7 +560,8 @@ void Profiler::output(ostream &os) {
         
         // debug info
         node.put ("memory-difference", boost::format("%1.2f kB") % ((memory_allocated - memory_deallocated)/1000.0));
-        node.put ("memory-percent",    boost::format("%1.2f %%") % ((memory_allocated / memory_deallocated)*100));
+        node.put ("memory-percent",    boost::format("%1.2f %%") % (memory_allocated / memory_deallocated));
+        node.put ("memory-peak",       boost::format("%1.2f") % (memory_peak));
         
         return cumul_time;
     };
@@ -690,6 +701,58 @@ void Profiler::uninitialize() {
     }
 }
 
+map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& MemoryAlloc::malloc_map() {
+    static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> static_malloc_map;
+    return static_malloc_map;
+} 
+
+
+void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
+	Profiler::instance()->notify_malloc(size);
+
+	void * p = malloc(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	return p;
+}
+
+void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
+	Profiler::instance()->notify_malloc(size);
+		
+	void * p = malloc(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	return p;
+}
+
+void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
+	Profiler::instance()->notify_malloc(size);
+		
+	void * p = malloc(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	return p;
+}
+
+void operator delete( void *p) throw() {
+	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
+		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
+		MemoryAlloc::malloc_map().erase((long)p);
+	} else {
+		Profiler::instance()->notify_free(sizeof(p));
+	}
+
+	free(p);
+}
+
+void operator delete[]( void *p) throw() {
+	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
+		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
+		MemoryAlloc::malloc_map().erase((long)p);
+	} else {
+		Profiler::instance()->notify_free(sizeof(p));
+	}
+
+	free(p);
+}
+
 #else // def FLOW123D_DEBUG_PROFILER
 
 Profiler* Profiler::_instance = NULL;
@@ -699,6 +762,7 @@ void Profiler::initialize() {
 }
 
 void Profiler::uninitialize() {
+    Profiler * _instance = Profiler::instance();
     if (_instance)  {
         delete _instance;
         _instance = NULL;

@@ -427,8 +427,15 @@ protected:
      * Total number of bytes deallocated directly in this frame (not include subframes).
      */
     size_t total_deallocated_;
-
-
+    /**
+     * Maximum number of bytes allocated at one time in this frame (not include subframes).
+     */
+    size_t max_allocated_;
+    /**
+     * Current number of bytes allocated in this frame (not include subframes).
+     */
+    size_t current_allocated_;
+    
     friend class Profiler;
 
 };
@@ -749,6 +756,24 @@ public:
         Profiler::instance()->stop_timer(timer_index_);
     }
 };
+
+
+class MemoryAlloc {
+public:
+	static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& malloc_map(); 
+};
+
+
+void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
+
+void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
+
+void *operator new[] (std::size_t size, const std::nothrow_t&) throw();
+
+void operator delete( void *p) throw();
+
+void operator delete[]( void *p) throw();
+
 
 #else // FLOW123D_DEBUG_PROFILER
 
