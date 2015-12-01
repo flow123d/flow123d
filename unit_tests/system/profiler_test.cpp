@@ -278,6 +278,60 @@ TEST(Profiler, structure) {
 
 }
 
+
+
+template <class T>
+void alloc_and_dealloc(int size){
+    T* t = new T[size];
+    delete [] t;
+}
+
+
+TEST(Profiler, memory_profiler) {
+    const int ARR_SIZE = 100;
+    const int LOOP_CNT = 100;
+    Profiler::initialize();
+
+    {
+        START_TIMER("memory-profiler-int");
+        // alloc and dealloc array of int
+        for (int i = 0; i < LOOP_CNT; i++) alloc_and_dealloc<int>(ARR_SIZE);
+        // test that we deallocated all allocated space
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
+        // test that allocated space is correct size
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), ARR_SIZE * LOOP_CNT * sizeof(int));
+        END_TIMER("memory-profiler-int");
+
+
+        START_TIMER("memory-profiler-double");
+        // alloc and dealloc array of float
+        for (int i = 0; i < LOOP_CNT; i++) alloc_and_dealloc<double>(ARR_SIZE);
+        // test that we deallocated all allocated space
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
+        // test that allocated space is correct size
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), ARR_SIZE * LOOP_CNT * sizeof(double));
+        END_TIMER("memory-profiler-double");
+
+
+        START_TIMER("memory-profiler-simple");
+        // alloc and dealloc array of float
+        for (int i = 0; i < LOOP_CNT; i++) {
+            int * j = new int;
+            delete j;
+        }
+        // test that we deallocated all allocated space
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
+        // test that allocated space is correct size
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), LOOP_CNT * sizeof(int));
+        END_TIMER("memory-profiler-simple");
+    }
+
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    Profiler::uninitialize();
+}
+
+
+
 #else // FLOW123D_DEBUG_PROFILER
 
 
@@ -292,5 +346,3 @@ TEST(Profiler, test_calls_only) {
 
 
 #endif // FLOW123D_DEBUG_PROFILER
-
-
