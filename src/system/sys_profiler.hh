@@ -53,6 +53,7 @@
 #include <mpi.h>
 #include <boost/property_tree/ptree.hpp>
 #include "time_point.hh"
+#include "petscsys.h" 
 
 // namespace alias
 namespace property_tree = boost::property_tree;
@@ -63,10 +64,15 @@ class MPI_Functions {
 public:
     static int sum(int* val, MPI_Comm comm);
     static double sum(double* val, MPI_Comm comm);
+    static long sum(long* val, MPI_Comm comm);
+    
     static int min(int* val, MPI_Comm comm);
     static double min(double* val, MPI_Comm comm);
+    static long min(long* val, MPI_Comm comm);
+    
     static int max(int* val, MPI_Comm comm);
     static double max(double* val, MPI_Comm comm);
+    static long max(long* val, MPI_Comm comm);
 };
 
 // Assuming all compilers support constexpr
@@ -436,6 +442,28 @@ protected:
      */
     size_t current_allocated_;
     
+    /**
+     * Number of times new/new[] operator was used in this scope
+     */
+    int alloc_called;
+    /**
+     * Number of times delete/delete[] operator was used in this scope
+     */
+    int dealloc_called;
+    
+    /**
+     * Number of bytes used by Petsc at the start of time-frame
+     */
+    PetscLogDouble petsc_start_memory;
+    /**
+     * Number of bytes used by Petsc at the start of time-frame
+     */
+    PetscLogDouble petsc_end_memory;
+    /**
+     * Maximum number of bytes used by Petsc during time-frame
+     */
+    PetscLogDouble petsc_peak_memory;
+    
     friend class Profiler;
 
 };
@@ -758,21 +786,18 @@ public:
 };
 
 
-class MemoryAlloc {
-public:
-	static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& malloc_map(); 
-};
 
 
-void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
-
-void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
-
-void *operator new[] (std::size_t size, const std::nothrow_t&) throw();
-
-void operator delete( void *p) throw();
-
-void operator delete[]( void *p) throw();
+// 
+// void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
+// 
+// void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
+// 
+// void *operator new[] (std::size_t size, const std::nothrow_t&) throw();
+// 
+// void operator delete( void *p) throw();
+// 
+// void operator delete[]( void *p) throw();
 
 
 #else // FLOW123D_DEBUG_PROFILER
