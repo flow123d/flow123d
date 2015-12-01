@@ -34,7 +34,6 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
-#include "flow/old_bcd.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
@@ -59,7 +58,6 @@ const IT::Selection & ConvectionTransport::EqData::get_output_selection() {
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
-    	bc_conc.add_factory( OldBcdInput::instance()->trans_conc_factory );
     	bc_conc.units( UnitSI().kg().m(-3) );
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
     	init_conc.units( UnitSI().kg().m(-3) );
