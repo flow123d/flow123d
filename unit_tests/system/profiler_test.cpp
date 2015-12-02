@@ -18,6 +18,8 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "petscvec.h"  
+#include "petscsys.h"  
 
 #ifdef FLOW123D_DEBUG_PROFILER
 
@@ -281,9 +283,10 @@ TEST(Profiler, structure) {
 
 
 template <class T>
-void alloc_and_dealloc(int size){
+int alloc_and_dealloc(int size){
     T* t = new T[size];
     delete [] t;
+    return size * sizeof(T);
 }
 
 
@@ -309,7 +312,7 @@ TEST(Profiler, memory_profiler) {
         // test that we deallocated all allocated space
         EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
         // test that allocated space is correct size
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), ARR_SIZE * LOOP_CNT * sizeof(double));
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), ARR_SIZE * LOOP_CNT * sizeof(double) + ARR_SIZE * LOOP_CNT * sizeof(int));
         END_TIMER("memory-profiler-double");
 
 
@@ -322,12 +325,82 @@ TEST(Profiler, memory_profiler) {
         // test that we deallocated all allocated space
         EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
         // test that allocated space is correct size
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), LOOP_CNT * sizeof(int));
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), LOOP_CNT * sizeof(int) + ARR_SIZE * LOOP_CNT * sizeof(double) + ARR_SIZE * LOOP_CNT * sizeof(int));
         END_TIMER("memory-profiler-simple");
     }
 
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
+}
+
+TEST(Profiler, memory_propagation){
+    const int SIZE = 25;
+    int allocated = 0;
+    
+    Profiler::initialize();
+    {
+        allocated += alloc_and_dealloc<int>(SIZE);
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+        
+        START_TIMER("A");
+            allocated += alloc_and_dealloc<int>(10 * SIZE);
+            EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+            
+            START_TIMER("B");
+                allocated += alloc_and_dealloc<int>(100 * SIZE);
+                EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+                
+                START_TIMER("C");
+                    EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+                END_TIMER("C");
+                
+                EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+            END_TIMER("B");
+            
+            allocated += alloc_and_dealloc<int>(10 * SIZE);
+            EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+            
+            START_TIMER("D");
+                EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+            END_TIMER("D");
+            
+            EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+        END_TIMER("A");
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+    }
+    EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+    EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    Profiler::uninitialize();
+}
+
+TEST(Profiler, petsc_memory_monitor) {
+    Profiler::initialize(); 
+    {
+        START_TIMER("A");
+        END_TIMER("A");
+        
+        START_TIMER("B");
+        END_TIMER("B");
+    }
+    Profiler::uninitialize();
+    /*PetscInt size = 10000;
+    Profiler::initialize();
+    PetscInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+    {
+        START_TIMER("A");
+            Vec tmp_vector;
+            VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector);
+        END_TIMER("A");
+        
+        START_TIMER("B");
+            Vec tmp_vector1, tmp_vector2;
+            VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector1);
+            VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector2);
+        END_TIMER("B");
+    }
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    Profiler::uninitialize();*/
 }
 
 
