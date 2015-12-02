@@ -255,8 +255,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     data_.set_limit_side(LimitSide::left);
 
-    row_4_el = new int[feo->dh()->el_ds()->lsize()];
-    for (unsigned int i=0; i<feo->dh()->el_ds()->lsize(); ++i)
+    row_4_el = new int[feo->dh()->el_ds()->size()];
+    for (unsigned int i=0; i<feo->dh()->el_ds()->size(); ++i)
     	row_4_el[i] = i;
 }
 
