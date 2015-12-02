@@ -1,13 +1,24 @@
-/*
- * storage_modifier.cc
+/*!
  *
- *  Created on: Feb 13, 2014
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    storage_transpose.cc
+ * @brief   
  */
 
 #include <cstdint>
 
 #include "input/storage_transpose.hh"
+#include "input/input_type.hh"
 
 
 namespace Input {
@@ -59,7 +70,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
         ASSERT( typeid(*source_storage) == typeid(StorageInt), "Incompatible type of storage. For selection must be Integer!\n");
     	return source_storage->deep_copy();
     } else {
-    	const Type::AbstractRecord * abstract_record_type = dynamic_cast<const Type::AbstractRecord *>(source_type);
+    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(source_type);
     	if (abstract_record_type != NULL ) {
             return modify_storage(target_type, abstract_record_type, source_storage, index);
     	}
@@ -105,11 +116,11 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 }
 
 
-StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::AbstractRecord *source_type,
+StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::Abstract *source_type,
 		const StorageBase *source_storage, unsigned int index) {
 
-	const Type::AbstractRecord *target_arec = dynamic_cast<const Type::AbstractRecord *>(target_type);
-	ASSERT( target_arec != NULL, "Incompatible type of target type. Must be AbstractRecord!\n");
+	const Type::Abstract *target_arec = dynamic_cast<const Type::Abstract *>(target_type);
+	ASSERT( target_arec != NULL, "Incompatible type of target type. Must be Abstract!\n");
 	ASSERT( typeid(*source_storage) == typeid(StorageArray), "Incompatible type of storage. Must be Array!\n");
 
 	string descendant_name = source_storage->get_item(0)->get_string();

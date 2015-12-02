@@ -1,0 +1,73 @@
+problem: !SequentialCoupling
+  description: narrow radioaoctive decay chain, with transport switched enabled but
+    with zero pressure gradient, VTK output test12
+  mesh:
+    mesh_file: ./input/flow_decay/sit_decay.msh
+  primary_equation: !Steady_MH
+    input_fields:
+    - rid: 1
+      anisotropy: 0.01
+    - region: IMPLICIT BOUNDARY
+      flow_old_bcd_file: ./input/flow_decay/sit_decay.fbc
+    output:
+      output_stream: 
+        file: ./decay.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-07
+  secondary_equation: !TransportOperatorSplitting
+    transport: !ConvectionTransport
+      input_fields:
+      - rid: 1
+        init_conc:
+        - 0.01
+        - 0.02
+        - 0.03
+        - 0.04
+        - 0.05
+      - region: IMPLICIT BOUNDARY
+        old_boundary_file: ./input/flow_decay/sit_decay.tbc
+    output_stream: 
+      file: ./transport_decay.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 0.5
+      name: transport_output_stream
+    substances:
+    - A
+    - B
+    - C
+    - D
+    - E
+    time:
+      end_time: 10.0
+    reaction_term: !RadioactiveDecay
+      ode_solver: !PadeApproximant
+        nominator_degree: 3
+        denominator_degree: 3
+      decays:
+      - radionuclide: A
+        half_life: 1.3863
+        products:
+        - B
+      - radionuclide: B
+        half_life: 2.3105
+        products:
+        - C
+      - radionuclide: C
+        half_life: 1.5403
+        products:
+        - D
+      - radionuclide: D
+        half_life: 1.1552
+        products:
+        - E
+    balance:
+      cumulative: true

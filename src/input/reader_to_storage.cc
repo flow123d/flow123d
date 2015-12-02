@@ -1,8 +1,18 @@
-/*
- * reader_to_storage.cc
+/*!
  *
- *  Created on: May 7, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    reader_to_storage.cc
+ * @brief   
  */
 
 #include <cstdint>
@@ -50,6 +60,10 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &
     if (! in) {
     	THROW(ExcInputMessage() << EI_Message("Can not open main input file: '" + fname + "'.\n"));
     }
+
+    // finish all lazy input types
+    Input::Type::TypeBase::lazy_finish();
+
 	read_stream(in, root_type, format);
 }
 
@@ -58,6 +72,9 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &
 ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_type, FileFormat format)
 : ReaderToStorage()
 {
+	// finish all lazy input types
+    Input::Type::TypeBase::lazy_finish();
+
 	try {
 		istringstream is(str);
 		read_stream(is, root_type, format);
@@ -71,9 +88,6 @@ ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_
 void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
     ASSERT(storage_==nullptr," ");
-
-    // finish all lazy input types
-    Input::Type::TypeBase::lazy_finish();
 
     PathBase * root_path;
 	if (format == FileFormat::format_JSON) {
@@ -148,7 +162,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
     if (typeid(*type) == typeid(Type::Selection)) {
         return make_storage(p, static_cast<const Type::Selection *>(type) );
     } else {
-    	const Type::AbstractRecord * abstract_record_type = dynamic_cast<const Type::AbstractRecord *>(type);
+    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
     	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
 
         const Type::String * string_type = dynamic_cast<const Type::String *>(type);
@@ -206,7 +220,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
                             << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
                 } else if (it->default_.has_value_at_declaration() ) {
                    storage_array->new_item(it->key_index,
-                           make_storage_from_default( it->default_.value(), it->type_.get() ) );
+                           make_storage_from_default( it->default_.value(), it->type_ ) );
                 } else { // defalut - optional or default at read time
                     // set null
                     storage_array->new_item(it->key_index, new StorageNull() );
@@ -240,7 +254,7 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 				} else if (it->default_.has_value_at_declaration() ) {
 					// other key from default values
 					storage_array->new_item(it->key_index,
-							make_storage_from_default( it->default_.value(), it->type_.get() ) );
+							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
 					 ASSERT( ! it->default_.is_obligatory() ,
 							 "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
@@ -265,16 +279,16 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 
 
 
-StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Abstract *abstr_rec)
 {
 	if ( p.is_record_type() ) {
 
 		string descendant_name = p.get_descendant_name();
 		if ( descendant_name == "" ) {
 			if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
+				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in Abstract.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
 			} else { // auto conversion
-				return abstract_rec_automatic_conversion(p, abstr_rec);
+				return abstract_automatic_conversion(p, abstr_rec);
 			}
 		} else {
 			try {
@@ -289,7 +303,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::AbstractRec
 			THROW( ExcInputError() << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ")
 				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
 		} else { // auto conversion
-			return abstract_rec_automatic_conversion(p, abstr_rec);
+			return abstract_automatic_conversion(p, abstr_rec);
 		}
 	}
 
@@ -298,12 +312,12 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::AbstractRec
 
 
 
-StorageBase * ReaderToStorage::abstract_rec_automatic_conversion(PathBase &p, const Type::AbstractRecord *abstr_rec)
+StorageBase * ReaderToStorage::abstract_automatic_conversion(PathBase &p, const Type::Abstract *abstr_rec)
 {
     // perform automatic conversion
     const Type::Record *default_child = abstr_rec->get_default_descendant();
     if (! default_child) THROW(ExcInputError()
-    		<< EI_Specification("Auto conversion of AbstractRecord not allowed.\n")
+    		<< EI_Specification("Auto conversion of Abstract not allowed.\n")
     		<< EI_ErrorAddress(p.as_string())
     		<< EI_InputType(abstr_rec->desc())
     		);
@@ -470,82 +484,11 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 
 
 
-StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
+StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, boost::shared_ptr<Type::TypeBase> type) {
     try {
-    	/*
-    	// Possible simplification of this method (need default strings to be valid JSON)
-    	ReaderToStorage  tmp_storage(dflt_str, *type);
-    	return tmp_storage.storage_;
-		*/
-
-        // an auto-convertible AbstractRecord can be initialized form default value
-    	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
-    	if (a_record != NULL ) {
-    		ASSERT( a_record->get_selection_default().has_value_at_declaration(),
-    				"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", type->type_name().c_str() );
-            return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
-        } else
-        if (typeid(*type) == typeid(Type::Record) ) {
-            // an auto-convertible Record can be initialized form default value
-            const Type::Record *record = static_cast<const Type::Record *>(type);
-            Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
-
-            ASSERT( auto_key_it != record->end(), "Can not initialize (non-auto-convertible) Record '%s' by default value\n",
-            		type->type_name().c_str());
-			StorageArray *storage_array = new StorageArray(record->size());
-			for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-				if ( it == auto_key_it ) {
-					// one key is initialized by the record default string
-					storage_array->new_item(it->key_index, make_storage_from_default(dflt_str, it->type_.get()) );
-				} else {
-
-					ASSERT( ! it->default_.is_obligatory(),
-							"Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
-
-					if (it->default_.has_value_at_declaration() ) {
-					   storage_array->new_item(it->key_index,
-							   make_storage_from_default( it->default_.value(), it->type_.get() ) );
-					} else { // defalut - optional or default at read time
-						// set null
-						storage_array->new_item(it->key_index, new StorageNull() );
-					}
-				}
-			}
-
-			return storage_array;
-        } else
-        if (typeid(*type) == typeid(Type::Array) ) {
-            const Type::Array *array = static_cast<const Type::Array *>(type);
-            if ( array->match_size(1) ) {
-               // try auto conversion to array
-                StorageArray *storage_array = new StorageArray(1);
-                const Type::TypeBase &sub_type = array->get_sub_type();
-                storage_array->new_item(0, make_storage_from_default(dflt_str, &sub_type) );
-                return storage_array;
-            } else {
-            	THROW(ExcInputMessage() << EI_Message("Can not initialize Array '" + type->type_name() + "' by default value, size 1 not allowed.\n"));
-            }
-
-        } else
-        if (typeid(*type) == typeid(Type::Integer)) {
-            return new StorageInt( static_cast<const Type::Integer *>(type) ->from_default(dflt_str) );
-        } else
-        if (typeid(*type) == typeid(Type::Double)) {
-            return new StorageDouble( static_cast<const Type::Double *>(type) ->from_default(dflt_str) );
-        } else
-        if (typeid(*type) == typeid(Type::Bool)) {
-            return new StorageBool( static_cast<const Type::Bool *>(type) ->from_default(dflt_str) );
-        } else
-        if (typeid(*type) == typeid(Type::Selection)) {
-                return new StorageInt( static_cast<const Type::Selection *>(type) ->from_default(dflt_str) );
-        } else {
-            const Type::String * string_type = dynamic_cast<const Type::String *>(type);
-            if (string_type != NULL ) return new StorageString( string_type->from_default(dflt_str) );
-
-            // default error
-            ASSERT(false, "Can not store default value for type: %s\n", typeid(type).name());
-        }
-
+    	// default strings must be valid JSON
+    	Type::Default dflt(dflt_str);
+    	return dflt.get_storage(type);
 
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration

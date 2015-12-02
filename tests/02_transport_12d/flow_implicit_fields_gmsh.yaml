@@ -1,0 +1,66 @@
+problem: !SequentialCoupling
+  description: Test2 - Transport implicit 1D-2D (convection, dispersion)
+  mesh:
+    mesh_file: ./input/test2.msh
+  primary_equation: !Steady_MH
+    output:
+      output_stream: 
+        file: ./test2.msh
+        format: !gmsh
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
+    input_fields:
+    - region: IMPLICIT BOUNDARY
+      flow_old_bcd_file: ./input/test2.fbc
+    - rid: 48
+      conductivity: 10
+      sigma: 0.05
+    - rid: 184
+      conductivity: 1
+    balance: true
+  secondary_equation: !TransportOperatorSplitting
+    output_stream: 
+      file: ./transport-implicit.msh
+      format: !gmsh
+        variant: ascii
+      time_step: 0.5
+      name: transport_output_stream
+    substances:
+    - A
+    - B
+    time:
+      end_time: 5.0
+      init_dt: 0.5
+    transport: !SoluteTransport_DG
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+      input_fields:
+      - region: IMPLICIT BOUNDARY
+        bc_conc: !FieldFormula
+          value: (1+sin(t))*0.5
+      - rid: 48
+        init_conc: !FieldFormula
+          value:
+          - (1+sin(x)*sin(y))*0.5
+          - (1+sin(x))*0.5
+        porosity: 0.25
+        dg_penalty: 10
+      - rid: 184
+        init_conc: !FieldFormula
+          value:
+          - (1+sin(x)*sin(y))*0.5
+          - (1+sin(x))*0.5
+        porosity: 0.25
+        diff_m: 0.1
+        dg_penalty: 10
+      dg_variant: symmetric
+    balance:
+      cumulative: true

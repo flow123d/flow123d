@@ -1,9 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Sorption with sources - no flow, no transport, only source term and sorptions. 
-                   Qualitative and mass balance check.
-                   - A - check sorption none (with source, init_conc_solid)",
+    description = "Sorption with sources - no flow, no transport, only source term and sorptions. \nQualitative and mass balance check.\n- A - check sorption none (with source, init_conc_solid)",
     mesh = {
       mesh_file = "input/mesh_simple.msh",
       sets = [ 

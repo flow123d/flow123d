@@ -1,4 +1,4 @@
-INI_FILES="flow_vtk_simple.con flow_vtk_source.con test_20.con langmuir_new.con freundlich_new.con linear_new.con langmuir_var.con freundlich_var.con linear_var.con linear_dg.con"
+INI_FILES="flow_vtk_simple.yaml flow_vtk_source.yaml test_20.yaml langmuir_new.yaml freundlich_new.yaml linear_new.yaml langmuir_var.yaml freundlich_var.yaml linear_var.yaml linear_dg.yaml"
 NPROC="1 2"
 FLOW_PARAMS="-o output"
 

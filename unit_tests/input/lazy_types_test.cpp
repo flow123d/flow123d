@@ -27,20 +27,20 @@ IT::Selection get_loc_sel() {
 }
 
 // test local record derive from local abstract record
-IT::Record loc_a_rec_descendant(IT::AbstractRecord &type) {
+IT::Record loc_a_rec_descendant(IT::Abstract &type) {
     return Record("loc_a_rec_descendant","")
             .derive_from(type)
             .declare_key("str", String(),"");
 }
 
-IT::AbstractRecord get_loc_a_rec() {
-    IT::AbstractRecord type = IT::AbstractRecord("loc_a_rec","")
+IT::Abstract get_loc_a_rec() {
+    IT::Abstract type = IT::Abstract("loc_a_rec","")
             .declare_key("key",Integer(),"");
 
-    // local instance of AbstractRecord has to call creation of its descendants
-    // in order to make them all derived from very same instance of AbstractRecord
+    // local instance of Abstract has to call creation of its descendants
+    // in order to make them all derived from very same instance of Abstract
     // different calls to get_loc_a_rec() returns completely distinguish types even if they
-    // has same name and structure. In particular no static Record can derive from local AbstractRecord !!
+    // has same name and structure. In particular no static Record can derive from local Abstract !!
 
     loc_a_rec_descendant(type);
     return type;
@@ -51,7 +51,7 @@ struct InputTypeCollection {
     static IT::Record main_record;
     static IT::Record stat_rec;
     static IT::Selection stat_sel;
-    static IT::AbstractRecord stat_a_rec;
+    static IT::Abstract stat_a_rec;
     static IT::Record stat_desc_stat_a_rec;
 };
 
@@ -89,7 +89,7 @@ IT::Record InputTypeCollection::stat_desc_stat_a_rec=
         .derive_from(stat_a_rec);
 
 
-IT::AbstractRecord InputTypeCollection::stat_a_rec=IT::AbstractRecord("stat_a_rec","");
+IT::Abstract InputTypeCollection::stat_a_rec=IT::Abstract("stat_a_rec","");
 
 
 

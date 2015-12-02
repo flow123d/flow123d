@@ -100,9 +100,7 @@
       {
         file = "./transport_lin_react.msh", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "gmsh", 
           variant = "ascii"
         }, 
         time_step = 0.5,

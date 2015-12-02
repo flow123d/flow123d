@@ -8,25 +8,25 @@
 
 #include <flow_gtest.hh>
 
-#include <input/type_record.hh>
+#include <input/input_type.hh>
 
 
 
 /**
- * Test Abstract Record.
+ * Test Abstract.
  */
 
-TEST(InputTypeAbstractRecord, inheritance) {
+TEST(InputTypeAbstract, inheritance) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	Record copy_rec = Record("Copy","")
-       	.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.")
+       	.declare_key("mesh", String(), Default("\"input.msh\""), "Comp. mesh.")
        	.declare_key("a_val", String(), Default::obligatory(), "")
 		.close();
 
-    AbstractRecord a_rec = AbstractRecord("EqBase","Base of equation records.");
-    AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
+    Abstract a_rec = Abstract("EqBase","Base of equation records.");
+    Abstract &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
     EXPECT_EQ( a_rec, a_ref);
 
     // test derived type
@@ -49,16 +49,16 @@ using namespace Input::Type;
     a_rec.finish();
 
     // auto conversion - default value for TYPE
-    EXPECT_EQ("EqDarcy", a_rec.get_selection_default().value() );
+    EXPECT_EQ("\"EqDarcy\"", a_rec.get_selection_default().value() );
     // no more allow_auto_conversion for a_rec
-    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed.");
+    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the Abstract 'EqBase' is closed.");
 
     a_rec.finish();
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
 
     // test default value for an auto convertible abstract record key
     Record xx_rec = Record("XX", "")
-    		.declare_key("ar_key", a_rec, Default("ahoj"), "")
+    		.declare_key("ar_key", a_rec, Default("\"ahoj\""), "")
 			.close();
     xx_rec.finish();
 
@@ -82,10 +82,10 @@ using namespace Input::Type;
 
 
     // check of correct auto conversion value
-    AbstractRecord x = AbstractRecord("AR","")
+    Abstract x = Abstract("AR","")
     	.allow_auto_conversion("BR")
 		.close();
-    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
+    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value '\"BR\"' for TYPE key do not match any descendant of Abstract 'AR'.");
 
 }
 
@@ -94,18 +94,18 @@ using namespace Input::Type;
 
 
 /**
- * Test AdHocAbstractRecord.
+ * Test AdHocAbstract.
  */
-/*namespace IT=Input::Type;
+namespace IT=Input::Type;
 
 class AdHocDataTest : public testing::Test {
 public:
 	static const IT::Record & get_rec();
 	static const IT::Record & get_in_rec1();
 	static const IT::Record & get_in_rec2();
-	static const IT::AbstractRecord & get_ancestor();
-	static const IT::AdHocAbstractRecord & get_adhoc_1();
-	static const IT::AdHocAbstractRecord & get_adhoc_2();
+	static const IT::Abstract & get_ancestor();
+	static const IT::AdHocAbstract & get_adhoc_1();
+	static const IT::AdHocAbstract & get_adhoc_2();
 
 protected:
     virtual void SetUp() {
@@ -117,14 +117,17 @@ protected:
 
 const IT::Record & AdHocDataTest::get_in_rec1() {
 	return IT::Record("Record 1","")
+		.declare_key("TYPE", IT::String(), IT::Default("\"Record 1\""), "")
 		.declare_key("val_1", IT::Integer(0), "value 1" )
 		.close();
 }
 
-const IT::AdHocAbstractRecord & AdHocDataTest::get_adhoc_1() {
-	return IT::AdHocAbstractRecord(get_ancestor())
-	.add_child(AdHocDataTest::get_in_rec1())
-	.add_child(AdHocDataTest::get_in_rec2());
+const IT::AdHocAbstract & AdHocDataTest::get_adhoc_1() {
+	static IT::AdHocAbstract ad_hoc = IT::AdHocAbstract(get_ancestor())
+		.close();
+	ad_hoc.add_child(AdHocDataTest::get_in_rec1());
+	ad_hoc.add_child(AdHocDataTest::get_in_rec2());
+	return ad_hoc;
 }
 
 const IT::Record & AdHocDataTest::get_rec() {
@@ -134,35 +137,39 @@ const IT::Record & AdHocDataTest::get_rec() {
 		.close();
 }
 
-const IT::AdHocAbstractRecord & AdHocDataTest::get_adhoc_2() {
-	return IT::AdHocAbstractRecord(get_ancestor())
-		.add_child(AdHocDataTest::get_in_rec1())
-		.add_child(AdHocDataTest::get_in_rec2());
+const IT::AdHocAbstract & AdHocDataTest::get_adhoc_2() {
+	static IT::AdHocAbstract ad_hoc = IT::AdHocAbstract(get_ancestor())
+		.close();
+	ad_hoc.add_child(AdHocDataTest::get_in_rec1());
+	ad_hoc.add_child(AdHocDataTest::get_in_rec2());
+	return ad_hoc;
 }
 
-const IT::AbstractRecord & AdHocDataTest::get_ancestor() {
-	return IT::AbstractRecord("Ancestor","Base of equation records.").close();
+const IT::Abstract & AdHocDataTest::get_ancestor() {
+	return IT::Abstract("Ancestor","Base of equation records.").close();
 }
 
 const IT::Record & AdHocDataTest::get_in_rec2() {
 	return IT::Record("Record 2","")
+		.declare_key("TYPE", IT::String(), IT::Default("\"Record 2\""), "")
 		.declare_key("val_2", IT::Integer(0), "value 2" )
 		.close();
 }
 
 
-TEST(InputTypeAdHocAbstractRecord, inheritance) {
+TEST(InputTypeAdHocAbstract, inheritance) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	AdHocDataTest::get_in_rec1().finish();
-	AdHocDataTest::get_in_rec2().finish();
-	AdHocDataTest::get_adhoc_1().finish();
-	AdHocDataTest::get_adhoc_2().finish();
-	AdHocDataTest::get_rec().finish();
+	AdHocDataTest::get_in_rec1();
+	AdHocDataTest::get_in_rec2();
+	AdHocDataTest::get_adhoc_1();
+	AdHocDataTest::get_adhoc_2();
+	AdHocDataTest::get_rec();
+	TypeBase::lazy_finish();
 
-	EXPECT_EQ( 1, AdHocDataTest::get_in_rec1().size());
-	EXPECT_EQ( 1, AdHocDataTest::get_in_rec2().size());
+	EXPECT_EQ( 2, AdHocDataTest::get_in_rec1().size());
+	EXPECT_EQ( 2, AdHocDataTest::get_in_rec2().size());
 	EXPECT_EQ( 2, AdHocDataTest::get_adhoc_1().child_size());
 	EXPECT_EQ( 2, AdHocDataTest::get_adhoc_2().child_size());
 	EXPECT_EQ( 2, AdHocDataTest::get_rec().size());
-}*/
+}

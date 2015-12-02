@@ -63,27 +63,33 @@ TEST(InputTypeScalar, all_types) {
 	using namespace Input::Type;
 
 
-    // from_default methods
+    // Default::check_validity methods
     // Bool
-    EXPECT_TRUE( Bool().from_default("true") );
-    EXPECT_FALSE( Bool().from_default("false") );
-    EXPECT_THROW_WHAT( { Bool().from_default("yes"); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("true").check_validity( boost::make_shared<Bool>() ) );
+    EXPECT_TRUE( Default("false").check_validity( boost::make_shared<Bool>() ) );
+    EXPECT_FALSE( Default::obligatory().check_validity( boost::make_shared<Bool>()) );
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( boost::make_shared<Bool>() ); }, ExcWrongDefault,
             "Default value 'yes' do not match type: 'Bool';" );
 
     // Integer
-    EXPECT_EQ(10, Integer().from_default("10") );
-    EXPECT_THROW_WHAT( { Integer(0,4).from_default("10"); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("10").check_validity( boost::make_shared<Integer>() ) );
+    EXPECT_THROW_WHAT( { Default("10").check_validity( boost::make_shared<Integer>(0,4) ); }, ExcWrongDefault,
             "Default value '10' do not match type: 'Integer';" );
-    EXPECT_THROW_WHAT( { Integer().from_default("yes"); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( boost::make_shared<Integer>() ); }, ExcWrongDefault,
             "Default value 'yes' do not match type: 'Integer';" );
 
     // Double
-    EXPECT_EQ(3.14, Double().from_default("3.14") );
-    EXPECT_EQ(-5.67e-23, Double().from_default("-5.67E-23") );
-    EXPECT_THROW_WHAT( { Double(0,4.4).from_default("-1e-10"); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("3.14").check_validity( boost::make_shared<Double>() ) );
+    EXPECT_TRUE( Default("-5.67E-23").check_validity( boost::make_shared<Double>() ) );
+    EXPECT_THROW_WHAT( { Default("-1e-10").check_validity( boost::make_shared<Double>(0,4.4) ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
-    EXPECT_THROW_WHAT( { Double().from_default("-3.6t5"); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { Default("-3.6t5").check_validity( boost::make_shared<Double>() ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
+
+    // String
+    EXPECT_TRUE( Default("\"ahoj\"").check_validity( boost::make_shared<String>() ) );
+    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( boost::make_shared<String>() ); }, ExcWrongDefault,
+            "Default value .* do not match type: 'String';" );
 
 
     // test equivalence operator
@@ -105,7 +111,7 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     // construction
-    Array arr_int(Integer(),1,8);
+    boost::shared_ptr<Array> arr_int = boost::make_shared<Array>(Integer(), 1, 8);
     Array arr_arr_dbl( Array( Double() ));
 
     Record rec_2("record_type_2", "desc");
@@ -124,25 +130,26 @@ using namespace Input::Type;
     EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // boost::smart_ptr assert fails
 
     // operator ==
-    EXPECT_NE( arr_int, Array( Double() ) );
-    EXPECT_EQ( arr_int, Array( Integer() ) );
-    EXPECT_NE( arr_int, rec_2 );
+    EXPECT_NE( *arr_int, Array( Double() ) );
+    EXPECT_EQ( *arr_int, Array( Integer() ) );
+    EXPECT_NE( *arr_int, rec_2 );
 
     // match_size
-    EXPECT_TRUE( arr_int.match_size(1) );
-    EXPECT_TRUE( arr_int.match_size(3) );
-    EXPECT_TRUE( arr_int.match_size(8) );
-    EXPECT_FALSE( arr_int.match_size(9) );
+    EXPECT_TRUE( arr_int->match_size(1) );
+    EXPECT_TRUE( arr_int->match_size(3) );
+    EXPECT_TRUE( arr_int->match_size(8) );
+    EXPECT_FALSE( arr_int->match_size(9) );
 
     // type_name()
-    EXPECT_EQ( arr_int.type_name(), Array(Integer()).type_name() );
+    EXPECT_EQ( arr_int->type_name(), Array(Integer()).type_name() );
 
     // valid default
     // no death
-    arr_int.valid_default("100");
-    EXPECT_THROW_WHAT( {arr_int.valid_default("1.5");}, ExcWrongDefault,
+    Default("100").check_validity( arr_int );
+    EXPECT_THROW_WHAT( {Default("1.5").check_validity( arr_int );}, ExcWrongDefault,
             "Default value '1.5' do not match type:" );
-    EXPECT_THROW_WHAT( {Array( Double(), 2 ).valid_default("3.2"); }, ExcWrongDefault,
+    boost::shared_ptr<Array> arr_double = boost::make_shared<Array>(Double(), 2);
+    EXPECT_THROW_WHAT( { Default("3.2").check_validity( arr_double ); }, ExcWrongDefault,
                   "Default value '3.2' do not match type: 'array_of_Double';"
                  );
 
@@ -200,18 +207,19 @@ using namespace Input::Type;
 
 
     // Integer selection
-    Selection int_sel("Integer selection");
-    int_sel.add_value(10, "ten");
-    int_sel.add_value(0,"zero");
-    int_sel.close();
+    Selection int_sel = Selection("Integer selection")
+    	.add_value(10, "ten")
+    	.add_value(0,"zero")
+    	.close();
+    boost::shared_ptr<Selection> sel_ptr = boost::make_shared<Selection>(int_sel);
 
 
     // Selection defaults
-    EXPECT_EQ(10, int_sel.from_default("ten") );
-    EXPECT_EQ(0, int_sel.from_default("zero") );
-    EXPECT_THROW_WHAT( { int_sel.from_default("two"); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("\"ten\"").check_validity( sel_ptr ) );
+    EXPECT_TRUE( Default("\"zero\"").check_validity( sel_ptr ) );
+    EXPECT_THROW_WHAT( { Default("\"two\"").check_validity( sel_ptr ); }, ExcWrongDefault,
             "Default value .* do not match type: " );
-    EXPECT_THROW_WHAT( { int_sel.from_default("10"); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { Default("10").check_validity( sel_ptr ); }, ExcWrongDefault,
             "Default value .* do not match type: " );
 
     EXPECT_EQ(10, int_sel.name_to_int("ten"));
@@ -351,7 +359,7 @@ TEST(InputTypeAttributes, base_test) {
 		.declare_key("step_iter", Integer(1, 100), Default::obligatory(), "Count of steps.")
 		.close();
 
-	static AbstractRecord a_rec = AbstractRecord("a_rec", "Step AbstractRecord")
+	static Abstract a_rec = Abstract("a_rec", "Step Abstract")
 		.close();
 	a_rec.add_child(rec1);
 	a_rec.add_child(rec2);

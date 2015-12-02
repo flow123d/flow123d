@@ -69,35 +69,6 @@
       },
     
       reaction_term = {
-/*        TYPE = "RadioactiveDecay",
-        decays = [
-          {
-            radionuclide = "A",
-            half_life = 1.0,
-            products = "B"
-          }        
-        ]*/
-/*        
-        TYPE = "Sorption",
-        solvent_density= 1.0,
-        substances = ["A"],
-        solubility = [1.0],
-        input_fields= [
-          {
-            time=0.0,
-            r_set="ALL",
-            rock_density = 1.0,
-            sorption_type=  "none",
-            isotherm_mult= 0.6
-          },
-          {
-            time=4.0,
-            r_set="ALL",
-            rock_density = 1.0,
-            sorption_type=  "linear",
-            isotherm_mult= 0.6
-          }
-        ]        */
         TYPE = "DualPorosity",
         
         input_fields= [
@@ -123,7 +94,7 @@
             r_set="BULK",
             diffusion_rate_immobile= {
               TYPE="FieldFormula", 
-              value = ["if(t>=7.0,0.01,0.001)"]
+              value = "if(t>=7.0,0.01,0.001)"
               },
             porosity_immobile = {
               TYPE = "FieldFormula",

@@ -1,8 +1,18 @@
-/*
- * transport_operator_splitting.cc
+/*!
  *
- *  Created on: May 21, 2011
- *      Author: jiri
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    transport_operator_splitting.cc
+ * @brief   
  */
 
 #include <iostream>
@@ -51,8 +61,8 @@ using namespace Input::Type;
 
 
 
-AbstractRecord & ConcentrationTransportBase::get_input_type() {
-	return AbstractRecord("Transport",
+Abstract & ConcentrationTransportBase::get_input_type() {
+	return Abstract("Transport",
 			"Transport of substances.")
 			.close();
 }
@@ -79,7 +89,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 					"Reaction model involved in transport.")
 
 		.declare_key("output_fields", Array(ConvectionTransport::EqData::get_output_selection()),
-				Default("conc"),
+				Default("\"conc\""),
 				"List of fields to write to output file.")
 		.close();
 }

@@ -1,0 +1,55 @@
+problem: !SequentialCoupling
+  description: Test14 - 2D transport with time variable boundary
+  mesh:
+    mesh_file: ./input/rectangle_with_bc_0.2.msh
+  # steady velocity field, with velocity v:0.1
+  primary_equation: !Steady_MH
+    input_fields:
+    - region: bulk
+      conductivity: 1
+    - r_set: BOUNDARY
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: 0.1*x
+    n_schurs: 2
+    output:
+      output_stream: 
+        file: ./test14.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
+  secondary_equation: !TransportOperatorSplitting
+    substances:
+    - A
+    time:
+      max_dt: 0.05
+      end_time: 1.0
+    transport: !ConvectionTransport
+      input_fields:
+      - region: bulk
+        init_conc: 0
+      - region: .right
+        time: 0.01
+        bc_conc: 100
+      - region: .right
+        time: 0.02
+        bc_conc: 0
+      - region: .right
+        time: 0.35
+        bc_conc: 20
+    output_stream: 
+      file: ./transport.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 0.1
+      name: transport_output_stream
+    balance:
+      cumulative: true

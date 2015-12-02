@@ -1,10 +1,19 @@
-/*
- * function_base_impl.hh
+/*!
  *
- *  Created on: Oct 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_algo_base.impl.hh
+ * @brief   
  */
-
 
 #ifndef field_algo_base_IMPL_HH_
 #define field_algo_base_IMPL_HH_
@@ -25,6 +34,7 @@ using namespace std;
 
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
+#include "input/accessors.hh"
 
 
 namespace it = Input::Type;
@@ -54,8 +64,8 @@ string FieldAlgorithmBase<spacedim, Value>::template_name() {
 
 
 template <int spacedim, class Value>
-Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
-	return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
+	return it::Abstract("Field:"+template_name(), "Abstract for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
 			.root_of_generic_subtree()
 			.close();

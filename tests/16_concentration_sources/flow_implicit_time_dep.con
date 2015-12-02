@@ -47,7 +47,9 @@
         r_tol = 1e-12
       }, 
       time = {
-        REF = "../../time"
+        end_time = 10,
+        max_dt = 1e0,
+        min_dt = 1e0
       }
     }, 
     secondary_equation = {
@@ -95,18 +97,16 @@
         "conc"
       ], 
       time = {
-        REF = "../../time"
+        end_time = 10,
+        max_dt = 1e0,
+        min_dt = 1e0
       },
       
       balance = {
         cumulative = true
       }
-    }, 
-    time = {
-      end_time = 10,
-      max_dt = 1e0,
-      min_dt = 1e0
     }
+
   }, 
   system = {
     output_streams = [
@@ -121,9 +121,7 @@
       {
         file = "./transport_test16.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 1,

@@ -64,7 +64,7 @@
             porosity= 0.25
           }
         ]
-      }
+      },
 
       output_stream = {
         REF = "/system/output_streams/1"
@@ -145,9 +145,7 @@
       {
         file = "./transport.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.5,

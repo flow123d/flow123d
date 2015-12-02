@@ -1,0 +1,53 @@
+problem: !SequentialCoupling
+  time: &anchor3
+    end_time: 100.0
+  description: Test13 - mixing of substances on edges and quantitative test on trivial
+    transport problem.
+  mesh:
+    mesh_file: input/test13.msh
+  primary_equation: !Steady_MH
+    input_fields:
+    - rid: 17
+      anisotropy: 1.0
+    - rid: 18
+      anisotropy: 0.1
+    - rid: 19
+      anisotropy: 1.0
+    - region: IMPLICIT BOUNDARY
+      flow_old_bcd_file: ./input/test13.fbc
+    output:
+      output_stream: 
+        file: test13.msh
+        format: !gmsh
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-14
+      r_tol: 1.0e-14
+  secondary_equation: !TransportOperatorSplitting
+    transport: !ConvectionTransport
+      input_fields:
+      - rid: 17
+        init_conc: 0
+      - rid: 18
+        init_conc: 0
+      - rid: 19
+        init_conc: 0
+      - region: IMPLICIT BOUNDARY
+        transport_old_bcd_file: ./input/test13.tbc
+    output_stream: 
+      file: transport.msh
+      format: !gmsh
+        variant: ascii
+      time_step: 0.5
+      name: transport_output_stream
+    substances:
+    - A
+    time: *anchor3
+    balance:
+      cumulative: true
