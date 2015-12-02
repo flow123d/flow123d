@@ -351,6 +351,24 @@ public:
      * Start the timer. If it is already started, just increase number of starts (recursions) and calls.
      */
     void start();
+    /**
+     * Pause current timer, save measured petsc memory information util resume
+     */
+    void pause();
+    /**
+     * Resume current timer, load measured petsc memory information
+     */
+    void resume();
+    
+    /**
+     * Method for exchanging metrics from parent timer to child timer
+     */
+    void accept_from_parent (const Timer &timer);
+    
+    /**
+     * Method for exchanging metrics from child timer to its parent timer
+     */
+    void accept_from_child (const Timer &timer);
 
 
     /**
@@ -454,15 +472,19 @@ protected:
     /**
      * Number of bytes used by Petsc at the start of time-frame
      */
-    PetscLogDouble petsc_start_memory;
+    long petsc_start_memory;
     /**
      * Number of bytes used by Petsc at the start of time-frame
      */
-    PetscLogDouble petsc_end_memory;
+    long petsc_end_memory;
+    /**
+     * Number of bytes used by Petsc at the start of time-frame
+     */
+    long petsc_memory_difference;
     /**
      * Maximum number of bytes used by Petsc during time-frame
      */
-    PetscLogDouble petsc_peak_memory;
+    long petsc_peak_memory;
     
     friend class Profiler;
 
