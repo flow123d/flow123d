@@ -615,7 +615,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
     		for (unsigned int j=0; j<n_dofs; ++j)
     			solution_elem_[sbi][i_cell] += ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()];
 
-			solution_elem_[sbi][i_cell] /= n_dofs;
+			solution_elem_[sbi][i_cell] = max(solution_elem_[sbi][i_cell]/n_dofs, 0.);
     	}
     }
 }
