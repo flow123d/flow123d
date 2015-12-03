@@ -323,7 +323,7 @@ Application::~Application() {
 
         // call python script which transforms json file at given location
         // Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");
-        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
+        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter", PETSC_COMM_WORLD);
 
         // finally uninitialize
         Profiler::uninitialize();
