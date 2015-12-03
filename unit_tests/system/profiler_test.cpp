@@ -375,32 +375,30 @@ TEST(Profiler, memory_propagation){
 }
 
 TEST(Profiler, petsc_memory_monitor) {
-    Profiler::initialize(); 
-    {
-        START_TIMER("A");
-        END_TIMER("A");
-        
-        START_TIMER("B");
-        END_TIMER("B");
-    }
-    Profiler::uninitialize();
-    /*PetscInt size = 10000;
+    PetscInt size = 10000;
     Profiler::initialize();
     PetscInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
     {
         START_TIMER("A");
             Vec tmp_vector;
             VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector);
+            VecDestroy(&tmp_vector);
+            
+            START_TIMER("C");
+            END_TIMER("C");
         END_TIMER("A");
         
         START_TIMER("B");
             Vec tmp_vector1, tmp_vector2;
             VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector1);
             VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector2);
+            VecDestroy(&tmp_vector1);
+            VecDestroy(&tmp_vector2);
         END_TIMER("B");
     }
+    Profiler::instance()->stop_timer(0);
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
-    Profiler::uninitialize();*/
+    Profiler::uninitialize();
 }
 
 
