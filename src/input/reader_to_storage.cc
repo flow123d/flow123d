@@ -350,16 +350,9 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
     	// if transposition is carried, only conversion to array with one element is allowed
     	if (try_transpose_read_) {
 			// try automatic conversion to array with one element
-			if ( array->match_size( 1 ) ) {
-				StorageArray *storage_array = new StorageArray(1);
-				const Type::TypeBase &sub_type = array->get_sub_type();
-				storage_array->new_item(0, make_storage(p, &sub_type) );
-
-				return storage_array;
-			} else {
-				THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
-						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
-			}
+    		const Type::TypeBase &sub_type = array->get_sub_type();
+    		StorageBase *one_element_storage = make_storage(p, &sub_type);
+    		return make_autoconversion_array_storage(p, array, one_element_storage);
         } else {
 			// set variables managed transposition
 			try_transpose_read_ = true;
@@ -371,16 +364,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 
 			// automatic conversion to array with one element
 			if (transpose_array_sizes_.size() == 0) {
-				if ( array->match_size( 1 ) ) {
-					StorageArray *storage_array = new StorageArray(1);
-					storage_array->new_item(0, first_item_storage);
-					try_transpose_read_ = false;
-
-					return storage_array;
-				} else {
-					THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
-							<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
-				}
+				try_transpose_read_ = false;
+				return make_autoconversion_array_storage(p, array, first_item_storage);
 			} else {
 
 				// check sizes of arrays stored in transpose_array_sizes_
@@ -592,6 +577,23 @@ StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::
 		     << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
 		     << EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
 			 << EI_InputType(type->desc()) );
+	}
+
+	return NULL;
+}
+
+
+
+StorageBase * ReaderToStorage::make_autoconversion_array_storage(PathBase &p, const Type::Array *array, StorageBase *item)
+{
+	if ( array->match_size( 1 ) ) {
+		StorageArray *storage_array = new StorageArray(1);
+		storage_array->new_item(0, item);
+
+		return storage_array;
+	} else {
+		THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
+				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
 	}
 
 	return NULL;

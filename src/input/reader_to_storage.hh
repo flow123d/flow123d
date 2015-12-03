@@ -159,6 +159,7 @@ protected:
     StorageBase * make_storage(PathBase &p, const Type::Double *double_type);
     StorageBase * make_storage(PathBase &p, const Type::String *string_type);
     StorageBase * make_transposed_storage(PathBase &p, const Type::TypeBase *type);
+    StorageBase * make_autoconversion_array_storage(PathBase &p, const Type::Array *array, StorageBase *item);
 
     StorageBase * record_automatic_conversion(PathBase &p, const Type::Record *record);
     StorageBase * abstract_automatic_conversion(PathBase &p, const Type::Abstract *abstr_rec);
