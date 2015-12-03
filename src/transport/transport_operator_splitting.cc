@@ -69,8 +69,8 @@ Abstract & ConcentrationTransportBase::get_input_type() {
 
 
 const Record & TransportOperatorSplitting::get_input_type() {
-	return Record("TransportOperatorSplitting",
-            "Explicit FVM transport (no diffusion)\n"
+	return Record("Transport_OS",
+            "Transport by convection and/or diffusion\n"
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
 		.derive_from(AdvectionProcessBase::get_input_type())
@@ -96,7 +96,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 
 
 const int TransportOperatorSplitting::registrar =
-		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record>("TransportOperatorSplitting") +
+		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record>("Transport_OS") +
 		TransportOperatorSplitting::get_input_type().size();
 
 

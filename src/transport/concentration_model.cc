@@ -34,7 +34,7 @@ using namespace Input::Type;
 
 
 const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
-	return Selection("SoluteTransport_BC_Type", "Types of boundary conditions for solute transport model.")
+	return Selection("ConvectionDiffusion_BC_Type", "Types of boundary conditions for solute transport model.")
               .add_value(bc_inflow, "inflow",
             		  "Default transport boundary condition.\n"
             		  "On water inflow (($(q_w \\le 0)$)), total flux is given by the reference concentration 'bc_conc'. "

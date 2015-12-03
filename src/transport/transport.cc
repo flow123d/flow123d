@@ -54,16 +54,16 @@ namespace IT = Input::Type;
 
 
 const int ConvectionTransport::registrar =
-		Input::register_class< ConvectionTransport, Mesh &, const Input::Record >("ConvectionTransport") +
+		Input::register_class< ConvectionTransport, Mesh &, const Input::Record >("Convection_FV") +
 		ConvectionTransport::get_input_type().size();
 
 const IT::Record &ConvectionTransport::get_input_type()
 {
-	return IT::Record("ConvectionTransport", "Explicit finite volume method for solute transport.")
+	return IT::Record("Convection_FV", "Explicit in time finite volume method for solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
 			.declare_key("input_fields", IT::Array(
 					IT::Record("TransportOperatorSplitting_Data", FieldCommon::field_descriptor_record_decsription("TransportOperatorSplitting_Data") )
-					.copy_keys( EqData().make_field_descriptor_type("TransportOperatorSplitting") )
+					.copy_keys( EqData().make_field_descriptor_type("Transport_OS") )
 					.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
 					.close()
 					), IT::Default::obligatory(), "")
@@ -73,7 +73,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 
 const IT::Selection & ConvectionTransport::EqData::get_output_selection() {
 	return EqData().output_fields
-		.make_output_field_selection("ConvectionTransport_Output")
+		.make_output_field_selection("Convection_FV_Output")
 		.close();
 }
 

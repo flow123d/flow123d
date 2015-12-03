@@ -52,7 +52,7 @@ const Selection & TransportDG<Model>::get_dg_variant_selection_input_type() {
 
 template<class Model>
 const Selection & TransportDG<Model>::EqData::get_output_selection() {
-	return Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
+	return Model::ModelEqData::get_output_selection_input_type("DG", "Implicit in time Discontinuous Galerkin solver")
 		.copy_values(EqData().make_output_field_selection("").close())
 		.close();
 }
