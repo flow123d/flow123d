@@ -32,7 +32,6 @@
 #include "coupling/balance.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
-#include "flow/old_bcd.hh"
 
 #include "reaction/reaction_term.hh"
 #include "reaction/first_order_reaction.hh"
@@ -83,7 +82,6 @@ const Record & TransportOperatorSplitting::get_input_type() {
 		.declare_key("input_fields", Array(
 				Record("TransportOperatorSplitting_Data", FieldCommon::field_descriptor_record_decsription("TransportOperatorSplitting_Data") )
 				.copy_keys( ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting") )
-				.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
 				.close()
 				), IT::Default::obligatory(), "")
 		.declare_key("output_fields", Array(ConvectionTransport::EqData::get_output_selection()),

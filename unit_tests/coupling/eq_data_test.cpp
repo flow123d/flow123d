@@ -43,7 +43,6 @@
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
-#include "flow/old_bcd.hh"
 #include <armadillo>
 
 using namespace std;
@@ -67,34 +66,6 @@ protected:
 
         static const IT::Selection & get_bc_type_selection();
 
-        template<int spacedim, class Value>
-        class FieldFactory : public OldBcdInput::FieldFactory<spacedim, Value> {
-        public:
-        	FieldFactory( typename OldBcdInput::FieldFactory<spacedim, Value>::FieldPtr * field, bool read_flow = true )
-        	: OldBcdInput::FieldFactory<spacedim, Value>(field),
-        	  read_flow_(read_flow)
-        	{}
-
-        	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
-        		Input::AbstractRecord field_record;
-        		if (rec.opt_val(field.input_name(), field_record)) {
-        			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
-        		}
-            	else {
-            		OldBcdInput *old_bcd = OldBcdInput::instance();
-            		if (read_flow_) {
-            			old_bcd->read_flow_record(rec, field);
-            		} else  {
-            			old_bcd->read_transport_record(rec, field);
-            		}
-            		return *(this->field_);
-            	}
-        	}
-
-        	/// Set true if field needs flow record, false if needs transport record
-        	bool read_flow_;
-        };
-
         EqData()
         {
         	arma::vec4 gravity = arma::vec4("3.0 2.0 1.0 -5.0");
@@ -104,8 +75,6 @@ protected:
 
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
                       bc_type.input_selection(&get_bc_type_selection());
-            bc_type.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Enum> >
-            					 (&(OldBcdInput::instance()->flow_type)) );
             bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
@@ -117,19 +86,13 @@ protected:
 
         	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
             bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
-        	bc_flux.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Scalar> >
-        						 (&(OldBcdInput::instance()->flow_flux)) );
             bc_flux.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
-        	bc_robin_sigma.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Scalar> >
-        								(&(OldBcdInput::instance()->flow_sigma)) );
             bc_robin_sigma.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
-            bc_conc.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Vector> >
-            					 (&(OldBcdInput::instance()->trans_conc), false) );
             bc_conc.units( UnitSI::dimensionless() );
         }
 
@@ -247,8 +210,6 @@ const IT::Record & SomeEquation::get_input_type() {
 	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_decsription("SomeEquation_Data") )
 	                .copy_keys( SomeEquation::EqData().make_field_descriptor_type("SomeEquation") )
 	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-	                .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
-	                .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
 	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
 					.close()
 	                ), IT::Default::obligatory(), ""  )
@@ -381,8 +342,15 @@ TEST_F(SomeEquation, old_bcd_input) {
     { 
       data=[
           { r_set="BOUNDARY",
-            flow_old_bcd_file="coupling/simplest_cube.fbc",
-            transport_old_bcd_file="coupling/transport.fbc",
+            bc_type={TYPE="FieldConstant", value = "dirichlet"},
+            bc_pressure={
+                TYPE="FieldFormula",
+                value="x"
+            },
+            bc_conc={
+                TYPE="FieldFormula",
+                value=["x", "10+x", "20+x", "30+x"]
+            },
             conc_mobile = {
                 TYPE="MultiField",
                 component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
@@ -424,12 +392,12 @@ TEST_F(SomeEquation, old_bcd_input) {
     {
     auto test_elm = mesh->element_accessor(10, true);
     EXPECT_EQ(EqData::dirichlet, (EqData::BC_type)data.bc_type.value(p, test_elm));
-    EXPECT_DOUBLE_EQ(7.0, data.bc_pressure.value(p, test_elm) );
+    EXPECT_DOUBLE_EQ(1.0, data.bc_pressure.value(p, test_elm) );
     arma::vec value = data.bc_conc.value(p, test_elm);
-    EXPECT_DOUBLE_EQ(7.0, value(0) );
-    EXPECT_DOUBLE_EQ(17.0, value(1) );
-    EXPECT_DOUBLE_EQ(27.0, value(2) );
-    EXPECT_DOUBLE_EQ(37.0, value(3) );
+    EXPECT_DOUBLE_EQ(1.0, value(0) );
+    EXPECT_DOUBLE_EQ(11.0, value(1) );
+    EXPECT_DOUBLE_EQ(21.0, value(2) );
+    EXPECT_DOUBLE_EQ(31.0, value(3) );
     }
 
 }

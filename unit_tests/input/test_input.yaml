@@ -16,3 +16,18 @@ map_3:
     <<: *anchor
     a: 2
     c: 3
+    
+multifield:
+  - &template_item !FieldElementwise
+    file: "field.msh"
+    component_name: "A"
+  - 
+    <<: *template_item    
+    component_name: "B"
+  - 
+    <<: *template_item    
+    component_name: "C"
+
+multifield_conversion: !FieldElementwise
+  file: "field.msh"
+  component_name: ["A", "B", "C"]
