@@ -155,7 +155,7 @@ void Timer::accept_from_child(Timer &timer) {
         
     // maximum value from child are always greater or equal to parent frame
     max_allocated_ = timer.max_allocated_;
-    petsc_peak_memory = timer.petsc_peak_memory
+    petsc_peak_memory = timer.petsc_peak_memory;
 }
 
 void Timer::accept_from_parent(Timer &timer) {
