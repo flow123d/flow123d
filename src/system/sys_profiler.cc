@@ -260,7 +260,12 @@ CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__
 
 void Profiler::initialize()
 {
-
+    // dummy Petsc initialization for unit tests
+    PetscBool is_initialized;
+    PetscInitialized(&is_initialized);
+    if (!is_initialized)
+        PetscInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+        
     if (!_instance)
         _instance = new Profiler();
 
@@ -275,7 +280,7 @@ Profiler::Profiler()
 {
 #ifdef FLOW123D_DEBUG_PROFILER
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
-    timers_.push_back( Timer(main_cp, -1) );
+    timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
 #endif
 }
@@ -364,12 +369,15 @@ void Profiler::stop_timer(const CodePoint &cp) {
                 timers_[actual_node].stop(false);
                 actual_node = timers_[actual_node].parent_timer;
                 
-                if (actual_node >= 0) {
-                    // propagate metrics from parent to child
-                    timers_[actual_node].accept_from_child(timers_[child_timer]);
-                    // resume current timer
-                    timers_[actual_node].resume();
-                }
+                // workaround for time-frame 0, if (actual_node >=0) would make more sense
+                //   but time-frame 0 has also parent_timer equal to 0
+                if (actual_node == child_timer && actual_node == 0)
+                    return;
+                
+                // propagate metrics from parent to child
+                timers_[actual_node].accept_from_child(timers_[child_timer]);
+                // resume current timer
+                timers_[actual_node].resume();
                 return;
             }
         }
@@ -380,12 +388,15 @@ void Profiler::stop_timer(const CodePoint &cp) {
     timers_[actual_node].stop(false);
     actual_node = timers_[actual_node].parent_timer;
     
-    if (actual_node >= 0) {
-        // propagate metrics from parent to child
-        timers_[actual_node].accept_from_child(timers_[child_timer]);
-        // resume current timer
-        timers_[actual_node].resume();
-    }
+    // workaround for time-frame 0, if (actual_node >=0) would make more sense
+    //   but time-frame 0 has also parent_timer equal to 0
+    if (actual_node == child_timer && actual_node == 0)
+        return;
+    
+    // propagate metrics from parent to child
+    timers_[actual_node].accept_from_child(timers_[child_timer]);
+    // resume current timer
+    timers_[actual_node].resume();
 }
 
 
@@ -410,13 +421,15 @@ void Profiler::stop_timer(int timer_index) {
                 timers_[actual_node].stop(false);
                 actual_node=timers_[actual_node].parent_timer;
                 
-                if (actual_node >= 0) {
-                    // propagate metrics from parent to child
-                    timers_[actual_node].accept_from_child(timers_[child_timer]);
-                    // resume current timer
-                    timers_[actual_node].resume();
-                }
-                return;
+                // workaround for time-frame 0, if (actual_node >=0) would make more sense
+                //   but time-frame 0 has also parent_timer equal to 0
+                if (actual_node == child_timer && actual_node == 0)
+                    return;
+                
+                // propagate metrics from parent to child
+                timers_[actual_node].accept_from_child(timers_[child_timer]);
+                // resume current timer
+                timers_[actual_node].resume();
             }
         // node not found - do nothing
         return;
@@ -425,12 +438,15 @@ void Profiler::stop_timer(int timer_index) {
     timers_[actual_node].stop(false);
     actual_node=timers_[actual_node].parent_timer;
     
-    if (actual_node >= 0) {
-        // propagate metrics from parent to child
-        timers_[actual_node].accept_from_child(timers_[child_timer]);
-        // resume current timer
-        timers_[actual_node].resume();
-    }
+    // workaround for time-frame 0, if (actual_node >=0) would make more sense
+    //   but time-frame 0 has also parent_timer equal to 0
+    if (actual_node == child_timer && actual_node == 0)
+        return;
+    
+    // propagate metrics from parent to child
+    timers_[actual_node].accept_from_child(timers_[child_timer]);
+    // resume current timer
+    timers_[actual_node].resume();
 }
 
 
