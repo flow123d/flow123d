@@ -9,7 +9,7 @@
       neighbouring = "./input/test16.ngh"
     }, 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       boundary_file = "./input/test16.fbc", 
       n_schurs = 2, 
       output = {

@@ -12,7 +12,7 @@ problem: !SequentialCoupling
       - .left
       - .up
       - .down
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: volume
       conductivity: 1.0e-10
@@ -31,14 +31,14 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     substances:
     - A
     - As-lin-limit
     - As-lin
     - As-lang
     - As-freund
-    transport: !ConvectionTransport
+    transport: !Convection_FV
       input_fields:
       - region: volume
         init_conc: 0.0

@@ -7,7 +7,7 @@ problem: !SequentialCoupling
       region_ids:
       - 17
       - 18
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - rid: 17
       anisotropy: 10
@@ -30,11 +30,11 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     substances:
     - age
     - U235
-    transport: !ConvectionTransport
+    transport: !Convection_FV
       input_fields:
       - r_set: subset
         init_conc: 0

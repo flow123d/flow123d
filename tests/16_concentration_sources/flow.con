@@ -6,7 +6,7 @@
       mesh_file = "./input/test16.msh"
     }, 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       
       n_schurs = 2,
       
@@ -39,13 +39,13 @@
       }
     }, 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
+      TYPE = "Transport_OS", 
       boundary_file = "./input/test16.tbc", 
       initial_file = "./input/test16.tic", 
       
       
       transport = {
-        TYPE = "ConvectionTransport",
+        TYPE = "Convection_FV",
         input_fields= [
           { region = "IMPLICIT BOUNDARY",
             bc_conc = 0

@@ -3,7 +3,7 @@ problem: !SequentialCoupling
     but with zero pressure gradient
   mesh:
     mesh_file: ./input/narrow_2d_chanel.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - r_set: BULK
       conductivity: 0.0001
@@ -25,7 +25,7 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     substances:
     - A
     - B

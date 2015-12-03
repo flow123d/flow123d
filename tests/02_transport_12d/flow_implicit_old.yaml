@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Test2 - Transport implicit 1D-2D (convection, dispersion)
   mesh:
     mesh_file: ./input/test2.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     output:
       output_stream:
         file: ./test2.pvd
@@ -27,7 +27,7 @@ problem: !SequentialCoupling
       anisotropy: 1
       cross_section: 1
     balance: true
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     output_stream:
       file: ./transport-implicit.pvd
       format: !vtk
@@ -39,7 +39,7 @@ problem: !SequentialCoupling
     time:
       end_time: 5.0
       init_dt: 0.5
-    transport: !SoluteTransport_DG
+    transport: !ConvectionDiffusion_DG
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12

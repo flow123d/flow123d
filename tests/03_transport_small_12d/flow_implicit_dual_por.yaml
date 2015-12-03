@@ -8,7 +8,7 @@ problem: !SequentialCoupling
       - 1d_upper
       - 1d_lower
       - 1d_left_branch
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - r_set: 1d_domain
       conductivity: 1.0e-06
@@ -34,7 +34,7 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     substances:
     - name: age
       molar_mass: 0.018
@@ -42,7 +42,7 @@ problem: !SequentialCoupling
     - name: U235
       molar_mass: 0.235
     # uranium 235
-    transport: !SoluteTransport_DG
+    transport: !ConvectionDiffusion_DG
       input_fields:
       - r_set: ALL
         init_conc: 0

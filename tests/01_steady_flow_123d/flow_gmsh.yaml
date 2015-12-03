@@ -13,7 +13,7 @@ problem: !SequentialCoupling
       - .2d_fracture_1
       - .2d_fracture_2
       - .3d_cube
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - region: 1d_channel

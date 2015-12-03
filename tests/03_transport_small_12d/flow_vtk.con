@@ -12,7 +12,7 @@
     }, // mesh
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
 
       input_fields= [
         { r_set = "1d_domain", conductivity = 1e-6, 
@@ -43,7 +43,7 @@
     }, // primary equation
 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
+      TYPE = "Transport_OS", 
 
       substances = [ 
         {name = "age", molar_mass = 0.018},     // water age
@@ -54,7 +54,7 @@
       balance = { cumulative = true },
       
       transport = {
-        TYPE="ConvectionTransport",
+        TYPE="Convection_FV",
         
         input_fields= [
           { r_set = "ALL",

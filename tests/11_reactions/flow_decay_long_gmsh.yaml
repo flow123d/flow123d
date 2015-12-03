@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Test11 - radioactive decay simulation, long decay chain with biffurcation
   mesh:
     mesh_file: ./input/sit_decay.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: IMPLICIT BOUNDARY
       flow_old_bcd_file: ./input/sit_decay.fbc
@@ -19,8 +19,8 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
-    transport: !ConvectionTransport
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
       input_fields:
       - rid: 1
         init_conc:

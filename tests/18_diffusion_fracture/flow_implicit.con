@@ -13,7 +13,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       
       input_fields= [
         { region = "IMPLICIT BOUNDARY",
@@ -44,10 +44,10 @@
     }, 
  
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting",
+      TYPE = "Transport_OS",
       
       transport = {
-        TYPE = "SoluteTransport_DG", 
+        TYPE = "ConvectionDiffusion_DG", 
         input_fields= [
           { region = "IMPLICIT BOUNDARY",
             bc_conc=0

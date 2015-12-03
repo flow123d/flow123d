@@ -7,7 +7,7 @@
     }, 
     
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       input_fields= [
       ],
       input_fields= [
@@ -32,10 +32,10 @@
     }, 
     
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
+      TYPE = "Transport_OS", 
       
       transport = {
-        TYPE = "ConvectionTransport",
+        TYPE = "Convection_FV",
         input_fields= [
           { rid = 1,
             init_conc =

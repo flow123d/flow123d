@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
 
       input_fields= [
         { region = "plane",

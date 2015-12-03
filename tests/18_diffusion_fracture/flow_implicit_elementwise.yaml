@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: '[u''test18:'', u''diffusion'', u''through'', u''fractures'']'
   mesh:
     mesh_file: ./input/test18.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: IMPLICIT BOUNDARY
       flow_old_bcd_file: ./input/test18.fbc
@@ -24,8 +24,8 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
-    transport: !SoluteTransport_DG
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
       input_fields:
       - region: IMPLICIT BOUNDARY
         bc_conc: 0

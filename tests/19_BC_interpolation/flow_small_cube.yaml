@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Interpolated boundary condition - small cube
   mesh:
     mesh_file: ${INPUT}/small_mesh.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: IMPLICIT BOUNDARY
       bc_type: dirichlet

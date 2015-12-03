@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
     mesh_file: ./input/old_mesh.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - rid: 62

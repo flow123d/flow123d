@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Steady flow + transport with source
   mesh:
     mesh_file: ./input/test16.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - region: IMPLICIT BOUNDARY
@@ -26,10 +26,10 @@ problem: !SequentialCoupling
       r_tol: 1.0e-12
     time:
       end_time: 5.7
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     boundary_file: ./input/test16.tbc
     initial_file: ./input/test16.tic
-    transport: !ConvectionTransport
+    transport: !Convection_FV
       input_fields:
       - region: IMPLICIT BOUNDARY
         bc_conc: 0

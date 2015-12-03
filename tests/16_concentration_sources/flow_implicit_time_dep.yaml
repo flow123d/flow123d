@@ -12,7 +12,7 @@ problem: !SequentialCoupling
       id: 200
       element_list:
       - 721
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - r_set: BOUNDARY
@@ -40,9 +40,9 @@ problem: !SequentialCoupling
       end_time: 10
       max_dt: 1.0
       min_dt: 1.0
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     dual_porosity: false
-    transport: !SoluteTransport_DG
+    transport: !ConvectionDiffusion_DG
       input_fields:
       - region: IMPLICIT BOUNDARY
         bc_conc: 0

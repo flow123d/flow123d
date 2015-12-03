@@ -7,7 +7,7 @@
       mesh_file = "./input/test16.msh"
     }, 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       
       n_schurs = 2,
       
@@ -42,11 +42,11 @@
       }
     }, 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting",
+      TYPE = "Transport_OS",
 
 //      dual_porosity = false, 
       transport = {
-        TYPE = "SoluteTransport_DG", 
+        TYPE = "ConvectionDiffusion_DG", 
         input_fields= [
           { region = "IMPLICIT BOUNDARY",
             bc_conc = 0

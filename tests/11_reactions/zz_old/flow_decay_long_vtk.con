@@ -9,7 +9,7 @@
     }, 
     
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       boundary_file = "./input/sit_decay.fbc", 
       output = {
         output_stream = {

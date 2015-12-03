@@ -12,7 +12,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
 
       input_fields= [
         { r_set = "1d_domain", conductivity = 1e-6, 
@@ -47,7 +47,7 @@
     }, 
 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
+      TYPE = "Transport_OS", 
 
       substances = [ 
         {name = "age", molar_mass = 0.018},     // water age
@@ -55,7 +55,7 @@
       ],
       
       transport = {
-        TYPE="SoluteTransport_DG",
+        TYPE="ConvectionDiffusion_DG",
         
         input_fields= [
           { r_set = "ALL",

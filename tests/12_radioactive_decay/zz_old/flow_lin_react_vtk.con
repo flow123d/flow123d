@@ -9,7 +9,7 @@
     }, 
     
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       boundary_file = "./input/flow_lin_react/sit_lin_react.fbc", 
       output = {
         output_stream = {

@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
 
       input_fields= [
         { r_set = "BOUNDARY",
@@ -33,10 +33,10 @@
     },
 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting",
+      TYPE = "Transport_OS",
       
       transport = {
-        TYPE="SoluteTransport_DG", 
+        TYPE="ConvectionDiffusion_DG", 
     
         input_fields= [
           { region = ".right",

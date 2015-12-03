@@ -7,7 +7,7 @@ problem: !SequentialCoupling
       region_ids:
       - 48
       - 184
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - rid: 48
       anisotropy: 10
@@ -33,7 +33,7 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     output_stream:
       file: ./transport.msh
       format: !gmsh
@@ -43,7 +43,7 @@ problem: !SequentialCoupling
     substances:
     - A
     - B
-    transport: !ConvectionTransport
+    transport: !Convection_FV
       input_fields:
       - region: IMPLICIT BOUNDARY
         transport_old_bcd_file: ./input/test2.tbc

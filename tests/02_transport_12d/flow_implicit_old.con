@@ -8,7 +8,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       output = {
         output_stream = {
           file = "./test2.pvd", 
@@ -44,7 +44,7 @@
     },
 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting",
+      TYPE = "Transport_OS",
       
       output_stream = {
         file = "./transport-implicit.pvd", 
@@ -62,7 +62,7 @@
 	init_dt = 0.5
       },
       transport = {
-        TYPE = "SoluteTransport_DG", 
+        TYPE = "ConvectionDiffusion_DG", 
         solver = {
           TYPE = "Petsc", 
           a_tol = 1e-12,

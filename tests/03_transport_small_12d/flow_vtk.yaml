@@ -10,7 +10,7 @@ problem: !SequentialCoupling
       - 1d_lower
       - 1d_left_branch
   # mesh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - r_set: 1d_domain
       conductivity: 1.0e-06
@@ -36,7 +36,7 @@ problem: !SequentialCoupling
       a_tol: 1.0e-12
       r_tol: 1.0e-12
   # primary equation
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     substances:
     - name: age
       molar_mass: 0.018
@@ -48,7 +48,7 @@ problem: !SequentialCoupling
       end_time: 1000000.0
     balance:
       cumulative: true
-    transport: !ConvectionTransport
+    transport: !Convection_FV
       input_fields:
       - r_set: ALL
         init_conc: 0

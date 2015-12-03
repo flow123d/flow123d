@@ -6,7 +6,7 @@ problem: !SequentialCoupling
     transport problem.
   mesh:
     mesh_file: input/test13.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - rid: 17
       anisotropy: 1.0
@@ -30,8 +30,8 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
-    transport: !SoluteTransport_DG
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
       input_fields:
       - rid: 17
         init_conc: 0

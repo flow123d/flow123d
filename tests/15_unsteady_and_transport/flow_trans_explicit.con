@@ -7,7 +7,7 @@
     },
  
     primary_equation = {
-      TYPE = "Unsteady_LMH", 
+      TYPE = "UnsteadyDarcy_LMH", 
 
       input_fields= [
         { rid = 100,
@@ -52,10 +52,10 @@
     }, 
 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
+      TYPE = "Transport_OS", 
 
       transport = {
-        TYPE = "ConvectionTransport",
+        TYPE = "Convection_FV",
         input_fields= [
           { rid = 100,
             init_conc = 0

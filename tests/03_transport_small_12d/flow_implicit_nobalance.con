@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
 
       input_fields= [
         { rid = 17,
@@ -46,14 +46,14 @@
     }, 
 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
+      TYPE = "Transport_OS", 
 
       substances = [
         "age"
       ], 
       
       transport = {
-        TYPE = "SoluteTransport_DG",
+        TYPE = "ConvectionDiffusion_DG",
         
         input_fields= [
           { rid = 17,
