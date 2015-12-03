@@ -377,7 +377,7 @@ TEST(Profiler, memory_propagation){
 TEST(Profiler, petsc_memory_monitor) {
     PetscInt size = 10000;
     Profiler::initialize();
-    PetscInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+        
     {
         START_TIMER("A");
             Vec tmp_vector;
@@ -396,7 +396,6 @@ TEST(Profiler, petsc_memory_monitor) {
             VecDestroy(&tmp_vector2);
         END_TIMER("B");
     }
-    Profiler::instance()->stop_timer(0);
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 }
