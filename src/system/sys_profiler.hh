@@ -359,16 +359,20 @@ public:
      * Resume current timer, load measured petsc memory information
      */
     void resume();
+    /**
+     * Debug information of the timer
+     */
+    void info();
     
     /**
      * Method for exchanging metrics from parent timer to child timer
      */
-    void accept_from_parent (const Timer &timer);
+    void accept_from_parent (Timer &timer);
     
     /**
      * Method for exchanging metrics from child timer to its parent timer
      */
-    void accept_from_child (const Timer &timer);
+    void accept_from_child (Timer &timer);
 
 
     /**
@@ -472,19 +476,23 @@ protected:
     /**
      * Number of bytes used by Petsc at the start of time-frame
      */
-    long petsc_start_memory;
+    PetscLogDouble petsc_start_memory;
     /**
      * Number of bytes used by Petsc at the start of time-frame
      */
-    long petsc_end_memory;
+    PetscLogDouble petsc_end_memory;
     /**
      * Number of bytes used by Petsc at the start of time-frame
      */
-    long petsc_memory_difference;
+    PetscLogDouble petsc_memory_difference;
     /**
      * Maximum number of bytes used by Petsc during time-frame
      */
-    long petsc_peak_memory;
+    PetscLogDouble petsc_peak_memory;
+    /**
+     * Maximum number of bytes used by Petsc during time-frame
+     */
+    PetscLogDouble petsc_local_peak_memory;
     
     friend class Profiler;
 
