@@ -563,7 +563,7 @@ public:
     /**
      * Method will transform last profiler json file to desired format
      */
-    void transform_profiler_data (const string &output_file_suffix, const string &formatter);
+    void transform_profiler_data (const string &output_file_suffix, const string &formatter, MPI_Comm comm);
     /**
      * Stop all timers and destroys the Profiler object.
      * If you want some output call @p output method just before.
