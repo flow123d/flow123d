@@ -157,6 +157,30 @@ void MultiField<spacedim, Value>::set_up_components() {
 
 
 template<int spacedim, class Value>
+std::vector<typename Value::return_type> MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
+	std::vector<typename Value::return_type> value;
+	for (auto field : sub_fields_) {
+		value.push_back( field.value(p, elm) );
+	}
+	return value;
+}
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+                   std::vector< std::vector<typename Value::return_type> >  &value_list) const {
+	value_list.clear();
+	for (auto field : sub_fields_) {
+		std::vector<typename Value::return_type> value;
+		field.value_list(point_list, elm, value);
+		value_list.push_back( value );
+	}
+}
+
+
+
+template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record descriptor_rec, const FieldCommon &field) {
 	Input::Record multifield_rec;
 	if (descriptor_rec.opt_val(field.input_name(), multifield_rec));

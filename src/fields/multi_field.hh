@@ -57,6 +57,7 @@ public:
     //typedef FieldBase<spacedim, Value> SubFieldBaseType;
     typedef Field<spacedim, Value> SubFieldType;
     typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
     class MultiFieldFactory : public Field<spacedim, Value>::FactoryBase {
     public:
@@ -141,6 +142,20 @@ public:
      * Must be call after setting components, mesh and limit side.
      */
     void set_up_components();
+
+    /**
+     * Returns vector of value in one given point @p on an element given by ElementAccessor @p elm.
+     * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
+     */
+    virtual std::vector<typename Value::return_type> value(const Point &p, const ElementAccessor<spacedim> &elm) const;
+
+    /**
+     * Returns std::vector of vector values in several points at once. The base class implements
+     * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
+     * but this overhead can be negligible for more complex fields as Python of Formula.
+     */
+    virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+                       std::vector< std::vector<typename Value::return_type> >  &value) const;
 
 private:
     std::vector< SubFieldType > sub_fields_;
