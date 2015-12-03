@@ -117,46 +117,55 @@ Timer::Timer(const CodePoint &cp, int parent)
   current_allocated_(0),
   alloc_called(0),
   dealloc_called(0),
-  petsc_start_memory(0),
-  petsc_end_memory (0),
-  petsc_peak_memory(0),
+  petsc_start_memory(-1),
+  petsc_end_memory (-1),
+  petsc_peak_memory(-1),
+  petsc_local_peak_memory(-1),
   petsc_memory_difference(0)
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=-1;
 }
 
+void Timer::info() {
+    cout << "  Timer: " << tag() << " " << this << endl;
+    cout << "          start: " << petsc_start_memory << endl;
+    cout << "          stop : " << petsc_end_memory << endl;
+    cout << "          diff : " << petsc_memory_difference << " (" << petsc_end_memory - petsc_start_memory << ")" << endl;
+    cout << "          peak : " << petsc_peak_memory << " (" << petsc_local_peak_memory << ")" << endl;
+    cout << endl;
+}
 
 
 double Timer::cumulative_time() const {
     return cumul_time;
 }
 
-void Timer::accept_from_child(const Timer &timer) {
-    cout << tag() << " accepting from child " << timer.tag() << " = " << timer.petsc_memory_difference << " " << &timer.petsc_memory_difference << endl;
+void Timer::accept_from_child(Timer &timer) {
     total_allocated_ += timer.total_allocated_ - total_allocated_;
     total_deallocated_ += timer.total_deallocated_ - total_deallocated_;
     alloc_called += timer.alloc_called - alloc_called;
     dealloc_called += timer.dealloc_called - dealloc_called;
     
-    // petsc_memory_difference += timer.petsc_memory_difference - petsc_memory_difference;
+    petsc_memory_difference += timer.petsc_memory_difference - petsc_memory_difference;
     
     // set current memory usage from child, and check new peak
-    max_allocated_ = timer.max_allocated_;
     current_allocated_ = timer.current_allocated_;
     if (current_allocated_ > max_allocated_)
         max_allocated_ = current_allocated_;
-    // max_allocated_ += timer.max_allocated_;
+        
+    // maximum value from child are always greater or equal to parent frame
+    max_allocated_ = timer.max_allocated_;
+    petsc_peak_memory = timer.petsc_peak_memory
 }
 
-void Timer::accept_from_parent(const Timer &timer) {
-    // cout << tag() << " accepting from parent " << timer.tag() << " = " << timer.petsc_memory_difference << endl;
-    // cumulate property
+void Timer::accept_from_parent(Timer &timer) {
+    // set default variable values from parent
     total_allocated_ += timer.total_allocated_;
     total_deallocated_ += timer.total_deallocated_;
     alloc_called += timer.alloc_called;
     dealloc_called += timer.dealloc_called;
     
-    // petsc_memory_difference += timer.petsc_memory_difference;
+    petsc_memory_difference += timer.petsc_memory_difference;
     
     // set current memory usage from parents, and check new peak
     max_allocated_ = timer.max_allocated_;
@@ -166,13 +175,23 @@ void Timer::accept_from_parent(const Timer &timer) {
 }
 
 void Timer::pause() {
-    cout << "PAUSE TF:  " << tag() << endl;
+    // get the maximum resident set size (memory used) for the program.
+    PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
+    if (petsc_peak_memory < petsc_local_peak_memory)
+        petsc_peak_memory = petsc_local_peak_memory;
 }
 void Timer::resume() {
-    cout << "RESUME TF: " << tag() << endl;
+    // tell PETSc to monitor the maximum memory usage so
+    //   that PetscMemoryGetMaximumUsage() will work.
+    PetscMemorySetGetMaximumUsage();
 }
+
 void Timer::start() {
-    cout << "Start TF:  " << tag() << endl;
+    // Tell PETSc to monitor the maximum memory usage so
+    //   that PetscMemoryGetMaximumUsage() will work.
+    PetscMemorySetGetMaximumUsage();
+    PetscMemoryGetCurrentUsage (&petsc_start_memory);
+    
     if (start_count == 0) {
         start_time = TimePoint();
     }
@@ -183,12 +202,15 @@ void Timer::start() {
 
 
 bool Timer::stop(bool forced) {
-    cout << "Stop TF:   " << tag() << endl;
+    // get current memory usage
     PetscMemoryGetCurrentUsage (&petsc_end_memory);
     petsc_memory_difference += petsc_end_memory - petsc_start_memory;
-    cout << tag() << " = " << petsc_memory_difference << " " << &petsc_memory_difference << endl;
-    // actual_node = timers_[actual_node].parent_timer;
     
+    // get the maximum resident set size (memory used) for the program.
+    PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
+    if (petsc_peak_memory < petsc_local_peak_memory)
+        petsc_peak_memory = petsc_local_peak_memory;
+        
     if (forced) start_count=1;
 
     if (start_count == 1) {
@@ -253,7 +275,7 @@ Profiler::Profiler()
 {
 #ifdef FLOW123D_DEBUG_PROFILER
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
-    timers_.push_back( Timer(main_cp, 0) );
+    timers_.push_back( Timer(main_cp, -1) );
     timers_[0].start();
 #endif
 }
@@ -297,9 +319,6 @@ int  Profiler::start_timer(const CodePoint &cp) {
     timers_[actual_node].accept_from_parent(parent_timer);
     timers_[actual_node].start();
     
-    // reset values
-    PetscMemoryGetCurrentUsage (&timers_[actual_node].petsc_start_memory);
-
     return actual_node;
 }
 
@@ -331,7 +350,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
         if (timer.child_timers[i] >0)
             ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
 #endif
-    Timer child_timer = timers_[actual_node];
+    int child_timer = actual_node;
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer) {
@@ -345,11 +364,12 @@ void Profiler::stop_timer(const CodePoint &cp) {
                 timers_[actual_node].stop(false);
                 actual_node = timers_[actual_node].parent_timer;
                 
-                // propagate metrics from parent to child
-                timers_[actual_node].accept_from_child(child_timer);
-                // resume current timer
-                timers_[actual_node].resume();
-                
+                if (actual_node >= 0) {
+                    // propagate metrics from parent to child
+                    timers_[actual_node].accept_from_child(timers_[child_timer]);
+                    // resume current timer
+                    timers_[actual_node].resume();
+                }
                 return;
             }
         }
@@ -360,10 +380,12 @@ void Profiler::stop_timer(const CodePoint &cp) {
     timers_[actual_node].stop(false);
     actual_node = timers_[actual_node].parent_timer;
     
-    // propagate metrics from parent to child
-    timers_[actual_node].accept_from_child(child_timer);
-    // resume current timer
-    timers_[actual_node].resume();
+    if (actual_node >= 0) {
+        // propagate metrics from parent to child
+        timers_[actual_node].accept_from_child(timers_[child_timer]);
+        // resume current timer
+        timers_[actual_node].resume();
+    }
 }
 
 
@@ -373,7 +395,8 @@ void Profiler::stop_timer(int timer_index) {
     ASSERT_LESS( timer_index, timers_.size() );
 
     if (! timers_[timer_index].running() ) return;
-
+    
+    int child_timer = actual_node;
     if ( timer_index != actual_node ) {
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer)
@@ -386,15 +409,28 @@ void Profiler::stop_timer(int timer_index) {
                 // close 'node' itself
                 timers_[actual_node].stop(false);
                 actual_node=timers_[actual_node].parent_timer;
+                
+                if (actual_node >= 0) {
+                    // propagate metrics from parent to child
+                    timers_[actual_node].accept_from_child(timers_[child_timer]);
+                    // resume current timer
+                    timers_[actual_node].resume();
+                }
                 return;
             }
         // node not found - do nothing
         return;
     }
-
     // node to close match the actual
     timers_[actual_node].stop(false);
     actual_node=timers_[actual_node].parent_timer;
+    
+    if (actual_node >= 0) {
+        // propagate metrics from parent to child
+        timers_[actual_node].accept_from_child(timers_[child_timer]);
+        // resume current timer
+        timers_[actual_node].resume();
+    }
 }
 
 
@@ -420,7 +456,6 @@ void Profiler::notify_free(const size_t size) {
     timers_[actual_node].total_deallocated_ += size;
     timers_[actual_node].current_allocated_ -= size;
     timers_[actual_node].dealloc_called++;
-    // cout << timers_[actual_node].tag() << timers_[actual_node].current_allocated_ << endl;
 }
 
 
@@ -514,15 +549,15 @@ void Profiler::update_running_timers() {
 
 template <class T>
 void save_mpi_metric (property_tree::ptree &node, MPI_Comm comm, T * ptr, string name) {
-    // node.put (name+"-min", MPI_Functions::min(ptr, comm));
-    // node.put (name+"-max", MPI_Functions::max(ptr, comm));
+    node.put (name+"-min", MPI_Functions::min(ptr, comm));
+    node.put (name+"-max", MPI_Functions::max(ptr, comm));
     node.put (name+"-sum", MPI_Functions::sum(ptr, comm));
 }
 
 template <class T>
 void save_nonmpi_metric (property_tree::ptree &node,  T * ptr, string name) {
-    // node.put (name+"-min", *ptr);
-    // node.put (name+"-max", *ptr);
+    node.put (name+"-min", *ptr);
+    node.put (name+"-max", *ptr);
     node.put (name+"-sum", *ptr);
 }
 
@@ -553,6 +588,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         int dealloc_called = timer.dealloc_called;
         
         long petsc_memory_difference = (long)timer.petsc_memory_difference;
+        long petsc_peak_memory = (long)timer.petsc_peak_memory;
         
         save_mpi_metric<double>(node, comm, &cumul_time, "cumul-time");
         save_mpi_metric<int>(node, comm, &call_count, "call_count");
@@ -560,11 +596,12 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         save_mpi_metric<long>(node, comm, &memory_allocated, "memory-alloc");
         save_mpi_metric<long>(node, comm, &memory_deallocated, "memory-dealloc");
         save_mpi_metric<long>(node, comm, &memory_peak, "memory-peak");
-        
+        // 
         save_mpi_metric<int>(node, comm, &alloc_called, "memory-alloc-called");
         save_mpi_metric<int>(node, comm, &dealloc_called, "memory-dealloc-called");
         
         save_mpi_metric<long>(node, comm, &petsc_memory_difference, "memory-petsc-diff");
+        save_mpi_metric<long>(node, comm, &petsc_peak_memory, "memory-petsc-peak");
         
         return MPI_Functions::sum(&cumul_time, comm);
     };
@@ -636,8 +673,8 @@ void Profiler::output(ostream &os) {
         int alloc_called = timer.alloc_called;
         int dealloc_called = timer.dealloc_called;
         
-        long petsc_start_memory = (long)timer.petsc_start_memory;
-        long petsc_end_memory = (long)timer.petsc_end_memory;
+        long petsc_memory_difference = (long)timer.petsc_memory_difference;
+        long petsc_peak_memory = (long)timer.petsc_peak_memory;
         
         save_nonmpi_metric<double>(node, &cumul_time, "cumul-time");
         save_nonmpi_metric<int>(node, &call_count, "call_count");
@@ -649,8 +686,8 @@ void Profiler::output(ostream &os) {
         save_nonmpi_metric<int>(node, &alloc_called, "memory-alloc-called");
         save_nonmpi_metric<int>(node, &dealloc_called, "memory-dealloc-called");
         
-        save_nonmpi_metric<long>(node, &petsc_start_memory, "memory-petsc-start");
-        save_nonmpi_metric<long>(node, &petsc_end_memory, "memory-petsc-end");
+        save_nonmpi_metric<long>(node, &petsc_memory_difference, "memory-petsc-diff");
+        save_nonmpi_metric<long>(node, &petsc_peak_memory, "memory-petsc-peak");
         
         return cumul_time;
     };
