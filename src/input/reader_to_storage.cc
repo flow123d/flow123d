@@ -360,58 +360,59 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 				THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
 						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
 			}
-        }
+        } else {
+			// set variables managed transposition
+			try_transpose_read_ = true;
+			transpose_index_ = 0;
+			transpose_array_sizes_.clear();
 
-    	// set variables managed transposition
-        try_transpose_read_ = true;
-    	transpose_index_ = 0;
-    	transpose_array_sizes_.clear();
+			const Type::TypeBase &sub_type = array->get_sub_type();
+			StorageBase *first_item_storage = make_storage(p, &sub_type);
 
-    	const Type::TypeBase &sub_type = array->get_sub_type();
-    	StorageBase *tmp_storage = make_storage(p, &sub_type);
+			// automatic conversion to array with one element
+			if (transpose_array_sizes_.size() == 0) {
+				if ( array->match_size( 1 ) ) {
+					StorageArray *storage_array = new StorageArray(1);
+					storage_array->new_item(0, first_item_storage);
+					try_transpose_read_ = false;
 
-    	// automatic conversion to array with one element
-    	if (transpose_array_sizes_.size() == 0) {
-			if ( array->match_size( 1 ) ) {
-				StorageArray *storage_array = new StorageArray(1);
-				storage_array->new_item(0, tmp_storage);
-				try_transpose_read_ = false;
-
-				return storage_array;
-			} else {
-				THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
-						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
-			}
-    	}
-
-    	// check sizes of arrays stored in transpose_array_sizes_
-    	transpose_array_sizes_.erase( unique( transpose_array_sizes_.begin(), transpose_array_sizes_.end() ),
-    								  transpose_array_sizes_.end() );
-    	if (transpose_array_sizes_.size() == 1) {
-    		unsigned int sizes = transpose_array_sizes_[0]; // sizes of transposed
-
-    		// array size out of bounds
-    		if ( !array->match_size( sizes ) ) {
-    			THROW( ExcInputError() << EI_Specification("Do not fit into size limits of the Array.")
-    					<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
-    		}
-
-			// create storage of array
-    		StorageArray *storage_array = new StorageArray(sizes);
-			storage_array->new_item(0, tmp_storage);
-			if (sizes>1) {
-				++transpose_index_;
-				while (transpose_index_ < sizes) {
-					storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
-					++transpose_index_;
+					return storage_array;
+				} else {
+					THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
+							<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
 				}
-			}
+			} else {
 
-			try_transpose_read_ = false;
-			return storage_array;
-    	} else {
-			THROW( ExcInputError() << EI_Specification("Unequal sizes of sub-arrays during transposition of '" + p.get_node_type(ValueTypes::array_type) + "'")
-					<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+				// check sizes of arrays stored in transpose_array_sizes_
+				transpose_array_sizes_.erase( unique( transpose_array_sizes_.begin(), transpose_array_sizes_.end() ),
+											  transpose_array_sizes_.end() );
+				if (transpose_array_sizes_.size() == 1) {
+					unsigned int sizes = transpose_array_sizes_[0]; // sizes of transposed
+
+					// array size out of bounds
+					if ( !array->match_size( sizes ) ) {
+						THROW( ExcInputError() << EI_Specification("Do not fit into size limits of the Array.")
+								<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+					}
+
+					// create storage of array
+					StorageArray *storage_array = new StorageArray(sizes);
+					storage_array->new_item(0, first_item_storage);
+					if (sizes>1) {
+						++transpose_index_;
+						while (transpose_index_ < sizes) {
+							storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
+							++transpose_index_;
+						}
+					}
+
+					try_transpose_read_ = false;
+					return storage_array;
+				} else {
+					THROW( ExcInputError() << EI_Specification("Unequal sizes of sub-arrays during transposition of '" + p.get_node_type(ValueTypes::array_type) + "'")
+							<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+				}
+        	}
     	}
 
     }
