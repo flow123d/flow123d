@@ -15,6 +15,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/ref_element.hh"
 #include "mesh/bih_tree.hh"
 
 #include "mesh/ngh/include/triangle.h"
@@ -88,13 +89,17 @@ void InspectElements::compute_intersections<1,3>(){
 	BIHTree bt(mesh, 20);
 
 	FOR_ELEMENTS(mesh, elm) {
-		if (elm->dim() == 1 && !closed_elements[elm->index()]&& elements_bb[elm->index()].intersect(mesh_3D_bb)) {
+        if (elm->dim() == 1 &&                                  // is 1D element
+            !closed_elements[elm->index()] &&                   // is not closed yet
+            elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
+        {
             DBGMSG("-----Nalezen 1D element------ \n");
 
 			update_abscissa(elm);
 			std::vector<unsigned int> searchedElements;
 			bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
 
+            // go through all 3D elements that can have possibly intersection with 1D elements bounding box
 			for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++){
 				int idx = *it;
 				ElementFullIter ele = mesh->element( idx );
@@ -129,11 +134,13 @@ void InspectElements::compute_intersections<1,3>(){
 }
 
 void InspectElements::prolongate_elements(const IntersectionLine &il, const ElementFullIter &elm, const ElementFullIter &ele){
-	for(unsigned int i = 0; i < il.size();i++){
+	for(const IntersectionPoint<1,3> &IP : il.points()) {
+        std::cout << IP;        
+		if(IP.dim_A() == 0) { 
+            // if IP is end of the 1D element
+            // prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
 
-		if(il[i].is_vertex()){
-
-			SideIter elm_side = elm->side((unsigned int)(1-il[i].local_coords1()[0])); //ele->side(3-stena);
+            SideIter elm_side = elm->side(IP.side_idx1());  // side of 1D element is vertex
 			Edge *edg = elm_side->edge();
 			for(int j=0; j < edg->n_sides;j++) {
 
@@ -142,30 +149,116 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
 
 					unsigned int sousedni_element = other_side->element()->index();
 					if(!closed_elements[sousedni_element]){
-						prolongate_1D_element(other_side->element(), ele);
+						prolongate_1D_element(other_side->element(), ele);  //computes intersection with the same tetrahedron
 					}
 				}
 			}
 		}else{
+            std::vector<Edge*> edges;
 
-			SideIter elm_side = ele->side((unsigned int)(3-il[i].side_idx2())); //ele->side(3-stena);
-			Edge *edg = elm_side->edge();
-			for(int j=0; j < edg->n_sides;j++) {
+            switch (IP.dim_B())
+            {
+                // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
+                case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
+                            edges.push_back(&(mesh->edges[ele->edge_idx_[RefElement<3>::interact<2,0>(IP.side_idx2())[j]]]));
+                        break;
+                
+                // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
+                case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
+                            edges.push_back(&(mesh->edges[ele->edge_idx_[RefElement<3>::interact<2,1>(IP.side_idx2())[j]]]));
+                        break;
+                        
+                // IP is on a side of tetrahedron; only possible edge is from the given side
+                case 2: edges.push_back(&(mesh->edges[ele->edge_idx_[IP.side_idx2()]]));
+                        break;
+                default: ASSERT_LESS(IP.dim_B(),3);
+            }
+            
+            for(Edge* edg : edges)
+            for(int j=0; j < edg->n_sides;j++) {
+                if (edg->side(j)->element() != ele) {
+                    unsigned int sousedni_element = edg->side(j)->element()->index();
 
-				SideIter other_side=edg->side(j);
-				if (other_side != elm_side) {
-					unsigned int sousedni_element = other_side->element()->index();
-
-					if(flag_for_3D_elements[sousedni_element] == -1){ // || (flag_for_3D_elements[sousedni_element] != (int)elm->index() && !intersectionExists(elm->index(),sousedni_element))){
-						flag_for_3D_elements[sousedni_element] = elm->index();
-						ProlongationPoint pp = {elm->index(), sousedni_element, ele->index()};
-						prolongation_point_queue.push(pp);
-					}
-				}
-			}
-		}
+                    if(flag_for_3D_elements[sousedni_element] == -1){
+                        flag_for_3D_elements[sousedni_element] = elm->index();
+                        ProlongationPoint pp = {elm->index(), sousedni_element, ele->index()};
+                        prolongation_point_queue.push(pp);
+                    }
+                }   
+            }
+        }  
+//         if(il[i].is_vertex()){
+// 
+//             SideIter elm_side = elm->side((unsigned int)(1-il[i].local_coords1()[0]));
+//             Edge *edg = elm_side->edge();
+//             for(int j=0; j < edg->n_sides;j++) {
+// 
+//                 SideIter other_side=edg->side(j);
+//                 if (other_side != elm_side) {
+// 
+//                     unsigned int sousedni_element = other_side->element()->index();
+//                     if(!closed_elements[sousedni_element]){
+//                         prolongate_1D_element(other_side->element(), ele);
+//                     }
+//                 }
+//             }
+//         }else{
+// 			SideIter elm_side = ele->side((unsigned int)(3-il[i].side_idx2())); //ele->side(3-stena);
+// 			
+// 			Edge *edg = elm_side->edge();
+//             
+// 			for(int j=0; j < edg->n_sides;j++) {
+// 
+// 				SideIter other_side=edg->side(j);
+// 				if (other_side != elm_side) {
+// 					unsigned int sousedni_element = other_side->element()->index();
+// 
+// 					if(flag_for_3D_elements[sousedni_element] == -1){ // || (flag_for_3D_elements[sousedni_element] != (int)elm->index() && !intersectionExists(elm->index(),sousedni_element))){
+// 						flag_for_3D_elements[sousedni_element] = elm->index();
+// 						ProlongationPoint pp = {elm->index(), sousedni_element, ele->index()};
+// 						prolongation_point_queue.push(pp);
+// 					}
+// 				}
+// 			}
+// 		}
 	}
 };
+
+void InspectElements::prolongate_1D_element(const ElementFullIter &elm, const ElementFullIter &ele){
+
+    update_abscissa(elm);
+    closed_elements[elm->index()] = true;
+
+    IntersectionLine il(elm->index(), ele->index());
+    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
+    CI_13.init();
+    CI_13.compute(il.points());
+
+    if(il.size() > 1){
+        intersection_line_list[elm->index()].push_back(il);
+        prolongate_elements(il, elm, ele);
+    }
+};
+
+void InspectElements::prolongate(const ProlongationPoint &pp){
+
+    ElementFullIter elm = mesh->element(pp.elm_1D_idx);
+    ElementFullIter ele = mesh->element(pp.elm_3D_idx);
+
+    update_abscissa(elm);
+    update_tetrahedron(ele);
+
+    IntersectionLine il(elm->index(), ele->index());
+    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
+    CI_13.init();
+    CI_13.compute(il.points());
+
+    if(il.size() > 1){
+        intersection_line_list[elm->index()].push_back(il);
+        prolongate_elements(il, elm, ele);
+    }
+
+}
 
 template<>
 void InspectElements::compute_intersections<2,3>(){
@@ -265,41 +358,6 @@ void InspectElements::compute_intersections<2,3>(){
 
 };
 
-void InspectElements::prolongate_1D_element(const ElementFullIter &elm, const ElementFullIter &ele){
-
-	update_abscissa(elm);
-	closed_elements[elm->index()] = true;
-
-	IntersectionLine il(elm->index(), ele->index());
-	ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
-	CI_13.init();
-	CI_13.compute(il.points());
-
-	if(il.size() > 1){
-		intersection_line_list[elm->index()].push_back(il);
-		prolongate_elements(il, elm, ele);
-	}
-};
-
-void InspectElements::prolongate(const ProlongationPoint &pp){
-
-	ElementFullIter elm = mesh->element(pp.elm_1D_idx);
-	ElementFullIter ele = mesh->element(pp.elm_3D_idx);
-
-	update_abscissa(elm);
-	update_tetrahedron(ele);
-
-	IntersectionLine il(elm->index(), ele->index());
-	ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
-	CI_13.init();
-	CI_13.compute(il.points());
-
-	if(il.size() > 1){
-		intersection_line_list[elm->index()].push_back(il);
-		prolongate_elements(il, elm, ele);
-	}
-
-}
 
 void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele){
 

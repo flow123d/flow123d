@@ -41,16 +41,16 @@ class InspectElements {
 	std::vector<bool> closed_elements;
 	std::vector<int> flag_for_3D_elements;
 
-
+    // Used only for 2d-3d
 	std::queue<ProlongationLine> prolongation_line_queue_2D;
 	std::queue<ProlongationLine> prolongation_line_queue_3D;
 
-	std::queue<ProlongationPoint> prolongation_point_queue;
+	std::queue<ProlongationPoint> prolongation_point_queue; // Used only for 1d-3d
 
-	int element_2D_index;
+	int element_2D_index;   // Used only for 2d-3d
 
-	Simplex<1> abscissa;
-	Simplex<2> triangle;
+	Simplex<1> abscissa;    // Used only for 1d-3d
+	Simplex<2> triangle;    // Used only for 2d-3d
 	Simplex<3> tetrahedron;
 
 	Mesh *mesh;
@@ -61,10 +61,12 @@ class InspectElements {
 	void update_triangle(const ElementFullIter &el);
 	void update_tetrahedron(const ElementFullIter &el);
 
+    // Used only for 1d-3d
 	void prolongate_elements(const IntersectionLine &il, const ElementFullIter &elm, const ElementFullIter &ele);
 	void prolongate_1D_element(const ElementFullIter &elm, const ElementFullIter &ele);
 	void prolongate(const ProlongationPoint &pp);
     
+    // Used only for 2d-3d
     void computeIntersections2d3d();
     void computeIntersections2d3dProlongation(const ProlongationLine &pl);
     void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, 

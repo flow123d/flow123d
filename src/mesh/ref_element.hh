@@ -204,6 +204,7 @@ public:
     static const unsigned int n_lines_per_node = dim;       ///< Number of lines with one common node.
     static const unsigned int n_nodes_per_line = 2;         ///< Number of nodes in one line.
     static const unsigned int n_sides_per_line = 2;         ///< Number of sides with one common line. @p dim == 3.
+    static const unsigned int n_sides_per_node = dim;       ///< Number of sides with one common line.
     
 	/// Number of lines on boundary of one side.
 	static const unsigned int n_lines_per_side = (unsigned int)((dim * (dim - 1)) / 2);//( dim == 3 ? 3 : 0);// Kombinační číslo dim nad dvěma
@@ -302,7 +303,7 @@ private:
     static const IdxVector<n_nodes_per_line> line_nodes_[n_lines]; ///< For given line, returns its nodes indices.
     static const IdxVector<n_lines_per_node> node_lines_[n_nodes]; ///< For given node, returns lines indices.
     static const IdxVector<n_nodes_per_side> side_nodes_[n_sides]; ///< For given side, returns nodes indices. For @p dim == 3.
-    static const IdxVector<n_nodes_per_side> node_sides_[n_nodes]; ///< For given node, returns sides indices. For @p dim == 3.
+    static const IdxVector<n_sides_per_node> node_sides_[n_nodes]; ///< For given node, returns sides indices. For @p dim == 3.
     static const IdxVector<n_sides_per_line> line_sides_[n_lines]; ///< For given line, returns sides indices. For @p dim == 3.
     static const IdxVector<n_lines_per_side> side_lines_[n_sides]; ///< For given side, returns lines indices. For @p dim == 3.
 };

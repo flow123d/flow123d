@@ -67,88 +67,178 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 
     // go through all intersection points (vertices of polygon)
 	for(unsigned int i = 0; i < i_points_.size();i++){
-            IntersectionPoint<2,3> ip = i_points_[i];
-			if(ip.side_idx1() != unset_loc_idx ){ 
-                // if the edge of triangle is set, it must be
-                // intersection S-E or E-S or E-E
+        IntersectionPoint<2,3> ip = i_points_[i];
+        
+        switch(ip.dim_A())
+        {
+            case 0: // if the ip is at the vertex of triangle -> intersection E-E
+            {
+                DBGMSG("Intersection type E-E.\n");
+                // IP is the vertex of triangle,
+                // the directions of triangle edges determines the directions of polygon edges
+                unsigned int vertex_index = ip.side_idx1();
+                DBGMSG("E-E: vertex_index: %d %d\n", vertex_index);
+                // <2>::lines_nodes[vertex_index][0 = line index IN, or 1 = line index OUT]
+                unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0];
+                unsigned int triangle_side_out = RefElement<2>::interact<1,0>(vertex_index)[1];
+                unsigned int row = 4+triangle_side_in;
                 
-				if(!ip.is_vertex()){   // IP is not a vertex of triangle -> cannot be E-E
-                    DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.side_idx1(),ip.side_idx2(),ip.orientation());
-                    /* directions of polygon edges depends on three aspects:
-                     * - normal orientation of the tetrahedron side (OUT...0, IN...1)
-                     * - orientation of the edge of the triangle (according to direction of other edges of triangle or opposite)
-                     * - orientation of the intersection point ... Plucker product (P>0...1, P<0...0)
-                     * 
-                     * we can obtain this XOR table: XOR(XOR(S,P),E)
-                     *  S   P   E   RES
-                     *  0   0   0   0
-                     *  0   0   1   1
-                     *  0   1   0   1
-                     *  0   1   1   0
-                     *  1   0   0   1
-                     *  1   0   1   0
-                     *  1   1   0   0
-                     *  1   1   1   1
-                     * 
-                     * -> this can be expressed as sum(S,P,E)%2
-                     * 
-                     * if RES == 1 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
-                     * if RES == 0 -> intersection direction is E-S
-                     */
-					unsigned int j = (RefElement<3>::normal_orientation(ip.side_idx2()) + 
-                                      RefElement<2>::normal_orientation(ip.side_idx1()) +
-                                      ip.orientation()
-                                     ) % 2;
+                if(trace_table(row,1) == -1)    // this ignores duplicit IP
+                {
+                    trace_table(row,0) = triangle_side_out+4;
+                    trace_table(row,1) = i;
+                    DBGMSG("E-E: row: %d, to edge: %d, ip: %d \n",row, triangle_side_out+4, i);
+                }
+            } break;
+            case 1: // if the ip is on the side of triangle -> intersection S-E or E-S
+            {
+                DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.side_idx1(),ip.side_idx2(),ip.orientation());
+                // IP is not a vertex of triangle -> cannot be E-E
+                /* directions of polygon edges depends on three aspects:
+                 * - normal orientation of the tetrahedron side (OUT...0, IN...1)
+                 * - orientation of the edge of the triangle (according to direction of other edges of triangle or opposite)
+                 * - orientation of the intersection point ... Plucker product (P>0...1, P<0...0)
+                 * 
+                 * we can obtain this XOR table: XOR(XOR(S,P),E)
+                 *  S   P   E   RES
+                 *  0   0   0   0
+                 *  0   0   1   1
+                 *  0   1   0   1
+                 *  0   1   1   0
+                 *  1   0   0   1
+                 *  1   0   1   0
+                 *  1   1   0   0
+                 *  1   1   1   1
+                 * 
+                 * -> this can be expressed as sum(S,P,E)%2
+                 * 
+                 * if RES == 1 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
+                 * if RES == 0 -> intersection direction is E-S
+                 */
+                unsigned int j = (RefElement<3>::normal_orientation(ip.side_idx2()) + 
+                                  RefElement<2>::normal_orientation(ip.side_idx1()) +
+                                  ip.orientation()
+                                 ) % 2;
 
-					if(j == 1){
-						// bod je vstupní na stěně a pokračuje na hranu trojúhelníku
-                        unsigned int row = ip.side_idx2();
-						trace_table(row,0) = ip.side_idx1()+4;
-						trace_table(row,1) = i;
-                        DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, ip.side_idx1()+4, i);
-					}else{
-						// bod je vstupní na hraně a vchází do čtyřstěnu
-                        unsigned int row = 4+ip.side_idx1();
-						trace_table(row,0) = ip.side_idx2();
-						trace_table(row,1) = i;
-                        DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, ip.side_idx2(), i);
-					}
-
-
-				}else{  // type E-E
-                    DBGMSG("Intersection type E-E.\n");
-                    // IP is the vertex of triangle,
-                    // the directions of triangle edges determines the directions of polygon edges
-                    unsigned int vertex_index = ip.side_idx1();
-                    DBGMSG("E-E: vertex_index: %d %d\n", vertex_index);
-                    // <2>::lines_nodes[vertex_index][0 = line index IN, or 1 = line index OUT]
-					unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0];
-					unsigned int triangle_side_out = RefElement<2>::interact<1,0>(vertex_index)[1];
-                    unsigned int row = 4+triangle_side_in;
-                    
-                    if(trace_table(row,1) == -1)    // this ignores duplicit IP
-                    {
-                        trace_table(row,0) = triangle_side_out+4;
-                        trace_table(row,1) = i;
-                        DBGMSG("E-E: row: %d, to edge: %d, ip: %d \n",row, triangle_side_out+4, i);
-                    }
-				}
-			}else{  // type S-S, IP is on the edge between two sides
+                if(j == 1){
+                    // bod je vstupní na stěně a pokračuje na hranu trojúhelníku
+                    unsigned int row = ip.side_idx2();
+                    trace_table(row,0) = ip.side_idx1()+4;
+                    trace_table(row,1) = i;
+                    DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, ip.side_idx1()+4, i);
+                }else{
+                    // bod je vstupní na hraně a vchází do čtyřstěnu
+                    unsigned int row = 4+ip.side_idx1();
+                    trace_table(row,0) = ip.side_idx2();
+                    trace_table(row,1) = i;
+                    DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, ip.side_idx2(), i);
+                }
+            } break;
+            case 2: // type S-S, IP is on the edge between two sides
+            {
                 DBGMSG("Intersection type S-S, ori %d.\n", ip.orientation());
-				/** here the side2 contains number of edge of the tetrahedron where the IP lies
+                /** here the side2 contains number of edge of the tetrahedron where the IP lies
                  * sides: let edge be oriented up and let us see the tetrahedron from outside ->
                  *  then the right side [0] is in and left side [1] is out
                  *  - this is determined by IP orientation
                  */
                 unsigned int tetrahedron_line = ip.side_idx2();
-                unsigned int tetrahedron_side_in = RefElement<3>::interact<2,1>(tetrahedron_line)[1-ip.orientation()];//RefElement<3>::line_sides[tetrahedron_line][1-ip.orientation()];
+                unsigned int tetrahedron_side_in = RefElement<3>::interact<2,1>(tetrahedron_line)[1-ip.orientation()];
                 unsigned int tetrahedron_side_out = RefElement<3>::interact<2,1>(tetrahedron_line)[ip.orientation()];
                 
-				trace_table(tetrahedron_side_in,0) = tetrahedron_side_out;
-				trace_table(tetrahedron_side_in,1) = i;
+                trace_table(tetrahedron_side_in,0) = tetrahedron_side_out;
+                trace_table(tetrahedron_side_in,1) = i;
                 DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",tetrahedron_side_in, tetrahedron_side_out, i);
-			}
-	}
+            } break;
+        }
+        
+    }
+            
+            
+//             if(ip.dim_A() < 2) {
+//                 // if the ip is on the side or at the vertex of triangle -> intersection S-E or E-S or E-E
+//                 
+// 			//if(ip.side_idx1() != unset_loc_idx ){ 
+//                 // if the edge of triangle is set, it must be
+//                 // intersection S-E or E-S or E-E
+//                 
+// 				if(!ip.is_vertex()){   // IP is not a vertex of triangle -> cannot be E-E
+//                     DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.side_idx1(),ip.side_idx2(),ip.orientation());
+//                     /* directions of polygon edges depends on three aspects:
+//                      * - normal orientation of the tetrahedron side (OUT...0, IN...1)
+//                      * - orientation of the edge of the triangle (according to direction of other edges of triangle or opposite)
+//                      * - orientation of the intersection point ... Plucker product (P>0...1, P<0...0)
+//                      * 
+//                      * we can obtain this XOR table: XOR(XOR(S,P),E)
+//                      *  S   P   E   RES
+//                      *  0   0   0   0
+//                      *  0   0   1   1
+//                      *  0   1   0   1
+//                      *  0   1   1   0
+//                      *  1   0   0   1
+//                      *  1   0   1   0
+//                      *  1   1   0   0
+//                      *  1   1   1   1
+//                      * 
+//                      * -> this can be expressed as sum(S,P,E)%2
+//                      * 
+//                      * if RES == 1 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
+//                      * if RES == 0 -> intersection direction is E-S
+//                      */
+// 					unsigned int j = (RefElement<3>::normal_orientation(ip.side_idx2()) + 
+//                                       RefElement<2>::normal_orientation(ip.side_idx1()) +
+//                                       ip.orientation()
+//                                      ) % 2;
+// 
+// 					if(j == 1){
+// 						// bod je vstupní na stěně a pokračuje na hranu trojúhelníku
+//                         unsigned int row = ip.side_idx2();
+// 						trace_table(row,0) = ip.side_idx1()+4;
+// 						trace_table(row,1) = i;
+//                         DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, ip.side_idx1()+4, i);
+// 					}else{
+// 						// bod je vstupní na hraně a vchází do čtyřstěnu
+//                         unsigned int row = 4+ip.side_idx1();
+// 						trace_table(row,0) = ip.side_idx2();
+// 						trace_table(row,1) = i;
+//                         DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, ip.side_idx2(), i);
+// 					}
+// 
+// 
+// 				}else{  // type E-E
+//                     DBGMSG("Intersection type E-E.\n");
+//                     // IP is the vertex of triangle,
+//                     // the directions of triangle edges determines the directions of polygon edges
+//                     unsigned int vertex_index = ip.side_idx1();
+//                     DBGMSG("E-E: vertex_index: %d %d\n", vertex_index);
+//                     // <2>::lines_nodes[vertex_index][0 = line index IN, or 1 = line index OUT]
+// 					unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0];
+// 					unsigned int triangle_side_out = RefElement<2>::interact<1,0>(vertex_index)[1];
+//                     unsigned int row = 4+triangle_side_in;
+//                     
+//                     if(trace_table(row,1) == -1)    // this ignores duplicit IP
+//                     {
+//                         trace_table(row,0) = triangle_side_out+4;
+//                         trace_table(row,1) = i;
+//                         DBGMSG("E-E: row: %d, to edge: %d, ip: %d \n",row, triangle_side_out+4, i);
+//                     }
+// 				}
+// 			}else{  // type S-S, IP is on the edge between two sides
+//                 DBGMSG("Intersection type S-S, ori %d.\n", ip.orientation());
+// 				/** here the side2 contains number of edge of the tetrahedron where the IP lies
+//                  * sides: let edge be oriented up and let us see the tetrahedron from outside ->
+//                  *  then the right side [0] is in and left side [1] is out
+//                  *  - this is determined by IP orientation
+//                  */
+//                 unsigned int tetrahedron_line = ip.side_idx2();
+//                 unsigned int tetrahedron_side_in = RefElement<3>::interact<2,1>(tetrahedron_line)[1-ip.orientation()];//RefElement<3>::line_sides[tetrahedron_line][1-ip.orientation()];
+//                 unsigned int tetrahedron_side_out = RefElement<3>::interact<2,1>(tetrahedron_line)[ip.orientation()];
+//                 
+// 				trace_table(tetrahedron_side_in,0) = tetrahedron_side_out;
+// 				trace_table(tetrahedron_side_in,1) = i;
+//                 DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",tetrahedron_side_in, tetrahedron_side_out, i);
+// 			}
+// 	}
     trace_table.print();
 	// Procházení trasovací tabulky a přeuspořádání bodů do nového pole
 	int first_row_index = -1;

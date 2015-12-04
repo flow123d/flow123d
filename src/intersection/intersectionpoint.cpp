@@ -16,8 +16,8 @@ template<unsigned int N, unsigned int M>
 void IntersectionPoint<N,M>::clear()
 {   local_coords1_.zeros();
     local_coords2_.zeros();
-    side_idx1_ = unset_loc_idx;
-    side_idx2_ = unset_loc_idx;
+    side_idx1_ = 0;
+    side_idx2_ = 0;
     orientation_ = 1;
     pathologic_ = false;
     dim_A_ = N;
@@ -63,7 +63,7 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned
     orientation_ = IP.orientation();
     pathologic_ = IP.is_pathologic();
     dim_A_ = IP.dim_A();
-    dim_B_ = M;
+    dim_B_ = M-1;
 };
 
 
@@ -78,7 +78,7 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned
     orientation_ = IP.orientation();
     pathologic_ = IP.is_pathologic();
     dim_A_ = IP.dim_A();
-    dim_B_ = M;
+    dim_B_ = M-2;
 };
 
     
@@ -90,9 +90,9 @@ template<> bool IntersectionPoint<2,3>::operator<(const IntersectionPoint<2,3> &
 
 template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPoint< N,M >& s)
 {
-    os << "Local coords on the first element on side(" << s.side_idx1_ << ")" << endl;
+    os << "Local coords on element A(id=" << s.side_idx1_ << ", dim=" << s.dim_A_ << ")" << endl;
     s.local_coords1_.print(os);
-    os << "Local coords on the second element on side(" << s.side_idx2_ << ")" << endl;
+    os << "Local coords on element B(id=" << s.side_idx2_ << ", dim=" << s.dim_B_ << ")" << endl;
     s.local_coords2_.print(os);
     os << "Orientation: " << s.orientation_ << " Patological: " << s.pathologic_ << endl;
     return os;

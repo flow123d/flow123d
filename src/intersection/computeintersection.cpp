@@ -147,8 +147,12 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 		xprintf(Msg,"Globale:\n");
 		global_triangle.print();*/
 //         IntersectionPoint<1,2> IP(theta,local_triangle,-1,-1,(*plucker_products[0] > 0 ? 1 : 0));
+        /*TODO: we do not test whether the IP is not at the vertex of abscissa:
+         * we solve intersection of triangle and line (not abscissa)
+         * this should be done (after this function) when solving 1d-2d
+         */
 		IntersectionPoint<1,2> IP(theta,local_triangle);
-        IP.set_topology(unset_loc_idx, 1, unset_loc_idx, 2);
+        IP.set_topology(0, 1, 0, 2);
         IP.set_plucker_flags((*plucker_products[0] > 0 ? 1 : 0), false);
 		IP12s.push_back(IP);
 		return true;
@@ -222,18 +226,24 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					t = -t;
 				}
 
-				//cout << "s,t: " << s << "," << t << endl;
-				//xprintf(Msg, "s,t : %f,%f \n",s,t);
-
 				// IP is outside of triangle side
 				if(t > 1+epsilon || t < -epsilon){// || s > 1+epsilon || s < -epsilon){
 					//xprintf(Msg,"hoohoo\n");
 					//return false;
 				}else{
-
-					s = (fabs(s) < epsilon ? 0 : (fabs(1-s) < epsilon ? 1 : s));
-					t = (fabs(t) < epsilon ? 0 : (fabs(1-t) < epsilon ? 1 : t));
-
+                    IntersectionPoint<1,2> IP;
+                    IP.set_plucker_flags(1, true);  // orientation and pathologic flag
+                    
+                    // possibly set abscissa vertex {0,1}
+                    if( fabs(s) < epsilon)       { s = 0; IP.set_side1(0,0);}
+                    else if(fabs(1-s) < epsilon) { s = 1; IP.set_side1(1,0);}
+                    else                         {        IP.set_side1(0,1);}   // no vertex, line 0, dim = 1
+                    
+                    // possibly set triangle vertex {0,1,2}
+                    if( fabs(t) < epsilon)       { t = 0; IP.set_side2(RefElement<2>::interact<0,1>(i)[0],0);}
+                    else if(fabs(1-t) < epsilon) { t = 1; IP.set_side2(RefElement<2>::interact<0,1>(i)[1],0);}
+                    else                         {        IP.set_side2(i,1);}   // no vertex, side i, dim = 1
+                    
 					arma::vec::fixed<2> local_abscissa;
 					local_abscissa[0] = 1-s;
 					local_abscissa[1] = s;
@@ -245,26 +255,20 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					 * 2 = 0, 1 - t, t
 					 *
 					 * t = 0 => 1; 1 => 0, 2 => 2
-					 *
+					 * TODO: according to ref element
 					 * */
 					l_triangle[(3-i)%3] = 1 - t;
 					l_triangle[(4-i)%3] = t;
 					l_triangle[2-i] = 0;
 
-					/*xprintf(Msg,"patologicky\n");
-					local_abscissa.print();
-					l_triangle.print();*/
-//                     IntersectionPoint<1,2> IP(local_abscissa,l_triangle,-1,i,1,false,true);
-					IntersectionPoint<1,2> IP(local_abscissa,l_triangle);
-                    IP.set_topology(unset_loc_idx, 1, i, 2);
-                    IP.set_plucker_flags(1, true);
+// 					local_abscissa.print();
+// 					l_triangle.print();
+                    
+					IP.set_coordinates(local_abscissa,l_triangle);
+                    
 					IP12s.push_back(IP);
 					return true;
 				}
-
-
-
-
 			}
 		}
 		return false;
@@ -378,45 +382,35 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 		}
 		if(!CI12[side].is_computed() // if not computed yet
             && CI12[side].compute(IP12s, true)){    // compute; if intersection exists then continue
-			//xprintf(Msg,"Prunik13\n");
 
-			if(IP12s.back().is_pathologic()){   // resolve pathologic cases
-				// Nastavování stěn, které se už nemusí počítat
-
-                //TODO: get index of vertex -> add to topology
-                //TODO: decide whether the IP is at vertex or a whole edge, use RE::interact<>
+            IntersectionPoint<1,2> IP = IP12s.back();   // shortcut
+            IntersectionPoint<1,3> IP13(IP, side);
+        
+			if(IP.is_pathologic()){   // resolve pathologic cases
                 
-                //TODO depends on reference element
-				if(side == 0){
-					if(IP12s.back().local_coords2()[0] == 1){   //test node 0 of tetrahedron
-						CI12[1].set_computed(); // set other two sides
-						CI12[2].set_computed();
-					}else if(IP12s.back().local_coords2()[1] == 1){ //test node 1 of tetrahedron
-						CI12[1].set_computed(); // set other two sides
-						CI12[3].set_computed();
-					}else if(IP12s.back().local_coords2()[2] == 1){ //test node 2 of tetrahedron
-						CI12[2].set_computed(); // set other two sides
-						CI12[3].set_computed();
-					}else{
-						CI12[IP12s.back().side_idx2() + 1].set_computed();  // intersection is an edge, set side is computed
-					}
-				}else if(side == 1 && IP12s.back().local_coords2()[2] == 1){
-					CI12[2].set_computed();
-					CI12[3].set_computed();
-				}else{
-					CI12[IP12s.back().side_idx2() + 1].set_computed();
-				}
+                // set the 'computed' flag on the connected sides by IP
+                if(IP.dim_B() == 0) // IP is vertex of triangle
+                {
+                    for(unsigned int s=0; s < 3; s++)   //sides per node
+                        CI12[RefElement<3>::interact<2,0>(IP.side_idx2())[s]].set_computed();
+                    IP13.set_side2(RefElement<3>::interact<0,2>(side)[IP.side_idx2()], IP.dim_B());
+                }
+                if(IP.dim_B() == 1) // IP is on edge of triangle
+                {
+                    for(unsigned int s=0; s < RefElement<3>::n_sides_per_line; s++)
+                        CI12[RefElement<3>::interact<2,1>(IP.side_idx2())[s]].set_computed();
+                    IP13.set_side2(RefElement<3>::interact<1,2>(side)[IP.side_idx2()], IP.dim_B());
+                }
 			}
 			
 			pocet_pruniku++;
-            IntersectionPoint<1,3> IP13(IP12s.back(), side);
-// 				IP13.print();
             IP13s.push_back(IP13);
 		}
 	}
-
+    
+    ASSERT_LESS(pocet_pruniku,3);
+    
 	// in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
-	// Kontrola vytvořených průniků => zda-li není potřeba interpolovat + zda-li se o prunik vubec nejedna:
 	if(pocet_pruniku == 1){
 		double f_theta = IP13s[IP13s.size()-1].local_coords1()[1];
 		if(f_theta > 1 || f_theta < 0){
@@ -424,7 +418,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 			IP13s.pop_back();
 		}
 
-	}else if(pocet_pruniku > 1){    //TODO: should be == 2, even for pathologic cases
+	}else if(pocet_pruniku == 2){
         
         // swap the ips in the line coordinate direction (0->1 : a1->a2)
         IntersectionPoint<1,3> *a1, *a2;
@@ -466,7 +460,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 //             a1->set_topology_EE(unset_loc_idx, a1->is_pathologic());  // edge index is set later
             // here we can set only local index of the vertex on the line
             DBGMSG("E-E 0\n");
-            a1->set_topology(0, 0, unset_loc_idx,3);
+            a1->set_topology(0, 0, 0,3);
         }
         if(t2 == 1) // interpolate IP a2
         {
@@ -480,7 +474,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 //             a2->set_topology_EE(unset_loc_idx, a2->is_pathologic());  // edge index is set later
             // here we can set only local index of the vertex on the line
             DBGMSG("E-E 1\n");
-            a2->set_topology(1, 0, unset_loc_idx,3);
+            a2->set_topology(1, 0, 0,3);
         }
     }
     return pocet_pruniku;
@@ -598,12 +592,11 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
             IntersectionPoint<3,2> IP32(IP31, (3-i)%3);  // interpolation uses local_coords2 and given side_idx2
             IntersectionPoint<2,3> IP23(IP32);           // switch side_idx1 and side_idx2 and coords back
             
-            if( IP.is_vertex() ) // if IP is vertex of triangle //TODO: later compare dim_A and dim_B instead
+            if( IP.dim_A() == 0 ) // if IP is vertex of triangle
             {
                 // we are on line (3-i)%3 of the triangle, and IP.side_idx1 contains local node of the line
                 // E-E, we know vertex index
-                IP23.set_topology(RefElement<2>::interact<0,1>((3-i)%3)[IP.side_idx1()], 0,
-                                  unset_loc_idx, IP.dim_B());
+                IP23.set_side1(RefElement<2>::interact<0,1>((3-i)%3)[IP.side_idx1()], 0);
             }
             
             lokalni_mnohouhelnik.add_ipoint(IP23);
@@ -622,11 +615,16 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionPolygon &l
 
 	for(unsigned int i = 0; i < 6;i++){
 		if(CI12[i].compute(IP12s, false)){
-            //TODO unit test this condition - possibly remove
-			if((IP12s.back().local_coords1())[0] <= 1 && (IP12s.back().local_coords1())[0] >= 0){
+            IntersectionPoint<1,2> IP = IP12s.back();
+            // Check whether the IP is on the abscissa (side of triangle)
+			if((IP.local_coords1())[0] <= 1 && (IP.local_coords1())[0] >= 0){
 // 				DBGMSG("CI23: number of 1-2 intersections = %d\n",pocet_pruniku);
-				IntersectionPoint<2,1> IP21(IP12s.back());
+				IntersectionPoint<2,1> IP21(IP);
 				IntersectionPoint<2,3> IP23(IP21,i);
+                
+                if(IP.dim_A() == 0) // IP is vertex of line (i.e. line of tetrahedron)
+                    IP23.set_side2(RefElement<3>::interact<0,1>(i)[IP.side_idx1()], 0);
+                
 				//IP23.print();
 				lokalni_mnohouhelnik.add_ipoint(IP23);
 			}

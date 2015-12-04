@@ -9,7 +9,6 @@ namespace computeintersection{
 template<unsigned int N, unsigned int M> class IntersectionPoint;
 template<unsigned int N, unsigned int M> std::ostream& operator<<(std::ostream& os, const IntersectionPoint<N,M>& IP);
     
-static const unsigned int unset_loc_idx = -1; ///< Value for local index that is unset.
 /**
  * Class represents an intersection point of simplex<N> and simplex<M>.
  * It contains barycentric coordinates of the point on both simplices.
@@ -94,14 +93,8 @@ public:
     /// Returns barycentric coordinates in the Simplex<M>.
     const arma::vec::fixed<M+1> &local_coords2() const;
 
-    void set_side1(unsigned int idx);  ///<  Sets the index of Simplex<N>.
-    void set_side2(unsigned int idx);   ///<  Sets the index of Simplex<M>.
-
-//     void set_orientation(unsigned int o);
-
-//     void set_is_vertex(bool iv);
-
-//     void set_is_patological(bool ip);
+    void set_side1(unsigned int idx, unsigned int dim_A);  ///<  Sets the index of Simplex<N>.
+    void set_side2(unsigned int idx, unsigned int dim_B);   ///<  Sets the index of Simplex<M>.
 
     unsigned int dim_A() const;         ///< Returns dimension of object A.
     unsigned int dim_B() const;         ///< Returns dimension of object B.
@@ -198,24 +191,14 @@ const arma::vec::fixed< M + 1  >& IntersectionPoint<N,M>::local_coords2() const
 {   return local_coords2_; }
 
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_side1(unsigned int idx)
-{   side_idx1_ = idx; }
+void IntersectionPoint<N,M>::set_side1(unsigned int idx, unsigned int dim_A)
+{   side_idx1_ = idx;
+    dim_A_ = dim_A; }
 
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_side2(unsigned int idx)
-{   side_idx2_ = idx; }
-
-// template<unsigned int N, unsigned int M>
-// void IntersectionPoint<N,M>::set_orientation(unsigned int o)
-// {   orientation = o; }
-
-// template<unsigned int N, unsigned int M>
-// void IntersectionPoint<N,M>::set_is_vertex(bool iv)
-// {   is_vertex_ = iv; }
-
-// template<unsigned int N, unsigned int M>
-// void IntersectionPoint<N,M>::set_is_patological(bool ip)
-// {   is_patological_ = ip; }
+void IntersectionPoint<N,M>::set_side2(unsigned int idx, unsigned int dim_B)
+{   side_idx2_ = idx;
+    dim_B_ = dim_B; }
 
 template<unsigned int N, unsigned int M>
 unsigned int IntersectionPoint<N,M>::side_idx1() const
@@ -231,7 +214,7 @@ unsigned int IntersectionPoint<N,M>::orientation() const
 
 template<unsigned int N, unsigned int M>
 bool IntersectionPoint<N,M>::is_vertex() const
-{   return (side_idx2_ == -1); }
+{   return (dim_B_ == 0); }
 
 template<unsigned int N, unsigned int M>
 bool IntersectionPoint<N,M>::is_pathologic() const
