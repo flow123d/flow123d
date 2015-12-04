@@ -1,5 +1,6 @@
-"""
-Library for work with state of GeoMops applications
+"""Library for work with state of GeoMops applications.
+
+.. codeauthor:: Pavel Richter <pavel.richter@tul.cz>
 """
 
 import os
@@ -69,5 +70,5 @@ def delete_config_file(name, directory=None):
     file_name = os.path.join(directory, name+'.yaml')
     try:
         os.remove(file_name)
-    except  (RuntimeError, IOError):
+    except (RuntimeError, IOError):
         return

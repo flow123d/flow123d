@@ -81,7 +81,7 @@ class htmltree(object):
     def h2(self, value='', attrib={ }, **kwargs):
         """
         Method creates level 2 header also with "on the side" href with icon
-          to this href
+        to this href
         :param value: header title
         :param attrib: optional attribute
         :return: element
@@ -210,7 +210,7 @@ class htmltree(object):
     def open(self, tag_name, value='', attrib={ }, **kwargs):
         """
         Method opens current element, shifts current top.
-          When adding new elements, current top is this newly created
+        When adding new elements, current top is this newly created
         :param tag_name: tag name
         :param value: optional text
         :param attrib: optional attribs
