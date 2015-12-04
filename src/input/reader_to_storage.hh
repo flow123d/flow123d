@@ -82,6 +82,8 @@ public:
     TYPEDEF_ERR_INFO(EI_Format, const string);
     TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, string);
+    TYPEDEF_ERR_INFO( EI_TransposeIndex, unsigned int);
+    TYPEDEF_ERR_INFO( EI_TransposeAddress, string);
     DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << "\n"
                                             << EI_Specification::val << "\n"
                                             << EI_Format::val << " type: " << EI_JSON_Type::qval << "\n"

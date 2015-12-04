@@ -342,8 +342,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
           return storage_array;
 
         } else {
+        	stringstream ss;
+        	ss << arr_size;
             THROW( ExcInputError()
-                    << EI_Specification("Do not fit into size limits of the Array.")
+                    << EI_Specification("Do not fit the size " + ss.str() + " of the Array.")
                     << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
         }
     } else {
@@ -360,7 +362,14 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 			transpose_array_sizes_.clear();
 
 			const Type::TypeBase &sub_type = array->get_sub_type();
-			StorageBase *first_item_storage = make_storage(p, &sub_type);
+			StorageBase *first_item_storage;
+			try {
+				first_item_storage = make_storage(p, &sub_type);
+			} catch (ExcInputError &e) {
+				e << EI_TransposeIndex(transpose_index_);
+				e << EI_TransposeAddress(p.as_string());
+				throw;
+			}
 
 			// automatic conversion to array with one element
 			if (transpose_array_sizes_.size() == 0) {
@@ -376,7 +385,9 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 
 					// array size out of bounds
 					if ( !array->match_size( sizes ) ) {
-						THROW( ExcInputError() << EI_Specification("Do not fit into size limits of the Array.")
+						stringstream ss;
+						ss << sizes;
+						THROW( ExcInputError() << EI_Specification("Result of transpose auto-conversion do not fit the size " + ss.str() + " of the Array.")
 								<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
 					}
 
@@ -386,7 +397,13 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 					if (sizes>1) {
 						++transpose_index_;
 						while (transpose_index_ < sizes) {
-							storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
+							try {
+								storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
+							} catch (ExcInputError &e) {
+								e << EI_TransposeIndex(transpose_index_);
+								e << EI_TransposeAddress(p.as_string());
+								throw;
+							}
 							++transpose_index_;
 						}
 					}
@@ -394,7 +411,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 					try_transpose_read_ = false;
 					return storage_array;
 				} else {
-					THROW( ExcInputError() << EI_Specification("Unequal sizes of sub-arrays during transposition of '" + p.get_node_type(ValueTypes::array_type) + "'")
+					THROW( ExcInputError()
+							<< EI_Specification("Unequal sizes of sub-arrays during transpose auto-conversion of '" + p.get_node_type(ValueTypes::array_type) + "'")
 							<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
 				}
         	}
@@ -564,7 +582,7 @@ StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::
 
 	int arr_size = p.get_array_size();
 	if ( arr_size == 0 ) {
-		THROW( ExcInputError() << EI_Specification("Empty array during transposition.")
+		THROW( ExcInputError() << EI_Specification("Empty array during transpose auto-conversion.")
 			<< EI_ErrorAddress(p.as_string()) << EI_InputType(type->desc()) );
 	} else if ( arr_size > 0 ) {
 		if (transpose_index_ == 0) transpose_array_sizes_.push_back( arr_size );
@@ -592,7 +610,8 @@ StorageBase * ReaderToStorage::make_autoconversion_array_storage(PathBase &p, co
 
 		return storage_array;
 	} else {
-		THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
+		THROW( ExcInputError()
+				<< EI_Specification("During transpose auto-conversion, the conversion to the single element array not allowed. Require type: '" + p.get_node_type(ValueTypes::array_type) + "'\nFound on input: ")
 				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
 	}
 
