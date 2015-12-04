@@ -366,6 +366,9 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 			try {
 				first_item_storage = make_storage(p, &sub_type);
 			} catch (ExcInputError &e) {
+	    		if ( !array->match_size(1) ) {
+	    			e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ");
+	    		}
 				e << EI_TransposeIndex(transpose_index_);
 				e << EI_TransposeAddress(p.as_string());
 				throw;
@@ -427,15 +430,16 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *selection)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, selection);
+	}
     string item_name;
 	try {
 		item_name = p.get_string_value();
 		int value = selection->name_to_int( item_name  );
 		return new StorageInt( value );
 	} catch (ExcInputError & e) {
-		if (try_transpose_read_) {
-			return this->make_transposed_storage(p, selection);
-		}
 		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
         e << EI_ErrorAddress(p.as_string());
         e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
@@ -453,13 +457,14 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_type)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, bool_type);
+	}
 	try {
 		return new StorageBool( p.get_bool_value() );
 	}
 	catch (ExcInputError & e) {
-		if (try_transpose_read_) {
-			return this->make_transposed_storage(p, bool_type);
-		}
 		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::bool_type) + "', but we found: ");
 		e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
 		e << EI_ErrorAddress(p.as_string());
@@ -473,14 +478,15 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *int_type)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, int_type);
+	}
 	std::int64_t value;
 	try {
 		value = p.get_int_value();
 	}
 	catch (ExcInputError & e) {
-		if (try_transpose_read_) {
-			return this->make_transposed_storage(p, int_type);
-		}
 		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
 		e << EI_ErrorAddress(p.as_string());
 		e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
@@ -503,15 +509,16 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *in
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *double_type)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, double_type);
+	}
     double value;
 
 	try {
 		value = p.get_double_value();
 	}
 	catch (ExcInputError & e) {
-		if (try_transpose_read_) {
-			return this->make_transposed_storage(p, double_type);
-		}
 		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::real_type) + "', but we found: ");
 		e << EI_ErrorAddress(p.as_string());
 		e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
@@ -533,6 +540,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *dou
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *string_type)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, string_type);
+	}
 	string value;
 	try {
 		value = p.get_string_value();
@@ -579,22 +590,18 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
 
 StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::TypeBase *type) {
 	ASSERT(try_transpose_read_, "Unset flag try_transpose_read_!\n");
+	ASSERT(p.is_array_type(), "Head node of path must be of type array!\n");
 
 	int arr_size = p.get_array_size();
 	if ( arr_size == 0 ) {
 		THROW( ExcInputError() << EI_Specification("Empty array during transpose auto-conversion.")
 			<< EI_ErrorAddress(p.as_string()) << EI_InputType(type->desc()) );
-	} else if ( arr_size > 0 ) {
+	} else {
 		if (transpose_index_ == 0) transpose_array_sizes_.push_back( arr_size );
 		p.down(transpose_index_);
 		StorageBase *storage = make_storage(p, type);
 		p.up();
 		return storage;
-	} else { // arr_size == -1
-		 THROW( ExcInputError()
-		     << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
-		     << EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
-			 << EI_InputType(type->desc()) );
 	}
 
 	return NULL;

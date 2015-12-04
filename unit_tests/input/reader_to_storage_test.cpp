@@ -378,7 +378,7 @@ TEST_F(InputReaderToStorageTest, Array) {
         EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
 
         stringstream ss1("{ key=3.2}");
-        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ExcInputError , "The value should be 'JSON array', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ExcInputError , "The value should be 'JSON real', but we found:.* 'JSON object'");
     }
 
     // test auto conversion failed
