@@ -19,7 +19,6 @@ void IntersectionPoint<N,M>::clear()
     idx_A_ = 0;
     idx_B_ = 0;
     orientation_ = 1;
-    pathologic_ = false;
     dim_A_ = N;
     dim_B_ = M;
 }
@@ -46,7 +45,6 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
         idx_A_ = IP.idx_B();
         idx_B_ = IP.idx_A();
         orientation_ = IP.orientation();
-        pathologic_ = IP.is_pathologic();
         dim_A_ = IP.dim_B();
         dim_B_ = IP.dim_A();
     };
@@ -61,7 +59,6 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned
     idx_A_ = IP.idx_A();
     idx_B_ = idx_B;
     orientation_ = IP.orientation();
-    pathologic_ = IP.is_pathologic();
     dim_A_ = IP.dim_A();
     dim_B_ = M-1;
 };
@@ -76,7 +73,6 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned
     idx_A_ = IP.idx_A();
     idx_B_ = idx_B;
     orientation_ = IP.orientation();
-    pathologic_ = IP.is_pathologic();
     dim_A_ = IP.dim_A();
     dim_B_ = M-2;
 };
@@ -94,7 +90,7 @@ template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const 
     s.local_bcoords_A_.print(os);
     os << "Local coords on element B(id=" << s.idx_B_ << ", dim=" << s.dim_B_ << ")" << endl;
     s.local_bcoords_B_.print(os);
-    os << "Orientation: " << s.orientation_ << " Patological: " << s.pathologic_ << endl;
+    os << "Orientation: " << s.orientation_ << " Patological: " << s.is_pathologic() << endl;
     return os;
 }
 

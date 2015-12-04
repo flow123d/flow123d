@@ -153,7 +153,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
          */
 		IntersectionPoint<1,2> IP(theta,local_triangle);
         IP.set_topology(0, 1, 0, 2);
-        IP.set_plucker_flags((*plucker_products[0] > 0 ? 1 : 0), false);
+        IP.set_orientation(*plucker_products[0] > 0 ? 1 : 0);
 		IP12s.push_back(IP);
 		return true;
         //TODO try removing the seocond part of the following condition
@@ -232,7 +232,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					//return false;
 				}else{
                     IntersectionPoint<1,2> IP;
-                    IP.set_plucker_flags(1, true);  // orientation and pathologic flag
+                    IP.set_orientation(-1);  // set orientation as a pathologic case ( > 1)
                     
                     // possibly set abscissa vertex {0,1}
                     if( fabs(s) < epsilon)       { s = 0; IP.set_topology_A(0,0);}

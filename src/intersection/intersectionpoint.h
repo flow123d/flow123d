@@ -40,19 +40,11 @@ template<unsigned int N, unsigned int M> class IntersectionPoint {
     /** Orientation according to Plucker products.
      * All Plucker products > 0 then orientation is 1. 
      * All Plucker products < 0 then orientation is 0.
-     * (In case of line 1D and triangle 2D, the line is going in oposite direction to the normal of triangle.)
+     * (In case of line 1D and triangle 2D, the line is going in opposite direction to the normal of triangle.)
      * 
-     * It is irrelevant in pathologic case.
+     * In pathologic case,  it is > 1.
      */
 	unsigned int orientation_;
-
-	/** @brief Pathologic flag.
-     * Is true, if the Plucker products resulted in pathologic case.
-     * Means, that IP is at a vertex or on an edge or side.
-     * \note Might be redundant, because if it is a pathologic case, then \p dim_A < N, or \p dim_B < M
-     * and orientation is irrelevant (can be set somehow special).
-     */
-	bool pathologic_;
 	
 	unsigned int dim_A_;    ///< Dimension of the object A of intersection. Equal \p N, by default.
     unsigned int dim_B_;    ///< Dimension of the object B of intersection. Equal \p M, by default.
@@ -104,9 +96,9 @@ public:
     void set_topology(unsigned int idx_A, unsigned int dim_A,
                       unsigned int idx_B, unsigned int dim_B);
     
-    void set_topology_A(unsigned int idx, unsigned int dim_A);  ///<  Sets the topology of object A in Simplex<N>.
-    void set_topology_B(unsigned int idx, unsigned int dim_B);  ///<  Sets the topology of object B in Simplex<M>.
-    void set_plucker_flags(unsigned int ori, bool pathologic);  ///< Setter for Plucker flags.
+    void set_topology_A(unsigned int idx, unsigned int dim_A);  ///< Sets the topology of object A in Simplex<N>.
+    void set_topology_B(unsigned int idx, unsigned int dim_B);  ///< Sets the topology of object B in Simplex<M>.
+    void set_orientation(unsigned int orientation);             ///< Setter orientation flag.
     
 //     void set_topology_SS(unsigned int edge_idx,
 //                          unsigned int ori,
@@ -164,11 +156,8 @@ void IntersectionPoint<N,M>::set_topology(unsigned int idx_A,unsigned int dim_A,
 }
     
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_plucker_flags(unsigned int ori, bool pathologic)
-{
-    orientation_ = ori;
-    pathologic_ = pathologic;
-}
+void IntersectionPoint<N,M>::set_orientation(unsigned int orientation)
+{   orientation_ = orientation; }
 
 // template<unsigned int N, unsigned int M>  
 // void IntersectionPoint<N,M>::set_topology_SS(unsigned int edge_idx, unsigned int ori, bool pathologic)
@@ -237,7 +226,7 @@ unsigned int IntersectionPoint<N,M>::orientation() const
 
 template<unsigned int N, unsigned int M>
 bool IntersectionPoint<N,M>::is_pathologic() const
-{   return pathologic_; }
+{   return (orientation_ > 1); }
 
 
 } // END namespace
