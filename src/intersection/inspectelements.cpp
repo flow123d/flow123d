@@ -140,7 +140,7 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
             // if IP is end of the 1D element
             // prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
 
-            SideIter elm_side = elm->side(IP.side_idx1());  // side of 1D element is vertex
+            SideIter elm_side = elm->side(IP.idx_A());  // side of 1D element is vertex
 			Edge *edg = elm_side->edge();
 			for(int j=0; j < edg->n_sides;j++) {
 
@@ -160,16 +160,16 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
             {
                 // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
                 case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
-                            edges.push_back(&(mesh->edges[ele->edge_idx_[RefElement<3>::interact<2,0>(IP.side_idx2())[j]]]));
+                            edges.push_back(&(mesh->edges[ele->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
                         break;
                 
                 // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
                 case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
-                            edges.push_back(&(mesh->edges[ele->edge_idx_[RefElement<3>::interact<2,1>(IP.side_idx2())[j]]]));
+                            edges.push_back(&(mesh->edges[ele->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
                         break;
                         
                 // IP is on a side of tetrahedron; only possible edge is from the given side
-                case 2: edges.push_back(&(mesh->edges[ele->edge_idx_[IP.side_idx2()]]));
+                case 2: edges.push_back(&(mesh->edges[ele->edge_idx_[IP.idx_B()]]));
                         break;
                 default: ASSERT_LESS(IP.dim_B(),3);
             }
@@ -189,7 +189,7 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
         }  
 //         if(il[i].is_vertex()){
 // 
-//             SideIter elm_side = elm->side((unsigned int)(1-il[i].local_coords1()[0]));
+//             SideIter elm_side = elm->side((unsigned int)(1-il[i].local_bcoords_A()[0]));
 //             Edge *edg = elm_side->edge();
 //             for(int j=0; j < edg->n_sides;j++) {
 // 
@@ -203,7 +203,7 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
 //                 }
 //             }
 //         }else{
-// 			SideIter elm_side = ele->side((unsigned int)(3-il[i].side_idx2())); //ele->side(3-stena);
+// 			SideIter elm_side = ele->side((unsigned int)(3-il[i].idx_B())); //ele->side(3-stena);
 // 			
 // 			Edge *edg = elm_side->edge();
 //             
@@ -557,14 +557,14 @@ void InspectElements::print_mesh_to_file(string name){
 					IntersectionPoint<2,3> IP23 = il[l];
 					arma::vec3 _global;
 					if(i == 0){
-						_global = (IP23.local_coords1())[0] * el2D->node[0]->point()
-														   +(IP23.local_coords1())[1] * el2D->node[1]->point()
-														   +(IP23.local_coords1())[2] * el2D->node[2]->point();
+						_global = (IP23.local_bcoords_A())[0] * el2D->node[0]->point()
+														   +(IP23.local_bcoords_A())[1] * el2D->node[1]->point()
+														   +(IP23.local_bcoords_A())[2] * el2D->node[2]->point();
 					}else{
-						_global = (IP23.local_coords2())[0] * el3D->node[0]->point()
-														   +(IP23.local_coords2())[1] * el3D->node[1]->point()
-														   +(IP23.local_coords2())[2] * el3D->node[2]->point()
-														   +(IP23.local_coords2())[3] * el3D->node[3]->point();
+						_global = (IP23.local_bcoords_B())[0] * el3D->node[0]->point()
+														   +(IP23.local_bcoords_B())[1] * el3D->node[1]->point()
+														   +(IP23.local_bcoords_B())[2] * el3D->node[2]->point()
+														   +(IP23.local_bcoords_B())[3] * el3D->node[3]->point();
 					}
 					fprintf(file,"%d %f %f %f\n", number_of_nodes, _global[0], _global[1], _global[2]);
 				}
@@ -683,13 +683,13 @@ void InspectElements::print_mesh_to_file_1D(string name){
 					IntersectionPoint<1,3> IP13 = il[l];
 					arma::vec3 _global;
 					if(i == 0){
-						_global = (IP13.local_coords1())[0] * el1D->node[0]->point()
-														   +(IP13.local_coords1())[1] * el1D->node[1]->point();
+						_global = (IP13.local_bcoords_A())[0] * el1D->node[0]->point()
+														   +(IP13.local_bcoords_A())[1] * el1D->node[1]->point();
 					}else{
-						_global = (IP13.local_coords2())[0] * el3D->node[0]->point()
-														   +(IP13.local_coords2())[1] * el3D->node[1]->point()
-														   +(IP13.local_coords2())[2] * el3D->node[2]->point()
-														   +(IP13.local_coords2())[3] * el3D->node[3]->point();
+						_global = (IP13.local_bcoords_B())[0] * el3D->node[0]->point()
+														   +(IP13.local_bcoords_B())[1] * el3D->node[1]->point()
+														   +(IP13.local_bcoords_B())[2] * el3D->node[2]->point()
+														   +(IP13.local_bcoords_B())[3] * el3D->node[3]->point();
 					}
 					//xprintf(Msg, "Zde3.5\n");
 					fprintf(file,"%d %f %f %f\n", number_of_nodes, _global[0], _global[1], _global[2]);

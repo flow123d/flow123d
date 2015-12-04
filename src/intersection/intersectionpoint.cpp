@@ -14,10 +14,10 @@ namespace computeintersection{
 
 template<unsigned int N, unsigned int M>
 void IntersectionPoint<N,M>::clear()
-{   local_coords1_.zeros();
-    local_coords2_.zeros();
-    side_idx1_ = 0;
-    side_idx2_ = 0;
+{   local_bcoords_A_.zeros();
+    local_bcoords_B_.zeros();
+    idx_A_ = 0;
+    idx_B_ = 0;
     orientation_ = 1;
     pathologic_ = false;
     dim_A_ = N;
@@ -31,20 +31,20 @@ IntersectionPoint<N,M>::IntersectionPoint()
 };
 
 template<unsigned int N, unsigned int M>    
-IntersectionPoint<N,M>::IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
-                                          const arma::vec::fixed<M+1> &lc2,
+IntersectionPoint<N,M>::IntersectionPoint(const arma::vec::fixed<N+1> &lcA,
+                                          const arma::vec::fixed<M+1> &lcB,
                                           unsigned int dim_A, 
                                           unsigned int dim_B)
-    : local_coords1_(lc1), local_coords2_(lc2), dim_A_(dim_A), dim_B_(dim_B)
+    : local_bcoords_A_(lcA), local_bcoords_B_(lcB), dim_A_(dim_A), dim_B_(dim_B)
     {};
 
 
 template<unsigned int N, unsigned int M>
 IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
-        local_coords1_ = IP.local_coords2();
-        local_coords2_ = IP.local_coords1();
-        side_idx1_ = IP.side_idx2();
-        side_idx2_ = IP.side_idx1();
+        local_bcoords_A_ = IP.local_bcoords_B();
+        local_bcoords_B_ = IP.local_bcoords_A();
+        idx_A_ = IP.idx_B();
+        idx_B_ = IP.idx_A();
         orientation_ = IP.orientation();
         pathologic_ = IP.is_pathologic();
         dim_A_ = IP.dim_B();
@@ -53,13 +53,13 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned int side_idx2){
+IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned int idx_B){
     ASSERT(M>1 && M<4,"Wrong the second dimension in an IntersectionPoint (allowed 2 and 3 only)");
     
-    local_coords1_ = IP.local_coords1();
-    local_coords2_ = RefElement<M>::template interpolate<M-1>(IP.local_coords2(), side_idx2);
-    side_idx1_ = IP.side_idx1();
-    side_idx2_ = side_idx2;
+    local_bcoords_A_ = IP.local_bcoords_A();
+    local_bcoords_B_ = RefElement<M>::template interpolate<M-1>(IP.local_bcoords_B(), idx_B);
+    idx_A_ = IP.idx_A();
+    idx_B_ = idx_B;
     orientation_ = IP.orientation();
     pathologic_ = IP.is_pathologic();
     dim_A_ = IP.dim_A();
@@ -68,13 +68,13 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned int side_idx2){
+IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned int idx_B){
     ASSERT(M == 3,"Wrong the second dimension in an IntersectionPoint (allowed 3 only)");
 
-    local_coords1_ = IP.local_coords1();
-    local_coords2_ = RefElement<3>::interpolate<1>(IP.local_coords2(), side_idx2);
-    side_idx1_ = IP.side_idx1();
-    side_idx2_ = side_idx2;
+    local_bcoords_A_ = IP.local_bcoords_A();
+    local_bcoords_B_ = RefElement<3>::interpolate<1>(IP.local_bcoords_B(), idx_B);
+    idx_A_ = IP.idx_A();
+    idx_B_ = idx_B;
     orientation_ = IP.orientation();
     pathologic_ = IP.is_pathologic();
     dim_A_ = IP.dim_A();
@@ -83,17 +83,17 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned
 
     
 template<> bool IntersectionPoint<2,3>::operator<(const IntersectionPoint<2,3> &ip) const{
-	return local_coords1_[1] < ip.local_coords1()[1] ||
-		(fabs((double)(local_coords1_[1] - ip.local_coords1()[1])) < 0.00000001 &&
-		 local_coords1_[2] < ip.local_coords1()[2]);
+	return local_bcoords_A_[1] < ip.local_bcoords_A()[1] ||
+		(fabs((double)(local_bcoords_A_[1] - ip.local_bcoords_A()[1])) < 0.00000001 &&
+		 local_bcoords_A_[2] < ip.local_bcoords_A()[2]);
 };
 
 template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPoint< N,M >& s)
 {
-    os << "Local coords on element A(id=" << s.side_idx1_ << ", dim=" << s.dim_A_ << ")" << endl;
-    s.local_coords1_.print(os);
-    os << "Local coords on element B(id=" << s.side_idx2_ << ", dim=" << s.dim_B_ << ")" << endl;
-    s.local_coords2_.print(os);
+    os << "Local coords on element A(id=" << s.idx_A_ << ", dim=" << s.dim_A_ << ")" << endl;
+    s.local_bcoords_A_.print(os);
+    os << "Local coords on element B(id=" << s.idx_B_ << ", dim=" << s.dim_B_ << ")" << endl;
+    s.local_bcoords_B_.print(os);
     os << "Orientation: " << s.orientation_ << " Patological: " << s.pathologic_ << endl;
     return os;
 }

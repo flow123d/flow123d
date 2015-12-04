@@ -76,7 +76,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
                 DBGMSG("Intersection type E-E.\n");
                 // IP is the vertex of triangle,
                 // the directions of triangle edges determines the directions of polygon edges
-                unsigned int vertex_index = ip.side_idx1();
+                unsigned int vertex_index = ip.idx_A();
                 DBGMSG("E-E: vertex_index: %d %d\n", vertex_index);
                 // <2>::lines_nodes[vertex_index][0 = line index IN, or 1 = line index OUT]
                 unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0];
@@ -92,7 +92,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
             } break;
             case 1: // if the ip is on the side of triangle -> intersection S-E or E-S
             {
-                DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.side_idx1(),ip.side_idx2(),ip.orientation());
+                DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.idx_A(),ip.idx_B(),ip.orientation());
                 // IP is not a vertex of triangle -> cannot be E-E
                 /* directions of polygon edges depends on three aspects:
                  * - normal orientation of the tetrahedron side (OUT...0, IN...1)
@@ -115,23 +115,23 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
                  * if RES == 1 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
                  * if RES == 0 -> intersection direction is E-S
                  */
-                unsigned int j = (RefElement<3>::normal_orientation(ip.side_idx2()) + 
-                                  RefElement<2>::normal_orientation(ip.side_idx1()) +
+                unsigned int j = (RefElement<3>::normal_orientation(ip.idx_B()) + 
+                                  RefElement<2>::normal_orientation(ip.idx_A()) +
                                   ip.orientation()
                                  ) % 2;
 
                 if(j == 1){
                     // bod je vstupní na stěně a pokračuje na hranu trojúhelníku
-                    unsigned int row = ip.side_idx2();
-                    trace_table(row,0) = ip.side_idx1()+4;
+                    unsigned int row = ip.idx_B();
+                    trace_table(row,0) = ip.idx_A()+4;
                     trace_table(row,1) = i;
-                    DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, ip.side_idx1()+4, i);
+                    DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, ip.idx_A()+4, i);
                 }else{
                     // bod je vstupní na hraně a vchází do čtyřstěnu
-                    unsigned int row = 4+ip.side_idx1();
-                    trace_table(row,0) = ip.side_idx2();
+                    unsigned int row = 4+ip.idx_A();
+                    trace_table(row,0) = ip.idx_B();
                     trace_table(row,1) = i;
-                    DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, ip.side_idx2(), i);
+                    DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, ip.idx_B(), i);
                 }
             } break;
             case 2: // type S-S, IP is on the edge between two sides
@@ -142,7 +142,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
                  *  then the right side [0] is in and left side [1] is out
                  *  - this is determined by IP orientation
                  */
-                unsigned int tetrahedron_line = ip.side_idx2();
+                unsigned int tetrahedron_line = ip.idx_B();
                 unsigned int tetrahedron_side_in = RefElement<3>::interact<2,1>(tetrahedron_line)[1-ip.orientation()];
                 unsigned int tetrahedron_side_out = RefElement<3>::interact<2,1>(tetrahedron_line)[ip.orientation()];
                 
@@ -158,12 +158,12 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 //             if(ip.dim_A() < 2) {
 //                 // if the ip is on the side or at the vertex of triangle -> intersection S-E or E-S or E-E
 //                 
-// 			//if(ip.side_idx1() != unset_loc_idx ){ 
+// 			//if(ip.idx_A() != unset_loc_idx ){ 
 //                 // if the edge of triangle is set, it must be
 //                 // intersection S-E or E-S or E-E
 //                 
 // 				if(!ip.is_vertex()){   // IP is not a vertex of triangle -> cannot be E-E
-//                     DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.side_idx1(),ip.side_idx2(),ip.orientation());
+//                     DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.idx_A(),ip.idx_B(),ip.orientation());
 //                     /* directions of polygon edges depends on three aspects:
 //                      * - normal orientation of the tetrahedron side (OUT...0, IN...1)
 //                      * - orientation of the edge of the triangle (according to direction of other edges of triangle or opposite)
@@ -185,23 +185,23 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 //                      * if RES == 1 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
 //                      * if RES == 0 -> intersection direction is E-S
 //                      */
-// 					unsigned int j = (RefElement<3>::normal_orientation(ip.side_idx2()) + 
-//                                       RefElement<2>::normal_orientation(ip.side_idx1()) +
+// 					unsigned int j = (RefElement<3>::normal_orientation(ip.idx_B()) + 
+//                                       RefElement<2>::normal_orientation(ip.idx_A()) +
 //                                       ip.orientation()
 //                                      ) % 2;
 // 
 // 					if(j == 1){
 // 						// bod je vstupní na stěně a pokračuje na hranu trojúhelníku
-//                         unsigned int row = ip.side_idx2();
-// 						trace_table(row,0) = ip.side_idx1()+4;
+//                         unsigned int row = ip.idx_B();
+// 						trace_table(row,0) = ip.idx_A()+4;
 // 						trace_table(row,1) = i;
-//                         DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, ip.side_idx1()+4, i);
+//                         DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, ip.idx_A()+4, i);
 // 					}else{
 // 						// bod je vstupní na hraně a vchází do čtyřstěnu
-//                         unsigned int row = 4+ip.side_idx1();
-// 						trace_table(row,0) = ip.side_idx2();
+//                         unsigned int row = 4+ip.idx_A();
+// 						trace_table(row,0) = ip.idx_B();
 // 						trace_table(row,1) = i;
-//                         DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, ip.side_idx2(), i);
+//                         DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, ip.idx_B(), i);
 // 					}
 // 
 // 
@@ -209,7 +209,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 //                     DBGMSG("Intersection type E-E.\n");
 //                     // IP is the vertex of triangle,
 //                     // the directions of triangle edges determines the directions of polygon edges
-//                     unsigned int vertex_index = ip.side_idx1();
+//                     unsigned int vertex_index = ip.idx_A();
 //                     DBGMSG("E-E: vertex_index: %d %d\n", vertex_index);
 //                     // <2>::lines_nodes[vertex_index][0 = line index IN, or 1 = line index OUT]
 // 					unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0];
@@ -230,7 +230,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 //                  *  then the right side [0] is in and left side [1] is out
 //                  *  - this is determined by IP orientation
 //                  */
-//                 unsigned int tetrahedron_line = ip.side_idx2();
+//                 unsigned int tetrahedron_line = ip.idx_B();
 //                 unsigned int tetrahedron_side_in = RefElement<3>::interact<2,1>(tetrahedron_line)[1-ip.orientation()];//RefElement<3>::line_sides[tetrahedron_line][1-ip.orientation()];
 //                 unsigned int tetrahedron_side_out = RefElement<3>::interact<2,1>(tetrahedron_line)[ip.orientation()];
 //                 
@@ -285,14 +285,14 @@ void IntersectionPolygon::trace_polygon_convex_hull(std::vector<unsigned int> &p
 	// Odstranění duplicit
 	// Odstranit nejen stejne, ale o epsilon podobne
 	for(unsigned int i = 0; i < i_points_.size()-1; i++){
-		if((fabs(i_points_[i].local_coords1()[0] - i_points_[i+1].local_coords1()[0]) < epsilon) &&
-		   (fabs(i_points_[i].local_coords1()[1] - i_points_[i+1].local_coords1()[1]) < epsilon)){
+		if((fabs(i_points_[i].local_bcoords_A()[0] - i_points_[i+1].local_bcoords_A()[0]) < epsilon) &&
+		   (fabs(i_points_[i].local_bcoords_A()[1] - i_points_[i+1].local_bcoords_A()[1]) < epsilon)){
 			i_points_.erase(i_points_.begin()+i);
 		}
 	}
 
-	if(i_points_.size() > 1 && fabs(i_points_[0].local_coords1()[0] - i_points_[i_points_.size()-1].local_coords1()[0]) < epsilon &&
-			fabs(i_points_[0].local_coords1()[1] - i_points_[i_points_.size()-1].local_coords1()[1]) < epsilon){
+	if(i_points_.size() > 1 && fabs(i_points_[0].local_bcoords_A()[0] - i_points_[i_points_.size()-1].local_bcoords_A()[0]) < epsilon &&
+			fabs(i_points_[0].local_bcoords_A()[1] - i_points_[i_points_.size()-1].local_bcoords_A()[1]) < epsilon){
 		i_points_.erase(i_points_.end());
 	}
 
@@ -326,12 +326,12 @@ void IntersectionPolygon::trace_polygon_convex_hull(std::vector<unsigned int> &p
 			unsigned int ii = (i+1)%i_points_.size();
 
 			for(unsigned int j = 0; j < 3;j++){
-				if(fabs((double)i_points_[i].local_coords1()[j]) < epsilon && fabs((double)i_points_[ii].local_coords1()[j]) < epsilon){
+				if(fabs((double)i_points_[i].local_bcoords_A()[j]) < epsilon && fabs((double)i_points_[ii].local_bcoords_A()[j]) < epsilon){
 					prolongation_table.push_back(6-j);
 				}
 			}
 			for(unsigned int k = 0; k < 4;k++){
-				if((int)k != forbidden_side && fabs((double)i_points_[i].local_coords2()[k]) < epsilon && fabs((double)i_points_[ii].local_coords2()[k]) < epsilon){
+				if((int)k != forbidden_side && fabs((double)i_points_[i].local_bcoords_B()[k]) < epsilon && fabs((double)i_points_[ii].local_bcoords_B()[k]) < epsilon){
 					prolongation_table.push_back(3-k);
 				}
 			}
@@ -343,8 +343,8 @@ void IntersectionPolygon::trace_polygon_convex_hull(std::vector<unsigned int> &p
 double IntersectionPolygon::convex_hull_cross(const IntersectionPoint<2,3> &O,
 		const IntersectionPoint<2,3> &A,
 		const IntersectionPoint<2,3> &B) const{
-	return ((A.local_coords1()[1]-O.local_coords1()[1])*(B.local_coords1()[2]-O.local_coords1()[2])
-			-(A.local_coords1()[2]-O.local_coords1()[2])*(B.local_coords1()[1]-O.local_coords1()[1]));
+	return ((A.local_bcoords_A()[1]-O.local_bcoords_A()[1])*(B.local_bcoords_A()[2]-O.local_bcoords_A()[2])
+			-(A.local_bcoords_A()[2]-O.local_bcoords_A()[2])*(B.local_bcoords_A()[1]-O.local_bcoords_A()[1]));
 }
 
 // int IntersectionPolygon::convex_hull_prolongation_side(const IntersectionPoint<2,3> &A,
@@ -352,38 +352,38 @@ double IntersectionPolygon::convex_hull_cross(const IntersectionPoint<2,3> &O,
 // 
 // 	// Finding same zero 2D local coord
 // 
-// 	if(fabs((double)A.local_coords1()[0]) < epsilon && fabs((double)B.local_coords1()[0]) < epsilon){
+// 	if(fabs((double)A.local_bcoords_A()[0]) < epsilon && fabs((double)B.local_bcoords_A()[0]) < epsilon){
 // 		return 6;
-// 	}else if(fabs((double)A.local_coords1()[1]) < epsilon && fabs((double)B.local_coords1()[1]) < epsilon){
+// 	}else if(fabs((double)A.local_bcoords_A()[1]) < epsilon && fabs((double)B.local_bcoords_A()[1]) < epsilon){
 // 		return 5;
-// 	}else if(fabs((double)A.local_coords1()[2]) < epsilon && fabs((double)B.local_coords1()[2]) < epsilon){
+// 	}else if(fabs((double)A.local_bcoords_A()[2]) < epsilon && fabs((double)B.local_bcoords_A()[2]) < epsilon){
 // 		return 4;
-// 	}else if(fabs((double)A.local_coords2()[0]) < epsilon && fabs((double)B.local_coords2()[0]) < epsilon){
+// 	}else if(fabs((double)A.local_bcoords_B()[0]) < epsilon && fabs((double)B.local_bcoords_B()[0]) < epsilon){
 // 		return 3;
-// 	}else if(fabs((double)A.local_coords2()[1]) < epsilon && fabs((double)B.local_coords2()[1]) < epsilon){
+// 	}else if(fabs((double)A.local_bcoords_B()[1]) < epsilon && fabs((double)B.local_bcoords_B()[1]) < epsilon){
 // 		return 2;
-// 	}else if(fabs((double)A.local_coords2()[2]) < epsilon && fabs((double)B.local_coords2()[2]) < epsilon){
+// 	}else if(fabs((double)A.local_bcoords_B()[2]) < epsilon && fabs((double)B.local_bcoords_B()[2]) < epsilon){
 // 		return 1;
-// 	}else if(fabs((double)A.local_coords2()[3]) < epsilon && fabs((double)B.local_coords2()[3]) < epsilon){
+// 	}else if(fabs((double)A.local_bcoords_B()[3]) < epsilon && fabs((double)B.local_bcoords_B()[3]) < epsilon){
 // 		return 0;
 // 	}
 // 	// Todo: Nahradit Assertem
-// 	/*cout << A.local_coords1()[0] << ","
-// 			<< A.local_coords1()[1] << ","
-// 			<< A.local_coords1()[2] << ","
-// 			<< A.local_coords2()[0] << ","
-// 			<< A.local_coords2()[1] << ","
-// 			<< A.local_coords2()[2] << ","
-// 			<< A.local_coords2()[3] << "," << endl;
+// 	/*cout << A.local_bcoords_A()[0] << ","
+// 			<< A.local_bcoords_A()[1] << ","
+// 			<< A.local_bcoords_A()[2] << ","
+// 			<< A.local_bcoords_B()[0] << ","
+// 			<< A.local_bcoords_B()[1] << ","
+// 			<< A.local_bcoords_B()[2] << ","
+// 			<< A.local_bcoords_B()[3] << "," << endl;
 // 
 // 
-// 	cout << B.local_coords1()[0] << ","
-// 			<< B.local_coords1()[1] << ","
-// 			<< B.local_coords1()[2] << ","
-// 			<< B.local_coords2()[0] << ","
-// 			<< B.local_coords2()[1] << ","
-// 			<< B.local_coords2()[2] << ","
-// 			<< B.local_coords2()[3] << ",";
+// 	cout << B.local_bcoords_A()[0] << ","
+// 			<< B.local_bcoords_A()[1] << ","
+// 			<< B.local_bcoords_A()[2] << ","
+// 			<< B.local_bcoords_B()[0] << ","
+// 			<< B.local_bcoords_B()[1] << ","
+// 			<< B.local_bcoords_B()[2] << ","
+// 			<< B.local_bcoords_B()[3] << ",";
 // 	xprintf(Msg, "Mozny problem\n");*/
 // 	return -1;
 // }
@@ -395,7 +395,7 @@ int IntersectionPolygon::side_content_prolongation() const{
 	for(unsigned int i = 0; i < i_points_.size();i++){
 
 		for(unsigned int j = 0; j < 4;j++){
-			if(fabs((double)i_points_[i].local_coords2()[j]) < epsilon){
+			if(fabs((double)i_points_[i].local_bcoords_B()[j]) < epsilon){
 				side_field[j]++;
 			}
 		}
@@ -415,9 +415,9 @@ double IntersectionPolygon::get_area() const{
 	double subtotal = 0.0;
 	for(unsigned int j = 2; j < i_points_.size();j++){
 		//xprintf(Msg, "volani %d %d\n",j, i_points_.size());
-		subtotal += fabs(i_points_[0].local_coords1()(1)*(i_points_[j-1].local_coords1()(2) - i_points_[j].local_coords1()(2)) +
-				 i_points_[j-1].local_coords1()(1)*(i_points_[j].local_coords1()(2) - i_points_[0].local_coords1()(2)) +
-				 i_points_[j].local_coords1()(1)*(i_points_[0].local_coords1()(2) - i_points_[j-1].local_coords1()(2)));
+		subtotal += fabs(i_points_[0].local_bcoords_A()(1)*(i_points_[j-1].local_bcoords_A()(2) - i_points_[j].local_bcoords_A()(2)) +
+				 i_points_[j-1].local_bcoords_A()(1)*(i_points_[j].local_bcoords_A()(2) - i_points_[0].local_bcoords_A()(2)) +
+				 i_points_[j].local_bcoords_A()(1)*(i_points_[0].local_bcoords_A()(2) - i_points_[j-1].local_bcoords_A()(2)));
 	}
 	return fabs(subtotal/2);
 };
