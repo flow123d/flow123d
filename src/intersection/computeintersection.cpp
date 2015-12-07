@@ -408,7 +408,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 		}
 	}
     
-    ASSERT_LESS(pocet_pruniku,3);
+    ASSERT_LE(pocet_pruniku,2);
     
 	// in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
 	if(pocet_pruniku == 1){
@@ -420,22 +420,22 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 
 	}else if(pocet_pruniku == 2){
         
-        // swap the ips in the line coordinate direction (0->1 : a1->a2)
-        IntersectionPoint<1,3> *a1, *a2;
-        double t1, t2;
-        if(IP13s[IP13s.size()-2].local_bcoords_A()[1] > IP13s[IP13s.size()-1].local_bcoords_A()[1])
+        // create shortcuts
+        IntersectionPoint<1,3> 
+            &a1 = IP13s[IP13s.size()-2],   // start point
+            &a2 = IP13s[IP13s.size()-1];   // end point
+        
+        // swap the ips in the line coordinate direction (0->1 : a1->a2)        
+        if(a1.local_bcoords_A()[1] > a2.local_bcoords_A()[1])
         {
-            a1 = &(IP13s[IP13s.size()-1]);
-            a2 = &(IP13s[IP13s.size()-2]);
+//             DBGMSG("Swap.\n");
+            std::swap(a1, a2);
         }
-        else
-        {
-            a1 = &(IP13s[IP13s.size()-2]);
-            a2 = &(IP13s[IP13s.size()-1]);
-        }
+        
         // get first and second theta (coordinate of ips on the line)
-        t1 = a1->local_bcoords_A()[1];
-        t2 = a2->local_bcoords_A()[1];
+        double t1, t2;
+        t1 = a1.local_bcoords_A()[1];
+        t2 = a2.local_bcoords_A()[1];
         
         // cut off the line by the abscissa points
         if(t1 < 0) t1 = 0;
@@ -450,31 +450,31 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
         
         if(t1 == 0) // interpolate IP a1
         {
-            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1->local_bcoords_B(), 
-                                                                                              a2->local_bcoords_B(), 
-                                                                                              a1->local_bcoords_A()[1],
-                                                                                              a2->local_bcoords_A()[1], 
+            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
+                                                                                              a2.local_bcoords_B(), 
+                                                                                              a1.local_bcoords_A()[1],
+                                                                                              a2.local_bcoords_A()[1], 
                                                                                               t1);
             arma::vec::fixed<2> inter({1 - t1, t1});    // barycentric coords
-            a1->set_coordinates(inter,interpolovane);
-//             a1->set_topology_EE(unset_loc_idx, a1->is_pathologic());  // edge index is set later
+            a1.set_coordinates(inter,interpolovane);
+//             a1.set_topology_EE(unset_loc_idx, a1.is_pathologic());  // edge index is set later
             // here we can set only local index of the vertex on the line
             DBGMSG("E-E 0\n");
-            a1->set_topology(0, 0, 0,3);
+            a1.set_topology(0, 0, 0,3);
         }
         if(t2 == 1) // interpolate IP a2
         {
-            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1->local_bcoords_B(), 
-                                                                                              a2->local_bcoords_B(), 
-                                                                                              a1->local_bcoords_A()[1],
-                                                                                              a2->local_bcoords_A()[1], 
+            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
+                                                                                              a2.local_bcoords_B(), 
+                                                                                              a1.local_bcoords_A()[1],
+                                                                                              a2.local_bcoords_A()[1], 
                                                                                               t2);
             arma::vec::fixed<2> inter({1 - t2, t2});      // barycentric coords
-            a2->set_coordinates(inter,interpolovane);
-//             a2->set_topology_EE(unset_loc_idx, a2->is_pathologic());  // edge index is set later
+            a2.set_coordinates(inter,interpolovane);
+//             a2.set_topology_EE(unset_loc_idx, a2.is_pathologic());  // edge index is set later
             // here we can set only local index of the vertex on the line
             DBGMSG("E-E 1\n");
-            a2->set_topology(1, 0, 0,3);
+            a2.set_topology(1, 0, 0,3);
         }
     }
     return pocet_pruniku;
