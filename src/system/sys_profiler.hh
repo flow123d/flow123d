@@ -816,6 +816,12 @@ public:
 };
 
 
+class MemoryAlloc {
+public:
+	static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& malloc_map();
+};
+
+
 
 
 // 

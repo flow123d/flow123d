@@ -852,6 +852,68 @@ void Profiler::uninitialize() {
 //     return Profiler::_instance;
 // }
 
+map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& MemoryAlloc::malloc_map() {
+    static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> static_malloc_map;
+    return static_malloc_map;
+}
+
+
+void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
+	if (Profiler::is_initialized()) {
+		Profiler::instance()->notify_malloc(size);
+	}
+
+	void * p = malloc(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	return p;
+}
+
+void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
+	if (Profiler::is_initialized()) {
+		Profiler::instance()->notify_malloc(size);
+	}
+		
+	void * p = malloc(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	return p;
+}
+
+void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
+	if (Profiler::is_initialized()) {
+		Profiler::instance()->notify_malloc(size);
+	}
+		
+	void * p = malloc(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	return p;
+}
+
+void operator delete( void *p) throw() {
+	if (Profiler::is_initialized()) {
+		if (MemoryAlloc::malloc_map()[(long)p] > 0) {
+			Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
+			MemoryAlloc::malloc_map().erase((long)p);
+		} else {
+			Profiler::instance()->notify_free(sizeof(p));
+		}
+	}
+
+	free(p);
+}
+
+void operator delete[]( void *p) throw() {
+	if (Profiler::is_initialized()) {
+		if (MemoryAlloc::malloc_map()[(long)p] > 0) {
+			Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
+			MemoryAlloc::malloc_map().erase((long)p);
+		} else {
+			Profiler::instance()->notify_free(sizeof(p));
+		}
+	}
+
+	free(p);
+}
+
 
 #else // def FLOW123D_DEBUG_PROFILER
 
