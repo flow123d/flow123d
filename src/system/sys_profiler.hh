@@ -522,6 +522,18 @@ public:
      */
     inline double actual_cumulative_time() const
         { return timers_[actual_node].cumulative_time(); }
+        
+    /**
+     * Debug method prints whole path of given timer
+     */
+    void print_timer_path (const int timer_index);
+    
+    /**
+     * Method which collects and reduces child_timer array from all processors
+     * and returns array which is secured. This method also fixes internal
+     * Profiler structure if necessary
+     */
+    int * get_reduced_child_timers (const int timer_index);
 
 #ifdef FLOW123D_HAVE_MPI
     /**
@@ -543,6 +555,11 @@ public:
      * TODO: move this outside to minimize dependencies
      */
     void output(MPI_Comm comm);
+    
+    /**
+     * Method sets MPI_Comm 
+     */
+    void set_MPI_communicator(MPI_Comm communicator);
 #endif /* FLOW123D_HAVE_MPI */
     /**
      * @brief Output current timing information into the given stream.
@@ -641,7 +658,10 @@ private:
     string flow_build_;
     /// Variable which stores last json log filepath
     string json_filepath;
-
+    
+    #ifdef FLOW123D_HAVE_MPI
+        MPI_Comm communicator_;
+    #endif /* FLOW123D_HAVE_MPI */
 
     /**
      * Use DFS to pass through the tree and collect information about all timers reduced from the processes in the communicator.
