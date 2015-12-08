@@ -462,7 +462,13 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
             DBGMSG("E-E 0\n");
             a1.set_topology(0, 0, 0,3);
         }
-        if(t2 == 1) // interpolate IP a2
+        
+        if(t1 == t2)    // if IPs are the same, then throw the second one away
+        {
+            pocet_pruniku = 1;
+            IP13s.pop_back();
+        }
+        else if(t2 == 1) // interpolate IP a2
         {
             arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
                                                                                               a2.local_bcoords_B(), 
