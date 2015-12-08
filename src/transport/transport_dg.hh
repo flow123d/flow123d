@@ -213,8 +213,7 @@ public:
 
     void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 
-    int *get_row_4_el()
-    { return row_4_el; }
+    int *get_row_4_el();
 
 
 
@@ -448,8 +447,6 @@ private:
 
 	/// Element averages of solution (the array is passed to reactions in operator splitting).
 	double **solution_elem_;
-
-	int *row_4_el;
 
 	// @}
 

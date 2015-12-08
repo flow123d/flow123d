@@ -243,10 +243,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
 
     data_.set_limit_side(LimitSide::left);
-
-    row_4_el = new int[feo->dh()->el_ds()->size()];
-    for (unsigned int i=0; i<feo->dh()->el_ds()->size(); ++i)
-    	row_4_el[i] = i;
 }
 
 
@@ -366,7 +362,6 @@ TransportDG<Model>::~TransportDG()
     delete[] rhs;
     delete[] mass_vec;
     delete feo;
-    delete[] row_4_el;
 
     gamma.clear();
 }
@@ -623,7 +618,7 @@ void TransportDG<Model>::output_data()
     output_vector_gather();
     data_.subset(FieldFlag::allow_output).set_time( Model::time_->step() );
     data_.output(Model::output_stream_);
-	Model::output_stream_->write_time_frame();
+//	Model::output_stream_->write_time_frame();
 
 	Model::output_data();
 
@@ -1702,6 +1697,12 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     // update mass_vec for the case that mass matrix changes in next time step
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
     	MatMult(*(ls_dt->get_matrix()), ls[sbi]->get_solution(), mass_vec[sbi]);
+}
+
+template<class Model>
+int *TransportDG<Model>::get_row_4_el()
+{
+	return feo->dh()->get_row_4_el();
 }
 
 

@@ -312,6 +312,8 @@ public:
 
     inline int *get_el_4_loc() const { return el_4_loc; }
 
+    inline int *get_row_4_el() const { return row_4_el; }
+
     /**
      * @brief Returns the global index of local element.
      *
