@@ -787,6 +787,9 @@ private:
 };
 
 
+
+
+
 /**
  *
  * @brief Class for automatic timer closing. This class is used by #START_TIMER macro
@@ -816,8 +819,12 @@ public:
 };
 
 
+/**
+ * Simple class providing static map variable storing address and alloc size
+ */
 class MemoryAlloc {
 public:
+    // create static map containing <allocation address, allocation size> pairs
 	static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& malloc_map();
 };
 

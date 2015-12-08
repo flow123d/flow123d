@@ -29,7 +29,6 @@
 #include <iostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include "petscsys.h" 
 
 #include "system/file_path.hh"
 #include "system/python_loader.hh"
@@ -377,7 +376,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
                 if (actual_node == child_timer && actual_node == 0)
                     return;
                 
-                // propagate metrics from parent to child
+                // propagate metrics from child to parent
                 timers_[actual_node].accept_from_child(timers_[child_timer]);
                 // resume current timer
                 timers_[actual_node].resume();
@@ -396,7 +395,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
     if (actual_node == child_timer && actual_node == 0)
         return;
     
-    // propagate metrics from parent to child
+    // propagate metrics from child to parent
     timers_[actual_node].accept_from_child(timers_[child_timer]);
     // resume current timer
     timers_[actual_node].resume();
@@ -437,6 +436,7 @@ void Profiler::stop_timer(int timer_index) {
         // node not found - do nothing
         return;
     }
+
     // node to close match the actual
     timers_[actual_node].stop(false);
     actual_node=timers_[actual_node].parent_timer;
@@ -845,12 +845,6 @@ void Profiler::uninitialize() {
         _instance = NULL;
     }
 }
-
-// Profiler* Profiler::instance() {
-//     // if (Profiler::_instance != NULL)
-//     //     Profiler::_instance = new Profiler();
-//     return Profiler::_instance;
-// }
 
 map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& MemoryAlloc::malloc_map() {
     static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> static_malloc_map;

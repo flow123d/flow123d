@@ -26,8 +26,6 @@
 
 #include <fstream>
 #include <string>
-#include <map>
-#include <stdint.h>
 #include "mpi.h"
 
 #include "system/system.hh"
@@ -262,8 +260,6 @@ void operator delete[]( void *p,  const my_new_t &) throw ()
 */
 
 
-// create static map containing <allocation address, allocation size> pairs
-// static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> malloc_map;
 
 
 /*!
