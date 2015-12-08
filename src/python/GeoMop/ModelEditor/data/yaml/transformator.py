@@ -500,7 +500,7 @@ class Transformator:
         dl1, dc1, dl2, dc2 = StructureChanger.node_pos(ref_node)
         intend = re.search(r'^(\s*)(\S.*)$', lines[dl1])
         intend = len(intend.group(1)) + 2
-        add = self.StructureChanger.copy_structure(lines, l1, c1, l2, c2, intend)
+        add = StructureChanger.copy_structure(lines, l1, c1, l2, c2, intend)
         while dl1 <= dl2:
             ref = re.search(r'^(.*\*' + anchor_node.anchor.value + r')(.*)$', lines[dl1])
             if ref is not None:

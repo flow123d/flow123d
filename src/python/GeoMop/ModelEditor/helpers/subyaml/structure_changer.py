@@ -384,6 +384,12 @@ class StructureChanger:
                 ident = re.search(r'^(\s*)\S', lines[nl2])
                 if ident is not None:
                     nc2 = len(ident.group(1))
+            else:
+                nl2 -= 1
+                nc2 = 0
+                ident = re.search(r'^(\s*)\S', lines[nl2])
+                if ident is not None:
+                    nc2 = len(ident.group(1))
         return nl1, nc1, nl2, nc2  
       
     @staticmethod

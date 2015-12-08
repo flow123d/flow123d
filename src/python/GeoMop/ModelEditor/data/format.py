@@ -1,9 +1,8 @@
 """
 Contains format specification class and methods to parse it from JSON.
+
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
 """
-
-__author__ = 'Tomas Krizek'
-
 import json
 
 
