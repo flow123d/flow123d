@@ -128,6 +128,8 @@ Timer::Timer(const CodePoint &cp, int parent)
 
 void Timer::info() {
     cout << "  Timer: " << tag() << " " << this << endl;
+    cout << "          malloc: " << total_allocated_ << endl;
+    cout << "          dalloc: " << total_deallocated_ << endl;
     cout << "          start: " << petsc_start_memory << endl;
     cout << "          stop : " << petsc_end_memory << endl;
     cout << "          diff : " << petsc_memory_difference << " (" << petsc_end_memory - petsc_start_memory << ")" << endl;
@@ -314,14 +316,15 @@ int  Profiler::start_timer(const CodePoint &cp) {
         child_idx=timers_.size();
         timers_.push_back( Timer(cp, actual_node) );
         timers_[actual_node].add_child(child_idx , timers_.back() );
+        
+        // propagate metrics from parent to child
+        timers_[child_idx].accept_from_parent(parent_timer);
     }
     actual_node=child_idx;
     
     // pause current timer
     parent_timer.pause();
     
-    // propagate metrics from parent to child
-    timers_[actual_node].accept_from_parent(parent_timer);
     timers_[actual_node].start();
     
     return actual_node;
