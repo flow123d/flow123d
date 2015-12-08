@@ -289,6 +289,20 @@ int alloc_and_dealloc(int size){
     return size * sizeof(T);
 }
 
+TEST(Profiler, memory_add_calls) {
+    int allocated = 0;
+    Profiler::initialize();
+    allocated += alloc_and_dealloc<int>(250);
+    {
+        for (int i = 0; i < 10000; i++) {
+            START_TIMER("A");
+            allocated += alloc_and_dealloc<int>(25);
+            END_TIMER("A");
+        }
+    }
+    EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+    Profiler::uninitialize();
+}
 
 TEST(Profiler, memory_profiler) {
     const int ARR_SIZE = 100;
