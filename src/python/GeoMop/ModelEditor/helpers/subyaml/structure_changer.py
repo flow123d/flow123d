@@ -262,19 +262,30 @@ class StructureChanger:
                 add.append(indent*" " + lines[l1][c1:])
                 from_line += 1
             indentation2 = re.search(r'^(\s*)(\S.*)$', lines[l1])
-            indentation2 = len(indentation2.group(1))
+            if indentation2 is None:
+                indentation2 = 0
+            else:
+                indentation2 = len(indentation2.group(1))
             indentation = indent - indentation2
             for i in range(from_line, l2):
                 indentation_test = re.search(r'^(\s*)(\S.*)$', lines[i])
-                if indentation == 0 or len(indentation_test.group(1)) < -indentation:
+                if indentation_test is None:
+                    indentation_test = 0
+                else:
+                    indentation_test = len(indentation_test.group(1))
+                if indentation == 0 or indentation_test < -indentation:
                     add.append(lines[i])
                 elif indentation < 0:
                     add.append(lines[i][-indentation:])
                 else:
                     add.append(indentation*" " + lines[i])
             indentation_test = re.search(r'^(\s*)(\S.*)$', lines[l2])
-            if len(indentation_test.group(1)) <= c2:
-                if indentation == 0 or len(indentation_test.group(1)) < -indentation:
+            if indentation_test is None:
+                indentation_test = 0
+            else:
+                indentation_test = len(indentation_test.group(1))
+            if indentation_test < c2:
+                if indentation == 0 or indentation_test < -indentation:
                     add.append(lines[l2][:c2])
                 elif indentation < 0:
                     add.append(lines[l2][-indentation:c2])

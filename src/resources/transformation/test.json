@@ -1,0 +1,30 @@
+{
+  "name": "Main transformation file",
+  "description": "Template for creating transformation file",
+  "old_format": "",
+  "new_format": "",
+  "actions":[
+     { 
+      "NAME" : "mesh sets setup, name",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/name",
+        "destination_path":"/problem/mesh/sets_new/$1/name",
+	"create_path":true
+      }
+    }
+,
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, region_labels",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/region_labels",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Union", 
+        "create_path":true 
+      }
+    }   
+  ]             
+}
+

@@ -287,7 +287,10 @@ class Transformator:
                                     '$'+str(i+1), replacement.replacements[i]) 
                             if new_action['parameters'][parameter][0] != "/":
                                 new_action['parameters'][parameter] = "/"+new_action['parameters'][parameter]
-            res.append(new_action)    
+            res.append(new_action)
+        if action['action'] == "delete-key": 
+            # keys in array must be delete from end
+            res.reverse()
         return res
         
     def _search_node(self, spath, node, replacement,  orig_path, deep=False):
@@ -600,10 +603,12 @@ class Transformator:
             i = node1.key.span.start.line-1
             lines[i] = re.sub(parent1.group(2) + r"\s*:", parent2.group(2) + ":", lines[i])
             return True
-        if node2.implementation != DataNode.Implementation.mapping:
-            raise TransformationFileFormatError(
-                "Parent of destination path (" + self._get_paths_str(action, 'destination_path') +
-                ") must be abstract record")
+        if not action['parameters']['create_path']:
+            # check only existing path
+            if node2.implementation != DataNode.Implementation.mapping:
+                raise TransformationFileFormatError(
+                    "Parent of destination path (" + self._get_paths_str(action, 'destination_path') +
+                    ") must be abstract record")
         intendation1 = re.search(r'^(\s*)(\S.*)$', lines[dl1])
         intendation1 = len(intendation1.group(1)) + 2
         sl1, sc1, sl2, sc2 = StructureChanger._add_comments(lines, sl1, sc1, sl2, sc2)
