@@ -181,6 +181,7 @@ void Timer::pause() {
     if (petsc_peak_memory < petsc_local_peak_memory)
         petsc_peak_memory = petsc_local_peak_memory;
 }
+
 void Timer::resume() {
     // tell PETSc to monitor the maximum memory usage so
     //   that PetscMemoryGetMaximumUsage() will work.
@@ -252,11 +253,13 @@ string Timer::code_point_str() const {
  */
 
 
+ Profiler * Profiler::instance() { 
+     static Profiler * _instance = new Profiler();
+     monitor_memory = true;
+     return _instance;
+ }
 
 
-
-
-Profiler* Profiler::_instance = NULL;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
 void Profiler::initialize()
@@ -267,9 +270,7 @@ void Profiler::initialize()
     if (!is_initialized)
         PetscInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
         
-    if (!_instance)
-        _instance = new Profiler();
-
+    Profiler::instance();
 }
 
 
@@ -837,15 +838,21 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 
 void Profiler::uninitialize() {
+    Profiler * _instance = Profiler::instance();
     if (_instance) {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
                 _instance->timers_[_instance->actual_node].tag().c_str());
         _instance->stop_timer(0);
-        delete _instance;
-        _instance = NULL;
+        
+        monitor_memory = false;
+        _instance->timers_.clear();
+        static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
+        _instance->timers_.push_back( Timer(main_cp, 0) );
+        _instance->timers_[0].start();
     }
 }
 
+bool Profiler::monitor_memory = false;
 map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& MemoryAlloc::malloc_map() {
     static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> static_malloc_map;
     return static_malloc_map;
@@ -853,68 +860,76 @@ map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& Me
 
 
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-	// if (Profiler::is_initialized()) {
-	// 	Profiler::instance()->notify_malloc(size);
-	// }
+    if (Profiler::monitor_memory)
+	   Profiler::instance()->notify_malloc(size);
 
 	void * p = malloc(size);
-	// MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
 	return p;
 }
 
 void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-	// if (Profiler::is_initialized()) {
-	// 	Profiler::instance()->notify_malloc(size);
-	// }
+    if (Profiler::monitor_memory)
+        Profiler::instance()->notify_malloc(size);
 		
 	void * p = malloc(size);
-	// MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
 	return p;
 }
 
 void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
-	// if (Profiler::is_initialized()) {
-	// 	Profiler::instance()->notify_malloc(size);
-	// }
+    if (Profiler::monitor_memory)
+	   Profiler::instance()->notify_malloc(size);
 		
 	void * p = malloc(size);
-	// MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
 	return p;
 }
 
 void operator delete( void *p) throw() {
-	// if (Profiler::is_initialized()) {
-	// 	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
-	// 		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
-	// 		MemoryAlloc::malloc_map().erase((long)p);
-	// 	} else {
-	// 		Profiler::instance()->notify_free(sizeof(p));
-	// 	}
-	// }
+    if (Profiler::monitor_memory) {
+    	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
+    		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
+    		MemoryAlloc::malloc_map().erase((long)p);
+    	} else {
+    		Profiler::instance()->notify_free(sizeof(p));
+    	}
+    }
 
 	free(p);
 }
 
 void operator delete[]( void *p) throw() {
-	// if (Profiler::is_initialized()) {
-	// 	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
-	// 		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
-	// 		MemoryAlloc::malloc_map().erase((long)p);
-	// 	} else {
-	// 		Profiler::instance()->notify_free(sizeof(p));
-	// 	}
-	// }
+    if (Profiler::monitor_memory) {
+    	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
+    		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
+    		MemoryAlloc::malloc_map().erase((long)p);
+    	} else {
+    		Profiler::instance()->notify_free(sizeof(p));
+    	}
+    }
 
 	free(p);
 }
 
+bool Profiler::is_initialized() {
+    return true;
+}
 
 #else // def FLOW123D_DEBUG_PROFILER
 
-Profiler* Profiler::_instance = NULL;
+Profiler * Profiler::instance() { 
+    static Profiler * _instance = new Profiler();
+    monitor_memory = true;
+    return _instance;
+}
 
 void Profiler::initialize() {
-    if (!_instance) _instance = new Profiler();
+    Profiler::instance();
+}
+
+bool Profiler::is_initialized() {
+    return _instance != NULL;
 }
 
 void Profiler::uninitialize() {

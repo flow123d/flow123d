@@ -560,10 +560,7 @@ public:
     /**
      * Returns unique Profiler object.
      */
-    inline static Profiler* instance() {
-        ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
-        return _instance;
-    }
+    static Profiler* instance();
     /**
      * Sets task specific information. The string @p description with textual description of the task and the
      * number of elements of the mesh (parameter @p size). This is used for weak scaling graphs so it should
@@ -702,8 +699,12 @@ public:
     /**
      * Check if the instance was created.
      */
-    static bool is_initialized() { return (_instance != NULL); }
+    static bool is_initialized();
 
+    /**
+     * Whether to monitor operator 'new/delete'
+     */
+    static bool monitor_memory;
 
 private:
     /**
@@ -728,9 +729,6 @@ private:
 
     /// Default code point.
     static CodePoint null_code_point;
-
-    /// Pointer to the unique instance of singleton Profiler class.
-    static Profiler* _instance;
 
     /// Vector of all timers. Whole tree is stored in this array.
     vector<Timer, SimpleAllocator<Timer>> timers_;
@@ -850,10 +848,7 @@ public:
 class Profiler {
 public:
     static void initialize();
-    inline static Profiler* instance() {
-        ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
-        return _instance;
-    }
+    static Profiler* instance();
 
     void set_task_info(string description, int size)
     {}
@@ -879,10 +874,9 @@ public:
     { return 0.0; }
     static void uninitialize();
 
-    static bool is_initialized() { return (_instance != NULL); }
+    static bool is_initialized();
 
 private:
-    static Profiler* _instance;
     Profiler() {}
 };
 

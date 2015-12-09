@@ -414,6 +414,18 @@ TEST(Profiler, petsc_memory_monitor) {
     Profiler::uninitialize();
 }
 
+TEST(Profiler, multiple_instances) {
+    int allocated = 0;
+    for (int i = 0; i < 5; i++) {
+        allocated = 0;
+        Profiler::initialize();
+        {
+            allocated += alloc_and_dealloc<int>(25);
+        }
+        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+        Profiler::uninitialize();
+    }
+}
 
 
 #else // FLOW123D_DEBUG_PROFILER
