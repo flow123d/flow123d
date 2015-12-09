@@ -263,6 +263,7 @@ void HeatTransferModel::set_components(SubstanceList &substances, const Input::R
 
 void HeatTransferModel::output_data()
 {
+	output_stream_->write_time_frame();
 	if (balance_ != nullptr)
 	{
 		calculate_instant_balance();

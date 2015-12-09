@@ -618,7 +618,6 @@ void TransportDG<Model>::output_data()
     output_vector_gather();
     data_.subset(FieldFlag::allow_output).set_time( Model::time_->step() );
     data_.output(Model::output_stream_);
-//	Model::output_stream_->write_time_frame();
 
 	Model::output_data();
 
