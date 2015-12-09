@@ -1,3 +1,5 @@
+# *
+#  * Should give same results as flow_gmsh.con, but BC condition is given as piezo head.
 problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
@@ -51,3 +53,4 @@ problem: !SequentialCoupling
       number_of_levels: 2
       use_adaptive_bddc: false
       bddcml_verbosity_level: 0
+    name: flow_output_stream

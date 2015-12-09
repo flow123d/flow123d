@@ -1,3 +1,4 @@
+# COMMENT_Stop_time:"1275",
 problem: !SequentialCoupling
   description: Steady flow + transport with source
   mesh:
@@ -5,9 +6,11 @@ problem: !SequentialCoupling
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test16.fbc
-    - rid: 7
+    - r_set: BOUNDARY
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: y
+    - r_set: BULK
       cross_section: 1
       conductivity: 1
     output:
@@ -31,9 +34,9 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
-      - region: IMPLICIT BOUNDARY
+      - r_set: BOUNDARY
         bc_conc: 0
-      - rid: 7
+      - r_set: BULK
         init_conc: 0
         porosity: 1
         diff_m: 1.0e-09
@@ -69,3 +72,4 @@ problem: !SequentialCoupling
       min_dt: 1.0
     balance:
       cumulative: true
+    name: transport_output_stream

@@ -34,7 +34,6 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
-#include "flow/old_bcd.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
@@ -64,7 +63,6 @@ const IT::Record &ConvectionTransport::get_input_type()
 			.declare_key("input_fields", IT::Array(
 					IT::Record("TransportOperatorSplitting_Data", FieldCommon::field_descriptor_record_decsription("TransportOperatorSplitting_Data") )
 					.copy_keys( EqData().make_field_descriptor_type("Transport_OS") )
-					.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
 					.close()
 					), IT::Default::obligatory(), "")
 			.close();
@@ -81,7 +79,6 @@ const IT::Selection & ConvectionTransport::EqData::get_output_selection() {
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
-    	bc_conc.add_factory( OldBcdInput::instance()->trans_conc_factory );
     	bc_conc.units( UnitSI().kg().m(-3) );
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
     	init_conc.units( UnitSI().kg().m(-3) );

@@ -12,10 +12,14 @@
       n_schurs = 2,
       
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test16.fbc"
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE="FieldFormula",
+            value="y"
+          }  
         },
-        { rid = 7,
+        { r_set = "BULK",
           cross_section = 1,
           conductivity = 1
         }
@@ -48,10 +52,10 @@
       transport = {
         TYPE = "ConvectionDiffusion_DG", 
         input_fields= [
-          { region = "IMPLICIT BOUNDARY",
+          { r_set = "BOUNDARY",
             bc_conc = 0
           },
-          { rid = 7,
+          { r_set = "BULK",
             init_conc = 0,
             porosity= 1,
             diff_m = 1e-9,

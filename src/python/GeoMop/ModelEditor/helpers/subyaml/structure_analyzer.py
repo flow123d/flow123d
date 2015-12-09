@@ -1,7 +1,14 @@
-from data import CompositeNode
-from .node_analyzer import NodeStructureType, NodeAnalyzer
+"""Structure analyzer.
+
+.. codeauthor:: Pavel Richter <pavel.richter@tul.cz>
+"""
+
+from util import Position, Span
+from data import DataNode
+
+from .node_analyzer import NodeAnalyzer
 from .line_analyzer import LineAnalyzer
-from .. import Notification, Position, Span
+from .. import Notification
 
 
 class StructureAnalyzer:
@@ -55,7 +62,7 @@ class StructureAnalyzer:
     def add_node_info(cls, doc, root, notification_handler):
         """Add border information about nodes"""
         lines = doc.splitlines()
-        if isinstance(root, CompositeNode):
+        if root.implementation != DataNode.Implementation.scalar:
             cls._analyze_node(lines, root, notification_handler)
 
     @classmethod
@@ -63,8 +70,8 @@ class StructureAnalyzer:
         """Node analysis is performed recursively"""
         na = NodeAnalyzer(lines, node)
         node_type = na. get_node_structure_type()
-        if node_type == NodeStructureType.json_array or \
-                node_type == NodeStructureType.json_dict:
+        if node_type == DataNode.StructureType.json_array or \
+                node_type == DataNode.StructureType.json_dict:
             cls._split_children(lines, node, cls._get_json_separator)
             if (len(node.children) > 0 and
                     node.children[0].delimiters is not None and
@@ -76,10 +83,10 @@ class StructureAnalyzer:
                 notification = Notification.from_name('MultiLineFlow')
                 notification.span = node.span
                 notification_handler.report(notification)
-        elif node_type == NodeStructureType.array:
+        elif node_type == DataNode.StructureType.array:
             cls._split_children(lines, node, cls._get_array_separator, False)
         for child in node.children:
-            if isinstance(child, CompositeNode):
+            if child.implementation != DataNode.Implementation.scalar:
                 cls._analyze_node(lines, child, notification_handler)
 
     @classmethod

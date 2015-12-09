@@ -5,9 +5,11 @@ problem: !SequentialCoupling
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test16.fbc
-    - rid: 7
+    - r_set: BOUNDARY
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: y
+    - r_set: BULK
       cross_section: 1
       anisotropy: 1
     output:
@@ -31,9 +33,9 @@ problem: !SequentialCoupling
     initial_file: ./input/test16.tic
     transport: !Convection_FV
       input_fields:
-      - region: IMPLICIT BOUNDARY
+      - r_set: BOUNDARY
         bc_conc: 0
-      - rid: 7
+      - r_set: BULK
         init_conc: 0
         porosity: 1
         sources_density: !FieldElementwise
@@ -58,3 +60,4 @@ problem: !SequentialCoupling
       end_time: 5.7
     balance:
       cumulative: true
+    name: transport_output_stream

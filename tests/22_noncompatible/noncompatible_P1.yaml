@@ -37,3 +37,4 @@ problem: !SequentialCoupling
     solver: !Petsc
       r_tol: 1.0e-10
       a_tol: 1.0e-10
+    name: flow_output_stream

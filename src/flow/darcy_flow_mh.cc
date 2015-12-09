@@ -62,7 +62,6 @@
 #include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
-#include "flow/old_bcd.hh"
 
 
 #include "coupling/balance.hh"
@@ -119,14 +118,11 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 				"Boundary condition for pressure as piezometric head." )
 		.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
 				"Initial condition for pressure as piezometric head." )
-		.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(),
-				"File with mesh dependent boundary conditions (obsolete).")
 		.declare_key("input_fields", it::Array(
 					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_decsription("DarcyFlowMH_Data") )
 					.copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
 					.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Boundary condition for pressure as piezometric head." )
 					.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Initial condition for pressure as piezometric head." )
-					.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
 					.close()
 					), it::Default::obligatory(), ""  )
 		.close();
@@ -174,7 +170,6 @@ DarcyFlowMH::EqData::EqData()
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
     	// TODO: temporary solution, we should try to get rid of pointer to the selection after having generic types
         bc_type.input_selection( &get_bc_type_selection() );
-        bc_type.add_factory( OldBcdInput::instance()->flow_type_factory );
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
@@ -183,12 +178,10 @@ DarcyFlowMH::EqData::EqData()
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
     	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
-    	bc_flux.add_factory( OldBcdInput::instance()->flow_flux_factory );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
-    	bc_robin_sigma.add_factory( OldBcdInput::instance()->flow_sigma_factory );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     //these are for unsteady
@@ -263,7 +256,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     n_schur_compls = in_rec.val<int>("n_schurs");
     //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
     data_.gravity_ =  arma::vec4(" 0 0 -1 0");
-    data_.bc_pressure.add_factory( OldBcdInput::instance()->flow_pressure_factory );
     data_.bc_pressure.add_factory(
     		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
     		(data_.gravity_, "bc_piezo_head") );

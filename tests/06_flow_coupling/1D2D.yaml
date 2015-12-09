@@ -57,3 +57,4 @@ problem: !SequentialCoupling
       velocity_p0: flow_output_stream
     solver: !Petsc
       accuracy: 1.0e-07
+    name: flow_output_stream

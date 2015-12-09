@@ -1,23 +1,29 @@
 problem: !SequentialCoupling
   description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
   mesh:
-    mesh_file: ./input/test2.msh
+    mesh_file: ./input/compatible.msh
     sets:
     - name: subset
-      region_ids:
-      - 48
-      - 184
+      region_labels:
+      - 2d
+      - 1d
+    - name: .sides
+      region_labels:
+      - .2d
+      - .1d
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - rid: 48
+    - region: 1d
       anisotropy: 10
-      sigma: 0.05
       cross_section: 1
-    - rid: 184
+      sigma: 0.05
+    - region: 2d
       anisotropy: 1
       cross_section: 1
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test2.fbc
+    - r_set: .sides
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: x
     balance: true
     output:
       output_stream:
@@ -36,7 +42,7 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
-      - region: IMPLICIT BOUNDARY
+      - r_set: .sides
         bc_conc: 1
       - r_set: subset
         init_conc: 0

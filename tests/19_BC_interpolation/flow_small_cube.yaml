@@ -27,3 +27,4 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
+  pause_after_run: false

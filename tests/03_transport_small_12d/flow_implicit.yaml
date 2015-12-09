@@ -11,8 +11,10 @@ problem: !SequentialCoupling
     - rid: 18
       anisotropy: 1
       cross_section: 1
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test3.fbc
+    - r_set: BOUNDARY
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: x+y
     output:
       output_stream: 
         file: flow.pvd
@@ -38,7 +40,7 @@ problem: !SequentialCoupling
       - rid: 18
         init_conc: 0
         porosity: 0.25
-      - region: IMPLICIT BOUNDARY
+      - r_set: BOUNDARY
         bc_conc: 1
       solver: !Petsc
         a_tol: 1.0e-12
@@ -54,3 +56,4 @@ problem: !SequentialCoupling
       init_dt: 0.1
     balance:
       cumulative: true
+    name: transport_output_stream

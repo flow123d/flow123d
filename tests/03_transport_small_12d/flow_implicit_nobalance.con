@@ -19,8 +19,9 @@
           anisotropy = 1,
           cross_section = 1
         },
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test3.fbc"
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value = "x+y" }
         }
       ],
 
@@ -64,7 +65,7 @@
             init_conc = 0,
             porosity= 0.25
           },
-          { region = "IMPLICIT BOUNDARY",
+          { r_set = "BOUNDARY",
             bc_conc = 1
           }
         ],

@@ -10,8 +10,9 @@
       TYPE = "SteadyDarcy_MH", 
       
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test18.fbc"
+        { r_set = "BOUNDARY",
+          bc_type="dirichlet",
+          bc_pressure=0
         },
         { rid = 20,
           cross_section = 1e-2
@@ -43,7 +44,7 @@
       transport = {
         TYPE = "ConvectionDiffusion_DG", 
         input_fields= [
-          { region = "IMPLICIT BOUNDARY",
+          { r_set = "BOUNDARY",
             bc_conc=0
           },
           {

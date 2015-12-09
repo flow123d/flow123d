@@ -16,7 +16,8 @@
       TYPE = "SteadyDarcy_MH", 
       
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
           bc_pressure = 0
         },
         { rid = 20,
@@ -49,7 +50,7 @@
       transport = {
         TYPE = "ConvectionDiffusion_DG", 
         input_fields= [
-          { region = "IMPLICIT BOUNDARY",
+          { r_set = "BOUNDARY",
             bc_conc=0
           },
           {

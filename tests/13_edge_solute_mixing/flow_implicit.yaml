@@ -2,20 +2,28 @@ problem: !SequentialCoupling
   time: &anchor3
     end_time: 100.0
     init_dt: 5.0
+    name: transport_output_stream
   description: Test13 - mixing of substances on edges and quantitative test on trivial
     transport problem.
   mesh:
-    mesh_file: input/test13.msh
+    mesh_file: input/Y_branch.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - rid: 17
+    - region: trunk
       anisotropy: 1.0
-    - rid: 18
+    - region: left_branch
+      anisotropy: 1.0
+    - region: right_branch
       anisotropy: 0.1
-    - rid: 19
-      anisotropy: 1.0
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test13.fbc
+    - region: .trunk
+      bc_type: dirichlet
+      bc_pressure: 10
+    - region: .left_branch
+      bc_type: dirichlet
+      bc_pressure: 5
+    - region: .right_branch
+      bc_type: dirichlet
+      bc_pressure: -5
     output:
       output_stream: 
         file: test13.pvd
@@ -33,13 +41,9 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
-      - rid: 17
+      - r_set: BULK
         init_conc: 0
-      - rid: 18
-        init_conc: 0
-      - rid: 19
-        init_conc: 0
-      - region: IMPLICIT BOUNDARY
+      - region: .trunk
         bc_conc: 1
       solver: !Petsc
         a_tol: 1.0e-12
@@ -55,3 +59,4 @@ problem: !SequentialCoupling
     time: *anchor3
     balance:
       cumulative: true
+    name: transport_output_stream
