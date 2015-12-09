@@ -233,15 +233,15 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 				}else{
                     IntersectionPoint<1,2> IP;
                     IP.set_orientation(-1);  // set orientation as a pathologic case ( > 1)
-                    
+
                     // possibly set abscissa vertex {0,1}
                     if( fabs(s) < epsilon)       { s = 0; IP.set_topology_A(0,0);}
                     else if(fabs(1-s) < epsilon) { s = 1; IP.set_topology_A(1,0);}
                     else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
                     
                     // possibly set triangle vertex {0,1,2}
-                    if( fabs(t) < epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[0],0);}
-                    else if(fabs(1-t) < epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[1],0);}
+                    if( fabs(t) < epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[RefElement<2>::normal_orientation(i)],0);  }
+                    else if(fabs(1-t) < epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[1-RefElement<2>::normal_orientation(i)],0);}
                     else                         {        IP.set_topology_B(i,1);}   // no vertex, side i, dim = 1
                     
 					arma::vec::fixed<2> local_abscissa;
@@ -391,9 +391,13 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
                 // set the 'computed' flag on the connected sides by IP
                 if(IP.dim_B() == 0) // IP is vertex of triangle
                 {
-                    for(unsigned int s=0; s < 3; s++)   //sides per node
-                        CI12[RefElement<3>::interact<2,0>(IP.idx_B())[s]].set_computed();
-                    IP13.set_topology_B(RefElement<3>::interact<0,2>(side)[IP.idx_B()], IP.dim_B());
+                    // map side (triangle) node index to tetrahedron node index
+                    unsigned int node = RefElement<3>::interact<0,2>(side)[IP.idx_B()];
+                    // set flag on all sides of tetrahedron connected by the node
+                    for(unsigned int s=0; s < RefElement<3>::n_sides_per_node; s++)
+                        CI12[RefElement<3>::interact<2,0>(node)[s]].set_computed();
+                    // set topology data for object B (tetrahedron) - node
+                    IP13.set_topology_B(node, IP.dim_B());
                 }
                 if(IP.dim_B() == 1) // IP is on edge of triangle
                 {
@@ -447,7 +451,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
             IP13s.pop_back(); 
             return pocet_pruniku;
         }
-        
+
         if(t1 == 0) // interpolate IP a1
         {
             arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
@@ -457,9 +461,8 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
                                                                                               t1);
             arma::vec::fixed<2> inter({1 - t1, t1});    // barycentric coords
             a1.set_coordinates(inter,interpolovane);
-//             a1.set_topology_EE(unset_loc_idx, a1.is_pathologic());  // edge index is set later
-            // here we can set only local index of the vertex on the line
-            DBGMSG("E-E 0\n");
+//             DBGMSG("E-E 0\n");
+            // set topology: node 0 of the line, tetrahedron
             a1.set_topology(0, 0, 0,3);
         }
         
@@ -477,9 +480,8 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
                                                                                               t2);
             arma::vec::fixed<2> inter({1 - t2, t2});      // barycentric coords
             a2.set_coordinates(inter,interpolovane);
-//             a2.set_topology_EE(unset_loc_idx, a2.is_pathologic());  // edge index is set later
-            // here we can set only local index of the vertex on the line
-            DBGMSG("E-E 1\n");
+//             DBGMSG("E-E 1\n");
+            // set topology: node 1 of the line, tetrahedron
             a2.set_topology(1, 0, 0,3);
         }
     }
