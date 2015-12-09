@@ -157,6 +157,18 @@ void MultiField<spacedim, Value>::set_up_components() {
 
 
 template<int spacedim, class Value>
+void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
+    if (! flags().match(FieldFlag::declare_input)) return;
+
+	set_up_components();
+	for( SubFieldType &field : sub_fields_) {
+		field.set_input_list(list);
+	}
+}
+
+
+
+template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record descriptor_rec, const FieldCommon &field) {
 	Input::Record multifield_rec;
 	if (descriptor_rec.opt_val(field.input_name(), multifield_rec));
@@ -185,32 +197,8 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
-    if (! flags().match(FieldFlag::declare_input)) return;
-
-	//cout << "MultiField::set_input_list: " << input_name() << endl;
-    // check that times forms ascending sequence
-    double time,last_time=0.0;
-
-	for (Input::Iterator<Input::Record> it = list.begin<Input::Record>();
-					it != list.end();
-					++it) {
-		if ( it->find<Input::Record>(this->input_name()) ) {
-		    for( SubFieldType &field : sub_fields_) {
-		    	field.shared_->input_list_.push_back(*it);
-			}
-			time = it->val<double>("time");
-			if (time < last_time) {
-				THROW( ExcNonascendingTime()
-						<< EI_Time(time)
-						<< EI_Field(input_name())
-						<< it->ei_address());
-			}
-			last_time = time;
-		}
-	}
-
-	shared_->list_it_ = shared_->input_list_.begin();
+bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
+	return in_rec.find<Input::Record>(input_name);
 }
 
 

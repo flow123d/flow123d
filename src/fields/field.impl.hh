@@ -448,6 +448,13 @@ typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase:
 }
 
 
+template<int spacedim, class Value>
+bool Field<spacedim,Value>::FactoryBase::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
+	return in_rec.find<Input::AbstractRecord>(input_name);
+}
+
+
+
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
@@ -460,27 +467,31 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
     for (Input::Iterator<Input::Record> it = list.begin<Input::Record>();
 					it != list.end();
 					++it) {
-		if ( it->find<Input::AbstractRecord>(this->input_name()) ) {
-			shared_->input_list_.push_back( Input::Record( *it ) );
-			time = it->val<double>("time");
-			if (time < last_time) {
-				THROW( ExcNonascendingTime()
-						<< EI_Time(time)
-						<< EI_Field(input_name())
-						<< it->ei_address());
-			}
-			last_time = time;
+    	for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
+			if ( (*rit)->is_active_field_descriptor( (*it), this->input_name() ) ) {
+				shared_->input_list_.push_back( Input::Record( *it ) );
+				time = it->val<double>("time");
+				if (time < last_time) {
+					THROW( ExcNonascendingTime()
+							<< EI_Time(time)
+							<< EI_Field(input_name())
+							<< it->ei_address());
+				}
+				last_time = time;
 
-			// output
-			//cout << "   - time: " << time;
-			//Input::Iterator<string> it_reg = it->find<string>("region");
-			//if (it_reg) cout << ", region: " << (*it_reg);
-			//Input::Iterator<string> it_set = it->find<string>("r_set");
-			//if (it_set) cout << ", r_set: " << (*it_set);
-			//Input::Iterator<int> it_id = it->find<int>("rid");
-			//if (it_id) cout << ", rid: " << (*it_id);
-			//cout << endl;
-		}
+				// output
+				//cout << "   - time: " << time;
+				//Input::Iterator<string> it_reg = it->find<string>("region");
+				//if (it_reg) cout << ", region: " << (*it_reg);
+				//Input::Iterator<string> it_set = it->find<string>("r_set");
+				//if (it_set) cout << ", r_set: " << (*it_set);
+				//Input::Iterator<int> it_id = it->find<int>("rid");
+				//if (it_id) cout << ", rid: " << (*it_id);
+				//cout << endl;
+
+				break;
+			}
+    	}
 	}
 
     shared_->list_it_ = shared_->input_list_.begin();

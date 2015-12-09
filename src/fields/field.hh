@@ -98,6 +98,11 @@ public:
     	 * @p FieldBase<...>::function_factory.
     	 */
     	virtual FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
+
+    	/**
+    	 * Check if Input::Record accessor contains data of field given by input_name
+    	 */
+    	virtual bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name);
     };
 
     /**

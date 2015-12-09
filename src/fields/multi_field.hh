@@ -66,6 +66,8 @@ public:
 
     	virtual typename Field<spacedim, Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
 
+    	bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) override;
+
     	unsigned int index_;
     };
 
