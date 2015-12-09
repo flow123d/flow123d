@@ -77,7 +77,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
                 // IP is the vertex of triangle,
                 // the directions of triangle edges determines the directions of polygon edges
                 unsigned int vertex_index = ip.idx_A();
-                DBGMSG("E-E: vertex_index: %d %d\n", vertex_index);
+                DBGMSG("E-E: vertex_index: %d\n", vertex_index);
                 // <2>::lines_nodes[vertex_index][0 = line index IN, or 1 = line index OUT]
                 unsigned int triangle_side_in = RefElement<2>::interact<1,0>(vertex_index)[0];
                 unsigned int triangle_side_out = RefElement<2>::interact<1,0>(vertex_index)[1];

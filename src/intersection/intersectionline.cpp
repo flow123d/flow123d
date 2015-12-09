@@ -19,7 +19,7 @@ double IntersectionLine::compute_length()
     double length = 0;
     for(unsigned int i=0; i < i_points_.size()-1; i++)
     {
-        length += std::abs(i_points_[i].local_bcoords_A()[0] - i_points_[i+1].local_bcoords_A()[0]);
+        length += std::abs(i_points_[i].local_bcoords_A()[1] - i_points_[i+1].local_bcoords_A()[1]);
     }
     return length;
 }

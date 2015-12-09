@@ -112,6 +112,10 @@ void InspectElements::compute_intersections<1,3>(){
 					CI_13.init();
 					CI_13.compute(il.points());
 
+//                     DBGMSG("IL IPs:\n");
+//                     for(unsigned int i=0; i < il.size(); i++)
+//                         std::cout << il.points()[i];
+                    
 					if(il.size() > 1){
 						closed_elements[elm->index()] = true;
 						flag_for_3D_elements[ele->index()] = elm->index();
@@ -135,7 +139,6 @@ void InspectElements::compute_intersections<1,3>(){
 
 void InspectElements::prolongate_elements(const IntersectionLine &il, const ElementFullIter &elm, const ElementFullIter &ele){
 	for(const IntersectionPoint<1,3> &IP : il.points()) {
-        std::cout << IP;        
 		if(IP.dim_A() == 0) { 
             // if IP is end of the 1D element
             // prolongate 1D element as long as it creates prolongation point on the side of tetrahedron

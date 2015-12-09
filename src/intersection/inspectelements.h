@@ -89,6 +89,8 @@ public:
 	template<unsigned int subdim, unsigned int dim>
 	void compute_intersections_init();
 
+    const std::vector<IntersectionLine> & list_intersection_lines(unsigned int idx_component_1D);
+    
 	void print_mesh_to_file(std::string name);
 	void print_mesh_to_file_1D(std::string name);
 
@@ -120,6 +122,14 @@ void InspectElements::compute_intersections_init()
 {
         ASSERT(0, "Method not implemented for given dim and subdim.");
 }
+
+
+inline const std::vector< IntersectionLine >& InspectElements::list_intersection_lines(unsigned int ele_idx)
+{
+    ASSERT_LESS(ele_idx, intersection_line_list.size());
+    return intersection_line_list[ele_idx];
+}
+
 
 } // END namespace
 
