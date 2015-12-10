@@ -19,11 +19,13 @@
 #include <fstream>
 #include <iomanip>
 #include <sys/param.h>
-#include "Python.h"
+
+#ifdef FLOW123D_HAVE_PYTHON
+    #include "Python.h"
+#endif // FLOW123D_HAVE_PYTHON
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
-#include "Python.h"
 #include "system/python_loader.hh"
 #include <boost/format.hpp>
 #include <iostream>
@@ -576,7 +578,7 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("run-finished-at",    end_time_string);
 }
 
-
+#ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
     PyObject * python_module;
     PyObject * convert_method;
@@ -641,6 +643,11 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
         cout << "Unknown result when executing Python: "<< endl;
     }
 }
+#else
+void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
+}
+
+#endif // FLOW123D_HAVE_PYTHON
 
 
 void Profiler::uninitialize() {
