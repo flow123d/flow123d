@@ -2,14 +2,16 @@
 GeoMop model auto-conversion module
 
 Ensures auto-conversion of data for specified format.
+
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
 """
 
 __author__ = 'Tomas Krizek'
 
 from copy import deepcopy
 
-from .data_node import CompositeNode, NodeOrigin
-from .util import TextValue
+from .data_node import DataNode, MappingDataNode, SequenceDataNode
+from util.util import TextValue
 
 
 def autoconvert(node, input_type):
@@ -47,7 +49,7 @@ def _autoconvert_crawl(node, input_type):
                 return
         _autoconvert_crawl(node, it_concrete)
     elif input_type['base_type'] == 'Array':
-        if not isinstance(node, CompositeNode):
+        if node.implementation != DataNode.Implementation.sequence:
             return
         children = list(node.children)
         node.children.clear()
@@ -56,7 +58,7 @@ def _autoconvert_crawl(node, input_type):
             node.set_child(ac_child)
             _autoconvert_crawl(ac_child, input_type['subtype'])
     elif input_type['base_type'] == 'Record':
-        if not isinstance(node, CompositeNode):
+        if node.implementation != DataNode.Implementation.mapping:
             return
         children = list(node.children)
         node.children.clear()
@@ -82,8 +84,8 @@ def _get_autoconverted(node, input_type):
     """
     if input_type is None:
         return node
-    is_array = isinstance(node, CompositeNode) and not node.explicit_keys
-    is_record = isinstance(node, CompositeNode) and node.explicit_keys
+    is_array = node.implementation == DataNode.Implementation.sequence
+    is_record = node.implementation == DataNode.Implementation.mapping
     if input_type['base_type'] == 'Array' and not is_array:
         dim = _get_expected_array_dimension(input_type)
         return _expand_value_to_array(node, dim)
@@ -105,7 +107,7 @@ def _get_expected_array_dimension(input_type):
 def _expand_value_to_array(node, dim):
     """Expands node value to specified dimension."""
     while dim > 0:
-        array_node = CompositeNode(False, node.key, node.parent)
+        array_node = SequenceDataNode(node.key, node.parent)
         array_node.span = node.span
         node.parent = array_node
         node.key = TextValue('0')
@@ -113,7 +115,7 @@ def _expand_value_to_array(node, dim):
             array_node.input_type = node.input_type
             node.input_type = array_node.input_type['subtype']
         array_node.children.append(node)
-        array_node.origin = NodeOrigin.ac_array
+        array_node.origin = DataNode.Origin.ac_array
         node = array_node
         dim -= 1
     return node
@@ -136,13 +138,13 @@ def _expand_reducible_to_key(node, input_type):
     if key is None:
         return node
 
-    record_node = CompositeNode(True, node.key, node.parent)
+    record_node = MappingDataNode(node.key, node.parent)
     record_node.span = node.span
     if hasattr(node, 'type'):
         record_node.type = node.type
         node.type = None
     node.parent = record_node
-    node.origin = NodeOrigin.ac_reducible_to_key
+    node.origin = DataNode.Origin.ac_reducible_to_key
     node.key = TextValue(key)
     if node.input_type is not None:
         record_node.input_type = node.input_type

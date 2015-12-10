@@ -1,20 +1,20 @@
 problem: !SequentialCoupling
   description: Test15 - 2D unsteady flow LM
   mesh:
-    mesh_file: ./input/test15.msh
+    mesh_file: ./input/channel_unstructured.msh
   primary_equation: !Unsteady_LMH
     input_fields:
-    - rid: 100
+    - region: domain
       anisotropy: 1
       # default
       cross_section: 1
       # default
-      storativity: 1
       water_source_density: !FieldFormula
         value: -x
       init_piezo_head: 0
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test15.fbc
+    - region: .left
+      bc_type: dirichlet
+      bc_pressure: 0
     n_schurs: 2
     output:
       output_stream: 
@@ -38,13 +38,15 @@ problem: !SequentialCoupling
       min_dt: 0.01
   secondary_equation: !TransportOperatorSplitting
     input_fields:
-    - rid: 100
+    - region: domain
       init_conc: 0
-    - region: IMPLICIT BOUNDARY
-      transport_old_bcd_file: ./input/test15_tbc_000
+    - region: .left
+      bc_type: dirichlet
+      bc_conc: 10
       time: 0.0
-    - region: IMPLICIT BOUNDARY
-      transport_old_bcd_file: ./input/test15_tbc_001
+    - region: .left
+      bc_type: dirichlet
+      bc_conc: 0
       time: 0.1
     output_stream: 
       file: ./transport.pvd

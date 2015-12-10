@@ -1,7 +1,7 @@
 """
 Module for data structure validation
-"""
 
-__author__ = 'Tomas Krizek'
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 
 from .validator import Validator
