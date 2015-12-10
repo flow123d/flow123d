@@ -34,6 +34,7 @@ using namespace std;
 
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
+#include "input/accessors.hh"
 
 
 namespace it = Input::Type;
@@ -63,8 +64,8 @@ string FieldAlgorithmBase<spacedim, Value>::template_name() {
 
 
 template <int spacedim, class Value>
-Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
-	return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
+	return it::Abstract("Field:"+template_name(), "Abstract for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
 			.root_of_generic_subtree()
 			.close();

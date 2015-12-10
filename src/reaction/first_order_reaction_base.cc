@@ -28,6 +28,7 @@
 
 #include "mesh/mesh.h"
 #include "la/distribution.hh"
+#include "input/accessors.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
 FLOW123D_FORCE_LINK_IN_PARENT(linearODEAnalytic);

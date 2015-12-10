@@ -3,7 +3,7 @@
     TYPE = "SequentialCoupling", 
     description = "[u'test18:', u'diffusion', u'through', u'fractures']", 
     mesh = {
-      mesh_file = "./input/test18.msh"
+      mesh_file = "./input/test18.msh",
       regions = [
         { name = "center",
           id   = 30,
@@ -16,7 +16,8 @@
       TYPE = "Steady_MH", 
       
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
           bc_pressure = 0
         },
         { rid = 20,
@@ -47,7 +48,7 @@
       TYPE = "SoluteTransport_DG", 
 
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
+        { r_set = "BOUNDARY",
           bc_conc=0
         },
         {
@@ -58,7 +59,7 @@
         {
           rid = 24,
           init_conc = 0,
-          diff_m = 1e-1
+          diff_m = 1e-1,
           dg_penalty = 100
         },
         {
@@ -102,9 +103,7 @@
       {
         file = "./transport-implicit.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.001,

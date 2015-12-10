@@ -32,8 +32,8 @@
 #include "mesh/intersection.hh"
 #include "mesh/partitioning.hh"
 
-#include "input/input_type.hh"
-#include "input/accessors.hh"
+#include "input/input_type_forward.hh"
+#include "input/accessors_forward.hh"
 #include "boost/shared_ptr.hpp"
 #include "system/exceptions.hh"
 

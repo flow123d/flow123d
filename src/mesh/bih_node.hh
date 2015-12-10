@@ -22,7 +22,6 @@
 #include "mesh/bounding_box.hh"
 #include <armadillo>
 #include <algorithm>
-#include "input/accessors.hh"
 
 class BIHNode {
 public:

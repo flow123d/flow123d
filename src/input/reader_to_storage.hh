@@ -21,14 +21,18 @@
 
 #include <sstream>
 
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 
 #include "input/input_exception.hh"
 #include "input/storage.hh"
 #include "input/path_base.hh"
 
+#include "system/file_path.hh"
+
 
 namespace Input {
+
+using namespace std;
 
 
 
@@ -78,6 +82,8 @@ public:
     TYPEDEF_ERR_INFO(EI_Format, const string);
     TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, string);
+    TYPEDEF_ERR_INFO( EI_TransposeIndex, unsigned int);
+    TYPEDEF_ERR_INFO( EI_TransposeAddress, string);
     DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << "\n"
                                             << EI_Specification::val << "\n"
                                             << EI_Format::val << " type: " << EI_JSON_Type::qval << "\n"
@@ -145,7 +151,7 @@ protected:
     StorageBase * make_storage(PathBase &p, const Type::TypeBase *type);
 
     StorageBase * make_storage(PathBase &p, const Type::Record *record);
-    StorageBase * make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * make_storage(PathBase &p, const Type::Abstract *abstr_rec);
     StorageBase * make_storage(PathBase &p, const Type::Array *array);
 
     StorageBase * make_selection_storage_without_catch(PathBase &p, const Type::Selection *selection);
@@ -154,9 +160,11 @@ protected:
     StorageBase * make_storage(PathBase &p, const Type::Integer *int_type);
     StorageBase * make_storage(PathBase &p, const Type::Double *double_type);
     StorageBase * make_storage(PathBase &p, const Type::String *string_type);
+    StorageBase * make_transposed_storage(PathBase &p, const Type::TypeBase *type);
+    StorageBase * make_autoconversion_array_storage(PathBase &p, const Type::Array *array, StorageBase *item);
 
     StorageBase * record_automatic_conversion(PathBase &p, const Type::Record *record);
-    StorageBase * abstract_rec_automatic_conversion(PathBase &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * abstract_automatic_conversion(PathBase &p, const Type::Abstract *abstr_rec);
 
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.
@@ -169,6 +177,35 @@ protected:
 
     /// Root of the declaration tree of the data in the storage.
     const Type::TypeBase *root_type_;
+
+    /**
+     * Flag signed that "expected" transposed part of input tree is processed.
+     *
+     * We set this flag if input tree contains another type at position where Array
+     * is expected. This type must correspond with type_of_value of Array.
+     *
+     * Subsequently:
+     * 1. We set @p transpose_index_ to value '0' (transposition of first Array item).
+     * 2. We retrieve whole subtree and find Array types that are located at position
+     *    where other type is expected (type_of_value of found Array must corresponds
+     *    with excepted type).
+     *    We create storage corresponding with subtree (unexpected Arrays are replaced
+     *    by item at position given by @p transpose_index_.
+     * 3. Together with paragraph 2 we store sizes of found Arrays to
+     *    @p transpose_array_sizes_.
+     * 4. We check sizes stored in transpose_array_sizes_ (all must be in equal
+     *    and may not be equal to zero). This size determines size of transposed Array
+     *    type.
+     * 5. We repeat paragraph 2 for all items of transposed Array (gradual increase of
+     *    @p transpose_index_).
+     */
+    bool try_transpose_read_;
+
+    /// Index of processed item in transposed part of input tree.
+    unsigned int transpose_index_;
+
+    /// Helper vector what allows check sizes of all transposed Arrays.
+    vector<unsigned int> transpose_array_sizes_;
 
     friend class Type::Default;
 

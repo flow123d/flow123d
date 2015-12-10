@@ -48,7 +48,7 @@
 #define SORPTION_IMPL_HH_
 
 #include <vector>
-#include <input/input_type.hh>
+#include <input/input_type_forward.hh>
 #include <boost/math/tools/roots.hpp>
 #include "fields/field.hh"
 

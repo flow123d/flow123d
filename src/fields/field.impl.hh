@@ -23,6 +23,7 @@
 #include "field.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
+#include "input/accessors.hh"
 
 
 /******************************************************************************************

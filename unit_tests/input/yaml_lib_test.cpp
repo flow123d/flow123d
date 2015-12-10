@@ -40,5 +40,22 @@ TEST(YamlCpp, merge_support) {
     EXPECT_EQ("3", config["map_3"]["c"].as<string>());
     EXPECT_EQ(1, config["map_3"]["b"].as<int>());
     EXPECT_EQ(3, config["map_3"]["c"].as<int>());
+
+    YAML::Node mf=config["multifield"];
+    // !! Merge do not support copy of tags
+    /*
+    EXPECT_EQ("!FieldElementwise", mf[0].Tag());
+    EXPECT_EQ("!FieldElementwise", mf[1].Tag());
+    EXPECT_EQ("!FieldElementwise", mf[2].Tag());
+    */
+
+    EXPECT_EQ("field.msh", mf[0]["file"].as<string>() );
+    EXPECT_EQ("field.msh", mf[1]["file"].as<string>() );
+    EXPECT_EQ("field.msh", mf[2]["file"].as<string>() );
+
+    EXPECT_EQ("A", mf[0]["component_name"].as<string>() );
+    EXPECT_EQ("B", mf[1]["component_name"].as<string>() );
+    EXPECT_EQ("C", mf[2]["component_name"].as<string>() );
+
 }
 

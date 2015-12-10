@@ -19,14 +19,19 @@
 #define TYPE_OUTPUT_HH_
 
 
-#include "input/type_base.hh"
+#include "input/input_type_forward.hh"
 #include "input/type_record.hh"
-#include "input/type_generic.hh"
+#include "input/type_abstract.hh"
+#include <string>
+#include <ostream>
+#include <boost/shared_ptr.hpp>
 
 
 namespace Input {
 
 namespace Type {
+
+using namespace std;
 
 /// Stores version of program and other base data of application
 struct RevNumData {
@@ -86,23 +91,23 @@ protected:
     /// Gets description of the given record type.
     const string & get_record_description(const Record *rec);
     /// Gets description of the given abstract type.
-    const string & get_abstract_description(const AbstractRecord *a_rec);
+    const string & get_abstract_description(const Abstract *a_rec);
     /// Gets range of integer
     void get_integer_bounds(Integer integer, int &lower , int &upper );
     /// Gets range of double
     void get_double_bounds(Double dbl, double &lower , double &upper );
-    /// Gets pointer of parent AbstractRecord for given Record
-    void get_parent_vec(Record rec, std::vector< boost::shared_ptr<AbstractRecord> > &parent_vec);
+    /// Gets pointer of parent Abstract for given Record
+    void get_parent_vec(Record rec, std::vector< boost::shared_ptr<Abstract> > &parent_vec);
     /// Gets pointer of inner type for given Array
     void get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type);
     /// Gets values of default for given record key
     void get_default(Record::KeyIter it, string &type, string &value);
     /// Gets description of the given selection type.
     const string & get_selection_description(const Selection *sel);
-    /// Gets parent_name_ of the given AdHocAbstractRecord type.
-    const string & get_adhoc_parent_name(const AdHocAbstractRecord *a_rec);
-    /// Gets iterator to begin of parent_data_ of the given AdHocAbstractRecord type.
-    AbstractRecord::ChildDataIter get_adhoc_parent_data(const AdHocAbstractRecord *a_rec);
+    /// Gets ancestor_.type_name of the given AdHocAbstract type.
+    void get_adhoc_parent_name(const AdHocAbstract *a_rec, string &parent_name);
+    /// Gets iterator to begin of ancestor_.child_data_ of the given AdHocAbstract type.
+    Abstract::ChildDataIter get_adhoc_parent_data(const AdHocAbstract *a_rec);
 
 
     /**
@@ -120,13 +125,13 @@ protected:
      */
     virtual void print_impl(ostream& stream, const Array *type) = 0;
     /**
-     * Implements printout of AbstractRecord @p type
+     * Implements printout of Abstract @p type
      */
-    virtual void print_impl(ostream& stream, const AbstractRecord *type) = 0;
+    virtual void print_impl(ostream& stream, const Abstract *type) = 0;
     /**
-     * Implements printout of AdHocAbstractRecord @p type
+     * Implements printout of AdHocAbstract @p type
      */
-    virtual void print_impl(ostream& stream, const AdHocAbstractRecord *type) = 0;
+    virtual void print_impl(ostream& stream, const AdHocAbstract *type) = 0;
     /**
      * Implements printout of Selection @p type
      */
@@ -209,8 +214,8 @@ protected:
 /**
  * @brief Class for create text documentation
  *
- * Record, AbstractRecord and Selection are represented by block of text that contains type name, name, description
- * and count and list of keys (for Record), descendants (for AbstractRecord) or values (for Selection).
+ * Record, Abstract and Selection are represented by block of text that contains type name, name, description
+ * and count and list of keys (for Record), descendants (for Abstract) or values (for Selection).
  *
  * In list are displayed information about subtypes, e.g. type name, description, value, range of numeric values etc.
  *
@@ -229,8 +234,8 @@ public:
 protected:
     void print_impl(ostream& stream, const Record *type);
     void print_impl(ostream& stream, const Array *type);
-    void print_impl(ostream& stream, const AbstractRecord *type);
-    void print_impl(ostream& stream, const AdHocAbstractRecord *type);
+    void print_impl(ostream& stream, const Abstract *type);
+    void print_impl(ostream& stream, const AdHocAbstract *type);
     void print_impl(ostream& stream, const Selection *type);
 	void print_impl(ostream& stream, const Integer *type);
 	void print_impl(ostream& stream, const Double *type);
@@ -281,8 +286,8 @@ protected:
 
     void print_impl(ostream& stream, const Record *type);
     void print_impl(ostream& stream, const Array *type);
-    void print_impl(ostream& stream, const AbstractRecord *type);
-    void print_impl(ostream& stream, const AdHocAbstractRecord *type);
+    void print_impl(ostream& stream, const Abstract *type);
+    void print_impl(ostream& stream, const AdHocAbstract *type);
     void print_impl(ostream& stream, const Selection *type);
     void print_impl(ostream& stream, const Integer *type);
     void print_impl(ostream& stream, const Double *type);
@@ -292,8 +297,8 @@ protected:
     void print_impl(ostream& stream, const Parameter *type);
 
 
-    /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
-    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type);
+    /// Print all keys of Abstract type or AdHocAbstract type
+    void print_abstract_record_keys(ostream& stream, const Abstract *type);
 
     /**
      * Print actual version of program.

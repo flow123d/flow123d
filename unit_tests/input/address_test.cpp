@@ -57,7 +57,7 @@ TEST(InputAddress, address_output_test) {
 		.close();
 
 
-    IT::AbstractRecord problem = IT::AbstractRecord("Problem","Base problem.")
+    IT::Abstract problem = IT::Abstract("Problem","Base problem.")
     	.close();
     {
     	problem.add_child(sequential_coupling_record);

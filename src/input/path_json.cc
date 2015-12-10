@@ -18,10 +18,12 @@
 #include "input/path_json.hh"
 #include "input/reader_to_storage.hh"
 #include "input/comment_filter.hh"
+#include "system/system.hh"
 
 #include "json_spirit/json_spirit_error_position.h"
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
+#include <boost/algorithm/string.hpp>
 
 
 namespace Input {

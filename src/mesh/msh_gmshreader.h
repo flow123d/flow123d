@@ -28,7 +28,7 @@
 #include "system/tokenizer.hh"
 #include "mesh/region.hh"
 #include "mesh/element_data_cache.hh"
-#include "input/accessors.hh"
+#include "input/input_exception.hh"
 
 class Mesh;
 class FilePath;

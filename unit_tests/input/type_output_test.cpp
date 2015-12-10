@@ -6,6 +6,7 @@
 
 #include "input/type_base.hh"
 #include "input/type_output.hh"
+#include "input/type_generic.hh"
 
 // Set version of program and other base data. Simulate data got from rev_num.h.
 Input::Type::RevNumData get_rev_num_data() {
@@ -109,7 +110,7 @@ TEST(OutputTypeTypeBase, record_output_test) {
     cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }
 
-TEST(OutputTypeAbstractRecord, abstract_record_test) {
+TEST(OutputTypeAbstract, abstract_record_test) {
     using namespace Input::Type;
 
 	Record copy_rec = Record("Copy","")
@@ -117,8 +118,8 @@ TEST(OutputTypeAbstractRecord, abstract_record_test) {
        	.declare_key("a_val", String(), Default::obligatory(), "")
 		.close();
 
-    AbstractRecord a_rec = AbstractRecord("EqBase","Base of equation records.");
-    AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
+	Abstract a_rec = Abstract("EqBase","Base of equation records.");
+	Abstract &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
     EXPECT_EQ( a_rec, a_ref);
 
     // test derived type
@@ -145,11 +146,11 @@ TEST(OutputTypeAbstractRecord, abstract_record_test) {
 }
 
 
-TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
+TEST(OutputTypeAbstract, ad_hoc_abstract_test) {
     using namespace Input::Type;
 
     // ancestor abstract record
-    AbstractRecord a_rec = AbstractRecord("EquationBase", "Base of equation records.")
+	Abstract a_rec = Abstract("EquationBase", "Base of equation records.")
     		.close();
 
     Record b_rec = Record("B_Record", "Test record.")
@@ -176,8 +177,8 @@ TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
     	.declare_key("pause", Bool(), Default("false"), "")
     	.close();
 
-    // adhoc abstract record - descendant of a_rec
-    AdHocAbstractRecord adhoc_rec(a_rec);
+    // adhoc abstract - descendant of a_rec
+    AdHocAbstract adhoc_rec = AdHocAbstract(a_rec).close();
     adhoc_rec.add_child(d_rec);
     adhoc_rec.add_child(e_rec);
     adhoc_rec.finish();

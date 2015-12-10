@@ -42,7 +42,7 @@ public:
 
 
     /**
-     * Return Record for initialization of FieldConstant that is derived from AbstractRecord given by @p a_type
+     * Return Record for initialization of FieldConstant that is derived from Abstract given by @p a_type
      * and the individual elements of the possible Value (vector, tensor) have Input::Type @p eit.
      */
     static const Input::Type::Record & get_input_type();

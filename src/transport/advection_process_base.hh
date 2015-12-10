@@ -9,7 +9,7 @@
 #define SRC_TRANSPORT_ADVECTION_PROCESS_BASE_HH_
 
 #include "coupling/equation.hh"
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 
 class Mesh;
 class MH_DofHandler;
@@ -41,8 +41,8 @@ public:
 
 
     /// Common specification of the input record for secondary equations.
-    static Input::Type::AbstractRecord & get_input_type() {
-        return Input::Type::AbstractRecord("Transport",
+    static Input::Type::Abstract & get_input_type() {
+        return Input::Type::Abstract("Transport",
                 "Secondary equation for transport of substances.")
                 .close();
     }
