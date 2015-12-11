@@ -94,15 +94,13 @@ public:
 	void print_mesh_to_file(std::string name);
 	void print_mesh_to_file_1D(std::string name);
 
-    /** @brief Computes the area of 2d-3d polygonal intersection.
-     * @return the polygonal area
-     * TODO: probably remove dependence on @class TTriangle in NGH
+    /** @brief Computes the area of 2d-3d polygonal intersections (sum over all polygons).
+     * @return the area of intersection polygon
      */
-	double polygonArea();
+	double polygon_area();
 
-    /** @brief Computes the length of 1d-3d line intersection.
+    /** @brief Computes the length of 1d-3d line intersection (sum over all lines).
      * @return the line length
-     * TODO: probably remove dependence on @class TAbscissa in NGH
      */
     double line_length();
 };

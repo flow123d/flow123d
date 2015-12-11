@@ -18,9 +18,6 @@
 #include "mesh/ref_element.hh"
 #include "mesh/bih_tree.hh"
 
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/abscissa.h"
-
 namespace computeintersection {
 
 InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
@@ -763,17 +760,15 @@ void InspectElements::print_mesh_to_file_1D(string name){
 
 };
 
-double InspectElements::polygonArea()
+double InspectElements::polygon_area()
 {
     double subtotal = 0.0;
 
     for(unsigned int i = 0; i < intersection_list.size(); i++){
         for(unsigned int j = 0; j < intersection_list[i].size();j++){
-            Element efi = *mesh->element(intersection_list[i][j].ele_2d_idx());
-             TTriangle t2d(efi);
-             double t2dArea = t2d.GetArea();
-             double localArea = intersection_list[i][j].get_area();//il.getArea();
-             subtotal += 2*localArea*t2dArea;
+            double t2dArea = mesh->element(intersection_list[i][j].ele_2d_idx())->measure();
+            double localArea = intersection_list[i][j].get_area();
+            subtotal += 2*localArea*t2dArea;
         }
     }
     return subtotal;
@@ -785,10 +780,7 @@ double InspectElements::line_length()
 
     for(unsigned int i = 0; i < intersection_line_list.size(); i++){
         for(unsigned int j = 0; j < intersection_line_list[i].size();j++){
-            Element efi = *mesh->element(intersection_line_list[i][j].ele_1d_idx());
-            TAbscissa t1d(efi);
-            double t1d_length = t1d.Length();
-            DBGMSG("t1d length %f\n",t1d_length);
+            double t1d_length = mesh->element(intersection_line_list[i][j].ele_1d_idx())->measure();
             double local_length = intersection_line_list[i][j].compute_length();
             subtotal += local_length*t1d_length;
         }
