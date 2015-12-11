@@ -9,7 +9,7 @@ problem: !SequentialCoupling
       bc_piezo_head: !FieldInterpolatedP0
         gmsh_file: ${INPUT}/large_cube_solution.msh
         field_name: piezo_head_elements_[L]
-    - r_set: BULK
+    - region: BULK
       anisotropy: 1
       sigma: 0.5
     n_schurs: 2
@@ -27,3 +27,4 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
+  pause_after_run: false

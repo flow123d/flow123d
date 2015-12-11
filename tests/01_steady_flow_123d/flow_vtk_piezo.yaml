@@ -1,3 +1,5 @@
+# *
+#  * Should give same results as flow_vtk.con, but BC condition is given as piezo head.
 problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
@@ -13,12 +15,12 @@ problem: !SequentialCoupling
     - region: 1d_channel
       anisotropy: 10
       sigma: 0.05
-    - r_set: all_2d
+    - region: all_2d
       anisotropy: 1
       sigma: 0.5
     - region: 3d_cube
       anisotropy: 0.1
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_piezo_head: !FieldFormula
         value: x
@@ -37,3 +39,4 @@ problem: !SequentialCoupling
     solver: !Petsc
       r_tol: 1.0e-10
       a_tol: 1.0e-10
+    name: flow_output_stream

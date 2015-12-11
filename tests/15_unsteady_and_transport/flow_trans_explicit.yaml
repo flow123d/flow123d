@@ -65,7 +65,7 @@ problem: !SequentialCoupling
       solubility:
       - 1.0
       input_fields:
-      - r_set: ALL
+      - region: ALL
         rock_density: 1.0
         sorption_type: linear
         isotherm_mult: 0.6
@@ -75,3 +75,4 @@ problem: !SequentialCoupling
       end_time: 2.0
     balance:
       cumulative: true
+    name: transport_output_stream

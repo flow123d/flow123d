@@ -4,7 +4,7 @@ problem: !SequentialCoupling
     mesh_file: ./input/mesh.msh
   primary_equation: !Steady_MH
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: (x-0.5)*y
@@ -47,3 +47,4 @@ problem: !SequentialCoupling
       end_time: 10
     balance:
       cumulative: true
+    name: transport_output_stream

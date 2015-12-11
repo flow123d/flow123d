@@ -10,16 +10,15 @@ output_streams:
     variant: ascii
   time_step: 0.5
   name: transport_output_stream
-
 problem: !SequentialCoupling
   description: Simple dual porosity test - steady flow, simple transport
   mesh:
     mesh_file: input/dual_por.msh
   primary_equation: !Steady_MH
     input_fields:
-    - r_set: ALL
+    - region: ALL
       conductivity: 1.0e-15
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: 0
     output:
@@ -37,12 +36,12 @@ problem: !SequentialCoupling
       a_tol: 1.0e-07
   secondary_equation: !TransportOperatorSplitting
     input_fields:
-    - r_set: ALL
+    - region: ALL
       init_conc:
       - 1.0
       - 0.0
       porosity: 0.25
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc: 0
     substances:
     - A
@@ -57,7 +56,7 @@ problem: !SequentialCoupling
       end_time: 5.0
     reaction_term: !DualPorosity
       input_fields:
-      - r_set: ALL
+      - region: ALL
         diffusion_rate_immobile:
         - 0.01
         - 0.01
@@ -75,7 +74,7 @@ problem: !SequentialCoupling
         - 1.0
         - 1.0
         input_fields: &anchor5
-        - r_set: ALL
+        - region: ALL
           rock_density: 1.0
           sorption_type: linear
           isotherm_mult: 0.6
@@ -93,3 +92,4 @@ problem: !SequentialCoupling
         reaction_liquid: *anchor6
     balance:
       cumulative: true
+  name: transport_output_stream

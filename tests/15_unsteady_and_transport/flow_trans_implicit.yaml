@@ -63,3 +63,4 @@ problem: !SequentialCoupling
       r_tol: 1.0e-07
     balance:
       cumulative: true
+    name: transport_output_stream

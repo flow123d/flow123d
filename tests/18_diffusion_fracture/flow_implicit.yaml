@@ -9,7 +9,7 @@ problem: !SequentialCoupling
       - 45
   primary_equation: !Steady_MH
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: 0
     - rid: 20
@@ -32,7 +32,7 @@ problem: !SequentialCoupling
       r_tol: 1.0e-12
   secondary_equation: !SoluteTransport_DG
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc: 0
     - rid: 20
       init_conc: 0
@@ -59,3 +59,4 @@ problem: !SequentialCoupling
       max_dt: 0.001
     balance:
       cumulative: true
+    name: transport_output_stream

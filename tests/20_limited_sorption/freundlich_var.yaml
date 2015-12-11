@@ -10,7 +10,6 @@ output_streams:
     variant: ascii
   time_step: 0.5
   name: transport_output_stream
-
 problem: !SequentialCoupling
   description: Adsorption all
   mesh:
@@ -19,7 +18,7 @@ problem: !SequentialCoupling
     input_fields:
     - region: rectangle
       conductivity: 0.125
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x
@@ -43,10 +42,10 @@ problem: !SequentialCoupling
     - Bs-lang
     - Cs-freund
     input_fields:
-    - r_set: ALL
+    - region: ALL
       init_conc: 0
       porosity: 0.25
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc: !FieldFormula
         value: 0.05*t
     output_stream: 
@@ -70,7 +69,7 @@ problem: !SequentialCoupling
       - 1.0
       - 1.0
       input_fields:
-      - r_set: ALL
+      - region: ALL
         rock_density: 1.0
         sorption_type: freundlich
         isotherm_mult: !FieldFormula
@@ -79,3 +78,4 @@ problem: !SequentialCoupling
       output_fields: []
     balance:
       cumulative: true
+  name: transport_output_stream

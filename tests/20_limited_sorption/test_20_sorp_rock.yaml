@@ -9,7 +9,6 @@ output_streams:
   format: !vtk
     variant: ascii
   name: transport_output_stream
-
 problem: !SequentialCoupling
   description: TestXXX-pork
   mesh:
@@ -18,7 +17,7 @@ problem: !SequentialCoupling
     input_fields:
     - region: rectangle
       conductivity: 0.125
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x
@@ -43,11 +42,11 @@ problem: !SequentialCoupling
     - C
     - Cs-freund
     input_fields:
-    - r_set: ALL
+    - region: ALL
       init_conc: 0
       porosity: !FieldFormula
         value: '0.25'
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc: !FieldFormula
         value: 0.05*t
     output:
@@ -103,3 +102,4 @@ problem: !SequentialCoupling
         - 0.4
     balance:
       cumulative: true
+  name: transport_output_stream

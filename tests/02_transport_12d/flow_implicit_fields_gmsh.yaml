@@ -20,7 +20,7 @@ problem: !SequentialCoupling
     - region: 2d
       anisotropy: 1
       cross_section: 1
-    - r_set: .sides
+    - region: .sides
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x
@@ -55,10 +55,10 @@ problem: !SequentialCoupling
       a_tol: 1.0e-12
       r_tol: 1.0e-12
     input_fields:
-    - r_set: .sides
+    - region: .sides
       bc_conc: !FieldFormula
         value: (1+sin(t))*0.5
-    - r_set: subset
+    - region: subset
       init_conc: !FieldFormula
         value:
         - (1+sin(x)*sin(y))*0.5
@@ -69,3 +69,4 @@ problem: !SequentialCoupling
     dg_variant: symmetric
     balance:
       cumulative: true
+    name: transport_output_stream

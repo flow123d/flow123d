@@ -5,11 +5,11 @@ problem: !SequentialCoupling
   primary_equation: !Steady_MH
     n_schurs: 2
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: y
-    - r_set: BULK
+    - region: BULK
       cross_section: 1
       anisotropy: 1
     output:
@@ -32,9 +32,9 @@ problem: !SequentialCoupling
     boundary_file: ./input/test16.tbc
     initial_file: ./input/test16.tic
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc: 0
-    - r_set: BULK
+    - region: BULK
       init_conc: 0
       porosity: 1
       sources_density: !FieldElementwise
@@ -59,3 +59,4 @@ problem: !SequentialCoupling
       end_time: 5.7
     balance:
       cumulative: true
+    name: transport_output_stream

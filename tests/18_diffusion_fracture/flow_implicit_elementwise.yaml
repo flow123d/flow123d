@@ -4,7 +4,7 @@ problem: !SequentialCoupling
     mesh_file: ./input/test18.msh
   primary_equation: !Steady_MH
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: 0
     - rid: 20
@@ -27,9 +27,9 @@ problem: !SequentialCoupling
       r_tol: 1.0e-12
   secondary_equation: !SoluteTransport_DG
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc: 0
-    - r_set: ALL
+    - region: ALL
       init_conc: !FieldElementwise
         gmsh_file: ./input/test18_init.msh
         field_name: concentration
@@ -51,3 +51,4 @@ problem: !SequentialCoupling
       max_dt: 0.001
     balance:
       cumulative: true
+    name: transport_output_stream

@@ -15,7 +15,7 @@ problem: !SequentialCoupling
     input_fields:
     - region: volume
       conductivity: 1.0e-10
-    - r_set: .boundary
+    - region: .boundary
       bc_type: dirichlet
       bc_piezo_head: 0
     output:
@@ -40,7 +40,7 @@ problem: !SequentialCoupling
     - region: volume
       init_conc: 1
       porosity: 0.25
-    - r_set: .boundary
+    - region: .boundary
       bc_conc: 1.0
     reaction_term: !Sorption
       solvent_density: 1.0

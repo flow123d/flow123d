@@ -6,7 +6,7 @@ problem: !SequentialCoupling
     input_fields:
     - rid: 1
       anisotropy: 0.01
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_piezo_head: 0
     output:
@@ -32,7 +32,7 @@ problem: !SequentialCoupling
       - 0.04
       - 0.05
       - 0.06
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc:
       - 0.01
       - 0.02
@@ -62,3 +62,4 @@ problem: !SequentialCoupling
         products: E
     balance:
       cumulative: true
+    name: transport_output_stream

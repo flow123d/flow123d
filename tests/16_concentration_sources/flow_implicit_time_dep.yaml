@@ -15,7 +15,7 @@ problem: !SequentialCoupling
   primary_equation: !Steady_MH
     n_schurs: 2
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: 0.2*y
@@ -79,3 +79,4 @@ problem: !SequentialCoupling
       r_tol: 1.0e-12
     balance:
       cumulative: true
+    name: transport_output_stream

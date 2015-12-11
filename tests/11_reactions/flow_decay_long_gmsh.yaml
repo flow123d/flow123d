@@ -4,7 +4,7 @@ problem: !SequentialCoupling
     mesh_file: ./input/sit_decay.msh
   primary_equation: !Steady_MH
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_piezo_head: 0
     output:
@@ -32,7 +32,7 @@ problem: !SequentialCoupling
       - 0.06
       - 0.07
       - 0.08
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc:
       - 0.2
       - 0.12
@@ -90,3 +90,4 @@ problem: !SequentialCoupling
       name: transport_output_stream
     balance:
       cumulative: true
+    name: transport_output_stream

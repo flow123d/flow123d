@@ -52,3 +52,4 @@ problem: !SequentialCoupling
       a_tol: 1.0e-12
       r_tol: 1.0e-12
     balance: false
+    name: transport_output_stream

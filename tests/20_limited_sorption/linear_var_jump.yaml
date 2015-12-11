@@ -10,7 +10,6 @@ output_streams:
     variant: ascii
   time_step: 0.5
   name: transport_output_stream
-
 problem: !SequentialCoupling
   description: Adsorption all
   mesh:
@@ -19,7 +18,7 @@ problem: !SequentialCoupling
     input_fields:
     - region: rectangle
       conductivity: 1
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: 0
     output:
@@ -38,10 +37,10 @@ problem: !SequentialCoupling
     substances:
     - A
     input_fields:
-    - r_set: ALL
+    - region: ALL
       init_conc: 1
       porosity: 0.25
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_conc: 1
     output_stream: 
       file: transport_test_20.pvd
@@ -59,15 +58,16 @@ problem: !SequentialCoupling
       - 10.0
       input_fields:
       - time: 0.0
-        r_set: ALL
+        region: ALL
         rock_density: 1.0
         sorption_type: linear
         isotherm_mult: 0.0
       - time: 2.0
-        r_set: ALL
+        region: ALL
         rock_density: 1.0
         sorption_type: linear
         isotherm_mult: 100.0
       output_fields: []
     balance:
       cumulative: true
+  name: transport_output_stream
