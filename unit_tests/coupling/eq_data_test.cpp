@@ -240,7 +240,7 @@ TEST_F(SomeEquation, values) {
             init_pressure=2.2,
             conc_mobile={REF="/data/0/conc_mobile"}
           },
-          { r_set="BULK",
+          { region="BULK",
             bulk_set_field=5.7,
             conc_mobile={REF="/data/0/conc_mobile"}
           },
@@ -341,7 +341,7 @@ TEST_F(SomeEquation, old_bcd_input) {
     string eq_data_old_bcd = R"JSON(
     { 
       data=[
-          { r_set="BOUNDARY",
+          { region="BOUNDARY",
             bc_type={TYPE="FieldConstant", value = "dirichlet"},
             bc_pressure={
                 TYPE="FieldFormula",
@@ -358,7 +358,7 @@ TEST_F(SomeEquation, old_bcd_input) {
                 components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
               }
           },
-          { r_set="BULK",
+          { region="BULK",
             bulk_set_field=0.0,
             conc_mobile={REF="/data/0/conc_mobile"}
           } 
@@ -409,11 +409,11 @@ TEST_F(SomeEquation, wrong_time_order) {
     string eq_data = R"JSON(
     { 
       data=[
-          { r_set="BULK",
+          { region="BULK",
             time=1.0,
             bulk_set_field=0.0
           }, 
-          { r_set="BULK",
+          { region="BULK",
             time=0.0,
             bulk_set_field=1.0
           } 
