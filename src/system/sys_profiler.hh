@@ -51,9 +51,10 @@
 #include "global_defs.h"
 #include "system/system.hh"
 #include <mpi.h>
+#include <ostream>
 #include <boost/property_tree/ptree.hpp>
 #include "time_point.hh"
-#include "petscsys.h" 
+
 
 // namespace alias
 namespace property_tree = boost::property_tree;
@@ -385,7 +386,7 @@ public:
 
 
     /// Getter for the 'tag'.
-    inline string tag() const {   
+    inline string tag() const {
         string buf(code_point_->tag_);
         buf.append(code_point_->subtag_);
         return buf;
@@ -654,19 +655,17 @@ public:
      * @brief Output current timing information into the given stream.
      *
      * COLECTIVE - all processes in the communicator have to call this
-     * method. It temporally stops all timers, synchronize all processes, collect
-     * profiling informations and write it to the given stream.
+     * method. All timers are finished,  all processes are synchronized, collect
+     * profiling informations are collected and written to the given stream.
      *
      *  Pass through the profiling tree (collective over processors)
      *  Print cumulative times average, balance (max/min), count (denote differences)
      *
      */
-    void output(MPI_Comm comm, ostream &os);
+    void output(MPI_Comm comm, std::ostream &os);
     /**
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
-     *
-     * TODO: move this outside to minimize dependencies
      */
     void output(MPI_Comm comm);
 #endif /* FLOW123D_HAVE_MPI */
@@ -680,7 +679,7 @@ public:
      *  Print cumulative times average, balance (max/min), count (denote differences)
      *
      */
-    void output(ostream &os);
+    void output(std::ostream &os);
     /**
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
@@ -713,11 +712,6 @@ private:
      */
     int find_child(const CodePoint &cp);
 
-    /**
-     * Used to update cumulative times of running timers
-     * in the @p output method in order to get actual results.
-     */
-    void update_running_timers();
 
     /**
      * Method will prepare construct specific details about the run (time start and time end)
@@ -726,6 +720,11 @@ private:
      */
     void output_header (property_tree::ptree &root, int mpi_size);
 
+    /**
+     * Open a new file for profiler output with default name based on the
+     * actual time and date. Returns a pointer to the stream of the output file.
+     */
+    std::shared_ptr<std::ostream> get_default_output_stream();
 
     /// Default code point.
     static CodePoint null_code_point;
@@ -734,7 +733,7 @@ private:
     vector<Timer, SimpleAllocator<Timer>> timers_;
 
     /// Index of the actual timer node. Negative value means 'unset'.
-    int actual_node;
+    unsigned int actual_node;
 
     /// MPI communicator used for final reduce of the timer node tree.
     //MPI_Comm communicator_;
@@ -783,6 +782,7 @@ private:
     Profiler(Profiler const&); // copy constructor is private
     Profiler & operator=(Profiler const&); // assignment operator is private
 };
+
 
 
 

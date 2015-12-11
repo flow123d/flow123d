@@ -101,6 +101,8 @@ long MPI_Functions::max(long* val, MPI_Comm comm) {
  * Implementation of class Timer
  */
 
+const int timer_no_child=-1;
+
 Timer::Timer(const CodePoint &cp, int parent)
 : start_time(TimePoint()),
   cumul_time(0.0),
@@ -122,7 +124,7 @@ Timer::Timer(const CodePoint &cp, int parent)
   petsc_local_peak_memory(-1),
   petsc_memory_difference(0)
 {
-    for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=-1;
+    for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
 }
 
 void Timer::info() {
@@ -230,14 +232,16 @@ bool Timer::stop(bool forced) {
 void Timer::add_child(int child_index, const Timer &child)
 {
     unsigned int idx = child.hash_idx_;
-    if (child_timers[idx] >0) {
+    if (child_timers[idx] != timer_no_child) {
+        // hash collision, find first empty place
         unsigned int i=idx;
         do {
             i=( i < max_n_childs ? i+1 : 0);
-        } while (i!=idx && child_timers[i] >0);
+        } while (i!=idx && child_timers[i] != timer_no_child);
         ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag().c_str());
         idx=i;
     }
+    //DBGMSG("Adding child %d at index: %d\n", child_index, idx);
     child_timers[idx] = child_index;
 }
 
@@ -309,9 +313,10 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 int  Profiler::start_timer(const CodePoint &cp) {
     Timer parent_timer = timers_[actual_node];
-    
+    //DBGMSG("Start timer: %s\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
+        //DBGMSG("Adding timer: %s\n", cp.tag_);
         // tag not present - create new timer
         child_idx=timers_.size();
         timers_.push_back( Timer(cp, actual_node) );
@@ -334,13 +339,12 @@ int  Profiler::start_timer(const CodePoint &cp) {
 
 int Profiler::find_child(const CodePoint &cp) {
     Timer &timer =timers_[actual_node];
-    int idx = cp.hash_idx_;
-    int child_idx;
+    unsigned int idx = cp.hash_idx_;
+    unsigned int child_idx;
     do {
+        if (timer.child_timers[idx] == timer_no_child) break; // tag is not there
+
         child_idx=timer.child_timers[idx];
-
-        if (child_idx < 0) break; // tag is not there
-
         ASSERT_LESS( child_idx, timers_.size());
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
         idx = ( (unsigned int)(idx)==Timer::max_n_childs ? 0 : idx+1 );
@@ -355,7 +359,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
     // check that all childrens are closed
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
-        if (timer.child_timers[i] >0)
+        if (timer.child_timers[i] != timer_no_child)
             ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
 #endif
     int child_timer = actual_node;
@@ -405,19 +409,22 @@ void Profiler::stop_timer(const CodePoint &cp) {
 
 
 void Profiler::stop_timer(int timer_index) {
-    if (timer_index <0) timer_index=actual_node;
-    ASSERT_LESS( timer_index, timers_.size() );
+    unsigned int timer_idx;
+    if (timer_index <0) timer_idx=actual_node;
+    else timer_idx = timer_index;
 
-    if (! timers_[timer_index].running() ) return;
-    
+    ASSERT_LESS( timer_idx, timers_.size() );
+
+    if (! timers_[timer_idx].running() ) return;
+
     int child_timer = actual_node;
-    if ( timer_index != actual_node ) {
+    if ( timer_idx != actual_node ) {
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer)
-            if ( (unsigned int)(timer_index) == node) {
+            if ( (unsigned int)(timer_idx) == node) {
                 // found above - close all nodes between
                 for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_index].tag().c_str(), timers_[actual_node].tag().c_str());
+                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_idx].tag().c_str(), timers_[actual_node].tag().c_str());
                     timers_[actual_node].stop(true);
                 }
                 // close 'node' itself
@@ -460,6 +467,7 @@ void Profiler::add_calls(unsigned int n_calls) {
 }
 
 
+
 void Profiler::notify_malloc(const size_t size) {
     timers_[actual_node].total_allocated_ += size;
     timers_[actual_node].current_allocated_ += size;
@@ -497,7 +505,6 @@ double Profiler::get_resolution () {
 
     return (result / measurements) * 1000; // ticks to seconds to microseconds conversion
 }
-
 
 
 std::string common_prefix( std::string a, std::string b ) {
@@ -545,7 +552,7 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     property_tree::ptree children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-		if (timer.child_timers[i] > 0) {
+		if (timer.child_timers[i] != timer_no_child) {
 			add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
 			has_children = true;
 		}
@@ -560,20 +567,6 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 }
 
 
-
-void Profiler::update_running_timers() {
-    for(int node=actual_node; node !=0; node = timers_[node].parent_timer)
-        timers_[node].cumul_time += (TimePoint() - timers_[node].start_time);
-    timers_[0].cumul_time += (TimePoint() - timers_[0].start_time);
-}
-
-template <class T>
-void save_mpi_metric (property_tree::ptree &node, MPI_Comm comm, T * ptr, string name) {
-    node.put (name+"-min", MPI_Functions::min(ptr, comm));
-    node.put (name+"-max", MPI_Functions::max(ptr, comm));
-    node.put (name+"-sum", MPI_Functions::sum(ptr, comm));
-}
-
 template <class T>
 void save_nonmpi_metric (property_tree::ptree &node,  T * ptr, string name) {
     node.put (name+"-min", *ptr);
@@ -581,10 +574,30 @@ void save_nonmpi_metric (property_tree::ptree &node,  T * ptr, string name) {
     node.put (name+"-sum", *ptr);
 }
 
+std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
+     json_filepath = FilePath(string(filename), FilePath::output_file);
+
+    //xprintf(MsgLog, "output into: %s\n", json_filepath.c_str());
+    return make_shared<ofstream>(json_filepath.c_str());
+}
+
 
 #ifdef FLOW123D_HAVE_MPI
+template <class T>
+void save_mpi_metric (property_tree::ptree &node, MPI_Comm comm, T * ptr, string name) {
+    node.put (name+"-min", MPI_Functions::min(ptr, comm));
+    node.put (name+"-max", MPI_Functions::max(ptr, comm));
+    node.put (name+"-sum", MPI_Functions::sum(ptr, comm));
+}
+
 void Profiler::output(MPI_Comm comm, ostream &os) {
     int ierr, mpi_rank, mpi_size;
+    //wait until profiling on all processors is finished
+    MPI_Barrier(comm);
+    stop_timer(0);
+
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
@@ -645,29 +658,21 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
 
 void Profiler::output(MPI_Comm comm) {
-    //wait until profiling on all processors is finished
-    MPI_Barrier(comm);
-    update_running_timers();
-    int ierr, mpi_rank, mpi_size;
+    int mpi_rank, ierr;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
-    MPI_Comm_size(comm, &mpi_size);
-
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-    json_filepath = FilePath(string(filename), FilePath::output_file);
-
-    xprintf(MsgLog, "output into: %s\n", json_filepath.c_str());
-    ofstream os(json_filepath.c_str());
-    output(comm, os);
-    os.close();
+    if (mpi_rank == 0) {
+        output(comm, *get_default_output_stream());
+    } else {
+        ostringstream os;
+        output(comm, os );
+    }
 }
 
 #endif /* FLOW123D_HAVE_MPI */
 
 void Profiler::output(ostream &os) {
     // last update
-    update_running_timers();
+    stop_timer(0);
 
     // output header
     property_tree::ptree root, children;
@@ -727,18 +732,10 @@ void Profiler::output(ostream &os) {
 
 
 void Profiler::output() {
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-    json_filepath = FilePath(string(filename), FilePath::output_file);
-
-    xprintf(MsgLog, "output into: %s\n", this->json_filepath.c_str());
-    ofstream os(json_filepath.c_str());
-    output(os);
-    os.close();
+    output(*get_default_output_stream());
 }
 
 void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
-    update_running_timers();
     time_t end_time = time(NULL);
 
     const char format[] = "%x %X";
@@ -772,14 +769,8 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
 
 
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-    PyObject * python_module;
-    PyObject * convert_method;
-    PyObject * arguments;
-    PyObject * return_value;
-    PyObject * tmp;
-    int argument_index = 0;
 
-
+    if (json_filepath=="") return;
 
     // debug info
     // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
@@ -792,17 +783,17 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 
     // grab module and function by importing module profiler_formatter_module.py
-    python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
-    convert_method  = PythonLoader::get_callable (python_module, "convert" );
-
+    PyObject * python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
     //
     // def convert (json_location, output_file, formatter):
     //
+    PyObject * convert_method  = PythonLoader::get_callable (python_module, "convert" );
 
-    arguments = PyTuple_New (3);
+    int argument_index = 0;
+    PyObject * arguments = PyTuple_New (3);
 
     // set json path location as first argument
-    tmp = PyString_FromString (json_filepath.c_str());
+    PyObject * tmp = PyString_FromString (json_filepath.c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // set output path location as second argument
@@ -814,26 +805,10 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // execute method with arguments
-    return_value = PyObject_CallObject (convert_method, arguments);
+    PyObject * return_value = PyObject_CallObject (convert_method, arguments);
     //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
 
-
-    if (PyBool_Check (return_value)) {
-        // is boolean
-
-        if (return_value == Py_True) {
-            cout << "Python execution was successful" << endl;
-        }else{
-            cout << "Error when executing Python" << endl;
-        }
-    } else if (PyString_Check (return_value)) {
-        // is string (holds error)
-
-        char* error_msg = PyString_AsString (return_value);
-        cout << "Error when executing Python: " << error_msg << endl;
-    } else {
-        cout << "Unknown result when executing Python: "<< endl;
-    }
+    PythonLoader::check_error();
 }
 
 
@@ -929,15 +904,11 @@ void Profiler::initialize() {
 }
 
 bool Profiler::is_initialized() {
-    return _instance != NULL;
+    return true;
 }
 
 void Profiler::uninitialize() {
-    Profiler * _instance = Profiler::instance();
-    if (_instance)  {
-        delete _instance;
-        _instance = NULL;
-    }
+    // do nothing
 }
 
 
