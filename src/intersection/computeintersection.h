@@ -26,27 +26,35 @@ template<unsigned int, unsigned int> class IntersectionPoint;
  * TODO: comment
  */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
-
-
 public:
 
 	ComputeIntersection();
+    //TODO: pass object by pointers or const reference, unify with set_data()
 	ComputeIntersection(Simplex<1> &abs, Simplex<2> &triang);
 	inline ~ComputeIntersection() {};
 
-	void clear_all();
+	
     //TODO: why this is not done in constructor?
-    //TODO: document both cases
-    // IP is intersection of triangle and whole line (bisector)
-    /**
+    // Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
+    /** @brief Computes intersection points of line and triangle.
+     * 
+     * If Plucker products are nonezero and with the same sign, then IP is inside the triangle.
+     * If some of the Plucker products are zero:
+     * 1 zero product -> IP is on the triangle side
+     * 2 zero products -> IP is at the vertex of triangle (there is no other IP)
+     * 3 zero products: 
+     *      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
+     *      -> triangle side is part of the line (and otherwise)     
+     * IP is intersection of triangle and whole line (bisector).
+     * @param IP12s - input/output vector of IPs. If IP found, it is pushed back.
+     * @param compute_zeros_plucker_products - if true, resolve pathologic cases (zero Plucker products), 
+     * otherwise ignore. E.g. in 2d-3d is false when looking for tetrahedron edges X triangle intersection
+     * (these would be found before in triangle line X tetrahedron intersection).
      * @return true, if intersection is found; false otherwise
      */
 	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
     
-    /**
-     * TODO: rename; it also actually computes plucker coords and products
-     */
-	void init_plucker_to_compute();
+    
 	void set_data(Simplex<1> *abs, Simplex<2> *triang);
 
 
@@ -60,11 +68,12 @@ public:
 		plucker_coordinates_triangle[side_idx] = p;
 	}
 
+	/// Gets the pointer to Plucker coordinates of the abscissa.
 	inline Plucker *get_pc_abscissa(){
 		return plucker_coordinates_abscissa[0];
 	}
 
-	/// Sets the pointer to Plucker coordinates of the triangle side of given @p side_idx.
+	/// Gets the pointer to Plucker coordinates of the triangle side of given @p side_idx.
 	inline Plucker *get_pc_triangle(unsigned int side_idx){
 		return plucker_coordinates_triangle[side_idx];
 	}
@@ -79,18 +88,28 @@ public:
 
 
 private:
+    /// Resets Plucker products to NULL.
+    void clear_all();
+    /// Computes Plucker coordinates (abscissa, triangle lines) and Plucker products.
+    void compute_plucker_products();
+    
 	Simplex<1> *abscissa;
 	Simplex<2> *triangle;
 
+    //TODO: Is there a reason for abscissa pc to be a vector?
 	std::vector<Plucker *> plucker_coordinates_abscissa;
 	std::vector<Plucker *> plucker_coordinates_triangle;
 
-    //TODO: allocate at the top level intersection object, use NaN to indicate plucker products not computed yet
+    //TODO: allocate at the top level intersection object, use NaN to indicate plucker products not computed yet, also Destroy!
 	double *plucker_products[3];
 	bool computed;
 
+    /** TODO: unify epsilon tolerances
+     * Here epsilon is used 1e-7:
+     * - compare Plucker products with 0 (~ rounding error)
+     * - compare parameter t of abscissa with 0 or 1 (test end point) (~rounding error X geometry tolerance)
+     */
 	static const double epsilon;
-
 };
 
 /******************************************************************
@@ -104,7 +123,7 @@ public:
 	ComputeIntersection();
 	ComputeIntersection(Simplex<1> &abs,Simplex<3> &tetr);
 
-	void clear_all();
+	
 	void init();
 	void set_data(Simplex<1> *abs, Simplex<3> *tetr);
     //TODO comment cases in implementation
@@ -141,7 +160,6 @@ private:
 	std::vector<Plucker *> plucker_coordinates_tetrahedron;
 
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[4];
-
 };
 
 /******************************************************************
@@ -152,9 +170,8 @@ template<> class ComputeIntersection<Simplex<2>, Simplex<3> > {
 public:
 	ComputeIntersection();
 
-	ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetr);
+	ComputeIntersection(Simplex<2> &tria, Simplex<3> &tetr);
 
-	void clear_all();
 	void init();
 	void compute(IntersectionPolygon &lokalni_mnohouhlenik);
 
@@ -163,10 +180,10 @@ public:
 
 	inline ~ComputeIntersection() {};
 
-//private:
+private:
 
-	// Reprezentation of triangle and tetrahedron as object Simplex
-	Simplex<2> *triange;
+	// Representation of triangle and tetrahedron as object Simplex
+	Simplex<2> *triangle;
 	Simplex<3> *tetrahedron;
 
 	// Plucker coordinates for each abscissa of simplices
@@ -176,9 +193,6 @@ public:
 	// Computing objects
 	ComputeIntersection<Simplex<1>, Simplex<3>> CI13[3];
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];
-
-
-
 };
 
 } // END namespace_close
