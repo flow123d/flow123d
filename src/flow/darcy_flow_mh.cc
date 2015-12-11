@@ -62,7 +62,6 @@
 #include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
-#include "flow/old_bcd.hh"
 
 
 #include "coupling/balance.hh"
@@ -119,14 +118,11 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 				"Boundary condition for pressure as piezometric head." )
 		.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
 				"Initial condition for pressure as piezometric head." )
-		.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(),
-				"File with mesh dependent boundary conditions (obsolete).")
 		.declare_key("input_fields", it::Array(
 					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_decsription("DarcyFlowMH_Data") )
 					.copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
 					.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Boundary condition for pressure as piezometric head." )
 					.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Initial condition for pressure as piezometric head." )
-					.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
 					.close()
 					), it::Default::obligatory(), ""  )
 		.close();
@@ -174,7 +170,6 @@ DarcyFlowMH::EqData::EqData()
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
     	// TODO: temporary solution, we should try to get rid of pointer to the selection after having generic types
         bc_type.input_selection( &get_bc_type_selection() );
-        bc_type.add_factory( OldBcdInput::instance()->flow_type_factory );
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
@@ -183,12 +178,10 @@ DarcyFlowMH::EqData::EqData()
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
     	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
-    	bc_flux.add_factory( OldBcdInput::instance()->flow_flux_factory );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
-    	bc_robin_sigma.add_factory( OldBcdInput::instance()->flow_sigma_factory );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     //these are for unsteady
@@ -263,7 +256,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     n_schur_compls = in_rec.val<int>("n_schurs");
     //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
     data_.gravity_ =  arma::vec4(" 0 0 -1 0");
-    data_.bc_pressure.add_factory( OldBcdInput::instance()->flow_pressure_factory );
     data_.bc_pressure.add_factory(
     		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
     		(data_.gravity_, "bc_piezo_head") );
@@ -335,6 +327,7 @@ void DarcyFlowMH_Steady::update_solution() {
 
 
     assembly_linear_system();
+
     int convergedReason = schur0->solve();
 
     xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
@@ -375,11 +368,14 @@ void DarcyFlowMH_Steady::postprocess()
 
 
 void DarcyFlowMH_Steady::output_data() {
+    START_TIMER("Darcy output data");
     time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 
+
 	if (balance_ != nullptr)
 	{
+	    START_TIMER("Darcy balance output");
 		if (balance_->cumulative() && time_->tlevel() > 0)
 		{
 			balance_->calculate_cumulative_sources(water_balance_idx_, schur0->get_solution(), time_->dt());
@@ -429,6 +425,7 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 template<unsigned int dim>
 void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_matrix, ElementFullIter ele)
 {
+    //START_TIMER("Assembly<dim>::assembly_local_matrix");
     fe_values_.reinit(ele);
     const unsigned int ndofs = fe_values_.get_fe()->n_dofs(), qsize = fe_values_.get_quadrature()->size();
     local_matrix.zeros(ndofs, ndofs);
@@ -456,6 +453,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
 template<unsigned int dim>
 void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, ElementFullIter ele, Neighbour *ngh)
 {
+    //START_TIMER("Assembly<dim>::assembly_local_vb");
     // compute normal vector to side
     arma::vec3 nv;
     ElementFullIter ele_higher = d.mesh->element.full_iter(ngh->side()->element());
@@ -479,6 +477,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, Elem
 template<unsigned int dim>
 arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIter ele)
 {
+    //START_TIMER("Assembly<dim>::make_element_vector");
     arma::vec3 flux_in_center;
     flux_in_center.zeros();
     
@@ -502,6 +501,7 @@ arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIte
 
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 {
+    START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
     
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
@@ -686,6 +686,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 
 void DarcyFlowMH_Steady::assembly_source_term()
 {
+    START_TIMER("assembly source term");
     if (balance_ != nullptr)
     	balance_->start_source_assembly(water_balance_idx_);
 
@@ -1047,8 +1048,11 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
 
 void DarcyFlowMH_Steady::assembly_linear_system() {
+    START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-	data_.set_time(time_->step());
+    {
+        data_.set_time(time_->step());
+    }
 	//DBGMSG("Assembly linear system\n");
 	if (data_.changed()) {
 		//DBGMSG("  Data changed\n");
@@ -1066,6 +1070,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
 	    if (!time_->is_steady()) {
+	        START_TIMER("fix time term");
 	    	//DBGMSG("    setup time term\n");
 	    	// assembly time term and rhs
 	    	setup_time_term();
@@ -1092,6 +1097,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 
 
 void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
+    START_TIMER("DarcyFlowMH_Steady::set_mesh_data_for_bddc");
     // prepare mesh for BDDCML
     // initialize arrays
     // auxiliary map for creating coordinates of local dofs and global-to-local numbering

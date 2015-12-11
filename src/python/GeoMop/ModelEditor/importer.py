@@ -29,8 +29,9 @@ __lib_dir__ = os.path.join(os.path.split(
     os.path.dirname(os.path.realpath(__file__)))[0], "common")
 sys.path.insert(1, __lib_dir__)
 
-from data.meconfig import MEConfig as cfg
 import argparse
+
+from meconfig import cfg
 
 if __name__ == "__main__":
     def main():

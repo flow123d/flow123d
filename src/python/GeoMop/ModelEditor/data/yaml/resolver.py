@@ -33,10 +33,8 @@ def _add_implicit_resolver(tag, regexp, first):
 
 _add_implicit_resolver(
     'tag:yaml.org,2002:bool',
-    re.compile(r'''^(?:yes|Yes|YES|no|No|NO
-                |true|True|TRUE|false|False|FALSE
-                |on|On|ON|off|Off|OFF)$''', re.X),
-    list('yYnNtTfFoO'))
+    re.compile(r'''^(?:true|True|TRUE|false|False|FALSE)$''', re.X),
+    list('tTfF'))
 
 _add_implicit_resolver(
     'tag:yaml.org,2002:int',

@@ -2,13 +2,14 @@ problem: !SequentialCoupling
   description: narrow radioaoctive decay chain, with transport switched enabled but
     with zero pressure gradient, VTK output test12
   mesh:
-    mesh_file: ./input/flow_decay/sit_decay.msh
+    mesh_file: ./input/sit_decay.msh
   primary_equation: !Steady_MH
     input_fields:
     - rid: 1
       anisotropy: 0.01
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/flow_decay/sit_decay.fbc
+    - r_set: BOUNDARY
+      bc_type: dirichlet
+      bc_piezo_head: 0
     output:
       output_stream: 
         file: ./decay.pvd
@@ -31,8 +32,13 @@ problem: !SequentialCoupling
       - 0.03
       - 0.04
       - 0.05
-    - region: IMPLICIT BOUNDARY
-      old_boundary_file: ./input/flow_decay/sit_decay.tbc
+    - r_set: BOUNDARY
+      bc_conc:
+      - 0.01
+      - 0.02
+      - 0.03
+      - 0.04
+      - 0.05
     output_stream: 
       file: ./transport_decay.pvd
       format: !vtk
