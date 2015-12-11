@@ -209,6 +209,8 @@ void Mesh::read_gmsh_from_stream(istream &in) {
     GmshMeshReader reader(in);
     reader.read_mesh(this);
     setup_topology();
+    //close region_db_.
+    region_db_.close();
 }
 
 
