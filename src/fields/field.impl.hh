@@ -60,6 +60,21 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 
 template<int spacedim, class Value>
+Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name)
+: data_(std::make_shared<SharedData>())
+{
+	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
+	// this invariant is kept also by n_comp setter
+	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
+	this->set_component_index(component_index);
+	this->name_ = (name=="") ? input_name : name;
+	this->shared_->input_name_ = input_name;
+
+	this->multifield_ = false;
+}
+
+
+template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
@@ -116,11 +131,11 @@ const it::Instance &Field<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
-it::Record &Field<spacedim,Value>::get_multifield_input_type() {
+it::Array &Field<spacedim,Value>::get_multifield_input_type() {
 	ASSERT(false, "This method can't be used for Field");
 
-	static it::Record rec = it::Record();
-	return rec;
+	static it::Array arr = it::Array( it::Integer() );
+	return arr;
 }
 
 
@@ -313,29 +328,22 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
     // read input up to given time
 	double input_time;
     if (shared_->input_list_.size() != 0) {
-        while( shared_->list_it_ != shared_->input_list_.end()
-        	   && time.ge( input_time = shared_->list_it_->val<double>("time") ) ) {
+        while( shared_->list_idx_ < shared_->input_list_.size()
+        	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
 
+        	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
         	// get domain specification
         	RegionSet domain;
         	std::string domain_name;
         	unsigned int id;
-			if (shared_->list_it_->opt_val("r_set", domain_name)) {
+			if (actual_list_item.opt_val("region", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 				if (domain.size() == 0) {
 					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << shared_->list_it_->ei_address() );
+							<< RegionDB::EI_Label(domain_name) << actual_list_item.ei_address() );
 				}
 
-			} else if (shared_->list_it_->opt_val("region", domain_name)) {
-				// try find region by label
-				Region region = mesh()->region_db().find_label(domain_name);
-				if(region.is_valid())
-				  domain.push_back(region);
-				else
-				  xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
-
-			} else if (shared_->list_it_->opt_val("rid", id)) {
+			} else if (actual_list_item.opt_val("rid", id)) {
 				try {
 					Region region = mesh()->region_db().find_id(id);
 					if(region.is_valid())
@@ -343,19 +351,19 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 					else
 					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
-					e << shared_->input_list_.ei_address();
+					e << actual_list_item.ei_address();
 					throw;
 				}
 			} else {
 				THROW(ExcMissingDomain()
-						<< shared_->list_it_->ei_address() );
+						<< actual_list_item.ei_address() );
 			}
 		    
 			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
 
 			// get field instance   
 			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
-				FieldBasePtr field_instance = (*rit)->create_field(*(shared_->list_it_), *this);
+				FieldBasePtr field_instance = (*rit)->create_field(actual_list_item, *this);
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
@@ -370,7 +378,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				}
 		    }
 
-        	++shared_->list_it_;
+        	++shared_->list_idx_;
         }
     }
 }
@@ -445,6 +453,44 @@ typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase:
 		return FieldBaseType::function_factory(field_record, field.n_comp() );
 	else
 		return FieldBasePtr();
+}
+
+
+template<int spacedim, class Value>
+bool Field<spacedim,Value>::FactoryBase::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
+	return in_rec.find<Input::AbstractRecord>(input_name);
+}
+
+
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
+    if (! flags().match(FieldFlag::declare_input)) return;
+
+    // check that times forms ascending sequence
+    double time,last_time=0.0;
+
+    for (Input::Iterator<Input::Record> it = list.begin<Input::Record>();
+					it != list.end();
+					++it) {
+    	for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
+			if ( (*rit)->is_active_field_descriptor( (*it), this->input_name() ) ) {
+				shared_->input_list_.push_back( Input::Record( *it ) );
+				time = it->val<double>("time");
+				if (time < last_time) {
+					THROW( ExcNonascendingTime()
+							<< EI_Time(time)
+							<< EI_Field(input_name())
+							<< it->ei_address());
+				}
+				last_time = time;
+
+				break;
+			}
+    	}
+	}
+
 }
 
 

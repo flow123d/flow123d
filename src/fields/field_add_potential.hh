@@ -22,7 +22,6 @@
 #include <memory>
 
 #include "fields/field.hh"
-#include "flow/old_bcd.hh"
 
 
 /**
@@ -59,16 +58,16 @@ public:
     	{}
 
     	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
-       		OldBcdInput *old_bcd = OldBcdInput::instance();
-       		old_bcd->read_flow_record(rec, field);
-       		auto field_ptr = old_bcd->flow_pressure;
-
        		Input::AbstractRecord field_a_rec;
-        	if (! field_ptr && rec.opt_val(field_name_, field_a_rec)) {
+        	if (rec.opt_val(field_name_, field_a_rec)) {
         		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( potential_, field_a_rec);
         	} else {
-        		return field_ptr;
+        		return typename Field<spacedim,Value>::FieldBasePtr();
         	}
+    	}
+
+    	bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) override {
+    		return in_rec.find<Input::AbstractRecord>(field_name_);
     	}
 
     	arma::vec::fixed<spacedim+1> potential_;

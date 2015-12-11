@@ -10,12 +10,16 @@
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { rid = 100,
+        { r_set = "BULK",
           conductivity = 0.1
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test14.fbc"
+          r_set = "BOUNDARY",
+          bc_type="dirichlet",
+          bc_pressure={
+            TYPE="FieldFormula",
+            value="x"
+          }  
         }
       ],
 
@@ -40,26 +44,26 @@
       TYPE = "SoluteTransport_DG", 
 
       input_fields= [
-        { rid = 100,
+        { r_set = "BULK",
           init_conc = 0
         },
         {
-          region = "IMPLICIT BOUNDARY",
+          r_set = "BOUNDARY",
           bc_conc = 20,
           time = 1
         },
         {
-          region = "IMPLICIT BOUNDARY",
+          r_set = "BOUNDARY",
           bc_conc = 0,
           time = 3
         },
         {
-          region = "IMPLICIT BOUNDARY",
+          r_set = "BOUNDARY",
           bc_conc = 40,
           time = 6
         },
         {
-          region = "IMPLICIT BOUNDARY",
+          r_set = "BOUNDARY",
           bc_conc = 0,
           time = 7
         }

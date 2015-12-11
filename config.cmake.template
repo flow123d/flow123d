@@ -16,8 +16,10 @@
 # If PETSC are not found we try to install them automatically.
 # Options for PETSC installer:
 #
-#     PETSC_INSTALL_MPI_DIR      - pass MPI to PETSC configure 
-#     PETSC_INSTALL_LAPACK_DIR   - pass Lapack to PETSC configure
+#     PETSC_INSTALL_MPI_DIR - specify location where MPI is already installed (petsc configure parameter --with-mpi-dir), 
+#                     e.g.:  set(PETSC_INSTALL_MPI_DIR '/opt/openmpi/bin') or set(PETSC_INSTALL_MPI_DIR '/usr')
+#     PETSC_INSTALL_LAPACK_DIR - specify location where BLAS/LAPACK is already installed (petsc configure parameter --with-blas-lapack-dir), 
+#                     e.g.:  set(PETSC_LAPACK_DIR '/usr')
 #
 #     PETSC_INSTALL_CONFIG - possible values:
 #       mini             - only petsc + necessary MPI, BLAS, LAPACK
@@ -25,11 +27,13 @@
 #       bddcml           - flow123d_mini + mumps + scalapack + blacs
 #       full             - bddcml + hypre + blopex + umfpack + sundials
 #
-#     PETSC_INSTALL_OPTIONS - additional options used as parameters to configure.py,
+#     PETSC_INSTALL_ADD_OPTIONS - additional options used as parameters to configure.py,
+#     PETSC_INSTALL_OWN_OPTIONS - use only user specified parameters to configure.py,
 #
 # example:
 # set(PETSC_INSTALL_CONFIG "bddcml")
-# set(PETSC_INSTALL_OPTIONS "--download-hypre=yes")
+# set(PETSC_INSTALL_MPI_DIR "/usr")
+# set(PETSC_INSTALL_ADD_OPTIONS "--download-hypre=yes")
 
 
 

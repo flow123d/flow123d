@@ -114,45 +114,45 @@ class ProfilerFormatter (object):
     def convert (self, json_location, output_file=None, formatter="SimpleTableFormatter", styles=[]):
         """Converts file @ json_location to output_file (if set) using given formatter name"""
         # read file to JSON
-        try:
-            with open (json_location, 'r') as fp:
-                jsonObj = json.load (fp, encoding="utf-8", cls=ProfilerJSONDecoder)
-        except Exception as exception:
-            # return string with message on error
-            return str (exception)
+        #try:
+        with open (json_location, 'r') as fp:
+            jsonObj = json.load (fp, encoding="utf-8", cls=ProfilerJSONDecoder)
+        #except Exception as exception:
+        #    # return string with message on error
+        #    return str (exception)
 
-        try:
-            # split styles fields declaration
-            styles = [value.replace ('\\n', '\n').replace ('\\t', '\t').replace ('\\r', '\r') for value in styles]
-            styles = dict (item.split (":", 1) for item in styles)
-            # grab instance and hand over styles
-            instance = ProfilerFormatter.get_class_instance (formatter)
-            instance.set_styles (styles)
-            # format json object
-            output = instance.format (jsonObj)
-        except Exception as exception:
-            # return string with message on error
-            return str (exception)
+        #try:
+        # split styles fields declaration
+        styles = [value.replace ('\\n', '\n').replace ('\\t', '\t').replace ('\\r', '\r') for value in styles]
+        styles = dict (item.split (":", 1) for item in styles)
+        # grab instance and hand over styles
+        instance = ProfilerFormatter.get_class_instance (formatter)
+        instance.set_styles (styles)
+        # format json object
+        output = instance.format (jsonObj)
+        #except Exception as exception:
+        #    # return string with message on error
+        #    return str (exception)
 
-        try:
-            # if output file is specified write result there
-            if output_file is not None:
-                with open (output_file, "w") as fp:
-                    fp.write (output)
-                print '{} file generated'.format (output_file)
-            # otherwise just print result to stdout
-            else:
-                print output
-        except Exception as exception:
-            # return string with message on error
-            return str (exception)
+        #try:
+        # if output file is specified write result there
+        if output_file is not None:
+            with open (output_file, "w") as fp:
+                fp.write (output)
+            print '{} file generated'.format (output_file)
+        # otherwise just print result to stdout
+        else:
+            print output
+        #except Exception as exception:
+        #    # return string with message on error
+        #    return str (exception)
 
 
         # return True on success
-        return True
+        #return True
 
 
 def convert (json_location, output_file, formatter):
-    """Simple iface method for c api"""
-    fmt = ProfilerFormatter ()
-    return fmt.convert (json_location, output_file, formatter)
+  """Simple iface method for c api"""
+  fmt = ProfilerFormatter ()
+  return fmt.convert (json_location, output_file, formatter)

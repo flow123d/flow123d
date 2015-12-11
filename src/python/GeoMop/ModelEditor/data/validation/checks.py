@@ -1,18 +1,16 @@
-"""
-Basic rules for data validation
-"""
+"""Basic rules for data validation
 
-__author__ = 'Tomas Krizek'
-
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 # pylint: disable=unused-argument
 
-from ..data_node import ScalarNode
+from ..data_node import DataNode
 import helpers.notifications.notification as ntf
 
 
 def check_scalar(node, input_type):
     """Checks scalar node value."""
-    if not isinstance(node, ScalarNode):
+    if node.implementation != DataNode.Implementation.scalar:
         raise ntf.Notification.from_name('ValidationTypeError', 'Scalar')
     checks = {
         'Integer': check_integer,
@@ -30,7 +28,7 @@ def check_scalar(node, input_type):
 
 def check_integer(value, input_type):
     """Checks if value is an integer within given range."""
-    if not isinstance(value, int):
+    if not isinstance(value, int) or isinstance(value, bool):
         raise ntf.Notification.from_name('ValidationTypeError', 'Integer')
     if value < input_type['min']:
         raise ntf.Notification.from_name('ValueTooSmall', input_type['min'])
@@ -41,7 +39,7 @@ def check_integer(value, input_type):
 
 def check_double(value, input_type):
     """Checks if value is a real number within given range."""
-    if not isinstance(value, (int, float)):
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
         raise ntf.Notification.from_name('ValidationTypeError', 'Double')
     if value < input_type['min']:
         raise ntf.Notification.from_name('ValueTooSmall', input_type['min'])
@@ -82,9 +80,9 @@ def check_array(value, input_type):
     if not isinstance(value, (list, str)):
         raise ntf.Notification.from_name('ValidationTypeError', 'Array')
     if len(value) < input_type['min']:
-        raise ntf.Notification.from_name('NotEnoughItems', input_type['min'])
+        raise ntf.Notification.from_name('NotEnoughItems', input_type['min'], input_type['max'])
     elif len(value) > input_type['max']:
-        raise ntf.Notification.from_name('TooManyItems', input_type['max'])
+        raise ntf.Notification.from_name('TooManyItems', input_type['min'], input_type['max'])
     return True
 
 
@@ -92,6 +90,8 @@ def check_record_key(children_keys, key, input_type):
     """Checks a single key within a record."""
     # if key is not found in specifications, it is considered to be valid
     if key not in input_type['keys']:
+        if key == 'fatal_error':
+            raise ntf.Notification.from_name('SilencedNotification')
         raise ntf.Notification.from_name('UnknownRecordKey', key, input_type['type_name'])
 
     try:

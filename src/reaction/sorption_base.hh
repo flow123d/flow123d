@@ -49,7 +49,8 @@ public:
   
   static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
   {
-      return EqData(output_field_name).output_fields.make_output_field_selection(selection_name)
+      return EqData(output_field_name).output_fields
+        .make_output_field_selection(selection_name, "desc")
         .close();
   }
 
@@ -205,7 +206,7 @@ protected:
   
   Input::Array output_array;
 
-  Input::Type::Selection output_selection;
+  //Input::Type::Selection output_selection;
 
   /**
    * Reaction model that follows the sorption.
@@ -216,6 +217,7 @@ protected:
   ///@name members used in output routines
   //@{
   VecScatter vconc_out_scatter; ///< Output vector scatter.
+  // TODO: replace vconc_solid + conc_solid by VecSeqDouble, use the same principle as in 'conc_solid_out'
   Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
   std::vector<VectorSeqDouble> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}

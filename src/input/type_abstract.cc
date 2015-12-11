@@ -205,7 +205,7 @@ TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPa
 	abstract.set_parameters_attribute(parameter_map);
 	std::stringstream type_stream;
 	type_stream << "\"" << this->content_hash() << "\"";
-	abstract.add_attribute("generic_type", type_stream.str());
+	abstract.add_attribute("generic_type", this->hash_str() );
 
 	return std::make_pair( boost::make_shared<Abstract>(abstract.close()), parameter_map );
 }

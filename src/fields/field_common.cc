@@ -38,7 +38,8 @@ FieldCommon::FieldCommon()
 
 
 FieldCommon::FieldCommon(const FieldCommon & other)
-: shared_(other.shared_),
+: name_(other.name_),
+  shared_(other.shared_),
   limit_side_(LimitSide::unknown),
   set_time_result_(TimeStatus::unknown),
   component_index_(other.component_index_)
@@ -49,8 +50,7 @@ FieldCommon::FieldCommon(const FieldCommon & other)
 
 
 IT::Record FieldCommon::field_descriptor_record(const string& record_name) {
-    return IT::Record(record_name, field_descriptor_record_decsription(record_name))
-                     .declare_key("r_set", IT::String(), "Name of region set where to set fields.")
+    return IT::Record(record_name, field_descriptor_record_description(record_name))
                      .declare_key("region", IT::String(), "Label of the region where to set fields. ")
                      .declare_key("rid", IT::Integer(0), "ID of the region where to set fields." )
                      .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
@@ -59,76 +59,24 @@ IT::Record FieldCommon::field_descriptor_record(const string& record_name) {
 					 .close();
 }
 
-const std::string FieldCommon::field_descriptor_record_decsription(const string& record_name) {
+const std::string FieldCommon::field_descriptor_record_description(const string& record_name) {
     return "Record to set fields of the equation.\n"
-                "The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\n"
+                "The fields are set only on the domain specified by one of the keys: 'region', 'rid'\n"
                 "and after the time given by the key 'time'. The field setting can be overridden by\n"
                 " any " + record_name + " record that comes later in the boundary data array.";
-}
-
-
-void FieldCommon::set_input_list(const Input::Array &list)
-{
-    if (! flags().match(FieldFlag::declare_input)) return;
-
-    shared_->input_list_ = list;
-
-    // check that times forms ascending sequence
-    double time,last_time=0.0;
-
-    if (list.size() == 0) return;
-    for( auto it = list.begin<Input::Record>();
-            it != list.end(); ++it) {
-// Interleaving of field time sequences can not be done by just filtering
-// fields by name. There is some problem in update_history. 
-// So we require correct ordering of whole list.            
-/*
-       	bool found;
-    	if (this->multifield_) {
-    		found = it->find<Input::Record>(input_name());
-    	}
-    	else if (this->component_index_ == std::numeric_limits<unsigned int>::max()) {
-    		found = it->find<Input::AbstractRecord>(input_name());
-    	}
-    	else {
-    		Input::Record mutlifield_rec;
-    		if (it->opt_val(input_name(), mutlifield_rec)) {
-    			found = mutlifield_rec.find<Input::Array>("components");
-    		}
-    		else found = false;
-    	}*/
-
-        bool found =true;
-        if (found) {
-            // field descriptor appropriate to the field
-
-            time = it->val<double>("time");
-            if (time < last_time) {
-                THROW( ExcNonascendingTime()
-                        << EI_Time(time)
-                        << EI_Field(input_name())
-                        << it->ei_address());
-            }
-            last_time=time;
-        }
-    }
-    shared_->list_it_ = shared_->input_list_.begin<Input::Record>();
 }
 
 
 
 void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
     if (! flags().match(FieldFlag::declare_input)) return;
-    ASSERT_LESS( 0, shared_->input_list_.size());
 
     // pass through field descriptors containing key matching field name.
     double time;
-    for( auto it = shared_->input_list_.begin<Input::Record>();
-         it != shared_->input_list_.end(); ++it)
-        if (it->find<Input::AbstractRecord>(input_name())) {
-            time = it->val<double>("time"); // default time=0
-            TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
-        }
+    for( auto &item : shared_->input_list_) {
+        time = item.val<double>("time"); // default time=0
+        TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
+    }
 }
 
 

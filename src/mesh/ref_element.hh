@@ -62,7 +62,6 @@
  *   d_linear_shape_function
  *
  * - can not change numbering of element sides due to DarcyFlow, which use hardwired side numbering in construction of basis functions
- * - any change of side numbering requires also change in flow/old_bcd.cc
  *
  *
  */

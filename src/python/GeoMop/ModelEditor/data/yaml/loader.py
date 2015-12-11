@@ -1,20 +1,19 @@
 """
 Package for generating DataNode structure from YAML document.
-"""
 
-__author__ = 'Tomas Krizek'
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 
 import re
 import copy
-
 import yaml as pyyaml
+
+from util import TextValue, Position, Span
+from helpers import Notification, NotificationHandler
 
 from .constructor import construct_scalar
 from .resolver import resolve_scalar_tag
-from ..util import TextValue
-from helpers import Position, Span
-from ..data_node import ScalarNode, CompositeNode, NodeOrigin
-from helpers import Notification, NotificationHandler
+from ..data_node import DataNode, ScalarDataNode, SequenceDataNode, MappingDataNode
 
 
 class Loader:
@@ -47,7 +46,7 @@ class Loader:
 
         root = self._create_node()
         if self._fatal_error_node:
-            if isinstance(root, CompositeNode):
+            if root.implementation != DataNode.Implementation.scalar:
                 # pylint: disable=no-member
                 root.set_child(self._fatal_error_node)
                 root.span.end = self._fatal_error_node.end
@@ -81,6 +80,7 @@ class Loader:
         anchor = self._extract_anchor()
         tag = self._extract_tag()
         node = None
+        # TODO: Adapter pattern?
         if tag is not None:
             node = self._create_node_by_tag(tag)
         elif isinstance(self._event, pyyaml.MappingStartEvent):
@@ -160,8 +160,8 @@ class Loader:
         return node
 
     def _create_scalar_node(self):
-        """Creates a ScalarNode."""
-        node = ScalarNode()
+        """Creates a ScalarDataNode."""
+        node = ScalarDataNode()
         tag = self._event.tag
         if tag is None or not tag.startswith('tag:yaml.org,2002:'):
             tag = resolve_scalar_tag(self._event.value)
@@ -189,7 +189,7 @@ class Loader:
             temp_node = self._create_scalar_node()
             if temp_node.value is None:
                 # empty node - construct as mapping
-                node = CompositeNode(True)
+                node = MappingDataNode()
                 node.span = temp_node.span
             else:  # may be used for autoconversion
                 node = temp_node
@@ -200,7 +200,7 @@ class Loader:
 
     def _create_record_node(self):
         """Creates a record node."""
-        node = CompositeNode(True)
+        node = MappingDataNode()
         start_mark = self._event.start_mark
         end_mark = self._event.end_mark
         self._next_parse_event()
@@ -211,12 +211,12 @@ class Loader:
             self._next_parse_event()  # value event
             if not key:  # if key is invalid
                 continue
-            elif key.value == '<<':  # handle merge
+            if self._event is None:
+                break  # something went wrong, abandon ship!
+            if key.value == '<<':  # handle merge
                 self._perform_merge(key, node)
                 self._next_parse_event()
                 continue
-            if self._event is None:
-                break  # something went wrong, abandon ship!
             child_node = self._create_node(node)
             self._next_parse_event()
             if child_node is None:  # i.e. unresolved alias
@@ -278,9 +278,7 @@ class Loader:
             return
 
         anchor_node = self.anchors[anchor.value]
-        # check if anchor_node is a record (mapping)
-        not_composite = not isinstance(anchor_node, CompositeNode)
-        if not_composite or not anchor_node.explicit_keys:
+        if anchor_node.implementation != DataNode.Implementation.mapping:
             notification = Notification.from_name('InvalidReferenceForMerge', anchor.value)
             notification.span = anchor.span
             self.notification_handler.report(notification)
@@ -293,7 +291,7 @@ class Loader:
 
     def _create_array_node(self):
         """Creates an array node."""
-        node = CompositeNode(False)
+        node = SequenceDataNode()
         start_mark = self._event.start_mark
         end_mark = self._event.end_mark
         self._next_parse_event()
@@ -347,10 +345,10 @@ class Loader:
         Creates a non-existing node in the data tree
         to wrap the content of the error (span) in a node.
         """
-        node = ScalarNode()
+        node = ScalarDataNode()
         end_pos = Position.from_document_end(self._document)
         node.span = Span(start_pos, end_pos)
         node.key = TextValue('fatal_error')
-        node.origin = NodeOrigin.error
+        node.origin = DataNode.Origin.error
         node.hidden = True
         self._fatal_error_node = node

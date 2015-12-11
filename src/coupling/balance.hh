@@ -40,14 +40,14 @@ class RegionDB;
  *
  * The mass, flux and source are calculated as follows:
  *
- * 	m(q,c,r) = ( M'(q,c) * solution )[r]
- * 	f(q,c,r) = ( R' * ( F(q,c) * solution + fv(q,c) ) )[r]
- * 	s(q,c,r) = ( S'(q,c) * solution + sv(q,c) )[r]
+ * 	m(q,c,r) =  ( M'(q,c) * solution )[r]
+ * 	f(q,c,r) = -( R' * ( F(q,c) * solution + fv(q,c) ) )[r]
+ * 	s(q,c,r) =  ( S'(q,c) * solution + sv(q,c) )[r]
  *
  * where M' stands for matrix transpose,
  *
  * 	m(q,c,r)...mass of q-th substance's c-th component in region r
- * 	f(q,c,r)...flux of q-th substance's c-th component in region r
+ * 	f(q,c,r)...incoming flux of q-th substance's c-th component in region r
  * 	s(q,c,r)...source of q-th substance's c-th component in region r
  *
  * and
@@ -59,6 +59,9 @@ class RegionDB;
  * 	fv(q,c)..be_flux_vec_[q*quantities_.size() + c]				n_boundary_edges
  * 	sv(q,c)..region_source_vec_[q*quantities_.size() + c]    	n_bulk_regions
  * 	R........region_be_matrix_									n_boundary_edges x n_boundary_regions
+ * 
+ * Remark: Matrix F and the vector fv are such that F*solution+fv produces _outcoming_ fluxes per boundary edge.
+ * However we write to output _incoming_ flux due to users' convention and consistently with input interface.
  *
  * Note that it holds:
  *
@@ -73,8 +76,8 @@ class RegionDB;
  *
  * where
  *
- * 	fp(q,c,r)...positive (outward) flux of q-th quantity's c-th component in region r
- * 	fn(q,c,r)...negative (inward) flux of q-th quantity's c-th component in region r
+ * 	fp(q,c,r)...positive (inward) flux of q-th quantity's c-th component in region r
+ * 	fn(q,c,r)...negative (outward) flux of q-th quantity's c-th component in region r
  * 	sp(q,c,r)...positive source (spring) of q-th quantity's c-th component in region r
  * 	sn(q,c,r)...negative source (sink) of q-th quantity's c-th component in region r
  *
@@ -138,14 +141,10 @@ public:
 	 * Constructor.
 	 * @param file_prefix  Prefix of output file name.
 	 * @param mesh         Mesh.
-	 * @param el_ds        Distribution of elements.
-	 * @param el_4_loc     Local to global element numbering.
 	 * @param in_rec       Input record of balance.
 	 */
 	Balance(const std::string &file_prefix,
 			const Mesh *mesh,
-			const Distribution *el_ds,
-			const int *el_4_loc,
 			const Input::Record &in_rec);
 
 	~Balance();
@@ -175,7 +174,8 @@ public:
 	 * @param n_loc_dofs            Number of solution dofs on the local process.
 	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
 	 */
-	void allocate(unsigned int n_loc_dofs, unsigned int max_dofs_per_boundary);
+	void allocate(unsigned int n_loc_dofs,
+			unsigned int max_dofs_per_boundary);
 
 	/**
 	 * This method must be called before assembling the matrix for computing mass.
@@ -230,7 +230,7 @@ public:
 			const std::vector<double> &values);
 
 	/**
-	 * Adds elements into matrix for computing flux.
+	 * Adds elements into matrix for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
 	 * @param elem_idx      Local index of boundary edge.
 	 * @param n_dofs        Number of dofs to be added.
@@ -256,7 +256,7 @@ public:
 			const std::vector<double> &values);
 
 	/**
-	 * Adds element into vector for computing flux.
+	 * Adds element into vector for computing (outcoing) flux.
 	 * @param quantity_idx  Index of quantity.
 	 * @param elem_idx      Local index of boundary edge.
 	 * @param value         Value to be added.
@@ -311,7 +311,7 @@ public:
 	/**
 	 * Updates cumulative quantities for balance.
 	 * This method can be called in substeps even if no output is generated.
-	 * It calculates the sum of flux and source over time interval.
+	 * It calculates the sum of source over time interval.
 	 * @param quantity_idx  Index of quantity.
 	 * @param solution      Solution vector.
 	 * @param dt            Actual time step.
@@ -323,7 +323,7 @@ public:
 	/**
 	 * Updates cumulative quantities for balance.
 	 * This method can be called in substeps even if no output is generated.
-	 * It calculates the sum of flux and source over time interval.
+	 * It calculates the sum of (incoming) flux over time interval.
 	 * @param quantity_idx  Index of quantity.
 	 * @param solution      Solution vector.
 	 * @param dt            Actual time step.
@@ -354,7 +354,7 @@ public:
 	}
 
 	/**
-	 * Calculates actual flux.
+	 * Calculates actual (incoming) flux.
 	 * @param quantity_idx  Index of quantity.
 	 * @param solution      Solution vector.
 	 */
@@ -412,8 +412,7 @@ private:
     /// Names of conserved quantities.
     std::vector<Quantity> quantities_;
 
-    /// Database of bulk and boundary regions.
-    const RegionDB &regions_;
+    const Mesh *mesh_;
 
     /// Units of conserved quantities.
     UnitSI units_;

@@ -1,0 +1,17 @@
+{
+"name": "Main transformation file",
+"description": "test scale",
+"old_format": "",
+"new_format": "",
+"actions":
+  [
+   {
+        "NAME": "Change sign in bc_flux in transport and heat (constant value)",
+        "action": "scale-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_flux",
+          "scale" : "-1"
+        }
+    }
+  ]
+}

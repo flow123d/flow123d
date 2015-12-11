@@ -183,9 +183,39 @@ TEST(Profiler, one_timer) {
         EXPECT_EQ(1000, AC);
     }
 
+    // test absolute time
+    {
+        START_TIMER("one_second");
+        wait_sec(1);
+    }
+    std::stringstream sout;
+    Profiler::instance()->output(MPI_COMM_WORLD, sout);
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+
+    //EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
+
     Profiler::uninitialize();
 }
 
+
+
+TEST(Profiler, absolute_time) {
+    Profiler::initialize();
+
+    // test absolute time
+    {
+        START_TIMER("one_second");
+        wait_sec(1);
+    }
+    std::stringstream sout;
+    Profiler::instance()->output(MPI_COMM_WORLD, sout);
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+
+    EXPECT_NE( sout.str().find("cumul-time-min\": \"1.00"), string::npos );
+    EXPECT_NE( sout.str().find("cumul-time-max\": \"1.00"), string::npos );
+
+    Profiler::uninitialize();
+}
 
 
 

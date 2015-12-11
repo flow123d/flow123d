@@ -1,15 +1,16 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Interpolated boundary condition - small cube
   mesh:
     mesh_file: ${INPUT}/small_mesh.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: IMPLICIT BOUNDARY
       bc_type: dirichlet
       bc_piezo_head: !FieldInterpolatedP0
         gmsh_file: ${INPUT}/large_cube_solution.msh
         field_name: piezo_head_elements_[L]
-    - r_set: BULK
+    - region: BULK
       anisotropy: 1
       sigma: 0.5
     n_schurs: 2

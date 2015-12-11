@@ -99,7 +99,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
 
     // identify it with PETSc vector
     PetscErrorCode ierr;
-    PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
+    //PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
     //ierr = VecCreateSeq( PETSC_COMM_SELF, numDofsSubInt, &locSolVec_ ); 
     ierr = VecCreateSeqWithArray( PETSC_COMM_SELF, 1, numDofsSub, &(locSolution_[0]), &locSolVec_ ); 
     CHKERRV( ierr );
@@ -135,7 +135,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     std::vector<PetscInt> idx( isngn_ );
 
     ISLocalToGlobalMapping subdomainMapping;
-    ierr = ISLocalToGlobalMappingCreate( comm_, numDofsSubInt, &(idx[0]), PETSC_COPY_VALUES, &subdomainMapping ); CHKERRV( ierr );
+    ierr = ISLocalToGlobalMappingCreate( comm_, 1, numDofsSubInt, &(idx[0]), PETSC_COPY_VALUES, &subdomainMapping ); CHKERRV( ierr );
     
     IS subdomainIndexSet;
     IS from;
@@ -246,9 +246,10 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 {
 #ifdef FLOW123D_HAVE_BDDCML
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
+    START_TIMER("BDDC linear solver");
 
     {
-		START_TIMER("BDDC linear solver");
+
 		START_TIMER("BDDC linear iteration");
 		bddcml_ -> solveSystem( r_tol_, number_of_levels_, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
 

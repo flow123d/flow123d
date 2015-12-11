@@ -48,14 +48,13 @@ const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
           		  "The prescribed temperature (($T_D$)) is specified by the field 'bc_temperature'.")
             .add_value(bc_total_flux, "total_flux",
           		  "Total energy flux boundary condition.\n"
-          		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )+q_wT_A$)), "
+          		  "The prescribed incoming total flux can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), "
           		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
-          		  "the advected temperature (($T_A$)) by 'bc_ad_temperature', "
           		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
           		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
             .add_value(bc_diffusive_flux, "diffusive_flux",
           		  "Diffusive flux boundary condition.\n"
-          		  "The prescribed energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )$)), "
+          		  "The prescribed incoming energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), "
           		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
           		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
           		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
@@ -210,10 +209,6 @@ HeatTransferModel::ModelEqData::ModelEqData()
 }
 
 
-UnitSI HeatTransferModel::balance_units()
-{
-	return UnitSI().m(2).kg().s(-2);
-}
 
 IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
@@ -230,22 +225,51 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 }
 
 
-IT::Selection HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 {
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
 	return IT::Selection(
-				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
-				"Selection for output fields of " + description + " for heat transfer.");
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Heat Transfer DG model.");
 }
 
 
-HeatTransferModel::HeatTransferModel() :
-		flux_changed(true)
-{}
+HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
+		AdvectionProcessBase(mesh, in_rec),
+		flux_changed(true),
+		mh_dh(nullptr)
+{
+	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	substances_.initialize({""});
+
+    output_stream_ = OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream"));
+    output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+
+    // initialization of balance object
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
+    if (it->val<bool>("balance_on"))
+    {
+    	balance_ = boost::make_shared<Balance>("energy", mesh_, *it);
+    	subst_idx = {balance_->add_quantity("energy")};
+    	balance_->units(UnitSI().m(2).kg().s(-2));
+    }
+}
 
 
 void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
 	substances.initialize({""});
+}
+
+void HeatTransferModel::output_data()
+{
+	output_stream_->write_time_frame();
+	if (balance_ != nullptr)
+	{
+		calculate_instant_balance();
+		balance_->output(time_->t());
+	}
 }
 
 
@@ -341,6 +365,9 @@ void HeatTransferModel::get_flux_bc_data(const std::vector<arma::vec3> &point_li
 	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
 	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+	
+	// Change sign in bc_flux since internally we work with outgoing fluxes.
+	for (auto f : bc_flux) f = -f;
 }
 
 void HeatTransferModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
@@ -415,4 +442,7 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 
 HeatTransferModel::~HeatTransferModel()
 {}
+
+
+
 

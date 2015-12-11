@@ -1,6 +1,5 @@
-# secondary_equation
 # problem
-output_streams: []
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Transport 1D-2D, (convection, dual porosity, sorption)
   mesh:
@@ -11,14 +10,14 @@ problem: !SequentialCoupling
       - 1d_upper
       - 1d_lower
       - 1d_left_branch
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: 1d_domain
+    - region: 1d_domain
       conductivity: 10
       sigma: 0.05
     - region: 2d
       conductivity: 1
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x+y
@@ -38,19 +37,23 @@ problem: !SequentialCoupling
       a_tol: 1.0e-12
       r_tol: 1.0e-12
   # primary equation
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      output_fields:
+      - conc
+      - porosity
+      input_fields:
+      - region: ALL
+        init_conc: 0
+        porosity: 0.25
+      - region: BOUNDARY
+        bc_conc: 1.0
     substances:
     - age
     - U235
-    input_fields:
-    - r_set: ALL
-      init_conc: 0
-      porosity: 0.25
-    - r_set: BOUNDARY
-      bc_conc: 1.0
     reaction_term: !DualPorosity
       input_fields:
-      - r_set: ALL
+      - region: ALL
         diffusion_rate_immobile:
         - 0.01
         - 0.01
@@ -68,7 +71,7 @@ problem: !SequentialCoupling
         - 1.0
         - 1.0
         input_fields: &anchor1
-        - r_set: ALL
+        - region: ALL
           rock_density: 1.0
           sorption_type:
           - linear
@@ -88,9 +91,6 @@ problem: !SequentialCoupling
         - 1.0
         input_fields: *anchor1
         output_fields: []
-    output_fields:
-    - conc
-    - porosity
     output_stream:
       file: transport.pvd
       format: !vtk

@@ -3,7 +3,7 @@
     TYPE = "SequentialCoupling", 
     description = "Test12 - narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient", 
     mesh = {
-      mesh_file = "./input/flow_decay/sit_decay.msh"
+      mesh_file = "./input/sit_decay.msh"
     }, 
     
     primary_equation = {
@@ -11,11 +11,12 @@
 
       input_fields= [
         { rid = 1,
-          conductivity = 0.01
+          anisotropy = 0.01
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/flow_decay/sit_decay.fbc"
+          r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_piezo_head = 0
         }
       ],
 
@@ -43,8 +44,8 @@
             [1, 0, 0]
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/flow_decay/sit_decay.tbc"
+          r_set = "BOUNDARY",
+          bc_conc = [1, 0, 0]
         }
       ],
 

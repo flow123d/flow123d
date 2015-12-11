@@ -1,9 +1,7 @@
-"""
-Contains all ModelEditor notifications and their codes.
-"""
+"""Contains all ModelEditor notifications and their codes.
 
-__author__ = 'Tomas Krizek'
-
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 
 _NOTIFICATIONS = [
 
@@ -88,21 +86,21 @@ _NOTIFICATIONS = [
         'code': 305,
         'name': 'InvalidSelectionOption',
         'description': 'When validating Selection, the given option does not exist.',
-        'message': '{0} has not option {1}',
+        'message': '{0} has no option {1}',
         'example': 'example_validation_scalar.yaml',
     },
     {
         'code': 306,
         'name': 'NotEnoughItems',
         'description': 'Array is smaller than its specified minimum size.',
-        'message': 'Array has to have at least {0} item(s)',
+        'message': 'Array has to contain at least {0} item(s) and at most {1} item(s).',
         'example': 'example_validation_array.yaml',
     },
     {
         'code': 307,
         'name': 'TooManyItems',
         'description': 'Array is larger than its specified maximum size.',
-        'message': 'Array cannot have more than {0} items(s)',
+        'message': 'Array has to contain at least {0} item(s) and at most {1} item(s).',
         'example': 'example_validation_array.yaml',
     },
     {
@@ -123,7 +121,7 @@ _NOTIFICATIONS = [
         'code': 310,
         'name': 'InvalidAbstractRecordType',
         'description': 'AbstractRecord type is invalid.',
-        'message': 'Invalid TYPE "{0}" for record {1}',
+        'message': 'Invalid type (yaml tag) "{0}" for record {1}',
         'example': 'example_validation_abstract_record.yaml',
     },
 
@@ -145,6 +143,43 @@ _NOTIFICATIONS = [
         'description': 'Format contains an input type that is not supported.',
         'message': 'Unexpected input_type "{0}" in format',
         'example': '',
+    },
+
+
+    # -----------------------------------------------------
+    #                  Autoconversion Errors
+    # -----------------------------------------------------
+
+
+    {
+        'code': 450,
+        'name': 'AutoconversionError',
+        'description': 'Occurs when format file is invalid. More specific warning should be used '
+                       'when possible.',
+        'message': '{0}',
+        'example': ''
+    },
+    {
+        'code': 451,
+        'name': 'UnsupportedTransposition',
+        'description': 'Transposition on unsupported input type. It should happen when Array of '
+                       'AbstractRecords would be expected from transposition.',
+        'message': 'Transposition is not supported for input_type "{0}"',
+        'example': '',  # no example - it's not be possible with the current IST
+    },
+    {
+        'code': 452,
+        'name': 'InvalidTransposition',
+        'description': 'Transposition of Record is not allowed.',
+        'message': 'Transposition of Record is not allowed',
+        'example': '',  # hard to create in the current IST
+    },
+    {
+        'code': 453,
+        'name': 'DifferentArrayLengthForTransposition',
+        'description': 'The arrays to be transposed are of different lengths.',
+        'message': 'Arrays to be transposed are of different length.',
+        'example': 'example_transposition.yaml',
     },
 
     # -----------------------------------------------------
@@ -224,6 +259,18 @@ _NOTIFICATIONS = [
         'example': 'example_validation_record.yaml',
     },
 
+    # -----------------------------------------------------
+    #               Autoconversion Warnings
+    # -----------------------------------------------------
+
+    {
+        'code': 700,
+        'name': 'ValueConversionError',
+        'description': 'Occurs when autoconversion of a scalar value to a correct type fails.',
+        'message': 'Could not convert value "{0}" to {1}.',
+        'example': 'example_validation_type_error.yaml'
+    },
+
     # =====================================================
     #                   INFO MESSAGES
     # =====================================================
@@ -284,6 +331,19 @@ _NOTIFICATIONS = [
         'description': 'Flow style is used across multiple lines.',
         'message': 'Using flow style across multiple lines is not recommended',
         'example': 'example_flow_style.yaml'
+    },
+
+    # -----------------------------------------------------
+    #                  Special Info
+    # -----------------------------------------------------
+
+    {
+        'code': 999,
+        'name': 'SilencedNotification',
+        'description': 'This is a placeholder notification that can be raised by the application, '
+                       'but is otherwise ignored and is never displayed.',
+        'message': 'If you see this notification, please report it as a bug.',
+        'example': ''
     },
 ]
 

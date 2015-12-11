@@ -42,11 +42,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
 using namespace Input::Type;
 
 
-const Selection & DualPorosity::EqData::get_output_selection() {
-	return EqData().output_fields
-		.make_output_field_selection("DualPorosity_Output")
-		.close();
-}
 
 const Record & DualPorosity::get_input_type() {
     return Record("DualPorosity",
@@ -63,8 +58,13 @@ const Record & DualPorosity::get_input_type() {
 		.declare_key("reaction_mobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in mobile zone.")
 		.declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
 
-		.declare_key("output_fields", Array(EqData::get_output_selection()),
-					Default("\"conc_immobile\""), "List of fields to write to output stream.")
+		.declare_key("output_fields",
+            Array(EqData().output_fields
+              .make_output_field_selection(
+                  "DualPorosity_output_fields",
+                  "Selection of field names of Dual Porosity model available for output.")
+              .close()),
+            Default("\"conc_immobile\""), "List of fields to write to output stream.")
 		.close();
 }
     
@@ -98,7 +98,7 @@ DualPorosity::EqData::EqData()
         .flags( FieldFlag::input_copy );
 
   output_fields += *this;
-  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) );
+  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
@@ -210,7 +210,7 @@ void DualPorosity::initialize_fields()
   data_.output_fields.set_mesh(*mesh_);
   data_.output_fields.set_limit_side(LimitSide::right);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
-  data_.conc_immobile.set_up_components();
+  data_.conc_immobile.setup_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions

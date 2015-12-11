@@ -161,6 +161,15 @@ public:
      */
     Partitioning *get_part();
 
+    Distribution *get_el_ds() const
+    { return el_ds; }
+
+    int *get_row_4_el() const
+    { return row_4_el; }
+
+    int *get_el_4_loc() const
+    { return el_4_loc; }
+
     /**
      * Returns MPI communicator of the mesh.
      */
@@ -313,6 +322,15 @@ protected:
     void count_element_types();
     void count_side_types();
 
+    /**
+     * Possibly modify region id of elements sets by user in "regions" part of input file.
+     *
+     * TODO: This method needs check in issue 'Review mesh setting'.
+     * Changes have been done during generalized region key and may be causing problems
+     * during the further development.
+     */
+    void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
+
     unsigned int n_bb_neigh, n_vb_neigh;
 
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
@@ -349,6 +367,16 @@ protected:
     MPI_Comm comm_;
 
     friend class GmshMeshReader;
+
+
+private:
+
+    /// Index set assigning to global element index the local index used in parallel vectors.
+	int *row_4_el;
+	/// Index set assigning to local element index its global index.
+	int *el_4_loc;
+	/// Parallel distribution of elements.
+	Distribution *el_ds;
 };
 
 

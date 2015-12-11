@@ -34,7 +34,7 @@ using namespace Input::Type;
 
 
 const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
-	return Selection("SoluteTransport_BC_Type", "Types of boundary conditions for solute transport model.")
+	return Selection("ConvectionDiffusion_BC_Type", "Types of boundary conditions for solute transport model.")
               .add_value(bc_inflow, "inflow",
             		  "Default transport boundary condition.\n"
             		  "On water inflow (($(q_w \\le 0)$)), total flux is given by the reference concentration 'bc_conc'. "
@@ -45,14 +45,13 @@ const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selectio
             		  "The prescribed concentration (($c_D$)) is specified by the field 'bc_conc'.")
               .add_value(bc_total_flux, "total_flux",
             		  "Total mass flux boundary condition.\n"
-            		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(c-c_R) )+q_wc_A$)), "
+            		  "The prescribed total incoming flux can have the general form (($\\delta(f_N+\\sigma_R(c_R-c) )$)), "
             		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
-            		  "the advected concentration (($c_A$)) by 'bc_ad_conc', "
             		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
             		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
               .add_value(bc_diffusive_flux, "diffusive_flux",
             		  "Diffusive flux boundary condition.\n"
-            		  "The prescribed mass flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(c-c_R) )$)), "
+            		  "The prescribed incoming mass flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(c_R-c) )$)), "
             		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
             		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
             		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
@@ -63,7 +62,7 @@ const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selectio
 
 
 ConcentrationTransportModel::ModelEqData::ModelEqData()
-: TransportBase::TransportEqData()
+: TransportEqData()
 {
     *this+=bc_type
             .name("bc_type")
@@ -123,38 +122,28 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 
 
-UnitSI ConcentrationTransportModel::balance_units()
-{
-	return UnitSI().kg();
-}
-
-
 IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
 {
 	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
-			.derive_from(AdvectionProcessBase::get_input_type())
-			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-					"Time governor setting for the secondary equation.")
-			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
-					"Settings for computing balance.")
-			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-					"Parameters of output stream.")
-			.declare_key("substances", IT::Array( Substance::get_input_type() ), IT::Default::obligatory(),
-					"Names of transported substances.");
+			.derive_from(ConcentrationTransportBase::get_input_type());
 }
 
-IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
 {
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
 	return IT::Selection(
-				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
-				"Output record for " + description + " for solute transport.");
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Diffusive Solute Transport DG model.");
 }
 
 
-ConcentrationTransportModel::ConcentrationTransportModel() :
-		flux_changed(true)
+ConcentrationTransportModel::ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec) :
+		ConcentrationTransportBase(mesh, in_rec),
+		flux_changed(true),
+		mh_dh(nullptr)
 {}
 
 
@@ -251,6 +240,9 @@ void ConcentrationTransportModel::get_flux_bc_data(const std::vector<arma::vec3>
 	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
 	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+	
+	// Change sign in bc_flux since internally we work with outgoing fluxes.
+	for (auto f : bc_flux) f = -f;
 }
 
 void ConcentrationTransportModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
@@ -298,6 +290,13 @@ void ConcentrationTransportModel::compute_sources_sigma(const std::vector<arma::
 
 ConcentrationTransportModel::~ConcentrationTransportModel()
 {}
+
+
+void ConcentrationTransportModel::set_balance_object(boost::shared_ptr<Balance> balance)
+{
+	balance_ = balance;
+	subst_idx = balance_->add_quantities(substances_.names());
+}
 
 
 

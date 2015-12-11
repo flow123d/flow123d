@@ -98,6 +98,13 @@ public:
     	 * @p FieldBase<...>::function_factory.
     	 */
     	virtual FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
+
+    	/**
+    	 * Check if Input::Record accessor contains data of field given by input_name.
+    	 *
+    	 * Returns true when ever the method create_field returns non-null pointer, otherwise returns false.
+    	 */
+    	virtual bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name);
     };
 
     /**
@@ -109,16 +116,26 @@ public:
     Field(const string &name, bool bc = false);
 
     /**
+     * Constructor that must be used for create of MultiField components.
+     *
+     * Set parameters @p component_index_, @p shared_->input_name_ and @p name_.
+     * Parameter name_ of Field is consisted of component name and MultiField name.
+     */
+    Field(unsigned int component_index, string input_name, string name = "");
+
+    /**
      * Copy constructor. Keeps shared history, declaration data, mesh.
      */
     Field(const Field &other);
 
     /**
-     * Assignment operator. Same properties as copy constructor.
+     * Assignment operator. Same properties as copy constructor, but class member name_ is not copied.
      *
      * Question: do we really need this, isn't copy constructor enough?
      * Answer: It is necessary in (usual) case when Field instance is created as the class member
      * but is filled later by assignment possibly from other class.
+     * TODO: operator can be merged with copy constructor, but we must provide to set correct value
+     * of name in method copy_from
      */
     Field &operator=(const Field &other);
 
@@ -131,7 +148,7 @@ public:
      */
     const IT::Instance &get_input_type() override;
 
-    IT::Record &get_multifield_input_type() override;
+    IT::Array &get_multifield_input_type() override;
 
 
     /**
@@ -238,6 +255,8 @@ public:
      * The first instance (non-null pointer) is used.
      */
     void add_factory(std::shared_ptr<FactoryBase> factory);
+
+    void set_input_list(const Input::Array &list) override;
 
 protected:
 

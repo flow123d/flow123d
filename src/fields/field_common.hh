@@ -63,7 +63,7 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
             << "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
     DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
-            << "Missing domain specification (region, r_id, or r_set) in the field descriptor:");
+            << "Missing domain specification (region or r_id) in the field descriptor:");
     DECLARE_EXCEPTION(ExcFieldMeshDifference,
             << "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
 
@@ -159,6 +159,17 @@ public:
      * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
      */
     void set_components(const std::vector<string> &names) {
+    	// Test of unique values in names vector for MultiField
+    	if (multifield_) {
+			std::vector<string> cpy = names;
+			std::sort( cpy.begin(), cpy.end() );
+			cpy.erase( std::unique( cpy.begin(), cpy.end() ), cpy.end() );
+			if (names.size() != cpy.size()) {
+				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
+													+ " has set non-unique names of components.") );
+			}
+    	}
+
         shared_->comp_names_ = names;
         shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
     }
@@ -175,7 +186,7 @@ public:
      *
      * The list is used by set_time method to set field on individual regions to actual FieldBase descendants.
      */
-    void set_input_list(const Input::Array &list);
+    virtual void set_input_list(const Input::Array &list) =0;
 
     /**
      * Set side of limit when calling @p set_time
@@ -242,7 +253,7 @@ public:
     /**
      * Create description of field descriptor record.
      */
-    static const std::string field_descriptor_record_decsription(const string& record_name);
+    static const std::string field_descriptor_record_description(const string& record_name);
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
@@ -254,7 +265,7 @@ public:
      * Returns input type for MultiField instance.
      * TODO: temporary solution, see @p multifield_
      */
-    virtual IT::Record &get_multifield_input_type() =0;
+    virtual IT::Array &get_multifield_input_type() =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
@@ -373,7 +384,7 @@ protected:
     	/**
     	 * Empty constructor.
     	 */
-    	SharedData() {};
+    	SharedData() : list_idx_(0) {};
 
         /**
          * True for boundary fields.
@@ -418,14 +429,14 @@ protected:
         const Mesh *mesh_;
 
         /**
-         * List of input field descriptors from which the field is set.
+         * Vector of input field descriptors from which the field is set.
          */
-        Input::Array input_list_;
+        vector<Input::Record> input_list_;
 
         /**
-         * Iterator to current input field descriptor.
+         * Index to current position of input field descriptor.
          */
-        Input::Iterator<Input::Record> list_it_;
+        unsigned int list_idx_;
 
         /**
          * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.

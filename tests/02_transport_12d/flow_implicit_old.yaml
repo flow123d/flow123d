@@ -1,10 +1,33 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test2 - Transport implicit 1D-2D (convection, dispersion)
   mesh:
-    mesh_file: ./input/test2.msh
-  primary_equation: !Steady_MH
+    mesh_file: ./input/compatible.msh
+    sets:
+    - name: subset
+      region_labels:
+      - 2d
+      - 1d
+    - name: .sides
+      region_labels:
+      - .2d
+      - .1d
+  primary_equation: !SteadyDarcy_MH
+    input_fields:
+    - region: 1d
+      anisotropy: 10
+      cross_section: 1
+      sigma: 0.05
+    - region: 2d
+      anisotropy: 1
+      cross_section: 1
+    - region: .sides
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: x
+    balance: true
     output:
-      output_stream: 
+      output_stream:
         file: ./test2.pvd
         format: !vtk
           variant: ascii
@@ -16,19 +39,18 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-    input_fields:
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test2.fbc
-    - rid: 48
-      anisotropy: 10
-      cross_section: 1
-      sigma: 0.05
-    - rid: 184
-      anisotropy: 1
-      cross_section: 1
-    balance: true
-  secondary_equation: !SoluteTransport_DG
-    output_stream: 
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
+      input_fields:
+      - region: .sides
+        bc_conc: 1
+      - region: subset
+        init_conc: 0
+        porosity: 0.25
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    output_stream:
       file: ./transport-implicit.pvd
       format: !vtk
         variant: ascii
@@ -39,17 +61,5 @@ problem: !SequentialCoupling
     time:
       end_time: 5.0
       init_dt: 0.5
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
-    input_fields:
-    - region: IMPLICIT BOUNDARY
-      bc_conc: 1
-    - rid: 48
-      init_conc: 0
-      porosity: 0.25
-    - rid: 184
-      init_conc: 0
-      porosity: 0.25
     balance:
       cumulative: true
