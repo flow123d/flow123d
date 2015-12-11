@@ -292,7 +292,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
-        balance_ = boost::make_shared<Balance>("water", mesh_, el_ds, el_4_loc, *it);
+        balance_ = boost::make_shared<Balance>("water", mesh_, *it);
         water_balance_idx_ = balance_->add_quantity("water_volume");
         balance_->allocate(rows_ds->lsize(), 1);
         balance_->units(UnitSI().m(3));
@@ -1259,10 +1259,10 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
     if (schur0 != NULL) delete schur0;
 
 	delete edge_ds;
-	delete el_ds;
+//	delete el_ds;
 	delete side_ds;
 
-	xfree(el_4_loc);
+//	xfree(el_4_loc);
 	xfree(row_4_el);
 	xfree(side_id_4_loc);
 	xfree(side_row_4_id);
@@ -1389,7 +1389,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     
     int *loc_part; // optimal (edge,el) partitioning (local chunk)
     int *id_4_old; // map from old idx to ids (edge,el)
-    int i, loc_i;
+    int loc_i;
 
     int e_idx;
 
@@ -1397,12 +1397,11 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     //ierr = MPI_Barrier(PETSC_COMM_WORLD);
     //ASSERT(ierr == 0, "Error in MPI_Barrier.");
 
-        id_4_old = new int[mesh_->n_elements()];
-        i = 0;
-        FOR_ELEMENTS(mesh_, el) id_4_old[i++] = el.index();
-
-        mesh_->get_part()->id_maps(mesh_->element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
-        delete[] id_4_old;
+    // row_4_el will be modified so we make a copy of the array from mesh
+    row_4_el = new int[mesh_->n_elements()];
+    std::copy(mesh_->get_row_4_el(), mesh_->get_row_4_el()+mesh_->n_elements(), row_4_el);
+    el_4_loc = mesh_->get_el_4_loc();
+    el_ds = mesh_->get_el_ds();
 
         //optimal element part; loc. els. id-> new el. numbering
         Distribution init_edge_ds(DistributionLocalized(), mesh_->n_edges(), PETSC_COMM_WORLD);
