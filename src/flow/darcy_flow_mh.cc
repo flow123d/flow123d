@@ -327,6 +327,7 @@ void DarcyFlowMH_Steady::update_solution() {
 
 
     assembly_linear_system();
+
     int convergedReason = schur0->solve();
 
     xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
@@ -367,11 +368,14 @@ void DarcyFlowMH_Steady::postprocess()
 
 
 void DarcyFlowMH_Steady::output_data() {
+    START_TIMER("Darcy output data");
     time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 
+
 	if (balance_ != nullptr)
 	{
+	    START_TIMER("Darcy balance output");
 		if (balance_->cumulative() && time_->tlevel() > 0)
 		{
 			balance_->calculate_cumulative_sources(water_balance_idx_, schur0->get_solution(), time_->dt());
@@ -421,6 +425,7 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 template<unsigned int dim>
 void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_matrix, ElementFullIter ele)
 {
+    //START_TIMER("Assembly<dim>::assembly_local_matrix");
     fe_values_.reinit(ele);
     const unsigned int ndofs = fe_values_.get_fe()->n_dofs(), qsize = fe_values_.get_quadrature()->size();
     local_matrix.zeros(ndofs, ndofs);
@@ -448,6 +453,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
 template<unsigned int dim>
 void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, ElementFullIter ele, Neighbour *ngh)
 {
+    //START_TIMER("Assembly<dim>::assembly_local_vb");
     // compute normal vector to side
     arma::vec3 nv;
     ElementFullIter ele_higher = d.mesh->element.full_iter(ngh->side()->element());
@@ -471,6 +477,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, Elem
 template<unsigned int dim>
 arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIter ele)
 {
+    //START_TIMER("Assembly<dim>::make_element_vector");
     arma::vec3 flux_in_center;
     flux_in_center.zeros();
     
@@ -494,6 +501,7 @@ arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIte
 
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 {
+    START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
     
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
@@ -678,6 +686,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 
 void DarcyFlowMH_Steady::assembly_source_term()
 {
+    START_TIMER("assembly source term");
     if (balance_ != nullptr)
     	balance_->start_source_assembly(water_balance_idx_);
 
@@ -1039,8 +1048,11 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
 
 void DarcyFlowMH_Steady::assembly_linear_system() {
+    START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-	data_.set_time(time_->step());
+    {
+        data_.set_time(time_->step());
+    }
 	//DBGMSG("Assembly linear system\n");
 	if (data_.changed()) {
 		//DBGMSG("  Data changed\n");
@@ -1058,6 +1070,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
 	    if (!time_->is_steady()) {
+	        START_TIMER("fix time term");
 	    	//DBGMSG("    setup time term\n");
 	    	// assembly time term and rhs
 	    	setup_time_term();
@@ -1084,6 +1097,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 
 
 void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
+    START_TIMER("DarcyFlowMH_Steady::set_mesh_data_for_bddc");
     // prepare mesh for BDDCML
     // initialize arrays
     // auxiliary map for creating coordinates of local dofs and global-to-local numbering
