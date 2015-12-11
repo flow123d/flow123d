@@ -41,7 +41,7 @@ const string eq_data_input = R"JSON(
 [
       { 
         time=0.0,
-        r_set="BULK",
+        region="BULK",
         init_pressure=1.1,
         velocity={TYPE="FieldFormula",
             value=[ "x", "y" ]
@@ -50,7 +50,7 @@ const string eq_data_input = R"JSON(
       },
       { 
         time=1.0,
-        r_set="BULK",
+        region="BULK",
         velocity=[1,2]
       }
 ]
@@ -178,7 +178,6 @@ TEST_F(SomeEquation, field_descriptor) {
 	EXPECT_TRUE( descriptor.has_key("time"));
 	EXPECT_TRUE( descriptor.has_key("rid"));
 	EXPECT_TRUE( descriptor.has_key("region"));
-	EXPECT_TRUE( descriptor.has_key("r_set"));
 	EXPECT_TRUE( descriptor.has_key("velocity"));
 	EXPECT_TRUE( descriptor.has_key("init_pressure"));
 	EXPECT_TRUE( descriptor.has_key("reaction_type"));
