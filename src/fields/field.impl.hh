@@ -320,25 +320,12 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
         	RegionSet domain;
         	std::string domain_name;
         	unsigned int id;
-			if (shared_->list_it_->opt_val("r_set", domain_name)) {
+			if (shared_->list_it_->opt_val("region", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 				if (domain.size() == 0) {
 					THROW( RegionDB::ExcUnknownSetOperand()
 							<< RegionDB::EI_Label(domain_name) << shared_->list_it_->ei_address() );
 				}
-
-			} else if (shared_->list_it_->opt_val("region", domain_name)) {
-				domain = mesh()->region_db().get_region_set(domain_name);
-				if (domain.size() == 0) {
-					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << shared_->list_it_->ei_address() );
-				}
-				// try find region by label
-				//Region region = mesh()->region_db().find_label(domain_name);
-				//if(region.is_valid())
-				//  domain.push_back(region);
-				//else
-				//  xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
 
 			} else if (shared_->list_it_->opt_val("rid", id)) {
 				try {
