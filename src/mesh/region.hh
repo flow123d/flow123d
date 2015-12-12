@@ -615,9 +615,9 @@ private:
     Region replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary);
 
     /**
-     * Replace label of existing region.
+     * Rename existing region (change label).
      */
-    Region replace_region_label(OnlyIDIter it_only_id, const std::string &label, bool boundary);
+    Region rename_region_label(OnlyIDIter it_only_id, const std::string &label);
 
     /**
      * Find existing region given by pair (dim, id).
