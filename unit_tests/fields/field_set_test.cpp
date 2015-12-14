@@ -174,7 +174,7 @@ TEST_F(SomeEquation, field_descriptor) {
 	Input::Type::Record descriptor = EqData().make_field_descriptor_type("SomeEquation");
 
 	descriptor.finish();
-	EXPECT_EQ(7, descriptor.size());
+	EXPECT_EQ(6, descriptor.size());
 	EXPECT_TRUE( descriptor.has_key("time"));
 	EXPECT_TRUE( descriptor.has_key("rid"));
 	EXPECT_TRUE( descriptor.has_key("region"));
