@@ -210,9 +210,15 @@ TEST(Profiler, absolute_time) {
     std::stringstream sout;
     Profiler::instance()->output(MPI_COMM_WORLD, sout);
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    
+    int mpi_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    
+    if (mpi_rank == 0) {
 
-    EXPECT_NE( sout.str().find("cumul-time-min\": \"1.00"), string::npos );
-    EXPECT_NE( sout.str().find("cumul-time-max\": \"1.00"), string::npos );
+        EXPECT_NE( sout.str().find("cumul-time-min\": \"1.00"), string::npos );
+        EXPECT_NE( sout.str().find("cumul-time-max\": \"1.00"), string::npos );
+    }
 
     Profiler::uninitialize();
 }
@@ -301,10 +307,15 @@ TEST(Profiler, structure) {
     std::stringstream sout;
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::instance()->output(MPI_COMM_WORLD, sout);
-
-    // when using find, we need to compare result to string::npos value (which indicates not found)
-    EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
-    EXPECT_NE( sout.str().find("\"tag\": \"sub1\""), string::npos );
+    
+    int mpi_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    
+    if (mpi_rank == 0) {
+        // when using find, we need to compare result to string::npos value (which indicates not found)
+        EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
+        EXPECT_NE( sout.str().find("\"tag\": \"sub1\""), string::npos );
+    }
 
     Profiler::uninitialize();
 
