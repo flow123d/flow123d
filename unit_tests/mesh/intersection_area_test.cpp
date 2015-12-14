@@ -63,7 +63,7 @@ void compute_intersection_area_23d(Mesh *mesh)
     xprintf(Msg, "Computing polygon area by NEW algorithm\n");
     InspectElements ie(mesh);
     ie.compute_intersections<2,3>();
-    area1 = ie.polygonArea();
+    area1 = ie.polygon_area();
 
 //     ie.print_mesh_to_file("output_intersection");
     
