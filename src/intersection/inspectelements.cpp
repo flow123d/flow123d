@@ -289,6 +289,7 @@ void InspectElements::compute_intersections<2,3>(){
 						CI_23.init();
 						CI_23.compute(il);
 
+                        //TODO: how does prolongation work when there are 1 or 2 IPs?
 						if(il.size() > 2){
 
 							//nalezen = true;
