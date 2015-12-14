@@ -103,13 +103,6 @@ private:
     //TODO: allocate at the top level intersection object, use NaN to indicate plucker products not computed yet, also Destroy!
 	double *plucker_products[3];
 	bool computed;
-
-    /** TODO: unify epsilon tolerances
-     * Here epsilon is used 1e-7:
-     * - compare Plucker products with 0 (~ rounding error)
-     * - compare parameter t of abscissa with 0 or 1 (test end point) (~rounding error X geometry tolerance)
-     */
-	static const double epsilon;
 };
 
 /******************************************************************

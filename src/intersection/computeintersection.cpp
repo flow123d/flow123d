@@ -16,8 +16,6 @@ namespace computeintersection{
 /****************************************************************
  * METODY PRO SIMPLEX 1 A SIMPLEX 2
  ****************************************************************/
-const double ComputeIntersection<Simplex<1>, Simplex<2>>::epsilon = 0.0000001;//128*2048*numeric_limits<double>::epsilon();
-
 ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(){
 	computed = false;
 	abscissa = NULL;
@@ -111,8 +109,8 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
                                        RefElement<2>::normal_orientation(2) ? -(*plucker_products[2]) : (*plucker_products[2]) };
     
     // test whether all plucker products have the same sign
-    if(((plucker_norm_products[0] > epsilon) && (plucker_norm_products[1] > epsilon) && (plucker_norm_products[2] > epsilon)) ||
-       ((plucker_norm_products[0] < -epsilon) && (plucker_norm_products[1] < -epsilon) && (plucker_norm_products[2] < -epsilon))){
+    if(((plucker_norm_products[0] > rounding_epsilon) && (plucker_norm_products[1] > rounding_epsilon) && (plucker_norm_products[2] > rounding_epsilon)) ||
+       ((plucker_norm_products[0] < -rounding_epsilon) && (plucker_norm_products[1] < -rounding_epsilon) && (plucker_norm_products[2] < -rounding_epsilon))){
         
 		double c = plucker_norm_products[0];
 		double d = plucker_norm_products[1];
@@ -175,7 +173,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 
 		for(unsigned int i = 0; i < 3;i++){
 // 			DBGMSG("PluckerProduct[%d]: %f\n",i, *plucker_products[i]);
-			if(fabs(*plucker_products[i]) <= epsilon){
+			if( std::abs(*plucker_products[i]) <= rounding_epsilon ){// fabs(*plucker_products[i]) <= rounding_epsilon){
                 // starting point of abscissa
 				arma::vec3 A = (*abscissa)[0].point_coordinates();
                 // direction vector of abscissa
@@ -193,7 +191,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
                  * see (4.3) on pg. 19 in DP VF
                  */
                 
-                //TODO armadillo function for max ??
+                //TODO armadillo function for max ?? -> nothing for maximum of absolute value
 				//Det.print();
 				unsigned int max_index = 0;
 				double maximum = Det[0];
@@ -206,11 +204,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					max_index = 2;
 				}
 				//abscissa is parallel to triangle side
-				//TODO compare with epsilon (~ rounding error)
-				if(maximum == 0){
-					//continue;
-					return false;
-				}
+				if(std::abs(maximum) <= rounding_epsilon) return false;
 
 				double DetX = K[(max_index+2)%3]*V[(max_index+1)%3]
 							-K[(max_index+1)%3]*V[(max_index+2)%3];
@@ -228,18 +222,18 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 				if(RefElement<2>::normal_orientation(i)) t=-t;
 
 				// IP is outside of triangle side
-                if(t > -epsilon && t < 1+epsilon){
+                if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
                     IntersectionPoint<1,2> IP;
                     IP.set_orientation(2);  // set orientation as a pathologic case ( > 1)
 
                     // possibly set abscissa vertex {0,1}
-                    if( fabs(s) < epsilon)       { s = 0; IP.set_topology_A(0,0);}
-                    else if(fabs(1-s) < epsilon) { s = 1; IP.set_topology_A(1,0);}
+                    if( fabs(s) <= geometry_epsilon)       { s = 0; IP.set_topology_A(0,0);}
+                    else if(fabs(1-s) <= geometry_epsilon) { s = 1; IP.set_topology_A(1,0);}
                     else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
                     
                     // possibly set triangle vertex {0,1,2}
-                    if( fabs(t) < epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[RefElement<2>::normal_orientation(i)],0);  }
-                    else if(fabs(1-t) < epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[1-RefElement<2>::normal_orientation(i)],0);}
+                    if( fabs(t) < geometry_epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[RefElement<2>::normal_orientation(i)],0);  }
+                    else if(fabs(1-t) < geometry_epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[1-RefElement<2>::normal_orientation(i)],0);}
                     else                         {        IP.set_topology_B(i,1);}   // no vertex, side i, dim = 1
                     
 					arma::vec::fixed<2> local_abscissa;
@@ -408,6 +402,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 	// in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
 	if(pocet_pruniku == 1){
 		double f_theta = IP13s[IP13s.size()-1].local_bcoords_A()[1];
+        // no tolerance needed - it was already compared and normalized in 1d-2d
 		if(f_theta > 1 || f_theta < 0){
 			pocet_pruniku = 0;
 			IP13s.pop_back();

@@ -5,6 +5,12 @@
 
 namespace computeintersection{
 
+//http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
+static const double rounding_epsilon = std::numeric_limits<double>::epsilon();    
+
+//TODO: idea:replace with relative tolerance and use some user input tolerance (absolute) of the coordinates
+static const double geometry_epsilon = 1e-9;
+
 //forward declare
 template<unsigned int N, unsigned int M> class IntersectionPoint;
 template<unsigned int N, unsigned int M> std::ostream& operator<<(std::ostream& os, const IntersectionPoint<N,M>& IP);

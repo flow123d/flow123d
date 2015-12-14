@@ -11,9 +11,6 @@
 #include <algorithm>
 
 namespace computeintersection{
-
-const double IntersectionPolygon::epsilon = 0.000000001;
-
 IntersectionPolygon::IntersectionPolygon() {};
 
 IntersectionPolygon::~IntersectionPolygon() {
@@ -276,23 +273,23 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 
 void IntersectionPolygon::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table){
 
-	if(i_points_.size() <= 1){
-			return;
-	}
+    // skip tracing if not enough IPs
+    if(i_points_.size() <= 1) return;
 
+    // sort IPs using IP's operator <
 	std::sort(i_points_.begin(),i_points_.end());
 
-	// Odstranění duplicit
-	// Odstranit nejen stejne, ale o epsilon podobne
+	// Remove duplicit IPs, use geometry epsilon for comparison
 	for(unsigned int i = 0; i < i_points_.size()-1; i++){
-		if((fabs(i_points_[i].local_bcoords_A()[0] - i_points_[i+1].local_bcoords_A()[0]) < epsilon) &&
-		   (fabs(i_points_[i].local_bcoords_A()[1] - i_points_[i+1].local_bcoords_A()[1]) < epsilon)){
+		if((fabs(i_points_[i].local_bcoords_A()[0] - i_points_[i+1].local_bcoords_A()[0]) < geometry_epsilon) &&
+		   (fabs(i_points_[i].local_bcoords_A()[1] - i_points_[i+1].local_bcoords_A()[1]) < geometry_epsilon)){
 			i_points_.erase(i_points_.begin()+i);
 		}
 	}
 
-	if(i_points_.size() > 1 && fabs(i_points_[0].local_bcoords_A()[0] - i_points_[i_points_.size()-1].local_bcoords_A()[0]) < epsilon &&
-			fabs(i_points_[0].local_bcoords_A()[1] - i_points_[i_points_.size()-1].local_bcoords_A()[1]) < epsilon){
+	// check also the first and last IP
+	if(i_points_.size() > 1 && fabs(i_points_[0].local_bcoords_A()[0] - i_points_[i_points_.size()-1].local_bcoords_A()[0]) < geometry_epsilon &&
+			fabs(i_points_[0].local_bcoords_A()[1] - i_points_[i_points_.size()-1].local_bcoords_A()[1]) < geometry_epsilon){
 		i_points_.erase(i_points_.end());
 	}
 
@@ -326,12 +323,12 @@ void IntersectionPolygon::trace_polygon_convex_hull(std::vector<unsigned int> &p
 			unsigned int ii = (i+1)%i_points_.size();
 
 			for(unsigned int j = 0; j < 3;j++){
-				if(fabs((double)i_points_[i].local_bcoords_A()[j]) < epsilon && fabs((double)i_points_[ii].local_bcoords_A()[j]) < epsilon){
+				if(fabs((double)i_points_[i].local_bcoords_A()[j]) < geometry_epsilon && fabs((double)i_points_[ii].local_bcoords_A()[j]) < geometry_epsilon){
 					prolongation_table.push_back(6-j);
 				}
 			}
 			for(unsigned int k = 0; k < 4;k++){
-				if((int)k != forbidden_side && fabs((double)i_points_[i].local_bcoords_B()[k]) < epsilon && fabs((double)i_points_[ii].local_bcoords_B()[k]) < epsilon){
+				if((int)k != forbidden_side && fabs((double)i_points_[i].local_bcoords_B()[k]) < geometry_epsilon && fabs((double)i_points_[ii].local_bcoords_B()[k]) < geometry_epsilon){
 					prolongation_table.push_back(3-k);
 				}
 			}
@@ -352,7 +349,7 @@ double IntersectionPolygon::convex_hull_cross(const IntersectionPoint<2,3> &O,
 // 
 // 	// Finding same zero 2D local coord
 // 
-// 	if(fabs((double)A.local_bcoords_A()[0]) < epsilon && fabs((double)B.local_bcoords_A()[0]) < epsilon){
+// 	if(fabs((double)A.local_bcoords_A()[0]) < geometry_epsilon && fabs((double)B.local_bcoords_A()[0]) < epsilon){
 // 		return 6;
 // 	}else if(fabs((double)A.local_bcoords_A()[1]) < epsilon && fabs((double)B.local_bcoords_A()[1]) < epsilon){
 // 		return 5;
@@ -395,7 +392,7 @@ int IntersectionPolygon::side_content_prolongation() const{
 	for(unsigned int i = 0; i < i_points_.size();i++){
 
 		for(unsigned int j = 0; j < 4;j++){
-			if(fabs((double)i_points_[i].local_bcoords_B()[j]) < epsilon){
+			if(fabs((double)i_points_[i].local_bcoords_B()[j]) < geometry_epsilon){
 				side_field[j]++;
 			}
 		}

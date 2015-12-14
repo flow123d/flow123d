@@ -22,8 +22,6 @@ template<unsigned int, unsigned int> class IntersectionPoint;
      */
 class IntersectionPolygon {
 
-	/// Can be replaced with global epsilon
-	static const double epsilon;
 	bool pathologic_;                               ///< Pathologic flag. True if one or more ips are.
     
 	std::vector<IntersectionPoint<2,3>> i_points_;  ///< Intersection points 2d-3d.
@@ -34,7 +32,8 @@ class IntersectionPolygon {
     void trace_polygon_opt(std::vector<unsigned int> &prolongation_table);
 
     /** General polygon tracing (also resolves pathologic cases). 
-     * TODO: link for wikipedia
+     * Implements Monotone Chain algorithm (find convex hull of set of points in 2D):
+     * https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain
      */
     void trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table);
     
