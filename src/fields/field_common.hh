@@ -373,7 +373,7 @@ protected:
     	/**
     	 * Empty constructor.
     	 */
-    	SharedData() {};
+    	SharedData() : list_idx_(-1) {};
 
         /**
          * True for boundary fields.
@@ -423,9 +423,9 @@ protected:
         vector<Input::Record> input_list_;
 
         /**
-         * Iterator to current input field descriptor.
+         * Index to current position of input field descriptor.
          */
-        vector<Input::Record>::iterator list_it_;
+        int list_idx_;
 
         /**
          * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.

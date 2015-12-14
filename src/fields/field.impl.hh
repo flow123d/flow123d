@@ -313,21 +313,21 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
     // read input up to given time
 	double input_time;
     if (shared_->input_list_.size() != 0) {
-        while( shared_->list_it_ != shared_->input_list_.end()
-        	   && time.ge( input_time = shared_->list_it_->val<double>("time") ) ) {
+        while( shared_->list_idx_ < shared_->input_list_.size()
+        	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
 
         	// get domain specification
         	RegionSet domain;
         	std::string domain_name;
         	unsigned int id;
-			if (shared_->list_it_->opt_val("r_set", domain_name)) {
+			if (shared_->input_list_[shared_->list_idx_].opt_val("r_set", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 				if (domain.size() == 0) {
 					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << shared_->list_it_->ei_address() );
+							<< RegionDB::EI_Label(domain_name) << shared_->input_list_[shared_->list_idx_].ei_address() );
 				}
 
-			} else if (shared_->list_it_->opt_val("region", domain_name)) {
+			} else if (shared_->input_list_[shared_->list_idx_].opt_val("region", domain_name)) {
 				// try find region by label
 				Region region = mesh()->region_db().find_label(domain_name);
 				if(region.is_valid())
@@ -335,7 +335,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				else
 				  xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
 
-			} else if (shared_->list_it_->opt_val("rid", id)) {
+			} else if (shared_->input_list_[shared_->list_idx_].opt_val("rid", id)) {
 				try {
 					Region region = mesh()->region_db().find_id(id);
 					if(region.is_valid())
@@ -343,19 +343,19 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 					else
 					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
-					e << shared_->list_it_->ei_address(); //TODO is address correct? Previous value was shared_->input_list_.ei_address()
+					e << shared_->input_list_[shared_->list_idx_].ei_address(); //TODO is address correct? Previous value was shared_->input_list_.ei_address()
 					throw;
 				}
 			} else {
 				THROW(ExcMissingDomain()
-						<< shared_->list_it_->ei_address() );
+						<< shared_->input_list_[shared_->list_idx_].ei_address() );
 			}
 		    
 			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
 
 			// get field instance   
 			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
-				FieldBasePtr field_instance = (*rit)->create_field(*(shared_->list_it_), *this);
+				FieldBasePtr field_instance = (*rit)->create_field(shared_->input_list_[shared_->list_idx_], *this);
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
@@ -370,7 +370,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				}
 		    }
 
-        	++shared_->list_it_;
+        	++shared_->list_idx_;
         }
     }
 }
@@ -494,7 +494,7 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
     	}
 	}
 
-    shared_->list_it_ = shared_->input_list_.begin();
+    shared_->list_idx_ = 0;
 }
 
 
