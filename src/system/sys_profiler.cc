@@ -471,6 +471,8 @@ void Profiler::add_calls(unsigned int n_calls) {
 
 
 void Profiler::notify_malloc(const size_t size) {
+    if (timers_.size() > actual_node)
+        return;
     timers_[actual_node].total_allocated_ += size;
     timers_[actual_node].current_allocated_ += size;
     timers_[actual_node].alloc_called++;
@@ -483,6 +485,8 @@ void Profiler::notify_malloc(const size_t size) {
 
 
 void Profiler::notify_free(const size_t size) {
+    if (timers_.size() > actual_node)
+        return;
     timers_[actual_node].total_deallocated_ += size;
     timers_[actual_node].current_allocated_ -= size;
     timers_[actual_node].dealloc_called++;
