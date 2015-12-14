@@ -611,7 +611,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     // MPI implementation uses MPI call to reduce values
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
-        double cumul_time = timer.cumulative_time () / 1000;
+        double cumul_time = timer.cumulative_time ();
         
         long memory_allocated = (long)timer.total_allocated_;
         long memory_deallocated = (long)timer.total_deallocated_;
@@ -689,7 +689,7 @@ void Profiler::output(ostream &os) {
     // non-MPI implementation is just dummy repetition of initial value
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
-        double cumul_time = timer.cumulative_time () / 1000;
+        double cumul_time = timer.cumulative_time ();
         
         long memory_allocated = (long)timer.total_allocated_;
         long memory_deallocated = (long)timer.total_deallocated_;
