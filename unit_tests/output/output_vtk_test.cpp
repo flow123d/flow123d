@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"

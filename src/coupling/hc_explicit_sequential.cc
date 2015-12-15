@@ -79,6 +79,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 
     // Read mesh
     {
+        START_TIMER("HC read mesh");
         mesh = new Mesh( in_record.val<Record>("mesh") );
         mesh->init_from_input();
         
@@ -140,9 +141,10 @@ void HC_ExplicitSequential::run_simulation()
     double velocity_interpolation_time;
     bool velocity_changed=true;
 
-
-    water->zero_time_step();
-
+    {
+        START_TIMER("HC water zero time step");
+        water->zero_time_step();
+    }
 
 
     // following cycle is designed to support independent time stepping of

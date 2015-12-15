@@ -42,8 +42,9 @@ print func_xyz(1, 2, 3)
 )CODE";
 
 TEST(PythonLoader, print_error) {
-	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", python_print); }, PythonLoader::ExcPythonError,
-        "Python Error: global name 'a' is not defined");
+	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", python_print); },
+	    PythonLoader::ExcPythonError,
+        "Message: global name 'a' is not defined\nTraceback");
 }
 
 

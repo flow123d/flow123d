@@ -272,11 +272,12 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
 void Application::run() {
-
+    START_TIMER("Application::run");
 	display_version();
 
+    START_TIMER("Read Input");
     Input::Record i_rec = read_input();
-
+    END_TIMER("Read Input");
 
     {
         using namespace Input;

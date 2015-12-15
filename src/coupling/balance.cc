@@ -87,6 +87,21 @@ Balance::Balance(const std::string &file_prefix,
 
 		output_.open(string(in_rec.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file))).c_str());
 	}
+
+	// construct vector of regions of boundary edges
+    for (unsigned int loc_el = 0; loc_el < mesh->get_el_ds()->lsize(); loc_el++)
+    {
+        Element *elm = mesh->element(mesh->get_el_4_loc()[loc_el]);
+        if (elm->boundary_idx_ != nullptr)
+        {
+            FOR_ELEMENT_SIDES(elm,si)
+            {
+                Boundary *b = elm->side(si)->cond();
+                if (b != nullptr)
+                	be_regions_.push_back(b->region().boundary_idx());
+            }
+        }
+    }
 }
 
 
