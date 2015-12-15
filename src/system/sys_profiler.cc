@@ -617,68 +617,76 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
 }
 
 
-void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-    PyObject * python_module;
-    PyObject * convert_method;
-    PyObject * arguments;
-    PyObject * return_value;
-    PyObject * tmp;
-    int argument_index = 0;
+void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter, MPI_Comm comm) {
+    int ierr, mpi_rank, mpi_size;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    MPI_Comm_size(comm, &mpi_size);
+
+    // transform profiler json file only on the first processor
+    if (mpi_rank == 0) {
+        PyObject * python_module;
+        PyObject * convert_method;
+        PyObject * arguments;
+        PyObject * return_value;
+        PyObject * tmp;
+        int argument_index = 0;
 
 
 
-    // debug info
-    // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
-    // cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
-    // cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
-    // cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
-    // cout << "Py_GetPath:            " << Py_GetPath() << endl;
-    // cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
-    // cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
+        // debug info
+        // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
+        // cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
+        // cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
+        // cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
+        // cout << "Py_GetPath:            " << Py_GetPath() << endl;
+        // cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
+        // cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
 
 
-    // grab module and function by importing module profiler_formatter_module.py
-    python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
-    convert_method  = PythonLoader::get_callable (python_module, "convert" );
+        // grab module and function by importing module profiler_formatter_module.py
+        python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+        convert_method  = PythonLoader::get_callable (python_module, "convert" );
 
-    //
-    // def convert (json_location, output_file, formatter):
-    //
+        //
+        // def convert (json_location, output_file, formatter):
+        //
 
-    arguments = PyTuple_New (3);
+        arguments = PyTuple_New (3);
 
-    // set json path location as first argument
-    tmp = PyString_FromString (json_filepath.c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
+        // set json path location as first argument
+        tmp = PyString_FromString (json_filepath.c_str());
+        PyTuple_SetItem (arguments, argument_index++, tmp);
 
-    // set output path location as second argument
-    tmp = PyString_FromString ((json_filepath + output_file_suffix).c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
+        // set output path location as second argument
+        tmp = PyString_FromString ((json_filepath + output_file_suffix).c_str());
+        PyTuple_SetItem (arguments, argument_index++, tmp);
 
-    // set Formatter class as third value
-    tmp = PyString_FromString (formatter.c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
+        // set Formatter class as third value
+        tmp = PyString_FromString (formatter.c_str());
+        PyTuple_SetItem (arguments, argument_index++, tmp);
 
-    // execute method with arguments
-    return_value = PyObject_CallObject (convert_method, arguments);
-    //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
+        // execute method with arguments
+        return_value = PyObject_CallObject (convert_method, arguments);
+        //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
 
 
-    if (PyBool_Check (return_value)) {
-        // is boolean
+        if (PyBool_Check (return_value)) {
+            // is boolean
 
-        if (return_value == Py_True) {
-            cout << "Python execution was successful" << endl;
-        }else{
-            cout << "Error when executing Python" << endl;
+            if (return_value == Py_True) {
+                cout << "Python execution was successful" << endl;
+            }else{
+                cout << "Error when executing Python" << endl;
+            }
+        } else if (PyString_Check (return_value)) {
+            // is string (holds error)
+
+            char* error_msg = PyString_AsString (return_value);
+            cout << "Error when executing Python: " << error_msg << endl;
+        } else {
+            cout << "Unknown result when executing Python: "<< endl;
         }
-    } else if (PyString_Check (return_value)) {
-        // is string (holds error)
-
-        char* error_msg = PyString_AsString (return_value);
-        cout << "Error when executing Python: " << error_msg << endl;
-    } else {
-        cout << "Unknown result when executing Python: "<< endl;
     }
 }
 
