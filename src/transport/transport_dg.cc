@@ -225,7 +225,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	this->eq_data_ = &data_;
 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-
+    time_->define_constraint(time_constraint_flow, 
+                             "Time step constrained due to time discretisation of flow.");
 
     // Read names of transported substances.
     // TODO: Substances should be held in TransportOperatorSplitting only.

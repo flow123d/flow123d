@@ -131,6 +131,8 @@ public:
     {
         // make module solved for ever
         time_=new TimeGovernor();
+        time_->define_constraint(time_constraint_flow, 
+                             "Time step constrained due to time discretisation of flow.");
         time_->next_time();
     };
 

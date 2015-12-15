@@ -116,14 +116,14 @@ public:
     /**
      * Set external upper time step constrain for time governor of the equation.
      */
-    virtual void set_time_upper_constraint(double dt)
-        {time_->set_upper_constraint(dt);}
+    virtual void set_time_upper_constraint(TimeConstraintName name,double dt)
+        {time_->set_upper_constraint(name, dt);}
         
     /**
      * Set external lower time step constrain for time governor of the equation.
      */
-    virtual void set_time_lower_constraint(double dt)
-        {time_->set_lower_constraint(dt);}
+    virtual void set_time_lower_constraint(TimeConstraintName name, double dt)
+        {time_->set_lower_constraint(name, dt);}
 
     /**
      * Basic getter method returns constant TimeGovernor reference which provides full read access to the time information.

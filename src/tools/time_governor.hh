@@ -30,6 +30,7 @@
 #include "input/accessors_forward.hh"
 #include "input/input_exception.hh"
 #include "tools/time_marks.hh"
+#include "tools/time_constraints.hh"
 
 namespace Input {
     class Record;
@@ -266,7 +267,12 @@ public:
     * @param max_dt is the maximal value allowed for time step
     */
    void set_permanent_constraint( double min_dt, double max_dt);
-    
+   
+   /// Defines a new time constraint and adds it to the list. Forwards TimeConstraintList functionality.
+   bool define_constraint(std::string name, std::string message, double value=0.0);
+   /// Prints all time constraint into a given @p stream. Forwards TimeConstraintList functionality.
+   void print_time_constraints(std::ostream &stream);
+   
     /**
      * @brief Sets upper constraint for the next time step estimating.
      * 
@@ -278,14 +284,16 @@ public:
      * - 0: constraint is in the interval of permanent constraints @p min_dt and @p max_dt. The upper constraint has been set.
      * - 1: constraint is lower than permanent lower constraint @p min_dt. Setting failed, no change happened.
      */
-    int set_upper_constraint(double upper);
+//     int set_upper_constraint(double upper);
+    int set_upper_constraint(std::string name, double value);
     
     /**
      * @brief Sets lower constraint for the next time step estimating. 
      * @return -1, 0 or 1 according to the success.
      * @see set_upper_constrain().
      */
-    int set_lower_constraint(double lower);
+//     int set_lower_constraint(double lower);
+    int set_lower_constraint(std::string name, double value);
     
     /**
      * @brief Fixing time step until fixed time mark.
@@ -351,13 +359,13 @@ public:
      *  Getter for upper constrain.
      */
     inline double upper_constraint() const
-        {return upper_constraint_;}
+        {return upper_constraint_.value();}
     
     /**
      *  Returns lower constraint.
      */
     inline double lower_constraint() const
-        {return lower_constraint_;}
+        {return lower_constraint_.value();}
         
     /**
      * End of interval with currently fixed time step. Can be changed by next call of method fix_dt_until_mark.
@@ -494,14 +502,10 @@ private:
     /// Flag is set if the time step has been changed (lasts only one time step).
     bool time_step_changed_;
     
-    /// Upper constraint for the choice of the next time step.
-    double upper_constraint_;
-    /// Lower constraint for the choice of the next time step.
-    double lower_constraint_;
-    /// Permanent upper limit for the time step.
-    double max_time_step_;
-    /// Permanent lower limit for the time step.
-    double min_time_step_;
+    /// List of all possible time step constraints.
+    TimeConstraintList time_constraints_;
+    TimeConstraint upper_constraint_,   ///< Upper constraint for the choice of the next time step.
+                   lower_constraint_;   ///< Lower constraint for the choice of the next time step.
 
     /**
      * When the next time is chosen we need only the lowest fix time. Therefore we use

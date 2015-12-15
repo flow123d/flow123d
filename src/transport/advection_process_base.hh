@@ -47,6 +47,7 @@ public:
                 .close();
     }
 
+    const TimeConstraintName time_constraint_flow = "Flow time step";
 };
 
 
