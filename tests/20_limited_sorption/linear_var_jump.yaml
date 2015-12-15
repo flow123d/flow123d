@@ -15,7 +15,7 @@ problem: !SequentialCoupling
   description: Adsorption all
   mesh:
     mesh_file: input/test_20.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: rectangle
       conductivity: 1
@@ -34,7 +34,7 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     substances:
     - A
     input_fields:
@@ -71,3 +71,4 @@ problem: !SequentialCoupling
       output_fields: []
     balance:
       cumulative: true
+  name: transport_output_stream

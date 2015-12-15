@@ -14,7 +14,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       n_schurs = 2, 
 
       input_fields= [

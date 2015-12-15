@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
 
       input_fields= [
         { r_set = "BOUNDARY",
@@ -33,19 +33,22 @@
     },
 
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
+      TYPE = "Transport_OS", 
     
-      input_fields= [
-        { region = ".right",
-          bc_conc = 1
-        },
-        { region = ".bottom",
-          bc_conc = 2
-        },
-        { region = ".top",
-          bc_conc = 3
-        }
-      ],
+      transport = {
+        TYPE="Convection_FV",
+        input_fields= [
+          { region = ".right",
+            bc_conc = 1
+          },
+          { region = ".bottom",
+            bc_conc = 2
+          },
+          { region = ".top",
+            bc_conc = 3
+          }
+        ]
+      },
 
       output_stream = {
         REF = "/system/output_streams/1"

@@ -24,7 +24,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       input_fields= [
         { region = "1d",
           anisotropy = 10,
@@ -64,7 +64,8 @@
     },
 
     secondary_equation = {
-      TYPE = "SoluteTransport_DG", 
+      TYPE = "Transport_OS",
+      
       output_stream = {
         file = "./transport-implicit.pvd", 
         format = {
@@ -80,33 +81,36 @@
         end_time = 5.0,
 	init_dt = 0.5
       },
-      solver = {
-        TYPE = "Petsc", 
-        a_tol = 1e-12,
-        r_tol = 1e-12
-      },
-      input_fields=[
-        { 
-          r_set=".sides",
-          bc_conc = {
-            TYPE="FieldFormula",
-            value = "(1+sin(t))*0.5"
-          }
+      transport = {
+        TYPE = "ConvectionDiffusion_DG", 
+        solver = {
+          TYPE = "Petsc", 
+          a_tol = 1e-12,
+          r_tol = 1e-12
         },
-        {
-          r_set="subset",
-          init_conc = {
-            TYPE="FieldFormula",
-            value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
+        input_fields=[
+          {
+            r_set=".sides",
+            bc_conc = {
+              TYPE="FieldFormula",
+              value = "(1+sin(t))*0.5"
+            }
           },
-          porosity= 0.25
-        },
-        {
-          region="1d",
-          dg_penalty=10
-        }        
-      ],
-      dg_variant="symmetric",  
+          {
+            r_set="subset",
+            init_conc={
+              TYPE="FieldFormula",
+              value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
+            },
+            porosity= 0.25
+          },
+          {
+            region="1d",
+            dg_penalty=10
+          }
+        ],
+        dg_variant = "symmetric"
+      },
       balance = {
         cumulative = true
       }

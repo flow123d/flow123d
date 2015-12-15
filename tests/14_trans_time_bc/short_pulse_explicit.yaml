@@ -3,7 +3,7 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/rectangle_with_bc_0.2.msh
   # steady velocity field, with velocity v:0.1
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: bulk
       conductivity: 1
@@ -26,24 +26,25 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
     substances:
     - A
     time:
       max_dt: 0.05
       end_time: 1.0
-    input_fields:
-    - region: bulk
-      init_conc: 0
-    - region: .right
-      time: 0.01
-      bc_conc: 100
-    - region: .right
-      time: 0.02
-      bc_conc: 0
-    - region: .right
-      time: 0.35
-      bc_conc: 20
+    transport: !Convection_FV
+      input_fields:
+      - region: bulk
+        init_conc: 0
+      - region: .right
+        time: 0.01
+        bc_conc: 100
+      - region: .right
+        time: 0.02
+        bc_conc: 0
+      - region: .right
+        time: 0.35
+        bc_conc: 20
     output_stream: 
       file: ./transport.pvd
       format: !vtk
@@ -52,3 +53,4 @@ problem: !SequentialCoupling
       name: transport_output_stream
     balance:
       cumulative: true
+    name: transport_output_stream

@@ -9,7 +9,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
       boundary_file = "${INPUT}/test1.fbc", 
       n_schurs = 2, 
       output = {

@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "Steady_MH", 
+      TYPE = "SteadyDarcy_MH", 
 
       input_fields= [
         {   region = "trunk",
@@ -54,17 +54,25 @@
     }, 
 
     secondary_equation = {
-	TYPE = "SoluteTransport_DG", 
-
-      input_fields= [
-        { r_set = "BULK",
-          init_conc = 0
-        },
-        {
-          region = ".trunk",
-          bc_conc = 1
+      TYPE = "Transport_OS", 
+      
+      transport = {
+        TYPE = "ConvectionDiffusion_DG",
+        input_fields= [
+          { r_set = "BULK",
+            init_conc = 0
+          },
+          {
+            region = ".trunk",
+            bc_conc = 1
+          }
+        ],
+        solver = {
+          TYPE = "Petsc", 
+          a_tol = 1e-12,
+          r_tol = 1e-12
         }
-      ],
+      },
 
       output_stream = {
         REF = "/system/output_streams/1"
@@ -76,11 +84,6 @@
  
       time = {
         REF = "../../time"
-      },
-      solver = {
-        TYPE = "Petsc", 
-        a_tol = 1e-12,
-        r_tol = 1e-12
       },
       balance = {
         cumulative = true

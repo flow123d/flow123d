@@ -18,12 +18,7 @@
 
 #include "hc_explicit_sequential.hh"
 #include "flow/darcy_flow_interface.hh"
-#include "transport/advection_process_base.hh"
-// TODO:
-// After having general default values:
-// make TransportNoting default for AdvectionProcessBase abstract
-// use default "{}" for secondary equation.
-// Then we can remove following include.
+//#include "flow/darcy_flow_mh_output.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -33,8 +28,9 @@
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
-FLOW123D_FORCE_LINK_IN_PARENT(soluteTransport);
-FLOW123D_FORCE_LINK_IN_PARENT(heatTransfer);
+FLOW123D_FORCE_LINK_IN_PARENT(concentrationTransportModel);
+FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport);
+FLOW123D_FORCE_LINK_IN_PARENT(heatModel);
 
 FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh);
 FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh);
@@ -107,14 +103,15 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // TODO: optionally setup transport objects
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
     if (it) {
-    	transport_reaction = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record>(*mesh, *it);
+    	secondary_eq = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record >(*mesh, *it);
 
         // setup fields
-        transport_reaction->data()["cross_section"]
+        secondary_eq->data()["cross_section"]
         		.copy_from(water->data()["cross_section"]);
+        secondary_eq->initialize();
 
     } else {
-        transport_reaction = std::make_shared<TransportNothing>(*mesh);
+        secondary_eq = std::make_shared<TransportNothing>(*mesh);
     }
 }
 
@@ -164,14 +161,14 @@ void HC_ExplicitSequential::run_simulation()
     // The question is how to choose intervals t_dt. That should depend on variability of the velocity field in time.
     // Currently we simply use t_dt == w_dt.
 
-    while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
+    while (! (water->time().is_end() && secondary_eq->time().is_end() ) ) {
 
-        transport_reaction->set_time_upper_constraint(water->time().estimate_dt());
+        secondary_eq->set_time_upper_constraint(water->time().estimate_dt());
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
         // in time 3*w_dt we can reconsider value of t_dt to better capture changing velocity.
-        velocity_interpolation_time= theta * transport_reaction->planned_time() + (1-theta) * transport_reaction->solved_time();
+        velocity_interpolation_time= theta * secondary_eq->planned_time() + (1-theta) * secondary_eq->solved_time();
         
         // printing water and transport times every step
         //xprintf(Msg,"HC_EXPL_SEQ: velocity_interpolation_time: %f, water_time: %f transport time: %f\n", 
@@ -199,26 +196,26 @@ void HC_ExplicitSequential::run_simulation()
             // for simplicity we use only last velocity field
             if (velocity_changed) {
                 //DBGMSG("velocity update\n");
-                transport_reaction->set_velocity_field( water->get_mh_dofhandler() );
+                secondary_eq->set_velocity_field( water->get_mh_dofhandler() );
                 velocity_changed = false;
             }
-            if (transport_reaction->time().tlevel() == 0) transport_reaction->zero_time_step();
+            if (secondary_eq->time().tlevel() == 0) secondary_eq->zero_time_step();
 
-            transport_reaction->update_solution();
+            secondary_eq->update_solution();
             
             //transport_reaction->time().view("TRANSPORT");        //show transport time governor
             
-            transport_reaction->output_data();
+            secondary_eq->output_data();
         }
 
     }
-    xprintf(Msg, "End of simulation at time: %f\n", transport_reaction->solved_time());
+    xprintf(Msg, "End of simulation at time: %f\n", secondary_eq->solved_time());
 }
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
 	water.reset();
-	transport_reaction.reset();
+	secondary_eq.reset();
     delete mesh;
 }
 

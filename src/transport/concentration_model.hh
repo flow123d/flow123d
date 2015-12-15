@@ -28,10 +28,10 @@
 
 
 
-class ConcentrationTransportModel : public AdvectionDiffusionModel {
+class ConcentrationTransportModel : public AdvectionDiffusionModel, public ConcentrationTransportBase {
 public:
 
-	class ModelEqData : public TransportBase::TransportEqData {
+	class ModelEqData : public TransportEqData {
 	public:
 
 		enum Concentration_bc_types {
@@ -65,7 +65,7 @@ public:
 
 		ModelEqData();
 
-		static constexpr const char * name() { return "SoluteTransport"; }
+		static constexpr const char * name() { return "ConvectionDiffusion"; }
 
 		static string default_output_field() { return "\"conc\""; }
 
@@ -75,48 +75,11 @@ public:
 
 	};
 
-protected:
 
-	/// Derived class should implement getter for ModelEqData instance.
-	virtual ModelEqData &data() = 0;
-
-	/**
-	 * Create input type that can be passed to the derived class.
-	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
-	 * @param description    Comment used to describe the record key.
-	 * @return
-	 */
-	static IT::Record get_input_type(const string &implementation, const string &description);
-
-	/**
-	 * Formula to calculate the dispersivity tensor.
-	 * @param velocity  Fluid velocity.
-	 * @param Dm        Molecular diffusivity.
-	 * @param alphaL    Longitudal dispersivity.
-	 * @param alphaT    Transversal dispersivity.
-	 * @param porosity  Porosity.
-	 * @param cross_cut Cross-section.
-	 * @param K         Dispersivity tensor (output).
-	 */
-	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
-			double Dm,
-			double alphaL,
-			double alphaT,
-			double porosity,
-			double cross_cut,
-			arma::mat33 &K);
-
-	/// Indicator of change in advection vector field.
-	bool flux_changed;
+	typedef ConcentrationTransportBase FactoryBaseType;
 
 
-public:
-
-	ConcentrationTransportModel();
-
-	static string balance_prefix() { return "mass"; }
-
-	UnitSI balance_units();
+	ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec);
 
 	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
 
@@ -160,6 +123,102 @@ public:
 				std::vector<arma::vec> &sources_sigma) override;
 
 	~ConcentrationTransportModel() override;
+
+
+	/**
+	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
+	 *
+         * @param dh mixed hybrid dof handler
+         *
+	 * (So far it does not work since the flow module returns a vector of zeros.)
+	 * @param velocity_vector Input array of velocity values.
+	 */
+	inline void set_velocity_field(const MH_DofHandler &dh) override
+	{
+		mh_dh = &dh;
+		flux_changed = true;
+	}
+
+    /// Returns number of transported substances.
+    inline unsigned int n_substances() override
+    { return substances_.size(); }
+
+    /// Returns reference to the vector of substance names.
+    inline SubstanceList &substances() override
+    { return substances_; }
+
+
+    // Methods inherited from ConcentrationTransportBase:
+
+	void set_target_time(double target_time) override {};
+
+	void set_balance_object(boost::shared_ptr<Balance> balance) override;
+
+    const vector<unsigned int> &get_subst_idx() override
+	{ return subst_idx; }
+
+    void set_output_stream(std::shared_ptr<OutputTime> stream)
+    { output_stream_ = stream; }
+
+	std::shared_ptr<OutputTime> output_stream() override
+	{ return output_stream_; }
+
+
+
+protected:
+
+	/// Derived class should implement getter for ModelEqData instance.
+	virtual ModelEqData &data() = 0;
+
+	/**
+	 * Create input type that can be passed to the derived class.
+	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
+	 * @param description    Comment used to describe the record key.
+	 * @return
+	 */
+	static IT::Record get_input_type(const string &implementation, const string &description);
+
+	/**
+	 * Formula to calculate the dispersivity tensor.
+	 * @param velocity  Fluid velocity.
+	 * @param Dm        Molecular diffusivity.
+	 * @param alphaL    Longitudal dispersivity.
+	 * @param alphaT    Transversal dispersivity.
+	 * @param porosity  Porosity.
+	 * @param cross_cut Cross-section.
+	 * @param K         Dispersivity tensor (output).
+	 */
+	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
+			double Dm,
+			double alphaL,
+			double alphaT,
+			double porosity,
+			double cross_cut,
+			arma::mat33 &K);
+
+	/// Indicator of change in advection vector field.
+	bool flux_changed;
+
+    /// Transported substances.
+    SubstanceList substances_;
+
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
+
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
+    const MH_DofHandler *mh_dh;
+
+    /// (new) object for calculation and writing the mass balance to file.
+    boost::shared_ptr<Balance> balance_;
+
+	std::shared_ptr<OutputTime> output_stream_;
+
+
+
 };
 
 
