@@ -89,6 +89,14 @@ void TypeBase::lazy_finish() {
 }
 
 
+ std::string TypeBase::hash_str(TypeHash hash) {
+    stringstream ss;
+    ss << "\"" << std::hex << hash << "\"";
+    return ss.str();
+}
+
+
+
 
 void TypeBase::add_attribute(std::string name, json_string val) {
 	ASSERT( !this->is_closed(), "Attribute can be add only to non-closed type: '%s'.\n", this->type_name().c_str());
@@ -137,7 +145,7 @@ TypeBase::json_string TypeBase::print_parameter_map_to_json(ParameterMap paramet
 	ss << "[";
 	for (ParameterMap::iterator it=parameter_map.begin(); it!=parameter_map.end(); it++) {
 		if (it != parameter_map.begin()) ss << "," << endl;
-		ss << "{ \"" << (*it).first << "\" : \"" << (*it).second << "\" }";
+		ss << "{ \"" << (*it).first << "\" : " << TypeBase::hash_str( (*it).second ) << " }";
 	}
 	ss << "]";
 	return ss.str();
@@ -147,6 +155,9 @@ TypeBase::json_string TypeBase::print_parameter_map_to_json(ParameterMap paramet
 void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
 	this->add_attribute("parameters", this->print_parameter_map_to_json(parameter_map));
 }
+
+
+
 
 
 
@@ -222,7 +233,7 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	(*arr.attributes_)["parameters"] = val;
 	std::stringstream type_stream;
 	type_stream << "\"" << this->content_hash() << "\"";
-	(*arr.attributes_)["generic_type"] = type_stream.str();
+	(*arr.attributes_)["generic_type"] = TypeBase::hash_str();
 
 	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );
 }

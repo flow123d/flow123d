@@ -170,6 +170,18 @@ public:
      */
     virtual TypeHash content_hash() const =0;
 
+    /**
+     * Format given hash for output. Use hex format and double quotas.
+     */
+    static std::string hash_str(TypeHash hash);
+
+    /**
+     * Format the hash of this type.
+     */
+    inline std::string hash_str() const {
+        return hash_str(content_hash());
+    }
+
     /// Add attribute to map
     void add_attribute(std::string name, json_string val);
 
