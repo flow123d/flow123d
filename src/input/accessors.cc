@@ -81,7 +81,6 @@ Address::Address()
 {
    data_->root_type_ = nullptr;
    data_->root_storage_ = &Array::empty_storage_;
-   data_->parent_ = nullptr;
    data_->descendant_order_ = 0;
    data_->actual_storage_ = &Array::empty_storage_;
 }
@@ -97,7 +96,6 @@ Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_ro
 
     data_->root_type_ = type_root;
     data_->root_storage_ = storage_root;
-    data_->parent_ = nullptr;
     data_->descendant_order_ = 0;
     data_->actual_storage_ = storage_root;
 }
@@ -112,7 +110,7 @@ Address::Address(const Address& other)
 std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
 	auto addr = std::make_shared<Address>(this->data_->root_storage_, this->data_->root_type_);
-	addr->data_->parent_ = this->data_.get();
+	addr->data_->parent_ = this->data_;
 	addr->data_->descendant_order_ = idx;
 	addr->data_->actual_storage_ = data_->actual_storage_->get_item(idx);
 
@@ -122,7 +120,7 @@ std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
 std::string Address::make_full_address() const {
 	std::vector<unsigned int> path;
-	AddressData * address_data = data_.get();
+	boost::shared_ptr<AddressData> address_data = data_;
 	while (address_data->parent_ != NULL) {
 		path.push_back(address_data->descendant_order_);
 		address_data = address_data->parent_;
