@@ -107,8 +107,11 @@ public:
     /// Perform changes to transport solution after reaction step.
     virtual void update_after_reactions(bool solution_changed) = 0;
 
+    /// Setter for output stream.
+    virtual void set_output_stream(std::shared_ptr<OutputTime> stream) = 0;
+
     /// Getter for output stream.
-    virtual std::shared_ptr<OutputTime> &output_stream() = 0;
+    virtual std::shared_ptr<OutputTime> output_stream() = 0;
 
     /// Getter for array of concentrations per element.
 	virtual double **get_concentration_matrix() = 0;

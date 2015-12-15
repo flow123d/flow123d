@@ -171,11 +171,14 @@ public:
     inline void set_velocity_field(const MH_DofHandler &dh) override
     { mh_dh=&dh; }
 
+    void set_output_stream(std::shared_ptr<OutputTime> stream)
+    { output_stream_ = stream; }
+
 
 	/**
 	 * Getters.
 	 */
-	inline std::shared_ptr<OutputTime> &output_stream() override
+	inline std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
 
 	double **get_concentration_matrix() override;

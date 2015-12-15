@@ -157,7 +157,10 @@ public:
     const vector<unsigned int> &get_subst_idx() override
 	{ return subst_idx; }
 
-	std::shared_ptr<OutputTime> &output_stream() override
+    void set_output_stream(std::shared_ptr<OutputTime> stream)
+    { output_stream_ = stream; }
+
+	std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
 
 

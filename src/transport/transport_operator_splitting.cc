@@ -155,7 +155,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
     INPUT_CHECK(convection->n_substances() >= 1 ,"Number of substances must be positive.\n");
 
-    convection->output_stream() = OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream"));
+    convection->set_output_stream(OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream")));
     convection->output_stream()->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     // initialization of balance object
