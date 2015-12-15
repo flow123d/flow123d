@@ -79,7 +79,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				"Settings for computing balance.")
 		.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 				"Parameters of output stream.")
-		.declare_key("substances", Array( Substance::get_input_type() ), Default::obligatory(),
+		.declare_key("substances", Array( Substance::get_input_type(), 1), Default::obligatory(),
 				"Specification of transported substances.")
 				// input data
 		.declare_key("transport", ConcentrationTransportBase::get_input_type(), Default::obligatory(),
@@ -153,8 +153,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	// Initialize list of substances.
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
-    INPUT_CHECK(convection->n_substances() >= 1 ,"Number of substances must be positive.\n");
 
+	// Initialize output stream.
     convection->set_output_stream(OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream")));
     convection->output_stream()->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
