@@ -350,43 +350,7 @@ std::string common_prefix( std::string a, std::string b ) {
     return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
 }
 
-void Profiler::print_timer_path (int timer_index) {
-    int tmp_index = timer_index;
-    while (tmp_index > 0) {
-        cout << timers_[tmp_index].tag() << " ";
-        tmp_index = timers_[tmp_index].parent_timer;
-    }
-    cout << "Whole Program ";
-    cout << endl;
-}
 
-void Profiler::set_MPI_communicator (MPI_Comm communicator) {
-    communicator_ = communicator;
-}
-
-int * Profiler::get_reduced_child_timers (const int timer_index) {
-    int * secured_array = new int[Timer::max_n_childs];
-    int * reduced_array = new int[Timer::max_n_childs];
-    int * original_array = timers_[timer_index].child_timers;
-    
-    // reduce timers to min value so we can detect missing Time-frame
-    MPI_Allreduce(original_array, reduced_array, Timer::max_n_childs, MPI_INT, MPI_MIN, communicator_);
-    
-    
-    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-        if (reduced_array[i] == -1 && original_array[i] > -1) {
-            // this processor contains time-frames, which at-least
-            //    one other processor does not contain
-            cout << "WARNING! Conflict in Time-frame ''" << timers_[original_array[i]].tag() << "', path: ";
-            print_timer_path (original_array[i]);
-            
-            secured_array[i] = -1;
-        } else {
-            secured_array[i] = original_array[i];
-        }
-    }
-    return secured_array;
-}
 
 template<typename ReduceFunctor>
 void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder, int timer_idx, double parent_time) {
@@ -425,11 +389,9 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     // write times children timers
     property_tree::ptree children;
     bool has_children = false;
-    int * secured_array = get_reduced_child_timers(timer_idx);
-        
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-		if (secured_array[i] > 0) {
-			add_timer_info (reduce, &children, secured_array[i], cumul_time_sum);
+		if (timer.child_timers[i] > 0) {
+			add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
 			has_children = true;
 		}
     }
@@ -457,8 +419,6 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
-    
-    set_MPI_communicator(comm);
 
     // output header
     property_tree::ptree root, children;
