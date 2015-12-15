@@ -480,19 +480,22 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 	return stream;
 }
 
+void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type) {
+    stream << "{" << endl;
+    stream << "\"id\" : " << type->hash_str() << "," << endl;
+    stream << "\"input_type\" : \"" + type->class_name() + "\"," << endl;
+    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
+    type->write_attributes(stream);
+}
+
 
 void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
 
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
-    stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"Record\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-    type->write_attributes(stream);
-    stream << "," << endl << endl;
-    stream << "\"description\" : \"" <<
+    print_type_header(stream, type);
+    stream << "," << endl << "\"description\" : \"" <<
             escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
 
     // parent records, implemented abstracts
@@ -559,15 +562,10 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type) {
     get_array_sizes(*type, lower_size, upper_size);
 	get_array_type(*type, array_type);
 
-	stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"Array\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-
+	print_type_header(stream, type);
+	stream << "," << endl;
 	stream << "\"range\" : [" << lower_size << ", " << upper_size << "]," << endl;
-	stream << "\"subtype\" : " << array_type->hash_str() << "," << endl;
-	type->write_attributes(stream);
-	stream << endl;
+	stream << "\"subtype\" : " << array_type->hash_str()  << endl;
 	stream << "}," << endl;
 
 	print_base(stream, array_type.get());
@@ -581,11 +579,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Abstract *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
-    stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"Abstract\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-    type->write_attributes(stream);
+    print_type_header(stream, type);
     stream << "," << endl;
     stream << "\"description\" : \"" <<
             escape_description( OutputBase::get_abstract_description(type)) << "\"," << endl;
@@ -607,13 +601,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstract *type) {
 
 	string parent_name;
 	get_adhoc_parent_name(type, parent_name);
-    stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"AdHocAbstract\"," << endl;
-    stream << "\"parent\" : \"" << parent_name << "\"," << endl;
-    type->write_attributes(stream);
-    stream << "," << endl;
-
+	print_type_header(stream, type);
+	stream << "," << endl;
     print_abstract_record_keys(stream, dynamic_cast<const Type::Abstract *>(type));
     stream << "},";
 
@@ -655,17 +644,12 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
-	stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"Selection\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-	type->write_attributes(stream);
+    print_type_header(stream, type);
     stream << "," << endl;
 	stream << "\"description\" : \"" <<
 	        escape_description(OutputBase::get_selection_description(type)) << "\"," << endl;
 
 	stream << "\"values\" : [" << endl;
-
 	for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
 		if (it != type->begin()) {
 			stream << "," << endl;
@@ -688,13 +672,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type) {
     int lower, upper;
 	get_integer_bounds(*type, lower, upper);
 
-	stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"Integer\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-	type->write_attributes(stream);
-    stream << "," << endl;
-
+	print_type_header(stream, type);
+	stream << "," << endl;
 	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
 	stream << "},";
 
@@ -709,13 +688,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type) {
     double lower, upper;
 	get_double_bounds(*type, lower, upper);
 
-	stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"Double\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-	type->write_attributes(stream);
-    stream << "," << endl;
-
+	print_type_header(stream, type);
+	stream << "," << endl;
     stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
 	stream << "},";
 
@@ -727,12 +701,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
-    stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"Bool\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-	type->write_attributes(stream);
-    stream << endl;
+    print_type_header(stream, type);
 	stream << "},";
 
 	boost::hash_combine(full_hash_, hash);
@@ -743,12 +712,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
-    stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"String\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-	type->write_attributes(stream);
-    stream << endl;
+    print_type_header(stream, type);
 	stream << "},";
 
 	boost::hash_combine(full_hash_, hash);
@@ -759,12 +723,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
-    stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-	stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-	type->write_attributes(stream);
+    print_type_header(stream, type);
     stream << "," << endl;
-
 	stream << "\"input_type\" : \"FileName\"," << endl;
 	stream << "\"file_mode\" : \"";
 	switch (type->get_file_type()) {
@@ -787,11 +747,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Parameter *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
-    stream << "{" << endl;
-    stream << "\"id\" : " << type->hash_str() << "," << endl;
-    stream << "\"input_type\" : \"Parameter\"," << endl;
-    stream << "\"type_ name\" : \"" << type->type_name() << "\"" << endl;
-	stream << "},";
+    print_type_header(stream, type);
+    stream << endl << "},";
 
 	boost::hash_combine(full_hash_, hash);
 }

@@ -104,6 +104,7 @@ public:
 
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  { return "TypeBase"; }
+    virtual string class_name() const { return "TypeBase"; }
 
     /**
      * Returns string with Type extensive documentation. We need this to pass Type description at
@@ -336,6 +337,7 @@ public:
 
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
     string type_name() const override;
+    string class_name() const override { return "Array"; }
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     bool operator==(const TypeBase &other) const override;
@@ -382,6 +384,8 @@ public:
 
 
     string type_name() const override;
+    string class_name() const override { return "Bool"; }
+
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };
@@ -415,6 +419,7 @@ public:
     bool match(std::int64_t value) const;
 
     string type_name() const override;
+    string class_name() const override { return "Integer"; }
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
@@ -452,6 +457,7 @@ public:
     bool match(double value) const;
 
     string type_name() const override;
+    string class_name() const override { return "Double"; }
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
@@ -471,6 +477,7 @@ private:
 class String : public Scalar {
 public:
     virtual string type_name() const override;
+    string class_name() const override { return "String"; }
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const   override;
@@ -510,6 +517,7 @@ public:
     { return FileName(::FilePath::output_file); }
 
     string type_name() const override;
+    string class_name() const override { return "FileName"; }
 
     bool operator==(const TypeBase &other) const
     { return  typeid(*this) == typeid(other) &&
