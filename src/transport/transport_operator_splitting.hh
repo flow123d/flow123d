@@ -135,14 +135,6 @@ public:
     virtual SubstanceList &substances() = 0;
 
 
-protected:
-
-    /// Getter for time governor.
-    TimeGovernor &time() { return *time_; }
-
-    friend class TransportOperatorSplitting;
-
-
 };
 
 

@@ -184,7 +184,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                     .concentration_matrix(convection->get_concentration_matrix(),
 						el_distribution, el_4_loc, convection->get_row_4_el())
 				.output_stream(convection->output_stream())
-				.set_time_governor(convection->time());
+				.set_time_governor((TimeGovernor &)convection->time());
 
 		reaction->initialize();
 
@@ -255,7 +255,7 @@ void TransportOperatorSplitting::update_solution() {
     time_->view("TOS");    //show time governor
 
     convection->set_target_time(time_->t());
-    convection->time_->view("Convection");
+    convection->time().view("Convection");
     
     START_TIMER("TOS-one step");
     int steps=0;
@@ -269,11 +269,11 @@ void TransportOperatorSplitting::update_solution() {
         )
         {
             DBGMSG("CFL changed.\n");
-            convection->time_->set_upper_constraint(cfl_convection);
+            convection->time().set_upper_constraint(cfl_convection);
 //             convection->time_->set_upper_constraint(std::min(cfl_convection, cfl_reaction));
             
             // fix step with new constraint
-            convection->time_->fix_dt_until_mark();
+            convection->time().fix_dt_until_mark();
         }
             
 	    convection->update_solution();

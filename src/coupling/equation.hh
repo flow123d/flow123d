@@ -126,9 +126,9 @@ public:
         {time_->set_lower_constraint(dt);}
 
     /**
-     * Basic getter method returns constant TimeGovernor reference which provides full read access to the time information.
+     * Basic getter method returns TimeGovernor reference which provides full access to the time information.
      */
-    inline TimeGovernor const &time()
+    inline TimeGovernor &time()
     {
         ASSERT( time_,"Time governor was not created.\n");
         return *time_;
