@@ -324,9 +324,7 @@ void TransportDG<Model>::initialize()
     // initialization of balance object
     if (Model::balance_ != nullptr)
     {
-	    Model::balance_->allocate(Model::mesh_->get_el_ds(),
-				Model::mesh_->get_el_4_loc(),
-	    		feo->dh()->distr()->lsize(),
+	    Model::balance_->allocate(feo->dh()->distr()->lsize(),
 	    		max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
     }
 

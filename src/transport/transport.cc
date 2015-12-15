@@ -136,7 +136,7 @@ void ConvectionTransport::initialize()
     output_stream_->mark_output_times(*time_);
 
     if (balance_ != nullptr)
-    	balance_->allocate(el_ds, el_4_loc, el_ds->lsize(), 1);
+    	balance_->allocate(el_ds->lsize(), 1);
 }
 
 

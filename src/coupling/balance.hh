@@ -168,14 +168,10 @@ public:
 
 	/**
 	 * Allocates matrices and vectors for balance.
-	 * @param el_ds        Distribution of elements.
-	 * @param el_4_loc     Local to global element numbering.
 	 * @param n_loc_dofs            Number of solution dofs on the local process.
 	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
 	 */
-	void allocate(const Distribution *el_ds,
-			const int *el_4_loc,
-			unsigned int n_loc_dofs,
+	void allocate(unsigned int n_loc_dofs,
 			unsigned int max_dofs_per_boundary);
 
 	/**

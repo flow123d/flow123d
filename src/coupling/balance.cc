@@ -154,9 +154,7 @@ std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &nam
 }
 
 
-void Balance::allocate(const Distribution *el_ds,
-		const int *el_4_loc,
-		unsigned int n_loc_dofs,
+void Balance::allocate(unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
 {
 	ASSERT(!allocation_done_, "Attempt to allocate Balance object multiple times.");
@@ -169,9 +167,9 @@ void Balance::allocate(const Distribution *el_ds,
 
 
 	// construct vector of regions of boundary edges
-    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    for (unsigned int loc_el = 0; loc_el < mesh_->get_el_ds()->lsize(); loc_el++)
     {
-        Element *elm = mesh_->element(el_4_loc[loc_el]);
+        Element *elm = mesh_->element(mesh_->get_el_4_loc()[loc_el]);
         if (elm->boundary_idx_ != nullptr)
         {
             FOR_ELEMENT_SIDES(elm,si)
