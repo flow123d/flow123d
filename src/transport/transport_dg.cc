@@ -314,7 +314,7 @@ void TransportDG<Model>::initialize()
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
-    	solution_elem_[sbi] = new double[feo->dh()->el_ds()->lsize()];
+    	solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
     }
     stiffness_matrix = new Mat[Model::n_substances()];
     rhs = new Vec[Model::n_substances()];
@@ -324,8 +324,8 @@ void TransportDG<Model>::initialize()
     // initialization of balance object
     if (Model::balance_ != nullptr)
     {
-	    Model::balance_->allocate(feo->dh()->el_ds(),
-				feo->dh()->get_el_4_loc(),
+	    Model::balance_->allocate(Model::mesh_->get_el_ds(),
+				Model::mesh_->get_el_4_loc(),
 	    		feo->dh()->distr()->lsize(),
 	    		max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
     }
@@ -339,7 +339,7 @@ TransportDG<Model>::~TransportDG()
     delete Model::time_;
     delete ls_dt;
 
-    if (feo->dh()->el_ds()->myp() == 0)
+    if (Model::mesh_->get_el_ds()->myp() == 0)
     {
 		for (unsigned int i=0; i<Model::n_substances(); i++)
 		{
@@ -571,7 +571,7 @@ template<class Model>
 void TransportDG<Model>::calculate_concentration_matrix()
 {
     // calculate element averages of solution
-    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator elem = Model::mesh_->element(feo->dh()->el_index(i_cell));
 
@@ -679,7 +679,7 @@ void TransportDG<Model>::assemble_mass_matrix()
     vector<PetscScalar> local_mass_balance_vector(ndofs);
 
     // assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator cell = Model::mesh_->element(feo->dh()->el_index(i_cell));
         if (cell->dim() != dim) continue;
@@ -768,7 +768,7 @@ void TransportDG<Model>::assemble_volume_integrals()
     PetscScalar local_matrix[ndofs*ndofs];
 
 	// assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator cell = Model::mesh_->element(feo->dh()->el_index(i_cell));
         if (cell->dim() != dim) continue;
@@ -838,7 +838,7 @@ void TransportDG<Model>::set_sources()
     double source;
 
 	// assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator cell = Model::mesh_->element(feo->dh()->el_index(i_cell));
         if (cell->dim() != dim) continue;
@@ -1263,7 +1263,7 @@ void TransportDG<Model>::set_boundary_conditions()
     vector<double> csection(qsize);
 	vector<arma::vec3> velocity;
 
-    for (unsigned int loc_el = 0; loc_el < feo->dh()->el_ds()->lsize(); loc_el++)
+    for (unsigned int loc_el = 0; loc_el < Model::mesh_->get_el_ds()->lsize(); loc_el++)
     {
         ElementFullIter elm = Model::mesh_->element(feo->dh()->el_index(loc_el));
         if (elm->boundary_idx_ == nullptr) continue;
@@ -1609,7 +1609,7 @@ void TransportDG<Model>::prepare_initial_condition()
     for (unsigned int k=0; k<qsize; k++)
     	init_values[k].resize(Model::n_substances());
 
-    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator elem = Model::mesh_->element(feo->dh()->el_index(i_cell));
     	if (elem->dim() != dim) continue;
@@ -1650,8 +1650,8 @@ void TransportDG<Model>::prepare_initial_condition()
 template<class Model>
 void TransportDG<Model>::get_par_info(int * &el_4_loc, Distribution * &el_ds)
 {
-	el_4_loc = feo->dh()->get_el_4_loc();
-	el_ds = feo->dh()->el_ds();
+	el_4_loc = Model::mesh_->get_el_4_loc();
+	el_ds = Model::mesh_->get_el_ds();
 }
 
 
@@ -1660,7 +1660,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 {
 	if (solution_changed)
 	{
-		for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+		for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
 		{
 			typename DOFHandlerBase::CellIterator elem = Model::mesh_->element(feo->dh()->el_index(i_cell));
 
@@ -1701,7 +1701,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 template<class Model>
 int *TransportDG<Model>::get_row_4_el()
 {
-	return feo->dh()->get_row_4_el();
+	return Model::mesh_->get_row_4_el();
 }
 
 
