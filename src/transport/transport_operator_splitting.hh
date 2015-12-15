@@ -62,8 +62,6 @@ public:
     static Input::Type::Abstract & get_input_type();
 
 
-    virtual void initialize() = 0;
-
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
      * In particular the velocity field dosn't change over this interval.
@@ -89,6 +87,7 @@ public:
     
     virtual bool assess_time_constraint(double &time_constraint) = 0;
 
+    /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
 
     /**
@@ -102,22 +101,28 @@ public:
      */
     virtual void calculate_instant_balance() = 0;
 
+    /// Calculate the array of concentrations per element (for reactions).
     virtual void calculate_concentration_matrix() = 0;
 
+    /// Perform changes to transport solution after reaction step.
     virtual void update_after_reactions(bool solution_changed) = 0;
 
-
+    /// Getter for output stream.
     virtual std::shared_ptr<OutputTime> &output_stream() = 0;
 
+    /// Getter for array of concentrations per element.
 	virtual double **get_concentration_matrix() = 0;
 
 	/// Return PETSc vector with solution for sbi-th substance.
 	virtual const Vec &get_solution(unsigned int sbi) = 0;
 
+	/// Return array of indices of local elements and parallel distribution of elements.
 	virtual void get_par_info(int * &el_4_loc, Distribution * &el_ds) = 0;
 
+	/// Return global array of order of elements within parallel vector.
 	virtual int *get_row_4_el() = 0;
 
+	/// Pass velocity from flow to transport.
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
 
     /// Returns number of trnasported substances.
@@ -129,6 +134,7 @@ public:
 
 protected:
 
+    /// Getter for time governor.
     TimeGovernor &time() { return *time_; }
 
     friend class TransportOperatorSplitting;
