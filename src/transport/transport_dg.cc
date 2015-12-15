@@ -329,7 +329,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
-    	balance_ = boost::make_shared<Balance>(Model::balance_prefix(), mesh_, feo->dh()->el_ds(), feo->dh()->get_el_4_loc(), *it);
+    	balance_ = boost::make_shared<Balance>(Model::balance_prefix(), mesh_, *it);
 
     	// a not very nice workaround for model with single solution component with no name
     	if (typeid(Model) == typeid(HeatTransferModel))

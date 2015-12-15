@@ -246,9 +246,10 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 {
 #ifdef FLOW123D_HAVE_BDDCML
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
+    START_TIMER("BDDC linear solver");
 
     {
-		START_TIMER("BDDC linear solver");
+
 		START_TIMER("BDDC linear iteration");
 		bddcml_ -> solveSystem( r_tol_, number_of_levels_, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
 
