@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
 
       input_fields= [
         { r_set = "BOUNDARY",
@@ -33,39 +33,32 @@
     },
 
     secondary_equation = {
-      TYPE = "Transport_OS",
-      
-      transport = {
-        TYPE = "ConvectionDiffusion_DG", 
+      TYPE = "SoluteTransport_DG", 
     
-        input_fields= [
-          { region = "domain",
-            diff_m = 1e-2,
-            sources_density = 0,
-            init_conc = 5
-          },
-          { region = ".left",
-            bc_type = "diffusive_flux",
-            bc_flux = 1e-1
-          },
-          { region = ".right",
-            bc_type = "diffusive_flux",
-            bc_conc = 10,
-            bc_robin_sigma = 1
-          },
-          { region = ".top",
-            bc_type = "diffusive_flux",
-            bc_flux = -1e-1
-          },
-          { region = ".bottom",
-            bc_type = "diffusive_flux",
-            bc_flux = -1e-1
-          }
-        ],
-        solver = { 
-          REF="../../../primary_equation/solver"
+      input_fields= [
+        { region = "domain",
+          diff_m = 1e-2,
+          sources_density = 0,
+          init_conc = 5
+        },
+        { region = ".left",
+          bc_type = "diffusive_flux",
+          bc_flux = 1e-1
+        },
+        { region = ".right",
+          bc_type = "diffusive_flux",
+          bc_conc = 10,
+          bc_robin_sigma = 1
+        },
+        { region = ".top",
+          bc_type = "diffusive_flux",
+          bc_flux = -1e-1
+        },
+        { region = ".bottom",
+          bc_type = "diffusive_flux",
+          bc_flux = -1e-1
         }
-      },
+      ],
 
       output_stream = {
         REF = "/system/output_streams/1"
@@ -79,8 +72,10 @@
       },
       balance = {
         cumulative = true
+      },
+      solver = { 
+        REF="../../primary_equation/solver"
       }
-      
     }
   }, 
 

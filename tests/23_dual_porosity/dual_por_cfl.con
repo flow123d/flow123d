@@ -8,7 +8,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
 
       input_fields = [
         { r_set = "BULK",
@@ -42,7 +42,7 @@
     }, 
     
     secondary_equation = {
-      TYPE = "Transport_OS", 
+      TYPE = "TransportOperatorSplitting", 
 
       substances = ["A"],
       time = {

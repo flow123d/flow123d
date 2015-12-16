@@ -12,7 +12,7 @@
     }, 
     
     primary_equation = {
-      TYPE = "SteadyDarcy_MH",
+      TYPE = "Steady_MH",
       
       input_fields = [
         { region = "volume", conductivity = 1e-10
@@ -39,22 +39,19 @@
     }, 
     
     secondary_equation = {
-      TYPE = "Transport_OS",
+      TYPE = "TransportOperatorSplitting",
    
       substances = ["A", "As-lin", "As-lang", "As-freund"],
       
-      transport = {
-        TYPE = "Convection_FV",
-        input_fields = [
-          { region = "volume",
-            init_conc = 1,
-            porosity= 0.25
-          },
-          { r_set = ".boundary",
-            bc_conc = 1.0
-          }
-        ]
-      },
+      input_fields = [
+        { region = "volume",
+          init_conc = 1,
+          porosity= 0.25
+        },
+        { r_set = ".boundary",
+          bc_conc = 1.0
+        }
+      ],      
       
       reaction_term = {
         TYPE = "Sorption",

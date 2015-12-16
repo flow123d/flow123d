@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
 
       input_fields= [
         { r_set = "BOUNDARY",
@@ -33,30 +33,22 @@
     },
 
     secondary_equation = {
-      TYPE = "Transport_OS",
-      
-      transport = {
-        TYPE="ConvectionDiffusion_DG", 
+      TYPE = "SoluteTransport_DG", 
     
-        input_fields= [
-          { region = ".right",
-            bc_conc = 1
-          },
-          { region = ".bottom",
-            bc_conc = 2
-          },
-          { region = ".top",
-            bc_conc = 3
-          },
-          { region = "domain",
-            diff_m = { TYPE="FieldFormula", value="if(y>0.5,0,1e-2)" }
-          }
-        ],
-        
-        solver = { 
-          REF="../../../primary_equation/solver"
+      input_fields= [
+        { region = ".right",
+          bc_conc = 1
+        },
+        { region = ".bottom",
+          bc_conc = 2
+        },
+        { region = ".top",
+          bc_conc = 3
+        },
+        { region = "domain",
+          diff_m = { TYPE="FieldFormula", value="if(y>0.5,0,1e-2)" }
         }
-      },
+      ],
 
       output_stream = {
         REF = "/system/output_streams/1"
@@ -71,8 +63,10 @@
       },
       balance = {
         cumulative = true
+      },
+      solver = { 
+        REF="../../primary_equation/solver"
       }
-
     }
   }, 
 

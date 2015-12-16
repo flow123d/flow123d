@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
 
       input_fields= [
         { r_set = "BULK",
@@ -41,42 +41,33 @@
     }, 
  
     secondary_equation = {
-      TYPE = "Transport_OS",
-      
-      transport = {
-        TYPE = "ConvectionDiffusion_DG", 
+      TYPE = "SoluteTransport_DG", 
 
-        input_fields= [
-          { r_set = "BULK",
-            init_conc = 0
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc = 20,
-            time = 1
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc = 0,
-            time = 3
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc = 40,
-            time = 6
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc = 0,
-            time = 7
-          }
-        ],
-        solver = {
-          TYPE = "Petsc", 
-          a_tol = 1e-12,
-          r_tol = 1e-12
+      input_fields= [
+        { r_set = "BULK",
+          init_conc = 0
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc = 20,
+          time = 1
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc = 0,
+          time = 3
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc = 40,
+          time = 6
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc = 0,
+          time = 7
         }
-      },
+      ],
 
       output_stream = {
         REF = "/system/output_streams/1"
@@ -85,7 +76,11 @@
       substances = [
         "A"
       ], 
-      
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      },
       time = {
 	end_time = 10.0, 
 	init_dt = 1.0

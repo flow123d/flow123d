@@ -11,7 +11,7 @@ problem: !SequentialCoupling
       region_labels:
       - .2d
       - .1d
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Steady_MH
     input_fields:
     - region: 1d
       anisotropy: 10
@@ -38,7 +38,7 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !Transport_OS
+  secondary_equation: !SoluteTransport_DG
     output_stream:
       file: ./transport-implicit.pvd
       format: !vtk
@@ -51,23 +51,21 @@ problem: !SequentialCoupling
     time:
       end_time: 5.0
       init_dt: 0.5
-    transport: !ConvectionDiffusion_DG
-      solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
-      input_fields:
-      - r_set: .sides
-        bc_conc: !FieldFormula
-          value: (1+sin(t))*0.5
-      - r_set: subset
-        init_conc: !FieldFormula
-          value:
-          - (1+sin(x)*sin(y))*0.5
-          - (1+sin(x))*0.5
-        porosity: 0.25
-      - region: 1d
-        dg_penalty: 10
-      dg_variant: symmetric
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
+    input_fields:
+    - r_set: .sides
+      bc_conc: !FieldFormula
+        value: (1+sin(t))*0.5
+    - r_set: subset
+      init_conc: !FieldFormula
+        value:
+        - (1+sin(x)*sin(y))*0.5
+        - (1+sin(x))*0.5
+      porosity: 0.25
+    - region: 1d
+      dg_penalty: 10
+    dg_variant: symmetric
     balance:
       cumulative: true
-    name: transport_output_stream

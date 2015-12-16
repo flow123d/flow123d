@@ -7,7 +7,7 @@
     }, 
     
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
 
       input_fields= [
         { rid = 1,
@@ -36,21 +36,18 @@
     },
     
     secondary_equation = {
-      TYPE = "Transport_OS", 
+      TYPE = "TransportOperatorSplitting", 
 
-      transport = {
-        TYPE = "Convection_FV",
-        input_fields= [
-          { rid = 1,
-            init_conc = 
-              [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000]
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc = [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000]
-          }
-        ]
-      },
+      input_fields= [
+        { rid = 1,
+          init_conc = 
+            [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000]
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc = [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000]
+        }
+      ],
 
       output_stream = {
         REF = "/system/output_streams/1"

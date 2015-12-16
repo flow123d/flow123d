@@ -10,7 +10,7 @@
     
 
     primary_equation = {
-      TYPE = "UnsteadyDarcy_LMH", 
+      TYPE = "Unsteady_LMH", 
 
       input_fields= [
         { region = "domain",
@@ -54,33 +54,25 @@
     }, 
 
     secondary_equation = {
-      TYPE = "Transport_OS",
+      TYPE = "SoluteTransport_DG", 
       
-      transport = {
-        TYPE = "ConvectionDiffusion_DG", 
-        input_fields= [
-          { region = "domain",
-            init_conc = 0
-          },
-          {
-            region = ".left",
-            bc_type = "dirichlet",
-            bc_conc = 10,
-            time = 0.0
-          },
-          {
-            region = ".left",
-            bc_type = "dirichlet",
-            bc_conc = 0,
-            time = 0.1
-          }
-        ],
-        solver = {
-          TYPE = "Petsc", 
-          a_tol = 1e-07,
-          r_tol = 1e-07
+      input_fields= [
+        { region = "domain",
+          init_conc = 0
+        },
+        {
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_conc = 10,
+          time = 0.0
+        },
+        {
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_conc = 0,
+          time = 0.1
         }
-      },
+      ],
       
       output_stream = {
         REF = "/system/output_streams/1"
@@ -93,7 +85,11 @@
         end_time = 2.0, 
         max_dt = 0.1
       },
-      
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07,
+        r_tol = 1e-07
+      }, 
       
       balance = {
         cumulative = true

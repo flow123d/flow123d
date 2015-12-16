@@ -8,7 +8,7 @@
 
     // steady velocity field, with velocity v=0.1
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
 
       input_fields= [
         { region = "bulk",
@@ -42,7 +42,7 @@
     }, 
 
     secondary_equation = {
-      TYPE = "Transport_OS", 
+      TYPE = "TransportOperatorSplitting", 
       substances = [ "A" ], 
       time = {       
         // test forcing smaller time step then output, 
@@ -51,29 +51,27 @@
         end_time = 1.0
       },
     
-      transport = {
-        TYPE = "Convection_FV",
-        input_fields= [
-          { region = "bulk",
-            init_conc = 0
-          },
-          {
-            region = ".right",
-            time = 0.01,
-            bc_conc=100
-          },
-          {
-            region = ".right",
-            time = 0.02,
-            bc_conc=0
-          },
-          {
-            region = ".right",
-            time = 0.35,
-            bc_conc=20
-          }  
-        ]
-      },
+      input_fields= [
+        { region = "bulk",
+          init_conc = 0
+        },
+        {
+          region = ".right",
+          time = 0.01,
+          bc_conc=100
+          
+        },
+        {
+          region = ".right",
+          time = 0.02,
+          bc_conc=0
+        },
+        {
+          region = ".right",
+          time = 0.35,
+          bc_conc=20
+        }  
+      ],
 
       output_stream = {
         REF = "/system/output_streams/1"

@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "UnsteadyDarcy_MH", 
+      TYPE = "Unsteady_MH", 
 
       input_fields= [
         {

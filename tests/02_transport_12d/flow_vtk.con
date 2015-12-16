@@ -23,7 +23,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
 
       input_fields= [
         { region = "1d",
@@ -65,25 +65,22 @@
     },
 
     secondary_equation = {
-      TYPE = "Transport_OS", 
+      TYPE = "TransportOperatorSplitting", 
 
-      transport = {
-        TYPE = "Convection_FV",
-        input_fields=[
-          {
-            r_set=".sides",
-            bc_conc = { 
-                TYPE="FieldFormula",
-                value="x/12.75"
-            }           
-          },
-          {
-            r_set="subset",
-            init_conc = 0,
-            porosity= 0.25
-          }
-        ]
-      },
+      input_fields=[
+        {
+          r_set=".sides",
+          bc_conc = { 
+              TYPE="FieldFormula",
+              value="x/12.75"
+          }           
+        },
+        {
+          r_set="subset",
+          init_conc = 0,
+          porosity= 0.25
+        }
+      ],
 
       output_stream = {
         file = "./transport.pvd", 

@@ -6,7 +6,7 @@
       mesh_file = "./input/test16.msh"
     }, 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
       
       n_schurs = 2,
       
@@ -43,37 +43,34 @@
       }
     }, 
     secondary_equation = {
-      TYPE = "Transport_OS", 
+      TYPE = "TransportOperatorSplitting", 
       boundary_file = "./input/test16.tbc", 
       initial_file = "./input/test16.tic", 
       
-      transport = {
-        TYPE = "Convection_FV",
-        input_fields= [
-          { r_set = "BOUNDARY",
-            bc_conc = 0
+      input_fields= [
+        { r_set = "BOUNDARY",
+          bc_conc = 0
+        },
+        { r_set = "BULK",
+          init_conc = 0,
+          porosity= 1,
+          sources_density = {
+            TYPE = "FieldElementwise",
+            gmsh_file = "input/test16_sources.msh",
+            field_name = "density"
           },
-          { r_set = "BULK",
-            init_conc = 0,
-            porosity= 1,
-            sources_density = {
-              TYPE = "FieldElementwise",
-              gmsh_file = "input/test16_sources.msh",
-              field_name = "density"
-            },
-            sources_sigma = {
-              TYPE = "FieldElementwise",
-              gmsh_file = "input/test16_sources.msh",
-              field_name = "sigma"
-            },
-            sources_conc = {
-              TYPE = "FieldElementwise",
-              gmsh_file = "input/test16_sources.msh",
-              field_name = "concentration"
-            }
+          sources_sigma = {
+            TYPE = "FieldElementwise",
+            gmsh_file = "input/test16_sources.msh",
+            field_name = "sigma"
+          },
+          sources_conc = {
+            TYPE = "FieldElementwise",
+            gmsh_file = "input/test16_sources.msh",
+            field_name = "concentration"
           }
-        ]
-      },
+        }
+      ],
       
       output_stream = {
         REF = "/system/output_streams/1"

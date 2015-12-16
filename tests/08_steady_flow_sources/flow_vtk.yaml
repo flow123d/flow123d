@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Test8 - Steady flow with sources
   mesh:
     mesh_file: ${INPUT}/test08.msh
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Steady_MH
     input_fields:
     - region: plane
       anisotropy: 1
@@ -25,4 +25,3 @@ problem: !SequentialCoupling
     solver: !Petsc
       r_tol: 1.0e-10
       a_tol: 1.0e-10
-    name: flow_output_stream

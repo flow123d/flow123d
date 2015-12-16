@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
       n_schurs = 2, 
 
       input_fields= [

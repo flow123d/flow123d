@@ -7,7 +7,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
 
       input_fields= [
         { r_set = "BULK",
@@ -41,36 +41,33 @@
     }, 
 
     secondary_equation = {
-      TYPE = "Transport_OS", 
+      TYPE = "TransportOperatorSplitting", 
     
-      transport = {
-        TYPE = "Convection_FV",
-        input_fields= [
-          { r_set = "BULK",
-            init_conc = 0
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc=20,
-            time = 1
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc=0,
-            time = 3
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc=40,
-            time = 6
-          },
-          {
-            r_set = "BOUNDARY",
-            bc_conc=0,
-            time = 7
-          }
-        ]
-      },
+      input_fields= [
+        { r_set = "BULK",
+          init_conc = 0
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc=20,
+          time = 1
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc=0,
+          time = 3
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc=40,
+          time = 6
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc=0,
+          time = 7
+        }
+      ],
 
       output_stream = {
         REF = "/system/output_streams/1"

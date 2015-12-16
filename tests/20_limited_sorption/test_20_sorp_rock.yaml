@@ -14,7 +14,7 @@ problem: !SequentialCoupling
   description: TestXXX-pork
   mesh:
     mesh_file: ${INPUT}/test_20.msh
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Steady_MH
     input_fields:
     - region: rectangle
       conductivity: 0.125
@@ -34,7 +34,7 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !Transport_OS
+  secondary_equation: !TransportOperatorSplitting
     substances:
     - A
     - As-lin
@@ -42,15 +42,14 @@ problem: !SequentialCoupling
     - Bs-lang
     - C
     - Cs-freund
-    transport: !Convection_FV
-      input_fields:
-      - r_set: ALL
-        init_conc: 0
-        porosity: !FieldFormula
-          value: '0.25'
-      - r_set: BOUNDARY
-        bc_conc: !FieldFormula
-          value: 0.05*t
+    input_fields:
+    - r_set: ALL
+      init_conc: 0
+      porosity: !FieldFormula
+        value: '0.25'
+    - r_set: BOUNDARY
+      bc_conc: !FieldFormula
+        value: 0.05*t
     output:
       conc_mobile_p0: transport_output_stream
       output_stream: 
@@ -104,4 +103,3 @@ problem: !SequentialCoupling
         - 0.4
     balance:
       cumulative: true
-  name: transport_output_stream

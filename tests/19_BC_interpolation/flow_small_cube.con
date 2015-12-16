@@ -6,7 +6,7 @@
       mesh_file = "${INPUT}/small_mesh.msh"    
     }, 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
       input_fields=[
         {
           region = "IMPLICIT BOUNDARY",

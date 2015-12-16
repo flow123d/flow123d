@@ -7,7 +7,7 @@
     }, 
     
     primary_equation = {
-      TYPE = "SteadyDarcy_MH",
+      TYPE = "Steady_MH",
       
       input_fields= [
         { region = "rectangle", 
@@ -37,22 +37,19 @@
     }, 
     
     secondary_equation = {
-      TYPE = "Transport_OS",
+      TYPE = "TransportOperatorSplitting",
    
       substances = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
       
-      transport = {
-        TYPE = "Convection_FV",
-        input_fields= [
-          { r_set = "ALL",
-            init_conc = 0,
-            porosity= {TYPE="FieldFormula", value = "0.25"}
-          },
-          { r_set = "BOUNDARY",
-            bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
-          }
-        ]
-      },
+      input_fields= [
+        { r_set = "ALL",
+          init_conc = 0,
+          porosity= {TYPE="FieldFormula", value = "0.25"}
+        },
+        { r_set = "BOUNDARY",
+          bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
+        }
+      ],
       
       output = {
         conc_mobile_p0 = "transport_output_stream", 

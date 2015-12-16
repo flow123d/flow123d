@@ -9,7 +9,7 @@
     }, 
 
     primary_equation = {
-      TYPE = "SteadyDarcy_MH", 
+      TYPE = "Steady_MH", 
       boundary_file = "./input/test3.fbc", 
       output = {
         output_stream = {

@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Test3 - Transport implicit 1D-2D, (convection, dispersion)
   mesh:
     mesh_file: ./input/test3.msh
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Steady_MH
     input_fields:
     - rid: 17
       anisotropy: 10
@@ -11,12 +11,10 @@ problem: !SequentialCoupling
     - rid: 18
       anisotropy: 1
       cross_section: 1
-    - r_set: BOUNDARY
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x+y
+    - region: IMPLICIT BOUNDARY
+      flow_old_bcd_file: ./input/test3.fbc
     output:
-      output_stream:
+      output_stream: 
         file: flow.pvd
         format: !vtk
           variant: ascii
@@ -29,23 +27,19 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !Transport_OS
+  secondary_equation: !SoluteTransport_DG
+    input_fields:
+    - rid: 17
+      init_conc: 0
+      porosity: 0.25
+    - rid: 18
+      init_conc: 0
+      porosity: 0.25
+    - region: IMPLICIT BOUNDARY
+      bc_conc: 1
     substances:
     - age
-    transport: !ConvectionDiffusion_DG
-      input_fields:
-      - rid: 17
-        init_conc: 0
-        porosity: 0.25
-      - rid: 18
-        init_conc: 0
-        porosity: 0.25
-      - r_set: BOUNDARY
-        bc_conc: 1
-      solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
-    output_stream:
+    output_stream: 
       file: transport.pvd
       format: !vtk
         variant: ascii
@@ -54,4 +48,7 @@ problem: !SequentialCoupling
     time:
       end_time: 1.0
       init_dt: 0.1
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
     balance: false

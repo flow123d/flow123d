@@ -3,7 +3,7 @@ problem: !SequentialCoupling
     section parameters.
   mesh:
     mesh_file: ${INPUT}/test6_21d.msh
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Steady_MH
     n_schurs: 2
     input_fields:
     - region: plane
