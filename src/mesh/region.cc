@@ -134,22 +134,23 @@ Region RegionDB::add_region(unsigned int id, const std::string &label) {
 	bool boundary = is_boundary(label);
 	if (label.size() == 0) create_label_from_id(label, id);
 
-    DimIDIter it_id = region_table_.get<DimId>().find(DimID(undefined_dim,id));
-    if (it_id != region_table_.get<DimId>().end() ) {
-    	// Find existing region
-    	return find_by_dimid(it_id, id, label, boundary);
+    OnlyIDIter it_only_id = region_table_.get<OnlyID>().find(id);
+    if (it_only_id != region_table_.get<OnlyID>().end() ) {
+    	// replace region label
+    	unsigned int index = it_only_id->index;
+
+    	RegionItem item(index, it_only_id->get_id(), label, it_only_id->dim());
+    	region_table_.replace(
+    			region_table_.get<Index>().find(index),
+                item);
+
+    	return Region(index, *this);
     }
 
     LabelIter it_label = region_table_.get<Label>().find(label);
     if (it_label != region_table_.get<Label>().end() ) {
         // ID is free, not label
         THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->get_id()) );
-    }
-
-    OnlyIDIter it_only_id = region_table_.get<OnlyID>().find(id);
-    if (it_only_id != region_table_.get<OnlyID>().end() ) {
-    	// replace region label
-    	return rename_region_label(it_only_id, label);
     }
 
     return insert_region(id, label, undefined_dim, boundary);
@@ -544,17 +545,6 @@ Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bo
         THROW(ExcInconsistentBoundary() << EI_Label(it_undef_dim->label) << EI_ID(it_undef_dim->get_id()) );
 
     return r_id;
-}
-
-Region RegionDB::rename_region_label(OnlyIDIter it_only_id, const std::string &label) {
-	unsigned int index = it_only_id->index;
-
-	RegionItem item(index, it_only_id->get_id(), label, it_only_id->dim());
-	region_table_.replace(
-			region_table_.get<Index>().find(index),
-            item);
-
-	return Region(index, *this);
 }
 
 Region RegionDB::find_by_dimid(DimIDIter it_id, unsigned int id, const std::string &label, bool boundary) {
