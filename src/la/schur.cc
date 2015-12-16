@@ -36,6 +36,7 @@
 #include <armadillo>
 #include <petscis.h>
 
+#include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 #include "la/local_to_global_map.hh"
 #include "system/system.hh"
@@ -201,6 +202,7 @@ void SchurComplement::form_schur()
 
 void SchurComplement::form_rhs()
 {
+    START_TIMER("form rhs");
 	if (rhs_changed_ || matrix_changed_) {
 	    MatMultTranspose(IAB, RHS1, *( Compl->get_rhs() ));
 	    VecAXPY(*( Compl->get_rhs() ), -1, RHS2);
@@ -245,6 +247,7 @@ Distribution *SchurComplement::make_complement_distribution()
 
 void SchurComplement::create_inversion_matrix()
 {
+    START_TIMER("create inversion matrix");
     PetscInt ncols, pos_start, pos_start_IA;
 
     MatReuse mat_reuse=MAT_REUSE_MATRIX;
@@ -321,11 +324,20 @@ double SchurComplement::get_solution_precision()
 
 
 int SchurComplement::solve() {
-	this->form_schur();
+    START_TIMER("SchurComplement::solve");
+    {
+        START_TIMER("form schur complement");
+        this->form_schur();
+    }
 
-	int converged_reason = Compl->solve();
-	this->resolve();
+    //START_TIMER("complement solve");
+    int converged_reason = Compl->solve();
+    //END_TIMER("complement solve");
 
+    {
+        START_TIMER("schur back resolve");
+        this->resolve();
+    }
 	return converged_reason;
 }
 

@@ -1,5 +1,5 @@
 
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
 

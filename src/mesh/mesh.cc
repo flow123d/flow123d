@@ -25,6 +25,7 @@
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
+#include "la/distribution.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
@@ -72,7 +73,10 @@ const IT::Record & Mesh::get_input_type() {
 const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
-:comm_(comm)
+:comm_(comm),
+ row_4_el(nullptr),
+ el_ds(nullptr),
+ el_4_loc(nullptr)
 {
 
     Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
@@ -85,7 +89,10 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
-  comm_(com)
+  comm_(com),
+  row_4_el(nullptr),
+  el_ds(nullptr),
+  el_4_loc(nullptr)
 {
     reinit(in_record_);
 }
@@ -155,6 +162,10 @@ Mesh::~Mesh() {
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
+
+    if (row_4_el != nullptr) delete[] row_4_el;
+    if (el_4_loc != nullptr) delete[] el_4_loc;
+    if (el_ds != nullptr) delete el_ds;
 }
 
 
@@ -272,6 +283,13 @@ void Mesh::setup_topology() {
     count_side_types();
 
     part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
+
+    // create parallel distribution and numbering of elements
+    int *id_4_old = new int[element.size()];
+    int i = 0;
+    FOR_ELEMENTS(this, ele) id_4_old[i++] = ele.index();
+    part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
+    delete[] id_4_old;
 }
 
 

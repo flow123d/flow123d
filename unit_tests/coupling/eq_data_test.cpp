@@ -19,7 +19,7 @@
  *   Record (nesmysl)? Tedy v nazvu recordu pouzit nazev tridy
  */
 
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
 #include <vector>

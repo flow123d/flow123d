@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 
 #include <memory>
 #include <boost/regex.hpp>
