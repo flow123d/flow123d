@@ -252,6 +252,10 @@ TEST_F(SomeEquation, values) {
                 TYPE="FieldConstant",
                 value=1.23
             },
+            bc_conc={
+                TYPE="FieldFormula",
+                value=["x", "10+x", "20+x", "30+x"]
+            },
             conc_mobile = {
                 TYPE="MultiField",
                 component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
@@ -262,6 +266,7 @@ TEST_F(SomeEquation, values) {
           { rid=102,
             bc_type="dirichlet",
             bc_piezo_head=1.23,
+            bc_conc={REF="/data/3/bc_conc"},
             conc_mobile={REF="/data/3/conc_mobile"}
           }
       ] 
@@ -332,80 +337,17 @@ TEST_F(SomeEquation, values) {
     EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_bottom) );
     EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, el_bc_bottom) );    // piezo_head
 
-}
-
-
-
-TEST_F(SomeEquation, old_bcd_input) {
-    // Test input for old_bcd
-    string eq_data_old_bcd = R"JSON(
-    { 
-      data=[
-          { r_set="BOUNDARY",
-            bc_type={TYPE="FieldConstant", value = "dirichlet"},
-            bc_pressure={
-                TYPE="FieldFormula",
-                value="x"
-            },
-            bc_conc={
-                TYPE="FieldFormula",
-                value=["x", "10+x", "20+x", "30+x"]
-            },
-            conc_mobile = {
-                TYPE="MultiField",
-                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
-                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
-                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
-              }
-          },
-          { r_set="BULK",
-            bulk_set_field=0.0,
-            conc_mobile={REF="/data/0/conc_mobile"}
-          } 
-      ] 
-    }
-    )JSON";
-
-    read_input(eq_data_old_bcd);
-
-    Space<3>::Point p;
-    p(0)=1.0; p(1)= 2.0; p(2)=3.0;
-
-    DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
-
-
-    // Four bc elements are read with mesh, corresponding to BCD IDs:
-    // 7, 17, 10, 12
-    // The bcd IDs  order in the bc_vector: 7, 17, 10, 12, 0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14, 15, 16
-
-    {
-    auto test_elm = mesh->element_accessor(4, true);
-    EXPECT_EQ(EqData::dirichlet, (EqData::BC_type)data.bc_type.value(p, test_elm));
-    EXPECT_DOUBLE_EQ(1.0, data.bc_pressure.value(p, test_elm) );
-    arma::vec value = data.bc_conc.value(p, test_elm);
-    EXPECT_DOUBLE_EQ(1.0, value(0) );
-    EXPECT_DOUBLE_EQ(11.0, value(1) );
-    EXPECT_DOUBLE_EQ(21.0, value(2) );
-    EXPECT_DOUBLE_EQ(31.0, value(3) );
-    }
-
-    {
-    auto test_elm = mesh->element_accessor(10, true);
-    EXPECT_EQ(EqData::dirichlet, (EqData::BC_type)data.bc_type.value(p, test_elm));
-    EXPECT_DOUBLE_EQ(1.0, data.bc_pressure.value(p, test_elm) );
-    arma::vec value = data.bc_conc.value(p, test_elm);
-    EXPECT_DOUBLE_EQ(1.0, value(0) );
-    EXPECT_DOUBLE_EQ(11.0, value(1) );
-    EXPECT_DOUBLE_EQ(21.0, value(2) );
-    EXPECT_DOUBLE_EQ(31.0, value(3) );
-    }
-
+    arma::vec bc_value = data.bc_conc.value(p, el_bc_bottom);
+    EXPECT_DOUBLE_EQ(1.0, bc_value(0) );
+    EXPECT_DOUBLE_EQ(11.0, bc_value(1) );
+    EXPECT_DOUBLE_EQ(21.0, bc_value(2) );
+    EXPECT_DOUBLE_EQ(31.0, bc_value(3) );
 }
 
 
 
 TEST_F(SomeEquation, wrong_time_order) {
-    // Test input for old_bcd
+    // Test input for wrong_time_order
     string eq_data = R"JSON(
     { 
       data=[
