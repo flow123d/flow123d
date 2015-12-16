@@ -343,7 +343,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 					else
 					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
-					e << shared_->input_list_[shared_->list_idx_].ei_address(); //TODO is address correct? Previous value was shared_->input_list_.ei_address()
+					e << shared_->input_list_[shared_->list_idx_].ei_address();
 					throw;
 				}
 			} else {
@@ -460,7 +460,6 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
-	//cout << "Field::set_input_list: " << input_name() << endl;
     // check that times forms ascending sequence
     double time,last_time=0.0;
 
@@ -478,16 +477,6 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
 							<< it->ei_address());
 				}
 				last_time = time;
-
-				// output
-				//cout << "   - time: " << time;
-				//Input::Iterator<string> it_reg = it->find<string>("region");
-				//if (it_reg) cout << ", region: " << (*it_reg);
-				//Input::Iterator<string> it_set = it->find<string>("r_set");
-				//if (it_set) cout << ", r_set: " << (*it_set);
-				//Input::Iterator<int> it_id = it->find<int>("rid");
-				//if (it_id) cout << ", rid: " << (*it_id);
-				//cout << endl;
 
 				break;
 			}
