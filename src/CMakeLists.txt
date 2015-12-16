@@ -230,7 +230,6 @@ add_library(coupling_lib
     fields/generic_field.cc
     coupling/equation.cc
     coupling/balance.cc
-    flow/old_bcd.cc
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
