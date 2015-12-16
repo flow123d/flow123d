@@ -11,7 +11,7 @@ problem: !SequentialCoupling
       region_labels:
       - .2d
       - .1d
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: 1d
       anisotropy: 10
@@ -38,14 +38,15 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
-    input_fields:
-    - r_set: .sides
-      bc_conc: !FieldFormula
-        value: x/12.75
-    - r_set: subset
-      init_conc: 0
-      porosity: 0.25
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - r_set: .sides
+        bc_conc: !FieldFormula
+          value: x/12.75
+      - r_set: subset
+        init_conc: 0
+        porosity: 0.25
     output_stream:
       file: ./transport.pvd
       format: !vtk
@@ -110,3 +111,4 @@ problem: !SequentialCoupling
           - 0
           - 0.5
         output_fields: []
+    name: transport_output_stream

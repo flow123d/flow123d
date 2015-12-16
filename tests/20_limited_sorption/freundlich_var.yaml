@@ -10,12 +10,11 @@ output_streams:
     variant: ascii
   time_step: 0.5
   name: transport_output_stream
-
 problem: !SequentialCoupling
   description: Adsorption all
   mesh:
     mesh_file: input/test_20.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: rectangle
       conductivity: 0.125
@@ -36,19 +35,20 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - r_set: ALL
+        init_conc: 0
+        porosity: 0.25
+      - r_set: BOUNDARY
+        bc_conc: !FieldFormula
+          value: 0.05*t
     substances:
     - A
     - As-lin
     - Bs-lang
     - Cs-freund
-    input_fields:
-    - r_set: ALL
-      init_conc: 0
-      porosity: 0.25
-    - r_set: BOUNDARY
-      bc_conc: !FieldFormula
-        value: 0.05*t
     output_stream: 
       file: transport_test_20.pvd
       format: !vtk
@@ -79,3 +79,4 @@ problem: !SequentialCoupling
       output_fields: []
     balance:
       cumulative: true
+  name: transport_output_stream

@@ -47,6 +47,13 @@ problem: !SequentialCoupling
       - r_set: subset
         init_conc: 0
         porosity: 0.25
+        diff_m: 1e-6
+        disp_l: 
+        - 0
+        - 0.5
+        disp_t:
+        - 0
+        - 0.1
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
