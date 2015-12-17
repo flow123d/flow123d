@@ -6,7 +6,7 @@
 namespace computeintersection{
 
 //http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
-static const double rounding_epsilon = std::numeric_limits<double>::epsilon();    
+static const double rounding_epsilon = 8*std::numeric_limits<double>::epsilon();
 
 //TODO: idea:replace with relative tolerance and use some user input tolerance (absolute) of the coordinates
 static const double geometry_epsilon = 1e-9;
@@ -137,7 +137,8 @@ public:
     bool is_pathologic() const;
     
 	/**
-	 * For convex hull polygon tracing
+	 * Comparison operator for sorting the IPs in convex hull tracing algorithm.
+     * Compares the points by x-coordinate (in case of a tie, compares by y-coordinate).
 	 */
 	bool operator<(const IntersectionPoint<N,M> &ip) const;
     

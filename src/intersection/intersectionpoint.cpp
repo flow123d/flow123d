@@ -79,10 +79,9 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned
 
     
 template<> bool IntersectionPoint<2,3>::operator<(const IntersectionPoint<2,3> &ip) const{
-	return local_bcoords_A_[1] < ip.local_bcoords_A()[1] ||
-        //TODO: should not be here really == operator?
-		(fabs((double)(local_bcoords_A_[1] - ip.local_bcoords_A()[1])) < geometry_epsilon &&
-		 local_bcoords_A_[2] < ip.local_bcoords_A()[2]);
+	return local_bcoords_A_[1] < ip.local_bcoords_A()[1] ||     // compare by x coordinate
+           (local_bcoords_A_[1] == ip.local_bcoords_A()[1] &&   // in case of tie
+           local_bcoords_A_[2] < ip.local_bcoords_A()[2]);      // compare by y coordinate
 };
 
 template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPoint< N,M >& s)
