@@ -874,6 +874,7 @@ public:
     static bool is_initialized() { return (_instance != NULL); }
 
 private:
+    static Profiler* _instance;
     Profiler() {}
 };
 
