@@ -145,38 +145,44 @@ double Timer::cumulative_time() const {
     return cumul_time;
 }
 
-void Timer::accept_from_child(Timer &timer) {
-    total_allocated_ += timer.total_allocated_ - total_allocated_;
-    total_deallocated_ += timer.total_deallocated_ - total_deallocated_;
-    alloc_called += timer.alloc_called - alloc_called;
-    dealloc_called += timer.dealloc_called - dealloc_called;
+void Profiler::accept_from_child(Timer &parent, Timer &child) {
+    int timer_idx = 0;
+    int child_timer = 0;
+    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
+        child_timer = child.child_timers[i];
+        if (child_timer != timer_no_child) {
+            // propagate metrics from child to parent
+            accept_from_child(child, timers_[child_timer]);
+        }
+    }
+    // compute totals by adding values from child
+    parent.total_allocated_ += child.total_allocated_;
+    parent.total_deallocated_ += child.total_deallocated_;
+    parent.alloc_called += child.alloc_called;
+    parent.dealloc_called += child.dealloc_called;
+
+    // add differences from child
+    parent.petsc_memory_difference += child.petsc_memory_difference;
+    parent.current_allocated_ += child.current_allocated_;
     
-    petsc_memory_difference += timer.petsc_memory_difference - petsc_memory_difference;
+    // when computing maximum, we take greater value from parent and child
+    // peak value from child are however realtive. Value from child is always
+    // measured from zero even though some memory is being in use
+    parent.petsc_peak_memory += max(parent.petsc_peak_memory, child.petsc_peak_memory);
+    parent.max_allocated_ += max(parent.max_allocated_, child.max_allocated_);
     
-    // set current memory usage from child, and check new peak
-    current_allocated_ = timer.current_allocated_;
-    if (current_allocated_ > max_allocated_)
-        max_allocated_ = current_allocated_;
-        
-    // maximum value from child are always greater or equal to parent frame
-    max_allocated_ = timer.max_allocated_;
-    petsc_peak_memory = timer.petsc_peak_memory;
 }
 
-void Timer::accept_from_parent(Timer &timer) {
-    // set default variable values from parent
-    total_allocated_ += timer.total_allocated_;
-    total_deallocated_ += timer.total_deallocated_;
-    alloc_called += timer.alloc_called;
-    dealloc_called += timer.dealloc_called;
-    
-    petsc_memory_difference += timer.petsc_memory_difference;
-    
-    // set current memory usage from parents, and check new peak
-    max_allocated_ = timer.max_allocated_;
-    current_allocated_ = timer.current_allocated_;
-    if (current_allocated_ > max_allocated_)
-        max_allocated_ = current_allocated_;
+void Profiler::propagate_timers() {
+    int timer_idx = 0;
+    int child_timer = 0;
+    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
+        child_timer = timers_[0].child_timers[i];
+        if (child_timer != timer_no_child) {
+            // propagate metrics from child to Whole-Program time-frame
+            accept_from_child(timers_[0], timers_[child_timer]);
+        }
+    }
 }
 
 void Timer::pause() {
@@ -259,24 +265,21 @@ string Timer::code_point_str() const {
  */
 
 
- Profiler * Profiler::instance() { 
-     static Profiler * _instance = new Profiler();
-     monitor_memory = true;
+Profiler * Profiler::instance() { 
+     initialize();
      return _instance;
- }
+ } 
 
 
+static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
+Profiler* Profiler::_instance = NULL;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
-void Profiler::initialize()
-{
-    // dummy Petsc initialization for unit tests
-    PetscBool is_initialized;
-    PetscInitialized(&is_initialized);
-    if (!is_initialized)
-        PetscInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+void Profiler::initialize() {
+    if (_instance == NULL)
+        _instance = new Profiler();
         
-    Profiler::instance();
+    monitor_memory = true;
 }
 
 
@@ -284,10 +287,8 @@ Profiler::Profiler()
 : actual_node(0),
   task_size_(1),
   start_time( time(NULL) )
-
 {
 #ifdef FLOW123D_DEBUG_PROFILER
-    static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
     timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
 #endif
@@ -323,9 +324,6 @@ int  Profiler::start_timer(const CodePoint &cp) {
         child_idx=timers_.size();
         timers_.push_back( Timer(cp, actual_node) );
         timers_[actual_node].add_child(child_idx , timers_.back() );
-        
-        // propagate metrics from parent to child
-        timers_[child_idx].accept_from_parent(parent_timer);
     }
     actual_node=child_idx;
     
@@ -383,8 +381,6 @@ void Profiler::stop_timer(const CodePoint &cp) {
                 if (actual_node == child_timer && actual_node == 0)
                     return;
                 
-                // propagate metrics from child to parent
-                timers_[actual_node].accept_from_child(timers_[child_timer]);
                 // resume current timer
                 timers_[actual_node].resume();
                 return;
@@ -402,8 +398,6 @@ void Profiler::stop_timer(const CodePoint &cp) {
     if (actual_node == child_timer && actual_node == 0)
         return;
     
-    // propagate metrics from child to parent
-    timers_[actual_node].accept_from_child(timers_[child_timer]);
     // resume current timer
     timers_[actual_node].resume();
 }
@@ -438,8 +432,6 @@ void Profiler::stop_timer(int timer_index) {
                 if (actual_node == child_timer && actual_node == 0)
                     return;
                 
-                // propagate metrics from parent to child
-                timers_[actual_node].accept_from_child(timers_[child_timer]);
                 // resume current timer
                 timers_[actual_node].resume();
             }
@@ -456,8 +448,6 @@ void Profiler::stop_timer(int timer_index) {
     if (actual_node == child_timer && actual_node == 0)
         return;
     
-    // propagate metrics from parent to child
-    timers_[actual_node].accept_from_child(timers_[child_timer]);
     // resume current timer
     timers_[actual_node].resume();
 }
@@ -603,6 +593,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     //wait until profiling on all processors is finished
     MPI_Barrier(comm);
     stop_timer(0);
+    propagate_timers();
 
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
@@ -679,6 +670,7 @@ void Profiler::output(MPI_Comm comm) {
 void Profiler::output(ostream &os) {
     // last update
     stop_timer(0);
+    propagate_timers();
 
     // output header
     property_tree::ptree root, children;
@@ -824,17 +816,13 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 
 void Profiler::uninitialize() {
-    Profiler * _instance = Profiler::instance();
     if (_instance) {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
                 _instance->timers_[_instance->actual_node].tag().c_str());
         _instance->stop_timer(0);
-        
         monitor_memory = false;
-        _instance->timers_.clear();
-        static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
-        _instance->timers_.push_back( Timer(main_cp, 0) );
-        _instance->timers_[0].start();
+        delete _instance;
+        _instance = NULL;
     }
 }
 
@@ -844,10 +832,14 @@ map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& Me
     return static_malloc_map;
 }
 
+void * Profiler::operator new (size_t size) {
+    return malloc (size);
+}
+
 
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     if (Profiler::monitor_memory)
-	   Profiler::instance()->notify_malloc(size);
+        Profiler::instance()->notify_malloc(size);
 
 	void * p = malloc(size);
 	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
@@ -898,28 +890,30 @@ void operator delete[]( void *p) throw() {
 	free(p);
 }
 
-bool Profiler::is_initialized() {
-    return true;
-}
-
 #else // def FLOW123D_DEBUG_PROFILER
 
 Profiler * Profiler::instance() { 
-    static Profiler * _instance = new Profiler();
-    monitor_memory = true;
-    return _instance;
-}
+     initialize();
+     return _instance;
+ } 
+
+Profiler* Profiler::_instance = NULL;
 
 void Profiler::initialize() {
-    Profiler::instance();
-}
-
-bool Profiler::is_initialized() {
-    return true;
+    if (_instance == NULL)
+        _instance = new Profiler();
+        monitor_memory = true;
 }
 
 void Profiler::uninitialize() {
-    // do nothing
+    if (_instance) {
+        ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
+                _instance->timers_[_instance->actual_node].tag().c_str());
+        monitor_memory = false;
+        _instance->stop_timer(0);
+        delete _instance;
+        _instance = NULL;
+    }
 }
 
 

@@ -366,16 +366,6 @@ public:
      */
     void info();
     
-    /**
-     * Method for exchanging metrics from parent timer to child timer
-     */
-    void accept_from_parent (Timer &timer);
-    
-    /**
-     * Method for exchanging metrics from child timer to its parent timer
-     */
-    void accept_from_child (Timer &timer);
-
 
     /**
      * If number of starts (recursions) drop back to zero, we stop the timer and add the period to the cumulative time.
@@ -699,7 +689,17 @@ public:
     /**
      * Check if the instance was created.
      */
-    static bool is_initialized();
+    static bool is_initialized() { return (_instance != NULL); }
+    
+    /**
+     * Check if the instance was created.
+     */
+    static void* operator new (size_t sz);
+    
+    /**
+     * Method will propagate values from children timers to its parents
+     */
+    void propagate_timers ();
 
     /**
      * Whether to monitor operator 'new/delete'
@@ -707,6 +707,12 @@ public:
     static bool monitor_memory;
 
 private:
+    
+    /**
+     * Method for exchanging metrics from child timer to its parent timer
+     */
+    void accept_from_child (Timer &parent, Timer &child);
+    
     /**
      * Try to find timer with tag (in fact only its 32-bit hash) from given code point @p cp.
      * Returns -1 if it is not found otherwise it returns its index.
@@ -729,6 +735,9 @@ private:
 
     /// Default code point.
     static CodePoint null_code_point;
+
+    /// Pointer to the unique instance of singleton Profiler class.
+    static Profiler* _instance;
 
     /// Vector of all timers. Whole tree is stored in this array.
     vector<Timer, SimpleAllocator<Timer>> timers_;
@@ -830,18 +839,6 @@ public:
 
 
 
-// 
-// void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
-// 
-// void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
-// 
-// void *operator new[] (std::size_t size, const std::nothrow_t&) throw();
-// 
-// void operator delete( void *p) throw();
-// 
-// void operator delete[]( void *p) throw();
-
-
 #else // FLOW123D_DEBUG_PROFILER
 
 
@@ -874,8 +871,7 @@ public:
     inline double actual_cumulative_time() const
     { return 0.0; }
     static void uninitialize();
-
-    static bool is_initialized();
+    static bool is_initialized() { return (_instance != NULL); }
 
 private:
     Profiler() {}
