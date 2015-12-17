@@ -11,7 +11,8 @@ import re
 from enum import Enum
 import json
 from collections import OrderedDict
-from .data_node import ScalarNode, CompositeNode, NodeOrigin
+from .data_node import DataNode
+
 
 def _represent_ordereddict(dumper, data):
     value = []
@@ -23,13 +24,15 @@ def _represent_ordereddict(dumper, data):
         value.append((node_key, node_value))
 
     return yaml.nodes.MappingNode(u'tag:yaml.org,2002:map', value)
-    
+
+
 def _ordereddict_constructor(loader, node):
     try:
         omap = loader.construct_yaml_omap(node)
         return OrderedDict(*omap)
     except yaml.constructor.ConstructorError:
         return loader.construct_yaml_seq(node)
+
 
 def parse_con(con):
     """
@@ -65,6 +68,7 @@ def _decode_con(con):
     pattern = re.compile(r"([\s\[\{,=])([^\s\[\{,=]+)\s*=\s*")
     con = pattern.sub(r'\1"\2" : ', con)
     return json.loads(con, object_pairs_hook=OrderedDict)
+
 
 def fix_tags(yaml, root):
     """Replase TYPE and refferences by tags"""
@@ -136,35 +140,34 @@ def _traverse_nodes(node, lines, add_anchor, anchor_idx, del_lines, i=1):
 
     return: array of lines for deleting
     """
-    if isinstance(node, CompositeNode):
-        for child in node.children:
-            if isinstance(child, ScalarNode) and child.key.value == "TYPE":
-                del_lines.append(child.key.span.start.line-1)
-                lines[node.key.span.start.line-1] += " !" + child.value
-            elif isinstance(child, ScalarNode) and child.key.value == "REF":
-                del_lines.append(child.key.span.start.line-1)
-                if not lines[node.key.span.start.line-1][-1:].isspace():
-                    lines[node.key.span.start.line-1] += " "
-                lines[node.key.span.start.line-1] += "*anchor" + str(i)
-                if child.value not in add_anchor:
-                    value = child.value
-                    if len(value) > 1 and value[0] == '.':
-                        if value[:3] == '../':
-                            value = "../" + value
-                        else:
-                            value = "." + value
-                        try:
-                            ref_node = child.get_node_at_path(value)
-                            value = ref_node.absolute_path
-                        except LookupError:
-                            pass
-                    add_anchor[value] = []
-                    anchor_idx[value] = i
-                    i += 1
-                    add_anchor[value].append(child)
-            else:
-                if isinstance(child, CompositeNode):
-                    i = _traverse_nodes(child, lines, add_anchor, anchor_idx, del_lines, i)
+    for child in node.children:
+        if child.implementation == DataNode.Implementation.scalar and child.key.value == "TYPE":
+            del_lines.append(child.key.span.start.line-1)
+            lines[node.key.span.start.line-1] += " !" + child.value
+        elif child.implementation == DataNode.Implementation.scalar and child.key.value == "REF":
+            del_lines.append(child.key.span.start.line-1)
+            if not lines[node.key.span.start.line-1][-1:].isspace():
+                lines[node.key.span.start.line-1] += " "
+            lines[node.key.span.start.line-1] += "*anchor" + str(i)
+            if child.value not in add_anchor:
+                value = child.value
+                if len(value) > 1 and value[0] == '.':
+                    if value[:3] == '../':
+                        value = "../" + value
+                    else:
+                        value = "." + value
+                    try:
+                        ref_node = child.get_node_at_path(value)
+                        value = ref_node.absolute_path
+                    except LookupError:
+                        pass
+                add_anchor[value] = []
+                anchor_idx[value] = i
+                i += 1
+                add_anchor[value].append(child)
+        else:
+            if child.implementation != DataNode.Implementation.scalar:
+                i = _traverse_nodes(child, lines, add_anchor, anchor_idx, del_lines, i)
     return i
 
 
@@ -740,10 +743,11 @@ class Comments:
                 if not key:
                     # go to next key
                     break
-                if not isinstance(node, CompositeNode):
+                if node.implementation == DataNode.Implementation.scalar:
                     return None
                 if node.get_child(key) is None:
-                    if len(node.children) == 1 and node.children[0].origin != NodeOrigin.structure:
+                    if len(node.children) == 1 and \
+                            node.children[0].origin != DataNode.Origin.structure:
                         node = node.children[0]                        
                     else:
                         return None

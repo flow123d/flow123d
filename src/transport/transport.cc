@@ -34,7 +34,6 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
-#include "flow/old_bcd.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
@@ -59,7 +58,6 @@ const IT::Selection & ConvectionTransport::EqData::get_output_selection() {
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
-    	bc_conc.add_factory( OldBcdInput::instance()->trans_conc_factory );
     	bc_conc.units( UnitSI().kg().m(-3) );
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
     	init_conc.units( UnitSI().kg().m(-3) );
@@ -127,11 +125,14 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 //=============================================================================
 void ConvectionTransport::make_transport_partitioning() {
 
-    int * id_4_old = new int[mesh_->n_elements()];
-    int i = 0;
-    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
-    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
-    delete[] id_4_old;
+//    int * id_4_old = new int[mesh_->n_elements()];
+//    int i = 0;
+//    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
+//    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
+//    delete[] id_4_old;
+	el_ds = mesh_->get_el_ds();
+	el_4_loc = mesh_->get_el_4_loc();
+	row_4_el = mesh_->get_row_4_el();
 
     // TODO: make output of partitioning is usefull but makes outputs different
     // on different number of processors, which breaks tests.

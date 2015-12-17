@@ -1,7 +1,7 @@
 problem: !SequentialCoupling
   description: Test15 - 2D unsteady flow LM
   mesh:
-    mesh_file: ./input/test15_with_boundary.msh
+    mesh_file: ./input/channel_structured.msh
   primary_equation: !Unsteady_LMH
     input_fields:
     - region: domain

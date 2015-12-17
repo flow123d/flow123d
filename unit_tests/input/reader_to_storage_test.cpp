@@ -344,12 +344,12 @@ TEST_F(InputReaderToStorageTest, Array) {
 
     {  //JSON format
         stringstream ss("[ 3.2 ]");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Do not fit into size limits of the Array.");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Do not fit the size 1 of the Array.");
     }
 
     {  //YAML format
         stringstream ss("- 3.2");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type, FileFormat::format_YAML);} , ExcInputError, "Do not fit into size limits of the Array.");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type, FileFormat::format_YAML);} , ExcInputError, "Do not fit the size 1 of the Array.");
     }
 
     {
@@ -378,13 +378,13 @@ TEST_F(InputReaderToStorageTest, Array) {
         EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
 
         stringstream ss1("{ key=3.2}");
-        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ExcInputError , "The value should be 'JSON array', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ExcInputError , "The value should be 'JSON real', but we found:.* 'JSON object'");
     }
 
     // test auto conversion failed
     {
         stringstream ss("3.2");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ExcInputError , "Automatic conversion to array not allowed. The value should be 'JSON array', but we found:.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ExcInputError , "conversion to the single element array not allowed. Require type: 'JSON array'.* 'JSON real'");
     }
 }
 
@@ -928,12 +928,12 @@ TEST_F(InputReaderToStorageTest, storage_transpose) {
 
     {   // Incorrect type - empty sub-array
     	stringstream ss("{ set={ one=[], two=[2,3], three={key_a=[\"A\",\"B\",\"C\"], key_b=false}, four=[1.5, 2.5, 3.5], five=\"one\" }, default=true }");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Empty array during transposition.");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Empty array during transpose auto-conversion.");
     }
 
     {   // Incorrect type - unequal sizes of sub-arrays
     	stringstream ss("{ set={ one=[1,2,3], two=[2,3], three={key_a=[\"A\",\"B\"], key_b=false}, four=[1.5, 2.5, 3.5], five=\"one\" }, default=true }");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Unequal sizes of sub-arrays during transposition");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Unequal sizes of sub-arrays during transpose auto-conversion");
     }
 
     {   // Incorrect type - transposition of Record is not allowed
@@ -943,7 +943,7 @@ TEST_F(InputReaderToStorageTest, storage_transpose) {
 
     {   // Incorrect type - array is greater than size limit
         stringstream ss("{ set={ one=[1,2,3,4], two=[2,3], three={key_a=\"B\", key_b=false}, four=1.5, five=\"one\" }, default=true }");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Do not fit into size limits of the Array");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Result of transpose auto-conversion do not fit the size 4 of the Array");
     }
 
 }

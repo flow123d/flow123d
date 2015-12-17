@@ -417,11 +417,9 @@ DOFHandlerMultiDim::~DOFHandlerMultiDim()
 void DOFHandlerMultiDim::make_elem_partitioning()
 {
 	// create local arrays of elements
-    int *id_4_old = new int[mesh_->n_elements()];
-    int i = 0;
-    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
-    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds_, el_4_loc, row_4_el);
-    delete[] id_4_old;
+    el_ds_ = mesh_->get_el_ds();
+    el_4_loc = mesh_->get_el_4_loc();
+    row_4_el = mesh_->get_row_4_el();
 
     // create local array of edges
     for (unsigned int iedg=0; iedg<mesh_->edges.size(); iedg++)

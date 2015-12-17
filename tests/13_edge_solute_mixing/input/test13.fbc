@@ -1,9 +1,0 @@
-$BoundaryFormat
-1.0	0	8
-$EndBoundaryFormat
-$BoundaryConditions
-3
-0	1	 10.000000000000	2	20	2	1	1
-1	1	-5.000000000000	2	83	1	1	1
-2	1	 5.000000000000	2	135	1	1	1
-$EndBoundaryConditions

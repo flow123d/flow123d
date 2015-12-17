@@ -144,8 +144,6 @@ public:
 	 */
 	Balance(const std::string &file_prefix,
 			const Mesh *mesh,
-			const Distribution *el_ds,
-			const int *el_4_loc,
 			const Input::Record &in_rec);
 
 	~Balance();

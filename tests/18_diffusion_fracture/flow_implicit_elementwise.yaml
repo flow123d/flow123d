@@ -4,8 +4,9 @@ problem: !SequentialCoupling
     mesh_file: ./input/test18.msh
   primary_equation: !Steady_MH
     input_fields:
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test18.fbc
+    - r_set: BOUNDARY
+      bc_type: dirichlet
+      bc_pressure: 0
     - rid: 20
       cross_section: 0.01
     - rid: 24
@@ -26,7 +27,7 @@ problem: !SequentialCoupling
       r_tol: 1.0e-12
   secondary_equation: !SoluteTransport_DG
     input_fields:
-    - region: IMPLICIT BOUNDARY
+    - r_set: BOUNDARY
       bc_conc: 0
     - r_set: ALL
       init_conc: !FieldElementwise
