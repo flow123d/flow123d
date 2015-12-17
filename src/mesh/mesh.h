@@ -325,7 +325,7 @@ protected:
     /**
      * Possibly modify region id of elements sets by user in "regions" part of input file.
      */
-    void modify_element_ids(const RegionDB::MapElementIDToRegionID *map);
+    void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 
     unsigned int n_bb_neigh, n_vb_neigh;
 

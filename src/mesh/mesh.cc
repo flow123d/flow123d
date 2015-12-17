@@ -234,14 +234,14 @@ void Mesh::init_from_input() {
 
     // read raw mesh, add regions from GMSH file
     GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-    reader.read_mesh(this, &el_to_reg_map);
+    reader.read_mesh(this);
     // possibly add implicit_boundary region.
     setup_topology();
     // create regions from our input
     if (in_record_.opt_val("regions", region_list)) {
         region_db_.read_regions_from_input(region_list, el_to_reg_map);
     }
-    modify_element_ids(&el_to_reg_map);
+    modify_element_ids(el_to_reg_map);
     //close region_db_.
     region_db_.close();
     // create sets
@@ -254,14 +254,10 @@ void Mesh::init_from_input() {
 
 
 
-void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID *map) {
-	if (map) {
-		FOR_ELEMENTS(this, ele) {
-			RegionDB::MapElementIDToRegionID::const_iterator it = map->find(ele->id());
-			if (it != map->end()) {
-				element[ele->index()].region_idx_ = region_db_.add_region( it->second, ele->dim() );
-			}
-		}
+void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
+	for (auto elem_to_region : map) {
+		ElementIter ele = this->element.find_id(elem_to_region.first);
+		ele->region_idx_ = region_db_.add_region( elem_to_region.second, ele->dim() );
 	}
 }
 
