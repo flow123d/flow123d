@@ -12,6 +12,7 @@
 
 
 #define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
 
@@ -36,6 +37,13 @@ unsigned int random_string(char *str){
     str[i]=0;
     //printf("str: '%s'\n", str);
     return length;
+}
+
+template <class T>
+int alloc_and_dealloc(int size){
+    T* t = new T[size];
+    delete [] t;
+    return size * sizeof(T);
 }
 
 TEST(Profiler, str_hash) {
@@ -117,6 +125,7 @@ double clock_resolution() {
 #define AT    string(Profiler::instance()->actual_tag())
 #define ACT   Profiler::instance()->actual_cumulative_time()
 #define AC    Profiler::instance()->actual_count()
+#define AM    Profiler::instance()->actual_memory_alloc()
 
 
 TEST(Profiler, one_timer) {
@@ -322,14 +331,6 @@ TEST(Profiler, structure) {
 }
 
 
-
-template <class T>
-int alloc_and_dealloc(int size){
-    T* t = new T[size];
-    delete [] t;
-    return size * sizeof(T);
-}
-
 TEST(Profiler, memory_add_calls) {
     int allocated = 0;
     Profiler::initialize();
@@ -341,7 +342,8 @@ TEST(Profiler, memory_add_calls) {
             END_TIMER("A");
         }
     }
-    EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+    Profiler::instance()->propagate_timers();
+    EXPECT_EQ(AM, allocated);
     Profiler::uninitialize();
 }
 
@@ -355,9 +357,9 @@ TEST(Profiler, memory_profiler) {
         // alloc and dealloc array of int
         for (int i = 0; i < LOOP_CNT; i++) alloc_and_dealloc<int>(ARR_SIZE);
         // test that we deallocated all allocated space
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
+        EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
         // test that allocated space is correct size
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), ARR_SIZE * LOOP_CNT * sizeof(int));
+        EXPECT_EQ(AM, ARR_SIZE * LOOP_CNT * sizeof(int));
         END_TIMER("memory-profiler-int");
 
 
@@ -365,9 +367,9 @@ TEST(Profiler, memory_profiler) {
         // alloc and dealloc array of float
         for (int i = 0; i < LOOP_CNT; i++) alloc_and_dealloc<double>(ARR_SIZE);
         // test that we deallocated all allocated space
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
+        EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
         // test that allocated space is correct size
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), ARR_SIZE * LOOP_CNT * sizeof(double) + ARR_SIZE * LOOP_CNT * sizeof(int));
+        EXPECT_EQ(AM, ARR_SIZE * LOOP_CNT * sizeof(double));
         END_TIMER("memory-profiler-double");
 
 
@@ -378,9 +380,9 @@ TEST(Profiler, memory_profiler) {
             delete j;
         }
         // test that we deallocated all allocated space
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
+        EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
         // test that allocated space is correct size
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), LOOP_CNT * sizeof(int) + ARR_SIZE * LOOP_CNT * sizeof(double) + ARR_SIZE * LOOP_CNT * sizeof(int));
+        EXPECT_EQ(AM, LOOP_CNT * sizeof(int));
         END_TIMER("memory-profiler-simple");
     }
 
@@ -388,51 +390,56 @@ TEST(Profiler, memory_profiler) {
     Profiler::uninitialize();
 }
 
+
 TEST(Profiler, memory_propagation){
     const int SIZE = 25;
-    int allocated = 0;
+    int allocated_Whole = 0;
+    int allocated_A = 0;
+    int allocated_B = 0;
+    int allocated_C = 0;
+    int allocated_D = 0;
     
     Profiler::initialize();
     {
-        allocated += alloc_and_dealloc<int>(SIZE);
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+        allocated_Whole += alloc_and_dealloc<int>(SIZE);
+        EXPECT_EQ(AM, allocated_Whole);
         
         START_TIMER("A");
-            allocated += alloc_and_dealloc<int>(10 * SIZE);
-            EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+            allocated_A += alloc_and_dealloc<int>(10 * SIZE);
+            EXPECT_EQ(AM, allocated_A);
             
             START_TIMER("B");
-                allocated += alloc_and_dealloc<int>(100 * SIZE);
-                EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+                allocated_B += alloc_and_dealloc<int>(100 * SIZE);
                 
                 START_TIMER("C");
-                    EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+                    EXPECT_EQ(AM, allocated_C);
                 END_TIMER("C");
+                allocated_B += allocated_C;
                 
-                EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
             END_TIMER("B");
+            allocated_A += allocated_B;
             
-            allocated += alloc_and_dealloc<int>(10 * SIZE);
-            EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+            allocated_A += alloc_and_dealloc<int>(10 * SIZE);
             
             START_TIMER("D");
-                EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+                allocated_D += alloc_and_dealloc<int>(1 * SIZE);
             END_TIMER("D");
+            allocated_A += allocated_D;
             
-            EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
         END_TIMER("A");
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+        allocated_Whole += allocated_A;
     }
-    EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
-    EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), Profiler::instance()->actual_memory_dealloc());
+    Profiler::instance()->propagate_timers();
+    EXPECT_EQ(AM, allocated_Whole);
+    EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 }
 
+
 TEST(Profiler, petsc_memory_monitor) {
     PetscInt size = 10000;
     Profiler::initialize();
-        
     {
         START_TIMER("A");
             Vec tmp_vector;
@@ -445,8 +452,8 @@ TEST(Profiler, petsc_memory_monitor) {
         
         START_TIMER("B");
             Vec tmp_vector1, tmp_vector2;
-            VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector1);
-            VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector2);
+            VecCreateSeq(PETSC_COMM_SELF, size, &tmp_vector1);
+            VecCreateSeq(PETSC_COMM_SELF, size, &tmp_vector2);
             VecDestroy(&tmp_vector1);
             VecDestroy(&tmp_vector2);
         END_TIMER("B");
@@ -463,11 +470,31 @@ TEST(Profiler, multiple_instances) {
         {
             allocated += alloc_and_dealloc<int>(25);
         }
-        EXPECT_EQ(Profiler::instance()->actual_memory_alloc(), allocated);
+        EXPECT_EQ(AM, allocated);
         Profiler::uninitialize();
     }
 }
 
+TEST(Profiler, propagate_values) {
+    int allocated = 0;
+    Profiler::initialize(); {
+            START_TIMER("A");
+                START_TIMER("B");
+                    START_TIMER("C");
+                        allocated += alloc_and_dealloc<int>(25);
+                    END_TIMER("C");
+                END_TIMER("B");
+                
+                START_TIMER("D");
+                END_TIMER("D");
+                
+                Profiler::instance()->propagate_timers();
+                EXPECT_EQ(AM, allocated);
+            END_TIMER("A");
+    }
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    Profiler::uninitialize();
+}
 
 #else // FLOW123D_DEBUG_PROFILER
 
