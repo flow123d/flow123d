@@ -134,6 +134,10 @@ Region RegionDB::add_region(unsigned int id, const std::string &label) {
 	bool boundary = is_boundary(label);
 	if (label.size() == 0) create_label_from_id(label, id);
 
+	/*
+	 * TODO: This part of code needs check in issue 'Review mesh setting'.
+	 * See @p Mesh::modify_element_ids method
+	 */
     OnlyIDIter it_only_id = region_table_.get<OnlyID>().find(id);
     if (it_only_id != region_table_.get<OnlyID>().end() ) {
     	// replace region label
@@ -241,6 +245,10 @@ void RegionDB::close() {
     // set default sets
    for(unsigned int i=0; i< size(); i++) {
        Region reg(i, *this);
+	   /*
+	    * TODO: Adding of regions to sets needs check in issue 'Review mesh setting'.
+	    * See @p Mesh::modify_element_ids method
+	    */
    	   RegionSet region_set;
    	   region_set.push_back( reg );
 

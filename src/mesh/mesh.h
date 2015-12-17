@@ -324,6 +324,10 @@ protected:
 
     /**
      * Possibly modify region id of elements sets by user in "regions" part of input file.
+     *
+     * TODO: This method needs check in issue 'Review mesh setting'.
+     * Changes have been done during generalized region key and may be causing problems
+     * during the further development.
      */
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 

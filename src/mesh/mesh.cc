@@ -227,6 +227,10 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 
 
 void Mesh::init_from_input() {
+	/*
+	 * TODO: This method needs check in issue 'Review mesh setting'.
+	 * See @p modify_element_ids method
+	 */
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
