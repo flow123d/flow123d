@@ -230,11 +230,13 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 }
 
 
-IT::Selection HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 {
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
 	return IT::Selection(
-				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
-				"Selection for output fields of " + description + " for heat transfer.");
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Heat Transfer DG model.");
 }
 
 

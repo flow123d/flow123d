@@ -96,7 +96,7 @@ public:
 
         static const Input::Type::Selection & get_bc_type_selection();
 
-		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
+		static IT::Selection get_output_selection();
 	};
 
 protected:

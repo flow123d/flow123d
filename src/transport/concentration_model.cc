@@ -145,11 +145,13 @@ IT::Record ConcentrationTransportModel::get_input_type(const string &implementat
 					"Names of transported substances.");
 }
 
-IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
 {
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
 	return IT::Selection(
-				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
-				"Output record for " + description + " for solute transport.");
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Diffusive Solute Transport DG model.");
 }
 
 

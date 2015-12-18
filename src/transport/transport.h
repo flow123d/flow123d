@@ -67,7 +67,6 @@ public:
 
     class EqData : public TransportBase::TransportEqData {
     public:
-        static const Input::Type::Selection & get_output_selection();
 
         EqData();
         virtual ~EqData() {};

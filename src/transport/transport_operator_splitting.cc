@@ -84,7 +84,13 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				.copy_keys( ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting") )
 				.close()
 				), IT::Default::obligatory(), "")
-		.declare_key("output_fields", Array(ConvectionTransport::EqData::get_output_selection()),
+		.declare_key("output_fields",
+		        Array(
+		                ConvectionTransport::EqData().output_fields
+		                    .make_output_field_selection(
+		                        "ConvectionTransport_output_fields",
+		                        "Selection of output fields for Convection Solute Transport model.")
+		                    .close()),
 				Default("\"conc\""),
 				"List of fields to write to output file.")
 		.close();

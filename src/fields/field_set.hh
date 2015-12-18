@@ -130,7 +130,7 @@ public:
     /**
      * Make Selection with strings for all field names in the FieldSet.
      */
-    Input::Type::Selection make_output_field_selection(const string &name, const string &desc = "");
+    Input::Type::Selection make_output_field_selection(const string &name, const string &desc);
 
     /**
      * Use @p FieldCommonBase::copy_from() to set field of the field set given by the first parameter

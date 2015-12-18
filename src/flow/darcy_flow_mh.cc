@@ -108,7 +108,9 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
 				"Linear solver for MH problem.")
-		.declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
+		.declare_key("output",
+		        DarcyFlowMHOutput::get_input_type(),
+		        it::Default::obligatory(),
 				"Parameters of output form MH module.")
 		.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions." )

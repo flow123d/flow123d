@@ -132,8 +132,6 @@ public:
 	class EqData : public Model::ModelEqData {
 	public:
 
-        static const Input::Type::Selection & get_output_selection();
-
 		EqData();
 
 		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
