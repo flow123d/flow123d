@@ -229,11 +229,10 @@ TEST_F(SomeEquation, values) {
                 value=1.1
               },
             init_conc = [ 1, 2, 3, 4],
+            // MultiField
             conc_mobile = {
-                TYPE="MultiField",
-                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
-                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
-                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+                TYPE="FieldConstant", 
+                value=[1, 2, 3, 4]
               }
           },
           { region="2D XY diagonal",
@@ -257,10 +256,8 @@ TEST_F(SomeEquation, values) {
                 value=["x", "10+x", "20+x", "30+x"]
             },
             conc_mobile = {
-                TYPE="MultiField",
-                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
-                common={TYPE="FieldConstant", value=[5, 6, 7, 8]},
-                components=[ {TYPE="FieldConstant", value=5}, {TYPE="FieldConstant", value=6}, {TYPE="FieldConstant", value=7}, {TYPE="FieldConstant", value=8}]
+                TYPE="FieldConstant", 
+                value=[5, 6, 7, 8]
               }
           },
           { rid=102,

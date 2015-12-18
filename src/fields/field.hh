@@ -131,7 +131,7 @@ public:
      */
     const IT::Instance &get_input_type() override;
 
-    IT::Record &get_multifield_input_type() override;
+    IT::Array &get_multifield_input_type() override;
 
 
     /**

@@ -54,7 +54,7 @@ namespace IT=Input::Type;
 template<int spacedim, class Value>
 class MultiField : public FieldCommon {
 public:
-    //typedef FieldBase<spacedim, Value> SubFieldBaseType;
+    typedef FieldAlgorithmBase<spacedim, Value> SubFieldBaseType;
     typedef Field<spacedim, Value> SubFieldType;
     typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
@@ -82,7 +82,7 @@ public:
      */
     const IT::Instance &get_input_type() override;
 
-    IT::Record &get_multifield_input_type() override;
+    IT::Array &get_multifield_input_type() override;
 
     /**
      * Abstract method to update field to the new time level.

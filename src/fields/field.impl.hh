@@ -116,11 +116,11 @@ const it::Instance &Field<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
-it::Record &Field<spacedim,Value>::get_multifield_input_type() {
+it::Array &Field<spacedim,Value>::get_multifield_input_type() {
 	ASSERT(false, "This method can't be used for Field");
 
-	static it::Record rec = it::Record();
-	return rec;
+	static it::Array arr = it::Array( it::Integer() );
+	return arr;
 }
 
 

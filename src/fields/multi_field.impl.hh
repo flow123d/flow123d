@@ -48,17 +48,8 @@ const it::Instance &  MultiField<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
-it::Record &  MultiField<spacedim,Value>::get_multifield_input_type() {
-	static it::Record type= it::Record("MultiField", "Record for all time-space functions.")
-		.has_obligatory_type_key()
-		.declare_key("component_names", it::Array( it::String() ), it::Default::read_time("Can be get from source of MultiField."),
-			"Names of MultiField components.")
-		.declare_key("common", transposed_field_.get_input_type(), it::Default::optional(),
-			"Supplied to components subtree.")
-		.declare_key("components", it::Array( sub_field_type_.get_input_type() ), it::Default::read_time("Converts from 'common' key."),
-			"Components of Multifield.")
-		.close();
-
+it::Array &  MultiField<spacedim,Value>::get_multifield_input_type() {
+	static it::Array type = it::Array( SubFieldBaseType::get_input_type_instance(shared_->input_element_selection_), 1);
 	return type;
 }
 
@@ -182,27 +173,20 @@ void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_
 
 template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record descriptor_rec, const FieldCommon &field) {
-	Input::Record multifield_rec;
-	if (descriptor_rec.opt_val(field.input_name(), multifield_rec));
-	Input::Iterator<Input::AbstractRecord> it_common = multifield_rec.find<Input::AbstractRecord>("common");
-	Input::Iterator<Input::Array> it_components = multifield_rec.find<Input::Array>("components");
-	if (it_common && !it_components) {
-		it_common->transpose_to( multifield_rec, "components", spacedim );
-		it_components = multifield_rec.find<Input::Array>("components");
-	}
-
-	ASSERT(it_components, "Failed to fill 'components' array of multifield: %s.", field.input_name().c_str());
-	ASSERT(index_ < it_components->size(), "Index of MultiField component is out of range.\n");
-
-	unsigned int position = 0;
-	for (auto it = it_components->begin<Input::AbstractRecord>(); it != it_components->end(); ++it, ++position)
+	Input::Array multifield_arr;
+	if (descriptor_rec.opt_val(field.input_name(), multifield_arr))
 	{
-		if (index_ == position) {
-			typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
-			field_algo_base->set_component_idx(index_);
-			return field_algo_base;
+		unsigned int position = 0;
+		for (auto it = multifield_arr.begin<Input::AbstractRecord>(); it != multifield_arr.end(); ++it, ++position)
+		{
+			if (index_ == position) {
+				typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
+				field_algo_base->set_component_idx(index_);
+				return field_algo_base;
+			}
 		}
 	}
+
 	return NULL;
 }
 

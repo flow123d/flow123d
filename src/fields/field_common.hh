@@ -254,7 +254,7 @@ public:
      * Returns input type for MultiField instance.
      * TODO: temporary solution, see @p multifield_
      */
-    virtual IT::Record &get_multifield_input_type() =0;
+    virtual IT::Array &get_multifield_input_type() =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
