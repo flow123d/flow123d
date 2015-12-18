@@ -533,7 +533,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
                 escape_description(it->description_) << "\"," << endl;
         stream << "\"default\" : { "
                 <<"\"type\" : \"" << dft_type << "\"," << endl
-                <<"\"value\" : \"" << escape_description(dft_value) << "\" }," << endl;
+                <<"\"value\" : " << dft_value << " }," << endl;
         stream << "\"type\" : " << it->type_->hash_str() << endl;
         stream << "}";
     }
