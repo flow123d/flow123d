@@ -80,7 +80,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 					"Reaction model involved in transport.")
 
 		.declare_key("input_fields", Array(
-				Record("TransportOperatorSplitting_Data", FieldCommon::field_descriptor_record_decsription("TransportOperatorSplitting_Data") )
+				Record("TransportOperatorSplitting_Data", FieldCommon::field_descriptor_record_description("TransportOperatorSplitting_Data") )
 				.copy_keys( ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting") )
 				.close()
 				), IT::Default::obligatory(), "")

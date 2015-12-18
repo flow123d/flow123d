@@ -104,8 +104,12 @@ public:
 
 	/**
 	 * Returns input type for a field descriptor, that can contain any of the fields in the set.
-	 * Typical usage is from derived class, where we add fields in the constructor and make auxiliary temporary instance
-	 * to get the record of the field descriptor. Simplest example:
+	 * Typical usage is from derived class, where we add fields in the constructor
+	 * and make auxiliary temporary instance
+	 * to get the record of the field descriptor.
+	 * The returned Record has name equation_name + "_Data".
+	 *
+	 * Simplest example:
 	 *
 	 * @code
 	 * class EqData : public FieldSet {
@@ -121,7 +125,8 @@ public:
 	 *
 	 * Input::Type::Record SomEquation::input_type=
 	 * 		Record("SomeEquation","equation's description")
-	 * 		.declare_key("data",Input::Type::Array(EqData().make_field_descriptor_type()),"List of field descriptors.");
+	 * 		.declare_key("data",Input::Type::Array(
+	 * 		    EqData().make_field_descriptor_type("SomeEquation")),"List of field descriptors.");
 	 * @endcode
 	 *
 	 */
