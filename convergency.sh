@@ -8,6 +8,18 @@ set -x
 MAIN_DIR=conv_results
 mkdir $MAIN_DIR
 
+function compute_other {
+    mkdir $res_dir
+    rm -f output/*
+    cat input.template.txt |sed "s/DH/$dh/" | sed "s/DT/$dt/" > input.txt
+    /usr/bin/time -a -o out ./lib/richards-2d >out 
+    grep "user" out 
+
+    cp -r output $res_dir
+    cp out $res_dir
+}
+
+
 finest_solution=$MAIN_DIR/cn_trap_dh_0.001_dt_0.5
 
 compare_times="50 100 200 400 800 1000"  
@@ -84,7 +96,7 @@ function find_print_time {
      }};
      if (\$err < \$best_t * 0.001) { print \$best_frame; }"
 }
-
+    #mv errors $res_dir
 function calc {
 bc << EOF
 scale=8
@@ -92,7 +104,7 @@ $@
 quit
 EOF
 }
-
+    
 function compare_num {
     local dh=$1
     local dt=$2

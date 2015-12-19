@@ -986,6 +986,10 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
 
         lambda(i) = solution->lambda(idx); //solution->residual(idx) - (solution->saturation(idx) - solution->old_saturation(idx))/dt * solution->el_sum(idx);
                           //element_volume*lumping_weights(i)*solution->new_sat_diff(idx)/dt;
+
+        //aux(i) = solution->richards_data->anal_flux->value(dh_cell->face(face_no)->barycenter());
+
+        //lambda(i) = solution->lambda(idx);//element_volume*lumping_weights(i)*solution->new_sat_diff(idx)/dt;
         el_phead    += trace_head(face_no) * lumping_weights(face_no);
 
          // to get velocity compatible with saturation we should use  lambda weighted phead

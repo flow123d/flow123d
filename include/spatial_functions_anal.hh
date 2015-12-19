@@ -246,9 +246,11 @@ private:
     std::vector< std::pair<BCType, Function<dim> *> > bc_segments;
 
     HydrologyModel hydro_model;
+    HydroModel_analytical hydro_model;
 
     double density;
     double gravity;
+
 
     bool no_exact_solution;
 
@@ -262,8 +264,8 @@ public:
     //fq_diff(h_params),
     //fc(h_params),
     //fk_diff(h_params),
-    density(1.0),
-    gravity(1.0)
+    density(0.0),
+    gravity(0.0)
     {
         cap_arg_max_=hydro_model.cap_arg_max();
         fq(cap_arg_max_/1.5, lambda_cap_max_half);
@@ -271,15 +273,23 @@ public:
         cout << "lh "<<lambda_cap_max_half <<endl;
         fq(cap_arg_max_, cap_max_);
 
+
+        // Analytical solution setting
+
         add_bc(0, Neuman, new ZeroFunction<dim>() ); // left
         add_bc(1, Neuman, new ZeroFunction<dim>() ); // right
-        add_bc(3, Dirichlet, new TLinear<dim>(prm) ); // top
-        add_bc(2, Dirichlet, new ConstantFunction<dim>(-2) ); // bottom
+        add_bc(2, Dirichlet, new ASol_ATan<dim>() ); // bottom
+        add_bc(3, Dirichlet, new ASol_ATan<dim>()); // top
+        //add_bc(3,Dirichlet, new ConstantFunction<dim>(1.0); // top
+        //add_bc(3,Dirichlet, new ConstantFunction<dim>(1.0); // top
 
-        initial = new ZLinear<dim>(prm, -1, -2);
-        anal_sol = new ZeroFunction<dim>();
-        anal_flux = new ZeroFunction<dim>();
-        no_exact_solution =true;
+        initial = new ASol_ATan<dim>();
+        anal_sol = new ASol_ATan<dim>();
+        anal_flux = new AFlux_ATan<dim>();
+        no_exact_solution =false;
+
+        //anal_sol = new ASol_lin<dim>();
+        //initial = new ASol_lin<dim>();
 
         print_mat_table();
     }
