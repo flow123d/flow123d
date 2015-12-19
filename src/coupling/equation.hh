@@ -213,6 +213,10 @@ protected:
      * EqData::data(). This approach is simpler than making EqData::data() a virtual method.
      */
     FieldSet *eq_data_;
+    
+    /// object for calculation and writing the mass balance to file.
+    boost::shared_ptr<Balance> balance_;
+    
 };
 
 

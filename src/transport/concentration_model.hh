@@ -212,9 +212,6 @@ protected:
      */
     const MH_DofHandler *mh_dh;
 
-    /// (new) object for calculation and writing the mass balance to file.
-    boost::shared_ptr<Balance> balance_;
-
 	std::shared_ptr<OutputTime> output_stream_;
 
 

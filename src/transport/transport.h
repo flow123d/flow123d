@@ -316,9 +316,6 @@ private:
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
 
-    /// (new) object for calculation and writing the mass balance to file.
-    boost::shared_ptr<Balance> balance_;
-
     friend class TransportOperatorSplitting;
 };
 #endif /* TRANSPORT_H_ */

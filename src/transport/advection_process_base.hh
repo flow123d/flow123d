@@ -46,10 +46,6 @@ public:
                 .close();
     }
 
-protected:
-
-    /// object for calculation and writing the mass balance to file.
-    boost::shared_ptr<Balance> balance_;
 
 };
 
