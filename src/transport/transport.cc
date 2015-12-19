@@ -60,11 +60,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 {
 	return IT::Record("Convection_FV", "Explicit in time finite volume method for solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
-			.declare_key("input_fields", IT::Array(
-					IT::Record("TransportOperatorSplitting_Data", FieldCommon::field_descriptor_record_decsription("TransportOperatorSplitting_Data") )
-					.copy_keys( EqData().make_field_descriptor_type("Transport_OS") )
-					.close()
-					), IT::Default::obligatory(), "")
+			.declare_key("input_fields", IT::Array(EqData().make_field_descriptor_type("Convection_FV")), IT::Default::obligatory(), "")
 			.close();
 }
 
