@@ -31,6 +31,7 @@ class Mesh;
 class Region;
 class FieldSet;
 typedef std::vector<Region> RegionSet;
+class Balance;
 
 
 namespace Input {
