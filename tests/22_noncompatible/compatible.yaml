@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Flow in 2d-1d domain, compatible mesh
   mesh:
     mesh_file: ./input/compatible.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - region: 1d
@@ -36,3 +36,4 @@ problem: !SequentialCoupling
     solver: !Petsc
       r_tol: 1.0e-10
       a_tol: 1.0e-10
+    name: flow_output_stream
