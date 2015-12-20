@@ -193,7 +193,7 @@ TEST_F(SomeEquation, output_field_selection) {
         .name("bc_pressure");
 
     Input::Type::Selection sel
-        = data.make_output_field_selection("Sel").close();
+        = data.make_output_field_selection("Sel", "desc").close();
     sel.finish();
 
     // Selection should not contain BC field bc_pressure.
