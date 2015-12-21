@@ -203,7 +203,7 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
-	return in_rec.find<Input::Record>(input_name);
+	return in_rec.find<Input::Array>(input_name);
 }
 
 
