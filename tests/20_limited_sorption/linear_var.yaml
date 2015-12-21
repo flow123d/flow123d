@@ -10,7 +10,6 @@ output_streams:
     variant: ascii
   time_step: 0.5
   name: transport_output_stream
-
 problem: !SequentialCoupling
   description: Adsorption all
   mesh:

@@ -30,6 +30,8 @@ problem: !SequentialCoupling
     substances:
     - A
     time:
+      # test forcing smaller time step then output,
+      # but still larger then 0.01 necessary for capture input
       max_dt: 0.05
       end_time: 1.0
     input_fields:

@@ -60,6 +60,7 @@ problem: !SequentialCoupling
           value: if(t>=7.0,0.01,0.001)
         porosity_immobile: !FieldFormula
           value: if(t>8.0,0.5,0.2)
+        # change porosity
       output_fields:
       - conc_immobile
       - porosity_immobile
@@ -70,3 +71,4 @@ problem: !SequentialCoupling
       format: !vtk
         variant: ascii
       time_step: 1.0
+# problem

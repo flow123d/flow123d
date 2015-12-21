@@ -1,3 +1,4 @@
+# COMMENT_Stop_time:"1275",
 problem: !SequentialCoupling
   description: Steady flow + transport with source
   mesh:
@@ -31,6 +32,7 @@ problem: !SequentialCoupling
       max_dt: 1.0
       min_dt: 1.0
   secondary_equation: !SoluteTransport_DG
+    # dual_porosity:false,
     input_fields:
     - r_set: BOUNDARY
       bc_conc: 0

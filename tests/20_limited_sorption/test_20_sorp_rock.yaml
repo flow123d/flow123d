@@ -9,7 +9,6 @@ output_streams:
   format: !vtk
     variant: ascii
   name: transport_output_stream
-
 problem: !SequentialCoupling
   description: TestXXX-pork
   mesh:
