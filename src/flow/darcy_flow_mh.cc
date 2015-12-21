@@ -102,7 +102,7 @@ const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
 
 
 const it::Record & DarcyFlowMH_Steady::get_input_type() {
-    return it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
+    return it::Record("SteadyDarcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
@@ -130,12 +130,12 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 
 
 const int DarcyFlowMH_Steady::registrar =
-		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("Steady_MH") +
+		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("SteadyDarcy_MH") +
 		DarcyFlowMH_Steady::get_input_type().size();
 
 
 const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
-	return it::Record("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
+	return it::Record("UnsteadyDarcy_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
 		.copy_keys(DarcyFlowMH_Steady::get_input_type())
 		.declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
@@ -145,7 +145,7 @@ const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
 
 
 const int DarcyFlowMH_Unsteady::registrar =
-		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("Unsteady_MH") +
+		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("UnsteadyDarcy_MH") +
 		DarcyFlowMH_Unsteady::get_input_type().size();
 
 

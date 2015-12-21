@@ -4,7 +4,7 @@ problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
     mesh_file: ./input/test1_new.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - region: 1d_channel
@@ -53,3 +53,4 @@ problem: !SequentialCoupling
       number_of_levels: 2
       use_adaptive_bddc: false
       bddcml_verbosity_level: 0
+    name: flow_output_stream

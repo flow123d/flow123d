@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Test of boundary conditions for transport
   mesh:
     mesh_file: ./input/mesh.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - r_set: BOUNDARY
       bc_type: dirichlet
@@ -21,27 +21,29 @@ problem: !SequentialCoupling
     solver: !Petsc &anchor3
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !SoluteTransport_DG
-    input_fields:
-    - region: domain
-      diff_m: 1.0
-      sources_density: 0
-      init_conc: 5
-    - region: .left
-      bc_type: total_flux
-      bc_flux: !FieldFormula
-        value: 7.5*4*y*(1-y)
-    - region: .right
-      bc_type: inflow
-      bc_conc: 10
-    - region: .top
-      bc_type: total_flux
-      bc_robin_sigma: 1
-      bc_conc: 2
-    - region: .bottom
-      bc_type: total_flux
-      bc_robin_sigma: 1
-      bc_conc: 2
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
+      input_fields:
+      - region: domain
+        diff_m: 1.0
+        sources_density: 0
+        init_conc: 5
+      - region: .left
+        bc_type: total_flux
+        bc_flux: !FieldFormula
+          value: 7.5*4*y*(1-y)
+      - region: .right
+        bc_type: inflow
+        bc_conc: 10
+      - region: .top
+        bc_type: total_flux
+        bc_robin_sigma: 1
+        bc_conc: 2
+      - region: .bottom
+        bc_type: total_flux
+        bc_robin_sigma: 1
+        bc_conc: 2
+      solver: *anchor3
     output_stream: 
       file: ./transport.pvd
       format: !vtk
@@ -54,4 +56,4 @@ problem: !SequentialCoupling
       end_time: 10
     balance:
       cumulative: true
-    solver: *anchor3
+    name: transport_output_stream

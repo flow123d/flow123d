@@ -4,7 +4,7 @@ problem: !SequentialCoupling
   mesh:
     # mesh_file:"./input/narrow_2d_chanel.msh"
     mesh_file: ./input/dual_por.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - r_set: BULK
       conductivity: 1.0
@@ -23,7 +23,13 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - r_set: BULK
+        init_conc:
+        - 1.0
+        porosity: 0.5
     substances:
     - A
     time:
@@ -33,11 +39,6 @@ problem: !SequentialCoupling
       a_tol: 1.0e-07
       r_tol: 1.0e-07
       # options:"-ksp_type gmres -ksp_monitor"
-    input_fields:
-    - r_set: BULK
-      init_conc:
-      - 1.0
-      porosity: 0.5
     reaction_term: !DualPorosity
       input_fields:
       - time: 0.0
