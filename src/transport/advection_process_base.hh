@@ -11,11 +11,15 @@
 #include "coupling/equation.hh"
 #include "input/input_type_forward.hh"
 
+class Balance;
 class Mesh;
 class MH_DofHandler;
 class SubstanceList;
 
 
+/**
+ * Abstract interface class for secondary equations in HC_ExplicitCoupling.
+ */
 class AdvectionProcessBase : public EquationBase {
 
 public:
@@ -35,17 +39,13 @@ public:
      */
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
 
-    virtual unsigned int n_substances() = 0;
-
-    virtual SubstanceList &substances() = 0;
-
-
     /// Common specification of the input record for secondary equations.
     static Input::Type::Abstract & get_input_type() {
         return Input::Type::Abstract("Transport",
-                "Secondary equation for transport of substances.")
+                "Secondary equation for transport of substances or heat transfer.")
                 .close();
     }
+
 
 };
 

@@ -38,8 +38,7 @@
 
       solver = {
         TYPE = "Petsc", 
-        a_tol = 1e-07, 
-        parameters = ""
+        a_tol = 1e-07
       }, 
       time = {
         REF = "../../time"

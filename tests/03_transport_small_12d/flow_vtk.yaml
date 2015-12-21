@@ -10,7 +10,7 @@ problem: !SequentialCoupling
       - 1d_lower
       - 1d_left_branch
   # mesh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: 1d_domain
       conductivity: 1.0e-06
@@ -36,7 +36,21 @@ problem: !SequentialCoupling
       a_tol: 1.0e-12
       r_tol: 1.0e-12
   # primary equation
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      # uranium 235
+      input_fields:
+      - region: ALL
+        init_conc: 0
+        porosity: 0.25
+        sources_density:
+        - 0.25
+        - 0
+        # source is in the whole volume (l+s) -> times porosity
+      - region: BOUNDARY
+        bc_conc:
+        - 0.0
+        - 1.0
     substances:
     - name: age
       molar_mass: 0.018
@@ -44,18 +58,6 @@ problem: !SequentialCoupling
     - name: U235
       molar_mass: 0.235
     # uranium 235
-    input_fields:
-    - region: ALL
-      init_conc: 0
-      porosity: 0.25
-      sources_density:
-      - 0.25
-      - 0
-      # source is in the whole volume (l+s) -> times porosity
-    - region: BOUNDARY
-      bc_conc:
-      - 0.0
-      - 1.0
     time:
       end_time: 1000000.0
     balance:

@@ -505,15 +505,7 @@ void SorptionBase::output_data(void )
 {
     output_vector_gather();
 
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if (rank == 0)
-    {
-      // Register fresh output data
-      data_->output_fields.set_time(time_->step());
-      data_->output_fields.output(output_stream_);
-    }
-
-    //for synchronization when measuring time by Profiler
-    MPI_Barrier(MPI_COMM_WORLD);
+    // Register fresh output data
+    data_->output_fields.set_time(time_->step());
+    data_->output_fields.output(output_stream_);
 }

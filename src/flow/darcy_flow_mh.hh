@@ -196,8 +196,6 @@ protected:
 
     MortarMethod mortar_method_;
 
-    /// object for calculation and writing the water balance to file.
-    boost::shared_ptr<Balance> balance_;
     /// index of water balance within the Balance object.
     unsigned int water_balance_idx_;
 };
