@@ -175,7 +175,7 @@ public:
      *
      * The list is used by set_time method to set field on individual regions to actual FieldBase descendants.
      */
-    void set_input_list(const Input::Array &list);
+    virtual void set_input_list(const Input::Array &list) =0;
 
     /**
      * Set side of limit when calling @p set_time
@@ -373,7 +373,7 @@ protected:
     	/**
     	 * Empty constructor.
     	 */
-    	SharedData() {};
+    	SharedData() : list_idx_(-1) {};
 
         /**
          * True for boundary fields.
@@ -420,12 +420,12 @@ protected:
         /**
          * List of input field descriptors from which the field is set.
          */
-        Input::Array input_list_;
+        vector<Input::Record> input_list_;
 
         /**
-         * Iterator to current input field descriptor.
+         * Index to current position of input field descriptor.
          */
-        Input::Iterator<Input::Record> list_it_;
+        int list_idx_;
 
         /**
          * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.

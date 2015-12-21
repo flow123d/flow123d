@@ -66,6 +66,10 @@ public:
         	}
     	}
 
+    	bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) override {
+    		return in_rec.find<Input::AbstractRecord>(field_name_);
+    	}
+
     	arma::vec::fixed<spacedim+1> potential_;
     	std::string field_name_;
     };

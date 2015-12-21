@@ -186,9 +186,14 @@ protected:
          */
 
         DBGMSG("init\n");
+
+        static std::vector<Input::Array> inputs;
+        unsigned int input_last = inputs.size(); // position of new item
+        inputs.push_back( in_rec.val<Input::Array>("data") );
+
         data.set_mesh(*mesh);
-        data.set_input_list( in_rec.val<Input::Array>("data"));
         data.set_limit_side(LimitSide::right);
+        data.set_input_list( inputs[input_last] );
         data.set_time(tg.step());
     }
 

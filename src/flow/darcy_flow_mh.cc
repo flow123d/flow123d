@@ -244,8 +244,13 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     //connecting data fields with mesh
     START_TIMER("data init");
     data_.set_mesh(mesh_in);
-    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
+    //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+    data_.gravity_ =  arma::vec4(" 0 0 -1 0");
+    data_.bc_pressure.add_factory(
+    		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
+    		(data_.gravity_, "bc_piezo_head") );
 
+    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
 
 
     
@@ -254,11 +259,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
-    data_.gravity_ =  arma::vec4(" 0 0 -1 0");
-    data_.bc_pressure.add_factory(
-    		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-    		(data_.gravity_, "bc_piezo_head") );
     
     solution = NULL;
     schur0   = NULL;

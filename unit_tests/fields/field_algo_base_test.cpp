@@ -79,8 +79,11 @@ public:
 	}
 
 	Input::Array input_list(const string& str) {
+		static std::vector<Input::Array> inputs;
+		unsigned int input_last = inputs.size(); // position of new item
 		Input::ReaderToStorage reader(str, *test_input_list, Input::FileFormat::format_JSON );
-		return reader.get_root_interface<Input::Array>();
+		inputs.push_back( reader.get_root_interface<Input::Array>() );
+		return inputs[input_last];
 	}
 
 	// RegionHistory for given region index
@@ -189,28 +192,15 @@ TYPED_TEST(FieldFix, get_input_type) {
 
 // test correctness of check for ascending time sequence
 TYPED_TEST(FieldFix, set_input_list) {
-    // !! independent lists are not yet supported
-    /*
 	string list_ok = "["
 			"{time=2, a=0}, "
 			"{time=1, b=0}, "
-			"{time=10, c=0},"
+			"{time=1, c=0},"
 			"{time=3, a=0}, "
 			"{time=2, b=0}, "
-			"{time=1, c=0},"
+			"{time=10, c=0},"
 			"{time=4, a=0}, "
 			"{time=5, a=0, b=0}]";
-			*/
-    string list_ok = "["
-            "{time=1, b=0}, "
-            "{time=1, c=0},"
-            "{time=2, a=0}, "
-            "{time=2, b=0}, "
-            "{time=3, a=0}, "
-            "{time=4, a=0}, "
-            "{time=5, a=0, b=0},"
-            "{time=10, c=0}"
-            "]";
 
 	string list_ko = "["
 			"{time=2, a=0},"
@@ -236,28 +226,15 @@ TYPED_TEST(FieldFix, set_input_list) {
 
 // check that it correctly introduce requered marks
 TYPED_TEST(FieldFix, mark_input_times) {
-    // !! independent lists are not yet supported
-    /*
     string list_ok = "["
             "{time=2, a=0}, "
             "{time=1, b=0}, "
-            "{time=10, c=0},"
+            "{time=1, c=0},"
             "{time=3, a=0}, "
             "{time=2, b=0}, "
-            "{time=1, c=0},"
+            "{time=10, c=0},"
             "{time=4, a=0}, "
             "{time=5, a=0, b=0}]";
-            */
-    string list_ok = "["
-            "{time=1, b=0}, "
-            "{time=1, c=0},"
-            "{time=2, a=0}, "
-            "{time=2, b=0}, "
-            "{time=3, a=0}, "
-            "{time=4, a=0}, "
-            "{time=5, a=0, b=0},"
-            "{time=10, c=0}"
-            "]";
 
 	if (this->is_enum_valued) {
 		boost::regex e("=0");
