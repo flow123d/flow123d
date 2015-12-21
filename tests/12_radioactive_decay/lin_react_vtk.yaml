@@ -63,4 +63,3 @@ problem: !SequentialCoupling
         products: E
     balance:
       cumulative: true
-    name: transport_output_stream

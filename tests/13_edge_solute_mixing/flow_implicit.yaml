@@ -2,7 +2,6 @@ problem: !SequentialCoupling
   time: &anchor3
     end_time: 100.0
     init_dt: 5.0
-    name: transport_output_stream
   description: Test13 - mixing of substances on edges and quantitative test on trivial
     transport problem.
   mesh:
@@ -59,4 +58,3 @@ problem: !SequentialCoupling
     time: *anchor3
     balance:
       cumulative: true
-    name: transport_output_stream

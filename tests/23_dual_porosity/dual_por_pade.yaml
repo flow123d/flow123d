@@ -78,4 +78,3 @@ problem: !SequentialCoupling
       reaction_immobile: *anchor3
     balance:
       cumulative: true
-  name: transport_output_stream

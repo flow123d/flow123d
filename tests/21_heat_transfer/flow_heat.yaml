@@ -66,4 +66,3 @@ problem: !SequentialCoupling
       a_tol: 1.0e-07
     time:
       end_time: 10
-    name: transport_output_stream

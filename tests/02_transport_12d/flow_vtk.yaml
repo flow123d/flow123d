@@ -111,4 +111,3 @@ problem: !SequentialCoupling
           - 0
           - 0.5
         output_fields: []
-    name: transport_output_stream

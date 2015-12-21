@@ -59,4 +59,3 @@ problem: !SequentialCoupling
       cumulative: true
     time:
       end_time: 1.0
-    time_step: 0.2

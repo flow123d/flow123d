@@ -54,4 +54,3 @@ problem: !SequentialCoupling
       end_time: 10
     balance:
       cumulative: true
-    name: transport_output_stream

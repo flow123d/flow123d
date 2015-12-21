@@ -3,7 +3,6 @@ problem: !SequentialCoupling
     end_time: 0.5
     max_dt: 0.01
     min_dt: 0.01
-    name: flow_output_stream
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
     mesh_file: ${INPUT}/test10.msh
@@ -37,6 +36,4 @@ problem: !SequentialCoupling
       cumulative: true
     solver: !Petsc
       a_tol: 1.0e-07
-      parameters: ''
     time: *anchor2
-    name: flow_output_stream

@@ -53,4 +53,3 @@ problem: !SequentialCoupling
       number_of_levels: 2
       use_adaptive_bddc: false
       bddcml_verbosity_level: 0
-    name: flow_output_stream

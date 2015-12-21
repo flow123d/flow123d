@@ -71,4 +71,3 @@ problem: !SequentialCoupling
       output_fields: []
     balance:
       cumulative: true
-  name: transport_output_stream

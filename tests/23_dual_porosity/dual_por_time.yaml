@@ -25,11 +25,12 @@ problem: !SequentialCoupling
       a_tol: 1.0e-07
   secondary_equation: !Transport_OS
     transport: !Convection_FV
-      input_fields:
-      - r_set: BULK
-        init_conc:
-        - 1.0
-        porosity: 0.5
+      # options:"-ksp_type gmres -ksp_monitor"
+    input_fields:
+    - r_set: BULK
+      init_conc:
+      - 1.0
+      porosity: 0.5
     substances:
     - A
     time:

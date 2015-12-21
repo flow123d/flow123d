@@ -62,4 +62,3 @@ problem: !SequentialCoupling
           branching_ratio: 0.1
     balance:
       cumulative: true
-    name: transport_output_stream

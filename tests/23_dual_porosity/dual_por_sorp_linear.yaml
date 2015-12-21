@@ -93,4 +93,3 @@ problem: !SequentialCoupling
         reaction_liquid: *anchor6
     balance:
       cumulative: true
-  name: transport_output_stream

@@ -69,4 +69,3 @@ problem: !SequentialCoupling
         - B
     balance:
       cumulative: true
-    name: transport_output_stream

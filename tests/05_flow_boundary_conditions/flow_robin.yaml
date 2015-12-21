@@ -38,4 +38,3 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-    name: flow_output_stream

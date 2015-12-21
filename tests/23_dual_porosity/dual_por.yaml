@@ -70,4 +70,3 @@ problem: !SequentialCoupling
       - conc_immobile
     balance:
       cumulative: true
-  name: transport_output_stream

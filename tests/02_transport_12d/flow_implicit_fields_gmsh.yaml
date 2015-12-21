@@ -55,6 +55,7 @@ problem: !SequentialCoupling
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
+      dg_variant: symmetric
     output_stream:
       file: ./transport-implicit.pvd
       format: !vtk
@@ -67,7 +68,5 @@ problem: !SequentialCoupling
     time:
       end_time: 5.0
       init_dt: 0.5
-    dg_variant: symmetric
     balance:
       cumulative: true
-    name: transport_output_stream
