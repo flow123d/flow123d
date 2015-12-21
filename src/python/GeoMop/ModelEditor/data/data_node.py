@@ -33,6 +33,7 @@ class DataNode:
         ac_array = 2
         ac_reducible_to_key = 3
         error = 4
+        ac_transposition = 5
 
     class StructureType(Enum):
         """The type of node in the text structure."""
