@@ -18,6 +18,9 @@
 #
 #     PETSC_INSTALL_MPI_DIR      - pass MPI to PETSC configure 
 #     PETSC_INSTALL_LAPACK_DIR   - pass Lapack to PETSC configure
+#     PETSC_MPI_DIR              - specify location where MPI is already installed (need to also specify PETSC_INSTALL_MPI_DIR), e.g.:
+#                                  set(PETSC_INSTALL_MPI_DIR TRUE)
+#                                  set(PETSC_MPI_DIR '/opt/openmpi/bin')
 #
 #     PETSC_INSTALL_CONFIG - possible values:
 #       mini             - only petsc + necessary MPI, BLAS, LAPACK

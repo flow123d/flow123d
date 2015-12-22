@@ -3,7 +3,7 @@ problem: !SequentialCoupling
     subdomain
   mesh:
     mesh_file: ./input/2D2D.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     data:
     - region: 2d_porous_block_left

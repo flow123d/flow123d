@@ -5,7 +5,6 @@
  *      Author: jb
  */
 
-
 #include <flow_gtest.hh>
 #include <sstream>
 #include <string>

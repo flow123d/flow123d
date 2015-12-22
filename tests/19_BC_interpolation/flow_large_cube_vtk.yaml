@@ -2,13 +2,13 @@ problem: !SequentialCoupling
   description: Interpolated boundary condition - big cube
   mesh:
     mesh_file: input/large_mesh.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: IMPLICIT BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x-z
-    - r_set: BULK
+    - region: BULK
       anisotropy: 1
     output:
       output_stream: 

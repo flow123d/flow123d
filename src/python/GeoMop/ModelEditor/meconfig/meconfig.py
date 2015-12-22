@@ -1,26 +1,23 @@
-"""Model dialog static parameters"""
+"""Model Editor static parameters
+
+.. codeauthor:: Pavel Richter <pavel.richter@tul.cz>
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 
 import os
-import copy
+from copy import deepcopy
 
 import config as cfg
-from helpers import NotificationHandler, AutocompleteHelper
+from helpers import (notification_handler, AutocompleteHelper,
+                     StructureAnalyzer, shortcuts)
 from ist import InfoTextGenerator
-from helpers.subyaml import StructureAnalyzer
 
-from .import_json import parse_con, fix_tags, rewrite_comments
-from .yaml import Loader
-from .yaml import Transformator, TransformationFileFormatError
-from .validation import Validator
-from .format import get_root_input_type_from_json
-from .autoconversion import autoconvert
-
-__author__ = ['Pavel Richter', 'Tomas Krizek']
-
-__resource_dir__ = os.path.join(os.path.split(
-    os.path.dirname(os.path.realpath(__file__)))[0], 'resources')
-__format_dir__ = os.path.join(__resource_dir__, 'format')
-__transformation_dir__ = os.path.join(__resource_dir__, 'transformation')
+from data.import_json import parse_con, fix_tags, rewrite_comments
+from data.yaml import Loader
+from data.yaml import Transformator, TransformationFileFormatError
+from data.validation import Validator
+from data.format import get_root_input_type_from_json
+from data.autoconversion import autoconvert
 
 
 class _Config:
@@ -35,21 +32,35 @@ class _Config:
     COUNT_RECENT_FILES = 5
     """Count of recent files"""
 
-    def __init__(self, readfromconfig=True):
-        if readfromconfig:
-            data = cfg.get_config_file(self.__class__.SERIAL_FILE)
-        else:
-            data = None
+    CONFIG_DIR = os.path.join(cfg.__config_dir__, 'ModelEditor')
 
-        if data is not None:
-            self.recent_files = copy.deepcopy(data.recent_files)
-            self.format_files = copy.deepcopy(data.format_files)
-            self.last_data_dir = data.last_data_dir
-        else:
-            from os.path import expanduser
-            self.last_data_dir = expanduser("~")
-            self.recent_files = []
-            self.format_files = []
+    def __init__(self, readfromconfig=True):
+
+        from os.path import expanduser
+        self.last_data_dir = expanduser("~")
+        """directory of the most recently opened data file"""
+        self.recent_files = []
+        """a list of recently opened files"""
+        self.format_files = []
+        """a list of format files"""
+        self.display_autocompletion = False
+        """whether to display autocompletion automatically"""
+        self.symbol_completion = False
+        """whether to automatically complete brackets and array symbols"""
+        self.shortcuts = deepcopy(shortcuts.DEFAULT_USER_SHORTCUTS)
+        """user customizable keyboard shortcuts"""
+
+        if readfromconfig:
+            data = cfg.get_config_file(self.__class__.SERIAL_FILE, self.CONFIG_DIR)
+            self.last_data_dir = getattr(data, 'last_data_dir', self.last_data_dir)
+            self.recent_files = getattr(data, 'recent_files', self.recent_files)
+            self.format_files = getattr(data, 'format_files', self.format_files)
+            self.display_autocompletion = getattr(data, 'display_autocompletion',
+                                                  self.display_autocompletion)
+            self.symbol_completion = getattr(data, 'symbol_completion',
+                                             self.symbol_completion)
+            if hasattr(data, 'shortcuts'):
+                self.shortcuts.update(data.shortcuts)
 
     def update_last_data_dir(self, file_name):
         """Save dir from last used file"""
@@ -57,7 +68,7 @@ class _Config:
 
     def save(self):
         """Save AddPictureWidget data"""
-        cfg.save_config_file(self.__class__.SERIAL_FILE, self)
+        cfg.save_config_file(self.__class__.SERIAL_FILE, self, self.CONFIG_DIR)
 
     def add_recent_file(self, file_name, format_file):
         """
@@ -114,7 +125,7 @@ class _Config:
 
 class MEConfig:
     """Static data class"""
-    notification_handler = NotificationHandler()
+    notification_handler = notification_handler
     """error handler for reporting and buffering errors"""
     autocomplete_helper = AutocompleteHelper()
     """helpers for handling autocomplete options in editor"""
@@ -128,6 +139,8 @@ class MEConfig:
     """Serialized variables"""
     curr_file = None
     """Serialized variables"""
+    imported_file_name = None
+    """if a file was imported, this is its suggested name"""
     root = None
     """root DataNode structure"""
     document = ""
@@ -144,6 +157,17 @@ class MEConfig:
     """data validator"""
     root_input_type = None
     """input type of the whole tree, parsed from format"""
+    resource_dir = os.path.join(os.path.split(
+        os.path.dirname(os.path.realpath(__file__)))[0], 'resources')
+    """path to a folder containing resources"""
+    format_dir = os.path.join(resource_dir, 'format')
+    """path to a folder containing IST files"""
+    transformation_dir = os.path.join(resource_dir, 'transformation')
+    """path to a folder containing transformation files"""
+    stylesheet_dir = os.path.join(resource_dir, 'css')
+    """path to a folder containing Qt stylesheets"""
+    info_text_html_root_dir = os.path.join(resource_dir, 'ist_html')
+    """path to a root folder for InfoText"""
 
     def __init__(self):
         pass
@@ -166,8 +190,8 @@ class MEConfig:
         """read names of format files in format files directory"""
         from os import listdir
         from os.path import isfile, join
-        for file_name in sorted(listdir(__format_dir__)):
-            if (isfile(join(__format_dir__, file_name)) and
+        for file_name in sorted(listdir(cls.format_dir)):
+            if (isfile(join(cls.format_dir, file_name)) and
                     file_name[-5:].lower() == ".json"):
                 cls.format_files.append(file_name[:-5])
 
@@ -176,8 +200,8 @@ class MEConfig:
         """read names of transformation files in format files directory"""
         from os import listdir
         from os.path import isfile, join
-        for file_name in listdir(__transformation_dir__):
-            if (isfile(join(__transformation_dir__, file_name)) and
+        for file_name in listdir(cls.transformation_dir):
+            if (isfile(join(cls.transformation_dir, file_name)) and
                     file_name[-5:].lower() == ".json"):
                 cls.transformation_files.append(file_name[:-5])
 
@@ -185,7 +209,7 @@ class MEConfig:
     def get_curr_format_text(cls):
         """return current format file text"""
         from os.path import join
-        file_name = join(__format_dir__, cls.curr_format_file + ".json")
+        file_name = join(cls.format_dir, cls.curr_format_file + ".json")
         try:
             with open(file_name, 'r') as file_d:
                 return file_d.read()
@@ -201,7 +225,7 @@ class MEConfig:
     def get_transformation_text(cls, file):
         """return transformation file text"""
         from os.path import join
-        file_name = join(__transformation_dir__, file + ".json")
+        file_name = join(cls.transformation_dir, file + ".json")
         try:
             with open(file_name, 'r') as file_d:
                 return file_d.read()
@@ -243,6 +267,7 @@ class MEConfig:
         cls.update_format()
         cls.changed = False
         cls.curr_file = None
+        cls.imported_file_name = None
 
     @classmethod
     def open_file(cls, file_name):
@@ -253,9 +278,10 @@ class MEConfig:
         """
         try:
             with open(file_name, 'r') as file_d:
-                cls.document = file_d.read()
+                cls.document = file_d.read().expandtabs(tabsize=2)
             cls.config.update_last_data_dir(file_name)
             cls.curr_file = file_name
+            cls.imported_file_name = None
             cls.config.add_recent_file(file_name, cls.curr_format_file)
             cls.update_format()
             cls.changed = False
@@ -278,6 +304,17 @@ class MEConfig:
             with open(file_name, 'r') as file_d:
                 con = file_d.read()
             cls.document = parse_con(con)
+            # find available file name
+            base_name = os.path.splitext(os.path.basename(file_name))[0]
+            cls.imported_file_name = base_name
+            i = 1
+            dir_path = cls.config.last_data_dir + os.path.sep
+            while os.path.isfile(dir_path + cls.imported_file_name + '.yaml'):
+                if i > 999:
+                    break
+                cls.imported_file_name = "{0}{1:03d}".format(base_name, i)
+                i += 1
+            cls.imported_file_name = dir_path + cls.imported_file_name + '.yaml'
             cls.curr_file = None
             cls.update()
             cls.document, need_move_forward = fix_tags(cls.document, cls.root)
@@ -285,11 +322,11 @@ class MEConfig:
             cls.document = rewrite_comments(con, cls.document, cls.root)
             cls.update()
             data = {'actions': [{'action': 'move-key-forward', 'parameters': {'path': '/system'}},
-                                {'action': 'delete-key', 'parameters': {'path': '/system'}}]}
+                                {'action': 'delete-key', 'parameters': {'path': '/system', 'deep': True}}]}
             for path in need_move_forward:
                 data['actions'].append({'action': 'move-key-forward', 'parameters': {'path': path}})
             transformator = Transformator(None, data)
-            cls.document = transformator.transform(cls.document)
+            cls.document = transformator.transform(cls.document, cls)
             cls.update_format()
             cls.changed = True
             return True
@@ -418,7 +455,7 @@ class MEConfig:
         if cls.main_window is not None:
             import PyQt5.QtWidgets as QtWidgets
             from ui.dialogs import TranformationDetailDlg
-            
+
             dialog = TranformationDetailDlg(transformator.name,
                                             transformator.description,
                                             transformator.old_version,
@@ -427,12 +464,12 @@ class MEConfig:
                                             transformator.new_version in cls.transformation_files,
                                             cls.main_window)
             res = QtWidgets.QDialog.Accepted == dialog.exec_()
-        if res :
+        if res:
             try:
-                cls.document = transformator.transform(cls.document)
+                cls.document = transformator.transform(cls.document, cls)
             except TransformationFileFormatError as err:
                 if cls.main_window is not None:
-                    cls._report_error("Can't decode transformation file", err)
+                    cls._report_error("Transformation format error", err)
                 else:
                     raise err
                 return
@@ -440,9 +477,27 @@ class MEConfig:
                 cls.set_current_format_file(transformator.new_version)
             else:
                 cls.update()
-                
+
     @classmethod
-    def _report_error(cls, mess,  err):
+    def get_shortcut(cls, name):
+        """Locate a keyboard shortcut by its action name.
+
+        :param str name: name of the shortcut
+        :return: the assigned shortcut
+        :rtype: :py:class:`helpers.keyboard_shortcuts.KeyboardShortcut` or ``None``
+        """
+        shortcut = None
+        if name in shortcuts.SYSTEM_SHORTCUTS:
+            shortcut = shortcuts.SYSTEM_SHORTCUTS[name]
+        elif name in cls.config.shortcuts:
+            shortcut = cls.config.shortcuts[name]
+        if shortcut:
+            return shortcuts.get_shortcut(shortcut)
+        return None
+
+    @classmethod
+    def _report_error(cls, mess, err):
+        """Report an error with dialog."""
         from geomop_dialogs import GMErrorDialog
         err_dialog = GMErrorDialog(cls.main_window)
         err_dialog.open_error_dialog(mess, err)

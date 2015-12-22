@@ -1,9 +1,9 @@
 """
 Notification Handler module for capturing and reporting notifications
 that occur when processing the data structure.
-"""
 
-__author__ = 'Tomas Krizek'
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 
 
 class NotificationHandler:
@@ -27,4 +27,9 @@ class NotificationHandler:
 
     def report(self, notification):
         """Reports a notification."""
+        if notification.title == 'SilencedNotification':
+            return
         self._notifications.append(notification)
+
+
+notification_handler = NotificationHandler()

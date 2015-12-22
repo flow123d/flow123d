@@ -306,13 +306,6 @@ public:
             double local_values[]) const override;
 
     /**
-     * @brief Returns the distribution of number of element to local processes.
-     */
-    inline Distribution *el_ds() const { return el_ds_; }
-
-    inline int *get_el_4_loc() const { return el_4_loc; }
-
-    /**
      * @brief Returns the global index of local element.
      *
      * @param loc_el Local index of element.
@@ -349,6 +342,7 @@ public:
      */
     bool el_is_local(int index) const;
 
+    /// Returns finite element object for given space dimension.
     template<unsigned int dim>
     FiniteElement<dim,3> *fe() const;
 

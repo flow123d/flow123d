@@ -1,18 +1,10 @@
-"""
-Utilities package for `data` package.
-"""
+"""Enums for ModelEditor.
 
-__author__ = 'Tomas Krizek'
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 
 from enum import Enum
 
-class TextValue:
-    """Represents a value in the input text."""
-    def __init__(self, value=None):
-        self.value = value
-        """the value from input text"""
-        self.span = None
-        """:class:`.Span` specifies the position of value in input text"""
 
 class PosType(Enum):
     comment = 1
@@ -52,10 +44,3 @@ class CursorType(Enum):
         if pos_type is PosType.in_value:
             return CursorType.value
         return CursorType.other
-
-class NodeStructureType(Enum):
-    scalar = 1
-    array = 2
-    dict = 3
-    json_array = 4
-    json_dict = 5

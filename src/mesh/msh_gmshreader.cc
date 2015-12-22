@@ -60,13 +60,13 @@ GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
 
 
 
-void GmshMeshReader::read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map) {
+void GmshMeshReader::read_mesh(Mesh* mesh) {
     START_TIMER("GMSHReader - read mesh");
     
     ASSERT( mesh , "Argument mesh is NULL.\n");
     read_physical_names(tok_, mesh);
     read_nodes(tok_, mesh);
-    read_elements(tok_, mesh, el_to_reg_map);
+    read_elements(tok_, mesh);
 }
 
 
@@ -103,7 +103,7 @@ void GmshMeshReader::read_nodes(Tokenizer &tok, Mesh* mesh) {
 
 
 
-void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map) {
+void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
     using namespace boost;
     xprintf(Msg, "- Reading elements...");
 
@@ -164,11 +164,6 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
 
             // allocate element arrays TODO: should be in mesh class
             Element *ele=nullptr;
-            // possibly modify region id
-            if (el_to_reg_map) {
-                RegionDB::MapElementIDToRegionID::const_iterator it = el_to_reg_map->find(id);
-                if (it != el_to_reg_map->end()) region_id = it->second;
-            }
             RegionIdx region_idx = mesh->region_db_.add_region( region_id, dim );
 
             if (region_idx.is_boundary()) {

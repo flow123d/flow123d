@@ -11,7 +11,7 @@ problem: !SequentialCoupling
       region_labels:
       - .2d
       - .1d
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: 1d
       anisotropy: 10
@@ -20,7 +20,7 @@ problem: !SequentialCoupling
     - region: 2d
       anisotropy: 1
       cross_section: 1
-    - r_set: .sides
+    - region: .sides
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x
@@ -38,14 +38,15 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
-    input_fields:
-    - r_set: .sides
-      bc_conc: !FieldFormula
-        value: x/12.75
-    - r_set: subset
-      init_conc: 0
-      porosity: 0.25
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - region: .sides
+        bc_conc: !FieldFormula
+          value: x/12.75
+      - region: subset
+        init_conc: 0
+        porosity: 0.25
     output_stream:
       file: ./transport.pvd
       format: !vtk
@@ -63,7 +64,7 @@ problem: !SequentialCoupling
       cumulative: true
     reaction_term: !DualPorosity
       input_fields:
-      - r_set: subset
+      - region: subset
         diffusion_rate_immobile:
         - 0.01
         - 0.01
@@ -81,7 +82,7 @@ problem: !SequentialCoupling
         - 1.0
         - 1.0
         input_fields:
-        - r_set: subset
+        - region: subset
           rock_density: 1.0
           sorption_type:
           - linear
@@ -100,7 +101,7 @@ problem: !SequentialCoupling
         - 1.0
         - 1.0
         input_fields:
-        - r_set: subset
+        - region: subset
           rock_density: 1.0
           sorption_type:
           - linear

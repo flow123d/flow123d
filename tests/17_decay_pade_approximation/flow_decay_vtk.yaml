@@ -3,11 +3,11 @@ problem: !SequentialCoupling
     with zero pressure gradient, VTK output test12
   mesh:
     mesh_file: ./input/sit_decay.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - rid: 1
       anisotropy: 0.01
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_piezo_head: 0
     output:
@@ -23,22 +23,23 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
-    input_fields:
-    - rid: 1
-      init_conc:
-      - 0.01
-      - 0.02
-      - 0.03
-      - 0.04
-      - 0.05
-    - r_set: BOUNDARY
-      bc_conc:
-      - 0.01
-      - 0.02
-      - 0.03
-      - 0.04
-      - 0.05
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - rid: 1
+        init_conc:
+        - 0.01
+        - 0.02
+        - 0.03
+        - 0.04
+        - 0.05
+      - region: BOUNDARY
+        bc_conc:
+        - 0.01
+        - 0.02
+        - 0.03
+        - 0.04
+        - 0.05
     output_stream: 
       file: ./transport_decay.pvd
       format: !vtk

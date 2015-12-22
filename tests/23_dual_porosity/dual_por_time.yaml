@@ -4,11 +4,11 @@ problem: !SequentialCoupling
   mesh:
     # mesh_file:"./input/narrow_2d_chanel.msh"
     mesh_file: ./input/dual_por.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: BULK
+    - region: BULK
       conductivity: 1.0
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: 0
     output:
@@ -23,7 +23,14 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      # options:"-ksp_type gmres -ksp_monitor"
+      input_fields:
+      - region: BULK
+        init_conc:
+        - 1.0
+        porosity: 0.5
     substances:
     - A
     time:
@@ -33,33 +40,29 @@ problem: !SequentialCoupling
       a_tol: 1.0e-07
       r_tol: 1.0e-07
       # options:"-ksp_type gmres -ksp_monitor"
-    input_fields:
-    - r_set: BULK
-      init_conc:
-      - 1.0
-      porosity: 0.5
     reaction_term: !DualPorosity
       input_fields:
       - time: 0.0
-        r_set: ALL
+        region: ALL
         diffusion_rate_immobile:
         - 0.0
         porosity_immobile: 0.1
         init_conc_immobile:
         - 0.01
       - time: 3.0
-        r_set: BULK
+        region: BULK
         porosity_immobile: 0.2
       - time: 4.0
-        r_set: BULK
+        region: BULK
         diffusion_rate_immobile:
         - 0.001
       - time: 6.0
-        r_set: BULK
+        region: BULK
         diffusion_rate_immobile: !FieldFormula
           value: if(t>=7.0,0.01,0.001)
         porosity_immobile: !FieldFormula
           value: if(t>8.0,0.5,0.2)
+        # change porosity
       output_fields:
       - conc_immobile
       - porosity_immobile
@@ -70,3 +73,4 @@ problem: !SequentialCoupling
       format: !vtk
         variant: ascii
       time_step: 1.0
+# problem

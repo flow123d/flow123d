@@ -19,7 +19,7 @@
  *   Record (nesmysl)? Tedy v nazvu recordu pouzit nazev tridy
  */
 
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
 #include <vector>
@@ -245,7 +245,7 @@ TEST_F(SomeEquation, values) {
             init_pressure=2.2,
             conc_mobile={REF="/data/0/conc_mobile"}
           },
-          { r_set="BULK",
+          { region="BULK",
             bulk_set_field=5.7,
             conc_mobile={REF="/data/0/conc_mobile"}
           },
@@ -356,11 +356,11 @@ TEST_F(SomeEquation, wrong_time_order) {
     string eq_data = R"JSON(
     { 
       data=[
-          { r_set="BULK",
+          { region="BULK",
             time=1.0,
             bulk_set_field=0.0
           }, 
-          { r_set="BULK",
+          { region="BULK",
             time=0.0,
             bulk_set_field=1.0
           } 

@@ -3,9 +3,9 @@ problem: !SequentialCoupling
     but with zero pressure gradient
   mesh:
     mesh_file: ./input/narrow_2d_chanel.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: BULK
+    - region: BULK
       conductivity: 0.0001
     - region: .left
       bc_type: dirichlet
@@ -25,19 +25,11 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
-    substances:
-    - A
-    - B
-    time:
-      end_time: 10
-      # init_dt:1.0
-    solver: !Petsc
-      a_tol: 1.0e-07
-      r_tol: 1.0e-07
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
       # options:"-ksp_type gmres -ksp_monitor"
     input_fields:
-    - r_set: BULK
+    - region: BULK
       init_conc:
       - 0.0
       - 0.0
@@ -82,10 +74,48 @@ problem: !SequentialCoupling
     #             isotherm_mult:0.6
     #           }
     #         ]
+    substances:
+    - A
+    - B
+    time:
+      end_time: 10
+      # init_dt:1.0
+    solver: !Petsc
+      a_tol: 1.0e-07
+      r_tol: 1.0e-07
+      # options:"-ksp_type gmres -ksp_monitor"
+    #         TYPE:"RadioactiveDecay",
+    #         decays:[
+    #           {
+    #             radionuclide:"A",
+    #             half_life:1.0,
+    #             products:"B"
+    #           }
+    #         ]
+    #         TYPE:"Sorption",
+    #         solvent_density:1.0,
+    #         substances:["A"],
+    #         solubility:[1.0],
+    #         input_fields:[
+    #           {
+    #             time:0.0,
+    #             r_set:"ALL",
+    #             rock_density:1.0,
+    #             sorption_type: "none",
+    #             isotherm_mult:0.6
+    #           },
+    #           {
+    #             time:4.0,
+    #             r_set:"ALL",
+    #             rock_density:1.0,
+    #             sorption_type: "linear",
+    #             isotherm_mult:0.6
+    #           }
+    #         ]
     reaction_term: !DualPorosity
       input_fields:
       - time: 0.0
-        r_set: ALL
+        region: ALL
         diffusion_rate_immobile:
         - 0.0
         - 0.0
@@ -94,7 +124,7 @@ problem: !SequentialCoupling
         - 0.0
         - 0.0
       - time: 4.0
-        r_set: ALL
+        region: ALL
         diffusion_rate_immobile:
         - 0.01
         - 0.01

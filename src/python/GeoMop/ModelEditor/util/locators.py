@@ -1,10 +1,10 @@
 """
 Classes for determining node and cursor location.
+
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
 """
 
-__author__ = 'Tomas Krizek'
-
-from util import ComparableMixin
+from geomop_util import ComparableMixin
 
 
 class Position(ComparableMixin):
