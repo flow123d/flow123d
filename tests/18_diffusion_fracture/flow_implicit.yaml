@@ -9,7 +9,7 @@ problem: !SequentialCoupling
       - 45
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: 0
     - rid: 20
@@ -33,7 +33,7 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
-      - r_set: BOUNDARY
+      - region: BOUNDARY
         bc_conc: 0
       - rid: 20
         init_conc: 0

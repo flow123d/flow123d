@@ -20,7 +20,7 @@ problem: !SequentialCoupling
       anisotropy: 10
       sigma: 0.05
     # using region set
-    - r_set: fractures
+    - region: fractures
       anisotropy: 1
       sigma: 0.5
     #         { region:"2d_fracture_1",
@@ -34,7 +34,7 @@ problem: !SequentialCoupling
     - region: 3d_cube
       anisotropy: 0.1
     # using region set
-    - r_set: dirichlet_boundary
+    - region: dirichlet_boundary
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x-z

@@ -6,11 +6,11 @@ problem: !SequentialCoupling
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: y
-    - r_set: BULK
+    - region: BULK
       cross_section: 1
       conductivity: 1
     output:
@@ -35,9 +35,9 @@ problem: !SequentialCoupling
     transport: !ConvectionDiffusion_DG
       # dual_porosity:false,
       input_fields:
-      - r_set: BOUNDARY
+      - region: BOUNDARY
         bc_conc: 0
-      - r_set: BULK
+      - region: BULK
         init_conc: 0
         porosity: 1
         diff_m: 1.0e-09

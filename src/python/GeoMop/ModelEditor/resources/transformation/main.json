@@ -116,6 +116,15 @@
         "old_name": "SoluteTransport_DG",
         "new_name": "Transport_OS"
       }
-    }
+    },
+    { 
+      "NAME" : "region to r_set",
+      "TODO": "Need to check that target key 'region' is not used.",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"**/input_fields/*/r_set",
+        "destination_path":"$1/input_fields/$2/region"
+      }
+    }           
   ]
 }

@@ -57,7 +57,7 @@
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { r_set = "BULK",
+        { region = "BULK",
           conductivity = 1,            // K_2d
           cross_section = 1           // delta_2d
           //water_source_density= {TYPE= "FieldFormula", value="2*y-1"}
@@ -67,7 +67,7 @@
           cross_section = 1         // delta_1d
         },*/
         { //region = ".left",
-          r_set="BOUNDARY",  
+          region="BOUNDARY",  
           bc_type = "dirichlet",
           //bc_pressure = {TYPE = "FieldFormula", value = "-x/2-y^3/3+y^2/2-1/12"}
           //                                                 1                               0                    0.079   
@@ -131,7 +131,7 @@
              
         
         {
-          r_set="matrix",
+          region="matrix",
           init_conc=0,
           porosity= 0.1,          
           dg_penalty=10

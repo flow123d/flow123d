@@ -7,7 +7,7 @@ problem: !SequentialCoupling
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
-    - r_set: ALL
+    - region: ALL
       conductivity: 1.0e-10
     - region: .boundary
       bc_type: dirichlet
@@ -32,7 +32,7 @@ problem: !SequentialCoupling
       input_fields:
       - region: .boundary
         bc_conc: 0
-      - r_set: ALL
+      - region: ALL
         init_conc:
         - 0
         - 0.9

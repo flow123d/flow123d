@@ -193,6 +193,7 @@ private:
     const RegionDB *db_;
 
     friend class RegionDB;
+    friend class Mesh;
 };
 
 
@@ -562,7 +563,7 @@ private:
 
 
     /// Database of all regions (both boundary and bulk).
-    RegionTable region_set_;
+    RegionTable region_table_;
 
     /// flag for closed database, no regions can be added, but you can add region sets
     bool closed_;

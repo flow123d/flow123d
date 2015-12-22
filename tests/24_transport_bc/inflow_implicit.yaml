@@ -4,7 +4,7 @@ problem: !SequentialCoupling
     mesh_file: ./input/mesh.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: (x-0.5)*y

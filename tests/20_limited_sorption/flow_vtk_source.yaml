@@ -16,7 +16,7 @@ problem: !SequentialCoupling
     input_fields:
     - region: volume
       conductivity: 1.0e-10
-    - r_set: .boundary
+    - region: .boundary
       bc_type: dirichlet
       bc_piezo_head: 0
     output:
@@ -55,7 +55,7 @@ problem: !SequentialCoupling
         - 0
         - 0
         - 0
-      - r_set: .boundary
+      - region: .boundary
         bc_conc: 0
     substances:
     - A
