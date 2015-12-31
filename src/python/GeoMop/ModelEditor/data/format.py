@@ -7,12 +7,12 @@ import json
 
 
 def get_root_input_type_from_json(data):
-    """Return the root input type from JSON formatted data."""
+    """Return the root input type from JSON formatted string."""
     return parse_format(json.loads(data))
 
 
 def parse_format(data):
-    """Returns root input type from JSON data."""
+    """Returns root input type from data."""
     input_types = {}
     root_id = data[0]['id']      # set root type
 

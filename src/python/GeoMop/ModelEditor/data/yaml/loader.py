@@ -211,12 +211,12 @@ class Loader:
             self._next_parse_event()  # value event
             if not key:  # if key is invalid
                 continue
-            elif key.value == '<<':  # handle merge
+            if self._event is None:
+                break  # something went wrong, abandon ship!
+            if key.value == '<<':  # handle merge
                 self._perform_merge(key, node)
                 self._next_parse_event()
                 continue
-            if self._event is None:
-                break  # something went wrong, abandon ship!
             child_node = self._create_node(node)
             self._next_parse_event()
             if child_node is None:  # i.e. unresolved alias

@@ -2,7 +2,7 @@ problem: !SequentialCoupling
   description: Steady flow + transport with source
   mesh:
     mesh_file: ./input/test16.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - r_set: BOUNDARY
@@ -28,24 +28,25 @@ problem: !SequentialCoupling
       r_tol: 1.0e-12
     time:
       end_time: 5.7
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - r_set: BOUNDARY
+        bc_conc: 0
+      - r_set: BULK
+        init_conc: 0
+        porosity: 1
+        sources_density: !FieldElementwise
+          gmsh_file: input/test16_sources.msh
+          field_name: density
+        sources_sigma: !FieldElementwise
+          gmsh_file: input/test16_sources.msh
+          field_name: sigma
+        sources_conc: !FieldElementwise
+          gmsh_file: input/test16_sources.msh
+          field_name: concentration
     boundary_file: ./input/test16.tbc
     initial_file: ./input/test16.tic
-    input_fields:
-    - r_set: BOUNDARY
-      bc_conc: 0
-    - r_set: BULK
-      init_conc: 0
-      porosity: 1
-      sources_density: !FieldElementwise
-        gmsh_file: input/test16_sources.msh
-        field_name: density
-      sources_sigma: !FieldElementwise
-        gmsh_file: input/test16_sources.msh
-        field_name: sigma
-      sources_conc: !FieldElementwise
-        gmsh_file: input/test16_sources.msh
-        field_name: concentration
     output_stream: 
       file: ./transport_test16.pvd
       format: !vtk

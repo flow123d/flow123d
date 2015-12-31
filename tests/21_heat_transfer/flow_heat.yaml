@@ -11,7 +11,7 @@ problem: !SequentialCoupling
       region_labels:
       - .fracture_top
       - .rock_top
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: rock
       conductivity: 0.01

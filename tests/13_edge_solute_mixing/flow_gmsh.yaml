@@ -5,7 +5,7 @@ problem: !SequentialCoupling
     transport problem.
   mesh:
     mesh_file: input/Y_branch.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: trunk
       anisotropy: 1.0
@@ -36,12 +36,13 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-14
       r_tol: 1.0e-14
-  secondary_equation: !TransportOperatorSplitting
-    input_fields:
-    - r_set: BULK
-      init_conc: 0
-    - region: .trunk
-      bc_conc: 1
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - r_set: BULK
+        init_conc: 0
+      - region: .trunk
+        bc_conc: 1
     output_stream: 
       file: transport.msh
       format: !gmsh

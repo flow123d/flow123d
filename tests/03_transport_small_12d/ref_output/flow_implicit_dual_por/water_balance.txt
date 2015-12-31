@@ -1,0 +1,12 @@
+"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"1d_upper"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"1d_lower"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"1d_left_branch"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"2d"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".1d_top"	"water_volume"	-5.86948e-08	-5.86948e-08	0	0	0	0	0	0	0	0	0	0
+0	".1d_left"	"water_volume"	4.78485e-08	0	4.78485e-08	0	0	0	0	0	0	0	0	0
+0	".1d_bottom"	"water_volume"	4.7896e-08	0	4.7896e-08	0	0	0	0	0	0	0	0	0
+0	".2d_top"	"water_volume"	-1.09461e-07	-1.09461e-07	0	0	0	0	0	0	0	0	0	0
+0	".2d_right"	"water_volume"	-1.07572e-07	-1.07572e-07	0	0	0	0	0	0	0	0	0	0
+0	".2d_bottom"	"water_volume"	9.01832e-08	0	9.01832e-08	0	0	0	0	0	0	0	0	0
+0	".2d_left"	"water_volume"	8.98004e-08	0	8.98004e-08	0	0	0	0	0	0	0	0	0

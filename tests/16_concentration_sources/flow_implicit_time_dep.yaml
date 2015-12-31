@@ -12,7 +12,7 @@ problem: !SequentialCoupling
       id: 200
       element_list:
       - 721
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - r_set: BOUNDARY
@@ -40,28 +40,32 @@ problem: !SequentialCoupling
       end_time: 10
       max_dt: 1.0
       min_dt: 1.0
-  secondary_equation: !SoluteTransport_DG
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
+      input_fields:
+      - region: IMPLICIT BOUNDARY
+        bc_conc: 0
+      - rid: 7
+        init_conc: 0
+        porosity: 1
+      - rid: 100
+        sources_density: !FieldFormula
+          value: max(4-t,0)
+      - rid: 200
+        time: 2
+        sources_sigma: 1
+        sources_conc: 1
+      - rid: 200
+        time: 4
+        sources_sigma: 0
+      - rid: 7
+        time: 4
+        porosity: !FieldFormula
+          value: 4/t
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     dual_porosity: false
-    input_fields:
-    - region: IMPLICIT BOUNDARY
-      bc_conc: 0
-    - rid: 7
-      init_conc: 0
-      porosity: 1
-    - rid: 100
-      sources_density: !FieldFormula
-        value: max(4-t,0)
-    - rid: 200
-      time: 2
-      sources_sigma: 1
-      sources_conc: 1
-    - rid: 200
-      time: 4
-      sources_sigma: 0
-    - rid: 7
-      time: 4
-      porosity: !FieldFormula
-        value: 4/t
     output_stream: 
       file: ./transport_test16.pvd
       format: !vtk
@@ -74,8 +78,5 @@ problem: !SequentialCoupling
       end_time: 10
       max_dt: 1.0
       min_dt: 1.0
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
     balance:
       cumulative: true

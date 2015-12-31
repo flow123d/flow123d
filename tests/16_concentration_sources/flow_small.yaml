@@ -4,7 +4,7 @@ problem: !SequentialCoupling
     such that it determines CFL condition (t equals 1/(10/0.9)).
   mesh:
     mesh_file: ./input/test16_small.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - r_set: ALL
@@ -27,24 +27,25 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
-    input_fields:
-    - region: .boundary
-      bc_conc: 0
-    - r_set: ALL
-      init_conc:
-      - 0
-      - 0.9
-      - 0
-      sources_sigma:
-      - 3
-      - 3
-      - 10
-      sources_conc:
-      - 0.6
-      - 0.6
-      - 0.6
-      porosity: 0.9
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - region: .boundary
+        bc_conc: 0
+      - r_set: ALL
+        init_conc:
+        - 0
+        - 0.9
+        - 0
+        sources_sigma:
+        - 3
+        - 3
+        - 10
+        sources_conc:
+        - 0.6
+        - 0.6
+        - 0.6
+        porosity: 0.9
     output_stream: 
       file: ./transport_test16.pvd
       format: !vtk

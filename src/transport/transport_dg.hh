@@ -125,7 +125,7 @@ private:
  *
  */
 template<class Model>
-class TransportDG : public TransportBase, public Model
+class TransportDG : public Model
 {
 public:
 
@@ -174,6 +174,9 @@ public:
      * @brief Initialize solution in the zero time.
      */
 	void zero_time_step() override;
+	
+    bool assess_time_constraint(double &time_constraint)
+    { return false; }
 
     /**
      * @brief Computes the solution in one time instant.
@@ -181,29 +184,37 @@ public:
 	void update_solution() override;
 
 	/**
-	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
-	 * 
-         * @param dh mixed hybrid dof handler
-         * 
-	 * (So far it does not work since the flow module returns a vector of zeros.)
-	 * @param velocity_vector Input array of velocity values.
-	 */
-	virtual void set_velocity_field(const MH_DofHandler &dh);
-
-	/**
 	 * @brief Postprocesses the solution and writes to output file.
 	 */
 	void output_data();
 
 	/**
-	 * @brief Getter for field data.
-	 */
-	virtual EqData *get_data() { return &data_; }
-
-	/**
 	 * @brief Destructor.
 	 */
 	~TransportDG();
+
+	void initialize() override;
+
+    void calculate_cumulative_balance();
+
+    void calculate_instant_balance();
+
+	const Vec &get_solution(unsigned int sbi)
+	{ return ls[sbi]->get_solution(); }
+
+	double **get_concentration_matrix()
+	{ return solution_elem_; }
+
+	void calculate_concentration_matrix();
+
+	void update_after_reactions(bool solution_changed);
+
+    void get_par_info(int * &el_4_loc, Distribution * &el_ds);
+
+    int *get_row_4_el();
+
+
+
 
 private:
     /// Registrar of class to factory
@@ -432,6 +443,9 @@ private:
 	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
 	LinSys *ls_dt;
 
+	/// Element averages of solution (the array is passed to reactions in operator splitting).
+	double **solution_elem_;
+
 	// @}
 
 
@@ -444,10 +458,8 @@ private:
 	/// Vector of solution data.
 	vector<Vec> output_vec;
 
-	/// Record with output specification.
-	Input::Record output_rec;
-
-	std::shared_ptr<OutputTime> output_stream;
+	/// Record with input specification.
+	Input::Record input_rec;
 
 
 	// @}
@@ -466,8 +478,6 @@ private:
 	vector<vector<vector<arma::vec3> > > ad_coef_edg;
 	/// Diffusion coefficients on edges.
 	vector<vector<vector<arma::mat33> > > dif_coef_edg;
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
 
 	// @}
 

@@ -171,17 +171,17 @@ class StructureChanger:
                 add[prepend_len] =  prepend_ident * " " +add[prepend_len]        
         return add
     
-    @staticmethod
-    def change_tag(lines, node, old,  new):
+    @classmethod
+    def change_tag(cls, lines, node, old,  new):
         """change node tag"""        
         l1, c1, l2, c2 = StructureChanger.node_pos(node)
-        return StructureChanger._replace(lines, new,  old,  l1, c1, l2, c2 )        
+        return cls.replace(lines, new,  old,  l1, c1, l2, c2 )        
         
-    @staticmethod
-    def add_tag(lines, node, new):
+    @classmethod
+    def add_tag(cls, lines, node, new):
         """add node tag"""
         l1, c1, l2, c2 = StructureChanger.key_pos(node)
-        return StructureChanger._replace(lines, ': ' + new,  ":",  l1, c1, l2, c2 )
+        return cls.replace(lines, ': ' + new,  ":",  l1, c1, l2, c2 )
         
     
     @staticmethod    
@@ -225,7 +225,7 @@ class StructureChanger:
             # more lines
             place = re.search(r'^(\s*)(\S.*\S)(\s*)$', lines[l2])
             if place is not None:
-                if len(place.group(1)) > c2:
+                if len(place.group(1)) < c2:
                     if (len(lines[l2]) - len(place.group(3))) <= c2:
                         del lines[l2]
                     else:
@@ -245,6 +245,18 @@ class StructureChanger:
                     lines[l1] = lines[l1][:c1]
             else:
                 del lines[l1]
+
+    @staticmethod
+    def add_key(key, indent, value=None, tag=None):
+        """
+        Create new line with tet key
+        """
+        add = indent*" "+ key +":"
+        if tag is not None:
+            add += " !" + tag
+        if value is not None:
+            add += " " + value
+        return add
 
     @staticmethod
     def copy_structure(lines, l1, c1, l2, c2, indent):
@@ -391,12 +403,11 @@ class StructureChanger:
                         nl2 -= 1
                         nc2 = 0
                 else:
-                    nc2 = 0
+                    break
                 ident = re.search(r'^(\s*)\S', lines[nl2])
                 if ident is not None:
                     nc2 = len(ident.group(1))
             else:
-                nl2 -= 1
                 nc2 = 0
                 ident = re.search(r'^(\s*)\S', lines[nl2])
                 if ident is not None:

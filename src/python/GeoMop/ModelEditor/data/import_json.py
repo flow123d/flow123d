@@ -223,7 +223,7 @@ class Comments:
         type_, col, line = self._read_start_of_block(col, line, lines)
         if type_ is None:
             return text
-        self._traverse_child(col, line, type_, lines, path, data)
+        col, line = self._traverse_child(col, line, type_, lines, path, data)
         comm, col, line = self._read_comments(col, line, lines, False)
         if comm is not None:
             self.comments.append(Comment('/', comm, True))
@@ -639,7 +639,7 @@ class Comments:
                     if len(lines) <= iline:
                         return True, icol, iline
                 icol, iline = self._find_all_interupt(icol, iline, lines)
-            return True, icol, iline
+            return True, icol+1, iline
         if lines[iline][icol] != char:
             return False, col, line
         text = lines[line][col:]
