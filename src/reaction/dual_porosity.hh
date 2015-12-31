@@ -65,7 +65,6 @@ public:
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
 
-    static const Input::Type::Selection & get_output_selection();
   };
 
   /// Constructor.

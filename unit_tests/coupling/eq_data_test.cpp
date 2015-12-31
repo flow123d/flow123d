@@ -212,7 +212,7 @@ MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, Fiel
 const IT::Record & SomeEquation::get_input_type() {
 	return IT::Record("SomeEquation","")
 	        .declare_key("data", IT::Array(
-	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_decsription("SomeEquation_Data") )
+	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
 	                .copy_keys( SomeEquation::EqData().make_field_descriptor_type("SomeEquation") )
 	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
 	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )

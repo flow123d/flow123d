@@ -67,7 +67,6 @@ public:
 
     class EqData : public TransportEqData {
     public:
-        static const Input::Type::Selection & get_output_selection();
 
         EqData();
         virtual ~EqData() {};
@@ -96,6 +95,8 @@ public:
     typedef ConcentrationTransportBase FactoryBaseType;
 
     static const Input::Type::Record & get_input_type();
+
+    static const IT::Selection & get_output_selection();
 
     /**
      * Constructor.

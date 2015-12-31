@@ -50,26 +50,49 @@ const Selection & TransportDG<Model>::get_dg_variant_selection_input_type() {
 		.close();
 }
 
+/*
+ *  Should be removed
 template<class Model>
 const Selection & TransportDG<Model>::EqData::get_output_selection() {
-	return Model::ModelEqData::get_output_selection_input_type("DG", "Implicit in time Discontinuous Galerkin solver")
+	return Model::ModelEqData::get_output_selection_input_type(
+	        "DG",
+	        "Implicit in time Discontinuous Galerkin solver")
 		.copy_values(EqData().make_output_field_selection("").close())
+		ConvectionTransport::EqData().output_fields
+		                            .make_output_field_selection(
+		                                "ConvectionTransport_output_fields",
+		                                "Selection of output fields for Convection Solute Transport model.")
+		                            .close()),
 		.close();
 }
+*/
 
 template<class Model>
 const Record & TransportDG<Model>::get_input_type() {
 	return Model::get_input_type("DG", "DG solver")
 		.declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
 				"Linear solver for MH problem.")
-		.declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
+		.declare_key("input_fields", Array(
+		        TransportDG<Model>::EqData()
+		            .make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")),
+		        IT::Default::obligatory(),
+		        "Input fields of the equation.")
 		.declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("\"non-symmetric\""),
 				"Variant of interior penalty discontinuous Galerkin method.")
 		.declare_key("dg_order", Integer(0,3), Default("1"),
 				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
-		.declare_key("output_fields", Array(EqData::get_output_selection()),
+/*
+		.declare_key("output_fields",
+		        Array(
+		            // Get selection name and description from the model
+                    Model::ModelEqData::get_output_selection()
+	                // EqData contains both TransportDG and model specific fields.
+                    .copy_values(
+                            EqData().make_output_field_selection("DG_output_fields","Auxiliary Selection")
+                            .close())
+                    .close()),
 				Default(Model::ModelEqData::default_output_field()),
-				"List of fields to write to output file.")
+				"List of fields to write to output file.")*/
 		.close();
 }
 

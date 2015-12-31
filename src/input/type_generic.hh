@@ -56,6 +56,7 @@ public:
 
     /// Parameter type name getter.
     string type_name() const override;
+    string class_name() const override { return "Parameter"; }
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const  override;

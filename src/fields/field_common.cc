@@ -49,7 +49,7 @@ FieldCommon::FieldCommon(const FieldCommon & other)
 
 
 IT::Record FieldCommon::field_descriptor_record(const string& record_name) {
-    return IT::Record(record_name, field_descriptor_record_decsription(record_name))
+    return IT::Record(record_name, field_descriptor_record_description(record_name))
                      .declare_key("region", IT::String(), "Label of the region where to set fields. ")
                      .declare_key("rid", IT::Integer(0), "ID of the region where to set fields." )
                      .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
@@ -58,7 +58,7 @@ IT::Record FieldCommon::field_descriptor_record(const string& record_name) {
 					 .close();
 }
 
-const std::string FieldCommon::field_descriptor_record_decsription(const string& record_name) {
+const std::string FieldCommon::field_descriptor_record_description(const string& record_name) {
     return "Record to set fields of the equation.\n"
                 "The fields are set only on the domain specified by one of the keys: 'region', 'rid'\n"
                 "and after the time given by the key 'time'. The field setting can be overridden by\n"

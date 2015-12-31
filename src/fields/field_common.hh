@@ -242,7 +242,7 @@ public:
     /**
      * Create description of field descriptor record.
      */
-    static const std::string field_descriptor_record_decsription(const string& record_name);
+    static const std::string field_descriptor_record_description(const string& record_name);
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase

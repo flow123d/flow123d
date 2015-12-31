@@ -108,7 +108,9 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
 				"Linear solver for MH problem.")
-		.declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
+		.declare_key("output",
+		        DarcyFlowMHOutput::get_input_type(),
+		        it::Default::obligatory(),
 				"Parameters of output form MH module.")
 		.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions." )
@@ -119,8 +121,9 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 		.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
 				"Initial condition for pressure as piezometric head." )
 		.declare_key("input_fields", it::Array(
-					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_decsription("DarcyFlowMH_Data") )
-					.copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
+					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
+					.copy_keys( DarcyFlowMH_Steady::EqData()
+                        .make_field_descriptor_type("DarcyFlowMH_Data_aux") )
 					.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Boundary condition for pressure as piezometric head." )
 					.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Initial condition for pressure as piezometric head." )
 					.close()

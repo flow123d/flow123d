@@ -127,6 +127,7 @@ public:
 
     /// Implements \p TypeBase::type_name
     string type_name() const override;
+    string class_name() const override { return "Selection"; }
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     bool operator==(const TypeBase &other) const override;

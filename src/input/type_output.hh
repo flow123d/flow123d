@@ -284,6 +284,13 @@ protected:
 	std::string format_hash(TypeBase::TypeHash hash);
 	std::string escape_description(std::string desc);
 
+	/**
+	 * Print header of a JSON object describing single TypeBase instance.
+	 * @param type - type to print
+	 * @param input_type - name of TypeBase descendant.
+	 */
+	void print_type_header(ostream& stream, const TypeBase *type);
+
     void print_impl(ostream& stream, const Record *type);
     void print_impl(ostream& stream, const Array *type);
     void print_impl(ostream& stream, const Abstract *type);

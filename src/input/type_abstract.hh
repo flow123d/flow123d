@@ -215,6 +215,7 @@ public:
 
     /// Abstract type name getter.
     virtual string type_name() const override;
+    string class_name() const override { return "Abstract"; }
 
     /**
      * Container-like access to the data of the Record. Returns iterator to the first data.
@@ -313,6 +314,8 @@ public:
 	AdHocAbstract(const Abstract &ancestor);
 
 	TypeHash content_hash() const   override;
+
+	string class_name() const override { return "AdHocAbstract"; }
 
 
     /**

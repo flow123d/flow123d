@@ -49,7 +49,8 @@ public:
   
   static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
   {
-      return EqData(output_field_name).output_fields.make_output_field_selection(selection_name)
+      return EqData(output_field_name).output_fields
+        .make_output_field_selection(selection_name, "desc")
         .close();
   }
 
@@ -205,7 +206,7 @@ protected:
   
   Input::Array output_array;
 
-  Input::Type::Selection output_selection;
+  //Input::Type::Selection output_selection;
 
   /**
    * Reaction model that follows the sorption.

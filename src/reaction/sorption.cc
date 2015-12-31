@@ -46,7 +46,9 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
 {
 	data_ = new EqData("conc_solid");
     this->eq_data_ = data_;
-	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
+	//output_selection = make_output_selection(
+    //        "SorptionSimple_output_fields",
+    //        "Selection of field names of Simple Sorption model available for output.");
 }
 
 const int SorptionSimple::registrar =
@@ -120,7 +122,7 @@ SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
         .flags_add(FieldFlag::input_copy)
         .name("porosity_immobile");
     this->eq_data_ = data_;
-    output_selection = make_output_selection(output_conc_name, output_selection_name);
+    //output_selection = make_output_selection(output_conc_name, output_selection_name);
 }
 
 SorptionDual::~SorptionDual(void)

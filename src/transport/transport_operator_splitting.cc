@@ -87,7 +87,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 		.declare_key("reaction_term", ReactionTerm::get_input_type(), Default::optional(),
 					"Reaction model involved in transport.")
 
-		.declare_key("output_fields", Array(ConvectionTransport::EqData::get_output_selection()),
+		.declare_key("output_fields", Array(ConvectionTransport::get_output_selection()),
 				Default("\"conc\""),
 				"List of fields to write to output file.")
 		.close();

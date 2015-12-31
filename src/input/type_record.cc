@@ -330,9 +330,7 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 	}
 	// Set attributes
 	rec.set_parameters_attribute(parameter_map);
-	std::stringstream type_stream;
-	type_stream << "\"" << this->content_hash() << "\"";
-	rec.add_attribute("generic_type", type_stream.str());
+	rec.add_attribute("generic_type", this->hash_str());
 
 	return std::make_pair( boost::make_shared<Record>(rec.close()), parameter_map );
 }

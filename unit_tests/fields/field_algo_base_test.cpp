@@ -54,7 +54,7 @@ public:
 
 		auto a_rec_type = this->field_.get_input_type();
 		test_field_descriptor = make_shared<Input::Type::Record>(
-				Input::Type::Record("any", FieldCommon::field_descriptor_record_decsription("any") )
+				Input::Type::Record("any", FieldCommon::field_descriptor_record_description("any") )
 				.copy_keys( this->field_.field_descriptor_record("any") )
 				.declare_key("a", a_rec_type, "")
 				.declare_key("b", a_rec_type, "")
