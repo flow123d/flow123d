@@ -6,9 +6,9 @@ problem: !SequentialCoupling
     mesh_file: ./input/dual_por.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: BULK
+    - region: BULK
       conductivity: 1.0
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: 0
     output:
@@ -27,7 +27,7 @@ problem: !SequentialCoupling
     transport: !Convection_FV
       # options:"-ksp_type gmres -ksp_monitor"
     input_fields:
-    - r_set: BULK
+    - region: BULK
       init_conc:
       - 1.0
       porosity: 0.5
@@ -53,32 +53,32 @@ problem: !SequentialCoupling
         - 1.0
         input_fields:
         - time: 0.0
-          r_set: ALL
+          region: ALL
           rock_density: 1.0
           sorption_type: none
           isotherm_mult: 0.6
         - time: 4.0
-          r_set: ALL
+          region: ALL
           rock_density: 1.0
           sorption_type: linear
           isotherm_mult: 0.6
       input_fields:
       - time: 0.0
-        r_set: ALL
+        region: ALL
         diffusion_rate_immobile:
         - 0.0
         porosity_immobile: 0.1
         init_conc_immobile:
         - 0.01
       - time: 3.0
-        r_set: BULK
+        region: BULK
         porosity_immobile: 0.2
       - time: 4.0
-        r_set: BULK
+        region: BULK
         diffusion_rate_immobile:
         - 0.001
       - time: 6.0
-        r_set: BULK
+        region: BULK
         diffusion_rate_immobile: !FieldFormula
           value: if(t>=7.0,0.01,0.001)
         porosity_immobile: !FieldFormula

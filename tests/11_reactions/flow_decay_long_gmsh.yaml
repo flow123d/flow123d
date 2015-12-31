@@ -4,7 +4,7 @@ problem: !SequentialCoupling
     mesh_file: ./input/sit_decay.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_piezo_head: 0
     output:
@@ -34,7 +34,7 @@ problem: !SequentialCoupling
         - 0.07
         - 0.08
         # this currently does not work
-      - r_set: BOUNDARY
+      - region: BOUNDARY
         #           {
         #             TYPE:"FieldElementwise",
         #             gmsh_file:"./input/sit_decay_long.msh",

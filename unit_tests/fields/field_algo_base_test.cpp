@@ -79,8 +79,11 @@ public:
 	}
 
 	Input::Array input_list(const string& str) {
+		static std::vector<Input::Array> inputs;
+		unsigned int input_last = inputs.size(); // position of new item
 		Input::ReaderToStorage reader(str, *test_input_list, Input::FileFormat::format_JSON );
-		return reader.get_root_interface<Input::Array>();
+		inputs.push_back( reader.get_root_interface<Input::Array>() );
+		return inputs[input_last];
 	}
 
 	// RegionHistory for given region index
@@ -189,28 +192,15 @@ TYPED_TEST(FieldFix, get_input_type) {
 
 // test correctness of check for ascending time sequence
 TYPED_TEST(FieldFix, set_input_list) {
-    // !! independent lists are not yet supported
-    /*
 	string list_ok = "["
 			"{time=2, a=0}, "
 			"{time=1, b=0}, "
-			"{time=10, c=0},"
+			"{time=1, c=0},"
 			"{time=3, a=0}, "
 			"{time=2, b=0}, "
-			"{time=1, c=0},"
+			"{time=10, c=0},"
 			"{time=4, a=0}, "
 			"{time=5, a=0, b=0}]";
-			*/
-    string list_ok = "["
-            "{time=1, b=0}, "
-            "{time=1, c=0},"
-            "{time=2, a=0}, "
-            "{time=2, b=0}, "
-            "{time=3, a=0}, "
-            "{time=4, a=0}, "
-            "{time=5, a=0, b=0},"
-            "{time=10, c=0}"
-            "]";
 
 	string list_ko = "["
 			"{time=2, a=0},"
@@ -236,28 +226,15 @@ TYPED_TEST(FieldFix, set_input_list) {
 
 // check that it correctly introduce requered marks
 TYPED_TEST(FieldFix, mark_input_times) {
-    // !! independent lists are not yet supported
-    /*
     string list_ok = "["
             "{time=2, a=0}, "
             "{time=1, b=0}, "
-            "{time=10, c=0},"
+            "{time=1, c=0},"
             "{time=3, a=0}, "
             "{time=2, b=0}, "
-            "{time=1, c=0},"
+            "{time=10, c=0},"
             "{time=4, a=0}, "
             "{time=5, a=0, b=0}]";
-            */
-    string list_ok = "["
-            "{time=1, b=0}, "
-            "{time=1, c=0},"
-            "{time=2, a=0}, "
-            "{time=2, b=0}, "
-            "{time=3, a=0}, "
-            "{time=4, a=0}, "
-            "{time=5, a=0, b=0},"
-            "{time=10, c=0}"
-            "]";
 
 	if (this->is_enum_valued) {
 		boost::regex e("=0");
@@ -336,12 +313,12 @@ TYPED_TEST(FieldFix, set_field) {
 
 TYPED_TEST(FieldFix, update_history) {
 	string list_ok = "["
-			"{time=0, r_set=\"ALL\", a =0, b =0},"
-			"{time=1, r_set=\"BULK\", a =1, b =0},"
-			"{time=2, r_set=\"BOUNDARY\", a =1, b =0},"
-			"{time=3, r_set=\"ALL\", b =0},"
-			"{time=4, r_set=\"ALL\", a =0},"
-			"{time=5, r_set=\"ALL\", a =1}"
+			"{time=0, region=\"ALL\", a =0, b =0},"
+			"{time=1, region=\"BULK\", a =1, b =0},"
+			"{time=2, region=\"BOUNDARY\", a =1, b =0},"
+			"{time=3, region=\"ALL\", b =0},"
+			"{time=4, region=\"ALL\", a =0},"
+			"{time=5, region=\"ALL\", a =1}"
 			"]";
 	if (this->is_enum_valued) {
 		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
@@ -466,12 +443,12 @@ TYPED_TEST(FieldFix, update_history) {
 
 TYPED_TEST(FieldFix, set_time) {
 	string list_ok = "["
-			"{time=0, r_set=\"ALL\", a =0, b =0},"
-			"{time=1, r_set=\"BULK\", a =1, b =0},"
-			"{time=2, r_set=\"BOUNDARY\", a =1, b =0},"
-			"{time=3, r_set=\"ALL\", b =0},"
-			"{time=4, r_set=\"ALL\", a =0},"
-			"{time=5, r_set=\"ALL\", a =1}"
+			"{time=0, region=\"ALL\", a =0, b =0},"
+			"{time=1, region=\"BULK\", a =1, b =0},"
+			"{time=2, region=\"BOUNDARY\", a =1, b =0},"
+			"{time=3, region=\"ALL\", b =0},"
+			"{time=4, region=\"ALL\", a =0},"
+			"{time=5, region=\"ALL\", a =1}"
 			"]";
 
 	if (this->is_enum_valued) {
@@ -510,10 +487,10 @@ TYPED_TEST(FieldFix, constructors) {
 	field_default.set_mesh( *(this->my_mesh) );
 
 	string list_ok = "["
-			"{time=2,  r_set=\"BULK\", a=0, b=1}, "
-			"{time=3,  r_set=\"BULK\", b=1}, "
-			"{time=4,  r_set=\"BULK\", a=1},"
-			"{time=5,  r_set=\"BULK\", a=0, b=0}]";
+			"{time=2,  region=\"BULK\", a=0, b=1}, "
+			"{time=3,  region=\"BULK\", b=1}, "
+			"{time=4,  region=\"BULK\", a=1},"
+			"{time=5,  region=\"BULK\", a=0, b=0}]";
 
 	if (this->is_enum_valued) {
 		list_ok = boost::regex_replace(list_ok, boost::regex("=1"), "=\"white\"");
@@ -616,11 +593,11 @@ TEST(Field, init_from_input) {
     init_conc.set_mesh(mesh);
     conductivity.set_mesh(mesh);
 
-    auto r_set = mesh.region_db().get_region_set("BULK");
+    auto region_set = mesh.region_db().get_region_set("BULK");
 
-    sorption_type.set_field(r_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
-    init_conc.set_field(r_set, in_rec.val<Input::AbstractRecord>("init_conc"));
-    conductivity.set_field(r_set, in_rec.val<Input::AbstractRecord>("conductivity"));
+    sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
+    init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
+    conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"));
 
     sorption_type.set_limit_side(LimitSide::right);
     init_conc.set_limit_side(LimitSide::right);

@@ -5,7 +5,7 @@ problem: !SequentialCoupling
     mesh_file: ./input/narrow_2d_chanel.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: BULK
+    - region: BULK
       conductivity: 0.0001
     - region: .left
       bc_type: dirichlet
@@ -29,7 +29,7 @@ problem: !SequentialCoupling
     transport: !Convection_FV
       # options:"-ksp_type gmres -ksp_monitor"
     input_fields:
-    - r_set: BULK
+    - region: BULK
       init_conc:
       - 0.0
       - 0.0
@@ -115,7 +115,7 @@ problem: !SequentialCoupling
     reaction_term: !DualPorosity
       input_fields:
       - time: 0.0
-        r_set: ALL
+        region: ALL
         diffusion_rate_immobile:
         - 0.0
         - 0.0
@@ -124,7 +124,7 @@ problem: !SequentialCoupling
         - 0.0
         - 0.0
       - time: 4.0
-        r_set: ALL
+        region: ALL
         diffusion_rate_immobile:
         - 0.01
         - 0.01

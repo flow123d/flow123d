@@ -8,7 +8,7 @@ problem: !SequentialCoupling
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x-z
-    - r_set: BULK
+    - region: BULK
       anisotropy: 1
     output:
       output_stream: 

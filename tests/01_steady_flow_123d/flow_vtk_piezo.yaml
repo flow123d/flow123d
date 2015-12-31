@@ -15,12 +15,12 @@ problem: !SequentialCoupling
     - region: 1d_channel
       anisotropy: 10
       sigma: 0.05
-    - r_set: all_2d
+    - region: all_2d
       anisotropy: 1
       sigma: 0.5
     - region: 3d_cube
       anisotropy: 0.1
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_piezo_head: !FieldFormula
         value: x

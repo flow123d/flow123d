@@ -4,9 +4,9 @@ problem: !SequentialCoupling
     mesh_file: ./input/test14.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - r_set: BULK
+    - region: BULK
       conductivity: 0.1
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x
@@ -28,18 +28,18 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
-      - r_set: BULK
+      - region: BULK
         init_conc: 0
-      - r_set: BOUNDARY
+      - region: BOUNDARY
         bc_conc: 20
         time: 1
-      - r_set: BOUNDARY
+      - region: BOUNDARY
         bc_conc: 0
         time: 3
-      - r_set: BOUNDARY
+      - region: BOUNDARY
         bc_conc: 40
         time: 6
-      - r_set: BOUNDARY
+      - region: BOUNDARY
         bc_conc: 0
         time: 7
       solver: !Petsc
