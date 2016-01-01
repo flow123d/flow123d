@@ -8,6 +8,9 @@ import sys
 import traceback
 
 
+LOGGER_PREFIX = 'GeoMop-'
+
+
 if 'APPDATA' in os.environ:
     __config_dir__ = os.path.join(os.environ['APPDATA'], 'GeoMop')
 else:
@@ -43,10 +46,11 @@ def _get_root_context_logger(context_name):
 
     :param str context_name: name of the context, ie. ModelEditor
     """""
-    name = 'GeoMop-' + context_name
+    name = LOGGER_PREFIX + context_name
     format_ = '%(asctime)s %(levelname)s %(message)s'
     filename = os.path.join(__config_dir__, name + '.log.txt')
     logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
     file_handler = logging.FileHandler(filename)
     formatter = logging.Formatter(format_)
     file_handler.setFormatter(formatter)

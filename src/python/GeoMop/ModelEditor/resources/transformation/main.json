@@ -6,6 +6,33 @@
 "actions":
   [
     {
+        "NAME": "Rename SoluteTransportDG neumann bc to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
+          "old_value" : "neumann",
+          "new_value" : "total_flux"
+        }          
+    },
+    {
+        "NAME": "Rename SoluteTransportDG robin bc to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
+          "old_value" : "robin",
+          "new_value" : "total_flux"
+        }          
+    },
+    { 
+      "NAME" : "region to r_set",
+      "TODO": "Need to check that target key 'region' is not used.",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"**/input_fields/*/r_set",
+        "destination_path":"$1/input_fields/$2/region"
+      }
+    },  
+    {
       "NAME": "Rename Steady_MH to SteadyDarcy_MH",
       "action": "rename-type",
       "parameters": {
@@ -116,15 +143,6 @@
         "old_name": "SoluteTransport_DG",
         "new_name": "Transport_OS"
       }
-    },
-    { 
-      "NAME" : "region to r_set",
-      "TODO": "Need to check that target key 'region' is not used.",
-      "action": "move-key",
-      "parameters": {
-        "source_path":"**/input_fields/*/r_set",
-        "destination_path":"$1/input_fields/$2/region"
-      }
-    }           
+    }
   ]
 }

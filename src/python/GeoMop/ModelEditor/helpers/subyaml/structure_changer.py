@@ -347,7 +347,7 @@ class StructureChanger:
         if inten is not None and len(inten.group(1)) >= c1:
             while nl1 > 0:
                 comment = re.search(r'^(\s*)#\s*(.*)$', lines[nl1-1])
-                if comment is not None:
+                if comment is not None and len(inten.group(1)) == len(comment.group(1)):
                     nl1 -= 1
                     nc1 = 0
                 else:

@@ -664,7 +664,7 @@ class Transformator:
                 "Destination block (" + self._get_paths_str(action, 'destination_path') +
                 ") and source block (" + self._get_paths_str(action, 'source_path') +
                 " is overlapped")
-        if sl1 <= dl1:
+        if sl1 < dl1:
             # source before dest, first copy
             intendation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
             StructureChanger.paste_structure(lines, dl2, add, len(intendation2.group(1)) < dc2)
