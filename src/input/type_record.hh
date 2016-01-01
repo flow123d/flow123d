@@ -1,8 +1,18 @@
-/*
- * type_record.hh
+/*!
  *
- *  Created on: May 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_record.hh
+ * @brief   
  */
 
 #ifndef TYPE_RECORD_HH_
@@ -11,7 +21,7 @@
 #include "system/exceptions.hh"
 
 #include "type_base.hh"
-#include "type_selection.hh"
+#include "storage.hh"
 
 
 namespace Input {
@@ -39,7 +49,7 @@ namespace Type {
 class Default {
 	friend class Record;
 	friend class OutputBase;
-	friend class OutputJSONTemplate;
+	//friend class OutputJSONTemplate;
 
 private:
     /**
@@ -58,6 +68,9 @@ public:
      */
     Default(const std::string & value);
 
+    /**
+     * Hash of the Default specification, counted of type_ and value_.
+     */
     TypeBase::TypeHash content_hash() const;
 
     /**
@@ -140,9 +153,21 @@ public:
     inline bool has_same_type(const Default &other) const
         {return type_ == other.type_; }
 
+    /**
+     * Check validity of @p value_ using the JSON reader
+     * if default type is default_at_declaration.
+     */
+    bool check_validity(boost::shared_ptr<TypeBase> type) const;
+
+    /**
+     * Return @p storage_, if storage_ is NULL, call check_validity method
+     */
+    Input::StorageBase *get_storage(boost::shared_ptr<TypeBase> type) const;
+
 private:
-    string value_;              ///< Stored value.
-    enum DefaultType type_;     ///< Type of the Default.
+    string value_;                          ///< Stored value.
+    enum DefaultType type_;                 ///< Type of the Default.
+    mutable Input::StorageBase *storage_;   ///< Storage of default value read by reader
 
     /**
      * Forbids default constructor.
@@ -156,7 +181,7 @@ private:
 };
 
 
-class AbstractRecord;
+class Abstract;
 
 
 /** ******************************************************************************************************************************
@@ -169,8 +194,8 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 	friend class OutputBase;
-	friend class AbstractRecord;
-	friend class AdHocAbstractRecord;
+	friend class Abstract;
+	friend class AdHocAbstract;
 
 public:
 
@@ -218,14 +243,27 @@ public:
     Record(const string & type_name_in, const string & description);
 
 
+    /**
+     * Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, description, auto conversion key, hash of keys and attributes.
+     */
     TypeHash content_hash() const  override;
 
 
     /**
-     * Method to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
-     * in the @p parent. You are free to overwrite copied keys, but you can not delete them.
+     * Method to derive new Record from an AbstractRecord @p parent. This register the @p parent in the newly
+     * created Record. Method creates TYPE key of Record and must be call before declaration of keys.
+     *
+     * Mechanism of set parent to derived Record and child to parent Abstract is a bit more complicated. For
+     * correct finish it must be done in these steps:
+     *
+     * - in derive_from is set @p parent to derived Record
+     * - in \p close is set derived Record to parent (or to all parents for multiple inheritance) and registered
+     *   parents in derived Record are erased
+     * - in \p AbstractRecord::finish is re-registered parents to descendant (through \p add_parent method)
      */
-    Record &derive_from(AbstractRecord &parent);
+    Record &derive_from(Abstract &parent);
 
     /**
      * Copy keys from other record. If @p other record is not yet constructed, we postpone copy to the finish phase.
@@ -243,11 +281,17 @@ public:
     Record &allow_auto_conversion(const string &from_key);
 
     /**
+     * Declares a key of the Record with name given by parameter @p key, the type given by target of pointer @p type,
+     * default value by parameter @p default_value, and with given @p description.
+     * The parameter @p type points to a descendant of TypeBase.
+     */
+    Record &declare_key(const string &key, boost::shared_ptr<TypeBase> type,
+                            const Default &default_value, const string &description);
+
+    /**
      * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type,
      * default value by parameter @p default_value, and with given @p description.
-     * The parameter @p type has a descendant of TypeBase. If @p type is an instance of Record, Selection, or AbstractRecord,
-     * we support references to static objects of these types that may not be yet constructed at the point when the declare_key method
-     * is called. This method can detect this case and postpone completion of the key.
+     * The parameter @p type has a descendant of TypeBase.
      */
     template <class KeyType>
     Record &declare_key(const string &key, const KeyType &type,
@@ -261,8 +305,13 @@ public:
     Record &declare_key(const string &key, const KeyType &type,
                             const string &description);
 
+
     /**
-     *  Can be used to close the Record for further declarations of keys.
+     * Close the Record for further declarations of keys.
+     *
+     * Add Record to type repository (see @p TypeRepository::add_type) and set Record
+     * as descendant of parent if Record is derived (for mechanism of set parent and
+     * descendant see \p derive_from)
      */
     const Record &close() const;
 
@@ -270,22 +319,17 @@ public:
     /**
      * Implements @p TypeBase::is_finished.
      */
-    virtual bool is_finished() const override;
+    bool is_finished() const override;
 
     /// Returns true if @p data_ is closed.
-    virtual bool is_closed() const override;
+    bool is_closed() const override;
 
     /// Record type name getter.
-    virtual string type_name() const override;
-
-    /**
-     * The default string can initialize an Record if the record is auto-convertible
-     * and the string is valid default value for the auto conversion key.
-     */
-    virtual bool valid_default(const string &str) const override;
+    string type_name() const override;
+    string class_name() const override { return "Record"; }
 
     /// Class comparison and Record type name comparision.
-    virtual bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const;
 
     /**
      * Interface to mapping key -> index in record. Returns index (in continuous array) for given key.
@@ -344,17 +388,16 @@ public:
     Record &has_obligatory_type_key();
 
     /// Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;
 
+    /// Set flag @p root_of_generic_subtree_ to true
+    Record &root_of_generic_subtree();
+
 
 protected:
-
-
-    /// Check that given default value is valid for given type of the key.
-    bool check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const;
 
     /**
      * Assertion for finished Type::Record.
@@ -375,9 +418,10 @@ protected:
      * Set parent Abstract of Record.
      *
      * This method is created for correct functionality of generic types. It must be called
-     * in Abstract::finish() and refill @p parent_vec_ vector of correct parents.
+     * in Abstract::finish() and refill @p parent_vec_ vector of correct parents (for complete
+     * mechanism of set parent and descendant see \p derive_from)
      */
-    const Record &add_parent(AbstractRecord &parent) const;
+    const Record &add_parent(Abstract &parent) const;
 
     /**
      * Internal data class.
@@ -411,8 +455,8 @@ protected:
         const string description_;
         const string type_name_;
 
-        /// Permanent pointer to parent AbstractRecord, necessary for output.
-        std::vector< boost::shared_ptr<AbstractRecord> > parent_vec_;
+        /// Permanent pointer to parent Abstract, necessary for output.
+        std::vector< boost::shared_ptr<Abstract> > parent_vec_;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
@@ -425,7 +469,7 @@ protected:
 
         /**
          * Initial value is = -1, when allow_auto_conversion is called we set this to 0.
-         * Final value can be assigned just after possible inheritance copy of keys from parent AbstractRecord.
+         * Final value can be assigned just after possible inheritance copy of keys from parent Abstract.
          */
         int auto_conversion_key_idx;
         /**
@@ -437,308 +481,6 @@ protected:
 
     /// Data handle.
     boost::shared_ptr<RecordData> data_;
-};
-
-
-/**
- * @brief Class for declaration of polymorphic Record.
- *
- * Like the Record class this is only proxy class. It derives all methods from Record, but
- * further  there is method \p no_more_descendants to close adding descendants. After this
- * you can not derive any Record from this AbstractRecord.
- *
- *
- *
- * A static method (typically part of an abstract class) for construction of an AbstractType can look like:
- *
- @code
-    static Input::Type::AbstractRecord &SomeAbstractClass::get_input_type() {
-        using namespace Input::Type;
-        static AbstractRecord rec("Function",
-            "Input for generic time-space function.");
-
-        if (! rec.is_finished()) {
-            // declaration of keys that should be derived
-            rec.declare_key("domain",Domain::get_input_type(),Default::optional(),
-                "Possibly restrict domain of the function.");
-            // Finish adding keys.
-            rec.finish();
-
-            // call construction of derived Records
-            FunctionLinear::get_input_type();
-            FunctionPolynomial::get_input_type();
-            FunctionInterpreted::get_input_type();
-
-            // finish adding descendants.
-            rec.finish();
-        }
-
-        return rec;
-    }
- @endcode
- *
- * @ingroup input_types
- */
-class AbstractRecord : public TypeBase {
-	friend class OutputBase;
-	//friend class Record;
-	friend class AdHocAbstractRecord;
-
-protected:
-
-    /**
-     * Actual data of the abstract record.
-     */
-    class ChildData {
-    public:
-        ChildData(const string &name, const string &description)
-        : selection_of_childs( boost::make_shared<Selection> (name + "_TYPE_selection") ),
-		  element_input_selection(nullptr),
-		  description_(description),
-		  type_name_(name),
-		  finished_(false),
-		  closed_(false),
-		  selection_default_(Default::obligatory())
-        {}
-
-        /**
-         * Selection composed from names of derived Records. Indices are according to
-         * the order of derivation (starting from zero).
-         */
-        boost::shared_ptr< Selection> selection_of_childs;
-
-        /**
-         * Vector of derived Records (proxies) in order of derivation.
-         */
-        vector< Record > list_of_childs;
-
-        // TODO: temporary hack, should be removed after implementation of generic types
-        const Selection * element_input_selection;
-
-        /// Description of the whole AbstractRecord type.
-        const string description_;
-
-        /// type_name of the whole AbstractRecord type.
-        const string type_name_;
-
-        /// AbstractRecord is finished when it has added all descendant records.
-        bool finished_;
-
-        /// If AbstractRecord is closed, we do not allow any further declaration calls.
-        bool closed_;
-
-        /**
-         * Default value of selection_of_childs (used for automatic conversion).
-         *
-         * If default value isn't set, selection_default_ is set to obligatory.
-         */
-        Default selection_default_;
-
-    };
-
-public:
-    /**
-     * Public typedef of constant iterator into array of keys.
-     */
-    typedef std::vector< Record >::const_iterator ChildDataIter;
-
-    /**
-     * Default constructor.
-     */
-    AbstractRecord();
-
-    /**
-     * Copy constructor. We check that other is non empty.
-     */
-    AbstractRecord(const AbstractRecord& other);
-
-
-    /**
-     * Basic constructor. You has to provide \p type_name of the new declared Record type and
-     * its \p description.
-     */
-    AbstractRecord(const string & type_name_in, const string & description);
-
-    TypeHash content_hash() const   override;
-
-    /**
-     * Allows shorter input of the AbstractRecord providing the default value to the "TYPE" key.
-     * If the input reader come across the AbstractRecord in the declaration tree and the input
-     * is not 'record-like' with specified value for TYPE, it tries to use the descendant Record specified by
-     * @p type_default parameter of this method. Further auto conversion of such Record may be possible.
-     */
-    AbstractRecord &allow_auto_conversion(const string &type_default);
-
-    /**
-     *  Can be used to close the AbstractRecord for further declarations of keys.
-     */
-    AbstractRecord &close();
-
-    /**
-     *  Finish declaration of the AbstractRecord type.
-     */
-    bool finish(bool is_generic = false) override;
-
-    /**
-     * The default string can initialize an Record if the record is auto-convertible
-     * and the string is valid default value for the auto conversion key.
-     */
-    virtual bool valid_default(const string &str) const override;
-
-    /**
-     * Returns reference to the inherited Record with given name.
-     */
-    const Record  &get_descendant(const string& name) const;
-
-    /**
-     * Returns default descendant if TYPE key has default value, otherwise returns empty Record.
-     */
-    const Record * get_default_descendant() const;
-
-    /**
-     * Returns reference to Selection type of the implicit key TYPE.
-     */
-    const Selection &get_type_selection() const;
-
-    /**
-     * Returns number of keys in the child_data_.
-     */
-    unsigned int child_size() const;
-
-    /**
-     * Implements @p TypeBase::is_finished.
-     */
-    virtual bool is_finished() const override;
-
-    /// Returns true if @p data_ is closed.
-    virtual bool is_closed() const override;
-
-    /// AbstractRecord type name getter.
-    virtual string type_name() const override;
-
-    /**
-     * Container-like access to the data of the Record. Returns iterator to the first data.
-     */
-    ChildDataIter begin_child_data() const;
-
-    /**
-     * Container-like access to the data of the Record. Returns iterator to the last data.
-     */
-    ChildDataIter end_child_data() const;
-
-    /**
-     * Add inherited Record. This method is used primarily in combination with registration
-     * variable. @see Input::Factory
-     *
-     * Example of usage:
-	 @code
-		 class SomeBase
-		 {
-		 public:
-    		/// the specification of input abstract record
-    		static const Input::Type::AbstractRecord & get_input_type();
-			...
-		 }
-
-		 class SomeDescendant : public SomeBase
-		 {
-		 public:
-    		/// the specification of input record
-    		static const Input::Type::Record & get_input_type();
-			...
-		 private:
-			/// registers class to factory
-			static const int reg;
-		 }
-
-		 /// implementation of registration variable
-		 const int SomeDescendant::reg =
-			 Input::register_class< SomeDescendant >("SomeDescendant") +
-			 SomeBase::get_input_type().add_child(SomeDescendant::get_input_type());
-	 @endcode
-     */
-    int add_child(const Record &subrec);
-
-    // TODO: temporary hack, should be removed after implementation of generic types
-    AbstractRecord &set_element_input(const Selection * element_input);
-
-    // Get default value of selection_of_childs
-    Default &get_selection_default() const;
-
-    // Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
-
-    /// Create deep copy of AbstractRecord (copy all data stored in shared pointers etc.)
-    AbstractRecord deep_copy() const;
-
-protected:
-    /**
-     * This method intentionally have no implementation to
-     * prevents deriving an AbstractRecord form other AbstractRecord.
-     * In such a case the linker should report an undefined reference.
-     */
-    Record &derive_from(AbstractRecord &parent);
-
-    /**
-     * Check if type has set value of default descendants.
-     */
-    bool have_default_descendant() const;
-
-    /// Actual data of the AbstractRecord.
-    boost::shared_ptr<ChildData> child_data_;
-
-    friend class Record;
-};
-
-
-/** ******************************************************************************************************************************
- * Class for declaration of polymorphic Record.
- *
- * AbstractRecord extends on list of descendants provided immediately
- * after construction by add_child(). These descendants derive
- * only keys from common AR. AdHocAR has separate instance for every
- * key of this type.
- *
- * @ingroup input_types
- */
-class AdHocAbstractRecord : public AbstractRecord {
-	friend class OutputBase;
-public:
-	/**
-	 * Constructor
-	 */
-	AdHocAbstractRecord(const AbstractRecord &ancestor);
-
-	TypeHash content_hash() const   override
-            { return 0;}
-
-
-    /**
-     * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,
-     * calls close() and complete keys with non-null pointers to lazy types.
-     */
-    bool finish(bool is_generic = false) override;
-
-    /**
-     * Add inherited Record.
-     */
-    AdHocAbstractRecord &add_child(const Record &subrec);
-
-protected:
-    /// Pointer to actual data of the parent AbstractRecord.
-    boost::shared_ptr<ChildData> parent_data_;
-
-    /// Temporary value of ancestor AbstractRecord
-    const AbstractRecord *tmp_ancestor_;
-
-    /*
-     * Temporary list of unconstructed descendants of AdHocAbstractRecord.
-     * Items are checked and added to child_data_ in finish() method.
-     */
-    std::deque< const Record * > unconstructed_childs_;
-
-    /// Name of parent AbstractRecord, used in printout
-    string parent_name_;
 };
 
 

@@ -155,8 +155,8 @@ TEST(FieldPython, read_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Record rec_type = Input::Type::Record("FieldPythonTest","")
-        .declare_key("field_string", VectorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
-        .declare_key("field_file", ScalarField::get_input_type(nullptr), Input::Type::Default::obligatory(), "" )
+        .declare_key("field_string", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
+        .declare_key("field_file", ScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .close();
 
     // read input string
@@ -198,7 +198,7 @@ TEST(FieldPython, read_from_input) {
 TEST(FieldPython, python_exception) {
     FieldPython<3, FieldValue<3>::Scalar> scalar_func;
 	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, PythonLoader::ExcPythonError,
-        "Python Error: 'module' object has no attribute 'func_xxx'");
+        "Message: 'module' object has no attribute 'func_xxx'");
 
 }
 

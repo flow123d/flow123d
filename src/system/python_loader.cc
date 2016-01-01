@@ -1,8 +1,18 @@
-/*
- * python_loader.cc
+/*!
  *
- *  Created on: Aug 31, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    python_loader.cc
+ * @brief   
  */
 
 #include "global_defs.h"
@@ -109,11 +119,34 @@ PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
 
 void PythonLoader::check_error() {
     if (PyErr_Occurred()) {
-    	PyObject *ptype, *pvalue, *ptraceback, *pystr;
+        PyObject *ptype, *pvalue, *ptraceback;
 
-    	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-		pystr = PyObject_Str(pvalue);
-		THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pystr) ));
+        PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+        string error_description = string(PyString_AsString(PyObject_Str(pvalue)));
+
+        /* See if we can get a full traceback */
+        PyObject *module_name = PyString_FromString("traceback");
+        PyObject *pyth_module = PyImport_Import(module_name);
+        Py_DECREF(module_name);
+
+        string str_traceback;
+        if (pyth_module) {
+            PyObject *pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+            if (pyth_func && PyCallable_Check(pyth_func)) {
+                PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, ptype, pvalue, ptraceback, NULL);
+                if (pyth_val) {
+                    str_traceback = string(PyString_AsString(PyObject_Str(pyth_val)));
+                    Py_DECREF(pyth_val);
+                }
+            }
+        }
+
+ 		string py_message =
+		             "\nType: " + string(PyString_AsString(PyObject_Str(ptype))) + "\n"
+		           + "Message: " + string(PyString_AsString(PyObject_Str(pvalue))) + "\n"
+		           + "Traceback: " + str_traceback;
+
+		THROW(ExcPythonError() << EI_PythonMessage( py_message ));
     }
 }
 

@@ -13,8 +13,9 @@ from ist.utils.htmltree import htmltree
 class ProfilerJSONDecoder(json.JSONDecoder):
     def decode(self, json_string):
         default_obj = super(ProfilerJSONDecoder, self).decode(json_string)
+        ist_nodes = default_obj.get('ist_nodes')
         lst = TypedList()
-        lst.parse(default_obj)
+        lst.parse(ist_nodes)
         return lst
 
 

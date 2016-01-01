@@ -1,8 +1,18 @@
-/*
- * function_python_impl.hh
+/*!
  *
- *  Created on: Oct 10, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_python.impl.hh
+ * @brief   
  */
 
 #ifndef FIELD_PYTHON_IMPL_HH_
@@ -16,15 +26,15 @@
 
 namespace it = Input::Type;
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_python)
+
 
 
 template <int spacedim, class Value>
-const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
-		.derive_from(a_type)
+		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
 		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
 				"Python script given as in place string")
 		.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
@@ -38,7 +48,8 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldPython<spacedim, Value>::registrar =
-		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython");
+		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython") +
+		FieldPython<spacedim, Value>::get_input_type().size();
 
 
 

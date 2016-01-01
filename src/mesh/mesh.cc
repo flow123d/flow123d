@@ -1,31 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
+ * 
+ * @file    mesh.cc
  * @ingroup mesh
- * @brief  Mesh construction
- *
+ * @brief   Mesh construction
  */
 
 #include <unistd.h>
@@ -37,6 +25,7 @@
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
+#include "la/distribution.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
@@ -75,7 +64,7 @@ const IT::Record & Mesh::get_input_type() {
 		.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
 				"List of region set definitions. There are three region sets implicitly defined:\n\n"
 				" - ALL (all regions of the mesh)\n - BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
-		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
+		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
 		.close();
 }
 
@@ -84,7 +73,10 @@ const IT::Record & Mesh::get_input_type() {
 const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
-:comm_(comm)
+:comm_(comm),
+ row_4_el(nullptr),
+ el_ds(nullptr),
+ el_4_loc(nullptr)
 {
 
     Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
@@ -97,7 +89,10 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
-  comm_(com)
+  comm_(com),
+  row_4_el(nullptr),
+  el_ds(nullptr),
+  el_4_loc(nullptr)
 {
     reinit(in_record_);
 }
@@ -167,6 +162,10 @@ Mesh::~Mesh() {
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
+
+    if (row_4_el != nullptr) delete[] row_4_el;
+    if (el_4_loc != nullptr) delete[] el_4_loc;
+    if (el_ds != nullptr) delete el_ds;
 }
 
 
@@ -221,30 +220,49 @@ void Mesh::read_gmsh_from_stream(istream &in) {
     GmshMeshReader reader(in);
     reader.read_mesh(this);
     setup_topology();
+    //close region_db_.
+    region_db_.close();
 }
 
 
 
 void Mesh::init_from_input() {
+	/*
+	 * TODO: This method needs check in issue 'Review mesh setting'.
+	 * See @p modify_element_ids method
+	 */
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
     RegionDB::MapElementIDToRegionID el_to_reg_map;
 
+    // read raw mesh, add regions from GMSH file
+    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
+    reader.read_mesh(this);
+    // possibly add implicit_boundary region.
+    setup_topology();
     // create regions from our input
     if (in_record_.opt_val("regions", region_list)) {
         region_db_.read_regions_from_input(region_list, el_to_reg_map);
     }
-    // read raw mesh, add regions from GMSH file
-    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-    reader.read_mesh(this, &el_to_reg_map);
-    // possibly add implicit_boundary region, close region_db_.
-    setup_topology();
+    modify_element_ids(el_to_reg_map);
+    //close region_db_.
+    region_db_.close();
     // create sets
     Input::Array set_list;
     if (in_record_.opt_val("sets", set_list)) {
         region_db_.read_sets_from_input(set_list);
     }
+}
+
+
+
+
+void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
+	for (auto elem_to_region : map) {
+		ElementIter ele = this->element.find_id(elem_to_region.first);
+		ele->region_idx_ = region_db_.add_region( elem_to_region.second, ele->dim() );
+	}
 }
 
 
@@ -264,8 +282,14 @@ void Mesh::setup_topology() {
     make_edge_permutations();
     count_side_types();
 
-    region_db_.close();
     part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
+
+    // create parallel distribution and numbering of elements
+    int *id_4_old = new int[element.size()];
+    int i = 0;
+    FOR_ELEMENTS(this, ele) id_4_old[i++] = ele.index();
+    part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
+    delete[] id_4_old;
 }
 
 

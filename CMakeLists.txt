@@ -1109,7 +1109,9 @@ if (CYGWIN)
     
     add_custom_target(post_package
                       COMMAND makensis.exe "${WIN_CMAKE_CURRENT_BINARY_DIR}\\\\_CPack_Packages\\\\CYGWIN\\\\NSIS\\\\project.nsi"
+                      COMMAND ${CMAKE_COMMAND} -E copy "Flow123d-*-CYGWIN.exe" "${CMAKE_CURRENT_BINARY_DIR}"
                       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_CPack_Packages/CYGWIN/NSIS"
+                      COMMENT "Building NSIS package executable."
                       )
 elseif (UNIX)
     SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")

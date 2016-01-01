@@ -3,17 +3,17 @@
     TYPE = "SequentialCoupling", 
     description = "Test15 - 2D unsteady flow LM",  
     mesh = {
-      mesh_file = "./input/test15.msh"
+      mesh_file = "./input/channel_unstructured.msh"
     },
  
     primary_equation = {
       TYPE = "Unsteady_LMH", 
 
+
       input_fields= [
-        { rid = 100,
+        { region = "domain",
           anisotropy = 1,         // default
           cross_section = 1,            // default
-          storativity=1,
           water_source_density = {
             TYPE = "FieldFormula",
             value = "-x"
@@ -21,8 +21,9 @@
           init_piezo_head = 0
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test15.fbc"
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_pressure = 0
         }
       ],
 
@@ -55,17 +56,19 @@
       TYPE = "TransportOperatorSplitting", 
 
       input_fields= [
-        { rid = 100,
+        { region = "domain",
           init_conc = 0
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test15_tbc_000",
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_conc = 10,
           time = 0.0
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test15_tbc_001",
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_conc = 0,
           time = 0.1
         }
       ],
@@ -123,9 +126,7 @@
       {
         file = "./transport.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.1,

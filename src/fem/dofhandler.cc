@@ -1,32 +1,20 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief Declaration of class which handles the ordering of degrees of freedom (dof) and mappings between local and global dofs.
- * @author Jan Stebel
+ * 
+ * @file    dofhandler.cc
+ * @brief   Declaration of class which handles the ordering of degrees of freedom (dof) and mappings between local and global dofs.
+ * @author  Jan Stebel
  */
-
 
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
@@ -429,11 +417,9 @@ DOFHandlerMultiDim::~DOFHandlerMultiDim()
 void DOFHandlerMultiDim::make_elem_partitioning()
 {
 	// create local arrays of elements
-    int *id_4_old = new int[mesh_->n_elements()];
-    int i = 0;
-    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
-    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds_, el_4_loc, row_4_el);
-    delete[] id_4_old;
+    el_ds_ = mesh_->get_el_ds();
+    el_4_loc = mesh_->get_el_4_loc();
+    row_4_el = mesh_->get_row_4_el();
 
     // create local array of edges
     for (unsigned int iedg=0; iedg<mesh_->edges.size(); iedg++)

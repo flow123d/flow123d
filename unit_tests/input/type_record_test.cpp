@@ -8,7 +8,8 @@
 
 #include <flow_gtest.hh>
 
-#include <input/type_record.hh>
+#include <input/input_type.hh>
+#include <input/reader_to_storage.hh>
 
 
 
@@ -46,15 +47,13 @@ using namespace Input::Type;
 
 
    // errors during declaration
-   Record rec_empty;
-
 #ifdef FLOW123D_DEBUG_ASSERTS
-   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcXprintfMsg, ".*into closed record 'EmptyRecord'.");
-#endif
+   Record rec_empty;
+   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcAssertMsg, ".*into closed record 'EmptyRecord'.");
 
-   Record rec_fin = Record("xx","")
-	  .close();
-   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcXprintfMsg, "Can not add .* into closed record");
+   Record rec_fin = Record("xx","").close();
+   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcAssertMsg, "Can not add .* into closed record");
+#endif
 
 
 //   This no more fails: Declaration of incomplete (unfinished) keys is possible.
@@ -126,7 +125,7 @@ using namespace Input::Type;
     	// allow default values for an array
     	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
     EXPECT_THROW_WHAT( { array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefault,
-                  "Default value 'ahoj' do not match type: 'Integer';"
+                  "Default value 'ahoj' do not match type: 'array_of_Integer';"
                  );
     array_record.close();
 
@@ -185,12 +184,14 @@ using namespace Input::Type;
 
     Record other_record = Record("OtherRecord","desc")
     	.close();
+    other_record.finish();
 
     static Record sub_rec = Record( "SubRecord", "")
     	.declare_key("bool_key", Bool(), Default("false"), "")
     	.declare_key("int_key", Integer(),  "")
     	.allow_auto_conversion("int_key")
     	.close();
+    sub_rec.finish();
 
     Record record_record = Record("RecordOfRecords", "")
     	.declare_key("sub_rec_1", other_record, "key desc");
@@ -200,8 +201,8 @@ using namespace Input::Type;
 
     Record record_record2 = Record("RecordOfRecords2", "")
     	.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
-    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); } , ExcWrongDefault,
-            "Default value '2.3' do not match type: 'Integer';" );
+    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); } , Input::ReaderToStorage::ExcAutomaticConversionError,
+            "Error during automatic conversion of SubRecord record" );
     record_record2.close();
 
     // recursion  -  forbidden

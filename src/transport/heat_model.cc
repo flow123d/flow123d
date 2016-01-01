@@ -1,30 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief Discontinuous Galerkin method for equation of transport with dispersion.
- *  @author Jan Stebel
+ * 
+ * @file    heat_model.cc
+ * @brief   Discontinuous Galerkin method for equation of transport with dispersion.
+ * @author  Jan Stebel
  */
 
 #include "input/input_type.hh"
@@ -47,16 +36,61 @@ using namespace Input::Type;
 
 
 
+const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
+	return Selection("HeatTransfer_BC_Type", "Types of boundary conditions for heat transfer model.")
+            .add_value(bc_inflow, "inflow",
+          		  "Default heat transfer boundary condition.\n"
+          		  "On water inflow (($(q_w \\le 0)$)), total energy flux is given by the reference temperature 'bc_temperature'. "
+          		  "On water outflow we prescribe zero diffusive flux, "
+          		  "i.e. the energy flows out only due to advection.")
+            .add_value(bc_dirichlet, "dirichlet",
+          		  "Dirichlet boundary condition (($T = T_D $)).\n"
+          		  "The prescribed temperature (($T_D$)) is specified by the field 'bc_temperature'.")
+            .add_value(bc_total_flux, "total_flux",
+          		  "Total energy flux boundary condition.\n"
+          		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )+q_wT_A$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the advected temperature (($T_A$)) by 'bc_ad_temperature', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+            .add_value(bc_diffusive_flux, "diffusive_flux",
+          		  "Diffusive flux boundary condition.\n"
+          		  "The prescribed energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+			  .close();
+}
+
 
 HeatTransferModel::ModelEqData::ModelEqData()
 {
-
-    *this+=bc_temperature
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Type of boundary condition.")
+            .units( UnitSI::dimensionless() )
+            .input_default("\"inflow\"")
+            .input_selection( &get_bc_type_selection() )
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+    *this+=bc_dirichlet_value
             .name("bc_temperature")
             .description("Boundary value of temperature.")
             .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
+	*this+=bc_flux
+			.name("bc_flux")
+			.description("Flux in Neumann boundary condition.")
+			.units( UnitSI().kg().m().s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs);
+	*this+=bc_robin_sigma
+			.name("bc_robin_sigma")
+			.description("Conductivity coefficient in Robin boundary condition.")
+			.units( UnitSI().m(4).s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
     *this+=init_temperature
             .name("init_temperature")
@@ -176,10 +210,6 @@ HeatTransferModel::ModelEqData::ModelEqData()
 }
 
 
-UnitSI HeatTransferModel::balance_units()
-{
-	return UnitSI().m(2).kg().s(-2);
-}
 
 IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
@@ -196,22 +226,51 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 }
 
 
-IT::Selection HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 {
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
 	return IT::Selection(
-				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
-				"Selection for output fields of " + description + " for heat transfer.");
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Heat Transfer DG model.");
 }
 
 
-HeatTransferModel::HeatTransferModel() :
-		flux_changed(true)
-{}
+HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
+		AdvectionProcessBase(mesh, in_rec),
+		flux_changed(true),
+		mh_dh(nullptr)
+{
+	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	substances_.initialize({""});
+
+    output_stream_ = OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream"));
+    output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+
+    // initialization of balance object
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
+    if (it->val<bool>("balance_on"))
+    {
+    	balance_ = boost::make_shared<Balance>("energy", mesh_, *it);
+    	subst_idx = {balance_->add_quantity("energy")};
+    	balance_->units(UnitSI().m(2).kg().s(-2));
+    }
+}
 
 
 void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
 	substances.initialize({""});
+}
+
+void HeatTransferModel::output_data()
+{
+	output_stream_->write_time_frame();
+	if (balance_ != nullptr)
+	{
+		calculate_instant_balance();
+		balance_->output(time_->t());
+	}
 }
 
 
@@ -289,14 +348,31 @@ void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_l
 }
 
 
-void HeatTransferModel::compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_values)
+void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types)
 {
-	vector<double> bc_value(point_list.size());
-	data().bc_temperature.value_list(point_list, ele_acc, bc_value);
-	for (unsigned int i=0; i<point_list.size(); i++)
-		bc_values[i] = bc_value[i];
+	// Currently the bc types for HeatTransfer are numbered in the same way as in TransportDG.
+	// In general we should use some map here.
+	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) };
+}
+
+
+void HeatTransferModel::get_flux_bc_data(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_flux,
+		std::vector< arma::vec > &bc_sigma,
+		std::vector< arma::vec > &bc_ref_value)
+{
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+}
+
+void HeatTransferModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_sigma)
+{
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 }
 
 
@@ -364,4 +440,7 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 
 HeatTransferModel::~HeatTransferModel()
 {}
+
+
+
 

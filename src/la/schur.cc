@@ -1,31 +1,20 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
+ * 
+ * @file    schur.cc
  * @ingroup la
- * @brief  Assembly explicit Schur complement for the given linear system.
- * Provides method for resolution of the full original vector of unknowns.
+ * @brief   Assembly explicit Schur complement for the given linear system.
+ *          Provides method for resolution of the full original vector of unknowns.
  *
  * Aim: Explicit schur should be faster then implicit, i.e.
  *
@@ -47,6 +36,7 @@
 #include <armadillo>
 #include <petscis.h>
 
+#include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 #include "la/local_to_global_map.hh"
 #include "system/system.hh"
@@ -212,6 +202,7 @@ void SchurComplement::form_schur()
 
 void SchurComplement::form_rhs()
 {
+    START_TIMER("form rhs");
 	if (rhs_changed_ || matrix_changed_) {
 	    MatMultTranspose(IAB, RHS1, *( Compl->get_rhs() ));
 	    VecAXPY(*( Compl->get_rhs() ), -1, RHS2);
@@ -256,6 +247,7 @@ Distribution *SchurComplement::make_complement_distribution()
 
 void SchurComplement::create_inversion_matrix()
 {
+    START_TIMER("create inversion matrix");
     PetscInt ncols, pos_start, pos_start_IA;
 
     MatReuse mat_reuse=MAT_REUSE_MATRIX;
@@ -332,11 +324,20 @@ double SchurComplement::get_solution_precision()
 
 
 int SchurComplement::solve() {
-	this->form_schur();
+    START_TIMER("SchurComplement::solve");
+    {
+        START_TIMER("form schur complement");
+        this->form_schur();
+    }
 
-	int converged_reason = Compl->solve();
-	this->resolve();
+    //START_TIMER("complement solve");
+    int converged_reason = Compl->solve();
+    //END_TIMER("complement solve");
 
+    {
+        START_TIMER("schur back resolve");
+        this->resolve();
+    }
 	return converged_reason;
 }
 

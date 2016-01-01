@@ -11,8 +11,9 @@
       input_fields= [
       ],
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/sit_decay.fbc"
+        { r_set = "BOUNDARY",
+          bc_type="dirichlet",
+          bc_piezo_head=0
         }
       ],
       
@@ -46,8 +47,8 @@
           }
 */
         },
-        { region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/sit_decay_long.tbc"
+        { r_set = "BOUNDARY",
+          bc_conc = [ 0.2,  0.12,   0.21,   0.12,   0.15,   0.16, 0.17,   0.18]
         }
       ],
 
@@ -138,9 +139,7 @@
       {
         file = "./transport.msh", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "gmsh", 
           variant = "ascii"
         }, 
         time_step = 0.5,

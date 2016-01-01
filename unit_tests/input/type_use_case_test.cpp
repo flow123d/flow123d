@@ -18,7 +18,7 @@
 
 class Equation {
 public:
-    static Input::Type::AbstractRecord & get_input_type();
+    static Input::Type::Abstract & get_input_type();
 
 };
 
@@ -113,7 +113,7 @@ const it::Record & Application::get_input_type() {
 
 const it::Record & EquationA::get_input_rec() {
 	return it::Record("EquationA", "For example explicit transport equation solver.")
-		.derive_from( const_cast<it::AbstractRecord &>(Equation::get_input_type()) )
+		.derive_from( const_cast<it::Abstract &>(Equation::get_input_type()) )
 		.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
 		.declare_key("parameter_a", it::Double(), "")
 		.close();
@@ -128,10 +128,10 @@ const int EquationA::registrar =
 
 const it::Record & EquationB::get_input_rec() {
 	return it::Record("EquationB", "For example implicit transport equation solver.")
-		.derive_from( const_cast<it::AbstractRecord &>(Equation::get_input_type()) )
+		.derive_from( const_cast<it::Abstract &>(Equation::get_input_type()) )
 		.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
 		.declare_key("parameter_b", it::Integer(), it::Default("111"), "")
-		.declare_key("default_str", it::String(), it::Default("str value"), "" )
+		.declare_key("default_str", it::String(), it::Default("\"str value\""), "" )
 		.declare_key("substances", it::Array( it::String() ), it::Default::obligatory(), "" )
 		.close();
 }
@@ -143,8 +143,8 @@ const int EquationB::registrar =
 
 
 
-it::AbstractRecord & Equation::get_input_type() {
-	return it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.")
+it::Abstract & Equation::get_input_type() {
+	return it::Abstract("AbstractEquation","Abstract input Record type for any equation.")
 		.close();
 }
 

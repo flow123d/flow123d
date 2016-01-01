@@ -1,8 +1,18 @@
-    /*
- * field_formula.impl.hh
+/*!
  *
- *  Created on: Jan 2, 2013
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_formula.impl.hh
+ * @brief   
  */
 
 #ifndef FIELD_FORMULA_IMPL_HH_
@@ -18,15 +28,19 @@
 
 namespace it = Input::Type;
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
+
 
 template <int spacedim, class Value>
-const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
+    static auto value_type = StringValue::get_input_type();
+    auto instance_ = value_type.make_instance({ std::make_pair("element_input_type", boost::make_shared<it::String>()) });
+
+
     return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
-            .derive_from(a_type)
-            .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
+            .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+            .declare_key("value", instance_.first , it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
                                         "entries of scalar, vector, or tensor value respectively.\n"
                                         "For vector values, you can use just one string to enter homogeneous vector.\n"
@@ -42,7 +56,8 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldFormula<spacedim, Value>::registrar =
-		Input::register_class< FieldFormula<spacedim, Value>, unsigned int >("FieldFormula");
+		Input::register_class< FieldFormula<spacedim, Value>, unsigned int >("FieldFormula") +
+		FieldFormula<spacedim, Value>::get_input_type().size();
 
 
 

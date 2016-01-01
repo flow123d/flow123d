@@ -1,8 +1,18 @@
-/*
- * field_set.hh
+/*!
  *
- *  Created on: Mar 8, 2014
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_set.hh
+ * @brief   
  */
 
 #ifndef FIELD_SET_HH_
@@ -94,8 +104,12 @@ public:
 
 	/**
 	 * Returns input type for a field descriptor, that can contain any of the fields in the set.
-	 * Typical usage is from derived class, where we add fields in the constructor and make auxiliary temporary instance
-	 * to get the record of the field descriptor. Simplest example:
+	 * Typical usage is from derived class, where we add fields in the constructor
+	 * and make auxiliary temporary instance
+	 * to get the record of the field descriptor.
+	 * The returned Record has name equation_name + "_Data".
+	 *
+	 * Simplest example:
 	 *
 	 * @code
 	 * class EqData : public FieldSet {
@@ -111,7 +125,8 @@ public:
 	 *
 	 * Input::Type::Record SomEquation::input_type=
 	 * 		Record("SomeEquation","equation's description")
-	 * 		.declare_key("data",Input::Type::Array(EqData().make_field_descriptor_type()),"List of field descriptors.");
+	 * 		.declare_key("data",Input::Type::Array(
+	 * 		    EqData().make_field_descriptor_type("SomeEquation")),"List of field descriptors.");
 	 * @endcode
 	 *
 	 */
@@ -120,7 +135,7 @@ public:
     /**
      * Make Selection with strings for all field names in the FieldSet.
      */
-    Input::Type::Selection make_output_field_selection(const string &name, const string &desc = "");
+    Input::Type::Selection make_output_field_selection(const string &name, const string &desc);
 
     /**
      * Use @p FieldCommonBase::copy_from() to set field of the field set given by the first parameter

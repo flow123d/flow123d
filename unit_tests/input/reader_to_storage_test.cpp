@@ -182,6 +182,8 @@ protected:
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
+    	this->try_transpose_read_ = false;
+    	Type::TypeBase::lazy_finish();
     	ReaderToStorage::read_stream(in, root_type, format);
     }
 };
@@ -342,12 +344,12 @@ TEST_F(InputReaderToStorageTest, Array) {
 
     {  //JSON format
         stringstream ss("[ 3.2 ]");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Do not fit into size limits of the Array.");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Do not fit the size 1 of the Array.");
     }
 
     {  //YAML format
         stringstream ss("- 3.2");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type, FileFormat::format_YAML);} , ExcInputError, "Do not fit into size limits of the Array.");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type, FileFormat::format_YAML);} , ExcInputError, "Do not fit the size 1 of the Array.");
     }
 
     {
@@ -382,7 +384,7 @@ TEST_F(InputReaderToStorageTest, Array) {
     // test auto conversion failed
     {
         stringstream ss("3.2");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ExcInputError , "Automatic conversion to array not allowed. The value should be 'JSON array', but we found:.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ExcInputError , "conversion to the single element array not allowed. Require type: 'JSON array'.* 'JSON real'");
     }
 }
 
@@ -496,7 +498,7 @@ TEST_F(InputReaderToStorageTest, Record) {
 */
 /*
     {
-        static Type::AbstractRecord abstr("Abstract", "");
+        static Type::Abstract abstr("Abstract", "");
         abstr.finish();
 
         static Type::Record lower( "Lower", "");
@@ -542,11 +544,11 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	static Type::Record copy_rec = Type::Record("Copy","")
-       	.declare_key("mesh", Type::String(), Type::Default("input.msh"), "Comp. mesh.")
+       	.declare_key("mesh", Type::String(), Type::Default("\"input.msh\""), "Comp. mesh.")
        	.declare_key("a_val", Type::String(), Type::Default::obligatory(), "")
 		.close();
 
-    static Type::AbstractRecord a_rec = Type::AbstractRecord("EqBase","Base of equation records.")
+    static Type::Abstract a_rec = Type::Abstract("EqBase","Base of equation records.")
     	.close();
 
     static Type::Record b_rec = Type::Record("EqDarcy","")
@@ -621,7 +623,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
     {   // Missing TYPE
         stringstream ss("{ c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Missing key 'TYPE' in AbstractRecord.");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Missing key 'TYPE' in Abstract.");
 
     }
 
@@ -638,7 +640,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
     }
 
     { // auto conversion
-       Type::AbstractRecord ar = Type::AbstractRecord("AR","")
+       Type::Abstract ar = Type::Abstract("AR","")
          .allow_auto_conversion("BR")
          .close();
        Type::Record br = Type::Record("BR","")
@@ -690,8 +692,8 @@ const string input_json_multiple_inheritance = R"JSON(
 TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	Type::AbstractRecord a_rec1 = Type::AbstractRecord("Base1", "Base of equation records.").close();
-	Type::AbstractRecord a_rec2 = Type::AbstractRecord("Base2", "Other base of equation records.").close();
+	Type::Abstract a_rec1 = Type::Abstract("Base1", "Base of equation records.").close();
+	Type::Abstract a_rec2 = Type::Abstract("Base2", "Other base of equation records.").close();
 
 	Type::Record rec_a = Type::Record("Desc_A", "First descendant")
 			.derive_from(a_rec1)
@@ -731,29 +733,26 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 }
 
 
-/*TEST_F(InputReaderToStorageTest, AdHocAbstractRec) {
+TEST_F(InputReaderToStorageTest, AdHocAbstract) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    static Type::Selection sel_type("TYPE_selection");
-    sel_type.add_value(0, "EqDarcy");
-    sel_type.add_value(1, "EqTransp");
-    sel_type.finish();
+    static Type::Abstract a_rec = Type::Abstract("EqBase","Base Abstract of equation records.")
+    	.close();
 
-    static Type::Record b_rec("EqDarcy","");
-    b_rec.declare_key("TYPE", sel_type, Type::Default("EqDarcy"), "Type of problem");
-    b_rec.declare_key("a_val", Type::String(), Type::Default("Description"), "");
-    b_rec.declare_key("b_val", Type::Integer(), "");
-    b_rec.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Mesh.");
-    b_rec.finish();
+    static Type::Record b_rec = Type::Record("EqDarcy","")
+    	.declare_key("TYPE", Type::String(), Type::Default("\"EqDarcy\""), "Type of problem")
+    	.declare_key("a_val", Type::String(), Type::Default("\"Description\""), "")
+    	.declare_key("b_val", Type::Integer(), "")
+    	.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Mesh.")
+		.close();
 
-    static Type::Record c_rec("EqTransp","");
-    c_rec.declare_key("TYPE", sel_type, Type::Default("EqTransp"), "Type of problem");
-    c_rec.declare_key("a_val", Type::Double(),"");
-    c_rec.declare_key("c_val", Type::Integer(), "");
-    c_rec.finish();
+    static Type::Record c_rec = Type::Record("EqTransp","")
+    	.declare_key("TYPE", Type::String(), Type::Default("\"EqTransp\""), "Type of problem")
+    	.declare_key("a_val", Type::Double(),"")
+    	.declare_key("c_val", Type::Integer(), "")
+    	.close();
 
-    static Type::AbstractRecord a_rec("EqBase","Base of equation records.");
-    static Type::AdHocAbstractRecord ah_rec(a_rec);
+    static Type::AdHocAbstract ah_rec(a_rec);
     ah_rec.add_child(b_rec);
     ah_rec.add_child(c_rec);
     ah_rec.finish();
@@ -764,7 +763,7 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(4, storage_->get_array_size());
-        EXPECT_EQ(0, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqDarcy", storage_->get_item(0)->get_string());
         EXPECT_EQ("Description", storage_->get_item(1)->get_string() );
         EXPECT_EQ(4, storage_->get_item(2)->get_int() );
         EXPECT_EQ("some.msh", storage_->get_item(3)->get_string() );
@@ -776,21 +775,21 @@ TEST_F(InputReaderToStorageTest, AbstractMultipleInheritance) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(3, storage_->get_array_size());
-        EXPECT_EQ(1, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqTransp", storage_->get_item(0)->get_string());
         EXPECT_EQ(5.5, storage_->get_item(1)->get_double() );
         EXPECT_EQ(4, storage_->get_item(2)->get_int() );
     }
 
     {   // Missing TYPE
         stringstream ss("{ b_val=4, a_val=\"Some text\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "Missing key 'TYPE' in AbstractRecord.");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "Missing key 'TYPE' in Abstract.");
     }
 
     {   // Wrong derived value type
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\" }");
         EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
     }
-} */
+}
 
 TEST(InputReaderToStorageTest_external, get_root_interface) {
     static Type::Record one_rec = Type::Record("One","")
@@ -823,9 +822,9 @@ TEST_F(InputReaderToStorageTest, default_values) {
     static Type::Record rec_type = Type::Record( "SomeRec","desc.")
     	.declare_key("int_key", Type::Integer(0,5), Type::Default("4"), "")
     	.declare_key("bool_key", Type::Bool(), Type::Default("true"),"")
-    	.declare_key("sel_key", sel_type, Type::Default("two"),"")
+    	.declare_key("sel_key", sel_type, Type::Default("\"two\""),"")
     	.declare_key("double_key", Type::Double(), Type::Default("1.23"),"")
-    	.declare_key("str_key", Type::String(), Type::Default("ahoj"),"")
+    	.declare_key("str_key", Type::String(), Type::Default("\"ahoj\""),"")
     	.declare_key("array_key", Type::Array( Type::Integer() ), Type::Default("123"), "")
 	    .declare_key("rec_key", sub_rec, Type::Default("321"), "")
 		.close();
@@ -848,6 +847,105 @@ TEST_F(InputReaderToStorageTest, default_values) {
         EXPECT_FALSE( storage_->get_item(6)->get_item(0)->get_bool() );
         EXPECT_EQ(321 , storage_->get_item(6)->get_item(1)->get_int() );
     }
+}
+
+
+TEST_F(InputReaderToStorageTest, storage_transpose) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    static Type::Selection sel_type = Type::Selection("IntSelection")
+    	.add_value(10,"ten","")
+    	.add_value(1,"one","")
+    	.add_value(2,"two","")
+		.close();
+
+    static Type::Record subrec_2 = Type::Record("TransposeSubrec2","")
+		.declare_key("key_a", Type::String(), "")
+		.declare_key("key_b", Type::Bool(), "")
+		.close();
+
+    static Type::Record subrec_1 = Type::Record("TransposeSubrec1","")
+		.declare_key("one", Type::Integer(), "")
+		.declare_key("two", Type::Array( Type::Integer(),1,10 ), "")
+		.declare_key("three", subrec_2, "")
+		.declare_key("four", Type::Double(), "")
+		.declare_key("five", sel_type, "")
+		.close();
+
+    static Type::Record root_record = Type::Record("RootTransposeRec","")
+		.declare_key("set", Type::Array(subrec_1,1,3), "")
+		.declare_key("default", Type::Bool(), "")
+		.close();
+
+    {   // Try one correct type
+        stringstream ss("{ set={ one=[1,2,3], two=[2,3], three={key_a=[\"A\",\"B\",\"C\"], key_b=[false,true,false]}, "
+        		"four=[1.5, 2.5, 3.5], five=[\"one\",\"two\",\"ten\"] }, default=true }");
+        read_stream(ss, root_record);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(3,   storage_->get_item(0)->get_array_size());
+        EXPECT_TRUE(   storage_->get_item(1)->get_bool());
+        StorageBase *substorage = storage_->get_item(0)->get_item(0);
+        EXPECT_EQ(5,   substorage->get_array_size());
+        EXPECT_EQ(1,   substorage->get_item(0)->get_int());
+        EXPECT_EQ(2,   substorage->get_item(1)->get_array_size());
+        EXPECT_EQ(2,   substorage->get_item(2)->get_array_size());
+        EXPECT_EQ("A", substorage->get_item(2)->get_item(0)->get_string());
+        EXPECT_FALSE(  substorage->get_item(2)->get_item(1)->get_bool());
+        EXPECT_EQ(1.5, substorage->get_item(3)->get_double());
+        EXPECT_EQ(1,   substorage->get_item(4)->get_int());
+        substorage = storage_->get_item(0)->get_item(1);
+        EXPECT_EQ(5,   substorage->get_array_size());
+        EXPECT_EQ(2,   substorage->get_item(0)->get_int());
+        EXPECT_EQ("B", substorage->get_item(2)->get_item(0)->get_string());
+        EXPECT_TRUE(   substorage->get_item(2)->get_item(1)->get_bool());
+        EXPECT_EQ(2.5, substorage->get_item(3)->get_double());
+        EXPECT_EQ(2,   substorage->get_item(4)->get_int());
+        substorage = storage_->get_item(0)->get_item(2);
+        EXPECT_EQ(5,   substorage->get_array_size());
+        EXPECT_EQ(3,   substorage->get_item(0)->get_int());
+        EXPECT_EQ("C", substorage->get_item(2)->get_item(0)->get_string());
+        EXPECT_FALSE(  substorage->get_item(2)->get_item(1)->get_bool());
+        EXPECT_EQ(3.5, substorage->get_item(3)->get_double());
+        EXPECT_EQ(10,  substorage->get_item(4)->get_int());
+    }
+
+    {   // Try other correct type - automatic conversion to array with one element
+        stringstream ss("{ set={ one=1, two=[2,3], three={key_a=\"A\", key_b=false}, four=1.5, five=\"one\" }, default=true }");
+        read_stream(ss, root_record);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_item(0)->get_array_size());
+        StorageBase *substorage = storage_->get_item(0)->get_item(0);
+        EXPECT_EQ(5,   substorage->get_array_size());
+        EXPECT_EQ(1,   substorage->get_item(0)->get_int());
+        EXPECT_EQ(2,   substorage->get_item(1)->get_array_size());
+        EXPECT_EQ(2,   substorage->get_item(2)->get_array_size());
+        EXPECT_EQ("A", substorage->get_item(2)->get_item(0)->get_string());
+        EXPECT_FALSE(  substorage->get_item(2)->get_item(1)->get_bool());
+        EXPECT_EQ(1.5, substorage->get_item(3)->get_double());
+    }
+
+    {   // Incorrect type - empty sub-array
+    	stringstream ss("{ set={ one=[], two=[2,3], three={key_a=[\"A\",\"B\",\"C\"], key_b=false}, four=[1.5, 2.5, 3.5], five=\"one\" }, default=true }");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Empty array during transpose auto-conversion.");
+    }
+
+    {   // Incorrect type - unequal sizes of sub-arrays
+    	stringstream ss("{ set={ one=[1,2,3], two=[2,3], three={key_a=[\"A\",\"B\"], key_b=false}, four=[1.5, 2.5, 3.5], five=\"one\" }, default=true }");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Unequal sizes of sub-arrays during transpose auto-conversion");
+    }
+
+    {   // Incorrect type - transposition of Record is not allowed
+        stringstream ss("{ set={ one=[1,2], two=[2,3], three=[{key_a=\"A\", key_b=false}, {key_a=\"B\", key_b=false}], four=1.5, five=\"one\" }, default=true }");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
+    }
+
+    {   // Incorrect type - array is greater than size limit
+        stringstream ss("{ set={ one=[1,2,3,4], two=[2,3], three={key_a=\"B\", key_b=false}, four=1.5, five=\"one\" }, default=true }");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Result of transpose auto-conversion do not fit the size 4 of the Array");
+    }
+
 }
 
 

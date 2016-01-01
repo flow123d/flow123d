@@ -1,22 +1,26 @@
-/*
- * field_algo_base.hh
+/*!
  *
- *  Created on: Aug 31, 2012
- *      Author: jb
- */
-
-/**
- * TODO:
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_algo_base.hh
+ * @brief   
+ * @todo
  * - better tests:
  *   - common set of quantities with different kind of values (scalar, vector, tensor, discrete, ..),
  *     common points and elements for evaluation
  *   - for individual Field implementations have:
  *     - different input
  *     - possibly different EPETCT_EQ tests, but rather have majority common
- *
- *
  */
-
 
 #ifndef field_algo_base_HH_
 #define field_algo_base_HH_
@@ -26,8 +30,8 @@
 
 #include <boost/type_traits.hpp>
 
-#include "input/input_type.hh"
-#include "input/accessors.hh"
+#include "input/input_type_forward.hh"
+#include "input/accessors_forward.hh"
 
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
@@ -55,8 +59,8 @@ class FieldAlgorithmBase {
 public:
        // expose template parameters
        typedef typename Space<spacedim>::Point Point;
-       typedef Value ValueType;
        static const unsigned int spacedim_=spacedim;
+       static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
 
 
        /**
@@ -66,7 +70,7 @@ public:
        FieldAlgorithmBase(unsigned int n_comp=0);
 
        /**
-        * Returns template parameters as string in order to distinguish name of AbstractRecords
+        * Returns template parameters as string in order to distinguish name of Abstracts
         * for initialization of different instances of the FieldBase template.
         */
        static std::string template_name();
@@ -75,7 +79,13 @@ public:
         * Returns whole tree of input types for FieldBase with all descendants based on element input type (namely for FieldConstant)
         * given by element_input_type pointer.
         */
-       static Input::Type::AbstractRecord & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
+       static Input::Type::Abstract & get_input_type();
+
+       /**
+        * Returns parameterized whole tree of input types for FieldBase with all descendants based on element input type (namely
+        * for FieldConstant) given by element_input_type pointer.
+        */
+       static const Input::Type::Instance & get_input_type_instance(const Input::Type::Selection *value_selection=NULL);
 
        /**
         * This static method gets accessor to abstract record with function input,

@@ -1,3 +1,20 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    dual_porosity.cc
+ * @brief   
+ */
+
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
@@ -25,11 +42,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
 using namespace Input::Type;
 
 
-const Selection & DualPorosity::EqData::get_output_selection() {
-	return EqData().output_fields
-		.make_output_field_selection("DualPorosity_Output")
-		.close();
-}
 
 const Record & DualPorosity::get_input_type() {
     return Record("DualPorosity",
@@ -46,8 +58,13 @@ const Record & DualPorosity::get_input_type() {
 		.declare_key("reaction_mobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in mobile zone.")
 		.declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
 
-		.declare_key("output_fields", Array(EqData::get_output_selection()),
-					Default("conc_immobile"), "List of fields to write to output stream.")
+		.declare_key("output_fields",
+            Array(EqData().output_fields
+              .make_output_field_selection(
+                  "DualPorosity_output_fields",
+                  "Selection of field names of Dual Porosity model available for output.")
+              .close()),
+            Default("\"conc_immobile\""), "List of fields to write to output stream.")
 		.close();
 }
     

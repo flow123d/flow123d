@@ -3,7 +3,7 @@
     TYPE = "SequentialCoupling", 
     description = "Test12 - radioactive decay simulation, long decay chain with biffurcation", 
     mesh = {
-      mesh_file = "./input/flow_lin_react/sit_lin_react.msh"
+      mesh_file = "./input/sit_decay.msh"
     }, 
     
     primary_equation = {
@@ -14,8 +14,9 @@
           anisotropy = 0.01
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/flow_lin_react/sit_lin_react.fbc"
+          r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_piezo_head = 0
         }
       ],
 
@@ -43,8 +44,8 @@
             [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.06000000]
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/flow_lin_react/sit_lin_react.tbc"
+          r_set = "BOUNDARY",
+          bc_conc = [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.06000000]
         }
       ],
 
@@ -96,9 +97,7 @@
       {
         file = "./transport_lin_react.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.5,

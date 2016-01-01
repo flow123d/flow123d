@@ -1,3 +1,20 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    sorption_base.cc
+ * @brief   
+ */
+
 #include <boost/foreach.hpp>
 
 #include "reaction/sorption_base.hh"
@@ -488,15 +505,7 @@ void SorptionBase::output_data(void )
 {
     output_vector_gather();
 
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if (rank == 0)
-    {
-      // Register fresh output data
-      data_->output_fields.set_time(time_->step());
-      data_->output_fields.output(output_stream_);
-    }
-
-    //for synchronization when measuring time by Profiler
-    MPI_Barrier(MPI_COMM_WORLD);
+    // Register fresh output data
+    data_->output_fields.set_time(time_->step());
+    data_->output_fields.output(output_stream_);
 }

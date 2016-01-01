@@ -1,8 +1,18 @@
-/*
- * multi_field.hh
+/*!
  *
- *  Created on: Feb 13, 2014
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    multi_field.hh
+ * @brief   
  */
 
 #ifndef MULTI_FIELD_HH_
@@ -34,7 +44,7 @@ namespace IT=Input::Type;
  *  - implement set_from_input
  *  - implement set_Time
  *
- *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of AbstractRecords
+ *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of Abstracts
  *    simplest solution - test that in EqDataBase and have more methods in FieldCommonBase, or somehow detach input handling from
  *    Fields
  *
@@ -56,6 +66,8 @@ public:
 
     	virtual typename Field<spacedim, Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
 
+    	bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) override;
+
     	unsigned int index_;
     };
 
@@ -69,7 +81,7 @@ public:
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::AbstractRecord &get_input_type() override;
+    const IT::Instance &get_input_type() override;
 
     IT::Record &get_multifield_input_type() override;
 
@@ -131,6 +143,8 @@ public:
      * Must be call after setting components, mesh and limit side.
      */
     void set_up_components();
+
+    void set_input_list(const Input::Array &list) override;
 
 private:
     std::vector< SubFieldType > sub_fields_;

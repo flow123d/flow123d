@@ -33,6 +33,9 @@
 #include <iostream>
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+
+
 using namespace std;
 
 
@@ -43,7 +46,7 @@ static const int list_size = 10;
 string field_input = R"JSON(
 [   
     {
-        r_set="set_1",
+        region="set_1",
 
         constant_scalar={ TYPE="FieldConstant", value=1.75 },
         constant_vector={ TYPE="FieldConstant", value=[1.75, 2.75, 3.75] },
@@ -70,7 +73,7 @@ string field_input = R"JSON(
         elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     },
     {
-        r_set="set_2",
+        region="set_2",
 
         constant_scalar={ TYPE="FieldConstant", value=1.25 },
         constant_vector={ TYPE="FieldConstant", value=[1.25, 2.25, 3.25] },

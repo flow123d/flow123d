@@ -6,6 +6,18 @@
 
 #include "input/type_base.hh"
 #include "input/type_output.hh"
+#include "input/type_generic.hh"
+
+// Set version of program and other base data. Simulate data got from rev_num.h.
+Input::Type::RevNumData get_rev_num_data() {
+	static Input::Type::RevNumData rev_num_data;
+	rev_num_data.version = "X.X.X";
+	rev_num_data.revision = "unit.test";
+	rev_num_data.branch = "unit.test";
+	rev_num_data.url = "unit.test";
+
+	return rev_num_data;
+}
 
 /**
  * Test Selection class.
@@ -92,147 +104,96 @@ TEST(OutputTypeTypeBase, record_output_test) {
     main.close();
 
     cout << "## " << "OutputText printout" << endl;
-
-    OutputText output_text( &main, 0);
-    output_text.print(cout);
-
-    //cout << endl;
-    //cout << "## " << "OutputJSONTemplate printout" << endl;
-
-    //OutputJSONTemplate output_json( &main, 0);
-    //output_json.print(cout);
-
-    cout << endl;
-    cout << "## " << "OutputLatex printout" << endl;
-
-    cout << OutputLatex(&main) << endl;
+    cout << OutputText(&main) << endl << endl;
 
     cout << "## " << "OutputJSONMachine printout" << endl;
-
-    cout << OutputJSONMachine(&main) << endl;
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }
 
-/*TEST(OutputTypeAbstractRecord, abstract_record_test) {
+TEST(OutputTypeAbstract, abstract_record_test) {
     using namespace Input::Type;
 
-    AbstractRecord a_rec("EqBase","Base of equation records.");
-    a_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
-    a_rec.declare_key("a_val", String(), Default::obligatory(), "");
-    AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy");
+	Record copy_rec = Record("Copy","")
+       	.declare_key("mesh", String(), Default("\"input.msh\""), "Comp. mesh.")
+       	.declare_key("a_val", String(), Default::obligatory(), "")
+		.close();
+
+	Abstract a_rec = Abstract("EqBase","Base of equation records.");
+	Abstract &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
     EXPECT_EQ( a_rec, a_ref);
-    a_rec.close();
 
     // test derived type
-    Record b_rec("EqDarcy", "test derived type and reducible key");
-    b_rec.derive_from(a_rec);
-    b_rec.declare_key("b_val", Integer(), Default("10"), "");
-    b_rec.allow_auto_conversion("a_val");
+    Record b_rec = Record("EqDarcy","test derived type and reducible key")
+    	.derive_from(a_rec)
+		.copy_keys(copy_rec)
+    	.declare_key("b_val", Integer(), Default("10"), "")
+    	.allow_auto_conversion("a_val")
+		.close();
 
-    Record c_rec("EqTransp","test derived type");
-    c_rec.derive_from(a_rec);
-    c_rec.declare_key("c_val", Integer(), "");
-    c_rec.declare_key("a_val", Double(),"");
-
-    c_rec.close();
-    b_rec.close();
+    Record c_rec = Record("EqTransp","test derived type")
+    	.derive_from(a_rec)
+		.copy_keys(copy_rec)
+    	.declare_key("c_val", Integer(), "")
+    	.declare_key("a_val", Double(),"")
+		.close();
 
     cout << "## " << "OutputText printout" << endl;
-    OutputText output_text( &b_rec, 0);
-    output_text.print(cout);
-
-    OutputText output_text2( &c_rec, 0);
-    output_text2.print(cout);
+    cout << OutputText( &b_rec);
+    cout << OutputText( &c_rec);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine(&a_rec) << endl;
-}*/
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
+}
 
 
-/**
- * Child classes of Input::Type::AbstractRecord and AdHocAbstractRecord
- * Contains public method for adding descendants
- */
-class AbstractRecordTest : public Input::Type::AbstractRecord {
-public:
-	AbstractRecordTest(const string & type_name_in, const string & description)
-	: Input::Type::AbstractRecord(type_name_in, description)
-	{}
-
-	void declare_descendant(const Input::Type::Record &subrec) {
-		add_child(subrec);
-	}
-};
-
-/*TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
+TEST(OutputTypeAbstract, ad_hoc_abstract_test) {
     using namespace Input::Type;
 
-	Selection sel_problem("Problem_TYPE_selection");
-	{
-		sel_problem.add_value(0, "B_Record");
-		sel_problem.add_value(1, "C_Record");
-		sel_problem.add_value(2, "D_Record");
-		sel_problem.add_value(3, "E_Record");
-		sel_problem.close();
-	}
-
-	Record b_rec("B_Record", "Test record.");
-	b_rec.declare_key("TYPE", sel_problem, Default("B_Record"), "Type of problem");
-    b_rec.declare_key("b_val", Integer(), Default("10"), "");
-    b_rec.declare_key("description", String(), Default::obligatory(), "");
-    b_rec.close();
-
-    Record c_rec("C_Record", "Test record.");
-	c_rec.declare_key("TYPE", sel_problem, Default("C_Record"), "Type of problem");
-    c_rec.declare_key("c_val", Double(), Default("0.5"), "");
-    c_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
-    c_rec.close();
-
-    Record d_rec("D_Record", "Test record.");
-	d_rec.declare_key("TYPE", sel_problem, Default("D_Record"), "Type of problem");
-    d_rec.declare_key("d_val", Integer(), Default("1"), "");
-    d_rec.declare_key("pause", Bool(), Default("false"), "");
-    d_rec.close();
-
-    Record e_rec("E_Record", "Test record.");
-    e_rec.declare_key("TYPE", sel_problem, Default("E_Record"), "Type of problem");
-    e_rec.declare_key("e_val", String(), Default("Some value"), "");
-    e_rec.declare_key("pause", Bool(), Default("false"), "");
-    e_rec.close();
-
     // ancestor abstract record
-    AbstractRecordTest a_rec_test("EqBase", "Base of equation records.");
-    a_rec_test.close();
-    a_rec_test.declare_descendant(b_rec);
-    a_rec_test.declare_descendant(c_rec);
-    AbstractRecord a_rec(a_rec_test);
+	Abstract a_rec = Abstract("EquationBase", "Base of equation records.")
+    		.close();
 
-    // adhoc abstract record - descendant of a_rec
-    AdHocAbstractRecord adhoc_rec(a_rec);
+    Record b_rec = Record("B_Record", "Test record.")
+    	.derive_from(a_rec)
+    	.declare_key("b_val", Integer(), Default("10"), "")
+    	.declare_key("description", String(), Default::obligatory(), "")
+    	.close();
+
+    Record c_rec = Record("C_Record", "Test record.")
+		.derive_from(a_rec)
+    	.declare_key("c_val", Double(), Default("0.5"), "")
+    	.declare_key("mesh", String(), Default("\"input.msh\""), "Comp. mesh.")
+    	.close();
+
+    Record d_rec = Record("D_Record", "Test record.")
+		.declare_key("TYPE", String(), Default("\"D_Record\""), "Type of problem")
+    	.declare_key("d_val", Integer(), Default("1"), "")
+    	.declare_key("pause", Bool(), Default("false"), "")
+    	.close();
+
+    Record e_rec = Record("E_Record", "Test record.")
+    	.declare_key("TYPE", String(), Default("\"E_Record\""), "Type of problem")
+    	.declare_key("e_val", String(), Default("\"Some value\""), "")
+    	.declare_key("pause", Bool(), Default("false"), "")
+    	.close();
+
+    // adhoc abstract - descendant of a_rec
+    AdHocAbstract adhoc_rec = AdHocAbstract(a_rec).close();
     adhoc_rec.add_child(d_rec);
     adhoc_rec.add_child(e_rec);
     adhoc_rec.finish();
 
-    Record root_rec("Root", "Root record.");
-    root_rec.declare_key("problem", adhoc_rec, Default::obligatory(), "Base problem");
-    root_rec.declare_key("pause", Bool(), Default("false"), "");
-    root_rec.close();
+    Record root_rec = Record("Root", "Root record.")
+    	.declare_key("problem", adhoc_rec, Default::obligatory(), "Base problem")
+    	.declare_key("pause", Bool(), Default("false"), "")
+    	.close();
 
-    cout << "## " << "AdHocAbstractRecord OutputText printout";
-    OutputText output_text( &root_rec, 0);
-    output_text.print(cout);
-
-    cout << endl << "## " << "OutputJSONTemplate printout";
-    OutputJSONTemplate output_json_template( &root_rec, 0);
-    output_json_template.print(cout);
-
-    cout << endl << "## " << "OutputLatex printout";
-    OutputLatex output_latex( &root_rec, 0);
-    output_latex.print(cout);
+    cout << "## " << "OutputText printout";
+    cout << OutputText( &root_rec) << endl;
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    OutputJSONMachine output_json_machine( &root_rec, 0);
-    output_json_machine.print(cout);
-}*/
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
+}
 
 
 TEST(OutputTypeArray, array_of_array_test) {
@@ -253,43 +214,28 @@ TEST(OutputTypeArray, array_of_array_test) {
     }
 
     cout << "## " << "OutputText printout" << endl;
-    OutputText output_text( &array_record, 0);
-    output_text.print(cout);
+    cout << OutputText(&array_record) << endl;
 
-    //cout << endl;
-    //cout << "## " << "OutputJSONTemplate printout" << endl;
-    //OutputJSONTemplate output_json( &array_record, 0);
-    //output_json.print(cout);
-
+    cout << endl << "## " << "OutputJSONMachine printout" << endl;
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }
 
-#include <boost/regex.hpp>
-TEST(OutputTypeRegEx, regex_filter_test) {
-    //static const boost::regex e("(\\d{4}[- ]){3}\\d{4}");
-    //regex_match("", e);
 
+TEST(OutputTypeParameter, parameter_test) {
     using namespace Input::Type;
 
-    Record a_rec("FieldConstant:Field:R3 -> Real", "");
-    a_rec.close();
+    std::vector<TypeBase::ParameterPair> param_vec;
+    param_vec.push_back( std::make_pair("param", boost::make_shared<Integer>()) );
 
-    // test derived type
-    Record b_rec("FieldConstant:Field:R3 -> Real[3,3]", "");
-    b_rec.close();
+    static Record param_record = Record("WithParameter", "Record with parameter.")
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("start_time", Double(), "desc.")
+			.declare_key("name", String(), "desc.")
+			.close();
 
-    Record c_rec("FieldConstant:Field:R3 -> Enum[3]", "");
-    c_rec.close();
+	static Instance inst = Instance(param_record, param_vec)
+								.close();
 
-
-    Record main("MainRecord", "The main record of flow.");
-    main.declare_key("a", a_rec, "first record of flow");
-    main.declare_key("b", b_rec, "first record of flow");
-    main.declare_key("c", c_rec, "second record of flow");
-    main.close();
-
-    OutputText output_text( &main, 0);
-    // finds expressions in format '[N,N]' or '[N]' where N is dimension (0-3)
-    //output_text.set_filter("(\\[[0-3]\\,?[0-3]?\\])");
-    output_text.set_filter(":Field:.*");
-    output_text.print(cout);
+    cout << endl << "## " << "OutputJSONMachine printout" << endl;
+    cout << OutputJSONMachine(get_rev_num_data()) << endl;
 }

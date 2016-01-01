@@ -1,8 +1,18 @@
-/*
- * field_constant.impl.hh
+/*!
  *
- *  Created on: Dec 15, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_constant.impl.hh
+ * @brief   
  */
 
 #ifndef FIELD_CONSTANT_IMPL_HH_
@@ -16,15 +26,15 @@
 
 namespace it = Input::Type;
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_constant)
+
 
 template <int spacedim, class Value>
-const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
-        .derive_from(a_type)
-        .declare_key("value", Value::get_input_type(eit), it::Default::obligatory(),
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .declare_key("value", Value::get_input_type(), it::Default::obligatory(),
                                     "Value of the constant field.\n"
                                     "For vector values, you can use scalar value to enter constant vector.\n"
                                     "For square (($N\\times N$))-matrix values, you can use:\n"
@@ -37,7 +47,8 @@ const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldConstant<spacedim, Value>::registrar =
-		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant");
+		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant") +
+		FieldConstant<spacedim, Value>::get_input_type().size();
 
 
 template <int spacedim, class Value>

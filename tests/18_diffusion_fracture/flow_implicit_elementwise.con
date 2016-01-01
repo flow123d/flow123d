@@ -10,8 +10,9 @@
       TYPE = "Steady_MH", 
       
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test18.fbc"
+        { r_set = "BOUNDARY",
+          bc_type="dirichlet",
+          bc_pressure=0
         },
         { rid = 20,
           cross_section = 1e-2
@@ -41,7 +42,7 @@
       TYPE = "SoluteTransport_DG", 
 
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
+        { r_set = "BOUNDARY",
           bc_conc=0
         },
         {
@@ -91,9 +92,7 @@
       {
         file = "./transport-implicit.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.001,

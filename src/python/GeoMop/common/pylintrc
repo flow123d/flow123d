@@ -1,0 +1,5 @@
+[typecheck]
+ignored-modules=PyQt5.QtWidgets,PyQt5.QtCore
+ignored-classes=GMErrorDialog
+[messages control]
+disable = R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,C1001,W1001,E1002,E1001,E1004

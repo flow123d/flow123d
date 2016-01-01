@@ -1,10 +1,19 @@
-/*
- * type_generic.cc
+/*!
  *
- *  Created on: May 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_generic.cc
+ * @brief   
  */
-
 
 #include <input/type_generic.hh>
 #include <input/type_repository.hh>
@@ -44,12 +53,6 @@ TypeBase::TypeHash Parameter::content_hash() const {
 }
 
 
-bool Parameter::valid_default(const string &str) const {
-    ASSERT(false, "Method valid_default can't be called for Parameter '%s'.\n", this->name_.c_str());
-    return true;
-}
-
-
 TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterPair> vec) const {
 	ParameterMap parameter_map;
 	for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
@@ -64,7 +67,7 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 
 
 bool Parameter::finish(bool is_generic) {
-	ASSERT(is_generic, "Finish of non-generic Parameter '%s'.\n", this->name_.c_str());
+	if (!is_generic) THROW( ExcParamaterInIst() << EI_Object(this->name_));
 	return true;
 }
 
@@ -87,12 +90,6 @@ TypeBase::TypeHash Instance::content_hash() const {
 	}
 
 	return seed;
-}
-
-
-bool Instance::valid_default(const string &str) const {
-    ASSERT(false, "Method valid_default can't be called for Instance type.\n");
-    return true;
 }
 
 
@@ -119,21 +116,25 @@ std::string print_parameter_vec(std::vector<TypeBase::ParameterPair> vec) {
 
 // Implements @p TypeBase::make_instance.
 TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPair> vec) const {
-	TypeBase::MakeInstanceReturnType ret;
+	// check if instance is created
+	if (created_instance_.first) {
+		return created_instance_;
+	}
+
 	try {
-		ret = generic_type_.make_instance(parameters_);
+		created_instance_ = generic_type_.make_instance(parameters_);
 	} catch (ExcParamaterNotSubsituted &e) {
         e << EI_ParameterList( print_parameter_vec(parameters_) );
         throw;
 	}
 #ifdef FLOW123D_DEBUG_ASSERTS
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = parameters_.begin(); vec_it!=parameters_.end(); vec_it++) {
-		ParameterMap::iterator map_it = ret.second.find( vec_it->first );
-		ASSERT(map_it != ret.second.end(), "Unused parameter '%s' in input type instance with parameters: %s.\n",
+		ParameterMap::iterator map_it = created_instance_.second.find( vec_it->first );
+		ASSERT(map_it != created_instance_.second.end(), "Unused parameter '%s' in input type instance with parameters: %s.\n",
 				vec_it->first.c_str(), print_parameter_vec(parameters_).c_str());
 	}
 #endif
-	return ret;
+	return created_instance_;
 }
 
 } // closing namespace Type
