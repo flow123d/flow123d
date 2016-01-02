@@ -53,6 +53,15 @@
       }
     },
     {
+      "NAME": "Move output_fields from Transport_OS to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/output_fields",
+        "destination_path": "/problem/secondary_equation/transport/output_fields",
+        "parent-type-filter": "TransportOperatorSplitting"
+      }
+    },  
+    {
       "NAME": "Move input_fields from Transport_OS to transport",
       "action": "move-key",
       "parameters": {
@@ -81,6 +90,15 @@
         "parent-type-filter": "SoluteTransport_DG"
       }
     },
+    {
+      "NAME": "Move output_fields from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/output_fields",
+        "destination_path": "/problem/secondary_equation/transport/output_fields",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },        
     {
       "NAME": "Move solver from SoluteTransport_DG to transport",
       "action": "move-key",
