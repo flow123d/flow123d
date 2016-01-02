@@ -304,7 +304,7 @@ void TransportDG<Model>::initialize()
     }
 
 	output_vec.resize(Model::n_substances());
-	output_solution.resize(Model::n_substances());
+	//output_solution.resize(Model::n_substances());
 	int rank;
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	unsigned int output_vector_size= (rank==0)?feo->dh()->n_global_dofs():0;
