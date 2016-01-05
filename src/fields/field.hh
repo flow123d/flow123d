@@ -116,6 +116,13 @@ public:
     Field(const string &name, bool bc = false);
 
     /**
+     * Constructor that must be used for create of MultiField components.
+     *
+     * Set @p FieldCommon::component_index_
+     */
+    Field(unsigned int component_index);
+
+    /**
      * Copy constructor. Keeps shared history, declaration data, mesh.
      */
     Field(const Field &other);
