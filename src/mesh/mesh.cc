@@ -57,6 +57,7 @@ namespace IT = Input::Type;
 
 const IT::Record & Mesh::get_input_type() {
 	return IT::Record("Mesh","Record with mesh related data." )
+	    .allow_auto_conversion("mesh_file")
 		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 				"Input file with mesh description.")
 		.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
