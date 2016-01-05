@@ -18,6 +18,7 @@ import icon
 from meconfig import cfg
 from ui.dialogs.json_editor import JsonEditorDlg
 from ui import MainWindow
+from util import constants
 
 
 class ModelEditor:
@@ -231,7 +232,7 @@ def main():
                 if err_dialog is not None:
                     err_dialog.open_error_dialog("Unhandled Exception!", error=exception)
 
-        log_unhandled_exceptions('ModelEditor', on_unhandled_exception)
+        log_unhandled_exceptions(constants.CONTEXT_NAME, on_unhandled_exception)
 
     # enable Ctrl+C from console to kill the application
     signal.signal(signal.SIGINT, signal.SIG_DFL)

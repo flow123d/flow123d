@@ -1,6 +1,3 @@
-# secondary_equation
-# problem
-output_streams: []
 problem: !SequentialCoupling
   description: Transport 1D-2D, (convection, dual porosity, sorption)
   mesh:
@@ -40,6 +37,9 @@ problem: !SequentialCoupling
   # primary equation
   secondary_equation: !Transport_OS
     transport: !Convection_FV
+      output_fields:
+      - conc
+      - porosity
       input_fields:
       - region: ALL
         init_conc: 0
@@ -89,9 +89,6 @@ problem: !SequentialCoupling
         - 1.0
         input_fields: *anchor1
         output_fields: []
-    output_fields:
-    - conc
-    - porosity
     output_stream:
       file: transport.pvd
       format: !vtk

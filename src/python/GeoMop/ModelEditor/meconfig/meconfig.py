@@ -5,6 +5,7 @@
 """
 
 import os
+import logging
 from copy import deepcopy
 
 import config as cfg
@@ -13,11 +14,14 @@ from helpers import (notification_handler, AutocompleteHelper,
 from ist import InfoTextGenerator
 
 from data.import_json import parse_con, fix_tags, rewrite_comments
+from data import export_con
 from data.yaml import Loader
 from data.yaml import Transformator, TransformationFileFormatError
 from data.validation import Validator
 from data.format import get_root_input_type_from_json
 from data.autoconversion import autoconvert
+from geomop_util.logging import LOGGER_PREFIX
+from util import constants
 
 
 class _Config:
@@ -168,9 +172,8 @@ class MEConfig:
     """path to a folder containing Qt stylesheets"""
     info_text_html_root_dir = os.path.join(resource_dir, 'ist_html')
     """path to a root folder for InfoText"""
-
-    def __init__(self):
-        pass
+    logger = logging.getLogger(LOGGER_PREFIX + constants.CONTEXT_NAME)
+    """root context logger"""
 
     @classmethod
     def init(cls, main_window):
@@ -341,6 +344,15 @@ class MEConfig:
             else:
                 raise err
         return False
+
+    @classmethod
+    def export_file(cls):
+        """Export the current YAML document to CON format.
+
+        :return: text of the exported file
+        :rtype: str
+        """
+        return export_con(cls.root)
 
     @classmethod
     def open_recent_file(cls, file_name):

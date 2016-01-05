@@ -81,7 +81,7 @@ const Record & TransportDG<Model>::get_input_type() {
 				"Variant of interior penalty discontinuous Galerkin method.")
 		.declare_key("dg_order", Integer(0,3), Default("1"),
 				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
-/*
+
 		.declare_key("output_fields",
 		        Array(
 		            // Get selection name and description from the model
@@ -92,7 +92,7 @@ const Record & TransportDG<Model>::get_input_type() {
                             .close())
                     .close()),
 				Default(Model::ModelEqData::default_output_field()),
-				"List of fields to write to output file.")*/
+				"List of fields to write to output file.")
 		.close();
 }
 
@@ -325,6 +325,7 @@ void TransportDG<Model>::initialize()
 	}
 
     // set time marks for writing the output
+	Model::output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     Model::output_stream_->mark_output_times(*Model::time_);
 
 

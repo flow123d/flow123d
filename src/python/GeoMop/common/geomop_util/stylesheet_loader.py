@@ -5,6 +5,7 @@ Module contains helper functions for loading stylesheets.
 """
 
 import os
+import platform
 
 
 def load_stylesheet(path, resource_dir):
@@ -26,6 +27,7 @@ def load_stylesheet(path, resource_dir):
         with open(path) as file_:
             stylesheet = file_.read()
 
-        stylesheet = stylesheet.replace('url(', 'url(' + resource_dir + os.path.sep)
+        if platform.system() == 'Linux':
+            stylesheet = stylesheet.replace("url('resources/", "url('" + resource_dir + os.path.sep)
 
     return stylesheet
