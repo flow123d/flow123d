@@ -49,7 +49,7 @@
         "key": "transport",
         "parent": "Transport",
         "type": "Convection_FV",
-        "type-filter": "TransportOperatorSplitting"
+        "type-filter": "Transport_OS"
       }
     },
     {
@@ -58,7 +58,7 @@
       "parameters": {
         "source_path": "/problem/secondary_equation/output_fields",
         "destination_path": "/problem/secondary_equation/transport/output_fields",
-        "parent-type-filter": "TransportOperatorSplitting"
+        "parent-type-filter": "Transport_OS"
       }
     },  
     {
@@ -67,7 +67,7 @@
       "parameters": {
         "source_path": "/problem/secondary_equation/input_fields",
         "destination_path": "/problem/secondary_equation/transport/input_fields",
-        "parent-type-filter": "TransportOperatorSplitting"
+        "parent-type-filter": "Transport_OS"
       }
     },
     {
