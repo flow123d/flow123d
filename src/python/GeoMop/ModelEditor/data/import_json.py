@@ -451,8 +451,9 @@ class Comments:
         if len(text) > 1:
             if text[0] == '"' and text[-1] == '"':
                 text = text[1:-1]
-            if text[0] == "'" and text[-1] == "'":
-                text = text[1:-1]
+            else:
+                if text[0] == "'" and text[-1] == "'":
+                    text = text[1:-1]
         return text
 
     def _read_value(self, col, line, lines):
