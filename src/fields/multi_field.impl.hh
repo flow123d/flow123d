@@ -60,7 +60,7 @@ bool MultiField<spacedim, Value>::set_time(
 {
 	// initialization of Multifield for first call
 	if (sub_fields_.size() == 0) {
-	    set_up_components();
+	    setup_components();
 	}
 
 	// set time for sub fields
@@ -121,7 +121,7 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::set_up_components() {
+void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
 	ASSERT(comp_size, "Vector of component names is empty!\n");
 	ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
@@ -155,7 +155,7 @@ template<int spacedim, class Value>
 void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
-	set_up_components();
+	setup_components();
 	for( SubFieldType &field : sub_fields_) {
 		field.set_input_list(list);
 	}

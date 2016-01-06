@@ -143,7 +143,7 @@ public:
      *
      * Must be call after setting components, mesh and limit side.
      */
-    void set_up_components();
+    void setup_components();
 
     /**
      * Returns vector of value in one given point @p on an element given by ElementAccessor @p elm.

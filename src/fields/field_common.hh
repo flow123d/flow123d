@@ -418,7 +418,7 @@ protected:
         const Mesh *mesh_;
 
         /**
-         * List of input field descriptors from which the field is set.
+         * Vector of input field descriptors from which the field is set.
          */
         vector<Input::Record> input_list_;
 

@@ -106,7 +106,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 	data_.output_fields.set_mesh(*mesh_);
 	data_.output_fields.set_limit_side(LimitSide::right);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
-	data_.conc_mobile.set_up_components();
+	data_.conc_mobile.setup_components();
 	data_.region_id = GenericField<3>::region_id(*mesh_);
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{

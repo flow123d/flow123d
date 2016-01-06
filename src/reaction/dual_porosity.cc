@@ -210,7 +210,7 @@ void DualPorosity::initialize_fields()
   data_.output_fields.set_mesh(*mesh_);
   data_.output_fields.set_limit_side(LimitSide::right);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
-  data_.conc_immobile.set_up_components();
+  data_.conc_immobile.setup_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
