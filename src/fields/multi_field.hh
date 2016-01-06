@@ -134,7 +134,7 @@ public:
      */
     inline SubFieldType &operator[](unsigned int idx)
     {
-    	ASSERT(idx < sub_fields_.size(), "Index of subfield is out of range.\n");
+    	ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
     	return sub_fields_[idx];
     }
 
@@ -167,6 +167,8 @@ private:
     /// Helper class members, used only for input record
     SubFieldType sub_field_type_;
     TransposedField transposed_field_;
+    /// Full list of input field descriptors from which the subfields of MultiField are set.
+    Input::Array full_input_list_;
 };
 
 
