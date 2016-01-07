@@ -34,7 +34,9 @@ Actions:
       children.
     - rename-type - Change tag on set path from old_name to new_name.
     - change-value - Change value on set path from old_value to new_value.
-      If node in specified path is not scallar type nide, exception is raise.
+      If node in specified path is not scallar type node, exception is raise.
+    - scale-value - multiply value in set path by scale. If node in specified 
+      path is not scallar type node with numeric value, exception is raise.
     - merge-arrays - Add array in addition_path after array in source path. If
       destination_path is defined, node is moved from source to this path.
     - move-key-forward - Move node in specified path before all siblings nodes.
@@ -109,13 +111,13 @@ from data.format import get_root_input_type_from_json
 class Transformator:
     """Transform yaml file to new version"""
     __actions__=["delete-key", "move-key", "rename-type", "move-key-forward",
-                          "change-value", "merge-arrays", "add-key"]
+                          "change-value", "merge-arrays", "add-key", "scale-value"]
     __source_paths__ = {"delete-key":"path","move-key-forward":"path", "move-key":"source_path", 
                                       "rename-type":"path", "change-value":"path", "merge-arrays":"source_path", 
-                                      "add-key":"path"}
+                                      "add-key":"path", "scale-value":"path"}
     __destination_paths__ = {"delete-key":None,"move-key-forward":None, "move-key":["destination_path"],
                                           "rename-type":None, "change-value":None, "merge-arrays":["destination_path",
-                                          "addition_path"], "add-key":None}
+                                          "addition_path"], "add-key":None, "scale-value":None}
     
     def __init__(self, transform_file, data=None):
         """init"""
@@ -160,6 +162,15 @@ class Transformator:
             elif action['action'] == "add-key":
                 self._check_parameter("path", action['parameters'], action['action'], i) 
                 self._check_parameter("key", action['parameters'], action['action'], i)
+            elif action['action'] == "scale-value":
+                self._check_parameter("path", action['parameters'], action['action'], i)
+                self._check_parameter("scale", action['parameters'], action['action'], i)
+                try:
+                    float(action['parameters']['scale'])
+                except ValueError:
+                    raise TransformationFileFormatError(
+                        "Type of parameter scale for action type scale-value is not " +
+                        "numeric (value: " + action['parameters']['scale'] + ")")
             i += 1
 
     def _check_parameter(self, name, dict_, act_type, line):
@@ -249,6 +260,8 @@ class Transformator:
                         changes = self._move_key(root, lines, action)
                 elif action['action'] == "add-key":
                     changes = self._add_key(root, lines, action)
+                elif action['action'] == "scale-value":
+                    changes = self._scale_value(root, lines, action)
                 if changes:
                     yaml = "\n".join(lines)
         yaml = "\n".join(lines)
@@ -653,8 +666,12 @@ class Transformator:
                 raise TransformationFileFormatError(
                     "Parent of destination path (" + self._get_paths_str(action, 'destination_path') +
                     ") must be abstract record")
-        intendation1 = re.search(r'^(\s*)(\S.*)$', lines[dl1])
-        intendation1 = len(intendation1.group(1)) + 2
+        if node1.parent is None:
+            intendation1 = 0
+        else:
+            intendation1 = re.search(r'^(\s*)(\S.*)$', lines[dl1])
+            intendation1 = len(intendation1.group(1)) + 2
+        
         sl1, sc1, sl2, sc2 = StructureChanger._add_comments(lines, sl1, sc1, sl2, sc2)
         add = StructureChanger.copy_structure(lines, sl1, sc1, sl2, sc2, intendation1)
         # rename key
@@ -667,7 +684,7 @@ class Transformator:
                 "Destination block (" + self._get_paths_str(action, 'destination_path') +
                 ") and source block (" + self._get_paths_str(action, 'source_path') +
                 " is overlapped")
-        if sl1 < dl1:
+        if sl1 < dl2:
             # source before dest, first copy
             intendation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
             StructureChanger.paste_structure(lines, dl2, add, len(intendation2.group(1)) < dc2)
@@ -693,6 +710,9 @@ class Transformator:
             raise TransformationFileFormatError(
                     "Specified addition path (" + self._get_paths_str(action, 'addition_path') + \
                     ") is not array type node." )
+        if parent2.parent is None:
+            raise TransformationFileFormatError(
+                    "Specified addition path can't be in root node" )
         try:
             parent1 = root.get_node_at_path(action['parameters']['source_path'])
         except:
@@ -763,7 +783,7 @@ class Transformator:
         lines[l2] += ',' 
        
     def _change_value(self, root, lines, action):
-        """Rename type transformation"""
+        """Change value to speciffied"""
         try:
             node = root.get_node_at_path(action['parameters']['path'])
         except:
@@ -776,6 +796,26 @@ class Transformator:
         l1, c1, l2, c2 =  StructureChanger.value_pos(node)
         return StructureChanger.replace(lines, new,  old,  l1, c1, l2, c2 )
         
+    def _scale_value(self, root, lines, action):
+        """Multiply value by set scale"""
+        try:
+            node = root.get_node_at_path(action['parameters']['path'])
+            scale = float(action['parameters']['scale'])
+        except:
+            return False
+        if node.implementation != DataNode.Implementation.scalar:
+            raise TransformationFileFormatError(
+                    "Specified path (" + self._get_paths_str(action, 'path') + ") is not scalar type node." )
+        try:
+            value =  float(node.value)
+        except ValueError:
+            raise TransformationFileFormatError(
+                    "Type of value in specified path (" 
+                    + self._get_paths_str(action, 'path') + ") is not numeric." )
+        l1, c1, l2, c2 =  StructureChanger.value_pos(node)
+        return StructureChanger.replace(lines, str(scale*value),   lines[l1][c1:c2],  l1, c1, l2, c2 )
+
+        
     def _add_key(self, root, lines, action):
         """Add key to abstract record"""
         try:
@@ -787,8 +827,7 @@ class Transformator:
             raise TransformationFileFormatError(
                 "Add path (" + self._get_paths_str(action, 'destination_path') +
                 ") must be abstract record")
-        intendation = re.search(r'^(\s*)(\S.*)$', lines[l1])
-        intendation = len(intendation.group(1)) + 2
+
         key = action['parameters']['key']
         if "value" in action['parameters']:
             value = action['parameters']['value']
@@ -797,9 +836,15 @@ class Transformator:
         if "type" in action['parameters']:
             tag = action['parameters']['type']
         else:
-            tag = None        
-        add = StructureChanger.add_key(key, intendation, value, tag)
-        lines.insert(l1+1, add)
+            tag = None
+        if node.parent is None:
+            add = StructureChanger.add_key(key, 0, value, tag)
+            lines.insert(l1,  add)
+        else:
+            intendation = re.search(r'^(\s*)(\S.*)$', lines[l1])
+            intendation = len(intendation.group(1)) + 2            
+            add = StructureChanger.add_key(key, intendation, value, tag)
+            lines.insert(l1+1, add)
         return True
 
 class TransformationFileFormatError(Exception):

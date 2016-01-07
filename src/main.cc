@@ -28,7 +28,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <regex>
+#include <boost/regex.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
@@ -295,29 +295,29 @@ void Application::run() {
     {
         using namespace Input;
         // check input file version against the version of executable
-        std::regex version_re("([^.]*)\.([^.]*)\.([^.]*)");
-        std::smatch match;
+        boost::regex version_re("([^.]*)[.]([^.]*)[.]([^.]*)");
+        boost::smatch match;
         std::string version(FLOW123D_VERSION_NAME_);
         vector<string> ver_fields(3);
-        if ( std::regex_search(version, match, version_re) ) {
-            ver_fields[1]=match[1];
-            ver_fields[2]=match[2];
-            ver_fields[3]=match[3];
+        if ( boost::regex_match(version, match, version_re) ) {
+            ver_fields[0]=match[1];
+            ver_fields[1]=match[2];
+            ver_fields[2]=match[3];
         } else {
             ASSERT(1, "Bad Flow123d version format: %s\n", version.c_str() );
         }
 
         std::string input_version = i_rec.val<string>("flow123d_version");
         vector<string> iver_fields(3);
-        if ( std::regex_search(input_version, match, version_re) ) {
-            iver_fields[1]=match[1];
-            iver_fields[2]=match[2];
-            iver_fields[3]=match[3];
+        if ( boost::regex_match(input_version, match, version_re) ) {
+            iver_fields[0]=match[1];
+            iver_fields[1]=match[2];
+            iver_fields[2]=match[3];
         } else {
             THROW( ExcVersionFormat() << EI_InputVersionStr(input_version) );
         }
 
-        if ( iver_fields[1] != ver_fields[1] || iver_fields[2] > ver_fields[2] ) {
+        if ( iver_fields[0] != ver_fields[0] || iver_fields[1] > ver_fields[1] ) {
             xprintf(Warn, "Input file with version: '%s' is no compatible with the program version: '%s' \n",
                     input_version.c_str(), version.c_str());
         }

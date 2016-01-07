@@ -197,7 +197,7 @@ class StructureChanger:
             old_str = re.search(re.escape(old), line)
             if old_str is not None:
                 if i == l2:
-                    if (old_str.end() + len(prefix)):
+                    if (old_str.end() + len(prefix)) > c2:
                         return False
                 if old_str.end() == len(line):
                     lines[i] = prefix + line[:old_str.start()] + new

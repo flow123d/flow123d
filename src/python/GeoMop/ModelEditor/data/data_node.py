@@ -307,8 +307,10 @@ class CompositeDataNode(DataNode):
             for child in self.children:
                 descendant = child.get_node_at_position(position)
                 if descendant is not None:
-                    node = descendant
-                    break
+                    if not descendant.origin is DataNode.Origin.ac_transposition or \
+                      not descendant.parent is self:
+                        node = descendant
+                        break
         return node
 
 
