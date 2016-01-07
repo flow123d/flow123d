@@ -153,6 +153,18 @@ template<int spacedim, class Value>
 void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
+    // Check sizes of Arrays defined MultiField in field descriptors
+    for (Input::Iterator<Input::Record> it = list.begin<Input::Record>();
+					it != list.end();
+					++it) {
+    	Input::Array mf_array;
+    	if ( it->opt_val(this->input_name(), mf_array) ) {
+    		unsigned int comp_size = this->shared_->comp_names_.size();
+    		if (mf_array.size() != 1 && mf_array.size() != comp_size)
+    			xprintf(UsrErr, "Invalid size of Array defined for MultiField '%s'!\n", this->input_name().c_str());
+    	}
+    }
+
     this->full_input_list_ = list;
     shared_->list_idx_ = 0;
 }
@@ -187,15 +199,18 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 	Input::Array multifield_arr;
 	if (descriptor_rec.opt_val(field.input_name(), multifield_arr))
 	{
+		//ASSERT(multifield_arr.size() == 1 || multifield_arr.size() == field.n_comp(),
+		//		"Invalid size of Array defined for MultiField '%s'!\n", field.input_name().c_str());
 		unsigned int position = 0;
-		for (auto it = multifield_arr.begin<Input::AbstractRecord>(); it != multifield_arr.end(); ++it, ++position)
-		{
-			if (index_ == position) {
-				typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
-				field_algo_base->set_component_idx(index_);
-				return field_algo_base;
+		auto it = multifield_arr.begin<Input::AbstractRecord>();
+		if (multifield_arr.size() > 1)
+			while (index_ != position) {
+				++it; ++position;
 			}
-		}
+
+		typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
+		field_algo_base->set_component_idx(index_);
+		return field_algo_base;
 	}
 
 	return NULL;
