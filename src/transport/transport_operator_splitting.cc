@@ -263,8 +263,8 @@ void TransportOperatorSplitting::update_solution() {
         steps++;
 	    // one internal step
         double cfl_convection, cfl_reaction;
-        bool cfl_changed =  convection->assess_time_constraint(cfl_convection);
-                         //|| reaction->assess_time_constraint(cfl_reaction);
+        bool cfl_changed =  convection->evaluate_time_constraint(cfl_convection);
+                         //|| reaction->evaluate_time_constraint(cfl_reaction);
         if (cfl_changed)
             //|| reaction->assess_time_constraint(cfl_reaction)
         {

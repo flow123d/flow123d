@@ -114,9 +114,12 @@ public:
 	 */
     void zero_time_step() override;
     /**
-     * 
-     */
-    bool assess_time_constraint(double &time_constraint) override;
+      * Evaluates CFL condition.
+      * Assembles the transport matrix and vector (including sources, bc terms).
+      * @param time_constraint is the value CFL constraint (return parameter)
+      * @return true if CFL is changed since previous step, false otherwise
+      */
+    bool evaluate_time_constraint(double &time_constraint) override;
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
@@ -128,7 +131,7 @@ public:
 
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
-     * In particular the velocity field dosn't change over this interval.
+     * In particular the velocity field doesn't change over this interval.
      *
      * Dependencies:
      *
@@ -220,10 +223,9 @@ private:
 	void read_concentration_sources();
 	void set_boundary_conditions();
   
-  //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-// 	void compute_concentration_sources(unsigned int sbi);
-
-    //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+    /** @brief Assembles concentration sources for each substance.
+     * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+     */
     void compute_concentration_sources();
     
 	/**

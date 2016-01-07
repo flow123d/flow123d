@@ -175,7 +175,7 @@ public:
      */
 	void zero_time_step() override;
 	
-    bool assess_time_constraint(double &time_constraint)
+    bool evaluate_time_constraint(double &time_constraint)
     { return false; }
 
     /**
