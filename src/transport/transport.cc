@@ -667,7 +667,7 @@ void ConvectionTransport::set_target_time(double target_time)
     // If CFL condition is changed, time fixation will change later from TOS.
     
     // Set the same constraint as was set last time.
-    time_->set_upper_constraint(cfl_max_step);
+    time_->set_upper_constraint(cfl_max_step, "CFL condition used from previous step.");
     
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes

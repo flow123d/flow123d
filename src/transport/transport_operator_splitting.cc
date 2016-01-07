@@ -269,7 +269,7 @@ void TransportOperatorSplitting::update_solution() {
         )
         {
             DBGMSG("CFL changed.\n");
-            convection->time().set_upper_constraint(cfl_convection);
+            convection->time().set_upper_constraint(cfl_convection, "Time step constrained due to CFL condition (including both flow and sources).");
 //             convection->time_->set_upper_constraint(std::min(cfl_convection, cfl_reaction));
             
             // fix step with new constraint

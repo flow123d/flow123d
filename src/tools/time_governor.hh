@@ -272,20 +272,23 @@ public:
      * 
      * This function can only make the constraint stricter. Upper constraint is reset to @p max_dt in next_time().
      * @param upper is the upper constraint for time step
+     * @param message describes the origin of the constraint
      * @return -1, 0 or 1 according to the success
      * 
      * - -1: constraint is higher than the permanent upper constraint @p max_dt. Setting failed, no change happened.
      * - 0: constraint is in the interval of permanent constraints @p min_dt and @p max_dt. The upper constraint has been set.
      * - 1: constraint is lower than permanent lower constraint @p min_dt. Setting failed, no change happened.
      */
-    int set_upper_constraint(double upper);
+    int set_upper_constraint(double upper, std::string message);
     
     /**
      * @brief Sets lower constraint for the next time step estimating. 
+     * @param lower is the lower constraint for time step
+     * @param message describes the origin of the constraint
      * @return -1, 0 or 1 according to the success.
      * @see set_upper_constrain().
      */
-    int set_lower_constraint(double lower);
+    int set_lower_constraint(double lower, std::string message);
     
     /**
      * @brief Fixing time step until fixed time mark.
@@ -494,6 +497,10 @@ private:
     /// Flag is set if the time step has been changed (lasts only one time step).
     bool time_step_changed_;
     
+    /// Description of the upper constraint.
+    std::string upper_constraint_message_;
+    /// Description of the upper constraint.
+    std::string lower_constraint_message_;
     /// Upper constraint for the choice of the next time step.
     double upper_constraint_;
     /// Lower constraint for the choice of the next time step.
@@ -503,6 +510,11 @@ private:
     /// Permanent lower limit for the time step.
     double min_time_step_;
 
+    /// Description of the upper constraint.
+    static const std::string max_constraint_message_;
+    /// Description of the upper constraint.
+    static const std::string min_constraint_message_;
+    
     /**
      * When the next time is chosen we need only the lowest fix time. Therefore we use
      * minimum priority queue of doubles based on the vector container.
