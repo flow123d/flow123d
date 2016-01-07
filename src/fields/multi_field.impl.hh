@@ -142,10 +142,8 @@ void MultiField<spacedim, Value>::setup_components() {
     		sub_fields_[i_comp].shared_->input_name_ = name();
     	}
 
-    	//sub_fields_[i_comp].flags_ = this->flags();
-    	//if ( flags().match(FieldFlag::declare_input) ) {
-    	//	sub_fields_[i_comp].set_input_list(this->full_input_list_);
-    	//}
+    	sub_fields_[i_comp].flags_ = this->flags_;
+    	sub_fields_[i_comp].set_input_list(this->full_input_list_);
     }
 }
 
@@ -155,10 +153,6 @@ template<int spacedim, class Value>
 void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
-	setup_components();
-	for( SubFieldType &field : sub_fields_) {
-		field.set_input_list(list);
-	}
     this->full_input_list_ = list;
     shared_->list_idx_ = 0;
 }
