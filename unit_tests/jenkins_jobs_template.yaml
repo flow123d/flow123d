@@ -266,6 +266,7 @@
           rm -rf `ls -dt ./build-* |tail -n +6 `
           cd flow123d
           git checkout ${{GIT_BRANCH##origin/}}
+          make clean-all                
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
