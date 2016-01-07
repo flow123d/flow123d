@@ -253,11 +253,11 @@ private:
 
     //@{
     /**
-     * Flag indicates the state of object (transport matrix or source term).
+     * Flag indicates the state of object (transport matrix or source or boundary term).
      * If false, the object is freshly assembled and not rescaled.
      * If true, the object is scaled (not necessarily with the current time step).
      */
-	bool is_convection_matrix_scaled, is_src_term_scaled;
+	bool is_convection_matrix_scaled, is_src_term_scaled, is_bc_term_scaled;
     //@}
     
     double **sources_corr;
