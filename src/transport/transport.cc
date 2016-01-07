@@ -528,7 +528,7 @@ bool ConvectionTransport::assess_time_constraint(double& time_constraint)
         DBGMSG("CFL changed - source.\n");
     }
     
-    //now resolve the CFL condition
+    // now resolve the CFL condition
     if(cfl_changed)
     {
         // find maximum of sum of contribution from flow and sources: MAX(vcfl_flow_ + vcfl_source_)
@@ -555,8 +555,6 @@ void ConvectionTransport::update_solution() {
     // explicit scheme looks one step back and uses data from previous time
     // (data time set previously in assess_time_constraint())
     time_->next_time();
-    
-    if(time_->is_changed_dt()) time_->view("Convection");    //show time governor
     
     double dt_new = time_->dt(),                    // current time step we are about to compute
            dt_scaled = dt_new / time_->last_dt();   // scaling ratio to previous time step
