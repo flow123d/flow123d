@@ -1,3 +1,4 @@
+# problem
 problem: !SequentialCoupling
   description: Transport 1D-2D, (convection, dual porosity, sorption)
   mesh:
