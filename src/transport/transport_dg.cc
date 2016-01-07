@@ -81,7 +81,7 @@ const Record & TransportDG<Model>::get_input_type() {
 				"Variant of interior penalty discontinuous Galerkin method.")
 		.declare_key("dg_order", Integer(0,3), Default("1"),
 				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
-/*
+
 		.declare_key("output_fields",
 		        Array(
 		            // Get selection name and description from the model
@@ -92,7 +92,7 @@ const Record & TransportDG<Model>::get_input_type() {
                             .close())
                     .close()),
 				Default(Model::ModelEqData::default_output_field()),
-				"List of fields to write to output file.")*/
+				"List of fields to write to output file.")
 		.close();
 }
 
@@ -304,12 +304,15 @@ void TransportDG<Model>::initialize()
     }
 
 	output_vec.resize(Model::n_substances());
-	output_solution.resize(Model::n_substances());
+	//output_solution.resize(Model::n_substances());
+	int rank;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	unsigned int output_vector_size= (rank==0)?feo->dh()->n_global_dofs():0;
 	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 	{
 		// for each substance we allocate output array and vector
-		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
-		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
+		//output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
+		VecCreateSeq(PETSC_COMM_SELF, output_vector_size, &output_vec[sbi]);
 	}
 	data_.output_field.set_components(Model::substances_.names());
 	data_.output_field.set_mesh(*Model::mesh_);
@@ -325,6 +328,7 @@ void TransportDG<Model>::initialize()
 	}
 
     // set time marks for writing the output
+	Model::output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     Model::output_stream_->mark_output_times(*Model::time_);
 
 
@@ -365,7 +369,7 @@ TransportDG<Model>::~TransportDG()
 		for (unsigned int i=0; i<Model::n_substances(); i++)
 		{
 			VecDestroy(&output_vec[i]);
-			delete[] output_solution[i];
+			//delete[] output_solution[i];
 		}
     }
 
@@ -397,12 +401,13 @@ void TransportDG<Model>::output_vector_gather()
 	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 	{
 		// gather solution to output_vec[sbi]
-		ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(), 1, idx, PETSC_COPY_VALUES, &is);
-		VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
-		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		//ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(),1 , idx, PETSC_COPY_VALUES, &is);
+		//VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
+		VecScatterCreateToZero(ls[sbi]->get_solution(), &output_scatter, PETSC_NULL);
+	    VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterDestroy(&(output_scatter));
-		ISDestroy(&(is));
+		//ISDestroy(&(is));
 	}
 }
 

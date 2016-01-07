@@ -211,6 +211,9 @@ class Transformator:
         text = cfg.get_curr_format_text()
         root_input_type = get_root_input_type_from_json(text)
         for aaction in self._transformation['actions']:
+            if changes:
+                root, lines = self.refresh(root_input_type, yaml, notification_handler, loader)
+                changes=False
             for action in self._replace_wildchars(root, aaction):
                 if changes:
                     root, lines = self.refresh(root_input_type, yaml, notification_handler, loader)
@@ -738,7 +741,8 @@ class Transformator:
         old = '!' + action['parameters']['old_name'] 
         new = '!' + action['parameters']['new_name']
  
-        return StructureChanger.change_tag(lines, node, old,  new)
+        StructureChanger.change_tag(lines, node, old,  new)
+        return True
 
     def _fix_end(self, lines, l1, c1, l2, c2 ):
         """If end of node is empty  on next line, end is move to end of preceding line"""

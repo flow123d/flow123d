@@ -64,16 +64,16 @@ const IT::Record &ConvectionTransport::get_input_type()
 			        EqData().make_field_descriptor_type("Convection_FV")),
 			        IT::Default::obligatory(),
 			        "")
-/*
+
             .declare_key("output_fields",
-			                Array(
+			                IT::Array(
 			                        ConvectionTransport::EqData().output_fields
 			                            .make_output_field_selection(
 			                                "ConvectionTransport_output_fields",
 			                                "Selection of output fields for Convection Solute Transport model.")
 			                            .close()),
-			                Default("\"conc\""),
-			                "List of fields to write to output file.")*/
+			                IT::Default("\"conc\""),
+			                "List of fields to write to output file.")
 			.close();
 }
 
@@ -145,6 +145,7 @@ void ConvectionTransport::initialize()
 		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(n_substances());
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
+	output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     output_stream_->mark_output_times(*time_);
 
     if (balance_ != nullptr)

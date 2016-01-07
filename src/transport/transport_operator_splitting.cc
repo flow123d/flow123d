@@ -86,10 +86,10 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				"Type of numerical method for solute transport.")
 		.declare_key("reaction_term", ReactionTerm::get_input_type(), Default::optional(),
 					"Reaction model involved in transport.")
-
+/*
 		.declare_key("output_fields", Array(ConvectionTransport::get_output_selection()),
 				Default("\"conc\""),
-				"List of fields to write to output file.")
+				"List of fields to write to output file.")*/
 		.close();
 }
 
@@ -156,7 +156,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	// Initialize output stream.
     convection->set_output_stream(OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream")));
-    convection->output_stream()->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+
 
     // initialization of balance object
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
