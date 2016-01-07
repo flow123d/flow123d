@@ -2,9 +2,9 @@
  * intersection_area_test.cpp
  *
  *  Created on: Nov 14, 2014
- *      Author: VF
+ *      Author: VF, PE
  */
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
 #include "system/system.hh"
