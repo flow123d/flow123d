@@ -98,7 +98,7 @@ DualPorosity::EqData::EqData()
         .flags( FieldFlag::input_copy );
 
   output_fields += *this;
-  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) );
+  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)

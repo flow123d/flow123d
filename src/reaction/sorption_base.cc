@@ -101,7 +101,7 @@ SorptionBase::EqData::EqData(const string &output_field_name)
             .flags(FieldFlag::input_copy);
     
     output_fields += *this;
-    output_fields += conc_solid.name(output_field_name).units( UnitSI().kg().m(-3) );
+    output_fields += conc_solid.name(output_field_name).units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
 }
 
 

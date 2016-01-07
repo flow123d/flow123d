@@ -63,7 +63,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
     	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
-    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) );
+    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
 	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
