@@ -56,7 +56,7 @@
 
       balance = {
         cumulative = true
-      }
+      },
       input_fields= [
         {
           r_set = ".bottom",
@@ -108,9 +108,7 @@
       {
         file = "./heat.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         },  
         time_step = 1,

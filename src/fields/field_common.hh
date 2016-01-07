@@ -1,8 +1,18 @@
-/*
- * field.hh
+/*!
  *
- *  Created on: Feb 13, 2014
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_common.hh
+ * @brief   
  */
 
 #ifndef FIELD_COMMON_HH_
@@ -53,7 +63,7 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
             << "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
     DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
-            << "Missing domain specification (region, r_id, or r_set) in the field descriptor:");
+            << "Missing domain specification (region or r_id) in the field descriptor:");
     DECLARE_EXCEPTION(ExcFieldMeshDifference,
             << "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
 
@@ -165,7 +175,7 @@ public:
      *
      * The list is used by set_time method to set field on individual regions to actual FieldBase descendants.
      */
-    void set_input_list(const Input::Array &list);
+    virtual void set_input_list(const Input::Array &list) =0;
 
     /**
      * Set side of limit when calling @p set_time
@@ -232,7 +242,7 @@ public:
     /**
      * Create description of field descriptor record.
      */
-    static const std::string field_descriptor_record_decsription(const string& record_name);
+    static const std::string field_descriptor_record_description(const string& record_name);
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
@@ -363,7 +373,7 @@ protected:
     	/**
     	 * Empty constructor.
     	 */
-    	SharedData() {};
+    	SharedData() : list_idx_(-1) {};
 
         /**
          * True for boundary fields.
@@ -410,12 +420,12 @@ protected:
         /**
          * List of input field descriptors from which the field is set.
          */
-        Input::Array input_list_;
+        vector<Input::Record> input_list_;
 
         /**
-         * Iterator to current input field descriptor.
+         * Index to current position of input field descriptor.
          */
-        Input::Iterator<Input::Record> list_it_;
+        int list_idx_;
 
         /**
          * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.

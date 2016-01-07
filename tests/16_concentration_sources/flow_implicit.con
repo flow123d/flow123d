@@ -1,5 +1,5 @@
 {
-  COMMENT_Stop_time = "1275", 
+//  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Steady flow + transport with source", 
@@ -12,10 +12,14 @@
       n_schurs = 2,
       
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test16.fbc"
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE="FieldFormula",
+            value="y"
+          }  
         },
-        { rid = 7,
+        { r_set = "BULK",
           cross_section = 1,
           conductivity = 1
         }
@@ -36,18 +40,20 @@
         r_tol = 1e-12
       }, 
       time = {
-        REF = "../../time"
+        end_time = 5.7,
+        max_dt = 1e0,
+        min_dt = 1e0
       }
     }, 
     secondary_equation = {
       TYPE = "SoluteTransport_DG", 
-      dual_porosity = false, 
+//      dual_porosity = false, 
       
       input_fields= [
-        { region = "IMPLICIT BOUNDARY",
+        { r_set = "BOUNDARY",
           bc_conc = 0
         },
-        { rid = 7,
+        { r_set = "BULK",
           init_conc = 0,
           porosity= 1,
           diff_m = 1e-9,
@@ -83,7 +89,9 @@
         "conc"
       ], 
       time = {
-        REF = "../../time"
+        end_time = 5.7,
+        max_dt = 1e0,
+        min_dt = 1e0
       },
       solver = {
         TYPE = "Petsc", 
@@ -93,11 +101,6 @@
       balance = {
         cumulative = true
       }
-    }, 
-    time = {
-      end_time = 5.7,
-      max_dt = 1e0,
-      min_dt = 1e0
     }
   }, 
   system = {
@@ -113,27 +116,12 @@
       {
         file = "./transport_test16.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.8,
         name = "transport_output_stream"
       }
     ]
-  }, 
-  zz_not_supported = {
-    constants = {
-      g = 9.81, 
-      rho = 1000
-    }, 
-    input = {
-      file_type = 1
-    }, 
-    output = {
-      output_file_2 = "./flow_test16.tmp", 
-      output_file_type = "1"
-    }
   }
 }

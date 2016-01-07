@@ -1,0 +1,18 @@
+{
+"name": "Main transformation file",
+"description": "Template for creating transformation file",
+"old_format": "",
+"new_format": "",
+"actions":
+  [
+    {
+      "NAME": "Rename Steady_MH to SteadyDarcy_MH",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "Steady_MH",
+        "new_name": "SteadyDarcy_MH"
+      }
+    }
+  ]
+}

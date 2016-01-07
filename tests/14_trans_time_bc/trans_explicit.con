@@ -10,12 +10,16 @@
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { rid = 100,
+        { r_set = "BULK",
           anisotropy = 0.1
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test14.fbc"
+          r_set = "BOUNDARY",
+          bc_type="dirichlet",
+          bc_pressure={
+            TYPE="FieldFormula",
+            value="x"
+          }  
         }
       ],
 
@@ -40,27 +44,27 @@
       TYPE = "TransportOperatorSplitting", 
     
       input_fields= [
-        { rid = 100,
+        { r_set = "BULK",
           init_conc = 0
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_000",
+          r_set = "BOUNDARY",
+          bc_conc=20,
           time = 1
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_001",
+          r_set = "BOUNDARY",
+          bc_conc=0,
           time = 3
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_002",
+          r_set = "BOUNDARY",
+          bc_conc=40,
           time = 6
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_003",
+          r_set = "BOUNDARY",
+          bc_conc=0,
           time = 7
         }
       ],
@@ -94,9 +98,7 @@
       {
         file = "./transport.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 1.0,

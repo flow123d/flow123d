@@ -1,33 +1,20 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
- *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @ingroup mesh
- * @brief
- * @author dalibor
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
- * @date Created on October 3, 2010, 11:32 AM
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    msh_gmshreader.cc
+ * @ingroup mesh
+ * @brief   
+ * @author  dalibor
  */
 
 #include <istream>
@@ -73,13 +60,13 @@ GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
 
 
 
-void GmshMeshReader::read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map) {
+void GmshMeshReader::read_mesh(Mesh* mesh) {
     START_TIMER("GMSHReader - read mesh");
     
     ASSERT( mesh , "Argument mesh is NULL.\n");
     read_physical_names(tok_, mesh);
     read_nodes(tok_, mesh);
-    read_elements(tok_, mesh, el_to_reg_map);
+    read_elements(tok_, mesh);
 }
 
 
@@ -116,7 +103,7 @@ void GmshMeshReader::read_nodes(Tokenizer &tok, Mesh* mesh) {
 
 
 
-void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map) {
+void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
     using namespace boost;
     xprintf(Msg, "- Reading elements...");
 
@@ -177,11 +164,6 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
 
             // allocate element arrays TODO: should be in mesh class
             Element *ele=nullptr;
-            // possibly modify region id
-            if (el_to_reg_map) {
-                RegionDB::MapElementIDToRegionID::const_iterator it = el_to_reg_map->find(id);
-                if (it != el_to_reg_map->end()) region_id = it->second;
-            }
             RegionIdx region_idx = mesh->region_db_.add_region( region_id, dim );
 
             if (region_idx.is_boundary()) {

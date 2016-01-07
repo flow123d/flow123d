@@ -11,7 +11,7 @@
 
       input_fields= [
         { r_set = "BOUNDARY",
-          bc_type = "dirichlet"
+          bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value="(x-0.5)*y" }
         }
       ],
@@ -30,7 +30,7 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       }
-    }
+    },
 
     secondary_equation = {
       TYPE = "SoluteTransport_DG", 
@@ -84,9 +84,7 @@
       {
         file = "./transport.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_list = [ 0, 0.25, 0.5, 1, 2, 10 ],

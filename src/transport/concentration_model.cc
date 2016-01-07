@@ -1,30 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief Discontinuous Galerkin method for equation of transport with dispersion.
- *  @author Jan Stebel
+ * 
+ * @file    concentration_model.cc
+ * @brief   Discontinuous Galerkin method for equation of transport with dispersion.
+ * @author  Jan Stebel
  */
 
 #include "input/input_type.hh"
@@ -45,7 +34,7 @@ using namespace Input::Type;
 
 
 const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
-	return Selection("SoluteTransport_BC_Type", "Types of boundary conditions for solute transport model.")
+	return Selection("ConvectionDiffusion_BC_Type", "Types of boundary conditions for solute transport model.")
               .add_value(bc_inflow, "inflow",
             		  "Default transport boundary condition.\n"
             		  "On water inflow (($(q_w \\le 0)$)), total flux is given by the reference concentration 'bc_conc'. "
@@ -74,7 +63,7 @@ const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selectio
 
 
 ConcentrationTransportModel::ModelEqData::ModelEqData()
-: TransportBase::TransportEqData()
+: TransportEqData()
 {
     *this+=bc_type
             .name("bc_type")
@@ -134,38 +123,28 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 
 
-UnitSI ConcentrationTransportModel::balance_units()
-{
-	return UnitSI().kg();
-}
-
-
 IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
 {
 	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
-			.derive_from(AdvectionProcessBase::get_input_type())
-			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-					"Time governor setting for the secondary equation.")
-			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
-					"Settings for computing balance.")
-			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-					"Parameters of output stream.")
-			.declare_key("substances", IT::Array( Substance::get_input_type() ), IT::Default::obligatory(),
-					"Names of transported substances.");
+			.derive_from(ConcentrationTransportBase::get_input_type());
 }
 
-IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
 {
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
 	return IT::Selection(
-				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
-				"Output record for " + description + " for solute transport.");
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Diffusive Solute Transport DG model.");
 }
 
 
-ConcentrationTransportModel::ConcentrationTransportModel() :
-		flux_changed(true)
+ConcentrationTransportModel::ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec) :
+		ConcentrationTransportBase(mesh, in_rec),
+		flux_changed(true),
+		mh_dh(nullptr)
 {}
 
 
@@ -309,6 +288,13 @@ void ConcentrationTransportModel::compute_sources_sigma(const std::vector<arma::
 
 ConcentrationTransportModel::~ConcentrationTransportModel()
 {}
+
+
+void ConcentrationTransportModel::set_balance_object(boost::shared_ptr<Balance> balance)
+{
+	balance_ = balance;
+	subst_idx = balance_->add_quantities(substances_.names());
+}
 
 
 

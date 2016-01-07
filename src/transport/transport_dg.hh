@@ -1,30 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief Discontinuous Galerkin method for equation of transport with dispersion.
- *  @author Jan Stebel
+ * 
+ * @file    transport_dg.hh
+ * @brief   Discontinuous Galerkin method for equation of transport with dispersion.
+ * @author  Jan Stebel
  */
 
 #ifndef TRANSPORT_DG_HH_
@@ -136,14 +125,12 @@ private:
  *
  */
 template<class Model>
-class TransportDG : public TransportBase, public Model
+class TransportDG : public Model
 {
 public:
 
 	class EqData : public Model::ModelEqData {
 	public:
-
-        static const Input::Type::Selection & get_output_selection();
 
 		EqData();
 
@@ -187,6 +174,9 @@ public:
      * @brief Initialize solution in the zero time.
      */
 	void zero_time_step() override;
+	
+    bool assess_time_constraint(double &time_constraint)
+    { return false; }
 
     /**
      * @brief Computes the solution in one time instant.
@@ -194,29 +184,37 @@ public:
 	void update_solution() override;
 
 	/**
-	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
-	 * 
-         * @param dh mixed hybrid dof handler
-         * 
-	 * (So far it does not work since the flow module returns a vector of zeros.)
-	 * @param velocity_vector Input array of velocity values.
-	 */
-	virtual void set_velocity_field(const MH_DofHandler &dh);
-
-	/**
 	 * @brief Postprocesses the solution and writes to output file.
 	 */
 	void output_data();
 
 	/**
-	 * @brief Getter for field data.
-	 */
-	virtual EqData *get_data() { return &data_; }
-
-	/**
 	 * @brief Destructor.
 	 */
 	~TransportDG();
+
+	void initialize() override;
+
+    void calculate_cumulative_balance();
+
+    void calculate_instant_balance();
+
+	const Vec &get_solution(unsigned int sbi)
+	{ return ls[sbi]->get_solution(); }
+
+	double **get_concentration_matrix()
+	{ return solution_elem_; }
+
+	void calculate_concentration_matrix();
+
+	void update_after_reactions(bool solution_changed);
+
+    void get_par_info(int * &el_4_loc, Distribution * &el_ds);
+
+    int *get_row_4_el();
+
+
+
 
 private:
     /// Registrar of class to factory
@@ -445,6 +443,9 @@ private:
 	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
 	LinSys *ls_dt;
 
+	/// Element averages of solution (the array is passed to reactions in operator splitting).
+	double **solution_elem_;
+
 	// @}
 
 
@@ -452,15 +453,13 @@ private:
 	// @{
 
 	/// Array for storing the output solution data.
-	vector<double*> output_solution;
+	//vector<double*> output_solution;
 
 	/// Vector of solution data.
 	vector<Vec> output_vec;
 
-	/// Record with output specification.
-	Input::Record output_rec;
-
-	std::shared_ptr<OutputTime> output_stream;
+	/// Record with input specification.
+	Input::Record input_rec;
 
 
 	// @}
@@ -479,8 +478,6 @@ private:
 	vector<vector<vector<arma::vec3> > > ad_coef_edg;
 	/// Diffusion coefficients on edges.
 	vector<vector<vector<arma::mat33> > > dif_coef_edg;
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
 
 	// @}
 

@@ -1,35 +1,21 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id: darcy_flow_mh.hh 877 2011-02-04 13:13:25Z jakub.sistek $
- * $Revision: 877 $
- * $LastChangedBy: jakub.sistek $
- * $LastChangedDate: 2011-02-04 14:13:25 +0100 (Fri, 04 Feb 2011) $
- *
- * @file
- * @brief Output class for darcy_flow_mh model.
+ * 
+ * @file    darcy_flow_mh_output.cc
  * @ingroup flow
- *
- *  @author Jan Brezina
- *
+ * @brief   Output class for darcy_flow_mh model.
+ * @author  Jan Brezina
  */
-
 
 #include <vector>
 #include <iostream>
@@ -61,8 +47,14 @@
 namespace it = Input::Type;
 
 const it::Selection & DarcyFlowMHOutput::OutputFields::get_output_selection() {
-	return DarcyFlowMH::EqData().make_output_field_selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
-		.copy_values(OutputFields().make_output_field_selection("").close())
+    // Since result output fields are in the separate fieldset OutputFields,
+    // we have to merge two selections.
+	return DarcyFlowMH::EqData().make_output_field_selection(
+	        "DarcyFlowMH_output_fields",
+	        "Selection of output fields for Darcy Flow MH model.")
+		.copy_values(OutputFields().make_output_field_selection(
+		        "DarcyMFOutput_output_fields",
+		        "Auxiliary selection.").close())
 		.close();
 }
 
@@ -70,9 +62,10 @@ const it::Record & DarcyFlowMHOutput::get_input_type() {
 	return it::Record("DarcyMHOutput", "Parameters of MH output.")
 		.declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
 						"Parameters of output stream.")
-		.declare_key("output_fields", it::Array(OutputFields::get_output_selection()),
+		.declare_key("output_fields",
+		        it::Array(OutputFields::get_output_selection()),
 				it::Default::obligatory(), "List of fields to write to output file.")
-//        .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
+//        .declare_key("balance_output", it::FileName::output(), it::Default("\"water_balance.txt\""),
 //                        "Output file for water balance table.")
 		.declare_key("compute_errors", it::Bool(), it::Default("false"),
 						"SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
@@ -191,7 +184,7 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
 
 void DarcyFlowMHOutput::output()
 {
-    START_TIMER("Darcy output");
+    START_TIMER("Darcy fields output");
 
     if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {
 
@@ -204,9 +197,16 @@ void DarcyFlowMHOutput::output()
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
-	  output_fields.fields_for_output.set_time(darcy_flow->time().step());
-	  output_fields.fields_for_output.output(output_stream);
-	  output_stream->write_time_frame();
+      {
+          START_TIMER("evaluate output fields");
+          output_fields.fields_for_output.set_time(darcy_flow->time().step());
+          output_fields.fields_for_output.output(output_stream);
+      }
+
+      {
+          START_TIMER("write time frame");
+          output_stream->write_time_frame();
+      }
 
       output_internal_flow_data();
 
@@ -220,6 +220,7 @@ void DarcyFlowMHOutput::output()
 //=============================================================================
 
 void DarcyFlowMHOutput::make_element_scalar() {
+    START_TIMER("DarcyFlowMHOutput::make_element_scalar");
     unsigned int sol_size;
     double *sol;
 
@@ -240,6 +241,7 @@ void DarcyFlowMHOutput::make_element_scalar() {
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
+    START_TIMER("DarcyFlowMHOutput::make_element_vector");
     // need to call this to create mh solution vector
     darcy_flow->get_mh_dofhandler();
 
@@ -258,6 +260,7 @@ void DarcyFlowMHOutput::make_element_vector() {
 
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
+    START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
 	unsigned int ndofs = max(dh->fe<1>()->n_dofs(), max(dh->fe<2>()->n_dofs(), dh->fe<3>()->n_dofs()));
 	unsigned int indices[ndofs];
 	unsigned int i_node;
@@ -287,6 +290,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 //=============================================================================
 
 void DarcyFlowMHOutput::make_node_scalar_param() {
+    START_TIMER("DarcyFlowMHOutput::make_node_scalar_param");
 
 	vector<double> scalars(mesh_->n_nodes());
 
@@ -506,6 +510,7 @@ void DarcyFlowMHOutput::water_balance() {
  */
 void DarcyFlowMHOutput::output_internal_flow_data()
 {
+    START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     if (raw_output_file == NULL) return;

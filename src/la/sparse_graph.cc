@@ -1,32 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- *
- * @file
+ * 
+ * @file    sparse_graph.cc
  * @ingroup la
- * @brief  Construction and partitioning of a sparse graph
- *
+ * @brief   Construction and partitioning of a sparse graph
  */
 
 #include "system/global_defs.h"
@@ -382,11 +369,11 @@ void SparseGraphMETIS::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
     adj_weights = new int [lsize_adj];
 }
 
+
 void SparseGraphMETIS::partition(int *part)
 {
     ASSERT( vtx_distr.lsize(0)==vtx_distr.size(),
             "METIS could be used only with localized distribution.\n");
-
     if (vtx_distr.np()==1) {
         for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;
         return;
@@ -406,8 +393,9 @@ void SparseGraphMETIS::partition(int *part)
                     abort();
                   }
                   int ncon = 1;
+                  // Unbalance tolerance vector. Multi-criteria balance is available in METIS 5.x.
                   real_t ubvec[1];
-                  ubvec[0] = 1.001;
+                  ubvec[0] = 1.001; // This is in fact default value used by METIS.
                   int options[METIS_NOPTIONS];
 
                   for (unsigned int i = 0;i < METIS_NOPTIONS;i++) options[i] = -1;
@@ -425,8 +413,8 @@ void SparseGraphMETIS::partition(int *part)
                   options[METIS_OPTION_CONTIG]    = 0;
                   options[METIS_OPTION_COMPRESS]  = 0;
                   options[METIS_OPTION_CCORDER]   = 0;
-                  options[METIS_OPTION_UFACTOR]   = 0;
-                  /*options[METIS_OPTION_DBGLVL]    = METIS_DBG_INFO;*/
+                  options[METIS_OPTION_UFACTOR]   = 30;
+                  //options[METIS_OPTION_DBGLVL]    = METIS_DBG_INFO | METIS_DBG_TIME;
                   options[METIS_OPTION_DBGLVL]    = 0;
 #else
                   /* weights */
@@ -453,7 +441,6 @@ void SparseGraphMETIS::partition(int *part)
                                                 vtx_weights, NULL, adj_weights, &n_proc, NULL,
                                                 ubvec, options, &edgecut,part);
 #else
-                      // has to be checked
                       METIS_PartGraphRecursive(&n_vtx, rows, adj, 
                                                 vtx_weights, adj_weights, &wgtflag, &num_flag, 
                                                 &n_proc, options, &edgecut, part);
@@ -471,7 +458,7 @@ void SparseGraphMETIS::partition(int *part)
                                   vtx_weights,adj_weights,&wgtflag,&num_flag, // vertex, edge weights, ...
                                   &n_proc,options,&edgecut,part);
 #endif
-                  }     
+                  }
         }
     }
 }

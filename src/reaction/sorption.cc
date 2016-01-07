@@ -1,3 +1,20 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    sorption.cc
+ * @brief   
+ */
+
 #include <vector>
 #include <limits>
 
@@ -20,7 +37,7 @@ const IT::Record & SorptionSimple::get_input_type() {
         .derive_from( ReactionTerm::get_input_type() )
         .copy_keys(SorptionBase::get_input_type())
         .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
-                     IT::Default("conc_solid"), "List of fields to write to output stream.")
+                     IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
 		.close();
 }
 
@@ -29,7 +46,9 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
 {
 	data_ = new EqData("conc_solid");
     this->eq_data_ = data_;
-	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
+	//output_selection = make_output_selection(
+    //        "SorptionSimple_output_fields",
+    //        "Selection of field names of Simple Sorption model available for output.");
 }
 
 const int SorptionSimple::registrar =
@@ -103,7 +122,7 @@ SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
         .flags_add(FieldFlag::input_copy)
         .name("porosity_immobile");
     this->eq_data_ = data_;
-    output_selection = make_output_selection(output_conc_name, output_selection_name);
+    //output_selection = make_output_selection(output_conc_name, output_selection_name);
 }
 
 SorptionDual::~SorptionDual(void)
@@ -118,7 +137,7 @@ const IT::Record & SorptionMob::get_input_type() {
         .derive_from( ReactionTerm::get_input_type() )
         .copy_keys(SorptionBase::get_input_type())
         .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
-            IT::Default("conc_solid"), "List of fields to write to output stream.")
+            IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
 		.close();
 }
 
@@ -207,7 +226,7 @@ const IT::Record & SorptionImmob::get_input_type() {
         .derive_from( ReactionTerm::get_input_type() )
         .copy_keys(SorptionBase::get_input_type())
         .declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
-            IT::Default("conc_immobile_solid"), "List of fields to write to output stream.")
+            IT::Default("\"conc_immobile_solid\""), "List of fields to write to output stream.")
 		.close();
 }
 

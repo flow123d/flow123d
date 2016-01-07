@@ -1,30 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief Discontinuous Galerkin method for equation of transport with dispersion.
- *  @author Jan Stebel
+ * 
+ * @file    heat_model.hh
+ * @brief   Discontinuous Galerkin method for equation of transport with dispersion.
+ * @author  Jan Stebel
  */
 
 #ifndef HEAT_MODEL_HH_
@@ -37,7 +26,7 @@
 
 
 
-class HeatTransferModel : public AdvectionDiffusionModel {
+class HeatTransferModel : public AdvectionDiffusionModel, public AdvectionProcessBase {
 public:
 
 	class ModelEqData : public FieldSet {
@@ -103,37 +92,19 @@ public:
 
 		static  constexpr const char *  name() { return "HeatTransfer"; }
 
-		static string default_output_field() { return "temperature"; }
+		static string default_output_field() { return "\"temperature\""; }
 
         static const Input::Type::Selection & get_bc_type_selection();
 
-		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
+		static IT::Selection get_output_selection();
 	};
 
-protected:
-
-	/// Derived class should implement getter for ModelEqData instance.
-	virtual ModelEqData &data() = 0;
-
-	/**
-	 * Create input type that can be passed to the derived class.
-	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
-	 * @param description    Comment used to describe the record key.
-	 * @return
-	 */
-	static IT::Record get_input_type(const string &implementation, const string &description);
-
-	/// Indicator of change in advection vector field.
-	bool flux_changed;
 
 
-public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
-	HeatTransferModel();
 
-	static string balance_prefix() { return "energy"; }
-
-	UnitSI balance_units();
+	HeatTransferModel(Mesh &mesh, const Input::Record in_rec);
 
 	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
 
@@ -176,7 +147,72 @@ public:
 
 	~HeatTransferModel() override;
 
+	/**
+	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
+	 *
+         * @param dh mixed hybrid dof handler
+         *
+	 * (So far it does not work since the flow module returns a vector of zeros.)
+	 */
+	inline void set_velocity_field(const MH_DofHandler &dh) override
+	{
+		mh_dh = &dh;
+		flux_changed = true;
+	}
+
+    /// Returns number of transported substances.
+    inline unsigned int n_substances()
+    { return 1; }
+
+    /// Returns reference to the vector of substance names.
+    inline SubstanceList &substances()
+    { return substances_; }
+
+
+protected:
+
+	/// Derived class should implement getter for ModelEqData instance.
+	virtual ModelEqData &data() = 0;
+
+	/**
+	 * Create input type that can be passed to the derived class.
+	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
+	 * @param description    Comment used to describe the record key.
+	 * @return
+	 */
+	static IT::Record get_input_type(const string &implementation, const string &description);
+
+	void output_data() override;
+
+	std::shared_ptr<OutputTime> &output_stream()
+	{ return output_stream_; }
+
+	virtual void calculate_cumulative_balance() = 0;
+
+	virtual void calculate_instant_balance() = 0;
+
+	/// Indicator of change in advection vector field.
+	bool flux_changed;
+
+    /// Transported substances.
+    SubstanceList substances_;
+
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
+    const MH_DofHandler *mh_dh;
+
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
+
+	std::shared_ptr<OutputTime> output_stream_;
+
+
 };
+
+
 
 
 

@@ -1,37 +1,23 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief ???
- *
- *
- * TODO:
+ * 
+ * @file    transport.h
+ * @brief   
+ * @todo
  * - remove transport_sources
  * - in create_transport_matric_mpi, there there is condition edge_flow > ZERO
  *   this makes matrix sparser, but can lead to elements without outflow and other problems
  *   when there are big differences in fluxes, more over it doesn't work if overall flow is very small
- *
  */
 
 #ifndef TRANSPORT_H_
@@ -76,12 +62,11 @@ class ConvectionTransport;
  * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
  *
  */
-class ConvectionTransport : public TransportBase {
+class ConvectionTransport : public ConcentrationTransportBase {
 public:
 
-    class EqData : public TransportBase::TransportEqData {
+    class EqData : public TransportEqData {
     public:
-        static const Input::Type::Selection & get_output_selection();
 
         EqData();
         virtual ~EqData() {};
@@ -106,14 +91,23 @@ public:
         FieldSet output_fields;
     };
 
+
+    typedef ConcentrationTransportBase FactoryBaseType;
+
+    static const Input::Type::Record & get_input_type();
+
+    static const IT::Selection & get_output_selection();
+
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec);
+    ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec);
 	/**
 	 * TODO: destructor
 	 */
 	virtual ~ConvectionTransport();
+
+	void initialize() override;
 
 	/**
 	 * Initialize solution at zero time.
@@ -122,11 +116,15 @@ public:
     /**
      * 
      */
-    bool assess_time_constraint(double &time_constraint);
+    bool assess_time_constraint(double &time_constraint) override;
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
 	void update_solution() override;
+
+	void calculate_concentration_matrix() override {};
+
+	void update_after_reactions(bool solution_changed) override {};
 
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
@@ -144,50 +142,62 @@ public:
      *
      *
      */
-    void set_target_time(double target_time);
+    void set_target_time(double target_time) override;
 
     /**
      * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
      */
-    void set_balance_object(boost::shared_ptr<Balance> balance);
+    void set_balance_object(boost::shared_ptr<Balance> balance) override;
 
-    const vector<unsigned int> &get_subst_idx()
+    const vector<unsigned int> &get_subst_idx() override
 	{ return subst_idx; }
 
     /**
      * Calculate quantities necessary for cumulative balance (over time).
      * This method is called at each (sub)iteration of the time loop.
      */
-    void calculate_cumulative_balance();
+    void calculate_cumulative_balance() override;
 
     /**
      * Calculate instant quantities at output times.
      */
-    void calculate_instant_balance();
+    void calculate_instant_balance() override;
 
-	/**
-	 * Communicate parallel concentration vectors into sequential output vector.
-	 */
-	void output_vector_gather();
 
     /**
      * @brief Write computed fields.
      */
     virtual void output_data() override;
 
+    inline void set_velocity_field(const MH_DofHandler &dh) override
+    { mh_dh=&dh; }
+
+    void set_output_stream(std::shared_ptr<OutputTime> stream)
+    { output_stream_ = stream; }
+
 
 	/**
 	 * Getters.
 	 */
-	inline EqData *get_data() { return &data_; }
+	inline std::shared_ptr<OutputTime> output_stream() override
+	{ return output_stream_; }
 
-	inline std::shared_ptr<OutputTime> output_stream() { return output_stream_; }
+	double **get_concentration_matrix() override;
 
-	double **get_concentration_matrix();
-	Vec *get_concentration_vector() { return vconc; }
-	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
-	int *get_el_4_loc();
-	int *get_row_4_el();
+	const Vec &get_solution(unsigned int sbi) override
+	{ return vconc[sbi]; }
+
+	void get_par_info(int * &el_4_loc, Distribution * &el_ds) override;
+
+	int *get_row_4_el() override;
+
+    /// Returns number of transported substances.
+    inline unsigned int n_substances() override
+    { return substances_.size(); }
+
+    /// Returns reference to the vector of substance names.
+    inline SubstanceList &substances() override
+    { return substances_; }
 
 private:
 
@@ -224,7 +234,15 @@ private:
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
+	/**
+	 * Communicate parallel concentration vectors into sequential output vector.
+	 */
+	void output_vector_gather();
 
+
+
+    /// Registrar of class to factory
+    static const int registrar;
 
     /**
      *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
@@ -276,8 +294,8 @@ private:
 
     std::vector<VectorSeqDouble> out_conc;
 
-	/// Record with output specification.
-	Input::Record output_rec;
+	/// Record with input specification.
+	const Input::Record input_rec;
 
 	std::shared_ptr<OutputTime> output_stream_;
 
@@ -286,9 +304,19 @@ private:
 	int *el_4_loc;
 	Distribution *el_ds;
 
+    /// Transported substances.
+    SubstanceList substances_;
+
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
+    const MH_DofHandler *mh_dh;
+
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
 
-            friend class TransportOperatorSplitting;
+    friend class TransportOperatorSplitting;
 };
 #endif /* TRANSPORT_H_ */

@@ -14,7 +14,6 @@
 
 #include <input/accessors.hh>
 #include <input/input_type.hh>
-#include <input/type_record.hh>
 
 #include "system/file_path.hh"
 
@@ -58,7 +57,7 @@ protected:
 
         FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
 
-        abstr_rec_ptr = new AbstractRecord("AbstractRecord", "desc");
+        abstr_rec_ptr = new Abstract("Abstract", "desc");
         abstr_rec_ptr->close();
 
         selection_ptr = new Selection("NameOfSelectionType");
@@ -190,7 +189,7 @@ protected:
 
     ::Input::Type::Record *desc_a_ptr;
     ::Input::Type::Record *desc_b_ptr;
-    ::Input::Type::AbstractRecord *abstr_rec_ptr;
+    ::Input::Type::Abstract *abstr_rec_ptr;
 
     ::Input::Type::Selection *selection_ptr;
 };
@@ -229,7 +228,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
 
     EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ(FilePath::get_absolute_working_dir()+"/json_root_dir/output_root/output_subdir/output.vtk",
+    EXPECT_EQ(FilePath::get_absolute_working_dir()+"json_root_dir/output_root/output_subdir/output.vtk",
     			(string) record.val<FilePath>("file_output") );
     EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
 

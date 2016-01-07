@@ -1,8 +1,18 @@
-/*
- * multi_field.impl.hh
+/*!
  *
- *  Created on: Feb 13, 2014
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    multi_field.impl.hh
+ * @brief   
  */
 
 #ifndef MULTI_FIELD_IMPL_HH_
@@ -31,7 +41,7 @@ template<int spacedim, class Value>
 const it::Instance &  MultiField<spacedim,Value>::get_input_type() {
 	ASSERT(false, "This method can't be used for MultiField");
 
-	static it::AbstractRecord abstract = it::AbstractRecord();
+	static it::Abstract abstract = it::Abstract();
 	static it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
 	return inst;
 }
@@ -139,9 +149,19 @@ void MultiField<spacedim, Value>::set_up_components() {
     		sub_fields_[i_comp].name_ = this->shared_->comp_names_[i_comp] + "_" + name();
     		sub_fields_[i_comp].shared_->input_name_ = name();
     	}
-
-    	sub_fields_[i_comp].set_input_list(this->shared_->input_list_);
     }
+}
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
+    if (! flags().match(FieldFlag::declare_input)) return;
+
+	set_up_components();
+	for( SubFieldType &field : sub_fields_) {
+		field.set_input_list(list);
+	}
 }
 
 
@@ -170,6 +190,13 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 		}
 	}
 	return NULL;
+}
+
+
+
+template<int spacedim, class Value>
+bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
+	return in_rec.find<Input::Record>(input_name);
 }
 
 

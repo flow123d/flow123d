@@ -1,32 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id: la_linsys.hh 1299 2011-08-23 21:42:50Z jakub.sistek $
- * $Revision: 1299 $
- * $LastChangedBy: jakub.sistek $
- * $LastChangedDate: 2011-08-23 23:42:50 +0200 (Tue, 23 Aug 2011) $
- *
- * @file
+ * 
+ * @file    linsys_BDDC.cc
  * @brief   Solver based on Multilevel BDDC - using corresponding class of OpenFTL package
  * @author  Jakub Sistek
- *
- *
  */
 
 #include <mpi.h>
@@ -112,7 +99,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
 
     // identify it with PETSc vector
     PetscErrorCode ierr;
-    PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
+    //PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
     //ierr = VecCreateSeq( PETSC_COMM_SELF, numDofsSubInt, &locSolVec_ ); 
     ierr = VecCreateSeqWithArray( PETSC_COMM_SELF, 1, numDofsSub, &(locSolution_[0]), &locSolVec_ ); 
     CHKERRV( ierr );
@@ -148,7 +135,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     std::vector<PetscInt> idx( isngn_ );
 
     ISLocalToGlobalMapping subdomainMapping;
-    ierr = ISLocalToGlobalMappingCreate( comm_, numDofsSubInt, &(idx[0]), PETSC_COPY_VALUES, &subdomainMapping ); CHKERRV( ierr );
+    ierr = ISLocalToGlobalMappingCreate( comm_, 1, numDofsSubInt, &(idx[0]), PETSC_COPY_VALUES, &subdomainMapping ); CHKERRV( ierr );
     
     IS subdomainIndexSet;
     IS from;
@@ -259,9 +246,10 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 {
 #ifdef FLOW123D_HAVE_BDDCML
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
+    START_TIMER("BDDC linear solver");
 
     {
-		START_TIMER("BDDC linear solver");
+
 		START_TIMER("BDDC linear iteration");
 		bddcml_ -> solveSystem( r_tol_, number_of_levels_, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
 

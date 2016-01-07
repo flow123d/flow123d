@@ -1,8 +1,18 @@
-/*
- * type_selection.hh
+/*!
  *
- *  Created on: May 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_selection.hh
+ * @brief   
  */
 
 #ifndef TYPE_SELECTION_HH_
@@ -26,7 +36,7 @@ using std::string;
  * The primary purpose of this class is initialization of enum variables. Since C++ provides no reflection,
  * in particular no access to enum identifiers as strings, you has to construct the Selection object consistent with an enum you want to initialize.
  *
- * Similarly to Type::Record and Type::AbstractRecord the Selection class is only proxy to the actual data.
+ * Similarly to Type::Record and Type::Abstract the Selection class is only proxy to the actual data.
  *
  * Usage:
  @code
@@ -117,6 +127,7 @@ public:
 
     /// Implements \p TypeBase::type_name
     string type_name() const override;
+    string class_name() const override { return "Selection"; }
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     bool operator==(const TypeBase &other) const override;
@@ -147,14 +158,6 @@ public:
     string int_to_name(const int &value) const;
 
     Selection &copy_values(const Selection &sel);
-
-    /**
-     * Same as \p Selection::name_to_int, but throws different exception, when string comes from default value.
-     */
-    int from_default(const string &str) const;
-
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    bool valid_default(const string &str) const override;
 
     /**
      * Just check if there is a particular name in the Selection.
@@ -190,7 +193,7 @@ private:
     void finished_check() const;
 
     /**
-     * Used in error messaged, where we can not use desc(), which can lead to infinite loop due to TYPE selection of AbstractRecord.
+     * Used in error messaged, where we can not use desc(), which can lead to infinite loop due to TYPE selection of Abstract.
      */
     string key_list() const;
 

@@ -32,7 +32,7 @@ struct InputTypeCollection {
     static const IT::Record & get_main_record();
     static const IT::Record & get_stat_rec();
     static const IT::Selection & get_stat_sel();
-    static const IT::AbstractRecord & get_stat_a_rec();
+    static const IT::Abstract & get_stat_a_rec();
 };
 
 // test that declare_key method correctly deal with both static (not yet constructed) and local
@@ -68,8 +68,8 @@ const IT::Selection & InputTypeCollection::get_stat_sel() {
 }
 
 
-const IT::AbstractRecord & InputTypeCollection::get_stat_a_rec() {
-	return IT::AbstractRecord("stat_a_rec","").close();
+const IT::Abstract & InputTypeCollection::get_stat_a_rec() {
+	return IT::Abstract("stat_a_rec","").close();
 }
 
 
@@ -98,12 +98,12 @@ TEST(TypeRepository, hash) {
 	EXPECT_EQ( hash, rec.close().content_hash() ); // close() method get record from TypeRepository
 	EXPECT_EQ( IT::Record("stat_rec","").close().content_hash(), InputTypeCollection::get_stat_rec().content_hash() );
 
-	// test of AbstractRecord
-	IT::AbstractRecord a_rec = IT::AbstractRecord("abstract_record", "Some abstract record.");
+	// test of Abstract
+	IT::Abstract a_rec = IT::Abstract("abstract_record", "Some abstract record.");
 
 	hash = a_rec.content_hash();
 	EXPECT_EQ( hash, a_rec.close().content_hash() );
-	EXPECT_EQ( IT::AbstractRecord("stat_a_rec","").close().content_hash(), InputTypeCollection::get_stat_a_rec().content_hash() );
+	EXPECT_EQ( IT::Abstract("stat_a_rec","").close().content_hash(), InputTypeCollection::get_stat_a_rec().content_hash() );
 
 	// test of Selection
 	IT::Selection sel = IT::Selection("selection", "Some selection.")

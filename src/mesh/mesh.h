@@ -1,30 +1,18 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief ???
- *
+ * 
+ * @file    mesh.h
+ * @brief   
  */
 
 #ifndef MAKE_MESH_H
@@ -44,8 +32,8 @@
 #include "mesh/intersection.hh"
 #include "mesh/partitioning.hh"
 
-#include "input/input_type.hh"
-#include "input/accessors.hh"
+#include "input/input_type_forward.hh"
+#include "input/accessors_forward.hh"
 #include "boost/shared_ptr.hpp"
 #include "system/exceptions.hh"
 
@@ -172,6 +160,15 @@ public:
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
      */
     Partitioning *get_part();
+
+    Distribution *get_el_ds() const
+    { return el_ds; }
+
+    int *get_row_4_el() const
+    { return row_4_el; }
+
+    int *get_el_4_loc() const
+    { return el_4_loc; }
 
     /**
      * Returns MPI communicator of the mesh.
@@ -325,6 +322,15 @@ protected:
     void count_element_types();
     void count_side_types();
 
+    /**
+     * Possibly modify region id of elements sets by user in "regions" part of input file.
+     *
+     * TODO: This method needs check in issue 'Review mesh setting'.
+     * Changes have been done during generalized region key and may be causing problems
+     * during the further development.
+     */
+    void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
+
     unsigned int n_bb_neigh, n_vb_neigh;
 
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
@@ -361,6 +367,16 @@ protected:
     MPI_Comm comm_;
 
     friend class GmshMeshReader;
+
+
+private:
+
+    /// Index set assigning to global element index the local index used in parallel vectors.
+	int *row_4_el;
+	/// Index set assigning to local element index its global index.
+	int *el_4_loc;
+	/// Parallel distribution of elements.
+	Distribution *el_ds;
 };
 
 

@@ -1,30 +1,41 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Test13 - mixing of substances on edges and 
-		   quantitative test on trivial transport problem.", 
+    description = "Test13 - mixing of substances on edges and quantitative test on trivial transport problem.", 
     mesh = {
-      mesh_file = "input/test13.msh" 
+      mesh_file = "input/Y_branch.msh" 
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
 
       input_fields= [
-        {   rid = 17,
+        {   region = "trunk",
             anisotropy = 1.0
         },
-        {   rid = 18,
+        {   region = "left_branch",
+            anisotropy = 1.0
+        },
+        {   region = "right_branch",
             anisotropy = 0.1
         },
-        {   rid = 19,
-            anisotropy = 1.0
+        {
+          region = ".trunk",
+          bc_type = "dirichlet",
+          bc_pressure = 10
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test13.fbc"
+          region = ".left_branch",
+          bc_type = "dirichlet",
+          bc_pressure = 5
+        },
+        {
+          region = ".right_branch",
+          bc_type = "dirichlet",
+          bc_pressure = -5
         }
       ],
+
 
       output = {
         output_stream = {
@@ -45,18 +56,12 @@
     secondary_equation = {
 	TYPE = "SoluteTransport_DG", 
 
-    input_fields= [
-        { rid = 17,
-          init_conc = 0
-        },
-        { rid = 18,
-          init_conc = 0
-        },
-        { rid = 19,
+      input_fields= [
+        { r_set = "BULK",
           init_conc = 0
         },
         {
-          region = "IMPLICIT BOUNDARY",
+          region = ".trunk",
           bc_conc = 1
         }
       ],
@@ -100,9 +105,7 @@
       {
         file = "transport_implicit.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 5,

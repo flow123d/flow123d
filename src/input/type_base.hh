@@ -1,8 +1,18 @@
-/*
- * type_base.hh
+/*!
  *
- *  Created on: May 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    type_base.hh
+ * @brief   
  */
 
 #ifndef TYPE_BASE_HH_
@@ -94,6 +104,7 @@ public:
 
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  { return "TypeBase"; }
+    virtual string class_name() const { return "TypeBase"; }
 
     /**
      * Returns string with Type extensive documentation. We need this to pass Type description at
@@ -137,7 +148,7 @@ public:
 
 
     /**
-     * Finish method. Finalize construction of "Lazy types": Record, Selection, AbstractRecord, and Array.
+     * Finish method. Finalize construction of "Lazy types": Record, Selection, Abstract and Array.
      * These input types are typically defined by means
      * of static variables, whose order of initialization is not known a priori. Since e.g. a Record can link to other
      * input types through its keys, these input types cannot be accessed directly at the initialization phase.
@@ -153,20 +164,24 @@ public:
     { return true; };
 
     /**
-     * For types that can be initialized from a default string, this method check
-     * validity of the default string. For invalid string an exception is thrown.
-     *
-     * Return false if the validity can not be decided due to presence of unconstructed types (Record, Selection)
-     */
-    virtual bool valid_default(const string &str) const =0;
-
-    /**
      * Hash of the type specification. Provides unique id computed from its
      * content (definition) so that same types have same hash.
      *
      * Hash is counted using type, name and other class members specific for descendants.
      */
     virtual TypeHash content_hash() const =0;
+
+    /**
+     * Format given hash for output. Use hex format and double quotas.
+     */
+    static std::string hash_str(TypeHash hash);
+
+    /**
+     * Format the hash of this type.
+     */
+    inline std::string hash_str() const {
+        return hash_str(content_hash());
+    }
 
     /// Add attribute to map
     void add_attribute(std::string name, json_string val);
@@ -255,7 +270,7 @@ class Selection;
  * @brief Class for declaration of inputs sequences.
  *
  * The type is fully specified after its constructor is called. All elements of the Array has same type, however you
- * can use elements of AbstractRecord.
+ * can use elements of Abstract.
  *
  * If you not disallow Array size 1, the input reader will try to convert any other type
  * on input into array with one element, e.g.
@@ -295,6 +310,11 @@ public:
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /**
+     * Constructor with a shared pointer @p type of array.
+     */
+    Array(boost::shared_ptr<TypeBase> type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
+
+    /**
      * Implements @p TypeBase::content_hash.
      *
      * Hash is calculated by type name, bounds, hash of stored type and hash of attributes.
@@ -317,16 +337,10 @@ public:
 
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
     string type_name() const override;
+    string class_name() const override { return "Array"; }
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     bool operator==(const TypeBase &other) const override;
-
-    /**
-     *  Default values for an array creates array containing one element
-     *  that is initialized by given default value. So this method check
-     *  if the default value is valid for the sub type of the array.
-     */
-    bool valid_default(const string &str) const override;
 
     // Implements @p TypeBase::make_instance.
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
@@ -369,11 +383,9 @@ public:
     TypeHash content_hash() const   override;
 
 
-    bool from_default(const string &str) const;
-
     string type_name() const override;
+    string class_name() const override { return "Bool"; }
 
-    bool valid_default(const string &str) const override;
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };
@@ -406,14 +418,8 @@ public:
      */
     bool match(std::int64_t value) const;
 
-    /**
-     * As before but also returns converted integer in @p value.
-     */
-    int from_default(const string &str) const;
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    bool valid_default(const string &str) const override;
-
     string type_name() const override;
+    string class_name() const override { return "Integer"; }
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
@@ -450,15 +456,8 @@ public:
      */
     bool match(double value) const;
 
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    bool valid_default(const string &str) const override;
-
-    /**
-     * As before but also returns converted integer in @p value.
-     */
-    double from_default(const string &str) const;
-
     string type_name() const override;
+    string class_name() const override { return "Double"; }
 
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
@@ -478,20 +477,15 @@ private:
 class String : public Scalar {
 public:
     virtual string type_name() const override;
+    string class_name() const override { return "String"; }
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const   override;
-
-
-    string from_default(const string &str) const;
 
     /**
      * Particular descendants can check validity of the string.
      */
     virtual bool match(const string &value) const;
-
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const override;
 
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };
@@ -523,6 +517,7 @@ public:
     { return FileName(::FilePath::output_file); }
 
     string type_name() const override;
+    string class_name() const override { return "FileName"; }
 
     bool operator==(const TypeBase &other) const
     { return  typeid(*this) == typeid(other) &&

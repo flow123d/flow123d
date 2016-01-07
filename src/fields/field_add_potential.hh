@@ -1,8 +1,18 @@
-/*
- * field_add_potential.hh
+/*!
  *
- *  Created on: Jan 19, 2013
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_add_potential.hh
+ * @brief   
  */
 
 #ifndef FIELD_ADD_POTENTIAL_HH_
@@ -12,7 +22,6 @@
 #include <memory>
 
 #include "fields/field.hh"
-#include "flow/old_bcd.hh"
 
 
 /**
@@ -49,16 +58,16 @@ public:
     	{}
 
     	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
-       		OldBcdInput *old_bcd = OldBcdInput::instance();
-       		old_bcd->read_flow_record(rec, field);
-       		auto field_ptr = old_bcd->flow_pressure;
-
        		Input::AbstractRecord field_a_rec;
-        	if (! field_ptr && rec.opt_val(field_name_, field_a_rec)) {
+        	if (rec.opt_val(field_name_, field_a_rec)) {
         		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( potential_, field_a_rec);
         	} else {
-        		return field_ptr;
+        		return typename Field<spacedim,Value>::FieldBasePtr();
         	}
+    	}
+
+    	bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) override {
+    		return in_rec.find<Input::AbstractRecord>(field_name_);
     	}
 
     	arma::vec::fixed<spacedim+1> potential_;

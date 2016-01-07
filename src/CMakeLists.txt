@@ -100,6 +100,7 @@ add_dependencies(system_lib update_source_tree)
 add_library(input_lib 
     input/type_base.cc
     input/type_record.cc
+    input/type_abstract.cc
     input/type_selection.cc
     input/type_generic.cc
     input/storage.cc
@@ -241,7 +242,6 @@ add_library(coupling_lib
     fields/generic_field.cc
     coupling/equation.cc
     coupling/balance.cc
-    flow/old_bcd.cc
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
