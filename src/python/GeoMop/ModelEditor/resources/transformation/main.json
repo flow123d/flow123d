@@ -6,6 +6,15 @@
 "actions":
   [
     {
+      "NAME": "Add new obligatory key, flow123d_version.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/",
+        "key": "flow123d_version",
+        "value": "1.8.9"  
+      }  
+    },
+    {
       "NAME": "Rename Steady_MH to SteadyDarcy_MH",
       "action": "rename-type",
       "parameters": {
