@@ -577,25 +577,14 @@ if (USE_PYTHON)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
             set(PYTHON_EXTRA_MODULES_PATH "${TARGET_PREFIX}/lib/flow123d")
 
-            string(REGEX MATCH "python[^/]*$" PYTHON_SUBDIR ${PYTHON_INCLUDE_DIRS})
-            string(REGEX MATCH "python[0-9]\\.[0-9]" PYTHON_SUBDIR_MINOR ${PYTHON_SUBDIR})
+            execute_process(
+              COMMAND python -c "import sys; print ';'.join([p for p in sys.path if p])"
+              OUTPUT_VARIABLE PY_PATHS
+              OUTPUT_STRIP_TRAILING_WHITESPACE)
             
-            # copy python files to build tree 
-            # first get prefix (we support just one prefix)
-            execute_process(
-                COMMAND python -c "import sys; print sys.prefix"
-                OUTPUT_VARIABLE PY_PREFIX
-                OUTPUT_STRIP_TRAILING_WHITESPACE)        
-            execute_process(
-                COMMAND python -c "import sys; print sys.exec_prefix"
-                OUTPUT_VARIABLE PY_EXEC_PREFIX
-                OUTPUT_STRIP_TRAILING_WHITESPACE)        
-            if (NOT (${PY_PREFIX} STREQUAL ${PY_EXEC_PREFIX}) )
-                message(WARNING "Python exec_prefix (${PY_EXEC_PREFIX}) different then prefix (${PY_PREFIX}). Not supported.")
-            endif()
-            message(STATUS "Python prefix: ${PY_PREFIX}")
-            message(STATUS "Python target prefix: ${TARGET_PREFIX}")
-            flow_define(PYTHON_PREFIX ${PY_PREFIX})
+              foreach(PY_PATH ${PY_PATHS})
+                COMMAND cp -rn ${PY_PATH} ${TARGET_PREFIX}/python/${PY_PATH} 
+              endforeach(PY_PATH)
             
             # copy python library
             set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_SUBDIR_MINOR})
