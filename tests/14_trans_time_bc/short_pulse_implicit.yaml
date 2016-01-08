@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test14 - 2D transport with time variable boundary, test matching input/output
     times even if prescribed initial and maximal time step is larger.

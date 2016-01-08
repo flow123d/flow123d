@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Flow in 2d-1d domain, compatible mesh
   mesh:
