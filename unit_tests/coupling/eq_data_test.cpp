@@ -296,8 +296,9 @@ TEST_F(SomeEquation, values) {
 
     // bulk fields
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
+    auto conc_mobile_val = data.conc_mobile.value(p, el_1d);
     for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
-        EXPECT_DOUBLE_EQ( 1.0 + i, data.conc_mobile[i].value(p, el_1d) );
+        EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );
     }
 
     FieldValue<3>::TensorFixed::return_type value = data.anisotropy.value(p, el_1d);
@@ -314,8 +315,9 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ( 1.0, value.at(2,2) );
 
     EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_2d) );
+    conc_mobile_val = data.conc_mobile.value(p, el_2d);
     for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
-        EXPECT_DOUBLE_EQ( 1.0 + i, data.conc_mobile[i].value(p, el_2d) );
+        EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );
     }
 
     // init_conc - variable length vector
