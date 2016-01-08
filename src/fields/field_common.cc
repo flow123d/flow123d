@@ -74,9 +74,8 @@ void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
 
     // pass through field descriptors containing key matching field name.
     double time;
-    for( auto it = shared_->input_list_.begin();
-         it != shared_->input_list_.end(); ++it) {
-        time = it->val<double>("time"); // default time=0
+    for( auto &item : shared_->input_list_) {
+        time = item.val<double>("time"); // default time=0
         TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
     }
 }
