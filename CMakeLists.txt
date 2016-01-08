@@ -572,36 +572,55 @@ if (USE_PYTHON)
 
         # set extra python module path in src directory, if case PYTHON_COPY if OFF
         set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
+        set(PYTHON_WRAPPER_PATHS "")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
             set(PYTHON_EXTRA_MODULES_PATH "${TARGET_PREFIX}/lib/flow123d")
-
+              
+              # copy python files to build tree 
+              # first get prefix (we support just one prefix)
+              execute_process(
+                  COMMAND python -c "import sys; print sys.prefix"
+                  OUTPUT_VARIABLE PY_PREFIX
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)        
+              execute_process(
+                  COMMAND python -c "import sys; print sys.exec_prefix"
+                  OUTPUT_VARIABLE PY_EXEC_PREFIX
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)        
+              if (NOT (${PY_PREFIX} STREQUAL ${PY_EXEC_PREFIX}) )
+                  message(WARNING "Python exec_prefix (${PY_EXEC_PREFIX}) different then prefix (${PY_PREFIX}). Not supported.")
+              endif()
+                            
+            # get all valid python system paths
             execute_process(
               COMMAND python -c "import sys; print ';'.join([p for p in sys.path if p])"
               OUTPUT_VARIABLE PY_PATHS
               OUTPUT_STRIP_TRAILING_WHITESPACE)
             
-              foreach(PY_PATH ${PY_PATHS})
-                COMMAND cp -rn ${PY_PATH} ${TARGET_PREFIX}/python/${PY_PATH} 
-              endforeach(PY_PATH)
+            # remove prefix from each python path
+            # and recursively copy not overwrite existing files
+            # python path locations
+            foreach(PY_PATH ${PY_PATHS})
+                string(REPLACE "${PY_PREFIX}" "" PY_ALT_PATH "${PY_PATH}")
+                list(APPEND PYTHON_WRAPPER_PATHS "${PY_ALT_PATH}")
+                execute_process(
+                  COMMAND cp -rn ${PY_PATH} ${TARGET_PREFIX}/${PY_ALT_PATH}
+                  )
+            endforeach(PY_PATH)
             
-            # copy python library
-            set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_SUBDIR_MINOR})
-            execute_process(
-                COMMAND mkdir -p ${TARGET_PREFIX}/lib 
-                )             
-            # recursive copy, not overwrite existing files
-            # we copy all and exclude some paths and files during install    
-            execute_process(
-                COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_SUBDIR_MINOR} ${TARGET_PREFIX}/lib 
-                )
+            message(STATUS "Python prefix: ${PY_PREFIX}")
+            message(STATUS "Python target prefix: ${TARGET_PREFIX}")
+            message(STATUS "Python wrapper paths: ${PYTHON_WRAPPER_PATHS}")
+            flow_define(PYTHON_PREFIX ${PY_PREFIX})
+            flow_define(PYTHON_PATHS  ${PYTHON_WRAPPER_PATHS})
+            
             # copy flow123d python scripts and modules
             execute_process(
                 COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${TARGET_PREFIX}/lib/flow123d 
                 )
 
-            # copy python include            
+            # copy python include (h files for embedded python)
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          
                 COMMAND mkdir -p ${TARGET_PREFIX}/include 
