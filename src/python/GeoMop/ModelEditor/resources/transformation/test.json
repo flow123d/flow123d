@@ -5,12 +5,23 @@
 "new_format": "",
 "actions":
   [
+   {
+        "NAME": "Rename SoluteTransportDG neumann bc to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
+          "old_value" : "neumann",
+          "new_value" : "diffusive_flux"
+        }          
+    },
     {
-      "action": "scale-value",
-      "parameters": {
-        "path": "/problem/primary_equation/input_fields/*/conductivity",
-        "scale": "1.1"
-      }
+        "NAME": "Rename SoluteTransportDG robin bc to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
+          "old_value" : "robin",
+          "new_value" : "diffusive_flux"
+        }          
     }
   ]
 }
