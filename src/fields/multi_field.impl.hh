@@ -33,6 +33,7 @@ template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField()
 : FieldCommon()
 {
+	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
 }
 
