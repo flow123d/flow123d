@@ -172,9 +172,11 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
 
 template<int spacedim, class Value>
 std::vector<typename Value::return_type> MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
+
 	std::vector<typename Value::return_type> value;
-	for (auto field : sub_fields_) {
-		value.push_back( field.value(p, elm) );
+	value.resize( size() );
+	for (unsigned int i_comp=0; i_comp < size(); ++i_comp) {
+		value[i_comp] = sub_fields_[i_comp].value(p,elm);
 	}
 	return value;
 }
@@ -185,9 +187,9 @@ template<int spacedim, class Value>
 void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
                    std::vector< std::vector<typename Value::return_type> >  &value_list) const {
 	value_list.clear();
-	for (auto field : sub_fields_) {
+	for (unsigned int i_comp=0; i_comp < size(); i_comp++) {
 		std::vector<typename Value::return_type> value;
-		field.value_list(point_list, elm, value);
+		sub_fields_[i_comp].value_list(point_list, elm, value);
 		value_list.push_back( value );
 	}
 }
