@@ -21,6 +21,7 @@
 
 #include "multi_field.hh"
 #include "fields/field_algo_base.hh"
+#include "input/input_exception.hh"
 
 namespace it = Input::Type;
 
@@ -161,7 +162,8 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     	if ( it->opt_val(this->input_name(), mf_array) ) {
     		unsigned int comp_size = this->shared_->comp_names_.size();
     		if (mf_array.size() != 1 && mf_array.size() != comp_size)
-    			xprintf(UsrErr, "Invalid size of Array defined for MultiField '%s'!\n", this->input_name().c_str());
+    			THROW( Input::ExcInputMessage() << EI_Message("Invalid size of Array defined for MultiField " + this->input_name()
+    			    + " at address " + it->address_string() + ".") );
     	}
     }
 
