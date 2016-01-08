@@ -9,16 +9,23 @@ problem: !SequentialCoupling
     - region: plane
       anisotropy: 1
     - region: .bc_south
-      bc_type: dirichlet
-      bc_pressure: 0
+      bc_type: total_flux
+      bc_flux: !FieldFormula
+        value: x
+      bc_pressure: !FieldFormula
+        value: -2*x
+      bc_robin_sigma: 0.5
     - region: .bc_east
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: y
     - region: .bc_north
-      bc_type: dirichlet
+      bc_type: total_flux
+      bc_flux: !FieldFormula
+        value: -x
       bc_pressure: !FieldFormula
-        value: x
+        value: 3*x
+      bc_robin_sigma: 0.5
     - region: .bc_west
       bc_type: dirichlet
       bc_pressure: 0

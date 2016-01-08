@@ -20,6 +20,7 @@
 #include "input/accessors.hh"
 #include "input/type_output.hh"
 #include "system/application_base.hh"
+#include "system/exceptions.hh"
 
 using namespace std;
 
@@ -30,6 +31,12 @@ using namespace std;
 
 class Application : public ApplicationBase {
 public:
+    TYPEDEF_ERR_INFO( EI_InputVersionStr, string);
+    DECLARE_EXCEPTION( ExcVersionFormat,
+            << "Wrong format of the version specification: "
+            << EI_InputVersionStr::qval);
+
+
     /// Root of the Input::Type tree. Description of whole input structure.
     static Input::Type::Record & get_input_type();
     
