@@ -188,12 +188,11 @@ std::vector<typename Value::return_type> MultiField<spacedim, Value>::value(cons
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-                   std::vector< std::vector<typename Value::return_type> >  &value_list) const {
-	value_list.clear();
-	for (unsigned int i_comp=0; i_comp < size(); i_comp++) {
-		std::vector<typename Value::return_type> value;
-		sub_fields_[i_comp].value_list(point_list, elm, value);
-		value_list.push_back( value );
+		std::vector<typename FieldValue_<0,1,typename Value::element_type>::return_type>  &value_list) const {
+	ASSERT_EQUAL( point_list.size(), value_list.size() );
+
+	for(unsigned int i=0; i< point_list.size(); i++) {
+		value_list[i]=this->value(point_list[i], elm);
 	}
 }
 

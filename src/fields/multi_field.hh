@@ -157,7 +157,7 @@ public:
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-                       std::vector< std::vector<typename Value::return_type> >  &value) const;
+                       std::vector<typename FieldValue_<0,1,typename Value::element_type>::return_type>  &value) const;
 
     void set_input_list(const Input::Array &list) override;
 
