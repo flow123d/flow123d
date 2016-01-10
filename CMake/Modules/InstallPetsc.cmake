@@ -111,7 +111,7 @@ file (WRITE "${cmakelists_fname}"
     URL ${PETSC_INSTALL_URL}
     SOURCE_DIR ${PETSC_INSTALL_DIR}/src
     BINARY_DIR ${PETSC_INSTALL_DIR}/src
-    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh --with-make-np ${MAKE_NUMCPUS}
+    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh
     BUILD_COMMAND make all
     INSTALL_COMMAND \"\"
   )  
@@ -121,7 +121,7 @@ file (WRITE "${cmakelists_fname}"
 file(WRITE "${PETSC_INSTALL_DIR}/conf_tmp.sh"
 "
 cd ${PETSC_INSTALL_DIR}/src
-./configure ${EXPAND_CONF_LINE}
+./configure  --with-make-np ${MAKE_NUMCPUS} ${EXPAND_CONF_LINE}
 ")
 
 # avoid unnecessary rebuilds if configuration doesn't change
