@@ -791,8 +791,8 @@ class Transformator:
         if node.implementation != DataNode.Implementation.scalar:
             raise TransformationFileFormatError(
                     "Specified path (" + self._get_paths_str(action, 'path') + ") is not scalar type node." )
-        old = '!' + action['parameters']['old_value'] 
-        new = '!' + action['parameters']['new_value']
+        old = action['parameters']['old_value'] 
+        new = action['parameters']['new_value']
         l1, c1, l2, c2 =  StructureChanger.value_pos(node)
         return StructureChanger.replace(lines, new,  old,  l1, c1, l2, c2 )
         

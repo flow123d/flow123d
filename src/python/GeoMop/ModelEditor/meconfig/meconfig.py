@@ -53,6 +53,8 @@ class _Config:
         """whether to automatically complete brackets and array symbols"""
         self.shortcuts = deepcopy(shortcuts.DEFAULT_USER_SHORTCUTS)
         """user customizable keyboard shortcuts"""
+        self.font = constants.DEFAULT_FONT
+        """text editor font"""
 
         if readfromconfig:
             data = cfg.get_config_file(self.__class__.SERIAL_FILE, self.CONFIG_DIR)
@@ -63,6 +65,7 @@ class _Config:
                                                   self.display_autocompletion)
             self.symbol_completion = getattr(data, 'symbol_completion',
                                              self.symbol_completion)
+            self.font = getattr(data, 'font', self.font)
             if hasattr(data, 'shortcuts'):
                 self.shortcuts.update(data.shortcuts)
 
