@@ -1,24 +1,32 @@
 """
 Module contains version.
+
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
 """
 
 import os
 
-__author__ = 'Tomas Krizek'
+__root_path__ = (os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 
-__git_root_path__ = os.path.join(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0],
-                                 '..')
+
+def get_root_file_path(filename):
+    """File path to a file in a root folder."
+
+    Git repo has has a different place for root than installed version of app.
+    """
+    file_path = os.path.join(__root_path__, filename)  # installed on Win
+    if not os.path.isfile(file_path):
+        file_path = os.path.join(__root_path__, '..', filename)  # for git repo
+    return file_path
+
 
 class Version:
     """Geomop version module"""
 
     def __init__(self):
         """Initializes the class."""
-
-        version_file_path = os.path.join(__git_root_path__, 'VERSION')
-        
         try:
-            with open(version_file_path) as version_file:
+            with open(Version.VERSION_FILE_PATH) as version_file:
                 lines = version_file.readlines()
         except FileNotFoundError:
             lines = []
@@ -29,8 +37,7 @@ class Version:
         """text build geomop pressentation"""
         self.date = lines[2].strip() if len(lines) > 2 else ''
         """text date geomop pressentation"""
-     
-    @staticmethod   
-    def get_changelog_path():
-        """return changelog path"""
-        return os.path.join(__git_root_path__, 'CHANGELOG.md')
+
+    CHANGELOG_FILE_PATH = get_root_file_path('CHANGELOG.md')
+    VERSION_FILE_PATH = get_root_file_path('VERSION')
+

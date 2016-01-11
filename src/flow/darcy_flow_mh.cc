@@ -96,7 +96,7 @@ const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
                .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
-               //.add_value(total_flux, "total_flux")
+               .add_value(total_flux, "total_flux", "Flux boundary condition. Combines Neumann and Robin type.")
 			   .close();
 }
 
@@ -571,6 +571,13 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
                     ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+
+		} else if ( type == EqData::total_flux) {
+		    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
+		    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+                    ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
 
                 } else {
                     xprintf(UsrErr, "BC type not supported.\n");

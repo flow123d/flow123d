@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Zero flow + transport with source. Substance A - increase of concentration,
     B - decrease of concentration, C - rapid increase of concentration with high sigma,

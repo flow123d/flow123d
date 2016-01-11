@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   time: &anchor3
     end_time: 100.0

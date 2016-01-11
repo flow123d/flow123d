@@ -42,7 +42,7 @@ class ModelEditor:
 
     def new_file(self):
         """new file menu action"""
-        if not self._save_old_file():
+        if not self.save_old_file():
             return
         cfg.new_file()
         self.mainwindow.reload()
@@ -53,7 +53,7 @@ class ModelEditor:
 
     def open_file(self):
         """open file menu action"""
-        if not self._save_old_file():
+        if not self.save_old_file():
             return
         yaml_file = QtWidgets.QFileDialog.getOpenFileName(
             self.mainwindow, "Choose Yaml Model File",
@@ -67,7 +67,7 @@ class ModelEditor:
 
     def import_file(self):
         """import con file menu action"""
-        if not self._save_old_file():
+        if not self.save_old_file():
             return
         con_file = QtWidgets.QFileDialog.getOpenFileName(
             self.mainwindow, "Choose Con Model File",
@@ -83,7 +83,7 @@ class ModelEditor:
         """open recent file menu action"""
         if action.text() == cfg.curr_file:
             return
-        if not self._save_old_file():
+        if not self.save_old_file():
             return
         cfg.open_recent_file(action.text())
         self.mainwindow.reload()
@@ -166,7 +166,7 @@ class ModelEditor:
             title += " - " + cfg.curr_file
         self.mainwindow.setWindowTitle(title)
 
-    def _save_old_file(self):
+    def save_old_file(self):
         """
         If file not saved, display confirmation dialeg and if is needed, do it
 
