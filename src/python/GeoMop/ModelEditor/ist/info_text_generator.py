@@ -146,6 +146,9 @@ class InfoTextGenerator:
                             abstract_id=cls.abstract_id,
                             selected_item=cls.selected_item
                         )
+                        # change color/font for different key types
+                        if 'default' in key:
+                            cls_ += ' key-type-' + key['default']['type'].replace(' ', '-')
                         section.tag('a', key['key'], attrib={'class': cls_, 'href': href})
 
         if selected_key_type is not None:

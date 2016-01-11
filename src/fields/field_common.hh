@@ -63,7 +63,7 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
             << "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
     DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
-            << "Missing domain specification (region, r_id, or r_set) in the field descriptor:");
+            << "Missing domain specification (region or r_id) in the field descriptor:");
     DECLARE_EXCEPTION(ExcFieldMeshDifference,
             << "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
 
@@ -242,7 +242,7 @@ public:
     /**
      * Create description of field descriptor record.
      */
-    static const std::string field_descriptor_record_decsription(const string& record_name);
+    static const std::string field_descriptor_record_description(const string& record_name);
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase

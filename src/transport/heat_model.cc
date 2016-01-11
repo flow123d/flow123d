@@ -210,10 +210,6 @@ HeatTransferModel::ModelEqData::ModelEqData()
 }
 
 
-UnitSI HeatTransferModel::balance_units()
-{
-	return UnitSI().m(2).kg().s(-2);
-}
 
 IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
@@ -230,22 +226,51 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 }
 
 
-IT::Selection HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 {
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
 	return IT::Selection(
-				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
-				"Selection for output fields of " + description + " for heat transfer.");
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Heat Transfer DG model.");
 }
 
 
-HeatTransferModel::HeatTransferModel() :
-		flux_changed(true)
-{}
+HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
+		AdvectionProcessBase(mesh, in_rec),
+		flux_changed(true),
+		mh_dh(nullptr)
+{
+	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	substances_.initialize({""});
+
+    output_stream_ = OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream"));
+    output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+
+    // initialization of balance object
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
+    if (it->val<bool>("balance_on"))
+    {
+    	balance_ = boost::make_shared<Balance>("energy", mesh_, *it);
+    	subst_idx = {balance_->add_quantity("energy")};
+    	balance_->units(UnitSI().m(2).kg().s(-2));
+    }
+}
 
 
 void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
 	substances.initialize({""});
+}
+
+void HeatTransferModel::output_data()
+{
+	output_stream_->write_time_frame();
+	if (balance_ != nullptr)
+	{
+		calculate_instant_balance();
+		balance_->output(time_->t());
+	}
 }
 
 
@@ -415,4 +440,7 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 
 HeatTransferModel::~HeatTransferModel()
 {}
+
+
+
 

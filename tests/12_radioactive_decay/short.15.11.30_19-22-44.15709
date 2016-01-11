@@ -1,0 +1,178 @@
+MPI size: 1
+This is Flow123d, version 1.8.JB_remove_oldbcd revision: release_1.8.2-854-gf130431
+Branch: JB_remove_oldbcd
+Build: Nov 30 2015, 08:04:37 flags: -g -O0 -Wall -Wno-unused-local-typedefs -std=c++11
+Fetch URL:  * JB_remove_oldbcd f130431 Add other yaml merge test.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R3 -> R[2,2]'.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R2 -> R[n]'.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R2 -> R[2]'.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R2 -> R[3]'.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R3 -> R[3]'.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R3 -> R[2]'.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R2 -> R[3,3]'.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R2 -> R[2,2]'.
+
+Warning (/home/jb/workspace/flow123d/src/input/type_repository.hh, finish(), 116):
+Unused root of generic subtree: 'Field:R2 -> R'.
+
+Warning (/home/jb/workspace/flow123d/src/input/reader_to_storage.cc, make_storage(), 232):
+Unprocessed key 'name' in record '/problem/primary_equation/output/output_stream'.
+
+Warning (/home/jb/workspace/flow123d/src/input/reader_to_storage.cc, make_storage(), 232):
+Unprocessed key 'name' in record '/problem/secondary_equation/output_stream'.
+- Reading nodes... 6 nodes read. 
+- Reading elements... 3 bulk elements, 0 boundary elements. 
+Created 10 edges and 0 neighbours.
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '1.0' for part of the input field 'cross_section' ('cross_section').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '1.0' for part of the input field 'conductivity' ('conductivity').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '1.0' for part of the input field 'sigma' ('sigma').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '0.0' for part of the input field 'water_source_density' ('water_source_density').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '0.0' for part of the input field 'init_pressure' ('init_pressure').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '1.0' for part of the input field 'storativity' ('storativity').
+regions:  region_1
+    DBG (/home/jb/workspace/flow123d/src/coupling/equation.hh, zero_time_step(), 87):Method 'zero_time_step' of '18DarcyFlowMH_Steady' is not implemented.
+
+TG[DARCY]:000000    t:    0.0000    dt:  1.000000    dt_int<  0.000000,       inf>    end_time: inf end_fixed_time: 0.000000 type: 0x8
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '1' for part of the input field 'porosity' ('porosity').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '0' for part of the input field 'sources_density' ('sources_density').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '0' for part of the input field 'sources_sigma' ('sources_sigma').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/fields/field.impl.hh, check_initialized_region_fields_(), 427):
+Using default value '0' for part of the input field 'sources_conc' ('sources_conc').
+regions:  region_1
+
+Warning (/home/jb/workspace/flow123d/src/system/tokenizer.cc, next_line(), 84):
+Remaining tokens, file '././input/flow_decay/sit_decay.tbc', line '6', after token #9.
+
+TG[TOS]:000001    t:    0.5000    dt:  0.500000    dt_int<  0.000000,  9.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000000    t:    0.0000    dt:  1.000000    dt_int<  0.000000, 10.000000>    end_time: 10.000000 end_fixed_time: 0.500000 type: 0x10
+    DBG (/home/jb/workspace/flow123d/src/transport/transport.cc, assess_time_constraint(), 483):CFL changed - flow.
+    DBG (/home/jb/workspace/flow123d/src/transport/transport.cc, assess_time_constraint(), 493):CFL changed - source.
+    DBG (/home/jb/workspace/flow123d/src/transport/transport_operator_splitting.cc, update_solution(), 276):CFL changed.
+
+TG[Convection]:000001    t:    0.5000    dt:  0.500000    dt_int<  0.000000,  9.500000>    end_time: 10.000000 end_fixed_time: 0.500000 type: 0x10
+    DBG (/home/jb/workspace/flow123d/src/transport/transport.cc, update_solution(), 538):BC - rescale NEW dt.
+    DBG (/home/jb/workspace/flow123d/src/transport/transport.cc, update_solution(), 555):SRC - rescale NEW dt.
+    DBG (/home/jb/workspace/flow123d/src/transport/transport.cc, update_solution(), 576):TM - rescale NEW dt.
+
+TG[TOS]:000002    t:    1.0000    dt:  0.500000    dt_int<  0.000000,  9.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000001    t:    0.5000    dt:  0.500000    dt_int<  0.000000,  9.500000>    end_time: 10.000000 end_fixed_time: 1.000000 type: 0x10
+
+TG[TOS]:000003    t:    1.5000    dt:  0.500000    dt_int<  0.000000,  8.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000002    t:    1.0000    dt:  0.500000    dt_int<  0.000000,  9.000000>    end_time: 10.000000 end_fixed_time: 1.500000 type: 0x10
+
+TG[TOS]:000004    t:    2.0000    dt:  0.500000    dt_int<  0.000000,  8.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000003    t:    1.5000    dt:  0.500000    dt_int<  0.000000,  8.500000>    end_time: 10.000000 end_fixed_time: 2.000000 type: 0x10
+
+TG[TOS]:000005    t:    2.5000    dt:  0.500000    dt_int<  0.000000,  7.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000004    t:    2.0000    dt:  0.500000    dt_int<  0.000000,  8.000000>    end_time: 10.000000 end_fixed_time: 2.500000 type: 0x10
+
+TG[TOS]:000006    t:    3.0000    dt:  0.500000    dt_int<  0.000000,  7.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000005    t:    2.5000    dt:  0.500000    dt_int<  0.000000,  7.500000>    end_time: 10.000000 end_fixed_time: 3.000000 type: 0x10
+
+TG[TOS]:000007    t:    3.5000    dt:  0.500000    dt_int<  0.000000,  6.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000006    t:    3.0000    dt:  0.500000    dt_int<  0.000000,  7.000000>    end_time: 10.000000 end_fixed_time: 3.500000 type: 0x10
+
+TG[TOS]:000008    t:    4.0000    dt:  0.500000    dt_int<  0.000000,  6.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000007    t:    3.5000    dt:  0.500000    dt_int<  0.000000,  6.500000>    end_time: 10.000000 end_fixed_time: 4.000000 type: 0x10
+
+TG[TOS]:000009    t:    4.5000    dt:  0.500000    dt_int<  0.000000,  5.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000008    t:    4.0000    dt:  0.500000    dt_int<  0.000000,  6.000000>    end_time: 10.000000 end_fixed_time: 4.500000 type: 0x10
+
+TG[TOS]:000010    t:    5.0000    dt:  0.500000    dt_int<  0.000000,  5.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000009    t:    4.5000    dt:  0.500000    dt_int<  0.000000,  5.500000>    end_time: 10.000000 end_fixed_time: 5.000000 type: 0x10
+
+TG[TOS]:000011    t:    5.5000    dt:  0.500000    dt_int<  0.000000,  4.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000010    t:    5.0000    dt:  0.500000    dt_int<  0.000000,  5.000000>    end_time: 10.000000 end_fixed_time: 5.500000 type: 0x10
+
+TG[TOS]:000012    t:    6.0000    dt:  0.500000    dt_int<  0.000000,  4.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000011    t:    5.5000    dt:  0.500000    dt_int<  0.000000,  4.500000>    end_time: 10.000000 end_fixed_time: 6.000000 type: 0x10
+
+TG[TOS]:000013    t:    6.5000    dt:  0.500000    dt_int<  0.000000,  3.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000012    t:    6.0000    dt:  0.500000    dt_int<  0.000000,  4.000000>    end_time: 10.000000 end_fixed_time: 6.500000 type: 0x10
+
+TG[TOS]:000014    t:    7.0000    dt:  0.500000    dt_int<  0.000000,  3.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000013    t:    6.5000    dt:  0.500000    dt_int<  0.000000,  3.500000>    end_time: 10.000000 end_fixed_time: 7.000000 type: 0x10
+
+TG[TOS]:000015    t:    7.5000    dt:  0.500000    dt_int<  0.000000,  2.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000014    t:    7.0000    dt:  0.500000    dt_int<  0.000000,  3.000000>    end_time: 10.000000 end_fixed_time: 7.500000 type: 0x10
+
+TG[TOS]:000016    t:    8.0000    dt:  0.500000    dt_int<  0.000000,  2.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000015    t:    7.5000    dt:  0.500000    dt_int<  0.000000,  2.500000>    end_time: 10.000000 end_fixed_time: 8.000000 type: 0x10
+
+TG[TOS]:000017    t:    8.5000    dt:  0.500000    dt_int<  0.000000,  1.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000016    t:    8.0000    dt:  0.500000    dt_int<  0.000000,  2.000000>    end_time: 10.000000 end_fixed_time: 8.500000 type: 0x10
+
+TG[TOS]:000018    t:    9.0000    dt:  0.500000    dt_int<  0.000000,  1.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000017    t:    8.5000    dt:  0.500000    dt_int<  0.000000,  1.500000>    end_time: 10.000000 end_fixed_time: 9.000000 type: 0x10
+
+TG[TOS]:000019    t:    9.5000    dt:  0.500000    dt_int<  0.000000,  0.500000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000018    t:    9.0000    dt:  0.500000    dt_int<  0.000000,  1.000000>    end_time: 10.000000 end_fixed_time: 9.500000 type: 0x10
+
+TG[TOS]:000020    t:   10.0000    dt:  0.500000    dt_int<  0.000000,  0.000000>    end_time: 10.000000 end_fixed_time: 0.000000 type: 0x10
+
+TG[Convection]:000019    t:    9.5000    dt:  0.500000    dt_int<  0.000000,  0.500000>    end_time: 10.000000 end_fixed_time: 10.000000 type: 0x10
+End of simulation at time: 10.000000
+/home/jb/workspace/flow123d/tests/12_radioactive_decay/output/profiler_info_15.11.30_19-22-44.log.json.txt file generated
+Python execution was successful

@@ -62,12 +62,12 @@ else()
 endif()
 
 if (PETSC_INSTALL_LAPACK_DIR)
-    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-lapack-dir=${PETSC_LAPACK_DIR})
+    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-blas-lapack-dir=${PETSC_LAPACK_DIR})
 else()
     if(CMAKE_Fortran_COMPILER)
-        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-f-blas-lapack=yes)
+        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-fblaslapack=yes)
     else()
-        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-c-blas-lapack=yes)
+        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-f2cblaslapack=yes)
     endif()    
 endif()
 
@@ -87,7 +87,7 @@ elseif(PETSC_INSTALL_CONFIG STREQUAL "full")
     # PETSc does not work with umfpack on Windows
         set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes  --download-blacs=yes --download-scalapack=yes --download-mumps=yes)
     else()    
-        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-hypre=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes --download-blopex=yes --download-umfpack=yes --download-sundials=yes)
+        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-hypre=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes --download-blopex=yes --download-suitesparse=yes --download-sundials=yes)
     endif()
 else()
     message("Unknown value of PETSC_INSTALL_CONFIG. Using 'mini'.")
@@ -111,7 +111,7 @@ file (WRITE "${cmakelists_fname}"
     URL ${PETSC_INSTALL_URL}
     SOURCE_DIR ${PETSC_INSTALL_DIR}/src
     BINARY_DIR ${PETSC_INSTALL_DIR}/src
-    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh --with-make-np ${MAKE_NUMCPUS}
+    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh
     BUILD_COMMAND make all
     INSTALL_COMMAND \"\"
   )  
@@ -121,7 +121,7 @@ file (WRITE "${cmakelists_fname}"
 file(WRITE "${PETSC_INSTALL_DIR}/conf_tmp.sh"
 "
 cd ${PETSC_INSTALL_DIR}/src
-./configure ${EXPAND_CONF_LINE}
+./configure  --with-make-np ${MAKE_NUMCPUS} ${EXPAND_CONF_LINE}
 ")
 
 # avoid unnecessary rebuilds if configuration doesn't change

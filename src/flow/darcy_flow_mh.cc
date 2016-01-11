@@ -96,19 +96,21 @@ const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
                .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
-               //.add_value(total_flux, "total_flux")
+               .add_value(total_flux, "total_flux", "Flux boundary condition. Combines Neumann and Robin type.")
 			   .close();
 }
 
 
 const it::Record & DarcyFlowMH_Steady::get_input_type() {
-    return it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
+    return it::Record("SteadyDarcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
 				"Linear solver for MH problem.")
-		.declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
+		.declare_key("output",
+		        DarcyFlowMHOutput::get_input_type(),
+		        it::Default::obligatory(),
 				"Parameters of output form MH module.")
 		.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions." )
@@ -119,8 +121,9 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 		.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
 				"Initial condition for pressure as piezometric head." )
 		.declare_key("input_fields", it::Array(
-					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_decsription("DarcyFlowMH_Data") )
-					.copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
+					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
+					.copy_keys( DarcyFlowMH_Steady::EqData()
+                        .make_field_descriptor_type("DarcyFlowMH_Data_aux") )
 					.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Boundary condition for pressure as piezometric head." )
 					.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Initial condition for pressure as piezometric head." )
 					.close()
@@ -130,12 +133,12 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 
 
 const int DarcyFlowMH_Steady::registrar =
-		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("Steady_MH") +
+		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("SteadyDarcy_MH") +
 		DarcyFlowMH_Steady::get_input_type().size();
 
 
 const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
-	return it::Record("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
+	return it::Record("UnsteadyDarcy_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
 		.copy_keys(DarcyFlowMH_Steady::get_input_type())
 		.declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
@@ -145,7 +148,7 @@ const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
 
 
 const int DarcyFlowMH_Unsteady::registrar =
-		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("Unsteady_MH") +
+		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("UnsteadyDarcy_MH") +
 		DarcyFlowMH_Unsteady::get_input_type().size();
 
 
@@ -568,6 +571,13 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
                     ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+
+		} else if ( type == EqData::total_flux) {
+		    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
+		    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+                    ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
 
                 } else {
                     xprintf(UsrErr, "BC type not supported.\n");

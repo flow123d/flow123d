@@ -1,0 +1,148 @@
+{
+"name": "Main transformation file",
+"description": "Template for creating transformation file",
+"old_format": "",
+"new_format": "",
+"actions":
+  [
+    {
+      "NAME": "Rename Steady_MH to SteadyDarcy_MH",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "Steady_MH",
+        "new_name": "SteadyDarcy_MH"
+      }
+    },
+    {
+      "NAME": "Rename Unsteady_MH to UnsteadyDarcy_MH",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "Unsteady_MH",
+        "new_name": "UnsteadyDarcy_MH"
+      }
+    },
+    {
+      "NAME": "Rename Unsteady_LMH to UnsteadyDarcy_LMH",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "Unsteady_LMH",
+        "new_name": "UnsteadyDarcy_LMH"
+      }
+    },
+    {
+      "NAME": "Rename TransportOperatorSplitting to Transport_OS",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "old_name": "TransportOperatorSplitting",
+        "new_name": "Transport_OS"
+      }
+    },
+    {
+      "NAME": "Add key transport to Transport_OS",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "key": "transport",
+        "parent": "Transport",
+        "type": "Convection_FV",
+        "type-filter": "Transport_OS"
+      }
+    },
+    {
+      "NAME": "Move output_fields from Transport_OS to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/output_fields",
+        "destination_path": "/problem/secondary_equation/transport/output_fields",
+        "parent-type-filter": "Transport_OS"
+      }
+    },  
+    {
+      "NAME": "Move input_fields from Transport_OS to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/input_fields",
+        "destination_path": "/problem/secondary_equation/transport/input_fields",
+        "parent-type-filter": "Transport_OS"
+      }
+    },
+    {
+      "NAME": "Add key transport to SoluteTransport_DG",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "key": "transport",
+        "parent": "Transport",
+        "type": "ConvectionDiffusion_DG",
+        "type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move input_fields from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/input_fields",
+        "destination_path": "/problem/secondary_equation/transport/input_fields",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move output_fields from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/output_fields",
+        "destination_path": "/problem/secondary_equation/transport/output_fields",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },        
+    {
+      "NAME": "Move solver from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/solver",
+        "destination_path": "/problem/secondary_equation/transport/solver",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move dg_order from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/dg_order",
+        "destination_path": "/problem/secondary_equation/transport/dg_order",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move dg_variant from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/dg_variant",
+        "destination_path": "/problem/secondary_equation/transport/dg_variant",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Rename SoluteTransport_DG to Transport_OS",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "old_name": "SoluteTransport_DG",
+        "new_name": "Transport_OS"
+      }
+    },
+    { 
+      "NAME" : "region to r_set",
+      "TODO": "Need to check that target key 'region' is not used.",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"**/input_fields/*/r_set",
+        "destination_path":"$1/input_fields/$2/region"
+      }
+    }           
+  ]
+}

@@ -33,26 +33,24 @@ import argparse
 
 from meconfig import cfg
 
+
 if __name__ == "__main__":
     def main():
         """Launches the import cli."""
         parser = argparse.ArgumentParser(
-            description='Import the yaml configarion file from con format')
+            description='Import the YAML configuration file from CON format')
         parser.add_argument('--transformation-name', nargs='*',
                             help='Transformation rules contained in the Model Editor that are '
                                  'processed after import')
         parser.add_argument('--destination-file', nargs='?', default=None,
                             help='The destination file if is different from source file')
-        parser.add_argument('--con_file', help='Con input file', required=True)
+        parser.add_argument('--con_file', help='CON input file', required=True)
         args = parser.parse_args()
 
         if args.destination_file:
             file = args.destination_file
         else:
-            if args.con_file[:-4]:
-                file = args.con_file[:-4] + ".yaml"
-            else:
-                file = args.con_file[:-4] + ".yaml"
+            file = os.path.splitext(args.con_file)[0] + '.yaml'  # replace extension
         if os.path.isfile(file):
             raise Exception("File already exists")
 

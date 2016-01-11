@@ -1,8 +1,9 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: 1D2D test - Steady flow in 2D block with fracture, fracture as 1D subdomain
   mesh:
     mesh_file: ./input/1D2D.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     data:
     - region: 2d_porous_block_left

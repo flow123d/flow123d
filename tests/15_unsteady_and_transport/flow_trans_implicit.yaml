@@ -1,8 +1,9 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test15 - 2D unsteady flow LM
   mesh:
     mesh_file: ./input/channel_structured.msh
-  primary_equation: !Unsteady_LMH
+  primary_equation: !UnsteadyDarcy_LMH
     input_fields:
     - region: domain
       anisotropy: 1
@@ -35,18 +36,22 @@ problem: !SequentialCoupling
     time:
       end_time: 2.0
       max_dt: 0.1
-  secondary_equation: !SoluteTransport_DG
-    input_fields:
-    - region: domain
-      init_conc: 0
-    - region: .left
-      bc_type: dirichlet
-      bc_conc: 10
-      time: 0.0
-    - region: .left
-      bc_type: dirichlet
-      bc_conc: 0
-      time: 0.1
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
+      input_fields:
+      - region: domain
+        init_conc: 0
+      - region: .left
+        bc_type: dirichlet
+        bc_conc: 10
+        time: 0.0
+      - region: .left
+        bc_type: dirichlet
+        bc_conc: 0
+        time: 0.1
+      solver: !Petsc
+        a_tol: 1.0e-07
+        r_tol: 1.0e-07
     output_stream: 
       file: ./transport-implicit.pvd
       format: !vtk
@@ -58,8 +63,5 @@ problem: !SequentialCoupling
     time:
       end_time: 2.0
       max_dt: 0.1
-    solver: !Petsc
-      a_tol: 1.0e-07
-      r_tol: 1.0e-07
     balance:
       cumulative: true

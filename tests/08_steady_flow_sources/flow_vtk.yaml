@@ -1,8 +1,9 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test8 - Steady flow with sources
   mesh:
     mesh_file: ${INPUT}/test08.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: plane
       anisotropy: 1

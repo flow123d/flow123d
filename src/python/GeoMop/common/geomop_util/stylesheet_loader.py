@@ -5,6 +5,7 @@ Module contains helper functions for loading stylesheets.
 """
 
 import os
+import platform
 
 
 def load_stylesheet(path, resource_dir):
@@ -21,11 +22,11 @@ def load_stylesheet(path, resource_dir):
     :rtype: str
     """
     stylesheet = ''
+    resource_dir = os.path.relpath(resource_dir).replace('\\', '/')
 
     if os.path.isfile(path):
         with open(path) as file_:
             stylesheet = file_.read()
-
-        stylesheet = stylesheet.replace('url(', 'url(' + resource_dir + os.path.sep)
+            stylesheet = stylesheet.replace("url('resources/", "url('" + resource_dir + '/')
 
     return stylesheet

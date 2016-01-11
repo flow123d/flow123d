@@ -322,6 +322,15 @@ protected:
     void count_element_types();
     void count_side_types();
 
+    /**
+     * Possibly modify region id of elements sets by user in "regions" part of input file.
+     *
+     * TODO: This method needs check in issue 'Review mesh setting'.
+     * Changes have been done during generalized region key and may be causing problems
+     * during the further development.
+     */
+    void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
+
     unsigned int n_bb_neigh, n_vb_neigh;
 
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears

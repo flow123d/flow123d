@@ -212,7 +212,7 @@ MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, Fiel
 const IT::Record & SomeEquation::get_input_type() {
 	return IT::Record("SomeEquation","")
 	        .declare_key("data", IT::Array(
-	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_decsription("SomeEquation_Data") )
+	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
 	                .copy_keys( SomeEquation::EqData().make_field_descriptor_type("SomeEquation") )
 	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
 	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
@@ -244,7 +244,7 @@ TEST_F(SomeEquation, values) {
             init_pressure=2.2,
             conc_mobile={REF="/data/0/conc_mobile"}
           },
-          { r_set="BULK",
+          { region="BULK",
             bulk_set_field=5.7,
             conc_mobile={REF="/data/0/conc_mobile"}
           },
@@ -355,11 +355,11 @@ TEST_F(SomeEquation, wrong_time_order) {
     string eq_data = R"JSON(
     { 
       data=[
-          { r_set="BULK",
+          { region="BULK",
             time=1.0,
             bulk_set_field=0.0
           }, 
-          { r_set="BULK",
+          { region="BULK",
             time=0.0,
             bulk_set_field=1.0
           } 

@@ -169,7 +169,7 @@ class ChangeAnalyzer:
                 space_after = re.search(r'(.*\S)\s+$', self._area[i-1])
                 if space_after is not None:
                     return i-1, space_after.end(1)
-                return i, 0
+        return i, 0
 
     def get_key_pos_type(self):
         """Get more specific key type definition.

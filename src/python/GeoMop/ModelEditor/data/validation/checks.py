@@ -80,9 +80,9 @@ def check_array(value, input_type):
     if not isinstance(value, (list, str)):
         raise ntf.Notification.from_name('ValidationTypeError', 'Array')
     if len(value) < input_type['min']:
-        raise ntf.Notification.from_name('NotEnoughItems', input_type['min'])
+        raise ntf.Notification.from_name('NotEnoughItems', input_type['min'], input_type['max'])
     elif len(value) > input_type['max']:
-        raise ntf.Notification.from_name('TooManyItems', input_type['max'])
+        raise ntf.Notification.from_name('TooManyItems', input_type['min'], input_type['max'])
     return True
 
 
@@ -90,6 +90,8 @@ def check_record_key(children_keys, key, input_type):
     """Checks a single key within a record."""
     # if key is not found in specifications, it is considered to be valid
     if key not in input_type['keys']:
+        if key == 'fatal_error':
+            raise ntf.Notification.from_name('SilencedNotification')
         raise ntf.Notification.from_name('UnknownRecordKey', key, input_type['type_name'])
 
     try:

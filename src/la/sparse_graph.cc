@@ -369,11 +369,11 @@ void SparseGraphMETIS::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
     adj_weights = new int [lsize_adj];
 }
 
+
 void SparseGraphMETIS::partition(int *part)
 {
     ASSERT( vtx_distr.lsize(0)==vtx_distr.size(),
             "METIS could be used only with localized distribution.\n");
-
     if (vtx_distr.np()==1) {
         for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;
         return;
@@ -393,8 +393,9 @@ void SparseGraphMETIS::partition(int *part)
                     abort();
                   }
                   int ncon = 1;
+                  // Unbalance tolerance vector. Multi-criteria balance is available in METIS 5.x.
                   real_t ubvec[1];
-                  ubvec[0] = 1.001;
+                  ubvec[0] = 1.001; // This is in fact default value used by METIS.
                   int options[METIS_NOPTIONS];
 
                   for (unsigned int i = 0;i < METIS_NOPTIONS;i++) options[i] = -1;
@@ -412,8 +413,8 @@ void SparseGraphMETIS::partition(int *part)
                   options[METIS_OPTION_CONTIG]    = 0;
                   options[METIS_OPTION_COMPRESS]  = 0;
                   options[METIS_OPTION_CCORDER]   = 0;
-                  options[METIS_OPTION_UFACTOR]   = 0;
-                  /*options[METIS_OPTION_DBGLVL]    = METIS_DBG_INFO;*/
+                  options[METIS_OPTION_UFACTOR]   = 30;
+                  //options[METIS_OPTION_DBGLVL]    = METIS_DBG_INFO | METIS_DBG_TIME;
                   options[METIS_OPTION_DBGLVL]    = 0;
 #else
                   /* weights */
@@ -440,7 +441,6 @@ void SparseGraphMETIS::partition(int *part)
                                                 vtx_weights, NULL, adj_weights, &n_proc, NULL,
                                                 ubvec, options, &edgecut,part);
 #else
-                      // has to be checked
                       METIS_PartGraphRecursive(&n_vtx, rows, adj, 
                                                 vtx_weights, adj_weights, &wgtflag, &num_flag, 
                                                 &n_proc, options, &edgecut, part);
@@ -458,7 +458,7 @@ void SparseGraphMETIS::partition(int *part)
                                   vtx_weights,adj_weights,&wgtflag,&num_flag, // vertex, edge weights, ...
                                   &n_proc,options,&edgecut,part);
 #endif
-                  }     
+                  }
         }
     }
 }

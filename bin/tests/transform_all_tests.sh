@@ -6,7 +6,7 @@
 # "src/python/GeoMop/ModelEditor/resources/transformations/main.json".
 
 echo "Transformation python scripts depends on packages: python3, python3-yaml, python3-markdown"
-echo "Transformation list: src/python/GeoMop/ModelEditor/resources/transformations/main.json"
+echo "Transformation list: src/python/GeoMop/ModelEditor/resources/transformations/flow123d.json"
 
 # Relative path to "tests" directory from directory,
 # where this script is placed
@@ -24,5 +24,5 @@ IMPORTER_PY="${0%/*}/${IMPORTER_PY}"
 for f in $TESTS_DIR/*/*.con; do
   echo "Processing $f";
   `rm -f ${f%.con}.yaml`;
-  `python3 $IMPORTER_PY --transformation-name main --con_file $f`;
+  `python3 $IMPORTER_PY --transformation-name flow123d --con_file $f`;
 done

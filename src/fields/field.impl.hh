@@ -326,7 +326,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
     // read input up to given time
 	double input_time;
     if (shared_->input_list_.size() != 0) {
-        while( shared_->list_idx_ < shared_->input_list_.size()
+        while( shared_->list_idx_ < (int)shared_->input_list_.size()
         	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
 
         	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
@@ -334,20 +334,12 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
         	RegionSet domain;
         	std::string domain_name;
         	unsigned int id;
-			if (actual_list_item.opt_val("r_set", domain_name)) {
+			if (actual_list_item.opt_val("region", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 				if (domain.size() == 0) {
 					THROW( RegionDB::ExcUnknownSetOperand()
 							<< RegionDB::EI_Label(domain_name) << actual_list_item.ei_address() );
 				}
-
-			} else if (actual_list_item.opt_val("region", domain_name)) {
-				// try find region by label
-				Region region = mesh()->region_db().find_label(domain_name);
-				if(region.is_valid())
-				  domain.push_back(region);
-				else
-				  xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
 
 			} else if (actual_list_item.opt_val("rid", id)) {
 				try {
