@@ -604,9 +604,10 @@ if (USE_PYTHON)
             foreach(PY_PATH ${PY_PATHS})
                 string(REPLACE "${PY_PREFIX}" "" PY_ALT_PATH "${PY_PATH}")
                 list(APPEND PYTHON_WRAPPER_PATHS "${PY_ALT_PATH}")
+                message(STATUS "rsync -rR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/")
                 execute_process(
-                  COMMAND cp -rn ${PY_PATH} ${TARGET_PREFIX}/${PY_ALT_PATH}
-                  )
+                  COMMAND rsync -rR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/
+                 )
             endforeach(PY_PATH)
             
             message(STATUS "Python prefix: ${PY_PREFIX}")
@@ -616,6 +617,9 @@ if (USE_PYTHON)
             flow_define(PYTHON_PATHS  ${PYTHON_WRAPPER_PATHS})
             
             # copy flow123d python scripts and modules
+            execute_process(
+                COMMAND ${TARGET_PREFIX}/lib/flow123d 
+                )
             execute_process(
                 COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${TARGET_PREFIX}/lib/flow123d 
                 )
