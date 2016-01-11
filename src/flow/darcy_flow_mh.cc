@@ -92,8 +92,8 @@ const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
                        "Dirichlet boundary condition. "
                        "Specify the pressure head through the 'bc_pressure' field "
                        "or the piezometric head through the 'bc_piezo_head' field.")
-               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
+               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water inflow by the 'bc_flux' field.")
+               .add_value(robin, "robin", "Robin boundary condition. Water inflow equal to (($\\sigma (h^R - h)$)). "
                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
                .add_value(total_flux, "total_flux", "Flux boundary condition. Combines Neumann and Robin type.")
@@ -563,7 +563,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     ls->mat_set_value(edge_row, edge_row, -1.0);
 
                 } else if ( type == EqData::neumann) {
-                    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
                     ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
 
                 } else if ( type == EqData::robin) {
@@ -573,7 +573,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
 
 		} else if ( type == EqData::total_flux) {
-		    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
+		    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
 		    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );

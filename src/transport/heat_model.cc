@@ -48,14 +48,13 @@ const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
           		  "The prescribed temperature (($T_D$)) is specified by the field 'bc_temperature'.")
             .add_value(bc_total_flux, "total_flux",
           		  "Total energy flux boundary condition.\n"
-          		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )+q_wT_A$)), "
+          		  "The prescribed incoming total flux can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), "
           		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
-          		  "the advected temperature (($T_A$)) by 'bc_ad_temperature', "
           		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
           		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
             .add_value(bc_diffusive_flux, "diffusive_flux",
           		  "Diffusive flux boundary condition.\n"
-          		  "The prescribed energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )$)), "
+          		  "The prescribed incoming energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), "
           		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
           		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
           		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
