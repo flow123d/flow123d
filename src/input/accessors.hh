@@ -1,19 +1,25 @@
-/*
- * accessors.hh
+/*!
  *
- *  Created on: Mar 29, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- *
- *  TODO:
+ * 
+ * @file    accessors.hh
+ * @brief   
+ * @todo
  *  - decide which part of interface has to be optimized ( probably nothing until we
  *    implement reader for HDF5, XML or large Raw data files, and try to use the same input interface for input of large data)
  *  - then make inlined only neccessary functions  and carefully move as much as possible into accessors.cc including explicit instantiation of
  *    support classes. This should speedup compilation of the code that use the accessors.
- *
  *  - implement operator -> without allocation (shared_ptr), i.e. put Accesors into Iterators
  *    Create corresponding accessor at construction of the iterator.
- *
  */
 
 #ifndef INPUT_INTERFACE_HH_
@@ -142,7 +148,7 @@ protected:
         /**
          * Pointer to data of parent node in the address tree
          */
-        AddressData * parent_;
+    	boost::shared_ptr<AddressData> parent_;
         /**
          * Index in StorageArray of the parent_ to get actual node.
          */
@@ -164,7 +170,7 @@ protected:
          * Delete whole storage tree when last root input accessor is destroyed.
          */
         ~AddressData() {
-        	if (	parent_ == nullptr
+        	if (	!parent_
         			&& root_storage_ == actual_storage_
         			&& root_type_ ) {
         		delete root_storage_;
@@ -391,7 +397,7 @@ protected:
 
 class AbstractRecord {
 public:
-	typedef ::Input::Type::AbstractRecord InputType;
+	typedef ::Input::Type::Abstract InputType;
 
     /**
      * Default constructor creates an empty accessor.
@@ -409,7 +415,7 @@ public:
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
      * type specification of the record given by parameter \p type.
      */
-    AbstractRecord(const Address &address, const Type::AbstractRecord type);
+    AbstractRecord(const Address &address, const Type::Abstract type);
 
     /**
      * Implicit conversion to the \p Input::Record accessor. You can use \p Input::AbstractRecord in the same
@@ -466,8 +472,8 @@ public:
 
 
 private:
-    /// Corresponding Type::AbstractRecord object.
-    Input::Type::AbstractRecord record_type_ ;
+    /// Corresponding Type::Abstract object.
+    Input::Type::Abstract record_type_ ;
 
     /// Contains address and relationships with abstract record ancestor
     Address address_;
@@ -831,7 +837,7 @@ struct TypeDispatch<string> {
 
 template<>
 struct TypeDispatch<AbstractRecord> {
-    typedef Input::Type::AbstractRecord InputType;
+    typedef Input::Type::Abstract InputType;
     typedef AbstractRecord ReadType;
     typedef AbstractRecord TmpType;
     static inline ReadType value(const Address &a, const InputType& t) { return AbstractRecord(a, t); }

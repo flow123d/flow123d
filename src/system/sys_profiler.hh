@@ -1,30 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
- *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id: profiler.hh 842 2011-01-08 17:58:15Z tomas.bambuch $
- * $Revision: 842 $
- * $LastChangedBy: tomas.bambuch $
- * $LastChangedDate: 2011-01-08 18:58:15 +0100 (So, 08 led 2011) $
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * 
- * TODO:
+ * @file    sys_profiler.hh
+ * @brief   
+ * @todo
  * - START_GLOBAL_TIMER(tag) - this calls the start_timer, which creates local timer on the correct place in the hierarchy,
  *    further this timer is added to the list of global timers, this contains groups of timers with same tag, and
  *    collect/sum data from these timers in the report.
@@ -56,15 +45,16 @@
  *  -O3,   c++11 : 6%
  */
 
-
 #ifndef PROFILER_H
 #define	PROFILER_H
 
 #include "global_defs.h"
 #include "system/system.hh"
 #include <mpi.h>
+#include <ostream>
 #include <boost/property_tree/ptree.hpp>
 #include "time_point.hh"
+
 
 // namespace alias
 namespace property_tree = boost::property_tree;
@@ -316,7 +306,7 @@ public:
 
 
     /// Getter for the 'tag'.
-    inline string tag() const {   
+    inline string tag() const {
         string buf(code_point_->tag_);
         buf.append(code_point_->subtag_);
         return buf;
@@ -540,19 +530,17 @@ public:
      * @brief Output current timing information into the given stream.
      *
      * COLECTIVE - all processes in the communicator have to call this
-     * method. It temporally stops all timers, synchronize all processes, collect
-     * profiling informations and write it to the given stream.
+     * method. All timers are finished,  all processes are synchronized, collect
+     * profiling informations are collected and written to the given stream.
      *
      *  Pass through the profiling tree (collective over processors)
      *  Print cumulative times average, balance (max/min), count (denote differences)
      *
      */
-    void output(MPI_Comm comm, ostream &os);
+    void output(MPI_Comm comm, std::ostream &os);
     /**
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
-     *
-     * TODO: move this outside to minimize dependencies
      */
     void output(MPI_Comm comm);
 #endif /* FLOW123D_HAVE_MPI */
@@ -566,7 +554,7 @@ public:
      *  Print cumulative times average, balance (max/min), count (denote differences)
      *
      */
-    void output(ostream &os);
+    void output(std::ostream &os);
     /**
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
@@ -595,11 +583,6 @@ private:
      */
     int find_child(const CodePoint &cp);
 
-    /**
-     * Used to update cumulative times of running timers
-     * in the @p output method in order to get actual results.
-     */
-    void update_running_timers();
 
     /**
      * Method will prepare construct specific details about the run (time start and time end)
@@ -608,6 +591,11 @@ private:
      */
     void output_header (property_tree::ptree &root, int mpi_size);
 
+    /**
+     * Open a new file for profiler output with default name based on the
+     * actual time and date. Returns a pointer to the stream of the output file.
+     */
+    std::shared_ptr<std::ostream> get_default_output_stream();
 
     /// Default code point.
     static CodePoint null_code_point;
@@ -619,7 +607,7 @@ private:
     vector<Timer> timers_;
 
     /// Index of the actual timer node. Negative value means 'unset'.
-    int actual_node;
+    unsigned int actual_node;
 
     /// MPI communicator used for final reduce of the timer node tree.
     //MPI_Comm communicator_;

@@ -1,8 +1,18 @@
-/*
- * material_dispatch.cc
+/*!
  *
- *  Created on: Nov 27, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    region.cc
+ * @brief   
  */
 
 #include <string>
@@ -87,8 +97,8 @@ RegionDB::RegionDB()
 
 
 Region RegionDB::implicit_boundary_region() {
-	DimIDIter it_id = region_set_.get<DimId>().find(DimID(undefined_dim, Region::undefined-2));
-    if ( it_id!=region_set_.get<DimId>().end() ) {
+	DimIDIter it_id = region_table_.get<DimId>().find(DimID(undefined_dim, Region::undefined-2));
+    if ( it_id!=region_table_.get<DimId>().end() ) {
         return Region(it_id->index, *this);
     }
 
@@ -98,20 +108,20 @@ Region RegionDB::implicit_boundary_region() {
 
 Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim) {
 	bool boundary = is_boundary(label);
-    DimIDIter it_id = region_set_.get<DimId>().find(DimID(dim,id));
-    if (it_id != region_set_.get<DimId>().end() ) {
+    DimIDIter it_id = region_table_.get<DimId>().find(DimID(dim,id));
+    if (it_id != region_table_.get<DimId>().end() ) {
     	// Find existing region
     	return find_by_dimid(it_id, id, label, boundary);
     }
 
-    DimIDIter it_undef_dim = region_set_.get<DimId>().find(DimID(undefined_dim,id));
-	if (it_undef_dim != region_set_.get<DimId>().end() ) {
+    DimIDIter it_undef_dim = region_table_.get<DimId>().find(DimID(undefined_dim,id));
+	if (it_undef_dim != region_table_.get<DimId>().end() ) {
 		// Region with same ID and undefined_dim exists, replace undefined_dim
 		return replace_region_dim(it_undef_dim, dim, boundary);
     }
 
-    LabelIter it_label = region_set_.get<Label>().find(label);
-    if (it_label != region_set_.get<Label>().end() ) {
+    LabelIter it_label = region_table_.get<Label>().find(label);
+    if (it_label != region_table_.get<Label>().end() ) {
         // ID is free, not label
         THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->get_id()) );
     }
@@ -124,14 +134,25 @@ Region RegionDB::add_region(unsigned int id, const std::string &label) {
 	bool boundary = is_boundary(label);
 	if (label.size() == 0) create_label_from_id(label, id);
 
-    DimIDIter it_id = region_set_.get<DimId>().find(DimID(undefined_dim,id));
-    if (it_id != region_set_.get<DimId>().end() ) {
-    	// Find existing region
-    	return find_by_dimid(it_id, id, label, boundary);
+	/*
+	 * TODO: This part of code needs check in issue 'Review mesh setting'.
+	 * See @p Mesh::modify_element_ids method
+	 */
+    OnlyIDIter it_only_id = region_table_.get<OnlyID>().find(id);
+    if (it_only_id != region_table_.get<OnlyID>().end() ) {
+    	// replace region label
+    	unsigned int index = it_only_id->index;
+
+    	RegionItem item(index, it_only_id->get_id(), label, it_only_id->dim());
+    	region_table_.replace(
+    			region_table_.get<Index>().find(index),
+                item);
+
+    	return Region(index, *this);
     }
 
-    LabelIter it_label = region_set_.get<Label>().find(label);
-    if (it_label != region_set_.get<Label>().end() ) {
+    LabelIter it_label = region_table_.get<Label>().find(label);
+    if (it_label != region_table_.get<Label>().end() ) {
         // ID is free, not label
         THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->get_id()) );
     }
@@ -141,13 +162,13 @@ Region RegionDB::add_region(unsigned int id, const std::string &label) {
 
 
 Region RegionDB::add_region(unsigned int id, unsigned int dim) {
-	DimIDIter it_id = region_set_.get<DimId>().find(DimID(dim,id));
-    if ( it_id!=region_set_.get<DimId>().end() ) {
+	DimIDIter it_id = region_table_.get<DimId>().find(DimID(dim,id));
+    if ( it_id!=region_table_.get<DimId>().end() ) {
         return Region(it_id->index, *this);
     }
 
-    DimIDIter it_undef_dim = region_set_.get<DimId>().find(DimID(undefined_dim,id));
-	if (it_undef_dim != region_set_.get<DimId>().end() ) {
+    DimIDIter it_undef_dim = region_table_.get<DimId>().find(DimID(undefined_dim,id));
+	if (it_undef_dim != region_table_.get<DimId>().end() ) {
 		// Region with same ID and undefined_dim exists, replace undefined_dim
 		bool boundary = is_boundary(it_undef_dim->label);
 		return replace_region_dim(it_undef_dim, dim, boundary);
@@ -163,8 +184,8 @@ Region RegionDB::add_region(unsigned int id, unsigned int dim) {
 
 Region RegionDB::find_label(const std::string &label) const
 {
-    LabelIter it_label = region_set_.get<Label>().find(label);
-    if (it_label==region_set_.get<Label>().end()  ) return Region();
+    LabelIter it_label = region_table_.get<Label>().find(label);
+    if (it_label==region_table_.get<Label>().end()  ) return Region();
     return Region(it_label->index, *this);
 }
 
@@ -174,8 +195,8 @@ Region RegionDB::find_label(const std::string &label) const
 
 Region RegionDB::find_id(unsigned int id, unsigned int dim) const
 {
-	DimIDIter it_id = region_set_.get<DimId>().find(DimID(dim, id));
-    if ( it_id==region_set_.get<DimId>().end() ) return Region();
+	DimIDIter it_id = region_table_.get<DimId>().find(DimID(dim, id));
+    if ( it_id==region_table_.get<DimId>().end() ) return Region();
     return Region(it_id->index, *this);
 }
 
@@ -184,11 +205,11 @@ Region RegionDB::find_id(unsigned int id, unsigned int dim) const
 
 Region RegionDB::find_id(unsigned int id) const
 {
-	if (region_set_.get<OnlyID>().count(id) > 1) {
+	if (region_table_.get<OnlyID>().count(id) > 1) {
 		THROW( ExcUniqueRegionId() << EI_ID( id ) );
 	}
-	OnlyIDIter it_id = region_set_.get<OnlyID>().find(id);
-	if ( it_id==region_set_.get<OnlyID>().end() ) return Region();
+	OnlyIDIter it_id = region_table_.get<OnlyID>().find(id);
+	if ( it_id==region_table_.get<OnlyID>().end() ) return Region();
 	return Region(it_id->index, *this);
 }
 
@@ -196,24 +217,24 @@ Region RegionDB::find_id(unsigned int id) const
 
 
 const std::string & RegionDB::get_label(unsigned int idx) const {
-    RegionTable::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
-    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %u\n", idx);
+    RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
+    ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
     return  it->label;
 }
 
 
 
 unsigned int RegionDB::get_id(unsigned int idx) const {
-    RegionTable::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
-    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %u\n", idx);
+    RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
+    ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
     return  it->get_id();
 }
 
 
 
 unsigned int RegionDB::get_dim(unsigned int idx) const {
-    RegionTable::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
-    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %u\n", idx);
+    RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
+    ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
     return  it->dim();
 }
 
@@ -224,14 +245,23 @@ void RegionDB::close() {
     // set default sets
    for(unsigned int i=0; i< size(); i++) {
        Region reg(i, *this);
+	   /*
+	    * TODO: Adding of regions to sets needs check in issue 'Review mesh setting'.
+	    * See @p Mesh::modify_element_ids method
+	    */
+   	   RegionSet region_set;
+   	   region_set.push_back( reg );
+
 
        if (reg.is_boundary() && (reg.boundary_idx() < boundary_size()) ) {
            add_to_set("BOUNDARY", reg );
            add_to_set("ALL", reg);
+       	   add_set(reg.label(), region_set);
        } else
        if ( (! reg.is_boundary()) && (reg.bulk_idx() < bulk_size()) ) {
            add_to_set("BULK", reg );
            add_to_set("ALL", reg);
+       	   add_set(reg.label(), region_set);
        }
     }
 }
@@ -501,7 +531,7 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 		n_bulk_++;
 	}
 	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
-	if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
+	if ( ! region_table_.insert( RegionItem(index, id, label, dim) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
 	return Region(index, *this);
 }
@@ -513,8 +543,8 @@ Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bo
 	unsigned int index = it_undef_dim->index;
 
 	RegionItem item(index, it_undef_dim->get_id(), it_undef_dim->label, dim);
-	region_set_.replace(
-            region_set_.get<Index>().find(index),
+	region_table_.replace(
+			region_table_.get<Index>().find(index),
             item);
 
 	Region r_id=Region(index, *this);
@@ -527,8 +557,8 @@ Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bo
 
 Region RegionDB::find_by_dimid(DimIDIter it_id, unsigned int id, const std::string &label, bool boundary) {
     unsigned int index = it_id->index;
-    LabelIter it_label = region_set_.get<Label>().find(label);
-    if ( it_label == region_set_.get<Label>().end() || index != it_label->index )
+    LabelIter it_label = region_table_.get<Label>().find(label);
+    if ( it_label == region_table_.get<Label>().end() || index != it_label->index )
     	THROW(ExcNonuniqueID() << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(it_id->label) );
 
     Region r_id=Region(index, *this);

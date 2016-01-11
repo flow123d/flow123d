@@ -1,10 +1,19 @@
-/*
- * function_base_impl.hh
+/*!
  *
- *  Created on: Oct 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_algo_base.impl.hh
+ * @brief   
  */
-
 
 #ifndef field_algo_base_IMPL_HH_
 #define field_algo_base_IMPL_HH_
@@ -25,9 +34,11 @@ using namespace std;
 
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
+#include "input/accessors.hh"
 
 
 namespace it = Input::Type;
+
 
 
 
@@ -47,37 +58,31 @@ FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 
 template <int spacedim, class Value>
 string FieldAlgorithmBase<spacedim, Value>::template_name() {
-    return boost::str(boost::format("R%i -> %s") % spacedim % Value::type_name() );
+	return boost::str(boost::format("R%i -> %s") % spacedim % Value::type_name() );
 }
 
 
 
 template <int spacedim, class Value>
-Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
-	const it::Selection *element_input_sel = nullptr;
-	if (element_input_type != nullptr) {
-		const it::Selection * sel_type = dynamic_cast<const it::Selection *>(element_input_type);
-		if (sel_type != NULL ) element_input_sel = sel_type;
+Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
+	return it::Abstract("Field:"+template_name(), "Abstract for all time-space functions.")
+			.allow_auto_conversion("FieldConstant")
+			.root_of_generic_subtree()
+			.close();
+}
+
+
+template <int spacedim, class Value>
+const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(const Input::Type::Selection *value_selection) {
+	std::vector<it::TypeBase::ParameterPair> param_vec;
+	if (is_enum_valued) {
+		ASSERT(value_selection, "Not defined 'value_selection' for enum element type.\n");
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::Selection>(*value_selection)) );
+	} else {
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
 	}
 
-	it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
-    	.allow_auto_conversion("FieldConstant")
-		.set_element_input(element_input_sel)
-		.close();
-
-	if ( !type.is_finished() ) {
-		type.add_child( const_cast<it::Record &>(FieldConstant<spacedim,Value>::get_input_type(type, element_input_type)) );
-		type.add_child( const_cast<it::Record &>(FieldFormula<spacedim,Value>::get_input_type(type, element_input_type)) );
-#ifdef FLOW123D_HAVE_PYTHON
-		type.add_child( const_cast<it::Record &>(FieldPython<spacedim,Value>::get_input_type(type, element_input_type)) );
-#endif
-		type.add_child( const_cast<it::Record &>(FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type)) );
-		type.add_child( const_cast<it::Record &>(FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type)) );
-
-		type.finish();
-    }
-
-    return type.close();
+	return it::Instance(get_input_type(), param_vec).close();
 }
 
 

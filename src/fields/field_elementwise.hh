@@ -1,8 +1,18 @@
-/*
- * field_elementwise.hh
+/*!
  *
- *  Created on: Jan 22, 2013
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_elementwise.hh
+ * @brief   
  */
 
 #ifndef FIELD_ELEMENTWISE_HH_
@@ -52,7 +62,7 @@ public:
      */
     FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data, unsigned int n_components);
 
-    static const Input::Type::Record & get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type();
 
     virtual void init_from_input(const Input::Record &rec);
 

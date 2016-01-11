@@ -1,4 +1,4 @@
-INI_FILES="trans_explicit.con ./trans_implicit.con ./short_pulse_explicit.con ./short_pulse_implicit.con"
+INI_FILES="trans_explicit.yaml ./trans_implicit.yaml ./short_pulse_explicit.yaml ./short_pulse_implicit.yaml"
 
 NPROC="1"
 FLOW_PARAMS="-o output"

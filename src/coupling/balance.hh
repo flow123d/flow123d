@@ -1,3 +1,20 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    balance.hh
+ * @brief   
+ */
+
 #ifndef BALANCE_HH_
 #define BALANCE_HH_
 
@@ -121,14 +138,10 @@ public:
 	 * Constructor.
 	 * @param file_prefix  Prefix of output file name.
 	 * @param mesh         Mesh.
-	 * @param el_ds        Distribution of elements.
-	 * @param el_4_loc     Local to global element numbering.
 	 * @param in_rec       Input record of balance.
 	 */
 	Balance(const std::string &file_prefix,
 			const Mesh *mesh,
-			const Distribution *el_ds,
-			const int *el_4_loc,
 			const Input::Record &in_rec);
 
 	~Balance();
@@ -158,7 +171,8 @@ public:
 	 * @param n_loc_dofs            Number of solution dofs on the local process.
 	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
 	 */
-	void allocate(unsigned int n_loc_dofs, unsigned int max_dofs_per_boundary);
+	void allocate(unsigned int n_loc_dofs,
+			unsigned int max_dofs_per_boundary);
 
 	/**
 	 * This method must be called before assembling the matrix for computing mass.
@@ -395,8 +409,7 @@ private:
     /// Names of conserved quantities.
     std::vector<Quantity> quantities_;
 
-    /// Database of bulk and boundary regions.
-    const RegionDB &regions_;
+    const Mesh *mesh_;
 
     /// Units of conserved quantities.
     UnitSI units_;

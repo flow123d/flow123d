@@ -1,10 +1,19 @@
-/*
- * accessors.cc
+/*!
  *
- *  Created on: Apr 26, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    accessors.cc
+ * @brief   
  */
-
 
 #include <memory>
 #include <boost/make_shared.hpp>
@@ -72,7 +81,6 @@ Address::Address()
 {
    data_->root_type_ = nullptr;
    data_->root_storage_ = &Array::empty_storage_;
-   data_->parent_ = nullptr;
    data_->descendant_order_ = 0;
    data_->actual_storage_ = &Array::empty_storage_;
 }
@@ -88,7 +96,6 @@ Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_ro
 
     data_->root_type_ = type_root;
     data_->root_storage_ = storage_root;
-    data_->parent_ = nullptr;
     data_->descendant_order_ = 0;
     data_->actual_storage_ = storage_root;
 }
@@ -103,7 +110,7 @@ Address::Address(const Address& other)
 std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
 	auto addr = std::make_shared<Address>(this->data_->root_storage_, this->data_->root_type_);
-	addr->data_->parent_ = this->data_.get();
+	addr->data_->parent_ = this->data_;
 	addr->data_->descendant_order_ = idx;
 	addr->data_->actual_storage_ = data_->actual_storage_->get_item(idx);
 
@@ -113,7 +120,7 @@ std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
 std::string Address::make_full_address() const {
 	std::vector<unsigned int> path;
-	AddressData * address_data = data_.get();
+	boost::shared_ptr<AddressData> address_data = data_;
 	while (address_data->parent_ != NULL) {
 		path.push_back(address_data->descendant_order_);
 		address_data = address_data->parent_;
@@ -140,8 +147,8 @@ std::string Address::make_full_address() const {
         	input_type = it->type_.get();
         	i--;
         } else
-		if (typeid(*input_type) == typeid(Type::AbstractRecord)) {
-			const Type::AbstractRecord * a_rec = static_cast<const Type::AbstractRecord *>(input_type);
+		if (typeid(*input_type) == typeid(Type::Abstract)) {
+			const Type::Abstract * a_rec = static_cast<const Type::Abstract *>(input_type);
 			const StorageString * storage_type = static_cast<const StorageString *>(storage->get_item(0));
 			input_type = & a_rec->get_descendant(storage_type->get_string());
 		} else
@@ -218,7 +225,7 @@ AbstractRecord::AbstractRecord(const AbstractRecord &rec)
 
 
 
-AbstractRecord::AbstractRecord(const Address &address, const Type::AbstractRecord type)
+AbstractRecord::AbstractRecord(const Address &address, const Type::Abstract type)
 : record_type_(type), address_(address)
 {
 	if (address.storage_head()->is_null())

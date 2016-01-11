@@ -1,46 +1,34 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file main.cc
- * @brief This file should contain only creation of Application object.
- *
+ * 
+ * @file    main.cc
+ * @brief   This file should contain only creation of Application object.
  */
 
-
 #include <petsc.h>
+
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
-#include "input/type_output.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 
 #include <iostream>
 #include <fstream>
+#include <boost/regex.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
@@ -50,15 +38,15 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _PROGRAM_VERSION_   "0.0.0"
+//#define _PROGRAM_VERSION_   "0.0.0"
 
-#ifndef _PROGRAM_REVISION_
-    #define _PROGRAM_REVISION_ "(unknown revision)"
-#endif
+//#ifndef _PROGRAM_REVISION_
+//    #define _PROGRAM_REVISION_ "(unknown revision)"
+//#endif
 
-#ifndef _PROGRAM_BRANCH_
-    #define _PROGRAM_BRANCH_ "(unknown branch)"
-#endif
+//#ifndef _PROGRAM_BRANCH_
+//    #define _PROGRAM_BRANCH_ "(unknown branch)"
+//#endif
 
 #ifndef FLOW123D_COMPILER_FLAGS_
     #define FLOW123D_COMPILER_FLAGS_ "(unknown compiler flags)"
@@ -70,6 +58,11 @@ namespace it = Input::Type;
 // this should be part of a system class containing all support information
 it::Record & Application::get_input_type() {
     static it::Record type = it::Record("Root", "Root record of JSON input for Flow123d.")
+    .declare_key("flow123d_version", it::String(), it::Default::obligatory(),
+            "Version of Flow123d for which the input file was created."
+            "Flow123d only warn about version incompatibility. "
+            "However, external tools may use this information to provide conversion "
+            "of the input file to the structure required by another version of Flow123d.")
     .declare_key("problem", CouplingBase::get_input_type(), it::Default::obligatory(),
     		"Simulation problem to be solved.")
     .declare_key("pause_after_run", it::Bool(), it::Default("false"),
@@ -112,23 +105,37 @@ void Application::split_path(const string& path, string& directory, string& file
     }
 }
 
+
+Input::Type::RevNumData Application::get_rev_num_data() {
+	Input::Type::RevNumData rev_num_data;
+
+	rev_num_data.version = string(FLOW123D_VERSION_NAME_);
+	rev_num_data.revision = string(FLOW123D_GIT_REVISION_);
+	rev_num_data.branch = string(FLOW123D_GIT_BRANCH_);
+	rev_num_data.url = string(FLOW123D_GIT_URL_);
+
+	return rev_num_data;
+}
+
+
 void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
-    string version(_VERSION_NAME_);
-    string revision(_GIT_REVISION_);
-    string branch(_GIT_BRANCH_);
-    string url(_GIT_URL_);
-    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
+	Input::Type::RevNumData rev_num_data = this->get_rev_num_data();
+    string build = string(__DATE__) + ", " + string(__TIME__)
+            + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
+    xprintf(Msg, "This is Flow123d, version %s revision: %s\n",
+            rev_num_data.version.c_str(),
+            rev_num_data.revision.c_str());
     xprintf(Msg,
     	 "Branch: %s\n"
 		 "Build: %s\n"
 		 "Fetch URL: %s\n",
-		 branch.c_str(), build.c_str() , url.c_str() );
-    Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
+		 rev_num_data.branch.c_str(), build.c_str() , rev_num_data.url.c_str() );
+    Profiler::instance()->set_program_info("Flow123d",
+            rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 }
 
 
@@ -171,8 +178,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
-//        ("full_doc", "Prints full structure of the main input file.")
-//        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
         ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
         ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
 
@@ -218,14 +223,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         exit( exit_output );
     }*/
 
-    /*if (vm.count("latex_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputLatex type_output(&get_input_type());
-        type_output.set_filter("");
-        cout << type_output;
-        exit( exit_output );
-    }*/
-
+    // if there is "JSON_machine" option
     if (vm.count("JSON_machine")) {
         // write ist to json file
         string json_filename = vm["JSON_machine"].as<string>();
@@ -234,8 +232,10 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         if (json_stream.fail()) {
     		cerr << "Failed to open file '" << json_filename << "'" << endl;
         } else {
+            // create the root Record
+            get_input_type();
 	        Input::Type::TypeBase::lazy_finish();
-	        json_stream << Input::Type::OutputJSONMachine(&get_input_type());
+	        json_stream << Input::Type::OutputJSONMachine( this->get_rev_num_data() );
 	        json_stream.close();
         }
         exit( exit_output );
@@ -284,16 +284,43 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
 void Application::run() {
-
+    START_TIMER("Application::run");
 	display_version();
 
+    START_TIMER("Read Input");
+    // get main input record handle
     Input::Record i_rec = read_input();
-
+    END_TIMER("Read Input");
 
     {
         using namespace Input;
+        // check input file version against the version of executable
+        boost::regex version_re("([^.]*)[.]([^.]*)[.]([^.]*)");
+        boost::smatch match;
+        std::string version(FLOW123D_VERSION_NAME_);
+        vector<string> ver_fields(3);
+        if ( boost::regex_match(version, match, version_re) ) {
+            ver_fields[0]=match[1];
+            ver_fields[1]=match[2];
+            ver_fields[2]=match[3];
+        } else {
+            ASSERT(1, "Bad Flow123d version format: %s\n", version.c_str() );
+        }
 
-        // get main input record handle
+        std::string input_version = i_rec.val<string>("flow123d_version");
+        vector<string> iver_fields(3);
+        if ( boost::regex_match(input_version, match, version_re) ) {
+            iver_fields[0]=match[1];
+            iver_fields[1]=match[2];
+            iver_fields[2]=match[3];
+        } else {
+            THROW( ExcVersionFormat() << EI_InputVersionStr(input_version) );
+        }
+
+        if ( iver_fields[0] != ver_fields[0] || iver_fields[1] > ver_fields[1] ) {
+            xprintf(Warn, "Input file with version: '%s' is no compatible with the program version: '%s' \n",
+                    input_version.c_str(), version.c_str());
+        }
 
         // should flow123d wait for pressing "Enter", when simulation is completed
         sys_info.pause_after_run = i_rec.val<bool>("pause_after_run");

@@ -29,7 +29,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
 
 namespace it=Input::Type;
 const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
-    return it::Record("Unsteady_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
+    return it::Record("UnsteadyDarcy_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyFlowMH_Steady::get_input_type())
         .declare_key("time",         TimeGovernor::get_input_type(), it::Default::obligatory(),
@@ -39,7 +39,7 @@ const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
 
 
 const int DarcyFlowLMH_Unsteady::registrar =
-        Input::register_class< DarcyFlowLMH_Unsteady, Mesh &, const Input::Record >("Unsteady_LMH") +
+        Input::register_class< DarcyFlowLMH_Unsteady, Mesh &, const Input::Record >("UnsteadyDarcy_LMH") +
         DarcyFlowLMH_Unsteady::get_input_type().size();
 
 

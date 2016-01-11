@@ -4,7 +4,7 @@
  *      Author: Jiri Hnidek <jiri.hnidek@tul.cz>
  */
 
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
 #include "io/output_time.hh"
@@ -25,6 +25,7 @@
 
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
 
 

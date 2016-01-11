@@ -1,0 +1,61 @@
+flow123d_version: 1.8.9
+problem: !SequentialCoupling
+  description: Test14 - 2D transport with time variable boundarty
+  mesh:
+    mesh_file: ./input/test14.msh
+  primary_equation: !SteadyDarcy_MH
+    input_fields:
+    - region: BULK
+      conductivity: 0.1
+    - region: BOUNDARY
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: x
+    n_schurs: 2
+    output:
+      output_stream: 
+        file: ./test14.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
+      input_fields:
+      - region: BULK
+        init_conc: 0
+      - region: BOUNDARY
+        bc_conc: 20
+        time: 1
+      - region: BOUNDARY
+        bc_conc: 0
+        time: 3
+      - region: BOUNDARY
+        bc_conc: 40
+        time: 6
+      - region: BOUNDARY
+        bc_conc: 0
+        time: 7
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    output_stream: 
+      file: ./transport-implicit.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 1.0
+      name: transport_output_stream
+    substances:
+    - A
+    time:
+      end_time: 10.0
+      init_dt: 1.0
+    balance:
+      cumulative: true

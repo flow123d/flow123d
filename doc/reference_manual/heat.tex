@@ -28,18 +28,32 @@ where \hyperA{HeatTransfer-DG-Data::fluid-thermal-source}{$f_l^T$}, \hyperA{Heat
 
 
 \paragraph{Initial and boundary conditions.}
-At time $t=0$ the temperature is determined by the initial condition
-$$ T(0,\vc x) = \hyperA{HeatTransfer-DG-Data::init-temperature}{T_0}(\vc x). $$
-Given the decomposition of $\partial\Omega_d$ into $\Gamma_I\cup\Gamma_D\cup\Gamma_N\cup\Gamma_R$ (see Section \ref{sc:transport_model}), we prescribe the following boundary conditions:
+At time $t=0$ the temperature is determined by the \hyperA{HeatTransfer-DG-Data::init-temperature}{initial condition} $T_0$ [K]:
+\[ T(0,\vc x) = T_0(\vc x). \]
+Given the decomposition of $\partial\Omega_d$ into $\Gamma_I\cup\Gamma_D\cup\Gamma_{TF}\cup\Gamma_{DF}$ (see also Section \ref{sc:transport_model}), we prescribe the following boundary conditions:
 \begin{itemize}
-\item Dirichlet:
-\[ T = \hyperA{HeatTransfer-DG-Data::bc-temperature}{T_D} \mbox{ on }\Gamma_I^+\cup\Gamma_D, \]
-\item Homogeneous Neumann:
-\[ \left(\varrho_l c_l T \vc q - \delta\Lambda\nabla T\right)\cdot\vc n = 0 \mbox{ on }\Gamma_I^-, \]
-\item Neumann:
-\[ \left(\varrho_l c_l T \vc q - \delta\Lambda\nabla T\right)\cdot\vc n = \hyperA{HeatTransfer-DG-Data::bc-flux}{f_N} \mbox{ on }\Gamma_N, \]
-\item Robin (Newton):
-\[ \left(\varrho_l c_l T \vc q - \delta\Lambda\nabla T\right)\cdot\vc n = \hyperA{HeatTransfer-DG-Data::bc-robin-sigma}{\sigma_R}(T-\hyperA{HeatTransfer-DG-Data::bc-temperature}{T_D}) \mbox{ on }\Gamma_R. \]
+\item \textbf{inflow} Default boundary condition. On the inflow $\Gamma_I^+$ the \hyperA{HeatTransfer-DG-Data::bc-temperature}{reference temperature} $T_D$ [K] is enforced through total flux:
+\[ \left(\varrho_l c_l T \vc q - \delta\Lambda\nabla T\right)\cdot\vc n = \varrho_l c_l T_D\vc q\cdot\vc n, \]
+while on the outflow $\Gamma_I^-$ we prescribe zero diffusive flux:
+\[ -\delta\Lambda\nabla T\cdot\vc n = 0. \] 
+\item \textbf{dirichlet} On $\Gamma_D$, the Dirichlet condition is imposed via \hyperA{HeatTransfer-DG-Data::bc-temperature}{prescribed temperature} $T_D$:
+\[ T = T_D \mbox{ on }\Gamma_I^+\cup\Gamma_D. \]
+\item \textbf{total\_flux}
+On $\Gamma_{TF}$ we impose total energy flux condition:
+\[ \left(\varrho_l c_l T \vc q - \delta\Lambda\nabla T\right)\cdot\vc n = \delta(f^T_N+\sigma^T_R(T-T_D)). \]
+with user-defined \hyperA{HeatTransfer-DG-Data::bc-flux}{energy flux} $f^T_N$ [J$\mathrm{m}^{-2}\mathrm{s}^{-1}$],
+\hyperA{HeatTransfer-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^T_R$ [J$\mathrm{m}^{-2}\mathrm{s}^{-1}\mathrm{K}^{-1}$] and \hyperA{HeatTransfer-DG-Data::bc-temperature}{reference temperature} $T_D$.
+\item \textbf{diffusive\_flux} Finally on $\Gamma_{DF}$ we prescribe diffusive energy flux (similarly as above):
+\[ -\delta\Lambda\nabla T\cdot\vc n = \delta(f^T_N+\sigma^T_R(T-T_D)). \]
+\end{itemize}
+We mention several typical uses of boundary conditions:
+\begin{itemize}
+\item natural inflow: Use dirichlet or inflow b.c. (the later type is useful when the location of liquid inflow is not known a priori) and specify $T_D$.
+\item natural outflow: The energy in the domain decreases only due to advection. Use zero diffusive\_flux or inflow (the latter in case that the outflow boundary is not known a priori).
+\item boundary with known energy flux: Use total\_flux and $f_N^T$.
+\item thermally insulated boundary: Use zero total\_flux.
+\item partially permeable boundary: The energy transfer is proportional to the temperature difference inside and outside the domain.
+Use diffusive\_flux, $T_D$ and $\sigma_R^T$.
 \end{itemize}
 
 

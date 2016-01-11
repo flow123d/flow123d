@@ -1,3 +1,19 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    linear_ode_solver.cc
+ * @brief   
+ */
 
 #include "reaction/linear_ode_solver.hh"
 
@@ -6,8 +22,8 @@
 
 using namespace Input::Type;
 
-AbstractRecord & LinearODESolverBase::get_input_type() {
-	return AbstractRecord("LinearODESolver",
+Abstract & LinearODESolverBase::get_input_type() {
+	return Abstract("LinearODESolver",
 			"Solver of a linear system of ODEs.")
 			.close();
 }

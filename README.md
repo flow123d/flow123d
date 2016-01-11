@@ -57,6 +57,7 @@ take long. Optionally you may need
                         on RedHat type distributions you may need texlive-cooltooltips, on Debian/Ubuntu 
 			texlive-latex-extra
 * imagemagick		tool is used to generate some graphics for the reference manual	
+* Python 2.7 and python libraries - markdown, json for HTML manual
 
 Flow123d depends also on PETSc library. It can be installed automatically during configuration,
 but for good parallel performance it has to be configured manually see appropriate section later on.

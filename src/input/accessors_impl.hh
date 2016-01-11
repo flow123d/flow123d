@@ -1,8 +1,18 @@
-/*
- * accessors_impl.hh
+/*!
  *
- *  Created on: Aug 1, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    accessors_impl.hh
+ * @brief   
  */
 
 #ifndef ACCESSORS_IMPL_HH_
@@ -184,7 +194,7 @@ inline bool IteratorBase::operator != (const IteratorBase &that) const
 
 
 inline IteratorBase::operator bool() const {
-	const StorageBase *s = address_.storage_head()->get_item(index_);
+	StorageBase *s = address_.storage_head()->get_item(index_);
     return ( s && ! s->is_null() );
 }
 

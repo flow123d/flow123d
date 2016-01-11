@@ -1,12 +1,21 @@
-/*
- * field_python.hh
+/*!
  *
- *  Created on: Aug 30, 2012
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_python.hh
+ * @brief   
+ * @todo    make FieldPython dummy class if we do not have python, so that we
+ *          need not optional code elsewhere
  */
-// TODO: make FieldPython dummy class if we do not have python, so that we
-// need not optional code elsewhere
-
 
 #ifndef FIELD_PYTHON_HH_
 #define FIELD_PYTHON_HH_
@@ -44,7 +53,7 @@ public:
 
     virtual void init_from_input(const Input::Record &rec);
 
-    static const Input::Type::Record & get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type();
 
     /**
      * Set the file and field to be called.

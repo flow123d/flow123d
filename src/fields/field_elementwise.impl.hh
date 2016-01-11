@@ -1,8 +1,18 @@
-/*
- * field_elementwise.impl.hh
+/*!
  *
- *  Created on: Jan 23, 2013
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field_elementwise.impl.hh
+ * @brief   
  */
 
 #ifndef FIELD_ELEMENTWISE_IMPL_HH_
@@ -19,13 +29,14 @@
 
 namespace IT = Input::Type;
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_elementwise)
+
+
 template <int spacedim, class Value>
-const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
-        .derive_from(a_type)
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
@@ -36,7 +47,8 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldElementwise<spacedim, Value>::registrar =
-		Input::register_class< FieldElementwise<spacedim, Value>, unsigned int >("FieldElementwise");
+		Input::register_class< FieldElementwise<spacedim, Value>, unsigned int >("FieldElementwise") +
+		FieldElementwise<spacedim, Value>::get_input_type().size();
 
 
 

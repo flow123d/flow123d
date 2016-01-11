@@ -1,8 +1,18 @@
-/*
- * field.impl.hh
+/*!
  *
- *  Created on: Feb 13, 2014
- *      Author: jb
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    field.impl.hh
+ * @brief   
  */
 
 #ifndef FIELD_IMPL_HH_
@@ -13,6 +23,7 @@
 #include "field.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
+#include "input/accessors.hh"
 
 
 /******************************************************************************************
@@ -98,12 +109,8 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
-	if (is_enum_valued) {
-		return make_input_tree();
-	} else {
-		return FieldBaseType::get_input_type();
-	}
+const it::Instance &Field<spacedim,Value>::get_input_type() {
+	return FieldBaseType::get_input_type_instance(shared_->input_element_selection_);
 }
 
 
@@ -114,37 +121,6 @@ it::Record &Field<spacedim,Value>::get_multifield_input_type() {
 
 	static it::Record rec = it::Record();
 	return rec;
-}
-
-
-
-/// ---------- Helper function template for make_input_tree method
-template <class FieldBaseType>
-IT::AbstractRecord & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::true_type&)
-{
-    ASSERT( sel != nullptr,
-    		"NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
-    return FieldBaseType::get_input_type(sel);
-}
-
-
-template <class FieldBaseType>
-IT::AbstractRecord & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::false_type&)
-{
-    return FieldBaseType::get_input_type(nullptr);
-}
-/// ---------- end helper function template
-
-
-
-
-template<int spacedim, class Value>
-it::AbstractRecord & Field<spacedim,Value>::make_input_tree() {
-	ASSERT(is_enum_valued,
-			"Can not use make_input_tree() for non-enum valued fields, use get_inout_type() instead.\n" );
-    return get_input_type_resolution<FieldBaseType>(
-            shared_->input_element_selection_ ,
-            boost::is_same<typename Value::element_type, FieldEnum>());
 }
 
 
@@ -337,29 +313,21 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
     // read input up to given time
 	double input_time;
     if (shared_->input_list_.size() != 0) {
-        while( shared_->list_it_ != shared_->input_list_.end()
-        	   && time.ge( input_time = shared_->list_it_->val<double>("time") ) ) {
+        while( shared_->list_idx_ < shared_->input_list_.size()
+        	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
 
         	// get domain specification
         	RegionSet domain;
         	std::string domain_name;
         	unsigned int id;
-			if (shared_->list_it_->opt_val("r_set", domain_name)) {
+			if (shared_->input_list_[shared_->list_idx_].opt_val("region", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 				if (domain.size() == 0) {
 					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << shared_->list_it_->ei_address() );
+							<< RegionDB::EI_Label(domain_name) << shared_->input_list_[shared_->list_idx_].ei_address() );
 				}
 
-			} else if (shared_->list_it_->opt_val("region", domain_name)) {
-				// try find region by label
-				Region region = mesh()->region_db().find_label(domain_name);
-				if(region.is_valid())
-				  domain.push_back(region);
-				else
-				  xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
-
-			} else if (shared_->list_it_->opt_val("rid", id)) {
+			} else if (shared_->input_list_[shared_->list_idx_].opt_val("rid", id)) {
 				try {
 					Region region = mesh()->region_db().find_id(id);
 					if(region.is_valid())
@@ -367,19 +335,19 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 					else
 					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
-					e << shared_->input_list_.ei_address();
+					e << shared_->input_list_[shared_->list_idx_].ei_address();
 					throw;
 				}
 			} else {
 				THROW(ExcMissingDomain()
-						<< shared_->list_it_->ei_address() );
+						<< shared_->input_list_[shared_->list_idx_].ei_address() );
 			}
 		    
 			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
 
 			// get field instance   
 			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
-				FieldBasePtr field_instance = (*rit)->create_field(*(shared_->list_it_), *this);
+				FieldBasePtr field_instance = (*rit)->create_field(shared_->input_list_[shared_->list_idx_], *this);
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
@@ -394,7 +362,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				}
 		    }
 
-        	++shared_->list_it_;
+        	++shared_->list_idx_;
         }
     }
 }
@@ -436,8 +404,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     	std::string region_list;
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
-    	auto input_type = get_input_type();
-        Input::ReaderToStorage reader( default_input, input_type, Input::FileFormat::format_JSON );
+    	auto input_type = get_input_type().make_instance().first;
+        Input::ReaderToStorage reader( default_input, *input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
         auto field_ptr = FieldBaseType::function_factory( a_rec , n_comp() );
@@ -469,6 +437,45 @@ typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase:
 		return FieldBaseType::function_factory(field_record, field.n_comp() );
 	else
 		return FieldBasePtr();
+}
+
+
+template<int spacedim, class Value>
+bool Field<spacedim,Value>::FactoryBase::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
+	return in_rec.find<Input::AbstractRecord>(input_name);
+}
+
+
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
+    if (! flags().match(FieldFlag::declare_input)) return;
+
+    // check that times forms ascending sequence
+    double time,last_time=0.0;
+
+    for (Input::Iterator<Input::Record> it = list.begin<Input::Record>();
+					it != list.end();
+					++it) {
+    	for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
+			if ( (*rit)->is_active_field_descriptor( (*it), this->input_name() ) ) {
+				shared_->input_list_.push_back( Input::Record( *it ) );
+				time = it->val<double>("time");
+				if (time < last_time) {
+					THROW( ExcNonascendingTime()
+							<< EI_Time(time)
+							<< EI_Field(input_name())
+							<< it->ei_address());
+				}
+				last_time = time;
+
+				break;
+			}
+    	}
+	}
+
+    shared_->list_idx_ = 0;
 }
 
 

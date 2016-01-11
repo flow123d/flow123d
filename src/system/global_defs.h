@@ -1,30 +1,18 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file   global_defs.h
- * @brief  Global macros to enhance readability and debugging, general constants.
- *
+ * 
+ * @file    global_defs.h
+ * @brief   Global macros to enhance readability and debugging, general constants.
  */
 
 #ifndef GLOBAL_DEFS_H
@@ -37,6 +25,7 @@
 
 #include "system/exc_common.hh"
 #include "config.h"
+#include "mpi.h"
 
 /*! @brief Debugging macros.
  *
@@ -107,16 +96,15 @@
  * usage of macros. And make robust "system" part, that
  * is MPI aware, but not MPI dependent.
  */
-#ifdef FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
-#define MPI_Comm_rank(A, B)
-#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
+//#ifdef FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
+//#define MPI_Comm_rank(A, B)
+//#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 
 #define ASSERT(i,...)   do {\
     if (!(i))  {\
         char msg[1024];\
         sprintf( msg, __VA_ARGS__);\
         int rank=-1;\
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);\
         THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
     }} while (0)
 
@@ -196,12 +184,12 @@ static const int debug_asserts_view = 0;
 
 
 /**
- * These macros are necessary in classes that contain Input::Type::AbstractRecord (PARENT macro)
- * and in classes contain descendant of this AbstractRecord (CHILD macro) if these descendants
+ * These macros are necessary in classes that contain Input::Type::Abstract (PARENT macro)
+ * and in classes contain descendant of this Abstract (CHILD macro) if these descendants
  * are initialized through methods of @p Input::Factory class.
  *
  * These macros are necessary for initializing of static variables in classes that contain
- * descendants of parent AbstractRecord.
+ * descendants of parent Abstract.
  */
 #define FLOW123D_FORCE_LINK_IN_CHILD(x) int force_link_##x = 0;
 #define FLOW123D_FORCE_LINK_IN_PARENT(x) extern int force_link_##x; void func_##x() { force_link_##x = 1; }

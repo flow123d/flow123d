@@ -12,8 +12,6 @@
 #include <flow_gtest.hh>
 
 #include <input/input_type.hh>
-#include <input/type_record.hh>
-#include <input/type_base.hh>
 #include <input/type_output.hh>
 #include <input/factory.hh>
 

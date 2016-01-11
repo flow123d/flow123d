@@ -426,6 +426,17 @@ class Selection(ComplexNode):
     def include_in_format(self):
         return self.name.find('TYPE') == -1
 
+class Parameter(AbstractNode):
+    """
+    Class representing Parameter node in IST
+    """
+    __type__ = 'Selection'
+    __name_field__ = 'name'
+    __value_field__ = 'name'
+
+    _fields = AbstractNode._fields + [
+        Field('name'),
+    ]
 
 # all acceptable input_type
 registered_nodes = {
@@ -437,5 +448,6 @@ registered_nodes = {
     'Integer': Integer,
     'FileName': FileName,
     'Bool': Bool,
-    'Array': Array
+    'Array': Array,
+    'Parameter': Parameter
 }

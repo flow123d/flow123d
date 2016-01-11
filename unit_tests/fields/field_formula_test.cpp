@@ -15,6 +15,9 @@
 #include "input/reader_to_storage.hh"
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+
+
 string input = R"INPUT(
 {   
    init_conc={ // formula on 2d 
@@ -37,8 +40,8 @@ TEST(FieldFormula, read_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Record rec_type = Input::Type::Record("FieldFormulaTest","")
-        .declare_key("conductivity_3d", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
-        .declare_key("init_conc", VectorField::get_input_type(nullptr), Input::Type::Default::obligatory(), "" )
+        .declare_key("conductivity_3d", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
+        .declare_key("init_conc", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .close();
 
     // read input string
@@ -127,7 +130,8 @@ TEST(FieldFormula, set_time) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Type::Array  input_type(VectorField::get_input_type(nullptr));
+    Input::Type::Array  input_type(VectorField::get_input_type_instance());
+    input_type.finish();
 
     // read input string
     Input::ReaderToStorage reader( set_time_input, input_type, Input::FileFormat::format_JSON );

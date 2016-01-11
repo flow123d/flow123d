@@ -649,11 +649,12 @@ class LatexFormatter (object):
 
                 try:
                     fmt = LatexFormatter.get_formatter_for (item)
-                    tex.extend (fmt.format (item))
-                    tex.newline ()
-                    tex.newline ()
+                    if fmt is not None:
+                        tex.extend (fmt.format (item))
+                        tex.newline ()
+                        tex.newline ()
                 except NotImplementedError as e:
-                    print e
+                    pass
 
         return tex
 

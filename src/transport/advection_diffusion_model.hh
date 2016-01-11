@@ -1,30 +1,19 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief Discontinuous Galerkin method for equation of transport with dispersion.
- *  @author Jan Stebel
+ * 
+ * @file    advection_diffusion_model.hh
+ * @brief   Discontinuous Galerkin method for equation of transport with dispersion.
+ * @author  Jan Stebel
  */
 
 #ifndef AD_MODEL_HH_
@@ -45,6 +34,14 @@ namespace IT = Input::Type;
  */
 class AdvectionDiffusionModel {
 public:
+
+    enum Abstract_bc_types {
+//        abc_none,
+        abc_inflow,
+        abc_dirichlet,
+        abc_total_flux,
+        abc_diffusive_flux
+    };
 
 	/// Read or set names of solution components.
 	virtual void set_components(SubstanceList &substances, const Input::Record &in_rec) = 0;
@@ -85,14 +82,45 @@ public:
 			std::vector< arma::vec > &init_values) = 0;
 
 	/**
-	 * Computes the Dirichlet boundary condition values.
+	 * Return types of boundary conditions for each solution component.
+	 * @param ele_acc  Element accessor.
+	 * @param bc_types Vector of bc. types (output, see BC_Type)
+	 */
+	virtual void get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types) = 0;
+
+	/**
+	 * \brief Return data for diffusive or total flux b.c.
+	 *
+	 * The flux can in general take the form
+	 *
+	 *   cross_section*(flux + sigma*(solution - ref_value))
+	 *
 	 * @param point_list   Points at which to evaluate.
 	 * @param ele_acc      Element accessor.
-	 * @param bc_values    Vector of b.c. values (output).
+	 * @param bc_flux      Neumann flux (output).
+	 * @param bc_sigma     Transition parameter (output).
+	 * @param bc_ref_value Reference value (output).
 	 */
-	virtual void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
+	virtual void get_flux_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_values) = 0;
+			std::vector< arma::vec > &bc_flux,
+			std::vector< arma::vec > &bc_sigma,
+			std::vector< arma::vec > &bc_ref_value) = 0;
+
+	/**
+	 * \brief Return transition coefficient for flux b.c.
+	 *
+	 * In assembly of system matrix one does not teed all data for total/diffusive flux b.c.
+	 * This method therefore returns only the sigma coefficient.
+	 *
+	 * @param point_list   Points at which to evaluate.
+	 * @param ele_acc      Element accessor.
+	 * @param bc_sigma     Transition parameter (output).
+	 */
+	virtual void get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_sigma) = 0;
 
 	/**
 	 * Compute coefficients of volume sources.

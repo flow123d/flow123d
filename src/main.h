@@ -1,36 +1,26 @@
 /*!
  *
- * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
- * especially for academic research:
- * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
- *
- * This program is free software; you can redistribute it and/or modify it under the terms
- * of the GNU General Public License version 3 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not,
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
- *
- *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
- *
- * @file
- * @brief ???
- *
+ * 
+ * @file    main.h
+ * @brief   
  */
 
 #include <string>
-#include "input/input_type.hh"
+#include "input/input_type_forward.hh"
 #include "input/accessors.hh"
+#include "input/type_output.hh"
 #include "system/application_base.hh"
+#include "system/exceptions.hh"
 
 using namespace std;
 
@@ -41,6 +31,12 @@ using namespace std;
 
 class Application : public ApplicationBase {
 public:
+    TYPEDEF_ERR_INFO( EI_InputVersionStr, string);
+    DECLARE_EXCEPTION( ExcVersionFormat,
+            << "Wrong format of the version specification: "
+            << EI_InputVersionStr::qval);
+
+
     /// Root of the Input::Type tree. Description of whole input structure.
     static Input::Type::Record & get_input_type();
     
@@ -93,6 +89,9 @@ protected:
     void split_path(const string& path, string& directory, string& file_name);
 
 private:
+
+    /// Get version of program and other base data from rev_num.h and store them to map
+    Input::Type::RevNumData get_rev_num_data();
 
     /// directory of main input file (used to resolve relative paths of other input files)
     string main_input_dir_;

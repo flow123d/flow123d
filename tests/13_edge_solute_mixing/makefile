@@ -1,4 +1,4 @@
-INI_FILES="./flow_gmsh.con ./flow_implicit.con"
+INI_FILES="./flow_gmsh.yaml ./flow_implicit.yaml"
 NPROC="1 2"
 FLOW_PARAMS="-o output"
 

@@ -25,7 +25,7 @@
  *
  */
 
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
 #include "system/system.hh"
@@ -40,7 +40,6 @@
 #include "mesh/msh_gmshreader.h"
 
 #include "fields/field_interpolated_p0.hh"
-#include "fields/field_interpolated_p0.impl.hh"
 
 
 
@@ -136,11 +135,11 @@ public:
         mesh->read_gmsh_from_stream(in);
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
-            .declare_key("scalar", ScalarField::get_input_type(FieldAlgorithmBase<3, FieldValue<3>::Scalar>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
-            .declare_key("scalar_large", ScalarField::get_input_type(FieldAlgorithmBase<3, FieldValue<3>::Scalar>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
-            .declare_key("vector_fixed", VecFixField::get_input_type(FieldAlgorithmBase<3, FieldValue<3>::VectorFixed>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
-            .declare_key("vector", VecField::get_input_type(FieldAlgorithmBase<3, FieldValue<3>::Vector>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
-            .declare_key("tensor_fixed", TensorField::get_input_type(FieldAlgorithmBase<3, FieldValue<2>::TensorFixed>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar_large", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vector", VecField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
         Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );

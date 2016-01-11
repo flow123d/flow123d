@@ -3,14 +3,21 @@
     TYPE = "SequentialCoupling", 
     description = "Test2 - Transport 1D-2D (convection, dual porosity, sorption)", 
     mesh = {
-      mesh_file = "./input/test2.msh",
+      mesh_file = "./input/compatible.msh",
       sets = [
           {
             name = "subset",
-            region_ids = [
-                48,
-                184
+            region_labels = [
+                "2d",
+                "1d"
             ]
+          },
+          {              
+            name = ".sides",
+            region_labels = [
+              ".2d",
+              ".1d"
+            ]            
           }
         ]
     }, 
@@ -19,17 +26,22 @@
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { rid = 48,
+        { region = "1d",
           anisotropy = 10,
-          sigma = 0.05,
-          cross_section = 1
+          cross_section = 1,
+          sigma = 0.05
         },
-        { rid = 184,
+        { region = "2d",
           anisotropy = 1,
           cross_section = 1
         },
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test2.fbc"
+        {
+          r_set = ".sides",
+          bc_type="dirichlet",
+          bc_pressure={
+            TYPE="FieldFormula",
+            value="x"            
+          }
         }
       ],
 
@@ -37,7 +49,11 @@
 
       output = {
         output_stream = {
-          REF = "/system/output_streams/0"
+        file = "./test2.pvd", 
+        format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          }
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0", "region_id" ]
       }, 
@@ -52,9 +68,12 @@
       TYPE = "TransportOperatorSplitting", 
 
       input_fields=[
-        { 
-          region="IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test2.tbc"
+        {
+          r_set=".sides",
+          bc_conc = { 
+              TYPE="FieldFormula",
+              value="x/12.75"
+          }           
         },
         {
           r_set="subset",
@@ -64,7 +83,12 @@
       ],
 
       output_stream = {
-        REF = "/system/output_streams/1"
+        file = "./transport.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.5
       },
       
       output_fields=["conc", "region_id"],
@@ -131,20 +155,11 @@
 
   system = {
     output_streams = [
-      {
-        file = "./test2.pvd", 
-        format = {
-          TYPE = "vtk", 
-          variant = "ascii"
-        }, 
-        name = "flow_output_stream"
-      }, 
+
       {
         file = "./transport.pvd", 
         format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         time_step = 0.5,
