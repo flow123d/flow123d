@@ -2,6 +2,7 @@
 #define INTERSECTIONPOINT_H_
 
 #include <armadillo>
+#include <mesh/mesh_types.hh>
 
 namespace computeintersection{
 
@@ -132,6 +133,9 @@ public:
     unsigned int idx_B() const;     ///<  Returns the index of Simplex<M>.
     unsigned int orientation() const;   ///<  Returns the orientation.
     //@}
+    
+    
+    arma::vec::fixed<3> coords(ElementFullIter ele);
     
     /// Returns true, if this is a pathologic case.
     bool is_pathologic() const;

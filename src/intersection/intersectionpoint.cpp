@@ -7,6 +7,7 @@
 
 #include "intersectionpoint.h"
 #include "mesh/ref_element.hh"
+#include <mesh/elements.h>
 #include "system/system.hh"
 
 using namespace std;
@@ -77,7 +78,20 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned
     dim_B_ = M-2;
 };
 
+template<unsigned int N, unsigned int M>
+arma::vec::fixed< 3  > IntersectionPoint<N,M>::coords(ElementFullIter ele)
+{
+    ASSERT(N == ele->dim(), "Element vs intersection point dimension mismatch.");
     
+    arma::vec::fixed< 3  > c;
+    c.zeros();
+    for(unsigned int i=0; i<N+1; i++)
+        c += local_bcoords_A_[i+1]*ele->node[i]->point();
+        
+    return c;
+}
+ 
+
 template<> bool IntersectionPoint<2,3>::operator<(const IntersectionPoint<2,3> &ip) const{
 	return local_bcoords_A_[1] < ip.local_bcoords_A()[1] ||     // compare by x coordinate
            (local_bcoords_A_[1] == ip.local_bcoords_A()[1] &&   // in case of tie
