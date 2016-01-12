@@ -92,10 +92,10 @@ const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
                        "Dirichlet boundary condition. "
                        "Specify the pressure head through the 'bc_pressure' field "
                        "or the piezometric head through the 'bc_piezo_head' field.")
-               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
-                       "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
-                       "through 'bc_pressure' and 'bc_piezo_head' respectively.")
+//                .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+//                .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
+//                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
+//                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
                .add_value(total_flux, "total_flux", "Flux boundary condition. Combines Neumann and Robin type.")
 			   .close();
 }
@@ -176,15 +176,15 @@ DarcyFlowMH::EqData::EqData()
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Pressure value for Dirichlet or Robin/total flux boundary condition.", "0.0");
-    	bc_pressure.disable_where(bc_type, {none, neumann} );
+    	bc_pressure.disable_where(bc_type, {none/*, neumann*/} );
         bc_pressure.units( UnitSI().m() );
 
     ADD_FIELD(bc_flux,"Flux in Neumman or total flux boundary condition.", "0.0");
-    	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
+    	bc_flux.disable_where(bc_type, {none, dirichlet/*, robin*/} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin or total flux boundary condition.", "0.0");
-    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
+    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet/*, neumann*/} );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     //these are for unsteady
@@ -562,16 +562,16 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     ls->rhs_set_value(edge_row, -bc_pressure);
                     ls->mat_set_value(edge_row, edge_row, -1.0);
 
-                } else if ( type == EqData::neumann) {
-                    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
-                    ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
-
-                } else if ( type == EqData::robin) {
-                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
-                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
-                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-
+//                 } else if ( type == EqData::neumann) {
+//                     double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
+//                     ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
+// 
+//                 } else if ( type == EqData::robin) {
+//                     double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+//                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
+//                     ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
+//                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+// 
 		} else if ( type == EqData::total_flux) {
 		    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
 		    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
