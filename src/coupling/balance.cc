@@ -499,7 +499,7 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 
 	if (rank_ == 0)
 		// sum fluxes in one step
-		increment_fluxes_[quantity_idx] += sum_fluxes*dt;
+		increment_fluxes_[quantity_idx] -= sum_fluxes*dt;
 }
 
 
@@ -603,7 +603,7 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	VecGetLocalSize(temp, &lsize);
 	for (int e=0; e<lsize; ++e)
 	{
-		if (flux_array[e] > 0)
+		if (flux_array[e] < 0)
 			fluxes_out_[quantity_idx][be_regions_[e]] += flux_array[e];
 		else
 			fluxes_in_[quantity_idx][be_regions_[e]] += flux_array[e];

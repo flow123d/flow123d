@@ -585,7 +585,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 
                 if (balance_ != nullptr)
                 {
-                    balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
+		    // We sum negative side fluxes which are oriented outwards, since the
+		    // fluxes in input and output are interpreted as incoming.
+                    balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {-1});
                 }
                 ++loc_b;
             }

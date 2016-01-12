@@ -73,8 +73,8 @@ class RegionDB;
  *
  * where
  *
- * 	fp(q,c,r)...positive (outward) flux of q-th quantity's c-th component in region r
- * 	fn(q,c,r)...negative (inward) flux of q-th quantity's c-th component in region r
+ * 	fp(q,c,r)...positive (inward) flux of q-th quantity's c-th component in region r
+ * 	fn(q,c,r)...negative (outward) flux of q-th quantity's c-th component in region r
  * 	sp(q,c,r)...positive source (spring) of q-th quantity's c-th component in region r
  * 	sn(q,c,r)...negative source (sink) of q-th quantity's c-th component in region r
  *

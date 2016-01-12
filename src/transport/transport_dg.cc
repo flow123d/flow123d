@@ -1348,7 +1348,7 @@ void TransportDG<Model>::set_boundary_conditions()
 					}
 					if (Model::balance_ != nullptr)
 						for (unsigned int i=0; i<ndofs; i++)
-							local_flux_balance_rhs -= local_rhs[i];
+							local_flux_balance_rhs += local_rhs[i];
 				}
 				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
 				{
@@ -1366,14 +1366,14 @@ void TransportDG<Model>::set_boundary_conditions()
 						{
 							for (unsigned int i=0; i<ndofs; i++)
 							{
-								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
+								local_flux_balance_vector[i] -= (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
 										- arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
 										+ gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
 							}
 						}
 						if (Model::time_->tlevel() > 0)
 							for (unsigned int i=0; i<ndofs; i++)
-								local_flux_balance_rhs -= local_rhs[i];
+								local_flux_balance_rhs += local_rhs[i];
 					}
 				}
 				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
@@ -1390,8 +1390,8 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int i=0; i<ndofs; i++)
 						{
 							for (unsigned int k=0; k<qsize; k++)
-								local_flux_balance_vector[i] += csection[k]*bc_sigma[k][sbi]*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-							local_flux_balance_rhs -= local_rhs[i];
+								local_flux_balance_vector[i] -= csection[k]*bc_sigma[k][sbi]*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+							local_flux_balance_rhs += local_rhs[i];
 						}
 					}
 				}
@@ -1409,8 +1409,8 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int i=0; i<ndofs; i++)
 						{
 							for (unsigned int k=0; k<qsize; k++)
-								local_flux_balance_vector[i] += csection[k]*(arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-							local_flux_balance_rhs -= local_rhs[i];
+								local_flux_balance_vector[i] -= csection[k]*(arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+							local_flux_balance_rhs += local_rhs[i];
 						}
 					}
 				}
@@ -1421,7 +1421,7 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int k=0; k<qsize; k++)
 						{
 							for (unsigned int i=0; i<ndofs; i++)
-								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+								local_flux_balance_vector[i] -= arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
 						}
 					}
 				}
