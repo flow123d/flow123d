@@ -27,6 +27,32 @@ InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 InspectElements::~InspectElements(){};
 
 template<>
+void InspectElements::compute_intersections_init<1,2>(){
+    flag_for_3D_elements.assign(mesh->n_elements(), -1);
+    closed_elements.assign(mesh->n_elements(), false);
+    intersection_point_list.assign(mesh->n_elements(),std::vector<IntersectionPoint<1,2>>());
+
+    if(elements_bb.size() == 0){
+        elements_bb.resize(mesh->n_elements());
+        bool first_2d_element = true;
+        FOR_ELEMENTS(mesh, elm) {
+
+            elements_bb[elm->index()] = elm->bounding_box();
+
+                if (elm->dim() == 2){
+                    if(first_2d_element){
+                        first_2d_element = false;
+                        mesh_3D_bb = elements_bb[elm->index()];
+                    }else{
+                        mesh_3D_bb.expand(elements_bb[elm->index()].min());
+                        mesh_3D_bb.expand(elements_bb[elm->index()].max());
+                    }
+                }
+        }
+    }
+};
+
+template<>
 void InspectElements::compute_intersections_init<1,3>(){
 	flag_for_3D_elements.assign(mesh->n_elements(), -1);
 	closed_elements.assign(mesh->n_elements(), false);
@@ -77,6 +103,69 @@ void InspectElements::compute_intersections_init<2,3>(){
 		}
 	}
 };
+
+template<>
+void InspectElements::compute_intersections<1,2>(){
+
+    compute_intersections_init<1,2>();
+    BIHTree bt(mesh, 20);
+
+    FOR_ELEMENTS(mesh, elm) {
+        if (elm->dim() == 1 &&                                  // is 1D element
+            !closed_elements[elm->index()] &&                   // is not closed yet
+            elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 2D mesh bounding box
+        {
+            DBGMSG("-----Nalezen 1D element------ \n");
+
+            update_abscissa(elm);
+            std::vector<unsigned int> searchedElements;
+            bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
+
+            // go through all 2D elements that can have possibly intersection with 1D elements bounding box
+            for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++){
+                int idx = *it;
+                ElementFullIter ele = mesh->element( idx );
+                if (ele->dim() == 2 && flag_for_3D_elements[ele->index()] == -1) {
+
+                    update_triangle(ele);
+
+//                     vector<IntersectionPoint> IPs;
+//                     IPs.reserve(2);
+                    ComputeIntersection<Simplex<1>, Simplex<2>> CI_12(abscissa, triangle);
+                    
+//                     DBGMSG("IL IPs:\n");
+//                     for(unsigned int i=0; i < il.size(); i++)
+//                         std::cout << il.points()[i];
+                    
+                    if(CI_12.compute(intersection_point_list[elm->index()], true, true)){
+                        closed_elements[elm->index()] = true;
+                        flag_for_3D_elements[ele->index()] = elm->index();
+                        
+                        // trace IPs in the direction of line (if IPs are 2)
+//                         if(intersection_point_list[elm->index()].size() == 2)
+//                         {
+//                             if(intersection_point_list[elm->index()][0].local_bcoords_A()[1] >
+//                                intersection_point_list[elm->index()][1].local_bcoords_A()[1]
+//                             )
+//                             std:swap(intersection_point_list[elm->index()][0],intersection_point_list[elm->index()][1]);
+//                         }
+
+                        //TODO: prolongation in parallel pathologic case (2 IPs) (I dont know what about IP being triangle vertex)
+//                         prolongate_elements(il, elm, ele);
+// 
+//                         while(!prolongation_point_queue.empty()){
+// 
+//                             prolongate((ProlongationPoint)prolongation_point_queue.front());
+//                             prolongation_point_queue.pop();
+// 
+//                         }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
 
 template<>
 void InspectElements::compute_intersections<1,3>(){

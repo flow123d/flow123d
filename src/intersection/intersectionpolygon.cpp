@@ -195,6 +195,7 @@ void IntersectionPolygon::trace_polygon_convex_hull(std::vector<unsigned int> &p
     // sort IPs using IP's operator <
 	std::sort(i_points_.begin(),i_points_.end());
 
+    //TODO: think about removing?? at this point we have already found IPs, no need to remove them...
 	// Remove duplicit IPs, use geometry epsilon for comparison
 	for(unsigned int i = 0; i < i_points_.size()-1; i++){
 		if((fabs(i_points_[i].local_bcoords_A()[0] - i_points_[i+1].local_bcoords_A()[0]) < geometry_epsilon) &&

@@ -23,6 +23,8 @@ namespace computeintersection {
 // forward declare
 struct ProlongationLine;
 struct ProlongationPoint;
+
+template<unsigned int N, unsigned int M> class IntersectionPoint;
 class IntersectionLine;
 class IntersectionPolygon;
     
@@ -33,6 +35,9 @@ class IntersectionPolygon;
 */
 class InspectElements {
 
+    // For case 1D-2D - list of intersection points
+    std::vector<std::vector<IntersectionPoint<1,2>>> intersection_point_list;
+    
 	// For case 2D-3D - list of intersectionpolygon
 	std::vector<std::vector<IntersectionPolygon>> intersection_list;
 	// For case 1D-3D - list of intersectionline
@@ -89,6 +94,7 @@ public:
 	template<unsigned int subdim, unsigned int dim>
 	void compute_intersections_init();
 
+    const std::vector<IntersectionPoint<1,2>> & list_intersection_points(unsigned int ele_idx);
     const std::vector<IntersectionLine> & list_intersection_lines(unsigned int idx_component_1D);
     
 	void print_mesh_to_file(std::string name);
@@ -126,6 +132,12 @@ inline const std::vector< IntersectionLine >& InspectElements::list_intersection
 {
     ASSERT_LESS(ele_idx, intersection_line_list.size());
     return intersection_line_list[ele_idx];
+}
+
+inline const vector< IntersectionPoint< 1, 2 > >& InspectElements::list_intersection_points(unsigned int ele_idx)
+{
+    ASSERT_LESS(ele_idx, intersection_point_list.size());
+    return intersection_point_list[ele_idx];
 }
 
 
