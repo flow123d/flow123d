@@ -1,6 +1,6 @@
 "time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
 0	"1d"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"2d"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
-0	".1d"	"water_volume"	28.987	0	28.987	0	0	0	0	0	0	0	0	0
-0	".2d_bottom_top"	"water_volume"	-45.1026	-45.1026	0	0	0	0	0	0	0	0	0	0
-0	"IMPLICIT BOUNDARY"	"water_volume"	1.68714e-08	-1.07885e-08	2.76598e-08	0	0	0	0	0	0	0	0	0
+0	".1d"	"water_volume"	-28.987	0	-28.987	0	0	0	0	0	0	0	0	0
+0	".2d_bottom_top"	"water_volume"	45.1026	45.1026	0	0	0	0	0	0	0	0	0	0
+0	"IMPLICIT BOUNDARY"	"water_volume"	-4.39197e-10	2.24107e-09	-2.68026e-09	0	0	0	0	0	0	0	0	0

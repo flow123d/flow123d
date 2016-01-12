@@ -2,4 +2,4 @@
 0	"region_7"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"left_source"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"right_source"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
-0	"IMPLICIT BOUNDARY"	"water_volume"	-8.99703e-12	-0.4	0.4	0	0	0	0	0	0	0	0	0
+0	"IMPLICIT BOUNDARY"	"water_volume"	9.59784e-12	0.4	-0.4	0	0	0	0	0	0	0	0	0
