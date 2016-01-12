@@ -60,13 +60,15 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 
 template<int spacedim, class Value>
-Field<spacedim,Value>::Field(unsigned int component_index)
+Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name)
 : data_(std::make_shared<SharedData>())
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 	this->set_component_index(component_index);
+	this->name_ = (name=="") ? input_name : name;
+	this->shared_->input_name_ = input_name;
 
 	this->multifield_ = false;
 }

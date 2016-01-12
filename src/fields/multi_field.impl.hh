@@ -125,24 +125,24 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
+	string full_name;
 	ASSERT(comp_size, "Vector of component names is empty!\n");
 	ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
 
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
     {
-    	sub_fields_.push_back( SubFieldType(i_comp) );
+    	if (this->shared_->comp_names_[i_comp].length() == 0)
+    		full_name = name();
+    	else {
+    		full_name = this->shared_->comp_names_[i_comp] + "_" + name();
+    	}
+
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name) );
     	sub_fields_[i_comp].units( units() );
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
     	sub_fields_[i_comp].add_factory( std::make_shared<MultiFieldFactory>(i_comp) );
-
-    	if (this->shared_->comp_names_[i_comp].length() == 0)
-    		sub_fields_[i_comp].name( name() );
-    	else {
-    		sub_fields_[i_comp].name_ = this->shared_->comp_names_[i_comp] + "_" + name();
-    		sub_fields_[i_comp].shared_->input_name_ = name();
-    	}
 
     	sub_fields_[i_comp].flags_ = this->flags_;
     	sub_fields_[i_comp].set_input_list(this->full_input_list_);
