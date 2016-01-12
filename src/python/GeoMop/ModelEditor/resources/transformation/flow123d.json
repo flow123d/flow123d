@@ -34,35 +34,6 @@
         }
     },
     {
-        "NAME": "Change sign in bc_flux in heat (formula)",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/secondary_equation/input_fields/*/bc_flux/value",
-          "parent-type-filter" : "FieldFormula",
-          "old_value" : "*",
-          "new_value" : "*"
-        }
-    },
-    {
-        "NAME": "Change sign in bc_flux in SteadyDarcy_MH (constant value)",
-        "action": "scale-value",
-        "parameters":{
-          "path" : "/problem/primary_equation/input_fields/*/bc_flux",
-          "type-filter" : "FieldConstant",
-          "scale" : "-1"
-        }
-    },
-    {
-        "NAME": "Change sign in bc_flux in SteadyDarcy_MH (formula)",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/primary_equation/input_fields/*/bc_flux/value",
-          "parent-type-filter" : "FieldFormula",
-          "old_value" : "*",
-          "new_value" : "*"
-        }
-    },
-    {
         "NAME": "Rename SoluteTransportDG neumann bc to total_flux",
         "action": "change-value",
         "parameters":{
