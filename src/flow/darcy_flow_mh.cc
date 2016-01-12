@@ -175,15 +175,15 @@ DarcyFlowMH::EqData::EqData()
         bc_type.input_selection( &get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
+    ADD_FIELD(bc_pressure,"Pressure value for Dirichlet or Robin/total flux boundary condition.", "0.0");
     	bc_pressure.disable_where(bc_type, {none, neumann} );
         bc_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
+    ADD_FIELD(bc_flux,"Flux in Neumman or total flux boundary condition.", "0.0");
     	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin or total flux boundary condition.", "0.0");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
