@@ -178,7 +178,7 @@ DarcyFlowMH::EqData::EqData()
         bc_type.input_selection( &get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(bc_pressure,"Pprescribed pressure value for bc_type=\"dirichlet\" or reference pressure for bc_type=\"total_flux\".", "0.0");
+    ADD_FIELD(bc_pressure,"Prescribed pressure value for bc_type=\"dirichlet\" or reference pressure for bc_type=\"total_flux\".", "0.0");
     	bc_pressure.disable_where(bc_type, {none/*, neumann*/} );
         bc_pressure.units( UnitSI().m() );
 
