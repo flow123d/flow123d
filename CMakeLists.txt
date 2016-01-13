@@ -552,6 +552,9 @@ endif()
 # PYTHON
 #
 # optionaly we use Python interface
+set(FLOW_WRAPPER "#!/bin/bash\n")
+set(FLOW_WRAPPER "${FLOW_WRAPPER}\n")
+
 if (USE_PYTHON)
     message(STATUS "\n ======================================================= ")
     find_package(PythonLibs 2.7)
@@ -601,14 +604,21 @@ if (USE_PYTHON)
             # remove prefix from each python path
             # and recursively copy not overwrite existing files
             # python path locations
+            # we strip prefix designated by python variable sys-prefix
+            # on linux we get something like "/usr"
+            # on windows we get path to installation folder
             foreach(PY_PATH ${PY_PATHS})
                 string(REPLACE "${PY_PREFIX}" "" PY_ALT_PATH "${PY_PATH}")
-                list(APPEND PYTHON_WRAPPER_PATHS "${PY_ALT_PATH}")
-                message(STATUS "rsync -rR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/")
+                list(APPEND PYTHON_WRAPPER_PATHS ".${PY_ALT_PATH}")
+                message(STATUS "rsync -aR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/")
                 execute_process(
-                  COMMAND rsync -rR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/
+                  COMMAND rsync -aR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/
                  )
+                 set(FLOW_WRAPPER "${FLOW_WRAPPER}PYTHONPATH=\${PYTHONPATH}:.${PY_ALT_PATH}\n")
             endforeach(PY_PATH)
+            execute_process(
+              COMMAND chmod -R 764 ${TARGET_PREFIX}/
+             )
             
             message(STATUS "Python prefix: ${PY_PREFIX}")
             message(STATUS "Python target prefix: ${TARGET_PREFIX}")
@@ -623,7 +633,9 @@ if (USE_PYTHON)
             execute_process(
                 COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${TARGET_PREFIX}/lib/flow123d 
                 )
-
+                
+            list(APPEND PYTHON_WRAPPER_PATHS "./lib/flow123d")
+            set(FLOW_WRAPPER "${FLOW_WRAPPER}PYTHONPATH=\${PYTHONPATH}:./lib/flow123d\n")
             # copy python include (h files for embedded python)
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          
@@ -635,7 +647,7 @@ if (USE_PYTHON)
                 COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${TARGET_PREFIX}/include 
                 )                           
             
-                
+            set(FLOW_WRAPPER "${FLOW_WRAPPER}export PYTHONPATH=\${PYTHONPATH}\n")
         endif()
     else()
         set(PYTHON_INCLUDE_DIRS "")
@@ -720,7 +732,10 @@ add_custom_target(update_source_tree
     COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
-   
+
+# generate wrapper file
+message(STATUS "GENERATING WRAPPER FILE ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh")
+FILE(WRITE "${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh" "${FLOW_WRAPPER}")
 
 #### create rev_num.h - file with some info about code origin
 # a custom target - is always built -> call cmake script to generate rev_num.h
@@ -900,7 +915,7 @@ endif()
 install(DIRECTORY bin/config              DESTINATION bin/)
 install(DIRECTORY bin/ndiff               DESTINATION bin/)
 install(DIRECTORY bin/paraview            DESTINATION bin/)
-install(DIRECTORY bin/python                  DESTINATION bin/)
+install(DIRECTORY bin/python              DESTINATION bin/)
 install(PROGRAMS  bin/tests/run_test.sh   DESTINATION bin/tests)
 
 install(PROGRAMS  bin/flow123d.sh         DESTINATION bin/)
@@ -921,23 +936,21 @@ else()
         PATTERN lib/python* EXCLUDE
         PATTERN *.a EXCLUDE
         )
+    install(PROGRAMS build_tree/bin/flow123d_wrapper2.sh   DESTINATION bin/)
 endif()        
 
-# install python modules
+# install python modules and system libs
 if (PYTHON_COPY)
-    install(DIRECTORY build_tree/${PYTHON_COPY_LIB_TARGET} 
-            DESTINATION lib
-            PATTERN *.dll EXCLUDE
-            PATTERN *.a EXCLUDE
-            PATTERN *.so EXCLUDE
-            PATTERN */dist-packages EXCLUDE
-            PATTERN *.py EXCLUDE)
+    install(DIRECTORY build_tree/lib/
+            DESTINATION lib/)
+    install(DIRECTORY build_tree/lib64/
+            DESTINATION lib64/)
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
             DESTINATION include)
 endif()
 
 install(TARGETS    bin/flow123d  
-  RUNTIME DESTINATION bin)
+        RUNTIME DESTINATION bin)
 install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
 
