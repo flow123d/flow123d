@@ -164,7 +164,8 @@ public:
     	std::sort( cpy.begin(), cpy.end() );
     	cpy.erase( std::unique( cpy.begin(), cpy.end() ), cpy.end() );
     	if (names.size() != cpy.size()) {
-    		xprintf(PrgErr, "The field '%s' has set non-unique names of components.\n", this->name());
+			THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
+												+ " has set non-unique names of components.") );
     	}
 
         shared_->comp_names_ = names;
