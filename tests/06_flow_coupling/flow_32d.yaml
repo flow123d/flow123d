@@ -22,7 +22,7 @@ problem: !SequentialCoupling
       conductivity: 2
       # K_3d
     - region: .2d_fraction
-      bc_type: neumann
+      bc_type: total_flux
       bc_flux: !FieldFormula
         value: '0'
     - region: .3d_cube

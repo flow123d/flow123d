@@ -5,6 +5,7 @@
 "new_format": "",
 "actions":
   [
+
     {
       "NAME": "Add new obligatory key, flow123d_version.",
       "action": "add-key",
@@ -13,6 +14,24 @@
         "key": "flow123d_version",
         "value": "1.8.9"  
       }  
+    },
+    {
+        "NAME": "Change flow bc_type neumann to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_type",
+          "old_value" : "neumann",
+          "new_value" : "total_flux"
+        }
+    },
+    {
+        "NAME": "Change flow bc_type robin to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_type",
+          "old_value" : "robin",
+          "new_value" : "total_flux"
+        }
     },
     {
         "NAME": "Rename SoluteTransportDG neumann bc to total_flux",
