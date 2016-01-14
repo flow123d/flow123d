@@ -9,7 +9,7 @@ problem: !SequentialCoupling
     - region: plane
       anisotropy: 1
     - region: .bc_south
-      bc_type: neumann
+      bc_type: total_flux
       bc_flux: !FieldFormula
         value: -(x)
     - region: .bc_east
@@ -17,7 +17,7 @@ problem: !SequentialCoupling
       bc_pressure: !FieldFormula
         value: y
     - region: .bc_north
-      bc_type: neumann
+      bc_type: total_flux
       bc_flux: !FieldFormula
         value: -(-x)
     - region: .bc_west
