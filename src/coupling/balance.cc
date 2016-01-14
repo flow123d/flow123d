@@ -65,8 +65,6 @@ Balance::Balance(const std::string &file_prefix,
 	  	  output_line_counter_(0)
 {
     ASSERT_PTR(mesh);
-    ASSERT_PTR(el_ds);
-    ASSERT_PTR(el_4_loc);
 
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
 

@@ -136,8 +136,9 @@ public:
             dirichlet=1,
             neumann=2,
             robin=3,
-            seepage=4,
-            river=5
+            total_flux=4,
+            seepage=5,
+            river=6
         };
 
         /// Return a Selection corresponding to enum BC_Type.

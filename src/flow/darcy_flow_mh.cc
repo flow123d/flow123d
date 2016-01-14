@@ -110,7 +110,7 @@ const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
 
 const it::Record & DarcyFlowMH_Steady::get_input_type() {
     it::Record field_descriptor =
-        it::Record("DarcyFlowMH_Data",FieldCommon::field_descriptor_record_decsription("DarcyFlowMH_Data") )
+        it::Record("DarcyFlowMH_Data",FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
         .copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
         .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(),
                 "Boundary piezometric head for BC types: dirichlet, robin, and river." )
@@ -290,9 +290,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
         data_.mark_input_times(this->mark_type());
         data_.set_limit_side(LimitSide::right);
-    //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
-        data_.bc_pressure.add_factory(
-    data_.bc_pressure.add_factory( OldBcdInput::instance()->flow_pressure_factory );
         data_.bc_switch_pressure.add_factory(
                 std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
                 (data_.gravity_, "bc_switch_piezo_head") );
