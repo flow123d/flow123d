@@ -553,7 +553,7 @@ endif()
 #
 # optionaly we use Python interface
 set(FLOW_WRAPPER "#!/bin/bash\n")
-set(FLOW_WRAPPER "${FLOW_WRAPPER}\n")
+set(FLOW_WRAPPER "${FLOW_WRAPPER}DIR=\"\$(dirname \$(dirname \$0))\"\n")
 
 if (USE_PYTHON)
     message(STATUS "\n ======================================================= ")
@@ -614,7 +614,7 @@ if (USE_PYTHON)
                 execute_process(
                   COMMAND rsync -aR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/
                  )
-                 set(FLOW_WRAPPER "${FLOW_WRAPPER}PYTHONPATH=\${PYTHONPATH}:.${PY_ALT_PATH}\n")
+                 set(FLOW_WRAPPER "${FLOW_WRAPPER}PYTHONPATH=\${PYTHONPATH}:\${DIR}${PY_ALT_PATH}\n")
             endforeach(PY_PATH)
             execute_process(
               COMMAND chmod -R 764 ${TARGET_PREFIX}/
@@ -635,7 +635,7 @@ if (USE_PYTHON)
                 )
                 
             list(APPEND PYTHON_WRAPPER_PATHS "./lib/flow123d")
-            set(FLOW_WRAPPER "${FLOW_WRAPPER}PYTHONPATH=\${PYTHONPATH}:./lib/flow123d\n")
+            set(FLOW_WRAPPER "${FLOW_WRAPPER}PYTHONPATH=\${PYTHONPATH}:\${DIR}/lib/flow123d\n")
             # copy python include (h files for embedded python)
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          

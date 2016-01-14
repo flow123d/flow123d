@@ -45,7 +45,7 @@ else
     loader_name=$(basename $loader)
     cat "../bin/flow123d_wrapper.sh" > "../bin/flow123d_wrapper2.sh"
     echo "export LD_LIBRARY_PATH=./lib" >> "../bin/flow123d_wrapper2.sh"
-    echo "lib/${loader_name} bin/flow123d $@" >> "../bin/flow123d_wrapper2.sh"
+    echo "\${DIR}lib/${loader_name} bin/flow123d \$@" >> "../bin/flow123d_wrapper2.sh"
     
     # add executable flag to ld-linux loader
     chmod +x "../lib/${loader_name}"
