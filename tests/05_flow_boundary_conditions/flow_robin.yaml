@@ -9,7 +9,7 @@ problem: !SequentialCoupling
     - region: plane
       anisotropy: 1
     - region: .bc_south
-      bc_type: robin
+      bc_type: total_flux
       bc_pressure: !FieldFormula
         value: -2*x
       bc_robin_sigma: 0.5
@@ -18,7 +18,7 @@ problem: !SequentialCoupling
       bc_pressure: !FieldFormula
         value: y
     - region: .bc_north
-      bc_type: robin
+      bc_type: total_flux
       bc_pressure: !FieldFormula
         value: 3*x
       bc_robin_sigma: 0.5

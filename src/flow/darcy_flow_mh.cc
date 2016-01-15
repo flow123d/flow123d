@@ -89,24 +89,14 @@ const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
                        "Dirichlet boundary condition. "
                        "Specify the pressure head through the 'bc_pressure' field "
                        "or the piezometric head through the 'bc_piezo_head' field.")
-               .add_value(neumann, "neumann",
-                       "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
-                       "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
-                       "through 'bc_pressure' and 'bc_piezo_head' respectively.")
-               .add_value(total_flux,
-                       "total_flux", "Flux boundary condition. Combines Neumann and Robin type.")
-               .add_value(seepage, "seepage",
-                       "Seepage face boundary condition. Boundary with potential seepage flow is described by the pair of inequalities:"
-                       "(($h \\ge h_d^D$)) and (($q \\ge q_d^N$)), where the equality holds in at least one of them."
-                       "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
-                       )
-               .add_value(river, "river",
-                       "River boundary condtion. For the water level above the bedrock, (($H > H^S$)) the Robin boundary condition is used, "
-                       "(( $q = \\sigma^R( H - H^D) + q^N$ )). For the water level under the bedrock, constant infiltration is used "
-                       "(( $q = \\sigma^R( H^S - H^D) + q^N$ )). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
-                       " ``bc_sigma, ``bc_flux``."
-                       )
+//                .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+//                .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
+//                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
+//                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
+               .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
+		       "Water outflow equal to (($q^N + \\sigma (h - h^R)$)). "
+                        "Specify the water outflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
+			"and the reference pressure head or pieozmetric head through 'bc_pressure' or 'bc_piezo_head' respectively.")
 			   .close();
 }
 
@@ -192,21 +182,22 @@ DarcyFlowMH_Steady::EqData::EqData()
         bc_type.input_selection( &get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for the pressure.");
-    	bc_pressure.disable_where(bc_type, {none, neumann, seepage} );
+    ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' save the bc_type='none'."
+		"See documentation of 'bc_type' for exact mening of 'bc_pressure' in individual boundary condition types.", "0.0");
+    	bc_pressure.disable_where(bc_type, {none/*, neumann*/} );
         bc_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(bc_flux,"Boundary water flux for: bc_type in {'total_flux', 'seepage', 'river'}.", "0.0");
-    	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
+    ADD_FIELD(bc_flux,"Water boundary flux. Used for bc_type in {'none', 'total_flux', 'seepage', 'river'}.", "0.0");
+    	bc_flux.disable_where(bc_type, {none, dirichlet/*, robin*/} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in the Robin and river boundary condition.");
-    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann, seepage} );
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in the 'total_flux' or the 'river' boundary condition type.", "0.0");
+    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, seepage,/*, neumann*/} );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     ADD_FIELD(bc_switch_pressure,
             "Critical pressure when switching seepage face and river boundary conditions.", "0.0");
-    bc_switch_pressure.disable_where(bc_type, {none, neumann, dirichlet, robin} );
+    bc_switch_pressure.disable_where(bc_type, {none, dirichlet} );
     bc_switch_pressure.units( UnitSI().m() );
 
     //these are for unsteady
@@ -639,16 +630,16 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     ls->rhs_set_value(edge_row, -bc_pressure);
                     ls->mat_set_value(edge_row, edge_row, -1.0);
 
-                } else if ( type == EqData::neumann) {
-                    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
-                    ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
-
-                } else if ( type == EqData::robin) {
-                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
-                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
-                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-
+//                 } else if ( type == EqData::neumann) {
+//                     double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
+//                     ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
+// 
+//                 } else if ( type == EqData::robin) {
+//                     double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+//                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
+//                     ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
+//                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+// 
 		} else if ( type == EqData::total_flux) {
 		    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
 		    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
