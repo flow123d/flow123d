@@ -119,14 +119,16 @@ SorptionBase::~SorptionBase(void)
   if (data_ != nullptr) delete data_;
 
   VecScatterDestroy(&(vconc_out_scatter));
-  VecDestroy(vconc_solid);
+  if (vconc_solid != NULL) {
+	  VecDestroy(vconc_solid);
 
-  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
-  {
-    //no mpi vectors
-    xfree(conc_solid[sbi]);
+	  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+	  {
+		//no mpi vectors
+		xfree(conc_solid[sbi]);
+	  }
+	  xfree(conc_solid);
   }
-  xfree(conc_solid);
 }
 
 void SorptionBase::make_reactions()
@@ -314,7 +316,7 @@ void SorptionBase::initialize_fields()
   // read fields from input file
   data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
 
-  data_->set_components( std::vector<std::string>(n_substances_, "") );
+  data_->set_components( substances_.names() );
   data_->set_mesh(*mesh_);
   data_->set_limit_side(LimitSide::right);
 
