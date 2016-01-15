@@ -159,13 +159,15 @@ public:
      * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
      */
     void set_components(const std::vector<string> &names) {
-    	// Test of unique values in names vector
-    	std::vector<string> cpy = names;
-    	std::sort( cpy.begin(), cpy.end() );
-    	cpy.erase( std::unique( cpy.begin(), cpy.end() ), cpy.end() );
-    	if (names.size() != cpy.size()) {
-			THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
-												+ " has set non-unique names of components.") );
+    	// Test of unique values in names vector for MultiField
+    	if (multifield_) {
+			std::vector<string> cpy = names;
+			std::sort( cpy.begin(), cpy.end() );
+			cpy.erase( std::unique( cpy.begin(), cpy.end() ), cpy.end() );
+			if (names.size() != cpy.size()) {
+				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
+													+ " has set non-unique names of components.") );
+			}
     	}
 
         shared_->comp_names_ = names;
