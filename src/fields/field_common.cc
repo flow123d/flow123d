@@ -38,7 +38,8 @@ FieldCommon::FieldCommon()
 
 
 FieldCommon::FieldCommon(const FieldCommon & other)
-: shared_(other.shared_),
+: name_(other.name_),
+  shared_(other.shared_),
   limit_side_(LimitSide::unknown),
   set_time_result_(TimeStatus::unknown),
   component_index_(other.component_index_)
