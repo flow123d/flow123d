@@ -249,7 +249,10 @@ bool Record::finish(bool is_generic)
     {
     	if (it->key_ != "TYPE") {
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-			if (!is_generic && it->type_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
+			if (!is_generic && it->type_->is_root_of_generic_subtree())
+			    THROW( ExcGenericWithoutInstance()
+			            << EI_Object(it->type_->type_name())
+			            << EI_TypeName(this->type_name()));
            	data_->finished = data_->finished && it->type_->finish(is_generic);
         }
     }
