@@ -83,16 +83,19 @@ const it::Selection & DarcyFlowMH_Steady::get_mh_mortar_selection() {
 
 const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
 	return it::Selection("DarcyFlow_BC_Type")
-               .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
+               .add_value(none, "none",
+                       "Homogeneous Neumann boundary condition. Zero flux")
                .add_value(dirichlet, "dirichlet",
                        "Dirichlet boundary condition. "
                        "Specify the pressure head through the 'bc_pressure' field "
                        "or the piezometric head through the 'bc_piezo_head' field.")
-               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+               .add_value(neumann, "neumann",
+                       "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
                .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
-               .add_value(total_flux, "total_flux", "Flux boundary condition. Combines Neumann and Robin type.")
+               .add_value(total_flux,
+                       "total_flux", "Flux boundary condition. Combines Neumann and Robin type.")
                .add_value(seepage, "seepage",
                        "Seepage face boundary condition. Boundary with potential seepage flow is described by the pair of inequalities:"
                        "(($h \\ge h_d^D$)) and (($q \\ge q_d^N$)), where the equality holds in at least one of them."
@@ -111,12 +114,13 @@ const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
 const it::Record & DarcyFlowMH_Steady::get_input_type() {
     it::Record field_descriptor =
         it::Record("DarcyFlowMH_Data",FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
-        .copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
-        .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(),
+        .copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH_Data_aux") )
+        .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
                 "Boundary piezometric head for BC types: dirichlet, robin, and river." )
-        .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(),
+        .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
                 "Boundary switch piezometric head for BC types: seepage, river." )
-        .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
+        .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
+                "Initial condition for the pressure given as the piezometric head." )
         .close();
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
@@ -124,7 +128,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
         .declare_key("max_it", it::Integer(0), it::Default("100"), "Maximal number of iterations before diverging.")
         .close();
 
-    return it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
+    return it::Record("SteadyDarcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
@@ -141,7 +145,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
                 "Time governor setting for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
-		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("None"),
+		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions." )
 		.close();
 }
@@ -188,15 +192,15 @@ DarcyFlowMH_Steady::EqData::EqData()
         bc_type.input_selection( &get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
+    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for the pressure.");
     	bc_pressure.disable_where(bc_type, {none, neumann, seepage} );
         bc_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.", "0.0");
+    ADD_FIELD(bc_flux,"Boundary water flux for: bc_type in {'total_flux', 'seepage', 'river'}.", "0.0");
     	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in the Robin and river boundary condition.");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann, seepage} );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
