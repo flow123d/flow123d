@@ -174,23 +174,21 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
 
 
 template<int spacedim, class Value>
-std::vector<typename Value::return_type> MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
+typename MultiField<spacedim, Value>::MultiFieldValue::return_type MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
+    typename MultiFieldValue::return_type ret(size(), 1);
+    for (unsigned int i_comp=0; i_comp < size(); i_comp++) {
+    	ret(i_comp, 0) = sub_fields_[i_comp].value(p,elm);
+    }
 
-	std::vector<typename Value::return_type> value;
-	value.resize( size() );
-	for (unsigned int i_comp=0; i_comp < size(); ++i_comp) {
-		value[i_comp] = sub_fields_[i_comp].value(p,elm);
-	}
-	return value;
+    return ret;
 }
 
 
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-		std::vector<typename FieldValue_<0,1,typename Value::element_type>::return_type>  &value_list) const {
+                   std::vector<typename MultiFieldValue::return_type>  &value_list) const {
 	ASSERT_EQUAL( point_list.size(), value_list.size() );
-
 	for(unsigned int i=0; i< point_list.size(); i++) {
 		value_list[i]=this->value(point_list[i], elm);
 	}
