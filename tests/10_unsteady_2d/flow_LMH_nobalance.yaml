@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   time: &anchor2
     end_time: 0.5
@@ -6,7 +7,7 @@ problem: !SequentialCoupling
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
     mesh_file: ${INPUT}/test10.msh
-  primary_equation: !Unsteady_LMH
+  primary_equation: !UnsteadyDarcy_LMH
     input_fields:
     - region: plane
       anisotropy: 0.02
@@ -35,5 +36,4 @@ problem: !SequentialCoupling
     balance: false
     solver: !Petsc
       a_tol: 1.0e-07
-      parameters: ''
     time: *anchor2

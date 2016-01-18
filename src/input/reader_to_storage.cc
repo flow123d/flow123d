@@ -37,7 +37,8 @@ using namespace internal;
 
 ReaderToStorage::ReaderToStorage()
 : storage_(nullptr),
-  root_type_(nullptr)
+  root_type_(nullptr),
+  try_transpose_read_(false)
 {}
 
 
@@ -325,7 +326,6 @@ StorageBase * ReaderToStorage::abstract_automatic_conversion(PathBase &p, const 
 }
 
 
-
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *array)
 {
 	int arr_size;
@@ -342,22 +342,85 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
           return storage_array;
 
         } else {
+        	stringstream ss;
+        	ss << arr_size;
             THROW( ExcInputError()
-                    << EI_Specification("Do not fit into size limits of the Array.")
+                    << EI_Specification("Do not fit the size " + ss.str() + " of the Array.")
                     << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
         }
     } else {
-        // try automatic conversion to array with one element
-        if ( array->match_size( 1 ) ) {
-            StorageArray *storage_array = new StorageArray(1);
-            const Type::TypeBase &sub_type = array->get_sub_type();
-            storage_array->new_item(0, make_storage(p, &sub_type) );
-
-            return storage_array;
+    	// if transposition is carried, only conversion to array with one element is allowed
+    	if (try_transpose_read_) {
+			// try automatic conversion to array with one element
+    		const Type::TypeBase &sub_type = array->get_sub_type();
+    		StorageBase *one_element_storage = make_storage(p, &sub_type);
+    		return make_autoconversion_array_storage(p, array, one_element_storage);
         } else {
-            THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
-                    << EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
-        }
+			// set variables managed transposition
+			try_transpose_read_ = true;
+			transpose_index_ = 0;
+			transpose_array_sizes_.clear();
+
+			const Type::TypeBase &sub_type = array->get_sub_type();
+			StorageBase *first_item_storage;
+			try {
+				first_item_storage = make_storage(p, &sub_type);
+			} catch (ExcInputError &e) {
+	    		if ( !array->match_size(1) ) {
+	    			e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ");
+	    		}
+				e << EI_TransposeIndex(transpose_index_);
+				e << EI_TransposeAddress(p.as_string());
+				throw;
+			}
+
+			// automatic conversion to array with one element
+			if (transpose_array_sizes_.size() == 0) {
+				try_transpose_read_ = false;
+				return make_autoconversion_array_storage(p, array, first_item_storage);
+			} else {
+
+				// check sizes of arrays stored in transpose_array_sizes_
+				transpose_array_sizes_.erase( unique( transpose_array_sizes_.begin(), transpose_array_sizes_.end() ),
+											  transpose_array_sizes_.end() );
+				if (transpose_array_sizes_.size() == 1) {
+					unsigned int sizes = transpose_array_sizes_[0]; // sizes of transposed
+
+					// array size out of bounds
+					if ( !array->match_size( sizes ) ) {
+						stringstream ss;
+						ss << sizes;
+						THROW( ExcInputError() << EI_Specification("Result of transpose auto-conversion do not fit the size " + ss.str() + " of the Array.")
+								<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+					}
+
+					// create storage of array
+					StorageArray *storage_array = new StorageArray(sizes);
+					storage_array->new_item(0, first_item_storage);
+					if (sizes>1) {
+						++transpose_index_;
+						while (transpose_index_ < sizes) {
+							try {
+								storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
+							} catch (ExcInputError &e) {
+								e << EI_TransposeIndex(transpose_index_);
+								e << EI_TransposeAddress(p.as_string());
+								throw;
+							}
+							++transpose_index_;
+						}
+					}
+
+					try_transpose_read_ = false;
+					return storage_array;
+				} else {
+					THROW( ExcInputError()
+							<< EI_Specification("Unequal sizes of sub-arrays during transpose auto-conversion of '" + p.get_node_type(ValueTypes::array_type) + "'")
+							<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+				}
+        	}
+    	}
+
     }
 
     return NULL;
@@ -367,6 +430,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *selection)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, selection);
+	}
     string item_name;
 	try {
 		item_name = p.get_string_value();
@@ -390,6 +457,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_type)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, bool_type);
+	}
 	try {
 		return new StorageBool( p.get_bool_value() );
 	}
@@ -407,6 +478,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *int_type)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, int_type);
+	}
 	std::int64_t value;
 	try {
 		value = p.get_int_value();
@@ -434,6 +509,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *in
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *double_type)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, double_type);
+	}
     double value;
 
 	try {
@@ -461,11 +540,18 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *dou
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *string_type)
 {
+	if ( try_transpose_read_ && p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, string_type);
+	}
 	string value;
 	try {
 		value = p.get_string_value();
 	}
 	catch (ExcInputError & e) {
+		if (try_transpose_read_) {
+			return this->make_transposed_storage(p, string_type);
+		}
 		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
         e << EI_ErrorAddress(p.as_string());
         e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
@@ -498,6 +584,45 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
     }
 
     return NULL;
+}
+
+
+
+StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::TypeBase *type) {
+	ASSERT(try_transpose_read_, "Unset flag try_transpose_read_!\n");
+	ASSERT(p.is_array_type(), "Head node of path must be of type array!\n");
+
+	int arr_size = p.get_array_size();
+	if ( arr_size == 0 ) {
+		THROW( ExcInputError() << EI_Specification("Empty array during transpose auto-conversion.")
+			<< EI_ErrorAddress(p.as_string()) << EI_InputType(type->desc()) );
+	} else {
+		if (transpose_index_ == 0) transpose_array_sizes_.push_back( arr_size );
+		p.down(transpose_index_);
+		StorageBase *storage = make_storage(p, type);
+		p.up();
+		return storage;
+	}
+
+	return NULL;
+}
+
+
+
+StorageBase * ReaderToStorage::make_autoconversion_array_storage(PathBase &p, const Type::Array *array, StorageBase *item)
+{
+	if ( array->match_size( 1 ) ) {
+		StorageArray *storage_array = new StorageArray(1);
+		storage_array->new_item(0, item);
+
+		return storage_array;
+	} else {
+		THROW( ExcInputError()
+				<< EI_Specification("During transpose auto-conversion, the conversion to the single element array not allowed. Require type: '" + p.get_node_type(ValueTypes::array_type) + "'\nFound on input: ")
+				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
+	}
+
+	return NULL;
 }
 
 

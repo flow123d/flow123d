@@ -261,11 +261,12 @@
       - build-name:
           name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
-      - shell:
+      - shell: |
           # remove all build directories safe the latest five
           rm -rf `ls -dt ./build-* |tail -n +6 `
           cd flow123d
           git checkout ${{GIT_BRANCH##origin/}}
+          make clean-all                
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
@@ -315,7 +316,7 @@
           branches:
             - master
             - 1.8.2
-	    - geomop_testing
+            - geomop_testing
     triggers:
       # run every day around 3 AM even if there is no change in code
       - timed: "H 3 * * *"

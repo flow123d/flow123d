@@ -6,8 +6,8 @@
 # accepted variables: 
 #     PETSC_INSTALL_DIR - target directory used for instalation
 #     PETSC_INSTALL_URL - url with petsc tarball
-#     PETSC_INSTALL_MPI_DIR      - pass MPI to PETSC configure 
-#     PETSC_INSTALL_LAPACK_DIR   - pass Lapack to PETSC configure
+#     PETSC_INSTALL_MPI_DIR      - pass MPI dir to PETSC configure 
+#     PETSC_INSTALL_LAPACK_DIR   - pass Blas/Lapack dir to PETSC configure
 #
 #     PETSC_INSTALL_CONFIG - possible values:
 #       mini             - only petsc + necessary MPI, BLAS, LAPACK
@@ -16,7 +16,8 @@
 #       full             - bddcml + hypre + blopex + umfpack + sundials
 #       default)         = flow123d_mini
 #
-#     PETSC_INSTALL_OPTIONS - additional options used as parameters to configure.py,
+#     PETSC_INSTALL_ADD_OPTIONS - additional options used as parameters to configure.py,
+#     PETSC_INSTALL_OWN_OPTIONS - use only this varieble as configure options
 #
 # We automatically reuse compiler and their flags. Further we set "--with-debugging=1" 
 # if CMAKE_BUILD_TYPE == "debug", otherwise we turn debugging off.
@@ -40,9 +41,10 @@ endif()
 # A temporary CMakeLists.txt
 
 # set compilers
-set(PETSC_CONF_LINE --CC=${CMAKE_C_COMPILER} --CFLAGS='${PETSC_C_FLAGS}' --CXX=${CMAKE_CXX_COMPILER} --CXXFLAGS='${PETSC_CXX_FLAGS}' --with-clanguage=C)
+set(PETSC_CONF_LINE --CFLAGS='${PETSC_C_FLAGS}' --CXXFLAGS='${PETSC_CXX_FLAGS}' --with-clanguage=C)
 if (CMAKE_Fortran_COMPILER)
-    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --FC=${CMAKE_Fortran_COMPILER} --FFLAGS=${PETSC_Fortran_FLAGS})
+    set(PETSC_CONF_LINE ${PETSC_CONF_LINE}  --FFLAGS=${PETSC_Fortran_FLAGS})
+    set(PETSC_Fortran_COMPILER ${CMAKE_Fortran_COMPILER})
 endif()
 
 # set debugging
@@ -56,18 +58,18 @@ endif()
 set(PETSC_CONF_LINE  ${PETSC_CONF_LINE} --with-shared-libraries=0)
 # set necessary libraries: MPI, BLAS, LAPACK
 if (PETSC_INSTALL_MPI_DIR)
-    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-mpi-dir=${PETSC_MPI_DIR})
+    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-mpi-dir=${PETSC_INSTALL_MPI_DIR})
 else()
     set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-mpich=yes)
 endif()
 
 if (PETSC_INSTALL_LAPACK_DIR)
-    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-lapack-dir=${PETSC_LAPACK_DIR})
+    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-blas-lapack-dir=${PETSC_INSTALL_LAPACK_DIR})
 else()
     if(CMAKE_Fortran_COMPILER)
-        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-f-blas-lapack=yes)
+        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-fblaslapack=yes)
     else()
-        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-c-blas-lapack=yes)
+        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-f2cblaslapack=yes)
     endif()    
 endif()
 
@@ -87,14 +89,18 @@ elseif(PETSC_INSTALL_CONFIG STREQUAL "full")
     # PETSc does not work with umfpack on Windows
         set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes  --download-blacs=yes --download-scalapack=yes --download-mumps=yes)
     else()    
-        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-hypre=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes --download-blopex=yes --download-umfpack=yes --download-sundials=yes)
+        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-hypre=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes --download-blopex=yes --download-suitesparse=yes --download-sundials=yes)
     endif()
 else()
     message("Unknown value of PETSC_INSTALL_CONFIG. Using 'mini'.")
 endif()    
 
 # additional options
-set(PETSC_CONF_LINE ${PETSC_CONF_LINE} ${INSTALL_PETSC_OPTIONS})
+set(PETSC_CONF_LINE ${PETSC_CONF_LINE} ${PETSC_INSTALL_ADD_OPTIONS})
+# override by user's own options
+if (PETSC_INSTALL_OWN_OPTIONS)
+    set(PETSC_CONF_LINE ${PETSC_INSTALL_OWN_OPTIONS})
+endif()    
 string(REPLACE ";" " " EXPAND_CONF_LINE "${PETSC_CONF_LINE}")
 
 
@@ -111,7 +117,7 @@ file (WRITE "${cmakelists_fname}"
     URL ${PETSC_INSTALL_URL}
     SOURCE_DIR ${PETSC_INSTALL_DIR}/src
     BINARY_DIR ${PETSC_INSTALL_DIR}/src
-    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh --with-make-np ${MAKE_NUMCPUS}
+    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh
     BUILD_COMMAND make all
     INSTALL_COMMAND \"\"
   )  
@@ -121,7 +127,10 @@ file (WRITE "${cmakelists_fname}"
 file(WRITE "${PETSC_INSTALL_DIR}/conf_tmp.sh"
 "
 cd ${PETSC_INSTALL_DIR}/src
-./configure ${EXPAND_CONF_LINE}
+export CC=${CMAKE_C_COMPILER}
+export CXX=${CMAKE_CXX_COMPILER}
+export FC=${PETSC_Fortran_COMPILER}
+./configure  --with-make-np ${MAKE_NUMCPUS} ${EXPAND_CONF_LINE}
 ")
 
 # avoid unnecessary rebuilds if configuration doesn't change

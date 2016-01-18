@@ -1,13 +1,16 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test14 - 2D transport with time variable boundary
   mesh:
     mesh_file: ./input/test14.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
-    - rid: 100
+    - region: BULK
       anisotropy: 0.1
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test14.fbc
+    - region: BOUNDARY
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: x
     n_schurs: 2
     output:
       output_stream: 
@@ -23,22 +26,23 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
-    input_fields:
-    - rid: 100
-      init_conc: 0
-    - region: IMPLICIT BOUNDARY
-      transport_old_bcd_file: ./input/test14_tbc_000
-      time: 1
-    - region: IMPLICIT BOUNDARY
-      transport_old_bcd_file: ./input/test14_tbc_001
-      time: 3
-    - region: IMPLICIT BOUNDARY
-      transport_old_bcd_file: ./input/test14_tbc_002
-      time: 6
-    - region: IMPLICIT BOUNDARY
-      transport_old_bcd_file: ./input/test14_tbc_003
-      time: 7
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - region: BULK
+        init_conc: 0
+      - region: BOUNDARY
+        bc_conc: 20
+        time: 1
+      - region: BOUNDARY
+        bc_conc: 0
+        time: 3
+      - region: BOUNDARY
+        bc_conc: 40
+        time: 6
+      - region: BOUNDARY
+        bc_conc: 0
+        time: 7
     output_stream: 
       file: ./transport.pvd
       format: !vtk

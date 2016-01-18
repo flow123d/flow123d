@@ -2,16 +2,13 @@
 Data Node package
 
 Contains classes for representing the tree structure of config files.
-"""
 
-__author__ = 'Tomas Krizek'
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 
 from enum import Enum
 
-from .util import TextValue
-
-DEBUG_MODE = True
-"""changes the behaviour to debug mode"""
+from util.util import TextValue
 
 
 class DataNode:
@@ -20,38 +17,105 @@ class DataNode:
 
     The complete tree is represented by its root node.
     """
+
+    class Implementation(Enum):
+        """Implementation type of :py:class:`DataNode`.
+
+        The different implementations are defined by the three node types in YAML.
+        """
+        scalar = 1
+        sequence = 2
+        mapping = 3
+
+    class Origin(Enum):
+        """The origin of data node."""
+        structure = 1
+        ac_array = 2
+        ac_reducible_to_key = 3
+        error = 4
+        ac_transposition = 5
+
+    class StructureType(Enum):
+        """The type of node in the text structure."""
+        scalar = 1
+        array = 2
+        dict = 3
+        json_array = 4
+        json_dict = 5
+
     def __init__(self, key=None, parent=None):
         self.ref = None
-        """reference to another node"""
+        """reference to another :py:class:`DataNode`"""
+        self.implementation = None
+        """the type node implementation - see :py:class:`DataNode.Implementation`"""
         self.parent = parent
-        """parent node"""
+        """parent :py:class:`DataNode`"""
+        self.children = []
+        """list of children nodes"""
         self.key = key
-        """key (name) of this node"""
+        """key (name) of this node (:py:class:`TextValue <util.util.TextValue>`)"""
         if self.key is None:
             self.key = TextValue()
         self.input_type = None
         """input type specified by format"""
         self.span = None
-        """borders the position of this node in input text"""
+        """the :py:class:`Span <util.locators.Span>` of this node's value in text"""
         self.anchor = None
-        """anchor of the node `TextValue`"""
+        """anchor of the node (:py:class:`TextValue <util.util.TextValue>`)"""
         self.is_flow = False
         """outer structure of the node is in flow format"""
         self.delimiters = None
-        """Outer border of node, span start point to first delimiter and to second"""
-        self.origin = NodeOrigin.structure
-        """indicates how node was created"""
+        """outer border of node, span start point to first delimiter and to second; used for
+        flow style nodes"""
+        self.origin = DataNode.Origin.structure
+        """indicates whether node is written in text or was created by an autoconversion
+        (:py:class:`DataNode.Origin`)"""
         self.hidden = False
         """whether node is hidden in tree structure"""
-        self._options = []
+        self.value = None
+        """the scalar value of the node (:py:class:`TextValue <util.util.TextValue>`"""
+        self.type = None
+        """specifies the type of AbstractRecord"""  # TODO is type TextValue?
 
     @property
     def absolute_path(self):
         """the absolute path to this node"""
         return self.generate_absolute_path()
 
+    @property
+    def start(self):
+        """the beginning :py:class:<Position <util.locators.Position>` of node
+        (including its key)"""
+        start = self.span.start
+        if self.key is not None and self.key.span is not None:
+            start = self.key.span.start
+        return start
+
+    @property
+    def end(self):
+        """the end :py:class:<Position <util.locators.Position>` of node"""
+        return self.span.end
+
+    @property
+    def children_keys(self):
+        """all children node keys"""
+        return [child.key.value for child in self.children]
+
+    @property
+    def visible_children(self):
+        """all visible children nodes"""
+        return [child for child in self.children if child.hidden is False]
+
+    @property
+    def notification_span(self):
+        """span for notification, preferably returns key span, falls back to span"""
+        if self.key is not None and self.key.span is not None:
+            return self.key.span
+        else:
+            return self.span
+
     def generate_absolute_path(self, descendant_path=None):
-        """generates absolute path to this node, used recursively"""
+        """generate absolute path to this node, used recursively"""
         if self.parent is None:
             if descendant_path is None:
                 descendant_path = ""
@@ -62,39 +126,60 @@ class DataNode:
             path = str(self.key.value) + "/" + descendant_path
         return self.parent.generate_absolute_path(path)
 
-    @property
-    def options(self):
-        """possible options to hint in autocomplete"""
-        options = self._options
-        # if DEBUG_MODE and self.span is not None:
-        #     # return start, end position as options
-        #     options = ["start: {start}".format(start=self.span.start),
-        #                "end: {end}".format(end=self.span.end)]
-        return options
-
-    @options.setter
-    def options(self, options):
-        """Autocomplete options setter."""
-        self._options = options
-
     def get_node_at_position(self, position):
-        """Retrieves DataNode at specified position."""
+        """Retrieve DataNode at specified position."""
         raise NotImplementedError
 
+    def get_child(self, key):
+        """Return a child node for the given key.
+
+        :return: child node of given key
+        :rtype: :py:class:`DataNode` or ``None``
+        """
+        for child in self.children:
+            if key == child.key.value:
+                return child
+        return None
+
+    def set_child(self, node):
+        """Set the given node as child of this node.
+
+        If the key already exists, replace the original child node.
+
+        :param: :py:class:`DataNode` to be set as a child
+        """
+        if self.implementation == DataNode.Implementation.scalar:
+            raise TypeError("Scalar node can not have children.")
+
+        node.parent = self
+
+        # does the key already exists? if so, replace it
+        for i, child in enumerate(self.children):
+            if child.key.value == node.key.value:
+                self.children[i] = node
+                return
+
+        # the key does not exists, create a new child node
+        self.children.append(node)
+        return
+
     def is_child_on_line(self, line):
-        """
-        Return if in set line is some child
-        """
+        """Return if in set line is some child"""
         return False
 
     def is_jsonchild_on_line(self, line):
-        """
-        Return if in set line is some json child
-        """
+        """Return if in set line is some json child"""
         return self.is_flow
 
     def get_node_at_path(self, path):
-        """returns node at given path"""
+        """Find node at the given path.
+
+        :param str path: absolute or relative path to the node, i.e. ``/problem/pause_on_run``
+        :return: the found node
+        :rtype: DataNode
+        :raises: LookupError - if no node is found
+        """
+        # TODO it would make more sense to return None instead of raising LookupError
         # pylint: disable=no-member
         if path is None:
             raise LookupError("No path provided")
@@ -111,18 +196,19 @@ class DataNode:
             elif key == '..':
                 node = node.parent
                 continue
-            if not isinstance(node, CompositeNode) or node.get_child(key) is None:
+            if node.get_child(key) is None:
                 raise LookupError("Node {key} does not exist in {location}"
                                   .format(key=key, location=node.absolute_path))
             node = node.get_child(key)
         return node
 
     def get_info_text_data(self, is_parent=False):
-        """
-        Returns data necessary to generate info_text.
+        """Return data necessary to generate info_text.
 
-        `is_parent` should be set to True when the generated info_text should be for this node,
-        instead of its parent node
+        :param bool is_parent: if set to True, generate info_text for this node,
+           instead of its parent node
+        :return: necessary input_type ids and values to generate info_text
+        :rtype: dict
         """
         # pylint: disable=no-member
         abstract_id = None
@@ -140,8 +226,8 @@ class DataNode:
             # find first parent record node
             prev_node = self
             node = self.parent if self.parent is not None else self
-            while (node.origin == NodeOrigin.ac_array or
-                   not (isinstance(node, CompositeNode) and node.explicit_keys is True) or
+            while (node.origin == DataNode.Origin.ac_array or
+                   node.implementation != DataNode.Implementation.mapping or
                    node.input_type is None):
                 if node.parent is None:
                     break
@@ -184,131 +270,84 @@ class DataNode:
             input_type=self.input_type
         )
 
-    @property
-    def start(self):
-        """start of node, including its key"""
-        start = self.span.start
-        if self.key is not None and self.key.span is not None:
-            start = self.key.span.start
-        return start
 
-    @property
-    def end(self):
-        """Returns the end of this node."""
-        return self.span.end
-
-
-class CompositeNode(DataNode):
-    """Represents a composite node in the tree structure."""
-    def __init__(self, explicit_keys, key=None, parent=None):
-        super(CompositeNode, self).__init__(key, parent)
-        self.children = []
-        """list of children nodes"""
-        self.explicit_keys = explicit_keys
-        """boolean; indicates whether keys are specified (record) or
-        implicit (array)"""
-        self.type = None
-        """specifies the type of AbstractRecord"""
-
-    def get_node_at_position(self, position):
-        """Retrieves DataNode at specified position."""
-        node = None
-        if self.start <= position <= self.end:
-            node = self
-            for child in self.children:
-                descendant = child.get_node_at_position(position)
-                if descendant is not None:
-                    node = descendant
-                    break
-        return node
+class CompositeDataNode(DataNode):
+    """Class defines the common behaviour of both Sequence an Mapping nodes."""
 
     def __str__(self):
-        text = super(CompositeNode, self).__str__()
+        text = super(CompositeDataNode, self).__str__()
         children_keys = [str(child.key.value) for child in self.children]
         text += "  children_keys: {children_keys}\n".format(
             children_keys=', '.join(children_keys)
         )
         return text
 
-    def get_child(self, key):
-        """
-        Returns a child node for the given key; None if key doesn't
-        exist.
-        """
-        for child in self.children:
-            if key == child.key.value:
-                return child
-        return None
-
-    def set_child(self, node):
-        """
-        Sets the specified node as child of this node. If the key already
-        exists, the other child node is replaced by this child_node.
-        """
-        node.parent = self
-
-        for i, child in enumerate(self.children):
-            if child.key.value == node.key.value:
-                self.children[i] = node
-                return
-        # still not ended - new key
-        self.children.append(node)
-
     def is_child_on_line(self, line):
-        """
-        Return if in set line is some child
-        """
+        """Return if in set line is some child"""
         for child in self.children:
-            if child.start.line <= line and child.end.line >= line:
+            if child.start.line <= line <= child.end.line:
                 return True
         return False
 
     def is_jsonchild_on_line(self, line):
-        """
-        Return if in set line is some json child
-        """
+        """Return if in set line is some json child"""
         for child in self.children:
-            if child.start.line <= line and child.end.line >= line:
+            if child.start.line <= line <= child.end.line:
                 if child.is_flow:
                     return True
                 return child.is_jsonchild_on_line(line)
         return False
 
-    @property
-    def children_keys(self):
-        """Returns all children keys."""
-        return [child.key.value for child in self.children]
+    def get_node_at_position(self, position):
+        """Retrieve :py:class:`DataNode` at specified
+        :py:class:`Position <util.locators.Position>`."""
+        node = None
+        if self.start <= position <= self.end:
+            node = self
+            for child in self.children:
+                descendant = child.get_node_at_position(position)
+                if descendant is not None:
+                    if descendant.origin is not DataNode.Origin.ac_transposition or \
+                           descendant.parent is not self:
+                        node = descendant
+                        break
+        return node
 
-    @property
-    def visible_children(self):
-        """Returns a list of all visible children nodes."""
-        return [child for child in self.children if child.hidden is False]
+
+class MappingDataNode(CompositeDataNode):
+    """Implementation of :py:class:`DataNode` for mapping nodes."""
+
+    def __init__(self, key=None, parent=None):
+        super(MappingDataNode, self).__init__(key, parent)
+        self.implementation = DataNode.Implementation.mapping
 
 
-class ScalarNode(DataNode):
-    """Represents a scalar node in the tree structure."""
+class SequenceDataNode(CompositeDataNode):
+    """Implementation of :py:class:`DataNode` for sequence nodes."""
+
+    def __init__(self, key=None, parent=None):
+        super(SequenceDataNode, self).__init__(key, parent)
+        self.implementation = DataNode.Implementation.sequence
+
+
+class ScalarDataNode(DataNode):
+    """Implementation of :py:class:`DataNode` for scalar nodes."""
+
     def __init__(self, key=None, parent=None, value=None):
-        super(ScalarNode, self).__init__(key, parent)
+        super(ScalarDataNode, self).__init__(key, parent)
+        self.implementation = DataNode.Implementation.scalar
         self.value = value
-        """the scalar value"""
 
     def get_node_at_position(self, position):
-        """Retrieves DataNode at specified position."""
+        """Retrieve :py:class:`DataNode` at specified
+        :py:class:`Position <util.locators.Position>`."""
         if self.start <= position <= self.end:
             return self
         return None
 
     def __str__(self):
-        text = super(ScalarNode, self).__str__()
+        text = super(ScalarDataNode, self).__str__()
         text += "  value: {value}".format(
             value=self.value
         )
         return text
-
-
-class NodeOrigin(Enum):
-    """The origin of data node."""
-    structure = 1
-    ac_array = 2
-    ac_reducible_to_key = 3
-    error = 4

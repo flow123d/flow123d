@@ -1,9 +1,10 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test6 - Coupling between dimension 1D-2D - influence of sigma and cross
     section parameters.
   mesh:
     mesh_file: ${INPUT}/test6_21d.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - region: plane
@@ -28,7 +29,7 @@ problem: !SequentialCoupling
         value: x
         # p_2d
     - region: .channel
-      bc_type: neumann
+      bc_type: total_flux
       bc_flux: !FieldFormula
         value: '0'
     output:

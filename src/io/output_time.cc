@@ -200,7 +200,7 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 
 void OutputTime::write_time_frame()
 {
-	START_TIMER("write_time_frame");
+	START_TIMER("OutputTime::write_time_frame");
     /* TODO: do something, when support for Parallel VTK is added */
     if (this->rank == 0) {
     	// Write data to output stream, when data registered to this output

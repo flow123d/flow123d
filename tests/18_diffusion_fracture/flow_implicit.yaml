@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: '[u''test18:'', u''diffusion'', u''through'', u''fractures'']'
   mesh:
@@ -7,9 +8,10 @@ problem: !SequentialCoupling
       id: 30
       element_list:
       - 45
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: IMPLICIT BOUNDARY
+    - region: BOUNDARY
+      bc_type: dirichlet
       bc_pressure: 0
     - rid: 20
       cross_section: 0.01
@@ -29,19 +31,23 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !SoluteTransport_DG
-    input_fields:
-    - region: IMPLICIT BOUNDARY
-      bc_conc: 0
-    - rid: 20
-      init_conc: 0
-      diff_m: 0.1
-    - rid: 24
-      init_conc: 0
-      diff_m: 0.1
-      dg_penalty: 100
-    - rid: 30
-      init_conc: 1
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
+      input_fields:
+      - region: BOUNDARY
+        bc_conc: 0
+      - rid: 20
+        init_conc: 0
+        diff_m: 0.1
+      - rid: 24
+        init_conc: 0
+        diff_m: 0.1
+        dg_penalty: 100
+      - rid: 30
+        init_conc: 1
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     output_stream: 
       file: ./transport-implicit.pvd
       format: !vtk
@@ -50,9 +56,6 @@ problem: !SequentialCoupling
       name: transport_output_stream
     substances:
     - A
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
     time:
       end_time: 0.01
       max_dt: 0.001

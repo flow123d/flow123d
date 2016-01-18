@@ -326,6 +326,7 @@ public:
 
     /// Record type name getter.
     string type_name() const override;
+    string class_name() const override { return "Record"; }
 
     /// Class comparison and Record type name comparision.
     bool operator==(const TypeBase &other) const;

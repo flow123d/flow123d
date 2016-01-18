@@ -1,30 +1,36 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
   mesh:
-    mesh_file: ./input/test2.msh
+    mesh_file: ./input/compatible.msh
     sets:
     - name: subset
-      region_ids:
-      - 48
-      - 184
-  primary_equation: !Steady_MH
+      region_labels:
+      - 2d
+      - 1d
+    - name: .sides
+      region_labels:
+      - .2d
+      - .1d
+  primary_equation: !SteadyDarcy_MH
     input_fields:
-    - rid: 48
+    - region: 1d
       anisotropy: 10
-      sigma: 0.05
       cross_section: 1
-    - rid: 184
+      sigma: 0.05
+    - region: 2d
       anisotropy: 1
       cross_section: 1
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test2.fbc
+    - region: .sides
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: x
     balance: true
     output:
-      output_stream: 
+      output_stream:
         file: ./test2.pvd
         format: !vtk
           variant: ascii
-        name: flow_output_stream
       output_fields:
       - pressure_p0
       - pressure_p1
@@ -33,22 +39,23 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
-    input_fields:
-    - region: IMPLICIT BOUNDARY
-      transport_old_bcd_file: ./input/test2.tbc
-    - r_set: subset
-      init_conc: 0
-      porosity: 0.25
-    output_stream: 
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      output_fields:
+      - conc
+      - region_id
+      input_fields:
+      - region: .sides
+        bc_conc: !FieldFormula
+          value: x/12.75
+      - region: subset
+        init_conc: 0
+        porosity: 0.25
+    output_stream:
       file: ./transport.pvd
       format: !vtk
         variant: ascii
       time_step: 0.5
-      name: transport_output_stream
-    output_fields:
-    - conc
-    - region_id
     substances:
     - A
     - B
@@ -58,7 +65,7 @@ problem: !SequentialCoupling
       cumulative: true
     reaction_term: !DualPorosity
       input_fields:
-      - r_set: subset
+      - region: subset
         diffusion_rate_immobile:
         - 0.01
         - 0.01
@@ -76,7 +83,7 @@ problem: !SequentialCoupling
         - 1.0
         - 1.0
         input_fields:
-        - r_set: subset
+        - region: subset
           rock_density: 1.0
           sorption_type:
           - linear
@@ -95,7 +102,7 @@ problem: !SequentialCoupling
         - 1.0
         - 1.0
         input_fields:
-        - r_set: subset
+        - region: subset
           rock_density: 1.0
           sorption_type:
           - linear

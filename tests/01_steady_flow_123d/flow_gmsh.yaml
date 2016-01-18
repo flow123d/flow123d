@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
@@ -13,14 +14,14 @@ problem: !SequentialCoupling
       - .2d_fracture_1
       - .2d_fracture_2
       - .3d_cube
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
     - region: 1d_channel
       anisotropy: 10
       sigma: 0.05
     # using region set
-    - r_set: fractures
+    - region: fractures
       anisotropy: 1
       sigma: 0.5
     #         { region:"2d_fracture_1",
@@ -34,7 +35,7 @@ problem: !SequentialCoupling
     - region: 3d_cube
       anisotropy: 0.1
     # using region set
-    - r_set: dirichlet_boundary
+    - region: dirichlet_boundary
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x-z

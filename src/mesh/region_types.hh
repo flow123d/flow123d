@@ -31,7 +31,7 @@ public:
 	/**
      * Returns whole tree of input types for Region with all descendants.
      */
-    static Input::Type::AbstractRecord & get_input_type();
+    static Input::Type::Abstract & get_input_type();
 
     TYPEDEF_ERR_INFO( EI_Region_Label, const std::string);
     DECLARE_EXCEPTION( ExcNonexistingLabel, << "Non-existing label of region: " << EI_Region_Label::qval << "\n" \

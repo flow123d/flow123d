@@ -1,13 +1,14 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test14 - 2D transport with time variable boundary
   mesh:
     mesh_file: ./input/rectangle_with_bc_0.2.msh
   # steady velocity field, with velocity v:0.1
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: bulk
       conductivity: 1
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: 0.1*x
@@ -26,24 +27,27 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - region: bulk
+        init_conc: 0
+      - region: .right
+        time: 0.01
+        bc_conc: 100
+      - region: .right
+        time: 0.02
+        bc_conc: 0
+      - region: .right
+        time: 0.35
+        bc_conc: 20
     substances:
     - A
     time:
+      # test forcing smaller time step then output,
+      # but still larger then 0.01 necessary for capture input
       max_dt: 0.05
       end_time: 1.0
-    input_fields:
-    - region: bulk
-      init_conc: 0
-    - region: .right
-      time: 0.01
-      bc_conc: 100
-    - region: .right
-      time: 0.02
-      bc_conc: 0
-    - region: .right
-      time: 0.35
-      bc_conc: 20
     output_stream: 
       file: ./transport.pvd
       format: !vtk

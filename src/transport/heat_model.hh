@@ -26,7 +26,7 @@
 
 
 
-class HeatTransferModel : public AdvectionDiffusionModel {
+class HeatTransferModel : public AdvectionDiffusionModel, public AdvectionProcessBase {
 public:
 
 	class ModelEqData : public FieldSet {
@@ -96,33 +96,15 @@ public:
 
         static const Input::Type::Selection & get_bc_type_selection();
 
-		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
+		static IT::Selection get_output_selection();
 	};
 
-protected:
-
-	/// Derived class should implement getter for ModelEqData instance.
-	virtual ModelEqData &data() = 0;
-
-	/**
-	 * Create input type that can be passed to the derived class.
-	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
-	 * @param description    Comment used to describe the record key.
-	 * @return
-	 */
-	static IT::Record get_input_type(const string &implementation, const string &description);
-
-	/// Indicator of change in advection vector field.
-	bool flux_changed;
 
 
-public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
-	HeatTransferModel();
 
-	static string balance_prefix() { return "energy"; }
-
-	UnitSI balance_units();
+	HeatTransferModel(Mesh &mesh, const Input::Record in_rec);
 
 	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
 
@@ -165,7 +147,72 @@ public:
 
 	~HeatTransferModel() override;
 
+	/**
+	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
+	 *
+         * @param dh mixed hybrid dof handler
+         *
+	 * (So far it does not work since the flow module returns a vector of zeros.)
+	 */
+	inline void set_velocity_field(const MH_DofHandler &dh) override
+	{
+		mh_dh = &dh;
+		flux_changed = true;
+	}
+
+    /// Returns number of transported substances.
+    inline unsigned int n_substances()
+    { return 1; }
+
+    /// Returns reference to the vector of substance names.
+    inline SubstanceList &substances()
+    { return substances_; }
+
+
+protected:
+
+	/// Derived class should implement getter for ModelEqData instance.
+	virtual ModelEqData &data() = 0;
+
+	/**
+	 * Create input type that can be passed to the derived class.
+	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
+	 * @param description    Comment used to describe the record key.
+	 * @return
+	 */
+	static IT::Record get_input_type(const string &implementation, const string &description);
+
+	void output_data() override;
+
+	std::shared_ptr<OutputTime> &output_stream()
+	{ return output_stream_; }
+
+	virtual void calculate_cumulative_balance() = 0;
+
+	virtual void calculate_instant_balance() = 0;
+
+	/// Indicator of change in advection vector field.
+	bool flux_changed;
+
+    /// Transported substances.
+    SubstanceList substances_;
+
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
+    const MH_DofHandler *mh_dh;
+
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
+
+	std::shared_ptr<OutputTime> output_stream_;
+
+
 };
+
+
 
 
 

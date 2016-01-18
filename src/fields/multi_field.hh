@@ -66,6 +66,8 @@ public:
 
     	virtual typename Field<spacedim, Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
 
+    	bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) override;
+
     	unsigned int index_;
     };
 
@@ -141,6 +143,8 @@ public:
      * Must be call after setting components, mesh and limit side.
      */
     void set_up_components();
+
+    void set_input_list(const Input::Array &list) override;
 
 private:
     std::vector< SubFieldType > sub_fields_;

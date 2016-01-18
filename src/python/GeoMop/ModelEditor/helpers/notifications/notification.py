@@ -1,12 +1,10 @@
-"""
-Notification related classes.
-"""
+"""Notification related classes.
 
-__author__ = 'Tomas Krizek'
-
+.. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
+"""
 from enum import Enum
 
-from ..locators import Span, Position
+from util.locators import Span, Position
 from .list import NOTIFICATIONS_BY_CODE, NOTIFICATIONS_BY_NAME
 
 

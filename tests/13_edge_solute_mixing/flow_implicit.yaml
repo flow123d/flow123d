@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   time: &anchor3
     end_time: 100.0
@@ -5,17 +6,24 @@ problem: !SequentialCoupling
   description: Test13 - mixing of substances on edges and quantitative test on trivial
     transport problem.
   mesh:
-    mesh_file: input/test13.msh
-  primary_equation: !Steady_MH
+    mesh_file: input/Y_branch.msh
+  primary_equation: !SteadyDarcy_MH
     input_fields:
-    - rid: 17
+    - region: trunk
       anisotropy: 1.0
-    - rid: 18
+    - region: left_branch
+      anisotropy: 1.0
+    - region: right_branch
       anisotropy: 0.1
-    - rid: 19
-      anisotropy: 1.0
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test13.fbc
+    - region: .trunk
+      bc_type: dirichlet
+      bc_pressure: 10
+    - region: .left_branch
+      bc_type: dirichlet
+      bc_pressure: 5
+    - region: .right_branch
+      bc_type: dirichlet
+      bc_pressure: -5
     output:
       output_stream: 
         file: test13.pvd
@@ -30,16 +38,16 @@ problem: !SequentialCoupling
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
-  secondary_equation: !SoluteTransport_DG
-    input_fields:
-    - rid: 17
-      init_conc: 0
-    - rid: 18
-      init_conc: 0
-    - rid: 19
-      init_conc: 0
-    - region: IMPLICIT BOUNDARY
-      bc_conc: 1
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
+      input_fields:
+      - region: BULK
+        init_conc: 0
+      - region: .trunk
+        bc_conc: 1
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     output_stream: 
       file: transport_implicit.pvd
       format: !vtk
@@ -49,8 +57,5 @@ problem: !SequentialCoupling
     substances:
     - A
     time: *anchor3
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
     balance:
       cumulative: true

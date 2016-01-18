@@ -47,8 +47,14 @@
 namespace it = Input::Type;
 
 const it::Selection & DarcyFlowMHOutput::OutputFields::get_output_selection() {
-	return DarcyFlowMH::EqData().make_output_field_selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
-		.copy_values(OutputFields().make_output_field_selection("").close())
+    // Since result output fields are in the separate fieldset OutputFields,
+    // we have to merge two selections.
+	return DarcyFlowMH::EqData().make_output_field_selection(
+	        "DarcyFlowMH_output_fields",
+	        "Selection of output fields for Darcy Flow MH model.")
+		.copy_values(OutputFields().make_output_field_selection(
+		        "DarcyMFOutput_output_fields",
+		        "Auxiliary selection.").close())
 		.close();
 }
 
@@ -56,7 +62,8 @@ const it::Record & DarcyFlowMHOutput::get_input_type() {
 	return it::Record("DarcyMHOutput", "Parameters of MH output.")
 		.declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
 						"Parameters of output stream.")
-		.declare_key("output_fields", it::Array(OutputFields::get_output_selection()),
+		.declare_key("output_fields",
+		        it::Array(OutputFields::get_output_selection()),
 				it::Default::obligatory(), "List of fields to write to output file.")
 //        .declare_key("balance_output", it::FileName::output(), it::Default("\"water_balance.txt\""),
 //                        "Output file for water balance table.")
@@ -177,7 +184,7 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
 
 void DarcyFlowMHOutput::output()
 {
-    START_TIMER("Darcy output");
+    START_TIMER("Darcy fields output");
 
     if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {
 
@@ -190,9 +197,16 @@ void DarcyFlowMHOutput::output()
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
-	  output_fields.fields_for_output.set_time(darcy_flow->time().step());
-	  output_fields.fields_for_output.output(output_stream);
-	  output_stream->write_time_frame();
+      {
+          START_TIMER("evaluate output fields");
+          output_fields.fields_for_output.set_time(darcy_flow->time().step());
+          output_fields.fields_for_output.output(output_stream);
+      }
+
+      {
+          START_TIMER("write time frame");
+          output_stream->write_time_frame();
+      }
 
       output_internal_flow_data();
 
@@ -206,6 +220,7 @@ void DarcyFlowMHOutput::output()
 //=============================================================================
 
 void DarcyFlowMHOutput::make_element_scalar() {
+    START_TIMER("DarcyFlowMHOutput::make_element_scalar");
     unsigned int sol_size;
     double *sol;
 
@@ -226,6 +241,7 @@ void DarcyFlowMHOutput::make_element_scalar() {
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
+    START_TIMER("DarcyFlowMHOutput::make_element_vector");
     // need to call this to create mh solution vector
     darcy_flow->get_mh_dofhandler();
 
@@ -244,6 +260,7 @@ void DarcyFlowMHOutput::make_element_vector() {
 
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
+    START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
 	unsigned int ndofs = max(dh->fe<1>()->n_dofs(), max(dh->fe<2>()->n_dofs(), dh->fe<3>()->n_dofs()));
 	unsigned int indices[ndofs];
 	unsigned int i_node;
@@ -273,6 +290,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 //=============================================================================
 
 void DarcyFlowMHOutput::make_node_scalar_param() {
+    START_TIMER("DarcyFlowMHOutput::make_node_scalar_param");
 
 	vector<double> scalars(mesh_->n_nodes());
 
@@ -492,6 +510,7 @@ void DarcyFlowMHOutput::water_balance() {
  */
 void DarcyFlowMHOutput::output_internal_flow_data()
 {
+    START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     if (raw_output_file == NULL) return;

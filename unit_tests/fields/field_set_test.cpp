@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#define TEST_USE_MPI
+#define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
 #include "fields/field_set.hh"
@@ -41,7 +41,7 @@ const string eq_data_input = R"JSON(
 [
       { 
         time=0.0,
-        r_set="BULK",
+        region="BULK",
         init_pressure=1.1,
         velocity={TYPE="FieldFormula",
             value=[ "x", "y" ]
@@ -50,7 +50,7 @@ const string eq_data_input = R"JSON(
       },
       { 
         time=1.0,
-        r_set="BULK",
+        region="BULK",
         velocity=[1,2]
       }
 ]
@@ -174,11 +174,10 @@ TEST_F(SomeEquation, field_descriptor) {
 	Input::Type::Record descriptor = EqData().make_field_descriptor_type("SomeEquation");
 
 	descriptor.finish();
-	EXPECT_EQ(7, descriptor.size());
+	EXPECT_EQ(6, descriptor.size());
 	EXPECT_TRUE( descriptor.has_key("time"));
 	EXPECT_TRUE( descriptor.has_key("rid"));
 	EXPECT_TRUE( descriptor.has_key("region"));
-	EXPECT_TRUE( descriptor.has_key("r_set"));
 	EXPECT_TRUE( descriptor.has_key("velocity"));
 	EXPECT_TRUE( descriptor.has_key("init_pressure"));
 	EXPECT_TRUE( descriptor.has_key("reaction_type"));
@@ -193,7 +192,7 @@ TEST_F(SomeEquation, output_field_selection) {
         .name("bc_pressure");
 
     Input::Type::Selection sel
-        = data.make_output_field_selection("Sel").close();
+        = data.make_output_field_selection("Sel", "desc").close();
     sel.finish();
 
     // Selection should not contain BC field bc_pressure.

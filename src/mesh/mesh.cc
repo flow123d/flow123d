@@ -25,6 +25,7 @@
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
+#include "la/distribution.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
@@ -56,6 +57,7 @@ namespace IT = Input::Type;
 
 const IT::Record & Mesh::get_input_type() {
 	return IT::Record("Mesh","Record with mesh related data." )
+	    .allow_auto_conversion("mesh_file")
 		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 				"Input file with mesh description.")
 		.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
@@ -72,7 +74,10 @@ const IT::Record & Mesh::get_input_type() {
 const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
-:comm_(comm)
+:comm_(comm),
+ row_4_el(nullptr),
+ el_ds(nullptr),
+ el_4_loc(nullptr)
 {
 
     Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
@@ -85,7 +90,10 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
-  comm_(com)
+  comm_(com),
+  row_4_el(nullptr),
+  el_ds(nullptr),
+  el_4_loc(nullptr)
 {
     reinit(in_record_);
 }
@@ -155,6 +163,10 @@ Mesh::~Mesh() {
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
+
+    if (row_4_el != nullptr) delete[] row_4_el;
+    if (el_4_loc != nullptr) delete[] el_4_loc;
+    if (el_ds != nullptr) delete el_ds;
 }
 
 
@@ -209,12 +221,17 @@ void Mesh::read_gmsh_from_stream(istream &in) {
     GmshMeshReader reader(in);
     reader.read_mesh(this);
     setup_topology();
+    //close region_db_.
     region_db_.close();
 }
 
 
 
 void Mesh::init_from_input() {
+	/*
+	 * TODO: This method needs check in issue 'Review mesh setting'.
+	 * See @p modify_element_ids method
+	 */
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
@@ -229,7 +246,7 @@ void Mesh::init_from_input() {
     if (in_record_.opt_val("regions", region_list)) {
         region_db_.read_regions_from_input(region_list, el_to_reg_map);
     }
-    modify_element_ids(&el_to_reg_map);
+    modify_element_ids(el_to_reg_map);
     //close region_db_.
     region_db_.close();
     // create sets
@@ -242,14 +259,10 @@ void Mesh::init_from_input() {
 
 
 
-void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID *map) {
-	if (map) {
-		FOR_ELEMENTS(this, ele) {
-			RegionDB::MapElementIDToRegionID::const_iterator it = map->find(ele->id());
-			if (it != map->end()) {
-				element[ele->index()].region_idx_ = region_db_.add_region( it->second, ele->dim() );
-			}
-		}
+void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
+	for (auto elem_to_region : map) {
+		ElementIter ele = this->element.find_id(elem_to_region.first);
+		ele->region_idx_ = region_db_.add_region( elem_to_region.second, ele->dim() );
 	}
 }
 
@@ -271,6 +284,13 @@ void Mesh::setup_topology() {
     count_side_types();
 
     part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
+
+    // create parallel distribution and numbering of elements
+    int *id_4_old = new int[element.size()];
+    int i = 0;
+    FOR_ELEMENTS(this, ele) id_4_old[i++] = ele.index();
+    part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
+    delete[] id_4_old;
 }
 
 

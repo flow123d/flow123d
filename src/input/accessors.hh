@@ -148,7 +148,7 @@ protected:
         /**
          * Pointer to data of parent node in the address tree
          */
-        AddressData * parent_;
+    	boost::shared_ptr<AddressData> parent_;
         /**
          * Index in StorageArray of the parent_ to get actual node.
          */
@@ -170,7 +170,7 @@ protected:
          * Delete whole storage tree when last root input accessor is destroyed.
          */
         ~AddressData() {
-        	if (	parent_ == nullptr
+        	if (	!parent_
         			&& root_storage_ == actual_storage_
         			&& root_type_ ) {
         		delete root_storage_;

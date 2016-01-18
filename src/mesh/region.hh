@@ -574,7 +574,7 @@ private:
 
 
     /// Database of all regions (both boundary and bulk).
-    RegionTable region_set_;
+    RegionTable region_table_;
 
     /// flag for closed database, no regions can be added, but you can add region sets
     bool closed_;
@@ -618,11 +618,6 @@ private:
      * Replace dimension of existing region with undefined_dim.
      */
     Region replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary);
-
-    /**
-     * Replace label of existing region.
-     */
-    Region replace_region_label(OnlyIDIter it_only_id, const std::string &label, bool boundary);
 
     /**
      * Find existing region given by pair (dim, id).

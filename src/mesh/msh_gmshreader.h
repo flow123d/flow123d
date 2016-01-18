@@ -112,7 +112,6 @@ public:
 
     /**
      *  Reads @p mesh from the GMSH file.
-     *  Optional map el_to_reg_map can be used to override region of some elements provided by GMSH file.
      *  Input of the mesh allows changing regions within the input CON file.
      */
     void read_mesh(Mesh* mesh);

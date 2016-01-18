@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 output_streams:
 - &anchor1
   file: test_20.pvd
@@ -10,16 +11,15 @@ output_streams:
     variant: ascii
   time_step: 0.5
   name: transport_output_stream
-
 problem: !SequentialCoupling
   description: Adsorption all
   mesh:
     mesh_file: input/test_20.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
     - region: rectangle
       conductivity: 1
-    - r_set: BOUNDARY
+    - region: BOUNDARY
       bc_type: dirichlet
       bc_pressure: 0
     output:
@@ -34,15 +34,16 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
-  secondary_equation: !TransportOperatorSplitting
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+      - region: ALL
+        init_conc: 1
+        porosity: 0.25
+      - region: BOUNDARY
+        bc_conc: 1
     substances:
     - A
-    input_fields:
-    - r_set: ALL
-      init_conc: 1
-      porosity: 0.25
-    - r_set: BOUNDARY
-      bc_conc: 1
     output_stream: 
       file: transport_test_20.pvd
       format: !vtk
@@ -59,12 +60,12 @@ problem: !SequentialCoupling
       - 10.0
       input_fields:
       - time: 0.0
-        r_set: ALL
+        region: ALL
         rock_density: 1.0
         sorption_type: linear
         isotherm_mult: 0.0
       - time: 2.0
-        r_set: ALL
+        region: ALL
         rock_density: 1.0
         sorption_type: linear
         isotherm_mult: 100.0

@@ -1,13 +1,17 @@
+# COMMENT_Stop_time:"1275",
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Steady flow + transport with source
   mesh:
     mesh_file: ./input/test16.msh
-  primary_equation: !Steady_MH
+  primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
-    - region: IMPLICIT BOUNDARY
-      flow_old_bcd_file: ./input/test16.fbc
-    - rid: 7
+    - region: BOUNDARY
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: y
+    - region: BULK
       cross_section: 1
       conductivity: 1
     output:
@@ -28,27 +32,33 @@ problem: !SequentialCoupling
       end_time: 5.7
       max_dt: 1.0
       min_dt: 1.0
-  secondary_equation: !SoluteTransport_DG
-    input_fields:
-    - region: IMPLICIT BOUNDARY
-      bc_conc: 0
-    - rid: 7
-      init_conc: 0
-      porosity: 1
-      diff_m: 1.0e-09
-      disp_l: 0.01
-      disp_t: 0.01
-      dg_penalty: 10.0
-      sources_density: !FieldElementwise
-        gmsh_file: input/test16_sources.msh
-        field_name: density
-      sources_sigma: !FieldElementwise
-        gmsh_file: input/test16_sources.msh
-        field_name: sigma
-      sources_conc: !FieldElementwise
-        gmsh_file: input/test16_sources.msh
-        field_name: concentration
-    dg_variant: symmetric
+  secondary_equation: !Transport_OS
+    transport: !ConvectionDiffusion_DG
+      # dual_porosity:false,
+      input_fields:
+      - region: BOUNDARY
+        bc_conc: 0
+      - region: BULK
+        init_conc: 0
+        porosity: 1
+        diff_m: 1.0e-09
+        disp_l: 0.01
+        disp_t: 0.01
+        dg_penalty: 10.0
+        sources_density: !FieldElementwise
+          gmsh_file: input/test16_sources.msh
+          field_name: density
+        sources_sigma: !FieldElementwise
+          gmsh_file: input/test16_sources.msh
+          field_name: sigma
+        sources_conc: !FieldElementwise
+          gmsh_file: input/test16_sources.msh
+          field_name: concentration
+    # dual_porosity:false
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+      dg_variant: symmetric
     output_stream: 
       file: ./transport_test16.pvd
       format: !vtk
@@ -63,8 +73,5 @@ problem: !SequentialCoupling
       end_time: 5.7
       max_dt: 1.0
       min_dt: 1.0
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
     balance:
       cumulative: true

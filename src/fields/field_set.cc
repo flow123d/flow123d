@@ -59,8 +59,8 @@ FieldSet FieldSet::subset( FieldFlag::Flags::Mask mask) const {
 
 Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equation_name) const {
     Input::Type::Record rec = Input::Type::Record(equation_name + "_Data",
-    		FieldCommon::field_descriptor_record_decsription(equation_name + "_Data"))
-    	.copy_keys(FieldCommon::field_descriptor_record(equation_name + "_Data"));
+    		FieldCommon::field_descriptor_record_description(equation_name + "_Data"))
+    	.copy_keys(FieldCommon::field_descriptor_record(equation_name + "_Data_aux"));
 
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {

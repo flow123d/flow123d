@@ -15,8 +15,8 @@ namespace IT = Input::Type;
  * implementation of RegionBase
  */
 
-IT::AbstractRecord & RegionBase::get_input_type() {
-	return IT::AbstractRecord("Region", "Abstract record for Region.")
+IT::Abstract & RegionBase::get_input_type() {
+	return IT::Abstract("Region", "Abstract record for Region.")
 			.close();
 }
 
