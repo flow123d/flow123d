@@ -68,6 +68,12 @@ const IT::Record & RegionFromId::get_region_input_type()
 
 
 
+const int RegionFromId::registrar =
+		Input::register_class< RegionFromId, const Input::Record &, Mesh * >("From_Id") +
+		RegionFromId::get_region_input_type().size();
+
+
+
 /*******************************************************************
  * implementation of RegionFromLabel
  */
@@ -93,6 +99,12 @@ const IT::Record & RegionFromLabel::get_region_input_type()
 				"The mesh_label is e.g. physical volume name in GMSH format.")
 		.close();
 }
+
+
+
+const int RegionFromLabel::registrar =
+		Input::register_class< RegionFromLabel, const Input::Record &, Mesh * >("From_Label") +
+		RegionFromLabel::get_region_input_type().size();
 
 
 
@@ -151,6 +163,12 @@ const IT::Record & RegionFromElements::get_region_input_type()
 
 
 
+const int RegionFromElements::registrar =
+		Input::register_class< RegionFromElements, const Input::Record &, Mesh * >("From_Elements") +
+		RegionFromElements::get_region_input_type().size();
+
+
+
 /*******************************************************************
  * implementation of RegionBoundary
  * Need new implementation, will be solved later.
@@ -159,6 +177,10 @@ const IT::Record & RegionFromElements::get_region_input_type()
 // RegionBoundary::RegionBoundary(const Input::Record &rec, Mesh *mesh) {}
 
 // const IT::Record & RegionBoundary::get_region_input_type() {}
+
+//const int RegionBoundary::registrar =
+//		Input::register_class< RegionBoundary, const Input::Record &, Mesh * >("Region_Boundary") +
+//		RegionBoundary::get_region_input_type().size();
 
 
 
@@ -191,6 +213,12 @@ const IT::Record & RegionUnion::get_region_input_type()
 
 
 
+const int RegionUnion::registrar =
+		Input::register_class< RegionUnion, const Input::Record &, Mesh * >("Union") +
+		RegionUnion::get_region_input_type().size();
+
+
+
 /*******************************************************************
  * implementation of RegionDifference
  */
@@ -220,6 +248,12 @@ const IT::Record & RegionDifference::get_region_input_type()
 
 
 
+const int RegionDifference::registrar =
+		Input::register_class< RegionDifference, const Input::Record &, Mesh * >("Difference") +
+		RegionDifference::get_region_input_type().size();
+
+
+
 /*******************************************************************
  * implementation of RegionIntersection
  */
@@ -246,4 +280,9 @@ const IT::Record & RegionIntersection::get_region_input_type()
 				"Defines region as an intersection of given pair of regions.")
 		.close();
 }
+
+
+const int RegionIntersection::registrar =
+		Input::register_class< RegionIntersection, const Input::Record &, Mesh * >("Intersection") +
+		RegionIntersection::get_region_input_type().size();
 

@@ -55,6 +55,8 @@ protected:
  */
 class RegionFromId : public RegionBase {
 public:
+    typedef RegionBase FactoryBaseType;
+
 	/// Constructor
 	RegionFromId(const Input::Record &rec, Mesh *mesh);
 
@@ -62,6 +64,10 @@ public:
      * Returns Input Type Record of Region
      */
     static const Input::Type::Record & get_region_input_type();
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 };
 
@@ -71,6 +77,8 @@ public:
  */
 class RegionFromLabel : public RegionBase {
 public:
+    typedef RegionBase FactoryBaseType;
+
 	/// Constructor
 	RegionFromLabel(const Input::Record &rec, Mesh *mesh);
 
@@ -78,6 +86,10 @@ public:
      * Returns Input Type Record of Region
      */
     static const Input::Type::Record & get_region_input_type();
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 };
 
@@ -87,6 +99,8 @@ public:
  */
 class RegionFromElements : public RegionBase {
 public:
+    typedef RegionBase FactoryBaseType;
+
 	/// Constructor
 	RegionFromElements(const Input::Record &rec, Mesh *mesh);
 
@@ -94,6 +108,10 @@ public:
      * Returns Input Type Record of Region
      */
     static const Input::Type::Record & get_region_input_type();
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 };
 
@@ -104,11 +122,17 @@ public:
 /*
 class RegionBoundary : public RegionBase {
 public:
+    typedef RegionBase FactoryBaseType;
+
 	/// Constructor
 	RegionBoundary(const Input::Record &rec, Mesh *mesh);
 
     /// Returns Input Type Record of Region
     static const Input::Type::Record & get_region_input_type();
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 };
 */
@@ -119,6 +143,8 @@ public:
  */
 class RegionUnion : public RegionBase {
 public:
+    typedef RegionBase FactoryBaseType;
+
 	/// Constructor
 	RegionUnion(const Input::Record &rec, Mesh *mesh);
 
@@ -126,6 +152,10 @@ public:
      * Returns Input Type Record of Region
      */
     static const Input::Type::Record & get_region_input_type();
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 };
 
@@ -135,6 +165,8 @@ public:
  */
 class RegionDifference : public RegionBase {
 public:
+    typedef RegionBase FactoryBaseType;
+
 	/// Constructor
 	RegionDifference(const Input::Record &rec, Mesh *mesh);
 
@@ -142,6 +174,10 @@ public:
      * Returns Input Type Record of Region
      */
     static const Input::Type::Record & get_region_input_type();
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 };
 
@@ -151,6 +187,8 @@ public:
  */
 class RegionIntersection : public RegionBase {
 public:
+    typedef RegionBase FactoryBaseType;
+
 	/// Constructor
 	RegionIntersection(const Input::Record &rec, Mesh *mesh);
 
@@ -158,6 +196,10 @@ public:
      * Returns Input Type Record of Region
      */
     static const Input::Type::Record & get_region_input_type();
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 };
 
