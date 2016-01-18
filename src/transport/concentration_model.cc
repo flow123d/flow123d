@@ -240,6 +240,9 @@ void ConcentrationTransportModel::get_flux_bc_data(const std::vector<arma::vec3>
 	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
 	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
 	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+	
+	// Change sign in bc_flux since internally we work with outgoing fluxes.
+	for (auto f : bc_flux) f = -f;
 }
 
 void ConcentrationTransportModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,

@@ -490,6 +490,9 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 	Vec temp;
 	VecDuplicate(ones_be_, &temp);
 	MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp);
+	// Since internally we keep outgoing fluxes, we change sign
+	// to write to output _incoming_ fluxes.
+	VecScale(temp, -1);
 	MatMultTranspose(region_be_matrix_, temp, boundary_vec);
 	VecDestroy(&temp);
 
@@ -499,7 +502,7 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 
 	if (rank_ == 0)
 		// sum fluxes in one step
-		increment_fluxes_[quantity_idx] -= sum_fluxes*dt;
+		increment_fluxes_[quantity_idx] += sum_fluxes*dt;
 }
 
 
@@ -592,6 +595,9 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	Vec temp;
 	VecDuplicate(ones_be_, &temp);
 	MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp);
+	// Since internally we keep outgoing fluxes, we change sign
+	// to write to output _incoming_ fluxes.
+	VecScale(temp, -1);
 	MatMultTranspose(region_be_matrix_, temp, boundary_vec);
 
 	// compute positive/negative fluxes
@@ -669,6 +675,8 @@ void Balance::output(double time)
 	}
 
 
+	// The convention for input/output of fluxes is that positive means inward.
+	// Therefore in the following code we switch sign of fluxes.
 	if (rank_ == 0)
 	{
 		sum_fluxes_.assign(n_quant, 0);
@@ -888,7 +896,7 @@ void Balance::output_legacy(double time)
 					<< setw(w) << initial_mass_[qi]+integrated_sources_[qi]-integrated_fluxes_[qi]
 					<< setw(w) << sum_masses_[qi]
 					<< setw(w) << initial_mass_[qi]+integrated_sources_[qi]-integrated_fluxes_[qi]-sum_masses_[qi]
-					<< setw(w) << fabs(initial_mass_[qi]+integrated_sources_[qi]-integrated_fluxes_[qi]-sum_masses_[qi])/(denominator==0?1:denominator)
+					<< setw(w) << fabs(initial_mass_[qi]+integrated_sources_[qi]+integrated_fluxes_[qi]-sum_masses_[qi])/(denominator==0?1:denominator)
 					<< endl;
 		}
 	}
@@ -963,7 +971,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			// print data header (repeat header after every "repeat" lines)
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
-			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] - integrated_fluxes_[qi]);
+			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
 			output_ << format_csv_val(time, delimiter, true)
 					<< format_csv_val("ALL", delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)

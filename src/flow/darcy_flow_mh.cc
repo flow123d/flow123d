@@ -576,6 +576,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 //                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
 //
 		} else if ( type == EqData::total_flux) {
+		    // internally we work with outward flux
 		    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
 		    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
@@ -588,9 +589,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 
                 if (balance_ != nullptr)
                 {
-		    // We sum negative side fluxes which are oriented outwards, since the
-		    // fluxes in input and output are interpreted as incoming.
-                    balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {-1});
+                    balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
                 }
                 ++loc_b;
             }
