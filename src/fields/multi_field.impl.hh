@@ -144,6 +144,10 @@ void MultiField<spacedim, Value>::setup_components() {
     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
     	sub_fields_[i_comp].add_factory( std::make_shared<MultiFieldFactory>(i_comp) );
 
+    	if (this->shared_->input_default_!="") {
+    		sub_fields_[i_comp].shared_->input_default_ = this->shared_->input_default_;
+    	}
+
     	sub_fields_[i_comp].flags_ = this->flags_;
     	sub_fields_[i_comp].set_input_list(this->full_input_list_);
     }
