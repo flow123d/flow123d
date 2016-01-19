@@ -48,12 +48,12 @@ else
     wrapper="flow123d_wrapper.sh"
     echo "Generating wrapper file '$wrapper'"
     echo "#!/bin/bash" > $wrapper
-    echo "cd \${0%/*}" >> $wrapper
-    python -c "import sys; print '\n'.join(['PYTHONPATH=\${PYTHONPATH}:\`pwd\`/..'+p.replace(sys.prefix, '') for p in sys.path if p])" >> $wrapper
-    echo "PYTHONPATH=\${PYTHONPATH}:\`pwd\`/../lib/flow123d" >> $wrapper
+    echo "DIR=\"\$( cd \"\$( dirname \"\${BASH_SOURCE[0]}\" )\" && pwd )\"" >> $wrapper
+    python -c "import sys; print '\n'.join(['PYTHONPATH=\${PYTHONPATH}:\${DIR}/..'+p.replace(sys.prefix, '') for p in sys.path if p])" >> $wrapper
+    echo "PYTHONPATH=\${PYTHONPATH}:\${DIR}/../lib/flow123d" >> $wrapper
     echo "export PYTHONPATH=\${PYTHONPATH}" >> $wrapper
-    echo "export LD_LIBRARY_PATH=\`pwd\`/../lib" >> $wrapper
-    echo "\`pwd\`/ld-linux-loader.so \`pwd\`/flow123d.bin \$@" >> $wrapper
+    echo "export LD_LIBRARY_PATH=\${DIR}/../lib" >> $wrapper
+    echo "\${DIR}/ld-linux-loader.so \${DIR}/flow123d.bin \$@" >> $wrapper
     chmod +x $wrapper
   fi
 fi
