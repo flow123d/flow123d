@@ -1380,7 +1380,7 @@ void TransportDG<Model>::set_boundary_conditions()
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
-						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]-bc_fluxes[k][sbi])*fe_values_side.JxW(k);
+						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]+bc_fluxes[k][sbi])*fe_values_side.JxW(k);
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
@@ -1399,7 +1399,7 @@ void TransportDG<Model>::set_boundary_conditions()
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
-						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]-bc_fluxes[k][sbi])*fe_values_side.JxW(k);
+						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]+bc_fluxes[k][sbi])*fe_values_side.JxW(k);
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}

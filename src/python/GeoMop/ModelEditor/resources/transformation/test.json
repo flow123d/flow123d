@@ -6,22 +6,12 @@
 "actions":
   [
    {
-        "NAME": "Rename SoluteTransportDG neumann bc to total_flux",
-        "action": "change-value",
+        "NAME": "Change sign in bc_flux in transport and heat (constant value)",
+        "action": "scale-value",
         "parameters":{
-          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
-          "old_value" : "neumann",
-          "new_value" : "diffusive_flux"
-        }          
-    },
-    {
-        "NAME": "Rename SoluteTransportDG robin bc to total_flux",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
-          "old_value" : "robin",
-          "new_value" : "diffusive_flux"
-        }          
+          "path" : "/problem/secondary_equation/input_fields/*/bc_flux",
+          "scale" : "-1"
+        }
     }
   ]
 }

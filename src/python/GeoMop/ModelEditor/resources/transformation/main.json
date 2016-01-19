@@ -6,23 +6,32 @@
 "actions":
   [
     {
-      "NAME": "Add new obligatory key, flow123d_version.",
-      "action": "add-key",
-      "parameters": {
-        "path": "/",
-        "key": "flow123d_version",
-        "value": "1.8.9"  
-      }  
+        "NAME": "Rename SoluteTransportDG neumann bc to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
+          "old_value" : "neumann",
+          "new_value" : "diffusive_flux"
+        }          
     },
     {
-      "NAME": "Add new obligatory key, flow123d_version.",
-      "action": "add-key",
-      "parameters": {
-        "path": "/problem",
-        "key": "flow123d_version",
-        "value": "problem"  
-      }  
+        "NAME": "Rename SoluteTransportDG robin bc to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
+          "old_value" : "robin",
+          "new_value" : "diffusive_flux"
+        }          
     },
+    { 
+      "NAME" : "region to r_set",
+      "TODO": "Need to check that target key 'region' is not used.",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"**/input_fields/*/r_set",
+        "destination_path":"$1/input_fields/$2/region"
+      }
+    },  
     {
       "NAME": "Rename Steady_MH to SteadyDarcy_MH",
       "action": "rename-type",
@@ -67,16 +76,25 @@
         "key": "transport",
         "parent": "Transport",
         "type": "Convection_FV",
-        "type-filter": "TransportOperatorSplitting"
+        "type-filter": "Transport_OS"
       }
     },
+    {
+      "NAME": "Move output_fields from Transport_OS to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/output_fields",
+        "destination_path": "/problem/secondary_equation/transport/output_fields",
+        "parent-type-filter": "Transport_OS"
+      }
+    },  
     {
       "NAME": "Move input_fields from Transport_OS to transport",
       "action": "move-key",
       "parameters": {
         "source_path": "/problem/secondary_equation/input_fields",
         "destination_path": "/problem/secondary_equation/transport/input_fields",
-        "parent-type-filter": "TransportOperatorSplitting"
+        "parent-type-filter": "Transport_OS"
       }
     },
     {
@@ -99,6 +117,15 @@
         "parent-type-filter": "SoluteTransport_DG"
       }
     },
+    {
+      "NAME": "Move output_fields from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/output_fields",
+        "destination_path": "/problem/secondary_equation/transport/output_fields",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },        
     {
       "NAME": "Move solver from SoluteTransport_DG to transport",
       "action": "move-key",

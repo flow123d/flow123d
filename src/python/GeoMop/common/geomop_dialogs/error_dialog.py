@@ -23,3 +23,11 @@ class GMErrorDialog(QtWidgets.QMessageBox):
         else:
             self.setInformativeText(type(error).__name__ + ": " + str(error))
         super(GMErrorDialog, self).exec_()
+        
+    def open_error_report_dialog(self, errors, msg="Process notifications:" ,  title="GeoMop Operation Report"):
+        """Display dialog with title, text and error message in detail."""
+        self.setWindowTitle(title)
+        self.setInformativeText("\n".join(errors))
+        self.setText(msg)
+        self.setIcon(QtWidgets.QMessageBox.Information)
+        super(GMErrorDialog, self).exec_()    
