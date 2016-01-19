@@ -13,9 +13,9 @@
 using namespace std;
 namespace computeintersection{
 
-/****************************************************************
- * METODY PRO SIMPLEX 1 A SIMPLEX 2
- ****************************************************************/
+/*************************************************************************************************************
+ *                                  COMPUTE INTERSECTION FOR:             1D AND 2D
+ ************************************************************************************************************/
 ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(){
 	computed = false;
 	abscissa = NULL;
@@ -59,7 +59,8 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
 	// if not already computed, compute plucker coordinates of triangle sides
 	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
 		if(!plucker_coordinates_triangle[side]->is_computed()){
-			plucker_coordinates_triangle[side]->compute((*triangle)[side][0].point_coordinates(), (*triangle)[side][1].point_coordinates());
+			plucker_coordinates_triangle[side]->compute((*triangle)[side][0].point_coordinates(), 
+                                                        (*triangle)[side][1].point_coordinates());
 		}
 	}
 
@@ -98,176 +99,262 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::set_computed(){
 	computed = true;
 };
 
-bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products){
+bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(IntersectionPoint< 1, 2 > &IP)
+{
+        double c = signed_plucker_product(0);
+        double d = signed_plucker_product(1);
+        double e = signed_plucker_product(2);
+        //xprintf(Msg,"Prunik.%f %f %f\n",c,d,e);
+        // c = w0; d = w1; e = w2, sum = w0+w1+w2
+        // local alfa = w2/sum; local beta = w1/sum; => local barycentric coordinates in the triangle
+        // see formula (3) on pg. 12 in BP VF
+        arma::vec::fixed<3> local_triangle;
+        
+        //TODO: do not understand the order of coordinate
+        local_triangle[0] = e/(c+d+e); // alfa
+        local_triangle[1] = d/(c+d+e); // beta
+        local_triangle[2] = c/(c+d+e); // gama
 
-	compute_plucker_products();
-	computed = true;
+        // local coordinate T on the line
+        // for i-th coordinate it holds: (from formula (4) on pg. 12 in BP VF)
+        // T = localAbscissa= (- A(i) + ( 1 - alfa - beta ) * V0(i) + alfa * V1(i) + beta * V2 (i)) / U(i)
+        // let's choose [max,i] = max {U(i)}
+        arma::vec3 u = (*abscissa)[1].point_coordinates() - (*abscissa)[0].point_coordinates();
+        unsigned int i = 0; //index of maximum in u
+        //find max in u in abs value:
+        double max = u[0];
+        if(fabs((double)u[1]) > fabs(max)){ max = u[1]; i = 1;}
+        if(fabs((double)u[2]) > fabs(max)){ max = u[2]; i = 2;}
 
-    // change sign of plucker products according to the sign of normal of sides
-    double plucker_norm_products[3] = {RefElement<2>::normal_orientation(0) ? -(*plucker_products[0]) : (*plucker_products[0]), 
-                                       RefElement<2>::normal_orientation(1) ? -(*plucker_products[1]) : (*plucker_products[1]), 
-                                       RefElement<2>::normal_orientation(2) ? -(*plucker_products[2]) : (*plucker_products[2]) };
+        // global coordinates in triangle
+        arma::vec3 global_triangle =
+        local_triangle[0]*(*triangle)[0][0].point_coordinates() +
+        local_triangle[1]*(*triangle)[0][1].point_coordinates() +
+        local_triangle[2]*(*triangle)[1][1].point_coordinates();
+        
+        //theta on abscissa
+        double t =  (-(*abscissa)[0].point_coordinates()[i] + global_triangle[i])/max;
+
+        /*
+        DBGMSG("Coordinates: line; local and global triangle\n");
+        theta.print();
+        local_triangle.print();
+        global_triangle.print();
+        */
+        IP.set_topology(0, 1, 0, 2);
+        IP.set_orientation(signed_plucker_product(0) > 0 ? 1 : 0);
+        arma::vec::fixed<2> theta = {1-t, t};
+
+        IP.set_coordinates(theta,local_triangle);
+        return true;
+}
+
+bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_pathologic(unsigned int side, IntersectionPoint< 1, 2 > &IP)
+{
+//      DBGMSG("PluckerProduct[%d]: %f\n",side, *plucker_products[side]);
+        if( std::abs(*plucker_products[side]) <= rounding_epsilon ){// fabs(*plucker_products[side]) <= rounding_epsilon){
+            // starting point of abscissa
+            arma::vec3 A = (*abscissa)[0].point_coordinates();
+            // direction vector of abscissa
+            arma::vec3 U = plucker_coordinates_abscissa[0]->get_u_vector();
+            arma::vec3 C = (*triangle)[side][side%2].point_coordinates();
+            // direction vector of triangle side
+            arma::vec3 V = plucker_coordinates_triangle[side]->get_u_vector();
+            arma::vec3 K = C - A;
+            // normal vector to common plane of U and V
+            arma::vec3 Det = -arma::cross(U,V);
+            
+//             A.print();
+//             U.print();
+//             C.print();
+//             V.print();
+//             K.print();
+//             Det.print();
+//             cout <<endl;
+            // we solve following equation for parameters s,t:
+            /* A + sU = C + tV
+             * sU - tV = C - A
+             * see (4.3) on pg. 19 in DP VF
+             */
+            
+            //TODO armadillo function for max ?? -> nothing for maximum of absolute value
+            //Det.print();
+            unsigned int max_index = 0;
+            double maximum = Det[0];
+            if(fabs((double)Det[1]) > fabs(maximum)){
+                maximum = Det[1];
+                max_index = 1;
+            }
+            if(fabs((double)Det[2]) > fabs(maximum)){
+                maximum = Det[2];
+                max_index = 2;
+            }
+            //abscissa is parallel to triangle side
+            if(std::abs(maximum) <= rounding_epsilon) return false;
+
+            double DetX = K[(max_index+2)%3]*V[(max_index+1)%3]
+                        -K[(max_index+1)%3]*V[(max_index+2)%3];
+
+            double DetY = K[(max_index+2)%3]*U[(max_index+1)%3]
+                        -K[(max_index+1)%3]*U[(max_index+2)%3];
+
+            double s;   //parameter on abscissa
+            double t;   //parameter on triangle side
+
+            s = DetX/Det[max_index];
+            t = DetY/Det[max_index];
+
+            // change sign according to side orientation
+            if(RefElement<2>::normal_orientation(side)) t=-t;
+
+            //DBGMSG("s = %f; t = %f\n",s,t);
+
+            // IP is outside of triangle side
+            if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
+
+                IP.set_orientation(2);  // set orientation as a pathologic case ( > 1)
+
+                // possibly set abscissa vertex {0,1}
+                if( fabs(s) <= geometry_epsilon)       { s = 0; IP.set_topology_A(0,0);}
+                else if(fabs(1-s) <= geometry_epsilon) { s = 1; IP.set_topology_A(1,0);}
+                else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
+                
+                // possibly set triangle vertex {0,1,2}
+                if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact<0,1>(side)[RefElement<2>::normal_orientation(side)],0);  }
+                else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact<0,1>(side)[1-RefElement<2>::normal_orientation(side)],0);}
+                else                         {        IP.set_topology_B(side,1);}   // no vertex, side side, dim = 1
+                
+                arma::vec::fixed<2> local_abscissa;
+                local_abscissa[0] = 1-s;
+                local_abscissa[1] = s;
+
+                arma::vec::fixed<3> l_triangle;
+                /*
+                 * 0 = 1- t, t, 0
+                 * 1 = 1 -t , 0, t // 1 = t, 0 , 1 - t
+                 * 2 = 0, 1 - t, t
+                 *
+                 * t = 0 => 1; 1 => 0, 2 => 2
+                 * TODO: according to ref element
+                 * */
+                l_triangle[(3-side)%3] = 1 - t;
+                l_triangle[(4-side)%3] = t;
+                l_triangle[2-side] = 0;
+
+//              local_abscissa.print();
+//              l_triangle.print();
+                
+                IP.set_coordinates(local_abscissa,l_triangle);
+
+                return true; // IP found
+            }
+        }
+    return false;   // IP NOT found
+}
+
+
+bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPoint<1,2>> &IP12s, 
+                                                          bool compute_zeros_plucker_products){
+
+    compute_plucker_products();
+    computed = true;
     
     // test whether all plucker products have the same sign
-    if(((plucker_norm_products[0] > rounding_epsilon) && (plucker_norm_products[1] > rounding_epsilon) && (plucker_norm_products[2] > rounding_epsilon)) ||
-       ((plucker_norm_products[0] < -rounding_epsilon) && (plucker_norm_products[1] < -rounding_epsilon) && (plucker_norm_products[2] < -rounding_epsilon))){
+    if(((signed_plucker_product(0) > rounding_epsilon) && (signed_plucker_product(1) > rounding_epsilon) && (signed_plucker_product(2) > rounding_epsilon)) ||
+       ((signed_plucker_product(0) < -rounding_epsilon) && (signed_plucker_product(1) < -rounding_epsilon) && (signed_plucker_product(2) < -rounding_epsilon))){
         
-		double c = plucker_norm_products[0];
-		double d = plucker_norm_products[1];
-		double e = plucker_norm_products[2];
-		//xprintf(Msg,"Prunik.%f %f %f\n",c,d,e);
-		// c = w0; d = w1; e = w2, sum = w0+w1+w2
-		// local alfa = w2/sum; local beta = w1/sum; => local barycentric coordinates in the triangle
-        // see formula (3) on pg. 12 in BP VF
-		arma::vec::fixed<3> local_triangle;
-		arma::vec::fixed<2> theta;
-        //TODO: do not understand the order of coordinate
-		local_triangle[0] = e/(c+d+e); // alfa
-		local_triangle[1] = d/(c+d+e); // beta
-		local_triangle[2] = c/(c+d+e); // gama
+        IntersectionPoint<1,2> IP;
+        
+        if(compute_plucker(IP))
+        {
+            IP12s.push_back(IP);
+            return true;
+        }
+    }else if(compute_zeros_plucker_products){
 
-		// local coordinate T on the line
-        // for i-th coordinate it holds: (from formula (4) on pg. 12 in BP VF)
-		// T = localAbscissa= (- A(i) + ( 1 - alfa - beta ) * V0(i) + alfa * V1(i) + beta * V2 (i)) / U(i)
-		// let's choose [max,i] = max {U(i)}
-		arma::vec3 u = (*abscissa)[1].point_coordinates() - (*abscissa)[0].point_coordinates();
-		unsigned int i = 0; //index of maximum in u
-		//find max in u in abs value:
-		double max = u[0];
-		if(fabs((double)u[1]) > fabs(max)){ max = u[1]; i = 1;}
-		if(fabs((double)u[2]) > fabs(max)){ max = u[2]; i = 2;}
-
-		// global coordinates in triangle
-		arma::vec3 global_triangle =
-		local_triangle[0]*(*triangle)[0][0].point_coordinates() +
-		local_triangle[1]*(*triangle)[0][1].point_coordinates() +
-		local_triangle[2]*(*triangle)[1][1].point_coordinates();
-		theta[1] = (-(*abscissa)[0].point_coordinates()[i] + global_triangle[i])/max;
-		theta[0] = 1 - theta[1];
-
-		/*xprintf(Msg,"Normalni\n");
-		theta.print();
-		local_triangle.print();
-		xprintf(Msg,"Globale:\n");
-		global_triangle.print();*/
-//         IntersectionPoint<1,2> IP(theta,local_triangle,-1,-1,(*plucker_products[0] > 0 ? 1 : 0));
-        /*TODO: we do not test whether the IP is not at the vertex of abscissa:
-         * we solve intersection of triangle and line (not abscissa)
-         * this should be done (after this function) when solving 1d-2d
-         */
-		IntersectionPoint<1,2> IP(theta,local_triangle);
-        IP.set_topology(0, 1, 0, 2);
-        IP.set_orientation(plucker_norm_products[0] > 0 ? 1 : 0);
-		IP12s.push_back(IP);
-		return true;
-
-	}else if(compute_zeros_plucker_products){
-
-		DBGMSG("Intersections - Pathologic case.\n");
-
-		// 1 zero product -> IP is on the triangle side
-		// 2 zero products -> IP is at the vertex of triangle (there is no other IP)
-		// 3 zero products: 
+        DBGMSG("Intersections - Pathologic case.\n");
+        // 1 zero product -> IP is on the triangle side
+        // 2 zero products -> IP is at the vertex of triangle (there is no other IP)
+        // 3 zero products: 
         //      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
-        //      -> triangle side is part of the line (and otherwise)            
-
-		for(unsigned int i = 0; i < 3;i++){
-// 			DBGMSG("PluckerProduct[%d]: %f\n",i, *plucker_products[i]);
-			if( std::abs(*plucker_products[i]) <= rounding_epsilon ){// fabs(*plucker_products[i]) <= rounding_epsilon){
-                // starting point of abscissa
-				arma::vec3 A = (*abscissa)[0].point_coordinates();
-                // direction vector of abscissa
-				arma::vec3 U = plucker_coordinates_abscissa[0]->get_u_vector();
-				arma::vec3 C = (*triangle)[i][i%2].point_coordinates();
-                // direction vector of triangle side
-				arma::vec3 V = plucker_coordinates_triangle[i]->get_u_vector();
-				arma::vec3 K = C - A;
-                // normal vector to common plane of U and V
-				arma::vec3 Det = -arma::cross(U,V);
-                
-                // we solve following equation for parameters s,t:
-                /* A + sU = C + tV
-                 * sU - tV = C - A
-                 * see (4.3) on pg. 19 in DP VF
-                 */
-                
-                //TODO armadillo function for max ?? -> nothing for maximum of absolute value
-				//Det.print();
-				unsigned int max_index = 0;
-				double maximum = Det[0];
-				if(fabs((double)Det[1]) > fabs(maximum)){
-					maximum = Det[1];
-					max_index = 1;
-				}
-				if(fabs((double)Det[2]) > fabs(maximum)){
-					maximum = Det[2];
-					max_index = 2;
-				}
-				//abscissa is parallel to triangle side
-				if(std::abs(maximum) <= rounding_epsilon) return false;
-
-				double DetX = K[(max_index+2)%3]*V[(max_index+1)%3]
-							-K[(max_index+1)%3]*V[(max_index+2)%3];
-
-			    double DetY = K[(max_index+2)%3]*U[(max_index+1)%3]
-							-K[(max_index+1)%3]*U[(max_index+2)%3];
-
-				double s;   //parameter on abscissa
-				double t;   //parameter on triangle side
-
-				s = DetX/Det[max_index];
-				t = DetY/Det[max_index];
-
-                // change sign according to side orientation
-				if(RefElement<2>::normal_orientation(i)) t=-t;
-
-				// IP is outside of triangle side
-                if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
-                    IntersectionPoint<1,2> IP;
-                    IP.set_orientation(2);  // set orientation as a pathologic case ( > 1)
-
-                    // possibly set abscissa vertex {0,1}
-                    if( fabs(s) <= geometry_epsilon)       { s = 0; IP.set_topology_A(0,0);}
-                    else if(fabs(1-s) <= geometry_epsilon) { s = 1; IP.set_topology_A(1,0);}
-                    else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
-                    
-                    // possibly set triangle vertex {0,1,2}
-                    if( fabs(t) < geometry_epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[RefElement<2>::normal_orientation(i)],0);  }
-                    else if(fabs(1-t) < geometry_epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact<0,1>(i)[1-RefElement<2>::normal_orientation(i)],0);}
-                    else                         {        IP.set_topology_B(i,1);}   // no vertex, side i, dim = 1
-                    
-					arma::vec::fixed<2> local_abscissa;
-					local_abscissa[0] = 1-s;
-					local_abscissa[1] = s;
-
-					arma::vec::fixed<3> l_triangle;
-					/*
-					 * 0 = 1- t, t, 0
-					 * 1 = 1 -t , 0, t // 1 = t, 0 , 1 - t
-					 * 2 = 0, 1 - t, t
-					 *
-					 * t = 0 => 1; 1 => 0, 2 => 2
-					 * TODO: according to ref element
-					 * */
-					l_triangle[(3-i)%3] = 1 - t;
-					l_triangle[(4-i)%3] = t;
-					l_triangle[2-i] = 0;
-
-// 					local_abscissa.print();
-// 					l_triangle.print();
-                    
-					IP.set_coordinates(local_abscissa,l_triangle);
-                    
-					IP12s.push_back(IP);
-					return true;
-				}
-			}
-		}
-		return false;
-	}else{
-		return false;
-	}
+        //      -> triangle side is part of the line (and otherwise)
+        IntersectionPoint<1,2> IP;
+        for(unsigned int i = 0; i < 3;i++){
+            if(compute_pathologic(i,IP))
+            {
+                IP12s.push_back(IP);
+                return true;
+            }
+        }
+    }
+    
+    return false;   // if IP not found before
 };
+
+bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< IntersectionPoint< 1, 2 > >& IP12s)
+{
+    compute_plucker_products();
+    computed = true;
+    
+    // test whether all plucker products have the same sign
+    if(((signed_plucker_product(0) > rounding_epsilon) && (signed_plucker_product(1) > rounding_epsilon) && (signed_plucker_product(2) > rounding_epsilon)) ||
+       ((signed_plucker_product(0) < -rounding_epsilon) && (signed_plucker_product(1) < -rounding_epsilon) && (signed_plucker_product(2) < -rounding_epsilon)))
+    {
+        IntersectionPoint<1,2> IP;
+        compute_plucker(IP);
+        
+        // if computing 1d-2d intersection as final product, cut the line
+        arma::vec::fixed<2> theta;
+        double t = IP.local_bcoords_A()[1];
+        if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
+                // possibly set abscissa vertex {0,1}
+                if( fabs(t) <= geometry_epsilon)       { theta = {1,0}; IP.set_topology_A(0,0);}
+                else if(fabs(1-t) <= geometry_epsilon) { theta = {0,1}; IP.set_topology_A(1,0);}
+                IP12s.push_back(IP);
+                return true;
+        }
+        else return false;   
+    }
+    else
+    {
+        DBGMSG("Intersections - Pathologic case.\n");
+        // 1 zero product -> IP is on the triangle side
+        // 2 zero products -> IP is at the vertex of triangle (there is no other IP)
+        // 3 zero products: 
+        //      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
+        //      -> triangle side is part of the line (and otherwise)      
+        unsigned int n_found = 0;
+        
+        for(unsigned int i = 0; i < 3;i++){
+            IntersectionPoint<1,2> IP;
+            if (compute_pathologic(i,IP))
+            {
+                double t = IP.local_bcoords_A()[1];
+                if(t >= -geometry_epsilon && t <= 1+geometry_epsilon)
+                {
+                    if(n_found > 0)
+                    {
+                        // if the IP has been found already
+                        if(IP12s.back().local_bcoords_A()[1] == t)
+//                         if((IP12s.back().dim_B() == IP.dim_B()) && 
+//                            (IP12s.back().idx_B() == IP.idx_B()))
+                            continue;
+                        
+                        // sort the IPs in the direction of the abscissa
+                        if(IP12s.back().local_bcoords_A()[1] > t)
+                            std:swap(IP12s.back(),IP);
+                    }
+                    
+                    IP12s.push_back(IP);
+                    
+                    n_found++;
+                }
+            }
+        }
+        return n_found > 0;
+    }
+}
+
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::print_plucker_coordinates(std::ostream &os){
 	os << "\tPluckerCoordinates Abscissa[0]";
@@ -295,9 +382,12 @@ double* ComputeIntersection<Simplex<1>, Simplex<2>>::get_plucker_product(unsigne
 };
 
 
-/****************************************************************
- * METODY PRO SIMPLEX 1 A SIMPLEX 3
- ****************************************************************/
+
+
+
+/*************************************************************************************************************
+ *                                  COMPUTE INTERSECTION FOR:             1D AND 3D
+ ************************************************************************************************************/
 ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(){
 	abscissa = NULL;
 	tetrahedron = NULL;
@@ -509,9 +599,14 @@ double* ComputeIntersection<Simplex<1>, Simplex<3>>::get_plucker_product(unsigne
 	return CI12[index_CI].get_plucker_product(index_edge);
 };
 
-/****************************************************************
- * METODY PRO SIMPLEX 2 A SIMPLEX 3
- ****************************************************************/
+
+
+
+
+
+/*************************************************************************************************************
+ *                                  COMPUTE INTERSECTION FOR:             2D AND 3D
+ ************************************************************************************************************/
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(){
 	triangle = NULL;
 	tetrahedron = NULL;

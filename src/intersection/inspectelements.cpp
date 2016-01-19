@@ -137,18 +137,9 @@ void InspectElements::compute_intersections<1,2>(){
 //                     for(unsigned int i=0; i < il.size(); i++)
 //                         std::cout << il.points()[i];
                     
-                    if(CI_12.compute(intersection_point_list[elm->index()], true, true)){
+                    if(CI_12.compute_final(intersection_point_list[elm->index()])){
                         closed_elements[elm->index()] = true;
                         flag_for_3D_elements[ele->index()] = elm->index();
-                        
-                        // trace IPs in the direction of line (if IPs are 2)
-//                         if(intersection_point_list[elm->index()].size() == 2)
-//                         {
-//                             if(intersection_point_list[elm->index()][0].local_bcoords_A()[1] >
-//                                intersection_point_list[elm->index()][1].local_bcoords_A()[1]
-//                             )
-//                             std:swap(intersection_point_list[elm->index()][0],intersection_point_list[elm->index()][1]);
-//                         }
 
                         //TODO: prolongation in parallel pathologic case (2 IPs) (I dont know what about IP being triangle vertex)
 //                         prolongate_elements(il, elm, ele);

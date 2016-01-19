@@ -9,6 +9,7 @@
 
 #include "simplex.h"
 #include "system/system.hh"
+#include "mesh/ref_element.hh"
 
 namespace computeintersection {
 
@@ -53,7 +54,9 @@ public:
      * @return true, if intersection is found; false otherwise
      */
 	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
-    
+    bool compute_final(std::vector<IntersectionPoint<1,2>> &IP12s);
+    bool compute_plucker(IntersectionPoint<1,2> &IP);
+    bool compute_pathologic(unsigned int side, IntersectionPoint<1,2> &IP);
     
 	void set_data(Simplex<1> *abs, Simplex<2> *triang);
 
@@ -93,6 +96,8 @@ private:
     /// Computes Plucker coordinates (abscissa, triangle lines) and Plucker products.
     void compute_plucker_products();
     
+    double signed_plucker_product(unsigned int i);
+    
 	Simplex<1> *abscissa;
 	Simplex<2> *triangle;
 
@@ -103,6 +108,10 @@ private:
     //TODO: allocate at the top level intersection object, use NaN to indicate plucker products not computed yet, also Destroy!
 	double *plucker_products[3];
 	bool computed;
+};
+
+inline double ComputeIntersection<Simplex<1>, Simplex<2>>::signed_plucker_product(unsigned int i){
+    return RefElement<2>::normal_orientation(i) ? -(*plucker_products[i]) : (*plucker_products[i]);
 };
 
 /******************************************************************
