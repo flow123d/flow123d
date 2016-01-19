@@ -552,9 +552,6 @@ endif()
 # PYTHON
 #
 # optionaly we use Python interface
-set(FLOW_WRAPPER "#!/bin/bash\n")
-set(FLOW_WRAPPER "${FLOW_WRAPPER}DIR=\"\$(dirname \$(dirname \$0))\"\n")
-
 if (USE_PYTHON)
     message(STATUS "\n ======================================================= ")
     find_package(PythonLibs 2.7)
@@ -600,6 +597,15 @@ if (USE_PYTHON)
               COMMAND python -c "import sys; print ';'.join([p for p in sys.path if p])"
               OUTPUT_VARIABLE PY_PATHS
               OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+            
+            # get all subfolders from paths so we can copy them during install
+            # some are located in lib some in lib64 some in local
+            execute_process(
+              COMMAND python -c "import sys, re; print ';'.join(set([[p for p in \\
+                  re.split(r'\\\\|/', x.replace(sys.prefix, '')) if p][0] for x in sys.path if x]))"
+              OUTPUT_VARIABLE PY_SUB_PATHS
+              OUTPUT_STRIP_TRAILING_WHITESPACE)
             
             # remove prefix from each python path
             # and recursively copy not overwrite existing files
@@ -610,11 +616,13 @@ if (USE_PYTHON)
             foreach(PY_PATH ${PY_PATHS})
                 string(REPLACE "${PY_PREFIX}" "" PY_ALT_PATH "${PY_PATH}")
                 list(APPEND PYTHON_WRAPPER_PATHS ".${PY_ALT_PATH}")
-                message(STATUS "rsync -aR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/")
-                execute_process(
-                  COMMAND rsync -aR ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/
-                 )
-                 set(FLOW_WRAPPER "${FLOW_WRAPPER}PYTHONPATH=\${PYTHONPATH}:\${DIR}${PY_ALT_PATH}\n")
+                # copy only if dir does not exists
+                if(NOT EXISTS "${TARGET_PREFIX}/${PY_ALT_PATH}")
+                    message(STATUS "cmake -E copy_directory ${PY_PREFIX}${PY_ALT_PATH} ${TARGET_PREFIX}${PY_ALT_PATH}")
+                    execute_process(
+                      COMMAND cmake -E copy_directory ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/${PY_ALT_PATH}
+                     )
+                 endif()
             endforeach(PY_PATH)
             execute_process(
               COMMAND chmod -R 764 ${TARGET_PREFIX}/
@@ -635,7 +643,6 @@ if (USE_PYTHON)
                 )
                 
             list(APPEND PYTHON_WRAPPER_PATHS "./lib/flow123d")
-            set(FLOW_WRAPPER "${FLOW_WRAPPER}PYTHONPATH=\${PYTHONPATH}:\${DIR}/lib/flow123d\n")
             # copy python include (h files for embedded python)
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          
@@ -646,8 +653,6 @@ if (USE_PYTHON)
             execute_process(
                 COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${TARGET_PREFIX}/include 
                 )                           
-            
-            set(FLOW_WRAPPER "${FLOW_WRAPPER}export PYTHONPATH=\${PYTHONPATH}\n")
         endif()
     else()
         set(PYTHON_INCLUDE_DIRS "")
@@ -732,10 +737,6 @@ add_custom_target(update_source_tree
     COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
-
-# generate wrapper file
-message(STATUS "GENERATING WRAPPER FILE ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh")
-FILE(WRITE "${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh" "${FLOW_WRAPPER}")
 
 #### create rev_num.h - file with some info about code origin
 # a custom target - is always built -> call cmake script to generate rev_num.h
@@ -871,6 +872,8 @@ if( PETSC_FOUND )
   
   
   ### add target for flow123d binary
+  #
+  # set(CMAKE_EXECUTABLE_FORMAT "ELF")
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
@@ -927,8 +930,8 @@ if (CYGWIN)
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" cygwin WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
     install(DIRECTORY build_tree/bin/            
         DESTINATION bin/
-        PATTERN mpiexec EXCLUDE)
-
+        PATTERN mpiexec EXCLUDE
+        )
 else()
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
     install(DIRECTORY build_tree/lib/            
@@ -936,21 +939,26 @@ else()
         PATTERN lib/python* EXCLUDE
         PATTERN *.a EXCLUDE
         )
-    install(PROGRAMS build_tree/bin/flow123d_wrapper2.sh   DESTINATION bin/)
 endif()        
 
 # install python modules and system libs
 if (PYTHON_COPY)
-    install(DIRECTORY build_tree/lib/
-            DESTINATION lib/)
-    install(DIRECTORY build_tree/lib64/
-            DESTINATION lib64/)
+    # install all sub folders of Python
+    foreach(PY_SUB_PATH ${PY_SUB_PATHS})
+        install(DIRECTORY build_tree/${PY_SUB_PATH}/
+                DESTINATION ${PY_SUB_PATH}/ OPTIONAL)
+    endforeach(PY_PATH)
+    # copy Python's include
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
             DESTINATION include)
 endif()
 
-install(TARGETS    bin/flow123d  
-        RUNTIME DESTINATION bin)
+
+install(PROGRAMS    build_tree/bin/flow123d             RENAME "flow123d.bin"
+        DESTINATION bin/)
+install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d"
+        DESTINATION bin/)
+install(PROGRAMS    build_tree/bin/ld-linux-loader.so DESTINATION bin/)
 install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
 

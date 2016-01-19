@@ -32,23 +32,29 @@ else
   then
     # detect shared libs
     loader=`ldd flow123d | grep "/ld" | sed 's/^\t*\(\/.*\) (.*)$/\1/'`
-    libs=`ldd flow123d | sed 's/^.* => \(\/.*\) (.*)$/\1/'`
-    libs="${libs} ${loader}"
+    libs=`ldd flow123d | grep -n "^/" | sed 's/^.* => \(\/.*\) (.*)$/\1/'`
+    libs="${libs}"
     
     # copy shared libs
     echo "Copy flow123d shared libraries ..."
     if [ ! -d ../lib ]; then mkdir ../lib; fi
     cp ${libs} ../lib
     
-    # now we alter wrapper file located in bin/flow123d_wrapper.sh
-    echo "Generating wrapper file"
-    loader_name=$(basename $loader)
-    cat "../bin/flow123d_wrapper.sh" > "../bin/flow123d_wrapper2.sh"
-    echo "export LD_LIBRARY_PATH=./lib" >> "../bin/flow123d_wrapper2.sh"
-    echo "\${DIR}lib/${loader_name} bin/flow123d \$@" >> "../bin/flow123d_wrapper2.sh"
+    # manually copy and rename file to bin dir so cmake can make it executable
+    cp ${loader} ./ld-linux-loader.so
+    chmod +x "./ld-linux-loader.so"
     
-    # add executable flag to ld-linux loader
-    chmod +x "../lib/${loader_name}"
+    # now we alter wrapper file located in bin/flow123d_wrapper.sh
+    wrapper="flow123d_wrapper.sh"
+    echo "Generating wrapper file '$wrapper'"
+    echo "#!/bin/bash" > $wrapper
+    echo "cd \${0%/*}" >> $wrapper
+    python -c "import sys; print '\n'.join(['PYTHONPATH=\${PYTHONPATH}:\`pwd\`/..'+p.replace(sys.prefix, '') for p in sys.path if p])" >> $wrapper
+    echo "PYTHONPATH=\${PYTHONPATH}:\`pwd\`/../lib/flow123d" >> $wrapper
+    echo "export PYTHONPATH=\${PYTHONPATH}" >> $wrapper
+    echo "export LD_LIBRARY_PATH=\`pwd\`/../lib" >> $wrapper
+    echo "\`pwd\`/ld-linux-loader.so \`pwd\`/flow123d.bin \$@" >> $wrapper
+    chmod +x $wrapper
   fi
 fi
 
