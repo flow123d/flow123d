@@ -336,13 +336,11 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< 
                     {
                         // if the IP has been found already
                         if(IP12s.back().local_bcoords_A()[1] == t)
-//                         if((IP12s.back().dim_B() == IP.dim_B()) && 
-//                            (IP12s.back().idx_B() == IP.idx_B()))
                             continue;
                         
                         // sort the IPs in the direction of the abscissa
                         if(IP12s.back().local_bcoords_A()[1] > t)
-                            std:swap(IP12s.back(),IP);
+                            std::swap(IP12s.back(),IP);
                     }
                     
                     IP12s.push_back(IP);
