@@ -328,7 +328,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
     // read input up to given time
 	double input_time;
     if (shared_->input_list_.size() != 0) {
-        while( shared_->list_idx_ < (int)shared_->input_list_.size()
+        while( shared_->list_idx_ < shared_->input_list_.size()
         	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
 
         	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
@@ -491,7 +491,6 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
     	}
 	}
 
-    shared_->list_idx_ = 0;
 }
 
 

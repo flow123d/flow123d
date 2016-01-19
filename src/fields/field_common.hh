@@ -384,7 +384,7 @@ protected:
     	/**
     	 * Empty constructor.
     	 */
-    	SharedData() : list_idx_(-1) {};
+    	SharedData() : list_idx_(0) {};
 
         /**
          * True for boundary fields.
@@ -436,7 +436,7 @@ protected:
         /**
          * Index to current position of input field descriptor.
          */
-        int list_idx_;
+        unsigned int list_idx_;
 
         /**
          * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.

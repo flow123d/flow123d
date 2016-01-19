@@ -70,7 +70,6 @@ const std::string FieldCommon::field_descriptor_record_description(const string&
 
 void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
     if (! flags().match(FieldFlag::declare_input)) return;
-    ASSERT_LESS( -1, shared_->list_idx_);
 
     // pass through field descriptors containing key matching field name.
     double time;

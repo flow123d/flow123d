@@ -173,7 +173,6 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     }
 
     this->full_input_list_ = list;
-    shared_->list_idx_ = 0;
 }
 
 
