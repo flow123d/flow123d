@@ -80,11 +80,19 @@ const int RegionFromId::registrar =
 
 RegionFromLabel::RegionFromLabel(const Input::Record &rec, Mesh *mesh)
 {
+	string region_name;
 	string mesh_label = rec.val<string>("mesh_label");
-	string region_name = rec.val<string>("name", mesh_label);
+	if ( !rec.opt_val<string>("name", region_name) ) {
+		region_name = mesh_label;
+	}
 
-	unsigned int region_id = mesh->region_db().find_label(mesh_label).id();
-	this->add_region(mesh, region_id, region_name);
+	Region reg = mesh->region_db().find_label(mesh_label);
+	if (reg == Region()) {
+		xprintf(Warn, "Unknown region in mesh with label '%s'\n", mesh_label.c_str());
+	} else {
+		unsigned int region_id = reg.id();
+		this->add_region(mesh, region_id, region_name);
+	}
 }
 
 
