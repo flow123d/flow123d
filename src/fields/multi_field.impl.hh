@@ -167,8 +167,8 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     	if ( it->opt_val(this->input_name(), mf_array) ) {
     		unsigned int comp_size = this->shared_->comp_names_.size();
     		if (mf_array.size() != 1 && mf_array.size() != comp_size)
-    			THROW( Input::ExcInputMessage() << EI_Message("Invalid size of Array defined for MultiField " + this->input_name()
-    			    + " at address " + it->address_string() + ".") );
+    			THROW( Exc_InvalidMultiFieldSize() << EI_MultiFieldName(this->input_name())
+    					<< EI_Size(mf_array.size()) << EI_ExpectedSize(comp_size) << list.ei_address() );
     	}
     }
 

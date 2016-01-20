@@ -60,6 +60,12 @@ public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldValue_<0,1,typename Value::element_type> MultiFieldValue;
 
+    TYPEDEF_ERR_INFO( EI_MultiFieldName, const string );
+    TYPEDEF_ERR_INFO( EI_Size, unsigned int );
+    TYPEDEF_ERR_INFO( EI_ExpectedSize, unsigned int );
+    DECLARE_INPUT_EXCEPTION( Exc_InvalidMultiFieldSize, << "Invalid size " << EI_Size::val
+    		<< "of the MultiField " << EI_MultiFieldName::qval << ", expected size: " << EI_ExpectedSize::val );
+
     class MultiFieldFactory : public Field<spacedim, Value>::FactoryBase {
     public:
     	/// Constructor.
