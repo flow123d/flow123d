@@ -258,6 +258,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
   el_4_loc(nullptr)
 
 {
+    is_steady=true;
     is_linear_=true;
     tolerance_=0.01;
     max_n_it_=100;
@@ -276,19 +277,18 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     {
         START_TIMER("data init");
         data_.set_mesh(mesh_in);
-    //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
-    data_.gravity_ =  arma::vec4(" 0 0 -1 0");
-    data_.bc_pressure.add_factory(
+        //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+        data_.gravity_ =  arma::vec4(" 0 0 -1 0");
+        data_.bc_pressure.add_factory(
     		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
     		(data_.gravity_, "bc_piezo_head") );
-
-        data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-        data_.mark_input_times(this->mark_type());
-        data_.set_limit_side(LimitSide::right);
         data_.bc_switch_pressure.add_factory(
                 std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
                 (data_.gravity_, "bc_switch_piezo_head") );
 
+        data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
+        data_.mark_input_times(this->mark_type());
+        data_.set_limit_side(LimitSide::right);
         data_.set_time(time_->step());
     }
     output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
@@ -334,11 +334,11 @@ void DarcyFlowMH_Steady::zero_time_step() {
     read_init_condition(); // Possible solution guess for steady case.
     //assembly_linear_system();
 
-    if (time_->is_steady()) {
+    if (is_steady) {
 
         /* TODO:
          * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
-         * - Introduce key, steady initial condition. Which could be used to start from steady initial case
+         * - Introduce key, 'steady_initial_condition'. Which could be used to start from steady initial case
          * as well as indicating steady solver. Problem: initial steady problem need to set limit_side::left, however staedy solver
          * should set limit_side::right. But this is problematic, since it seems that limit_side may not be property of the solver, but could be set by user.
          *
@@ -1203,7 +1203,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
-	    if (!time_->is_steady()) {
+	    if (!is_steady) {
 	        START_TIMER("fix time term");
 	    	//DBGMSG("    setup time term\n");
 	    	// assembly time term and rhs
@@ -1218,10 +1218,10 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 	    END_TIMER("full assembly");
 	} else {
 		START_TIMER("modify system");
-		if (!time_->is_steady()) {
+		if (!is_steady) {
 			modify_system();
 		} else {
-			xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
+			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
 		}
 		END_TIMER("modiffy system");
 	}
@@ -1672,6 +1672,7 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
     : DarcyFlowMH_Steady(mesh_in, in_rec)
 {
+    is_steady=false;
     /*
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	data_.mark_input_times(this->mark_type());
