@@ -129,11 +129,13 @@ public:
     Field(const Field &other);
 
     /**
-     * Assignment operator. Same properties as copy constructor.
+     * Assignment operator. Same properties as copy constructor, but class member name_ is not copied.
      *
      * Question: do we really need this, isn't copy constructor enough?
      * Answer: It is necessary in (usual) case when Field instance is created as the class member
      * but is filled later by assignment possibly from other class.
+     * TODO: operator can be merged with copy constructor, but we must provide to set correct value
+     * of name in method copy_from
      */
     Field &operator=(const Field &other);
 
