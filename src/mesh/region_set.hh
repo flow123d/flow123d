@@ -1,12 +1,12 @@
 /*
- * region_types.hh
+ * region_set.hh
  *
  *  Created on: Nov 27, 2012
  *      Author: jb
  */
 
-#ifndef REGION_TYPES_HH_
-#define REGION_TYPES_HH_
+#ifndef REGION_SET_HH_
+#define REGION_SET_HH_
 
 #include "mesh/mesh.h"
 #include "mesh/region.hh"
@@ -22,12 +22,8 @@
  *  - constructor what adds region to RegionDB
  *  - static generating function created Input Type Record
  */
-class RegionBase : public Region {
+class RegionSetBase {
 public:
-	/// Constructor
-	RegionBase(unsigned int index, const RegionDB &db)
-	: Region(index, db) {}
-
 	/**
      * Returns whole tree of input types for Region with all descendants.
      */
@@ -45,20 +41,19 @@ public:
 
 protected:
     /// Empty constructor
-	RegionBase()
-	: Region() {}
+    RegionSetBase() {}
 };
 
 
 /**
  * Region declared by id and name.
  */
-class RegionFromId : public RegionBase {
+class RegionSetFromId : public RegionSetBase {
 public:
-    typedef RegionBase FactoryBaseType;
+    typedef RegionSetBase FactoryBaseType;
 
 	/// Constructor
-	RegionFromId(const Input::Record &rec, Mesh *mesh);
+    RegionSetFromId(const Input::Record &rec, Mesh *mesh);
 
 	/**
      * Returns Input Type Record of Region
@@ -75,12 +70,12 @@ private:
 /**
  * Region declared by mesh_label and name
  */
-class RegionFromLabel : public RegionBase {
+class RegionSetFromLabel : public RegionSetBase {
 public:
-    typedef RegionBase FactoryBaseType;
+    typedef RegionSetBase FactoryBaseType;
 
 	/// Constructor
-	RegionFromLabel(const Input::Record &rec, Mesh *mesh);
+    RegionSetFromLabel(const Input::Record &rec, Mesh *mesh);
 
 	/**
      * Returns Input Type Record of Region
@@ -97,12 +92,12 @@ private:
 /**
  * Region declared by name and enum of elements
  */
-class RegionFromElements : public RegionBase {
+class RegionSetFromElements : public RegionSetBase {
 public:
-    typedef RegionBase FactoryBaseType;
+    typedef RegionSetBase FactoryBaseType;
 
 	/// Constructor
-	RegionFromElements(const Input::Record &rec, Mesh *mesh);
+    RegionSetFromElements(const Input::Record &rec, Mesh *mesh);
 
 	/**
      * Returns Input Type Record of Region
@@ -120,12 +115,12 @@ private:
  * Need new implementation, will be solved later.
  */
 /*
-class RegionBoundary : public RegionBase {
+class RegionSetBoundary : public RegionSetBase {
 public:
-    typedef RegionBase FactoryBaseType;
+    typedef RegionSetBase FactoryBaseType;
 
 	/// Constructor
-	RegionBoundary(const Input::Record &rec, Mesh *mesh);
+	RegionSetBoundary(const Input::Record &rec, Mesh *mesh);
 
     /// Returns Input Type Record of Region
     static const Input::Type::Record & get_region_input_type();
@@ -141,12 +136,12 @@ private:
 /**
  * Region defined as union of other regions
  */
-class RegionUnion : public RegionBase {
+class RegionSetUnion : public RegionSetBase {
 public:
-    typedef RegionBase FactoryBaseType;
+    typedef RegionSetBase FactoryBaseType;
 
 	/// Constructor
-	RegionUnion(const Input::Record &rec, Mesh *mesh);
+    RegionSetUnion(const Input::Record &rec, Mesh *mesh);
 
 	/**
      * Returns Input Type Record of Region
@@ -163,12 +158,12 @@ private:
 /**
  * Region defined as difference of two other regions
  */
-class RegionDifference : public RegionBase {
+class RegionSetDifference : public RegionSetBase {
 public:
-    typedef RegionBase FactoryBaseType;
+    typedef RegionSetBase FactoryBaseType;
 
 	/// Constructor
-	RegionDifference(const Input::Record &rec, Mesh *mesh);
+    RegionSetDifference(const Input::Record &rec, Mesh *mesh);
 
 	/**
      * Returns Input Type Record of Region
@@ -185,12 +180,12 @@ private:
 /**
  * Region defined as intersection of other regions
  */
-class RegionIntersection : public RegionBase {
+class RegionSetIntersection : public RegionSetBase {
 public:
-    typedef RegionBase FactoryBaseType;
+    typedef RegionSetBase FactoryBaseType;
 
 	/// Constructor
-	RegionIntersection(const Input::Record &rec, Mesh *mesh);
+    RegionSetIntersection(const Input::Record &rec, Mesh *mesh);
 
 	/**
      * Returns Input Type Record of Region
@@ -205,4 +200,4 @@ private:
 
 
 
-#endif /* REGION_TYPES_HH_ */
+#endif /* REGION_SET_HH_ */
