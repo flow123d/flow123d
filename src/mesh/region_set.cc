@@ -50,7 +50,11 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 {
 	string region_label = rec.val<string>("name");
 	unsigned int region_id = rec.val<unsigned int>("id");
-	this->add_region(mesh, region_id, region_label);
+	Region reg = this->add_region(mesh, region_id, region_label);
+
+	RegionSet region_set;
+	region_set.push_back( reg );
+	add_set(mesh, reg.label(), region_set);
 }
 
 
@@ -91,7 +95,11 @@ RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 		xprintf(Warn, "Unknown region in mesh with label '%s'\n", mesh_label.c_str());
 	} else {
 		unsigned int region_id = reg.id();
-		this->add_region(mesh, region_id, region_name);
+		Region reg = this->add_region(mesh, region_id, region_name);
+
+		RegionSet region_set;
+		region_set.push_back( reg );
+		add_set(mesh, reg.label(), region_set);
 	}
 }
 
@@ -134,7 +142,10 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 		else THROW( ExcNonexistingLabel() << EI_Region_Label(region_label) );
 	}
 
-	this->add_region(mesh, region_id, region_label);
+	Region reg = this->add_region(mesh, region_id, region_label);
+	RegionSet region_set;
+	region_set.push_back( reg );
+	add_set(mesh, reg.label(), region_set);
 
 	// TODO We must use MapElementIDToRegionID taken from mesh->region_db or gets as constructor argument
 	RegionDB::MapElementIDToRegionID map;
