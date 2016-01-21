@@ -194,7 +194,7 @@ public:
     /**
      *
      */
-    void read_gmsh_from_stream(istream &in);
+    void read_gmsh_from_stream(istream &in, bool close_region_db = true);
     /**
      * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
      */
@@ -208,6 +208,14 @@ public:
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
+
+    /**
+     * Reads elements and their affiliation to regions and region sets defined by user in input file
+     * Format of input record is defined in method RegionSetBase::get_input_type()
+     *
+     * @param region_list Array input AbstractRecords which define regions, region sets and elements
+     */
+    void read_regions_from_input(Input::Array region_list);
 
     /// Vector of nodes of the mesh.
     NodeVector node_vector;

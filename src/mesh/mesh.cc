@@ -76,8 +76,8 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm),
  row_4_el(nullptr),
- el_ds(nullptr),
- el_4_loc(nullptr)
+ el_4_loc(nullptr),
+ el_ds(nullptr)
 {
 
     Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
@@ -92,8 +92,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),
   row_4_el(nullptr),
-  el_ds(nullptr),
-  el_4_loc(nullptr)
+  el_4_loc(nullptr),
+  el_ds(nullptr)
 {
     reinit(in_record_);
 }
@@ -214,7 +214,7 @@ void Mesh::count_element_types() {
 }
 
 
-void Mesh::read_gmsh_from_stream(istream &in) {
+void Mesh::read_gmsh_from_stream(istream &in, bool close_region_db) {
   
     START_TIMER("Reading mesh - from_stream");
     
@@ -222,7 +222,9 @@ void Mesh::read_gmsh_from_stream(istream &in) {
     reader.read_mesh(this);
     setup_topology();
     //close region_db_.
-    region_db_.close();
+    if (close_region_db) {
+    	region_db_.close();
+    }
 }
 
 
@@ -743,6 +745,19 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
 
     if (boundary_domain) return boundary_elements_id_;
     return bulk_elements_id_;
+}
+
+void Mesh::read_regions_from_input(Input::Array region_list)
+{
+	std::shared_ptr<RegionBase> reg_ptr;
+	for (Input::Iterator<Input::AbstractRecord> it = region_list.begin<Input::AbstractRecord>();
+				it != region_list.end();
+				++it) {
+		reg_ptr = (*it).factory< RegionBase, const Input::Record &, Mesh * >(*it, this);
+		reg_ptr.reset();
+	}
+
+	this->region_db_.close();
 }
 
 //-----------------------------------------------------------------------------
