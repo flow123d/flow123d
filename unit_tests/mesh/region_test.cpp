@@ -5,12 +5,17 @@
  *      Author: jb
  */
 
-#include <flow_gtest.hh>
+#define TEST_USE_PETSC
+#include <flow_gtest_mpi.hh>
+
 #include "mesh/region.hh"
+#include "mesh/mesh.h"
+#include "mesh/region_set.hh"
 #include "input/type_base.hh"
 #include "input/type_output.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
+#include "system/sys_profiler.hh"
 #include <map>
 
 #include <boost/lexical_cast.hpp>
@@ -251,6 +256,66 @@ TEST(Region, read_element_map_from_input) {
 	EXPECT_EQ(0, ( *(map.find(5)) ).second );
 	EXPECT_EQ(1, ( *(map.find(8)) ).second );
 	EXPECT_EQ(0, ( *(map.find(9)) ).second );
+}
+
+
+const string read_new_regions = R"JSON(
+[
+	{
+		TYPE="From_Id",
+		name = "label_0",
+		id = 0
+	},
+	{
+		TYPE="From_Elements",
+		name = "label_1",
+		id = 1,
+		element_list = [8, 5, 3, 1]
+	},
+	{
+		TYPE="From_Label",
+		name = "label_2",
+		mesh_label = "3D back"
+	},
+	{
+		TYPE="Union",
+		name = "label_3",
+		region_labels = ["label_0", "label_1"]
+	},
+	{
+		TYPE="Union",
+		name = "label_4",
+		region_labels = ["label_0", "label_2"]
+	},
+	{
+		TYPE="Difference",
+		name = "label_5",
+		region_labels = ["label_3", "label_4"]
+	},
+	{
+		TYPE="Intersection",
+		name = "label_6",
+		region_labels = ["label_3", "label_4"]
+	}
+]
+)JSON";
+
+TEST(NewRegion, read_new_regions) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    Profiler::initialize();
+
+    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    Mesh * mesh = new Mesh;
+    ifstream in(string( mesh_file ).c_str());
+    mesh->read_gmsh_from_stream(in, false);
+
+	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
+	Input::ReaderToStorage json_reader( read_new_regions, element_map_array_input_type, Input::FileFormat::format_JSON);
+	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
+
+	mesh->read_regions_from_input(i_arr);
+	mesh->region_db().print_region_table(cout);
 }
 
 
