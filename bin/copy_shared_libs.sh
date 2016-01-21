@@ -33,7 +33,6 @@ else
     # detect shared libs
     loader=`ldd flow123d | grep "/ld" | sed 's/^\t*\(\/.*\) (.*)$/\1/'`
     libs=`ldd flow123d | grep -n "^/" | sed 's/^.* => \(\/.*\) (.*)$/\1/'`
-    libs="${libs}"
     
     # copy shared libs
     echo "Copy flow123d shared libraries ..."
@@ -43,17 +42,36 @@ else
     # manually copy and rename file to bin dir so cmake can make it executable
     cp ${loader} ./ld-linux-loader.so
     chmod +x "./ld-linux-loader.so"
-    
-    # now we alter wrapper file located in bin/flow123d_wrapper.sh
+
+    # get all python paths stripped by python sys.prefix by calling dedicated script
+    # result will look like:     path1;path2;...;pathn
+    paths=$(python ../../flow123d/bin/python/python_path_script.py sys_path_without_prefix --format cmake)
     wrapper="flow123d_wrapper.sh"
     echo "Generating wrapper file '$wrapper'"
+
+    # --- WRAPPER ---
+
+    # add bash header
     echo "#!/bin/bash" > $wrapper
+    # declare $DIR variable containing absolute path to this script's location
     echo "DIR=\"\$( cd \"\$( dirname \"\${BASH_SOURCE[0]}\" )\" && pwd )\"" >> $wrapper
-    python -c "import sys; print '\n'.join(['PYTHONPATH=\${PYTHONPATH}:\${DIR}/..'+p.replace(sys.prefix, '') for p in sys.path if p])" >> $wrapper
-    echo "PYTHONPATH=\${PYTHONPATH}:\${DIR}/../lib/flow123d" >> $wrapper
+    # add paths to PYTHONPATH, set path separator to colon to avoid problems
+    # with paths containing spaces
+    export IFS=";"
+    for path in $paths
+    do
+       echo "PYTHONPATH=\${PYTHONPATH}:\${DIR}/..${path}" >> $wrapper
+    done
+    export IFS=
+    # export PYTHONPATH variable
     echo "export PYTHONPATH=\${PYTHONPATH}" >> $wrapper
+    # export LD_LIBRARY_PATH variable for corrent lib loading
     echo "export LD_LIBRARY_PATH=\${DIR}/../lib" >> $wrapper
+    # start flow using ld-loader and pass all arguments
     echo "\${DIR}/ld-linux-loader.so \${DIR}/flow123d.bin \$@" >> $wrapper
+
+    # --- WRAPPER ---
+
     chmod +x $wrapper
   fi
 fi

@@ -572,7 +572,6 @@ if (USE_PYTHON)
 
         # set extra python module path in src directory, if case PYTHON_COPY if OFF
         set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
-        set(PYTHON_WRAPPER_PATHS "")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
@@ -594,16 +593,26 @@ if (USE_PYTHON)
                             
             # get all valid python system paths
             execute_process(
-              COMMAND python -c "import sys; print ';'.join([p for p in sys.path if p])"
+              COMMAND python ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path --format cmake
               OUTPUT_VARIABLE PY_PATHS
               OUTPUT_STRIP_TRAILING_WHITESPACE)
 
             
             # get all subfolders from paths so we can copy them during install
             # some are located in lib some in lib64 some in local
+            # Python's sys.path contains several paths we must copy in order to assure Python's correct functionality.
+            # We decided to remove part /usr from paths to make them shorter. sys.path:
+            #    /usr/lib64/python2.7
+            #    /usr/lib64/python2.7/site-packages
+            #    /usr/lib/python2.7/site-packages
+            # if we remove prefix we get:
+            #    /lib64/python2.7
+            #    /lib64/python2.7/site-packages
+            #    /lib/python2.7/site-packages
+            # we store first part of each stripped sys.path, remove duplicate and join them with compilation
+            # CMAKE will interprets this as LIST
             execute_process(
-              COMMAND python -c "import sys, re; print ';'.join(set([[p for p in \\
-                  re.split(r'\\\\|/', x.replace(sys.prefix, '')) if p][0] for x in sys.path if x]))"
+              COMMAND python ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path_subdir --format cmake
               OUTPUT_VARIABLE PY_SUB_PATHS
               OUTPUT_STRIP_TRAILING_WHITESPACE)
             
@@ -615,7 +624,6 @@ if (USE_PYTHON)
             # on windows we get path to installation folder
             foreach(PY_PATH ${PY_PATHS})
                 string(REPLACE "${PY_PREFIX}" "" PY_ALT_PATH "${PY_PATH}")
-                list(APPEND PYTHON_WRAPPER_PATHS ".${PY_ALT_PATH}")
                 # copy only if dir does not exists
                 if(NOT EXISTS "${TARGET_PREFIX}/${PY_ALT_PATH}")
                     message(STATUS "cmake -E copy_directory ${PY_PREFIX}${PY_ALT_PATH} ${TARGET_PREFIX}${PY_ALT_PATH}")
@@ -630,19 +638,13 @@ if (USE_PYTHON)
             
             message(STATUS "Python prefix: ${PY_PREFIX}")
             message(STATUS "Python target prefix: ${TARGET_PREFIX}")
-            message(STATUS "Python wrapper paths: ${PYTHON_WRAPPER_PATHS}")
             flow_define(PYTHON_PREFIX ${PY_PREFIX})
-            flow_define(PYTHON_PATHS  ${PYTHON_WRAPPER_PATHS})
             
             # copy flow123d python scripts and modules
-            execute_process(
-                COMMAND ${TARGET_PREFIX}/lib/flow123d 
-                )
             execute_process(
                 COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${TARGET_PREFIX}/lib/flow123d 
                 )
                 
-            list(APPEND PYTHON_WRAPPER_PATHS "./lib/flow123d")
             # copy python include (h files for embedded python)
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          
@@ -954,11 +956,19 @@ if (PYTHON_COPY)
 endif()
 
 
-install(PROGRAMS    build_tree/bin/flow123d             RENAME "flow123d.bin"
-        DESTINATION bin/)
-install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d"
-        DESTINATION bin/)
-install(PROGRAMS    build_tree/bin/ld-linux-loader.so DESTINATION bin/)
+# on UNIX rename flow123d and create install wrapper which uses corrent linux loader
+if (UNIX)
+    install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin"
+            DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d"
+            DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/ld-linux-loader.so  DESTINATION bin/)
+else()
+  install(TARGETS       bin/flow123d
+          RUNTIME DESTINATION bin)
+endif()
+
+
 install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
 
