@@ -574,8 +574,8 @@ if (USE_PYTHON)
         set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
         
         if (PYTHON_COPY)
-            set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
-            set(PYTHON_EXTRA_MODULES_PATH "${TARGET_PREFIX}/lib/flow123d")
+            set(PY_BUILD_PREFIX "${CMAKE_BINARY_DIR}")
+            set(PYTHON_EXTRA_MODULES_PATH "${PY_BUILD_PREFIX}/lib/flow123d")
               
               # copy python files to build tree 
               # first get prefix (we support just one prefix)
@@ -598,22 +598,21 @@ if (USE_PYTHON)
               OUTPUT_STRIP_TRAILING_WHITESPACE)
 
             
-            # get all subfolders from paths so we can copy them during install
-            # some are located in lib some in lib64 some in local
-            # Python's sys.path contains several paths we must copy in order to assure Python's correct functionality.
-            # We decided to remove part /usr from paths to make them shorter. sys.path:
-            #    /usr/lib64/python2.7
+            # The script:
+            #   1. takes all paths from Python system path (variable sys.path)
+            #   2. filter paths leaving only ones starting with Python system variable prefix (sys.prefix)
+            #   3. for each extract the name of the first subdirectory under prefix
+            #   4. remove duplicate subdirectories
+            #   5. return path joined with ; colon (CMAKE will interprets this as LIST)
+            # From:
+            #    /usr/local/python2.7
             #    /usr/lib64/python2.7/site-packages
             #    /usr/lib/python2.7/site-packages
-            # if we remove prefix we get:
-            #    /lib64/python2.7
-            #    /lib64/python2.7/site-packages
-            #    /lib/python2.7/site-packages
-            # we store first part of each stripped sys.path, remove duplicate and join them with compilation
-            # CMAKE will interprets this as LIST
+            # We get something like this:
+            #  "local/;lib64/;lib/"
             execute_process(
               COMMAND python ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path_subdir --format cmake
-              OUTPUT_VARIABLE PY_SUB_PATHS
+              OUTPUT_VARIABLE PY_PREFIX_SUBDIRS
               OUTPUT_STRIP_TRAILING_WHITESPACE)
             
             # remove prefix from each python path
@@ -625,35 +624,35 @@ if (USE_PYTHON)
             foreach(PY_PATH ${PY_PATHS})
                 string(REPLACE "${PY_PREFIX}" "" PY_ALT_PATH "${PY_PATH}")
                 # copy only if dir does not exists
-                if(NOT EXISTS "${TARGET_PREFIX}/${PY_ALT_PATH}")
-                    message(STATUS "cmake -E copy_directory ${PY_PREFIX}${PY_ALT_PATH} ${TARGET_PREFIX}${PY_ALT_PATH}")
+                if(NOT EXISTS "${PY_BUILD_PREFIX}/${PY_ALT_PATH}")
+                    message(STATUS "cmake -E copy_directory ${PY_PREFIX}${PY_ALT_PATH} ${PY_BUILD_PREFIX}${PY_ALT_PATH}")
                     execute_process(
-                      COMMAND cmake -E copy_directory ${PY_PREFIX}/.${PY_ALT_PATH} ${TARGET_PREFIX}/${PY_ALT_PATH}
+                      COMMAND cmake -E copy_directory ${PY_PREFIX}/.${PY_ALT_PATH} ${PY_BUILD_PREFIX}/${PY_ALT_PATH}
                      )
                  endif()
             endforeach(PY_PATH)
             execute_process(
-              COMMAND chmod -R 764 ${TARGET_PREFIX}/
+              COMMAND chmod -R 764 ${PY_BUILD_PREFIX}/
              )
             
             message(STATUS "Python prefix: ${PY_PREFIX}")
-            message(STATUS "Python target prefix: ${TARGET_PREFIX}")
+            message(STATUS "Python target prefix: ${PY_BUILD_PREFIX}")
             flow_define(PYTHON_PREFIX ${PY_PREFIX})
             
             # copy flow123d python scripts and modules
             execute_process(
-                COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${TARGET_PREFIX}/lib/flow123d 
+                COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${PY_BUILD_PREFIX}/lib/flow123d 
                 )
                 
             # copy python include (h files for embedded python)
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          
-                COMMAND mkdir -p ${TARGET_PREFIX}/include 
+                COMMAND mkdir -p ${PY_BUILD_PREFIX}/include 
                 )             
             # recursive copy, not overwrite existing files
             # we copy all and exclude some paths and files during install    
             execute_process(
-                COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${TARGET_PREFIX}/include 
+                COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include 
                 )                           
         endif()
     else()
@@ -872,10 +871,23 @@ if( PETSC_FOUND )
   SET (CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/../lib" )
   
+  # bug in cmake https://cmake.org/Bug/view.php?id=13934
+  # causing error during CPack operation
+  # 
+  #    CMake Error at cmake_install.cmake (FILE):
+  #        file INSTALL cannot find
+  #        
+  # This is workaround posted on cmake.org. This bug occured in version 2.8 
+  # (first occurence in version 2.8.10) but it is platform depended, so some 
+  # unix systems will not have this bug
+  # 
+  # By setting CMAKE_EXECUTABLE_FORMAT to "ELF" in the toolchain file you 
+  #   tell CMake that it can use its builtin ELF editor instead of relinking
+  if (${CMAKE_VERSION} VERSION_GREATER 2.8.10 AND ${CMAKE_VERSION} VERSION_LESS 2.9)
+      set(CMAKE_EXECUTABLE_FORMAT "ELF")
+  endif()
   
   ### add target for flow123d binary
-  #
-  # set(CMAKE_EXECUTABLE_FORMAT "ELF")
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
@@ -946,9 +958,9 @@ endif()
 # install python modules and system libs
 if (PYTHON_COPY)
     # install all sub folders of Python
-    foreach(PY_SUB_PATH ${PY_SUB_PATHS})
-        install(DIRECTORY build_tree/${PY_SUB_PATH}/
-                DESTINATION ${PY_SUB_PATH}/ OPTIONAL)
+    foreach(PY_PREFIX_SUBDIR ${PY_PREFIX_SUBDIRS})
+        install(DIRECTORY ${PY_BUILD_PREFIX}/${PY_PREFIX_SUBDIR}/
+                DESTINATION ${PY_PREFIX_SUBDIR}/ OPTIONAL)
     endforeach(PY_PATH)
     # copy Python's include
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
