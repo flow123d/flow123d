@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+
+# get absolute dir in which is this script stored
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# populated by configure_file in cmake call
+PYTHONPATH="@PY_WRAPPER_PATHS@"
+
+# temporatily set for separator to colon (;)
+export IFS=";"
+for path in $PYTHON_PATHS
+do
+   # add all paths to PYTHONPATH variable
+   PYTHONPATH=${PYTHONPATH}:${SCRIPT_DIR}/..${path}
+done
+# restore separator
+export IFS=
+# export python PYTHONPATH variable
+export PYTHONPATH=${PYTHONPATH}
+# export variable LD_LIBRARY_PATH so libraries will be searched in that location
+export LD_LIBRARY_PATH=${SCRIPT_DIR}/../lib
+
+# using linux loader run flow123d and pass all arguments
+${SCRIPT_DIR}/ld-linux-loader.so ${SCRIPT_DIR}/flow123d.bin $@
