@@ -653,7 +653,14 @@ if (USE_PYTHON)
             # we copy all and exclude some paths and files during install    
             execute_process(
                 COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include 
-                )                           
+                )
+            
+            # save python system path without prefix to PY_WRAPPER_PATHS 
+            # variable so it can be later used in wrapper via configure_file
+            execute_process(
+              COMMAND python ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path_without_prefix --format cmake
+              OUTPUT_VARIABLE PY_WRAPPER_PATHS
+              OUTPUT_STRIP_TRAILING_WHITESPACE)
         endif()
     else()
         set(PYTHON_INCLUDE_DIRS "")
@@ -953,6 +960,8 @@ else()
         PATTERN lib/python* EXCLUDE
         PATTERN *.a EXCLUDE
         )
+    # configure wrapper file
+    configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh @ONLY)
 endif()        
 
 # install python modules and system libs
