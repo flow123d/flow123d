@@ -40,8 +40,9 @@ def action_sys_exec_prefix():
 
 
 def action_sys_path():
-    return [p for p in sys.path if p not in ('', os.getcwd())]
-
+    paths = [p for p in sys.path if p not in ('', os.getcwd())]
+    paths = [x for x in paths if x.find(sys.prefix) != -1]
+    return paths
 
 def action_sys_path_without_prefix():
     paths = [p for p in sys.path if p not in ('', os.getcwd())]
