@@ -148,7 +148,11 @@ Region RegionDB::add_region(unsigned int id, const std::string &label) {
     			region_table_.get<Index>().find(index),
                 item);
 
-    	return Region(index, *this);
+    	Region reg = Region(index, *this);
+    	RegionSet region_set;
+    	region_set.push_back( reg );
+    	this->add_set(reg.label(), region_set);
+    	return reg;
     }
 
     LabelIter it_label = region_table_.get<Label>().find(label);
@@ -245,23 +249,14 @@ void RegionDB::close() {
     // set default sets
    for(unsigned int i=0; i< size(); i++) {
        Region reg(i, *this);
-	   /*
-	    * TODO: Adding of regions to sets needs check in issue 'Review mesh setting'.
-	    * See @p Mesh::modify_element_ids method
-	    */
-   	   RegionSet region_set;
-   	   region_set.push_back( reg );
-
 
        if (reg.is_boundary() && (reg.boundary_idx() < boundary_size()) ) {
            add_to_set("BOUNDARY", reg );
            add_to_set("ALL", reg);
-       	   add_set(reg.label(), region_set);
        } else
        if ( (! reg.is_boundary()) && (reg.bulk_idx() < bulk_size()) ) {
            add_to_set("BULK", reg );
            add_to_set("ALL", reg);
-       	   add_set(reg.label(), region_set);
        }
     }
 }
@@ -533,7 +528,12 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
 	if ( ! region_table_.insert( RegionItem(index, id, label, dim) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
-	return Region(index, *this);
+
+	Region reg = Region(index, *this);
+	RegionSet region_set;
+	region_set.push_back( reg );
+	this->add_set(reg.label(), region_set);
+	return reg;
 }
 
 Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary) {
