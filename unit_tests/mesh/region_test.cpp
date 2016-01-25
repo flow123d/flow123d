@@ -270,7 +270,7 @@ const string read_new_regions = R"JSON(
 		TYPE="From_Elements",
 		name = "label_1",
 		id = 1,
-		element_list = [8, 5, 3, 1]
+		element_list = [8, 5, 6]
 	},
 	{
 		TYPE="From_Label",
@@ -315,7 +315,42 @@ TEST(NewRegion, read_new_regions) {
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	mesh->read_regions_from_input(i_arr);
-	mesh->region_db().print_region_table(cout);
+
+	const RegionDB & region_db = mesh->region_db();
+	region_db.print_region_table(cout);
+
+	EXPECT_EQ( 1, region_db.get_region_set("label_0").size() );
+	EXPECT_EQ( 0, region_db.get_region_set("label_0")[0].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("label_1").size() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_1")[0].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("label_2").size() );
+	EXPECT_EQ(39, region_db.get_region_set("label_2")[0].id() );
+
+	EXPECT_EQ( 2, region_db.get_region_set("label_3").size() );
+	EXPECT_EQ( 0, region_db.get_region_set("label_3")[0].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_3")[1].id() );
+
+	EXPECT_EQ( 2, region_db.get_region_set("label_4").size() );
+	EXPECT_EQ(39, region_db.get_region_set("label_4")[0].id() );
+	EXPECT_EQ( 0, region_db.get_region_set("label_4")[1].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("label_5").size() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_5")[0].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("label_6").size() );
+	EXPECT_EQ( 0, region_db.get_region_set("label_6")[0].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("3D back").size() );
+	EXPECT_EQ(39, region_db.get_region_set("3D back")[0].id() );
+
+	EXPECT_EQ(37, mesh->element[0].region().id() );
+	EXPECT_EQ(39, mesh->element[3].region().id() );
+	EXPECT_EQ( 1, mesh->element[4].region().id() );
+	EXPECT_EQ( 1, mesh->element[5].region().id() );
+	EXPECT_EQ( 1, mesh->element[7].region().id() );
+	EXPECT_EQ("label_2", mesh->element[3].region().label() );
 }
 
 
