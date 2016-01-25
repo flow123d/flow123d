@@ -270,6 +270,15 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 
 
 
+void Mesh::modify_element_ids(unsigned int region_id, std::vector<unsigned int> element_ids_vec) {
+	for (auto elem_to_region : element_ids_vec) {
+		ElementIter ele = this->element.find_id(elem_to_region);
+		ele->region_idx_ = region_db_.add_region( region_id, ele->dim() );
+	}
+}
+
+
+
 
 void Mesh::setup_topology() {
     START_TIMER("MESH - setup topology");

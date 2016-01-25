@@ -136,21 +136,16 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 
 	this->add_region(mesh, region_id, region_label);
 
-	// TODO We must use MapElementIDToRegionID taken from mesh->region_db or gets as constructor argument
-	RegionDB::MapElementIDToRegionID map;
     Input::Array element_list;
 	if (rec.opt_val("element_list", element_list) ) {
+		std::vector<unsigned int> element_ids;
 		for (Input::Iterator<unsigned int> it_element = element_list.begin<unsigned int>();
 				it_element != element_list.end();
 		        ++it_element) {
+			element_ids.push_back( *it_element );
 
-			std::map<unsigned int, unsigned int>::iterator it_map = map.find((*it_element));
-			if (it_map == map.end()) {
-				map.insert( std::make_pair((*it_element), region_id) );
-			} else {
-				xprintf(Warn, "Element with id %u can't be added more than once.\n", (*it_element));
-			}
 		}
+		mesh->modify_element_ids(region_id, element_ids);
 	}
 }
 
