@@ -192,7 +192,10 @@ public:
     unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
     /**
+     * Reads mesh from stream.
      *
+     * Method is especially used in unit tests and allows to select
+     * if region_db_ should be closed.
      */
     void read_gmsh_from_stream(istream &in, bool close_region_db = true);
     /**
