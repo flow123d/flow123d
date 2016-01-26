@@ -33,15 +33,11 @@ public:
     DECLARE_EXCEPTION( ExcNonexistingLabel, << "Non-existing label of region: " << EI_Region_Label::qval << "\n" \
                                              << "You must also set ID or use existing label.\n");
 
-    /// Call appropriate add_region methods of RegionDB
-    Region add_region(Mesh *mesh, unsigned int id, const std::string &label);
-    Region add_region(Mesh *mesh, unsigned int id, const std::string &label, unsigned int dim);
-    Region add_region(Mesh *mesh, unsigned int id, unsigned int dim);
-    void add_set(Mesh *mesh, const string& set_name, const RegionSet & set);
-
 protected:
-    /// Empty constructor
-    RegionSetBase() {}
+    /// Constructor
+    RegionSetBase(Mesh *mesh);
+    /// Reference to region_db_ of Mesh
+    RegionDB &region_db_;
 };
 
 

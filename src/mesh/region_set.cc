@@ -15,29 +15,12 @@ namespace IT = Input::Type;
  * implementation of RegionSetBase
  */
 
+RegionSetBase::RegionSetBase(Mesh *mesh)
+: region_db_(mesh->region_db_) {}
+
 IT::Abstract & RegionSetBase::get_input_type() {
 	return IT::Abstract("Region", "Abstract record for Region.")
 			.close();
-}
-
-
-Region RegionSetBase::add_region(Mesh *mesh, unsigned int id, const std::string &label) {
-	return mesh->region_db_.add_region(id, label);
-}
-
-
-Region RegionSetBase::add_region(Mesh *mesh, unsigned int id, const std::string &label, unsigned int dim) {
-	return mesh->region_db_.add_region(id, label, dim);
-}
-
-
-Region RegionSetBase::add_region(Mesh *mesh, unsigned int id, unsigned int dim) {
-	return mesh->region_db_.add_region(id, dim);
-}
-
-
-void RegionSetBase::add_set(Mesh *mesh, const string& set_name, const RegionSet & set) {
-	mesh->region_db_.add_set(set_name, set);
 }
 
 
@@ -47,10 +30,11 @@ void RegionSetBase::add_set(Mesh *mesh, const string& set_name, const RegionSet 
  */
 
 RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
+: RegionSetBase(mesh)
 {
 	string region_label = rec.val<string>("name");
 	unsigned int region_id = rec.val<unsigned int>("id");
-	this->add_region(mesh, region_id, region_label);
+	region_db_.add_region(region_id, region_label);
 }
 
 
@@ -79,6 +63,7 @@ const int RegionSetFromId::registrar =
  */
 
 RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
+: RegionSetBase(mesh)
 {
 	string region_name;
 	string mesh_label = rec.val<string>("mesh_label");
@@ -91,7 +76,7 @@ RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 		xprintf(Warn, "Unknown region in mesh with label '%s'\n", mesh_label.c_str());
 	} else {
 		unsigned int region_id = reg.id();
-		this->add_region(mesh, region_id, region_name);
+		region_db_.add_region(region_id, region_name);
 	}
 }
 
@@ -121,6 +106,7 @@ const int RegionSetFromLabel::registrar =
  */
 
 RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mesh)
+: RegionSetBase(mesh)
 {
 	unsigned int region_id;
 	string region_label = rec.val<string>("name");
@@ -134,7 +120,7 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 		else THROW( ExcNonexistingLabel() << EI_Region_Label(region_label) );
 	}
 
-	this->add_region(mesh, region_id, region_label);
+	region_db_.add_region(region_id, region_label);
 
     Input::Array element_list;
 	if (rec.opt_val("element_list", element_list) ) {
@@ -177,7 +163,7 @@ const int RegionSetFromElements::registrar =
  * Need new implementation, will be solved later.
  */
 
-// RegionSetBoundary::RegionSetBoundary(const Input::Record &rec, Mesh *mesh) {}
+// RegionSetBoundary::RegionSetBoundary(const Input::Record &rec, Mesh *mesh) : RegionSetBase(mesh) {}
 
 // const IT::Record & RegionSetBoundary::get_region_input_type() {}
 
@@ -192,13 +178,14 @@ const int RegionSetFromElements::registrar =
  */
 
 RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
+: RegionSetBase(mesh)
 {
 	string set_name = rec.val<string>("name");
 	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
 
 	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
 	RegionSet region_set = mesh->region_db().union_sets( set_names.first, set_names.second );
-	add_set(mesh, set_name, region_set);
+	region_db_.add_set(set_name, region_set);
 }
 
 
@@ -227,13 +214,14 @@ const int RegionSetUnion::registrar =
  */
 
 RegionSetDifference::RegionSetDifference(const Input::Record &rec, Mesh *mesh)
+: RegionSetBase(mesh)
 {
 	string set_name = rec.val<string>("name");
 	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
 
 	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
 	RegionSet region_set = mesh->region_db().difference( set_names.first, set_names.second );
-	add_set(mesh, set_name, region_set);
+	region_db_.add_set(set_name, region_set);
 }
 
 
@@ -262,13 +250,14 @@ const int RegionSetDifference::registrar =
  */
 
 RegionSetIntersection::RegionSetIntersection(const Input::Record &rec, Mesh *mesh)
+: RegionSetBase(mesh)
 {
 	string set_name = rec.val<string>("name");
 	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
 
 	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
 	RegionSet region_set = mesh->region_db().intersection( set_names.first, set_names.second );
-	add_set(mesh, set_name, region_set);
+	region_db_.add_set(set_name, region_set);
 }
 
 
