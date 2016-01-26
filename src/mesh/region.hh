@@ -313,16 +313,14 @@ public:
     TYPEDEF_ERR_INFO( EI_IDOfOtherLabel, unsigned int);
     TYPEDEF_ERR_INFO( EI_LabelOfOtherID, const std::string);
     DECLARE_EXCEPTION( ExcAddingIntoClosed, << "Can not add label=" << EI_Label::qval << " into closed MaterialDispatch.\n");
-    DECLARE_EXCEPTION( ExcNonuniqueID, << "Non-unique ID during add of region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "other region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n");
-    DECLARE_EXCEPTION( ExcNonuniqueLabel, << "Non-unique label during add of region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "other region with same label but different ID: " << EI_IDOfOtherLabel::val << " already exists\n");
-    DECLARE_EXCEPTION( ExcInconsistentBoundary, << "Inconsistent add of region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "both ID and label match an existing region with different boundary flag.");
-    DECLARE_EXCEPTION( ExcInconsistentDimension, << "Inconsistent add of region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "both ID and label match an existing region with different dimension.");
+    DECLARE_EXCEPTION( ExcNonuniqueID, << "Non-unique ID during add of elementary region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "other elementary region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n");
+    DECLARE_EXCEPTION( ExcNonuniqueLabel, << "Non-unique label during add of elementary region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "other elementary region with same label but different ID: " << EI_IDOfOtherLabel::val << " already exists\n");
+    DECLARE_EXCEPTION( ExcInconsistentBoundary, << "Inconsistent add of elementary region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "both ID and label match an existing elementary region with different boundary flag.");
 
-    DECLARE_EXCEPTION( ExcCantAdd, << "Can not add new region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
+    DECLARE_EXCEPTION( ExcCantAdd, << "Can not add new elementary region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
 
     DECLARE_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
 
@@ -331,7 +329,7 @@ public:
     TYPEDEF_ERR_INFO( EI_NumOp, unsigned int);
     DECLARE_INPUT_EXCEPTION( ExcWrongOpNumber, << "Wrong number of operands. Expect 2, given: " << EI_NumOp::val);
 
-    DECLARE_INPUT_EXCEPTION(ExcUniqueRegionId, << "Id of region must be unique, id: " << EI_ID::val );
+    DECLARE_INPUT_EXCEPTION(ExcUniqueRegionId, << "Id of elementary region must be unique, id: " << EI_ID::val );
 
     /// Default constructor
     RegionDB();
