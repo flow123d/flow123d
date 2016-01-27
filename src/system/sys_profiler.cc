@@ -621,7 +621,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         long petsc_peak_memory = (long)timer.petsc_peak_memory;
         
         save_mpi_metric<double>(node, comm, &cumul_time, "cumul-time");
-        save_mpi_metric<int>(node, comm, &call_count, "call_count");
+        save_mpi_metric<int>(node, comm, &call_count, "call-count");
         
         save_mpi_metric<long>(node, comm, &memory_allocated, "memory-alloc");
         save_mpi_metric<long>(node, comm, &memory_deallocated, "memory-dealloc");
@@ -700,7 +700,7 @@ void Profiler::output(ostream &os) {
         long petsc_peak_memory = (long)timer.petsc_peak_memory;
         
         save_nonmpi_metric<double>(node, &cumul_time, "cumul-time");
-        save_nonmpi_metric<int>(node, &call_count, "call_count");
+        save_nonmpi_metric<int>(node, &call_count, "call-count");
         
         save_nonmpi_metric<long>(node, &memory_allocated, "memory-alloc");
         save_nonmpi_metric<long>(node, &memory_deallocated, "memory-dealloc");
