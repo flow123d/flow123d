@@ -11,7 +11,7 @@ problem: !SequentialCoupling
     - region: .bc_south
       bc_type: total_flux
       bc_flux: !FieldFormula
-        value: x
+        value: -(x)
     - region: .bc_east
       bc_type: dirichlet
       bc_pressure: !FieldFormula
@@ -19,7 +19,7 @@ problem: !SequentialCoupling
     - region: .bc_north
       bc_type: total_flux
       bc_flux: !FieldFormula
-        value: -x
+        value: -(-x)
     - region: .bc_west
       bc_type: dirichlet
       bc_pressure: 0

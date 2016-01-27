@@ -159,6 +159,17 @@ public:
      * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
      */
     void set_components(const std::vector<string> &names) {
+    	// Test of unique values in names vector for MultiField
+    	if (multifield_) {
+			std::vector<string> cpy = names;
+			std::sort( cpy.begin(), cpy.end() );
+			cpy.erase( std::unique( cpy.begin(), cpy.end() ), cpy.end() );
+			if (names.size() != cpy.size()) {
+				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
+													+ " has set non-unique names of components.") );
+			}
+    	}
+
         shared_->comp_names_ = names;
         shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
     }
@@ -254,7 +265,7 @@ public:
      * Returns input type for MultiField instance.
      * TODO: temporary solution, see @p multifield_
      */
-    virtual IT::Record &get_multifield_input_type() =0;
+    virtual IT::Array &get_multifield_input_type() =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
@@ -373,7 +384,7 @@ protected:
     	/**
     	 * Empty constructor.
     	 */
-    	SharedData() : list_idx_(-1) {};
+    	SharedData() : list_idx_(0) {};
 
         /**
          * True for boundary fields.
@@ -418,14 +429,14 @@ protected:
         const Mesh *mesh_;
 
         /**
-         * List of input field descriptors from which the field is set.
+         * Vector of input field descriptors from which the field is set.
          */
         vector<Input::Record> input_list_;
 
         /**
          * Index to current position of input field descriptor.
          */
-        int list_idx_;
+        unsigned int list_idx_;
 
         /**
          * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.

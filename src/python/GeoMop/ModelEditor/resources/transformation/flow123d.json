@@ -16,6 +16,62 @@
       }  
     },
     {
+        "NAME": "Change sign in bc_flux in transport and heat (constant value)",
+        "action": "scale-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_flux",
+          "scale" : "-1"
+        }
+    },
+    {
+        "NAME": "Change sign in bc_flux in SteadyDarcy_MH (constant value)",
+        "action": "scale-value",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_flux",
+          "scale" : "-1"
+        }
+    },
+    {
+        "NAME": "Change sign in bc_flux in transport and heat (formula)",
+        "action": "replace-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_flux/value",
+          "parent-type-filter" : "FieldFormula",
+          "pattern" : "^(.*)$",
+          "replacement" : "-(\\1)"
+        }
+    },
+    {
+        "NAME": "Change sign in bc_flux in SteadyDarcy_MH (formula)",
+        "action": "replace-value",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_flux/value",
+          "parent-type-filter" : "FieldFormula",
+          "pattern" : "^(.*)$",
+          "replacement" : "-(\\1)"
+        }
+    },
+    {
+        "NAME": "Warn about change of sign in bc_flux in transport and heat (elementwise)",
+        "action": "rename-type",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_flux",
+          "old_name": "FieldElementwise",
+          "new_name": "FieldElementwise_PLEASE_SWITCH_FLUX_SIGN_IN_GMSH_FILE",
+          "type-filter" : "FieldElementwise"
+        }
+    },
+    {
+        "NAME": "Warn about change of sign in bc_flux in flow (elementwise)",
+        "action": "rename-type",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_flux",
+          "old_name": "FieldElementwise",
+          "new_name": "FieldElementwise_PLEASE_SWITCH_FLUX_SIGN_IN_GMSH_FILE",
+          "type-filter" : "FieldElementwise"
+        }
+    },
+    {
         "NAME": "Change flow bc_type neumann to total_flux",
         "action": "change-value",
         "parameters":{

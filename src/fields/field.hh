@@ -116,16 +116,26 @@ public:
     Field(const string &name, bool bc = false);
 
     /**
+     * Constructor that must be used for create of MultiField components.
+     *
+     * Set parameters @p component_index_, @p shared_->input_name_ and @p name_.
+     * Parameter name_ of Field is consisted of component name and MultiField name.
+     */
+    Field(unsigned int component_index, string input_name, string name = "");
+
+    /**
      * Copy constructor. Keeps shared history, declaration data, mesh.
      */
     Field(const Field &other);
 
     /**
-     * Assignment operator. Same properties as copy constructor.
+     * Assignment operator. Same properties as copy constructor, but class member name_ is not copied.
      *
      * Question: do we really need this, isn't copy constructor enough?
      * Answer: It is necessary in (usual) case when Field instance is created as the class member
      * but is filled later by assignment possibly from other class.
+     * TODO: operator can be merged with copy constructor, but we must provide to set correct value
+     * of name in method copy_from
      */
     Field &operator=(const Field &other);
 
@@ -138,7 +148,7 @@ public:
      */
     const IT::Instance &get_input_type() override;
 
-    IT::Record &get_multifield_input_type() override;
+    IT::Array &get_multifield_input_type() override;
 
 
     /**

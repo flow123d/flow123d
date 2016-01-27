@@ -3,10 +3,10 @@
 0	"1d_lower"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"1d_left_branch"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"2d"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
-0	".1d_top"	"water_volume"	-17.8123	-17.8123	0	0	0	0	0	0	0	0	0	0
-0	".1d_left"	"water_volume"	8.97271	0	8.97271	0	0	0	0	0	0	0	0	0
-0	".1d_bottom"	"water_volume"	8.97796	0	8.97796	0	0	0	0	0	0	0	0	0
-0	".2d_top"	"water_volume"	-1.11365	-1.11365	0	0	0	0	0	0	0	0	0	0
-0	".2d_right"	"water_volume"	-0.901061	-0.901061	0	0	0	0	0	0	0	0	0	0
-0	".2d_bottom"	"water_volume"	0.974874	-0.00154626	0.97642	0	0	0	0	0	0	0	0	0
-0	".2d_left"	"water_volume"	0.901475	-0.00300279	0.904477	0	0	0	0	0	0	0	0	0
+0	".1d_top"	"water_volume"	17.8123	17.8123	0	0	0	0	0	0	0	0	0	0
+0	".1d_left"	"water_volume"	-8.97271	0	-8.97271	0	0	0	0	0	0	0	0	0
+0	".1d_bottom"	"water_volume"	-8.97796	0	-8.97796	0	0	0	0	0	0	0	0	0
+0	".2d_top"	"water_volume"	1.11365	1.11365	0	0	0	0	0	0	0	0	0	0
+0	".2d_right"	"water_volume"	0.901061	0.901061	0	0	0	0	0	0	0	0	0	0
+0	".2d_bottom"	"water_volume"	-0.974874	0.00154626	-0.97642	0	0	0	0	0	0	0	0	0
+0	".2d_left"	"water_volume"	-0.901475	0.00300279	-0.904477	0	0	0	0	0	0	0	0	0

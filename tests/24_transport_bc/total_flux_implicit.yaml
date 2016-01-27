@@ -32,7 +32,7 @@ problem: !SequentialCoupling
       - region: .left
         bc_type: total_flux
         bc_flux: !FieldFormula
-          value: 7.5*4*y*(1-y)
+          value: -(7.5*4*y*(1-y))
       - region: .right
         bc_type: inflow
         bc_conc: 10
