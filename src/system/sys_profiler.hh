@@ -52,6 +52,7 @@
 #include "system/system.hh"
 #include <mpi.h>
 #include <ostream>
+#include <unordered_map>
 #include <boost/property_tree/ptree.hpp>
 #include "time_point.hh"
 #include "petscsys.h" 
@@ -830,10 +831,14 @@ public:
 /**
  * Simple class providing static map variable storing address and alloc size
  */
+// gcc version 4.9 and lower has following bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=59751
+// fix in version 4.9: https://gcc.gnu.org/gcc-4.9/changes.html#cxx
+// typedef unordered_map<long, int, hash<long>, equal_to<long>, SimpleAllocator<pair<const long, int>>> unordered_map_with_alloc;
+typedef map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
 class MemoryAlloc {
 public:
     // create static map containing <allocation address, allocation size> pairs
-	static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& malloc_map();
+	static unordered_map_with_alloc & malloc_map();
 };
 
 

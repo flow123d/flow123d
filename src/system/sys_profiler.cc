@@ -27,8 +27,9 @@
 #include "sys_profiler.hh"
 #include "system/system.hh"
 #include "system/python_loader.hh"
-#include <boost/format.hpp>
+#include <unordered_map>
 #include <iostream>
+#include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
@@ -827,8 +828,8 @@ void Profiler::uninitialize() {
 }
 
 bool Profiler::monitor_memory = false;
-map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>>& MemoryAlloc::malloc_map() {
-    static map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> static_malloc_map;
+unordered_map_with_alloc & MemoryAlloc::malloc_map() {
+    static unordered_map_with_alloc static_malloc_map;
     return static_malloc_map;
 }
 
