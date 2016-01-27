@@ -38,7 +38,8 @@ FieldCommon::FieldCommon()
 
 
 FieldCommon::FieldCommon(const FieldCommon & other)
-: shared_(other.shared_),
+: name_(other.name_),
+  shared_(other.shared_),
   limit_side_(LimitSide::unknown),
   set_time_result_(TimeStatus::unknown),
   component_index_(other.component_index_)
@@ -69,13 +70,11 @@ const std::string FieldCommon::field_descriptor_record_description(const string&
 
 void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
     if (! flags().match(FieldFlag::declare_input)) return;
-    ASSERT_LESS( -1, shared_->list_idx_);
 
     // pass through field descriptors containing key matching field name.
     double time;
-    for( auto it = shared_->input_list_.begin();
-         it != shared_->input_list_.end(); ++it) {
-        time = it->val<double>("time"); // default time=0
+    for( auto &item : shared_->input_list_) {
+        time = item.val<double>("time"); // default time=0
         TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
     }
 }

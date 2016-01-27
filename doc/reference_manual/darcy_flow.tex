@@ -106,7 +106,13 @@ The \hyperA{DarcyFlowMH-Data::sigma}{transition coefficients}
 the ratio of the crosswind and the tangential conductivity in the fracture. For example, in the case of impermeable film
 on the fracture walls one may choice $\sigma_{32} < 1$.
 
-In order to obtain unique solution we have to prescribe boundary conditions. Currently we support three basic 
+
+In order to obtain unique solution we have to prescribe boundary conditions.
+Currently we consider a disjoint decomposition of the boundary
+\[
+    \prtl\Omega_d = \Gamma_d^D \cup \Gamma_d^{TF} \cup \Gamma_d^{Sp} \cup \Gamma_d^{Ri}
+\]
+where we support the following
 \hyperA{DarcyFlowMH-Data::bc-type}{types of boundary conditions}:
 
 {\bf Dirichlet} boundary condition
@@ -117,21 +123,26 @@ where $h_d^D$ \units{}{1}{} is the \hyperA{DarcyFlowMH-Data::bc-pressure}{bounda
 Alternatively one can prescribe the \hyperA{DarcyFlowMH-Data::bc-piezo-head}{boundary piezometric head}
 $H_d^D$ \units{}{1}{} related to the pressure head through \eqref{eq:piezo_head}.
 
-{\bf Neuman} boundary condition
+{\bf Total flux} boundary condition (combination of Neumann and Robin type)
 \[
-    \vc q_d \cdot \vc n = q_d^N         \text{ on }\Gamma_d^N,
+    -\vc q_d \cdot \vc n = q_d^N + \sigma_d^R ( h_d^R - h_d)        \text{ on }\Gamma_d^{TF},
 \]
-where $q_d^N$ \units{}{4-d}{-1} is the \hyperA{DarcyFlowMH-Data::bc-flux}{surface density of the water outflow}.
-
-{\bf Robin} boundary condition 
-\[
-    \vc q_d \cdot \vc n = \sigma_d^R ( h_d - h_d^R)     \text{ on }\Gamma_d^R.
-\]
-where $h_d^R$ is the \Alink{DarcyFlowMH-Data::bc-pressure}{boundary pressure head} and
+where $q_d^N$ \units{}{4-d}{-1} is the \hyperA{DarcyFlowMH-Data::bc-flux}{surface density of the water inflow},
+$h_d^R$ is the \Alink{DarcyFlowMH-Data::bc-pressure}{boundary pressure head} and
 $\sigma_d^R$ \units{}{3-d}{-1}  
 is the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient}.
 As before one can also prescribe the \Alink{DarcyFlowMH-Data::bc-piezo-head}{boundary piezo head}
 $H_d^R$ to specify $h_d^R$.
+
+% {\bf Robin} boundary condition 
+% \[
+%     \vc q_d \cdot \vc n = \sigma_d^R ( h_d - h_d^R)     \text{ on }\Gamma_d^R.
+% \]
+% where $h_d^R$ is the \Alink{DarcyFlowMH-Data::bc-pressure}{boundary pressure head} and
+% $\sigma_d^R$ \units{}{3-d}{-1}  
+% is the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient}.
+% As before one can also prescribe the \Alink{DarcyFlowMH-Data::bc-piezo-head}{boundary piezo head}
+% $H_d^R$ to specify $h_d^R$.
 
 {\bf Seepage face} boundary condition 
 \[
@@ -198,13 +209,7 @@ and then use \eqref{bc:robin_flux} to obtain complementary condition for the pre
 
 
 
-We consider a disjoint decomposition of the boundary
-\[
-    \prtl\Omega_d =  \cap \Gamma_d^N \cap \Gamma_d^R
-\]
-into Dirichlet, Neumann, and Robin part. In order to obtain well posed steady state problem one have to 
-prescribe Dirichlet or Robin boundary condition on part of boundary that is connected (geometricaly of through
-the inter dimensional coupling) to hte rest of the domain.
+
 
 For unsteady problems one has to specify an initial condition in terms of the 
 \hyperA{DarcyFlowMH-Data::init-pressure}{initial pressure head}
@@ -214,12 +219,12 @@ $H_d^0$ \units{}{1}{}.
 
 \paragraph{Volume balance.}
 The equation \eqref{eq:continuity} satisfies the volume balance of the liquid in the following form:
-\[ V(0) + \int_0^t s(\tau) \,d\tau - \int_0^t f(\tau) \,d\tau = V(t) \]
+\[ V(0) + \int_0^t s(\tau) \,d\tau + \int_0^t f(\tau) \,d\tau = V(t) \]
 for any instant $t$ in the computational time interval.
 Here
 $$ V(t) := \sum_{d=1}^3\int_{\Omega^d}(\delta S h)(t,\vc x)\,d\vc x, $$
 $$ s(t) := \sum_{d=1}^3\int_{\Omega^d}F(t,\vc x)\,d\vc x, $$
-$$ f(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\vc q(t,\vc x)\cdot\vc n(\vc x) \,d\vc x $$
+$$ f(t) := -\sum_{d=1}^3\int_{\partial\Omega^d}\vc q(t,\vc x)\cdot\vc n(\vc x) \,d\vc x $$
 is the volume \units{}{3}{}, the volume source \units{}{3}{-1} and the volume flux \units{}{3}{-1} of the liquid at time $t$, respectively.
 The volume, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{water\_balance.txt}.
 

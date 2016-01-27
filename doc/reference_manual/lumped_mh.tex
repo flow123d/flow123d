@@ -75,8 +75,8 @@ where
     c_t(h, \mr h, q, \mr q)&= \sum_{d=1}^{3}\sum_{T\in \mathcal T_d}
         \int_{T} \frac{\delta_d S_d}{\tau} h_d q_d\,dx,
     \\    
-    c_R(\mr h, \mr q)&=
-    \int_{\partial T\setminus\partial\Omega_{d}}
+    c_R(\mr h, \mr q)&= \sum_{d=1}^{3}\sum_{T\in \mathcal T_d}
+    \int_{\partial T\cap\Gamma_{d}^{TF}}
         \sigma_d^R\, h_d \mr q_d \,ds,
     \\
     \langle g, \vc v \rangle  & =
@@ -87,10 +87,10 @@ where
     \langle f, q \rangle  &=
     -\sum_{d=1}^{3}\int_{\Omega_d} \delta_{d}\,f_d\,q_{d}\,dx,
     \\
-        &\phantom{=}+
+        &\phantom{=}-
     \sum_{d=1}^{3}\sum_{T\in\mathcal T_d}
-    \int_{\partial T\cap\partial\Omega_N} 
-        q_d^N \mr q_d - \sigma_d^R\, h_d^R \mr q_d\,ds
+    \int_{\partial T\cap\Gamma_d^{TF}} 
+        q_d^N \mr q_d + \sigma_d^R\, h_d^R \mr q_d\,ds
     \\
         &\phantom{=}-c_t(\tilde h, \mr{\tilde{h}}, q, \mr q).
     \label{eq:weak_term_f}%    

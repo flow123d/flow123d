@@ -5,27 +5,27 @@
 0	"IMPLICIT BOUNDARY"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"ALL"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0.1	"plane"	"water_volume"	0	0	0	4.93526	0	0	0	0	0	0	0	0
-0.1	".bc_inflow"	"water_volume"	-26.6014	-26.6014	0	0	0	0	0	0	0	0	0	0
-0.1	".bc_outflow"	"water_volume"	3.45002e-18	0	3.45002e-18	0	0	0	0	0	0	0	0	0
-0.1	"IMPLICIT BOUNDARY"	"water_volume"	2.15888e-08	-3.74495e-09	2.53337e-08	0	0	0	0	0	0	0	0	0
-0.1	"ALL"	"water_volume"	-26.6014	-26.6014	2.53337e-08	4.93526	0	0	0	-4.93526	0	-4.93526	0	-4.15149e-08
+0.1	".bc_inflow"	"water_volume"	26.6014	26.6014	0	0	0	0	0	0	0	0	0	0
+0.1	".bc_outflow"	"water_volume"	-3.45154e-18	0	-3.45154e-18	0	0	0	0	0	0	0	0	0
+0.1	"IMPLICIT BOUNDARY"	"water_volume"	-2.14341e-08	3.60785e-09	-2.50419e-08	0	0	0	0	0	0	0	0	0
+0.1	"ALL"	"water_volume"	26.6014	26.6014	-2.50419e-08	4.93526	0	0	0	4.93526	0	4.93526	0	-4.12386e-08
 0.2	"plane"	"water_volume"	0	0	0	7.06107	0	0	0	0	0	0	0	0
-0.2	".bc_inflow"	"water_volume"	-18.2783	-18.2783	0	0	0	0	0	0	0	0	0	0
-0.2	".bc_outflow"	"water_volume"	5.01026e-14	0	5.01026e-14	0	0	0	0	0	0	0	0	0
-0.2	"IMPLICIT BOUNDARY"	"water_volume"	2.92055e-08	-3.67671e-09	3.28822e-08	0	0	0	0	0	0	0	0	0
-0.2	"ALL"	"water_volume"	-18.2783	-18.2783	3.28823e-08	7.06107	0	0	0	-2.12581	0	-7.06107	0	-1.28575e-07
+0.2	".bc_inflow"	"water_volume"	18.2783	18.2783	0	0	0	0	0	0	0	0	0	0
+0.2	".bc_outflow"	"water_volume"	-5.01053e-14	0	-5.01053e-14	0	0	0	0	0	0	0	0	0
+0.2	"IMPLICIT BOUNDARY"	"water_volume"	-2.9192e-08	3.42152e-09	-3.26135e-08	0	0	0	0	0	0	0	0	0
+0.2	"ALL"	"water_volume"	18.2783	18.2783	-3.26135e-08	7.06107	0	0	0	2.12581	0	7.06107	0	-1.27935e-07
 0.3	"plane"	"water_volume"	0	0	0	8.6794	0	0	0	0	0	0	0	0
-0.3	".bc_inflow"	"water_volume"	-14.7997	-14.7997	0	0	0	0	0	0	0	0	0	0
-0.3	".bc_outflow"	"water_volume"	2.14374e-11	0	2.14374e-11	0	0	0	0	0	0	0	0	0
-0.3	"IMPLICIT BOUNDARY"	"water_volume"	3.39153e-08	-2.80115e-09	3.67165e-08	0	0	0	0	0	0	0	0	0
-0.3	"ALL"	"water_volume"	-14.7997	-14.7997	3.67379e-08	8.6794	0	0	0	-1.61833	0	-8.6794	0	-2.49278e-07
+0.3	".bc_inflow"	"water_volume"	14.7997	14.7997	0	0	0	0	0	0	0	0	0	0
+0.3	".bc_outflow"	"water_volume"	-2.14377e-11	0	-2.14377e-11	0	0	0	0	0	0	0	0	0
+0.3	"IMPLICIT BOUNDARY"	"water_volume"	-3.40304e-08	2.55069e-09	-3.65811e-08	0	0	0	0	0	0	0	0	0
+0.3	"ALL"	"water_volume"	14.7997	14.7997	-3.66026e-08	8.6794	0	0	0	1.61833	0	8.6794	0	-2.47902e-07
 0.4	"plane"	"water_volume"	0	0	0	10.0401	0	0	0	0	0	0	0	0
-0.4	".bc_inflow"	"water_volume"	-12.7657	-12.7657	0	0	0	0	0	0	0	0	0	0
-0.4	".bc_outflow"	"water_volume"	1.50569e-09	0	1.50569e-09	0	0	0	0	0	0	0	0	0
-0.4	"IMPLICIT BOUNDARY"	"water_volume"	3.74201e-08	-2.85065e-09	4.02708e-08	0	0	0	0	0	0	0	0	0
-0.4	"ALL"	"water_volume"	-12.7657	-12.7657	4.17765e-08	10.0401	0	0	0	-1.36067	0	-10.0401	0	-4.00241e-07
+0.4	".bc_inflow"	"water_volume"	12.7657	12.7657	0	0	0	0	0	0	0	0	0	0
+0.4	".bc_outflow"	"water_volume"	-1.5057e-09	0	-1.5057e-09	0	0	0	0	0	0	0	0	0
+0.4	"IMPLICIT BOUNDARY"	"water_volume"	-3.75818e-08	2.49196e-09	-4.00738e-08	0	0	0	0	0	0	0	0	0
+0.4	"ALL"	"water_volume"	12.7657	12.7657	-4.15795e-08	10.0401	0	0	0	1.36067	0	10.0401	0	-3.97541e-07
 0.5	"plane"	"water_volume"	0	0	0	11.2371	0	0	0	0	0	0	0	0
-0.5	".bc_inflow"	"water_volume"	-11.3907	-11.3907	0	0	0	0	0	0	0	0	0	0
-0.5	".bc_outflow"	"water_volume"	3.52468e-08	0	3.52468e-08	0	0	0	0	0	0	0	0	0
-0.5	"IMPLICIT BOUNDARY"	"water_volume"	4.03491e-08	-3.67827e-09	4.40273e-08	0	0	0	0	0	0	0	0	0
-0.5	"ALL"	"water_volume"	-11.3907	-11.3907	7.92741e-08	11.2371	0	0	0	-1.19707	0	-11.2371	0	-5.79538e-07
+0.5	".bc_inflow"	"water_volume"	11.3907	11.3907	0	0	0	0	0	0	0	0	0	0
+0.5	".bc_outflow"	"water_volume"	-3.52468e-08	0	-3.52468e-08	0	0	0	0	0	0	0	0	0
+0.5	"IMPLICIT BOUNDARY"	"water_volume"	-4.0468e-08	3.3367e-09	-4.38047e-08	0	0	0	0	0	0	0	0	0
+0.5	"ALL"	"water_volume"	11.3907	11.3907	-7.90515e-08	11.2371	0	0	0	1.19707	0	11.2371	0	-5.74824e-07

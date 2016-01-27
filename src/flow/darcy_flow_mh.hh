@@ -103,8 +103,8 @@ public:
         enum BC_Type {
             none=0,
             dirichlet=1,
-            neumann=2,
-            robin=3,
+//             neumann=2,
+//             robin=3,
             total_flux=4
         };
 

@@ -482,7 +482,13 @@ class MEConfig:
         if res:
             try:
                 cls.document = transformator.transform(cls.document, cls)
-            except TransformationFileFormatError as err:
+                if len(transformator.err)>0:
+                    if cls.main_window is not None:
+                        cls._report_notify(transformator.err)
+                    else:
+                        for err in transformator.err:
+                            print(err)
+            except TransformationFileFormatError as err :
                 if cls.main_window is not None:
                     cls._report_error("Transformation format error", err)
                 else:
@@ -516,3 +522,10 @@ class MEConfig:
         from geomop_dialogs import GMErrorDialog
         err_dialog = GMErrorDialog(cls.main_window)
         err_dialog.open_error_dialog(mess, err)
+        
+    @classmethod
+    def _report_notify(cls, errs):
+        """Report an error with dialog."""
+        from geomop_dialogs import GMErrorDialog
+        err_dialog = GMErrorDialog(cls.main_window)
+        err_dialog.open_error_report_dialog(errs)
