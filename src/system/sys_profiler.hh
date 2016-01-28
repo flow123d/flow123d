@@ -474,19 +474,24 @@ protected:
      */
     PetscLogDouble petsc_start_memory;
     /**
-     * Number of bytes used by Petsc at the start of time-frame
+     * Number of bytes used by Petsc at the end of time-frame
      */
     PetscLogDouble petsc_end_memory;
     /**
-     * Number of bytes used by Petsc at the start of time-frame
+     * Difference between start and end of a petsc memory usage 
      */
     PetscLogDouble petsc_memory_difference;
     /**
-     * Maximum number of bytes used by Petsc during time-frame
+     * Maximum amount of memory used that was PetscMalloc()ed at any time 
+     * during this run.
+     *
+     * The memory usage reported here includes all Fortran arrays (that may be
+     * used in application-defined sections of code).
      */
     PetscLogDouble petsc_peak_memory;
     /**
-     * Maximum number of bytes used by Petsc during time-frame
+     * local aximum amount of memory used that was PetscMalloc()ed 
+     * used during time-frame pause/resume
      */
     PetscLogDouble petsc_local_peak_memory;
     
