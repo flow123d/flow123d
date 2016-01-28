@@ -52,8 +52,8 @@
 #include "system/system.hh"
 #include <mpi.h>
 #include <ostream>
-#include <unordered_map>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/unordered_map.hpp>
 #include "time_point.hh"
 #include "petscsys.h" 
 
@@ -81,6 +81,9 @@ public:
 // Assuming all compilers support constexpr
 #define CONSTEXPR_ constexpr
 
+// macro which does nothing but silence g++ compiler warning
+// about unused variable
+#define UNUSED(expr) (void)(expr)
 
 using namespace std;
 
@@ -703,11 +706,23 @@ public:
     void propagate_timers ();
 
     /**
+     * Public setter to turn on/off memory monitoring
+     * @param value whether to turn monitoring on or off
+     */
+    void static set_memory_monitoring(const bool value);
+    
+    /**
+     * Public getter to memory monitoring
+     * @return memory monitoring status
+     */
+    bool static get_memory_monitoring();
+
+private:
+    
+    /**
      * Whether to monitor operator 'new/delete'
      */
     static bool monitor_memory;
-
-private:
     
     /**
      * Method for exchanging metrics from child timer to its parent timer
@@ -834,11 +849,26 @@ public:
 // gcc version 4.9 and lower has following bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=59751
 // fix in version 4.9: https://gcc.gnu.org/gcc-4.9/changes.html#cxx
 // typedef unordered_map<long, int, hash<long>, equal_to<long>, SimpleAllocator<pair<const long, int>>> unordered_map_with_alloc;
-typedef map<long, int, std::less<long>, SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
+typedef boost::unordered_map<long, int, boost::hash<long>, equal_to<long>, SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
 class MemoryAlloc {
 public:
-    // create static map containing <allocation address, allocation size> pairs
+    /**
+     * Create static map containing <allocation address, allocation size> pairs
+     *   map is used for storing allocations and deallocations of all object not 
+     *   related to profiler after profiler initialization phase
+     */
 	static unordered_map_with_alloc & malloc_map();
+    /**
+     * Create static map containing <allocation address, allocation size> pairs
+     * map is used to store ONLY allocation before profiler is fully initialized
+     */
+    static unordered_map_with_alloc & init_overhead_map();
+    /**
+     * Sums given map and returns sum value
+     * @param  map unordered_map_with_alloc map
+     * @return     total sum of a given map
+     */
+    static int sum(unordered_map_with_alloc & map);
 };
 
 

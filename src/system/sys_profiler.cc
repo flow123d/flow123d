@@ -27,11 +27,11 @@
 #include "sys_profiler.hh"
 #include "system/system.hh"
 #include "system/python_loader.hh"
-#include <unordered_map>
 #include <iostream>
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/unordered_map.hpp>
 
 #include "system/file_path.hh"
 #include "system/python_loader.hh"
@@ -123,9 +123,9 @@ Timer::Timer(const CodePoint &cp, int parent)
   dealloc_called(0),
   petsc_start_memory(-1),
   petsc_end_memory (-1),
+  petsc_memory_difference(0),
   petsc_peak_memory(-1),
-  petsc_local_peak_memory(-1),
-  petsc_memory_difference(0)
+  petsc_local_peak_memory(-1)
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
 }
@@ -147,7 +147,6 @@ double Timer::cumulative_time() const {
 }
 
 void Profiler::accept_from_child(Timer &parent, Timer &child) {
-    int timer_idx = 0;
     int child_timer = 0;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
         child_timer = child.child_timers[i];
@@ -175,11 +174,9 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
 }
 
 void Profiler::propagate_timers() {
-    int timer_idx = 0;
-    int child_timer = 0;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-        child_timer = timers_[0].child_timers[i];
-        if (child_timer != timer_no_child) {
+        unsigned int child_timer = timers_[0].child_timers[i];
+        if ((signed int)child_timer != timer_no_child) {
             // propagate metrics from child to Whole-Program time-frame
             accept_from_child(timers_[0], timers_[child_timer]);
         }
@@ -267,8 +264,8 @@ string Timer::code_point_str() const {
 
 
 Profiler * Profiler::instance() { 
-     initialize();
-     return _instance;
+    initialize();
+    return _instance;
  } 
 
 
@@ -277,10 +274,11 @@ Profiler* Profiler::_instance = NULL;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
 void Profiler::initialize() {
-    if (_instance == NULL)
+    if (_instance == NULL) {
+        MemoryAlloc::malloc_map().reserve(100*1000);
         _instance = new Profiler();
-        
-    monitor_memory = true;
+        set_memory_monitoring(true);
+    }
 }
 
 
@@ -363,7 +361,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
         if (timer.child_timers[i] != timer_no_child)
             ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
 #endif
-    int child_timer = actual_node;
+    unsigned int child_timer = actual_node;
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer) {
@@ -414,7 +412,7 @@ void Profiler::stop_timer(int timer_index) {
 
     if (! timers_[timer_idx].running() ) return;
 
-    int child_timer = actual_node;
+    unsigned int child_timer = actual_node;
     if ( timer_idx != actual_node ) {
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer)
@@ -595,8 +593,13 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     MPI_Barrier(comm);
     stop_timer(0);
     propagate_timers();
+    
+    // stop monitoring memory
+    bool memory_monitoring_ = get_memory_monitoring();
+    set_memory_monitoring(false);
 
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    UNUSED(ierr);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
@@ -652,12 +655,16 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         // write result to stream
         property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
     }
+    // restore memory monitoring
+    set_memory_monitoring(memory_monitoring_);
 }
 
 
 void Profiler::output(MPI_Comm comm) {
     int mpi_rank, ierr;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    UNUSED(ierr);
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
     if (mpi_rank == 0) {
         output(comm, *get_default_output_stream());
     } else {
@@ -804,8 +811,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // execute method with arguments
-    PyObject * return_value = PyObject_CallObject (convert_method, arguments);
-    //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
+    PyObject_CallObject (convert_method, arguments);
 
     PythonLoader::check_error();
 }
@@ -821,16 +827,42 @@ void Profiler::uninitialize() {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
                 _instance->timers_[_instance->actual_node].tag().c_str());
         _instance->stop_timer(0);
-        monitor_memory = false;
+        set_memory_monitoring(false);
         delete _instance;
         _instance = NULL;
     }
 }
 
 bool Profiler::monitor_memory = false;
+void Profiler::set_memory_monitoring(const bool value) {
+    if (value && !monitor_memory) {
+        cout << "Memory monitoring is ON" << endl;
+    }
+    if (!value && monitor_memory) {
+        cout << "Memory monitoring is OFF" << endl;
+    }
+    monitor_memory = value;
+}
+
+bool Profiler::get_memory_monitoring() {
+    return monitor_memory;
+}
+
 unordered_map_with_alloc & MemoryAlloc::malloc_map() {
     static unordered_map_with_alloc static_malloc_map;
     return static_malloc_map;
+}
+
+unordered_map_with_alloc & MemoryAlloc::init_overhead_map() {
+    static unordered_map_with_alloc static_init_overhead_map;
+    return static_init_overhead_map;
+}
+
+int MemoryAlloc::sum(unordered_map_with_alloc & map) {
+    int total = 0;
+    for (auto it=map.begin(); it!=map.end(); it++)
+        total += it->second;
+    return total;
 }
 
 void * Profiler::operator new (size_t size) {
@@ -839,34 +871,53 @@ void * Profiler::operator new (size_t size) {
 
 
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-    if (Profiler::monitor_memory)
-        Profiler::instance()->notify_malloc(size);
-
 	void * p = malloc(size);
-	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+    
+    if (!Profiler::is_initialized()) {
+        MemoryAlloc::init_overhead_map()[(long)p] = static_cast<int>(size);
+    }else
+    
+    if (Profiler::get_memory_monitoring()) {
+        Profiler::instance()->notify_malloc(size);
+        MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+    }
+
 	return p;
 }
 
 void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-    if (Profiler::monitor_memory)
+    void * p = malloc(size);
+    
+    if (!Profiler::is_initialized()) {
+        MemoryAlloc::init_overhead_map()[(long)p] = static_cast<int>(size);
+    }else
+    
+    if (Profiler::get_memory_monitoring()) {
         Profiler::instance()->notify_malloc(size);
-		
-	void * p = malloc(size);
-	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+        MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+    }
+    
+
 	return p;
 }
 
 void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
-    if (Profiler::monitor_memory)
-	   Profiler::instance()->notify_malloc(size);
-		
-	void * p = malloc(size);
-	MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+    void * p = malloc(size);
+    
+    if (!Profiler::is_initialized()) {
+        MemoryAlloc::init_overhead_map()[(long)p] = static_cast<int>(size);
+    }else
+    
+    if (Profiler::get_memory_monitoring()) {
+        Profiler::instance()->notify_malloc(size);
+        MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
+    }
+
 	return p;
 }
 
 void operator delete( void *p) throw() {
-    if (Profiler::monitor_memory) {
+    if (Profiler::get_memory_monitoring()) {
     	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
     		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
     		MemoryAlloc::malloc_map().erase((long)p);
@@ -879,7 +930,7 @@ void operator delete( void *p) throw() {
 }
 
 void operator delete[]( void *p) throw() {
-    if (Profiler::monitor_memory) {
+    if (Profiler::get_memory_monitoring()) {
     	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
     		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
     		MemoryAlloc::malloc_map().erase((long)p);
@@ -901,16 +952,17 @@ Profiler * Profiler::instance() {
 Profiler* Profiler::_instance = NULL;
 
 void Profiler::initialize() {
-    if (_instance == NULL)
+    if (_instance == NULL) {
         _instance = new Profiler();
-        monitor_memory = true;
+        set_memory_monitoring(true);
+    }
 }
 
 void Profiler::uninitialize() {
     if (_instance) {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
                 _instance->timers_[_instance->actual_node].tag().c_str());
-        monitor_memory = false;
+        set_memory_monitoring(false);
         _instance->stop_timer(0);
         delete _instance;
         _instance = NULL;
