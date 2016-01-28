@@ -348,8 +348,8 @@ TEST(Profiler, memory_add_calls) {
 }
 
 TEST(Profiler, memory_profiler) {
-    const int ARR_SIZE = 100;
-    const int LOOP_CNT = 100;
+    const int ARR_SIZE = 1000;
+    const int LOOP_CNT = 1000;
     Profiler::initialize();
 
     {
@@ -390,6 +390,41 @@ TEST(Profiler, memory_profiler) {
     Profiler::uninitialize();
 }
 
+TEST(Profiler, Petsc_memory) {
+    Profiler::initialize();
+    PetscLogDouble mem;
+    {
+        START_TIMER("A");
+            PetscInt size = 100*1000;
+            PetscScalar value = 0.1;
+            Vec tmp_vector;
+            VecCreateSeq(PETSC_COMM_SELF, size, &tmp_vector);
+            VecSet(tmp_vector, value);
+            // VecSetRandom(tmp_vector, NULL);
+        END_TIMER("A");
+        
+        START_TIMER("A");
+            //allocated memory MUST be greater or equal to size * size of double
+            EXPECT_GE(Profiler::instance()->actual_petsc_memory_difference(), size*sizeof(double));
+        END_TIMER("A");
+        
+        // START_TIMER("B");
+        //     PetscScalar sum;
+        //     VecSum(tmp_vector, &sum);
+        // END_TIMER("B");
+        
+        START_TIMER("C");
+            VecDestroy(&tmp_vector);
+        END_TIMER("C");
+        
+        START_TIMER("C");
+            // since we are destroying vector, we expect to see negative memory difference
+            EXPECT_LE(Profiler::instance()->actual_petsc_memory_difference(), 0);
+        END_TIMER("C");
+    }
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    Profiler::uninitialize();
+}
 
 TEST(Profiler, memory_propagation){
     const int SIZE = 25;
