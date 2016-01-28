@@ -648,6 +648,14 @@ public:
      */
     inline double actual_memory_dealloc() const
         { return timers_[actual_node].total_deallocated_; }
+
+    /* see Timer docs */
+    inline PetscLogDouble actual_petsc_start_memory() const
+        { return timers_[actual_node].petsc_start_memory; }
+    inline PetscLogDouble actual_petsc_end_memory() const
+        { return timers_[actual_node].petsc_end_memory; }
+    inline PetscLogDouble actual_petsc_memory_difference() const
+        { return timers_[actual_node].petsc_memory_difference; }
         
 
 #ifdef FLOW123D_HAVE_MPI

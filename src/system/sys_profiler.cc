@@ -121,11 +121,11 @@ Timer::Timer(const CodePoint &cp, int parent)
   current_allocated_(0),
   alloc_called(0),
   dealloc_called(0),
-  petsc_start_memory(-1),
-  petsc_end_memory (-1),
+  petsc_start_memory(0),
+  petsc_end_memory (0),
   petsc_memory_difference(0),
-  petsc_peak_memory(-1),
-  petsc_local_peak_memory(-1)
+  petsc_peak_memory(0),
+  petsc_local_peak_memory(0)
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
 }
