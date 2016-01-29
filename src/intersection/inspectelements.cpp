@@ -131,7 +131,7 @@ void InspectElements::compute_intersections<1,2>(){
 
 //                     vector<IntersectionPoint> IPs;
 //                     IPs.reserve(2);
-                    ComputeIntersection<Simplex<1>, Simplex<2>> CI_12(abscissa, triangle);
+                    ComputeIntersection<Simplex<1>, Simplex<2>> CI_12(&abscissa, &triangle);
                     
 //                     DBGMSG("IL IPs:\n");
 //                     for(unsigned int i=0; i < il.size(); i++)
@@ -185,7 +185,7 @@ void InspectElements::compute_intersections<1,3>(){
 					update_tetrahedron(ele);
 
 					IntersectionLine il(elm->index(), ele->index());
-					ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
+					ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(&abscissa, &tetrahedron);
 					CI_13.init();
 					CI_13.compute(il.points());
 
@@ -310,7 +310,7 @@ void InspectElements::prolongate_1D_element(const ElementFullIter &elm, const El
     closed_elements[elm->index()] = true;
 
     IntersectionLine il(elm->index(), ele->index());
-    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
+    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(&abscissa, &tetrahedron);
     CI_13.init();
     CI_13.compute(il.points());
 
@@ -329,7 +329,7 @@ void InspectElements::prolongate(const ProlongationPoint &pp){
     update_tetrahedron(ele);
 
     IntersectionLine il(elm->index(), ele->index());
-    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
+    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(&abscissa, &tetrahedron);
     CI_13.init();
     CI_13.compute(il.points());
 
@@ -365,7 +365,7 @@ void InspectElements::compute_intersections<2,3>(){
 					if (ele->dim() == 3 && flag_for_3D_elements[ele->index()] != (int)(elm->index())) {
 						update_tetrahedron(ele);
 						IntersectionPolygon il(elm.index(), ele->index());
-						ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
+						ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(&triangle, &tetrahedron);
 						CI_23.init();
 						CI_23.compute(il);
 
@@ -544,7 +544,7 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 	element_2D_index = pl.elm_2D_idx;
 
 
-	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
+	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(&triangle, &tetrahedron);
 	CI_23.init();
 	CI_23.compute(intersection_list[pl.elm_2D_idx][pl.dictionary_idx]);
 

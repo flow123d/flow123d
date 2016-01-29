@@ -25,18 +25,24 @@ template<unsigned int, unsigned int> class IntersectionPoint;
 
 /**
  * TODO: comment
+ * TODO: Idea: constructor creates empty object; for each abscissa and triangle only update data 
+ * [abscissa, triangle] and (plucker coordinates, products) if not final dimension.
+ * Remove init() methods.
+ * Wouldn't a flag for final dimension object help code structure?
+ * 
+ * @brief Computes the intersection of an abscissa and a triangle.
  */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
 public:
-
+    /// Default constructor.
 	ComputeIntersection();
-    //TODO: pass object by pointers or const reference, unify with set_data()
-	ComputeIntersection(Simplex<1> &abs, Simplex<2> &triang);
-	inline ~ComputeIntersection() {};
+    /// Constructor, sets abscissa and triangle object.
+	ComputeIntersection(Simplex<1> *abscissa, Simplex<2> *triangle);
+	~ComputeIntersection(){}
 
-	
-    //TODO: why this is not done in constructor?
+    // Why this is not done in constructor?
     // Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
+    
     /** @brief Computes intersection points of line and triangle.
      * 
      * If Plucker products are nonezero and with the same sign, then IP is inside the triangle.
@@ -54,41 +60,61 @@ public:
      * @return true, if intersection is found; false otherwise
      */
 	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
-    bool compute_final(std::vector<IntersectionPoint<1,2>> &IP12s);
-    bool compute_plucker(IntersectionPoint<1,2> &IP);
-    bool compute_pathologic(unsigned int side, IntersectionPoint<1,2> &IP);
     
-	void set_data(Simplex<1> *abs, Simplex<2> *triang);
-
+    /** Computes final 1d-2d intersection. (Use when this is not the resulting dimension object).
+     * @param IP12s - input/output vector of IPs. If IP found, it is pushed back.
+     * @return true, if intersection is found; false otherwise
+     */
+    bool compute_final(std::vector<IntersectionPoint<1,2>> &IP12s);
+    
+    /// @name Setters and Getters
+    //@{ 
+    /** @brief Sets the abscissa and triangle.
+     * 
+     * Use mainly when this is not final intersection computation.
+     */
+	void set_data(Simplex<1> *abscissa, Simplex<2> *triangle);
 
     /// Sets the pointer to Plucker coordinates of the abscissa.
-	inline void set_pc_abscissa(Plucker *p){
-		plucker_coordinates_abscissa[0] = p;
+    void set_pc_abscissa(Plucker *p){
+		plucker_coordinates_abscissa_ = p;
 	}
 	
 	/// Sets the pointer to Plucker coordinates of the triangle side of given @p side_idx.
-	inline void set_pc_triangle(Plucker *p, unsigned int side_idx){
-		plucker_coordinates_triangle[side_idx] = p;
+    void set_pc_triangle(Plucker *p, unsigned int side_idx){
+		plucker_coordinates_triangle_[side_idx] = p;
 	}
 
 	/// Gets the pointer to Plucker coordinates of the abscissa.
-	inline Plucker *get_pc_abscissa(){
-		return plucker_coordinates_abscissa[0];
+    Plucker *get_pc_abscissa(){
+		return plucker_coordinates_abscissa_;
 	}
 
 	/// Gets the pointer to Plucker coordinates of the triangle side of given @p side_idx.
-	inline Plucker *get_pc_triangle(unsigned int side_idx){
-		return plucker_coordinates_triangle[side_idx];
+    Plucker *get_pc_triangle(unsigned int side_idx){
+		return plucker_coordinates_triangle_[side_idx];
 	}
 
+	/** @brief Sets the Plucker product of abscissa and triangle side (use if computed before).
+     * @param side_idx local index of a side of triangle.
+     */
+    void set_plucker_product(double* number, unsigned int side_idx)
+    { plucker_products_[side_idx] = number; };
+    
+    /** @brief Getter for Plucker product of abscissa and triangle side @p side_idx.
+     */
+    double* get_plucker_product(unsigned int side_idx)
+    { return plucker_products_[side_idx]; };
+
+    /// Gets true if the intersection has been computed already (e.g. in case of IP in vertex).
+    bool is_computed() { return computed_; }
+    /// Sets the 'computed' flag true. Means that intersection has been computed already (e.g. in case of IP in vertex).
+    void set_computed() { computed_ = true; }
+    
+	//@}
+
+    /// Prints out all the Plucker coordinates.
 	void print_plucker_coordinates(std::ostream &os);
-
-	void set_plucker_product(double* number, unsigned int i);
-	double* get_plucker_product(unsigned int i);
-
-	bool is_computed();
-	void set_computed();
-
 
 private:
     /// Resets Plucker products to NULL.
@@ -96,69 +122,107 @@ private:
     /// Computes Plucker coordinates (abscissa, triangle lines) and Plucker products.
     void compute_plucker_products();
     
-    double signed_plucker_product(unsigned int i);
+    double signed_plucker_product(unsigned int i)
+    { return RefElement<2>::normal_orientation(i) ? -(*plucker_products_[i]) : (*plucker_products_[i]); }
     
-	Simplex<1> *abscissa;
-	Simplex<2> *triangle;
+        /** Computes intersection when nonezero Plucker products are of the same sign.
+     * @param IP is the intersection point (if found)
+     * @return true, if intersection is found; false otherwise
+     */
+    bool compute_plucker(IntersectionPoint<1,2> &IP);
+    
+    /** Computes intersection of abscissa and triangle side for zero Plucker product - pathologic case.
+     * @param side is the local index of the triangle side
+     * @param IP is the intersection point (if found)
+     * @return true, if intersection is found; false otherwise
+     */
+    bool compute_pathologic(unsigned int side, IntersectionPoint<1,2> &IP);
+    
+    
+    bool computed_;
+    
+	Simplex<1> *abscissa_;
+	Simplex<2> *triangle_;
 
-    //TODO: Is there a reason for abscissa pc to be a vector?
-	std::vector<Plucker *> plucker_coordinates_abscissa;
-	std::vector<Plucker *> plucker_coordinates_triangle;
+	Plucker* plucker_coordinates_abscissa_;
+	std::vector<Plucker *> plucker_coordinates_triangle_;
 
     //TODO: allocate at the top level intersection object, use NaN to indicate plucker products not computed yet, also Destroy!
-	double *plucker_products[3];
-	bool computed;
+	double *plucker_products_[3];
 };
 
-inline double ComputeIntersection<Simplex<1>, Simplex<2>>::signed_plucker_product(unsigned int i){
-    return RefElement<2>::normal_orientation(i) ? -(*plucker_products[i]) : (*plucker_products[i]);
-};
+
 
 /******************************************************************
  * 	TŘÍDA PRO VÝPOČET SIMPLEX 1 - SIMPLEX 3
  * ****************************************************************/
 
+/**
+ * @brief Computes the intersection of an abscissa and a tetrahedron.
+ * 
+ * Uses 4 ComputeIntersection<Simplex<1>,Simplex<2>> for abscissa and tetrahedron sides intersections.
+ */
 template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
 
 public:
 
 	ComputeIntersection();
-	ComputeIntersection(Simplex<1> &abs,Simplex<3> &tetr);
-
+	ComputeIntersection(Simplex<1> *abscissa,Simplex<3> *tetrahedron);
+	~ComputeIntersection() {}
 	
 	void init();
-	void set_data(Simplex<1> *abs, Simplex<3> *tetr);
+    
     //TODO comment cases in implementation
-	unsigned int compute(std::vector<IntersectionPoint<1,3>> &IP13s);
-
-	inline void set_pc_abscissa(Plucker *p){
-		plucker_coordinates_abscissa[0] = p;
+    unsigned int compute(std::vector<IntersectionPoint<1,3>> &IP13s);
+    
+     /// @name Setters and Getters
+    //@{ 
+    /**
+     * @brief Sets the abscissa and tetrahedron.
+     * Use mainly when this is not final intersection computation.
+     */
+    void set_data(Simplex<1> *abscissa, Simplex<3> *tetrehedron);
+    
+    /// Sets the pointer to Plucker coordinates of the abscissa.
+    void set_pc_abscissa(Plucker *p){
+		plucker_coordinates_abscissa_ = p;
 	}
-	inline void set_pc_tetrahedron(Plucker *p, unsigned int index){
-		plucker_coordinates_tetrahedron[index] = p;
+	
+	/// Sets the pointer to Plucker coordinates of the tetrahedron edge of given @p edge_idx.
+    void set_pc_tetrahedron(Plucker *p, unsigned int edge_idx){
+		plucker_coordinates_tetrahedron[edge_idx] = p;
 	}
 
-	inline Plucker *get_pc_abscissa(){
-		return plucker_coordinates_abscissa[0];
+	/// Gets the pointer to Plucker coordinates of the abscissa.
+    Plucker *get_pc_abscissa(){
+		return plucker_coordinates_abscissa_;
 	}
-
-	inline Plucker *get_pc_tetrahedron(unsigned int index){
-		return plucker_coordinates_tetrahedron[index];
-	}
-
+    
+    /// Gets the pointer to Plucker coordinates of the tetrahedron edge of given @p edge_idx.
+    Plucker *get_pc_tetrahedron(unsigned int edge_idx){
+		return plucker_coordinates_tetrahedron[edge_idx];
+    }
+        
+    /**
+     * @brief Gets the Plucker product of the abscissa and tetrahedron side.
+     * 
+     * @param side_idx is index of tetrahedron side (triangle) [0...3]
+     * @param edge_idx is local index triangle side (tetrahedron edge) [0...2]
+     * @return double*
+     */
+    double* get_plucker_product(unsigned int side_idx, unsigned edge_idx);
+    //@}
+    
+	/// Prints out the Plucker coordinates of abscissa and tetrahedron edges.
 	void print_plucker_coordinates(std::ostream &os);
+    /// Prints out the Plucker coordinates of tetrahedron edges in a tree of tetrahedron sides (triangles).
 	void print_plucker_coordinates_tree(std::ostream &os);
 
-	void set_plucker_product(double* number, unsigned int index_CI, unsigned index_edge);
-	double* get_plucker_product(unsigned int index_CI, unsigned index_edge);
-
-	inline ~ComputeIntersection() {}
-
 private:
-	Simplex<1> *abscissa;
-	Simplex<3> *tetrahedron;
+	Simplex<1> *abscissa_;
+	Simplex<3> *tetrahedron_;
 
-	std::vector<Plucker *> plucker_coordinates_abscissa;
+    Plucker* plucker_coordinates_abscissa_;
 	std::vector<Plucker *> plucker_coordinates_tetrahedron;
 
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[4];
@@ -168,28 +232,35 @@ private:
  * 	TŘÍDA PRO VÝPOČET SIMPLEX 2 - SIMPLEX 3
  * ****************************************************************/
 
+/**
+ * @brief Computes the intersection of a triangle and a tetrahedron.
+ * 
+ * Uses 3 ComputeIntersection<Simplex<1>,Simplex<3>> for triangle sides and tetrahedron intersections.
+ * Uses 6 ComputeIntersection<Simplex<1>,Simplex<2>> for tetrahedron sides and triangle intersections.
+ */
 template<> class ComputeIntersection<Simplex<2>, Simplex<3> > {
 public:
 	ComputeIntersection();
 
-	ComputeIntersection(Simplex<2> &tria, Simplex<3> &tetr);
+	ComputeIntersection(Simplex<2> *triangle, Simplex<3> *tetrahedron);
+    ~ComputeIntersection() {};
 
 	void init();
-	void compute(IntersectionPolygon &lokalni_mnohouhlenik);
+	void compute(IntersectionPolygon &local_polygon);
 
+    /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
 	void print_plucker_coordinates(std::ostream &os);
+    /// Prints out the Plucker coordinates in a tree simplices.
 	void print_plucker_coordinates_tree(std::ostream &os);
-
-	inline ~ComputeIntersection() {};
 
 private:
 
 	// Representation of triangle and tetrahedron as object Simplex
-	Simplex<2> *triangle;
-	Simplex<3> *tetrahedron;
+	Simplex<2> *triangle_;
+	Simplex<3> *tetrahedron_;
 
 	// Plucker coordinates for each abscissa of simplices
-	std::vector<Plucker *> plucker_coordinates_triangle;
+	std::vector<Plucker *> plucker_coordinates_triangle_;
 	std::vector<Plucker *> plucker_coordinates_tetrahedron;
 
 	// Computing objects
