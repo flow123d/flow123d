@@ -25,59 +25,72 @@
 using namespace std;
 using namespace computeintersection;
 
+/******************************************************************************************** TEST 1d-2d ****/
 
-void compute_intersection_area_23d(Mesh *mesh)
+/// Create results for the meshes in directory 'site_13d'.
+void fill_12d_solution(std::vector<std::vector<computeintersection::IntersectionPoint<1,2>>> &ips)
 {
-    double area1, area2 = 0;
+    ips.clear();
+    ips.resize(9);
+    // ips[0] is empty
+    ips[1].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<3>({1,0,0})));
+    ips[2].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0,1}),arma::vec::fixed<3>({1,0,0})));
+    ips[3].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0.5,0.5}),arma::vec::fixed<3>({1,0,0})));
+    ips[4].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0.5,0.5}),arma::vec::fixed<3>({1,0,0})));
+    ips[5].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0.5,0.5}),arma::vec::fixed<3>({0.5,0.5,0})));
+    ips[6].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0.5,0.5}),arma::vec::fixed<3>({0.5,0.25,0.25})));
+    ips[7].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({2,1})/3,arma::vec::fixed<3>({0.8,0.2,0})));
+    ips[7].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({1,2})/3,arma::vec::fixed<3>({0.6,0,0.4})));
+    ips[8].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<3>({1,0,0})));
+    ips[8].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0,1}),arma::vec::fixed<3>({0,1,0})));
+}
 
-    // compute intersection by NGH
-    xprintf(Msg, "Computing polygon area by NGH algorithm\n");
-    TTriangle ttr;
-    TTetrahedron tte;
-    TIntersectionType it = area;
-
-    FOR_ELEMENTS(mesh, elm) {
-        if (elm->dim() == 2) {
-        ttr.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
-        }else if(elm->dim() == 3){
-        tte.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
-                     TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
-//         elm->node[0]->point().print();
-//         elm->node[1]->point().print();
-//         elm->node[2]->point().print();
-//         elm->node[3]->point().print();
-//         
-//         elm->side(0)->node(0)->point().print();
-//         elm->side(0)->node(1)->point().print();
-//         elm->side(0)->node(2)->point().print();
-        }
+/**
+ * Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
+ */
+std::vector<computeintersection::IntersectionPoint<1,2>> permute_coords(std::vector<computeintersection::IntersectionPoint<1,2>> ips, 
+                                                                        unsigned int permute[3])
+{
+    std::vector<computeintersection::IntersectionPoint<1,2>> new_points(ips.size());
+    for(unsigned int i = 0; i < ips.size(); i++)
+    {
+        arma::vec::fixed<3> new_coords;
+        for(unsigned int j = 0; j < 3; j++)
+            new_coords[j] = ips[i].local_bcoords_B()[permute[j]];
+        
+        new_points[i].set_coordinates(ips[i].local_bcoords_A(), new_coords);
     }
-    GetIntersection(ttr, tte, it, area2);
-    
-    
-    // compute intersection
-    xprintf(Msg, "Computing polygon area by NEW algorithm\n");
-    InspectElements ie(mesh);
-    ie.compute_intersections<2,3>();
-    area1 = ie.polygon_area();
+    return new_points;
+}
 
-//     ie.print_mesh_to_file("output_intersection");
+void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection::IntersectionPoint<1,2>> &ips)
+{
+    xprintf(Msg, "Computing 1d-2d intersections.\n");
+    InspectElements ie(mesh);
+    ie.compute_intersections<1,2>();
     
-    xprintf(Msg,"Polygon area: (intersections) %.16e,\t(NGH) %.16e\n", area1, area2);
-    EXPECT_NEAR(area1, area2, 1e-14);
-//     EXPECT_DOUBLE_EQ(area1,area2);
+    //test solution
+    std::vector<computeintersection::IntersectionPoint<1,2>> ipc = ie.list_intersection_points(1);
+
+    EXPECT_EQ(ipc.size(), ips.size());
+    
+    for(unsigned int i=0; i < ipc.size(); i++)
+    {
+        cout << "---------- check IP[" << i << "] ----------" << endl;
+        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_A()[0], ips[i].local_bcoords_A()[0]);
+        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_A()[1], ips[i].local_bcoords_A()[1]);
+        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_B()[0], ips[i].local_bcoords_B()[0]);
+        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_B()[1], ips[i].local_bcoords_B()[1]);
+        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_B()[2], ips[i].local_bcoords_B()[2]);
+    }
 }
 
 
-TEST(area_intersections, all) {
+TEST(intersections_12d, all) {
     Profiler::initialize();
     
     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/site/";//notfunctional/
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/meshes_12d/";
     std::vector<string> filenames;
     
     // read mesh file names
@@ -105,22 +118,31 @@ TEST(area_intersections, all) {
     }
     
     std::sort(filenames.begin(), filenames.end(), less<string>());
-
+    
+    std::vector<std::vector<computeintersection::IntersectionPoint<1,2>>> solution;
+    fill_12d_solution(solution);
+    
     // for each mesh, compute intersection area and compare with old NGH
-    for(auto &fname : filenames)
+    for(unsigned int s=0; s< filenames.size(); s++)
     {
-        unsigned int permutations[6][3] = {{0,1,2},{0,2,1},{1,0,2},{1,2,0},{2,0,1},{2,1,0}};
-        for(unsigned int p=0; p<6; p++)
+        const unsigned int np = 6;
+        unsigned int permutations[np][3] = {{0,1,2},
+                                            {1,0,2},
+                                            {1,2,0},
+                                            {0,2,1},
+                                            {2,0,1},
+                                            {2,1,0}};
+        for(unsigned int p=0; p<np; p++)
         {
-            xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
+            xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
             FilePath::set_io_dirs(".","","",".");
-            FilePath mesh_file(dir_name + fname, FilePath::input_file);
+            FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
             Mesh mesh;
             // read mesh with gmshreader
             GmshMeshReader reader(mesh_file);
             reader.read_mesh(&mesh);
-            
+        
             // permute nodes:
             FOR_ELEMENTS(&mesh,ele)
             {
@@ -136,18 +158,19 @@ TEST(area_intersections, all) {
                         ele->node[i] = tmp[i];
 //                         ele->node[i]->point().print(cout);
                     }
+//                     cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
                 }
             }
+            
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
-            compute_intersection_area_23d(&mesh);
+            compute_intersection_12d(&mesh, permute_coords(solution[s], permutations[p]));
             xprintf(Msg, "==============\n");
         }
     }
     Profiler::uninitialize();
 }
-
 
 
 
@@ -377,78 +400,59 @@ TEST(intersections_13d, all) {
 
 
 
-
-
-
-
-
-
-/******************************************************************************************** TEST 1d-2d ****/
-
-/// Create results for the meshes in directory 'site_13d'.
-void fill_12d_solution(std::vector<std::vector<computeintersection::IntersectionPoint<1,2>>> &ips)
+/******************************************************************************************** TEST 2d-3d ****/
+void compute_intersection_area_23d(Mesh *mesh)
 {
-    ips.clear();
-    ips.resize(9);
-    // ips[0] is empty
-    ips[1].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<3>({1,0,0})));
-    ips[2].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0,1}),arma::vec::fixed<3>({1,0,0})));
-    ips[3].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0.5,0.5}),arma::vec::fixed<3>({1,0,0})));
-    ips[4].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0.5,0.5}),arma::vec::fixed<3>({1,0,0})));
-    ips[5].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0.5,0.5}),arma::vec::fixed<3>({0.5,0.5,0})));
-    ips[6].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0.5,0.5}),arma::vec::fixed<3>({0.5,0.25,0.25})));
-    ips[7].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({2,1})/3,arma::vec::fixed<3>({0.8,0.2,0})));
-    ips[7].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({1,2})/3,arma::vec::fixed<3>({0.6,0,0.4})));
-    ips[8].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<3>({1,0,0})));
-    ips[8].push_back(computeintersection::IntersectionPoint<1,2>(arma::vec::fixed<2>({0,1}),arma::vec::fixed<3>({0,1,0})));
-}
+    double area1, area2 = 0;
 
-/**
- * Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
- */
-std::vector<computeintersection::IntersectionPoint<1,2>> permute_coords(std::vector<computeintersection::IntersectionPoint<1,2>> ips, 
-                                                                        unsigned int permute[3])
-{
-    std::vector<computeintersection::IntersectionPoint<1,2>> new_points(ips.size());
-    for(unsigned int i = 0; i < ips.size(); i++)
-    {
-        arma::vec::fixed<3> new_coords;
-        for(unsigned int j = 0; j < 3; j++)
-            new_coords[j] = ips[i].local_bcoords_B()[permute[j]];
-        
-        new_points[i].set_coordinates(ips[i].local_bcoords_A(), new_coords);
+    // compute intersection by NGH
+    xprintf(Msg, "Computing polygon area by NGH algorithm\n");
+    TTriangle ttr;
+    TTetrahedron tte;
+    TIntersectionType it = area;
+
+    FOR_ELEMENTS(mesh, elm) {
+        if (elm->dim() == 2) {
+        ttr.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
+        }else if(elm->dim() == 3){
+        tte.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
+                     TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
+//         elm->node[0]->point().print();
+//         elm->node[1]->point().print();
+//         elm->node[2]->point().print();
+//         elm->node[3]->point().print();
+//         
+//         elm->side(0)->node(0)->point().print();
+//         elm->side(0)->node(1)->point().print();
+//         elm->side(0)->node(2)->point().print();
+        }
     }
-    return new_points;
-}
-
-void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection::IntersectionPoint<1,2>> &ips)
-{
-    xprintf(Msg, "Computing 1d-2d intersections.\n");
+    GetIntersection(ttr, tte, it, area2);
+    
+    
+    // compute intersection
+    xprintf(Msg, "Computing polygon area by NEW algorithm\n");
     InspectElements ie(mesh);
-    ie.compute_intersections<1,2>();
-    
-    //test solution
-    std::vector<computeintersection::IntersectionPoint<1,2>> ipc = ie.list_intersection_points(1);
+    ie.compute_intersections<2,3>();
+    area1 = ie.polygon_area();
 
-    EXPECT_EQ(ipc.size(), ips.size());
+//     ie.print_mesh_to_file("output_intersection");
     
-    for(unsigned int i=0; i < ipc.size(); i++)
-    {
-        cout << "---------- check IP[" << i << "] ----------" << endl;
-        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_A()[0], ips[i].local_bcoords_A()[0]);
-        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_A()[1], ips[i].local_bcoords_A()[1]);
-        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_B()[0], ips[i].local_bcoords_B()[0]);
-        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_B()[1], ips[i].local_bcoords_B()[1]);
-        EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_B()[2], ips[i].local_bcoords_B()[2]);
-    }
+    xprintf(Msg,"Polygon area: (intersections) %.16e,\t(NGH) %.16e\n", area1, area2);
+    EXPECT_NEAR(area1, area2, 1e-14);
+//     EXPECT_DOUBLE_EQ(area1,area2);
 }
 
 
-TEST(intersections_12d, all) {
+TEST(area_intersections, all) {
     Profiler::initialize();
     
     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/meshes_12d/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/site/";//notfunctional/
     std::vector<string> filenames;
     
     // read mesh file names
@@ -476,31 +480,22 @@ TEST(intersections_12d, all) {
     }
     
     std::sort(filenames.begin(), filenames.end(), less<string>());
-    
-    std::vector<std::vector<computeintersection::IntersectionPoint<1,2>>> solution;
-    fill_12d_solution(solution);
-    
+
     // for each mesh, compute intersection area and compare with old NGH
-    for(unsigned int s=0; s< filenames.size(); s++)
+    for(auto &fname : filenames)
     {
-        const unsigned int np = 6;
-        unsigned int permutations[np][3] = {{0,1,2},
-                                            {1,0,2},
-                                            {1,2,0},
-                                            {0,2,1},
-                                            {2,0,1},
-                                            {2,1,0}};
-        for(unsigned int p=0; p<np; p++)
+        unsigned int permutations[6][3] = {{0,1,2},{0,2,1},{1,0,2},{1,2,0},{2,0,1},{2,1,0}};
+        for(unsigned int p=0; p<6; p++)
         {
-            xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
+            xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
             FilePath::set_io_dirs(".","","",".");
-            FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
+            FilePath mesh_file(dir_name + fname, FilePath::input_file);
             
             Mesh mesh;
             // read mesh with gmshreader
             GmshMeshReader reader(mesh_file);
             reader.read_mesh(&mesh);
-        
+            
             // permute nodes:
             FOR_ELEMENTS(&mesh,ele)
             {
@@ -516,18 +511,15 @@ TEST(intersections_12d, all) {
                         ele->node[i] = tmp[i];
 //                         ele->node[i]->point().print(cout);
                     }
-//                     cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
                 }
             }
-            
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
-            compute_intersection_12d(&mesh, permute_coords(solution[s], permutations[p]));
+            compute_intersection_area_23d(&mesh);
             xprintf(Msg, "==============\n");
         }
     }
     Profiler::uninitialize();
 }
-
 
