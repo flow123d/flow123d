@@ -23,9 +23,9 @@ ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection()
 	plucker_coordinates_triangle_.resize(3);
 };
 
-ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(computeintersection::Simplex< 1 >* abscissa, 
-                                                                 computeintersection::Simplex< 2 >* triangle)
-: computed_(false), abscissa_(abscissa), triangle_(triangle)
+ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(computeintersection::Simplex< 1 >& abscissa, 
+                                                                 computeintersection::Simplex< 2 >& triangle)
+: computed_(false), abscissa_(&abscissa), triangle_(&triangle)
 {
     plucker_coordinates_abscissa_ = new Plucker();
     plucker_coordinates_triangle_.resize(3);
@@ -77,11 +77,11 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
 
 };
 
-void ComputeIntersection<Simplex<1>, Simplex<2>>::set_data(computeintersection::Simplex< 1 >* abscissa, 
-                                                           computeintersection::Simplex< 2 >* triangle){
+void ComputeIntersection<Simplex<1>, Simplex<2>>::set_data(computeintersection::Simplex< 1 >& abscissa, 
+                                                           computeintersection::Simplex< 2 >& triangle){
 	computed_ = false;
-	abscissa_ = abscissa;
-	triangle_ = triangle;
+	abscissa_ = &abscissa;
+	triangle_ = &triangle;
 	clear_all();
 };
 
@@ -365,15 +365,13 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::print_plucker_coordinates(std:
  *                                  COMPUTE INTERSECTION FOR:             1D AND 3D
  ************************************************************************************************************/
 ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection()
-: abscissa_(nullptr), tetrahedron_(nullptr)
 {
     plucker_coordinates_abscissa_ = nullptr;
     plucker_coordinates_tetrahedron.resize(6, nullptr);
 };
 
-ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(computeintersection::Simplex< 1 >* abscissa, 
-                                                                 computeintersection::Simplex< 3 >* tetrahedron)
-: abscissa_(abscissa), tetrahedron_(tetrahedron)
+ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(computeintersection::Simplex< 1 >& abscissa, 
+                                                                 computeintersection::Simplex< 3 >& tetrahedron)
 {
     plucker_coordinates_abscissa_ = new Plucker();
     plucker_coordinates_tetrahedron.resize(6);
@@ -382,10 +380,7 @@ ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(computeintersec
 		plucker_coordinates_tetrahedron[i] = new Plucker();
 	}
 
-
-	for(unsigned int i = 0; i < 4;i++){
-		CI12[i].set_data(abscissa_, &(*tetrahedron_)[i]);
-	}
+    set_data(abscissa, tetrahedron);
 };
 
 
@@ -404,12 +399,10 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
 
 };
 
-void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(computeintersection::Simplex< 1 >* abscissa, 
-                                                           computeintersection::Simplex< 3 >* tetrahedron){
-	abscissa_ = abscissa;
-	tetrahedron_ = tetrahedron;
+void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(computeintersection::Simplex< 1 >& abscissa, 
+                                                           computeintersection::Simplex< 3 >& tetrahedron){
 	for(unsigned int i = 0; i < 4;i++){
-		CI12[i].set_data(abscissa_, &(*tetrahedron_)[i]);
+		CI12[i].set_data(abscissa, tetrahedron[i]);
 	}
 };
 
@@ -580,15 +573,13 @@ double* ComputeIntersection<Simplex<1>, Simplex<3>>::get_plucker_product(unsigne
  *                                  COMPUTE INTERSECTION FOR:             2D AND 3D
  ************************************************************************************************************/
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection()
-: triangle_(nullptr), tetrahedron_(nullptr)
 {
     plucker_coordinates_triangle_.resize(3, nullptr);
     plucker_coordinates_tetrahedron.resize(6, nullptr);
 };
 
 
-ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(Simplex<2> *triangle, Simplex<3> *tetrahedron)
-: triangle_(triangle), tetrahedron_(tetrahedron)
+ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron)
 {
     plucker_coordinates_triangle_.resize(3);
     plucker_coordinates_tetrahedron.resize(6);
@@ -596,12 +587,12 @@ ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(Simplex<2> *tri
     // set CI object for 1D-2D intersection 'tetrahedron edge - triangle'
 	for(unsigned int i = 0; i < 6;i++){
 		plucker_coordinates_tetrahedron[i] = new Plucker();
-		CI12[i].set_data(&tetrahedron_->abscissa(i), triangle_);
+		CI12[i].set_data(tetrahedron.abscissa(i), triangle);
 	}
 	// set CI object for 1D-3D intersection 'triangle side - tetrahedron'
 	for(unsigned int i = 0; i < 3;i++){
 		plucker_coordinates_triangle_[i] = new Plucker();
-		CI13[i].set_data(&triangle_->abscissa(i) , tetrahedron_);
+		CI13[i].set_data(triangle.abscissa(i) , tetrahedron);
 	}
 };
 

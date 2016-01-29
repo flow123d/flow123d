@@ -37,7 +37,7 @@ public:
     /// Default constructor.
 	ComputeIntersection();
     /// Constructor, sets abscissa and triangle object.
-	ComputeIntersection(Simplex<1> *abscissa, Simplex<2> *triangle);
+	ComputeIntersection(Simplex<1> &abscissa, Simplex<2> &triangle);
 	~ComputeIntersection(){}
 
     // Why this is not done in constructor?
@@ -73,7 +73,7 @@ public:
      * 
      * Use mainly when this is not final intersection computation.
      */
-	void set_data(Simplex<1> *abscissa, Simplex<2> *triangle);
+	void set_data(Simplex<1> &abscissa, Simplex<2> &triangle);
 
     /// Sets the pointer to Plucker coordinates of the abscissa.
     void set_pc_abscissa(Plucker *p){
@@ -167,7 +167,7 @@ template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
 public:
 
 	ComputeIntersection();
-	ComputeIntersection(Simplex<1> *abscissa,Simplex<3> *tetrahedron);
+	ComputeIntersection(Simplex<1> &abscissa,Simplex<3> &tetrahedron);
 	~ComputeIntersection() {}
 	
 	void init();
@@ -181,7 +181,7 @@ public:
      * @brief Sets the abscissa and tetrahedron.
      * Use mainly when this is not final intersection computation.
      */
-    void set_data(Simplex<1> *abscissa, Simplex<3> *tetrehedron);
+    void set_data(Simplex<1> &abscissa, Simplex<3> &tetrahedron);
     
     /// Sets the pointer to Plucker coordinates of the abscissa.
     void set_pc_abscissa(Plucker *p){
@@ -219,9 +219,6 @@ public:
 	void print_plucker_coordinates_tree(std::ostream &os);
 
 private:
-	Simplex<1> *abscissa_;
-	Simplex<3> *tetrahedron_;
-
     Plucker* plucker_coordinates_abscissa_;
 	std::vector<Plucker *> plucker_coordinates_tetrahedron;
 
@@ -242,7 +239,7 @@ template<> class ComputeIntersection<Simplex<2>, Simplex<3> > {
 public:
 	ComputeIntersection();
 
-	ComputeIntersection(Simplex<2> *triangle, Simplex<3> *tetrahedron);
+	ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron);
     ~ComputeIntersection() {};
 
 	void init();
@@ -254,10 +251,6 @@ public:
 	void print_plucker_coordinates_tree(std::ostream &os);
 
 private:
-
-	// Representation of triangle and tetrahedron as object Simplex
-	Simplex<2> *triangle_;
-	Simplex<3> *tetrahedron_;
 
 	// Plucker coordinates for each abscissa of simplices
 	std::vector<Plucker *> plucker_coordinates_triangle_;
