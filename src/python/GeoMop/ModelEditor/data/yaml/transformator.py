@@ -121,7 +121,7 @@ class Transformator:
     __source_paths__ = {"delete-key":"path","move-key-forward":"path", "move-key":"source_path", 
                                       "rename-type":"path", "change-value":"path", "merge-arrays":"source_path", 
                                       "add-key":"path", "scale-value":"path", "replace-value":"path"}
-    __destination_paths__ = {"delete-key":None,"move-key-forward":None, "move-key":["destination_path"],
+    __destination_paths__ = {"delete-key":None,"move-key-forward":None, "move-key":["destination_path", 'set_type_path'],
                                           "rename-type":None, "change-value":None, "merge-arrays":["destination_path",
                                           "addition_path"], "add-key":None, "scale-value":None, "replace-value":None}
 
@@ -268,10 +268,10 @@ class Transformator:
                         try:
                             node = root.get_node_at_path(action['parameters']['set_type_path']) 
                             if node.type is not None:
-                                StructureChanger.change_tag(lines, node, node.type, action['parameters']['new_type'])
+                                StructureChanger.change_tag(lines, node, node.type.value, action['parameters']['new_type'].strip())
                             else:
-                                StructureChanger.add_tag(lines, node, action['parameters']['new_type'])                                
-                            changes = True                                
+                                StructureChanger.add_tag(lines, node, action['parameters']['new_type'].strip()) 
+                            changes = True
                         except:
                             pass
                 elif action['action'] == "rename-type":
@@ -480,14 +480,13 @@ class Transformator:
             raise TransformationFileFormatError(
                 "Parent of path (" + self._get_paths_str(action, 'path') + ") must be abstract record")
         if is_root:
-            intendation1 = 0
+            indentation1 = 0
             pl1 = 0
             pc1 = 0
         else:
-            intendation1 = re.search(r'^(\s*)(\S.*)$', lines[pl1])
-            intendation1 = len(intendation1.group(1)) + 2
-        l1, c1, l2, c2 = StructureChanger._add_comments(lines, l1, c1, l2, c2)
-        add = StructureChanger.copy_structure(lines, l1, c1, l2, c2, intendation1)
+            indentation1 = StructureChanger.get_indentation(lines, pl1) + 2
+        l1, c1, l2, c2 = StructureChanger.add_comments(lines, l1, c1, l2, c2)
+        add = StructureChanger.copy_structure(lines, l1, c1, l2, c2, indentation1)
         pl1, pc1 = StructureChanger.skip_tar(lines, pl1, pc1, pl2, pc2)
         action['parameters']['deep'] = True
         self._delete_key(root, lines, action)
@@ -587,7 +586,7 @@ class Transformator:
         l1, c1, l2, c2 = anchor_node.span.start.line-1, anchor_node.span.start.column-1, \
             anchor_node.span.end.line-1, anchor_node.span.end.column-1
         l1, c1 = StructureChanger.skip_tar(lines, l1, c1, l2, c2)
-        hlpl1, hlpc1, l2, c2 = StructureChanger._add_comments(lines, l1, c1, l2, c2)
+        hlpl1, hlpc1, l2, c2 = StructureChanger.add_comments(lines, l1, c1, l2, c2)
         dl1, dc1, dl2, dc2 = StructureChanger.node_pos(ref_node)
         intend = re.search(r'^(\s*)(\S.*)$', lines[dl1])
         intend = len(intend.group(1)) + 2
@@ -698,13 +697,12 @@ class Transformator:
                     "Parent of destination path (" + self._get_paths_str(action, 'destination_path') +
                     ") must be abstract record")
         if node1.parent is None:
-            intendation1 = 0
+            indentation1 = 0
         else:
-            intendation1 = re.search(r'^(\s*)(\S.*)$', lines[dl1])
-            intendation1 = len(intendation1.group(1)) + 2
-        
-        sl1, sc1, sl2, sc2 = StructureChanger._add_comments(lines, sl1, sc1, sl2, sc2)
-        add = StructureChanger.copy_structure(lines, sl1, sc1, sl2, sc2, intendation1)
+            indentation1 = StructureChanger.get_indentation(lines, dl1) + 2
+
+        sl1, sc1, sl2, sc2 = StructureChanger.add_comments(lines, sl1, sc1, sl2, sc2)
+        add = StructureChanger.copy_structure(lines, sl1, sc1, sl2, sc2, indentation1)
         # rename key
         i = node1.key.span.start.line - sl1 - 1
         add[i] = re.sub(parent1.group(2) + r"\s*:", new_node + ":", add[i])        
@@ -717,8 +715,8 @@ class Transformator:
                 " is overlapped")
         if sl1 < dl2:
             # source before dest, first copy
-            intendation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
-            StructureChanger.paste_structure(lines, dl2, add, len(intendation2.group(1)) < dc2)
+            indentation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
+            StructureChanger.paste_structure(lines, dl2, add, len(indentation2.group(1)) < dc2)
             action['parameters']['path'] = action['parameters']['source_path']
             action['parameters']['deep'] = True
             self._delete_key(root, lines, action)
@@ -727,8 +725,8 @@ class Transformator:
             action['parameters']['path'] = action['parameters']['source_path']
             action['parameters']['deep'] = True
             self._delete_key(root, lines, action)
-            intendation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
-            StructureChanger.paste_structure(lines, dl2, add, len(intendation2.group(1)) < dc2)        
+            indentation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
+            StructureChanger.paste_structure(lines, dl2, add, len(indentation2.group(1)) < dc2)        
         return True
         
     def _add_array(self, root, lines, action):
@@ -765,10 +763,9 @@ class Transformator:
                 "Source and addition nodes can't contains each other (" + 
                 self._get_paths_str(action, 'source_path') + ")")
         
-        intendation1 = re.search(r'^(\s*)(\S.*)$', lines[sl1])
-        intendation1 = len(intendation1.group(1))
-        al1, ac1, al2, ac2 = StructureChanger._add_comments(lines, al1, ac1, al2, ac2)
-        add = StructureChanger.copy_structure(lines, al1, ac1, al2, ac2, intendation1)
+        indentation1 = StructureChanger.get_indentation(lines, sl1)
+        al1, ac1, al2, ac2 = StructureChanger.add_comments(lines, al1, ac1, al2, ac2)
+        add = StructureChanger.copy_structure(lines, al1, ac1, al2, ac2, indentation1)
  
         if al2 < sl1 or (al2 == sl1 and al2 < sc1):
             # source after addition, first delete
@@ -789,8 +786,8 @@ class Transformator:
             node = root.get_node_at_path(action['parameters']['path'])
         except:
             return False
-        old = '!' + action['parameters']['old_name'] 
-        new = '!' + action['parameters']['new_name']
+        old = action['parameters']['old_name'] 
+        new = action['parameters']['new_name']
  
         StructureChanger.change_tag(lines, node, old,  new)
         return True
@@ -900,9 +897,9 @@ class Transformator:
             add = StructureChanger.add_key(key, 0, value, tag)
             lines.insert(l1,  add)
         else:
-            intendation = re.search(r'^(\s*)(\S.*)$', lines[l1])
-            intendation = len(intendation.group(1)) + 2            
-            add = StructureChanger.add_key(key, intendation, value, tag)
+            indentation = re.search(r'^(\s*)(\S.*)$', lines[l1])
+            indentation = len(indentation.group(1)) + 2            
+            add = StructureChanger.add_key(key, indentation, value, tag)
             lines.insert(l1+1, add)
         return True
 
