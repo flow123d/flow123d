@@ -55,8 +55,36 @@ def rewrite_comments(con, yaml, data):
     comments.read_comments_from_con(con, data)
     comments.sorte_by_yaml(yaml, data)
     return comments.write_to_yaml(yaml)
+    
+def fix_intendation(yaml, root):
+    """
+    Move intendation for array
+    
+    This method suppose that that yaml is clean text created by yaml.dump 
+    method with parameters defaultlt_flow_style=False and indent=2.
+    """
+    lines = yaml.splitlines(False)
+    lines = _traverse_nodes_intendation(root, lines)
+    return "\n".join(lines)
 
-
+def _traverse_nodes_intendation(node, lines):
+    """
+    Traverse node, and move indentation for array
+    """
+    for child in node.children:
+        if child.implementation == DataNode.Implementation.sequence:
+            for line in range(child.span.start.line-1, child.span.end.line):
+                if child.span.start.line == child.span.end.line or \
+                    line >= len(lines) or \
+                    (line == (child.span.end.line-1) and \
+                        ( child.span.end.column < 2 or \
+                         lines[line][:(child.span.end.column-1)].isspace())):
+                    break
+                lines[line] = "  " + lines[line]  
+        if child.implementation != DataNode.Implementation.scalar:
+            lines = _traverse_nodes_intendation(child, lines)
+    return lines    
+        
 def _decode_con(con):
     """Reads .con format and returns read data in form of dicts and lists."""
     pattern = re.compile(r"//.*")

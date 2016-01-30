@@ -13,7 +13,7 @@ from helpers import (notification_handler, AutocompleteHelper,
                      StructureAnalyzer, shortcuts)
 from ist import InfoTextGenerator
 
-from data.import_json import parse_con, fix_tags, rewrite_comments
+from data.import_json import parse_con, fix_tags, rewrite_comments, fix_intendation
 from data import export_con
 from data.yaml import Loader
 from data.yaml import Transformator, TransformationFileFormatError
@@ -322,6 +322,8 @@ class MEConfig:
                 i += 1
             cls.imported_file_name = dir_path + cls.imported_file_name + '.yaml'
             cls.curr_file = None
+            cls.update()
+            cls.document = fix_intendation(cls.document, cls.root)
             cls.update()
             cls.document, need_move_forward = fix_tags(cls.document, cls.root)
             cls.update()
