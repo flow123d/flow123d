@@ -280,22 +280,28 @@ const string read_new_regions = R"JSON(
 	{
 		TYPE="Union",
 		name = "label_3",
-		region_labels = ["label_0", "label_1"]
+		regions = ["label_0", "label_1"]
 	},
 	{
 		TYPE="Union",
 		name = "label_4",
-		region_labels = ["label_0", "label_2"]
+		regions = ["label_0", "label_2"]
+	},
+	{
+		TYPE="Union",
+		name = "label_5",
+		region_ids = [37, 38],
+		regions = ["label_0", "label_1", "label_2"]
 	},
 	{
 		TYPE="Difference",
-		name = "label_5",
-		region_labels = ["label_3", "label_4"]
+		name = "label_6",
+		regions = ["label_3", "label_4"]
 	},
 	{
 		TYPE="Intersection",
-		name = "label_6",
-		region_labels = ["label_3", "label_4"]
+		name = "label_7",
+		regions = ["label_3", "label_4", "label_5"]
 	}
 ]
 )JSON";
@@ -336,11 +342,18 @@ TEST(NewRegion, read_new_regions) {
 	EXPECT_EQ(39, region_db.get_region_set("label_4")[0].id() );
 	EXPECT_EQ( 0, region_db.get_region_set("label_4")[1].id() );
 
-	EXPECT_EQ( 1, region_db.get_region_set("label_5").size() );
-	EXPECT_EQ( 1, region_db.get_region_set("label_5")[0].id() );
+	EXPECT_EQ( 5, region_db.get_region_set("label_5").size() );
+	EXPECT_EQ(37, region_db.get_region_set("label_5")[0].id() );
+	EXPECT_EQ(38, region_db.get_region_set("label_5")[1].id() );
+	EXPECT_EQ(39, region_db.get_region_set("label_5")[2].id() );
+	EXPECT_EQ( 0, region_db.get_region_set("label_5")[3].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_5")[4].id() );
 
 	EXPECT_EQ( 1, region_db.get_region_set("label_6").size() );
-	EXPECT_EQ( 0, region_db.get_region_set("label_6")[0].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_6")[0].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("label_7").size() );
+	EXPECT_EQ( 0, region_db.get_region_set("label_7")[0].id() );
 
 	EXPECT_EQ( 1, region_db.get_region_set("3D back").size() );
 	EXPECT_EQ(39, region_db.get_region_set("3D back")[0].id() );
