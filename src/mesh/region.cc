@@ -185,7 +185,6 @@ Region RegionDB::add_region(unsigned int id, unsigned int dim) {
 }
 
 
-
 Region RegionDB::find_label(const std::string &label) const
 {
     LabelIter it_label = region_table_.get<Label>().find(label);
@@ -322,6 +321,21 @@ RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_na
 	return set_union;
 }
 
+RegionSet RegionDB::union_sets( RegionSet target_set, const string & source_set_name) const {
+	RegionSet set_union;
+	RegionSet source_set;
+	RegionSet::iterator it;
+
+	prepare_set(source_set_name, source_set);
+	std::stable_sort(target_set.begin(), target_set.end(), Region::comp);
+
+	set_union.resize(target_set.size() + source_set.size());
+	it = std::set_union(target_set.begin(), target_set.end(), source_set.begin(), source_set.end(), set_union.begin(), Region::comp);
+	set_union.resize(it - set_union.begin());
+
+	return set_union;
+}
+
 
 RegionSet RegionDB::intersection( const string & set_name_1, const string & set_name_2) const {
 	RegionSet set_insec;
@@ -336,13 +350,29 @@ RegionSet RegionDB::intersection( const string & set_name_1, const string & set_
 	return set_insec;
 }
 
+RegionSet RegionDB::intersection( RegionSet target_set, const string & source_set_name) const {
+	RegionSet set_insec;
+	RegionSet source_set;
+	RegionSet::iterator it;
+
+	prepare_set(source_set_name, source_set);
+	std::stable_sort(target_set.begin(), target_set.end(), Region::comp);
+
+	set_insec.resize(target_set.size() + source_set.size());
+	it = std::set_intersection(target_set.begin(), target_set.end(), source_set.begin(), source_set.end(), set_insec.begin(), Region::comp);
+	set_insec.resize(it - set_insec.begin());
+
+	return set_insec;
+}
+
 
 RegionSet RegionDB::difference( const string & set_name_1, const string & set_name_2) const {
 	RegionSet set_diff;
 	RegionSet set_1, set_2;
 	RegionSet::iterator it;
 
-	prepare_sets(set_name_1, set_name_2, set_1, set_2);
+	prepare_set(set_name_1, set_1);
+	prepare_set(set_name_2, set_2);
 	set_diff.resize(set_1.size() + set_2.size());
 	it = std::set_difference(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_diff.begin(), Region::comp);
 	set_diff.resize(it - set_diff.begin());
@@ -368,19 +398,27 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 
 
 
-pair<string,string> RegionDB::get_and_check_operands(const Input::Array & operands) const
+void RegionDB::prepare_set( const string & set_name, RegionSet & set) const {
+	std::map<std::string, RegionSet>::const_iterator it = sets_.find(set_name);
+	if ( it == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name)); }
+	set = (*it).second;
+	std::stable_sort(set.begin(), set.end(), Region::comp);
+}
+
+
+
+std::vector<string> RegionDB::get_and_check_operands(const Input::Array & operands) const
 {
 	vector<string> names;
 	operands.copy_to(names);
-	if ( names.size() != 2 ) THROW(ExcWrongOpNumber() << EI_NumOp(names.size()) << operands.ei_address() );
-	auto ret_names = pair<string,string>(names[0], names[1]);
-	if ( sets_.find( ret_names.first ) == sets_.end() )
-		THROW( ExcUnknownSet()  << EI_Label( ret_names.first )
-								<< operands.ei_address() );
-	if ( sets_.find( ret_names.second ) == sets_.end() )
-		THROW( ExcUnknownSet()  << EI_Label( ret_names.second )
-								<< operands.ei_address() );
-	return ret_names;
+
+	for (string name : names) {
+		if ( sets_.find( name ) == sets_.end() )
+			THROW( ExcUnknownSet()  << EI_Label( name )
+									<< operands.ei_address() );
+	}
+
+	return names;
 }
 
 
@@ -449,8 +487,8 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by union operation.\n", set_name.c_str());
 			}
 
-			pair<string,string> set_names = get_and_check_operands(*operands);
-			region_set = union_sets( set_names.first, set_names.second );
+			std::vector<string> set_names = get_and_check_operands(*operands);
+			region_set = union_sets( set_names[0], set_names[1] );
 		}
 
 		operands = rec.find<Input::Array>("intersection");
@@ -460,8 +498,8 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by intersection operation.\n", set_name.c_str());
 			}
 
-			pair<string,string> set_names = get_and_check_operands(*operands);
-			region_set = intersection( set_names.first, set_names.second );
+			std::vector<string> set_names = get_and_check_operands(*operands);
+			region_set = intersection( set_names[0], set_names[1] );
 		}
 
 		operands = rec.find<Input::Array>("difference");
@@ -471,8 +509,8 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by difference operation.\n", set_name.c_str());
 			}
 
-			pair<string,string> set_names = get_and_check_operands(*operands);
-			region_set = difference( set_names.first, set_names.second );
+			std::vector<string> set_names = get_and_check_operands(*operands);
+			region_set = difference( set_names[0], set_names[1] );
 		}
 
 		add_set(set_name, region_set);

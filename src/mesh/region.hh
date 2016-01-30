@@ -310,6 +310,7 @@ public:
 
     TYPEDEF_ERR_INFO( EI_Label, const std::string);
     TYPEDEF_ERR_INFO( EI_ID, unsigned int);
+    TYPEDEF_ERR_INFO( EI_dim, unsigned int);
     TYPEDEF_ERR_INFO( EI_IDOfOtherLabel, unsigned int);
     TYPEDEF_ERR_INFO( EI_LabelOfOtherID, const std::string);
     DECLARE_EXCEPTION( ExcAddingIntoClosed, << "Can not add label=" << EI_Label::qval << " into closed MaterialDispatch.\n");
@@ -321,6 +322,8 @@ public:
                                              << "both ID and label match an existing elementary region with different boundary flag.");
 
     DECLARE_EXCEPTION( ExcCantAdd, << "Can not add new elementary region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
+
+    DECLARE_EXCEPTION( ExcUnknownRegion, << "Region with id: " << EI_ID::qval << " and dim: " << EI_dim::qval << " doesn't exist." );
 
     DECLARE_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
 
@@ -360,12 +363,15 @@ public:
      * @p dim is dimension of reference elements in the region and @p boundary is true if the region consist of boundary elements
      * (where one can apply boundary condition).
      *
+     * TODO: check and make revision of this method according to a new conception of regions.
      */
     Region add_region(unsigned int id, const std::string &label, unsigned int dim);
 
     /**
      * As the previous, but set the 'boundary; flag according to the label (labels starting with dot '.' are boundary).
      * Used in read_regions_from_input ( with undefined dimension) to read regions given in 'regions' key of the 'mesh' input record.
+     *
+     * TODO: check and make revision of this method according to a new conception of regions.
      */
     Region add_region(unsigned int id, const std::string &label);
 
@@ -457,8 +463,11 @@ public:
      * @param set_name_1 Name of first RegionSet
      * @param set_name_2 Name of second RegionSet
      * @return RegionSet created of union operation
+     *
+     * TODO: First method is obsolete, remove after full implementation of new regions and update documentation
      */
     RegionSet union_sets( const string & set_name_1, const string & set_name_2) const;
+    RegionSet union_sets( RegionSet target_set, const string & source_set_name) const;
 
     /**
      * Get RegionSets of specified names and create their intersection.
@@ -467,8 +476,11 @@ public:
      * @param set_name_1 Name of first RegionSet
      * @param set_name_2 Name of second RegionSet
      * @return RegionSet created of intersection operation
+     *
+     * TODO: First method is obsolete, remove after full implementation of new regions and update documentation
      */
     RegionSet intersection( const string & set_name_1, const string & set_name_2) const;
+    RegionSet intersection( RegionSet target_set, const string & source_set_name) const;
 
     /**
      * Get RegionSets of specified names and create their difference
@@ -496,6 +508,8 @@ public:
      * Format of input record is defined in variable RegionDB::get_region_set_input_type()
      *
      * @param arr Array input records which define region sets
+     *
+     * TODO: Method is obsolete, functionality is moved to Mesh, remove after full implementation of new regions
      */
     void read_sets_from_input(Input::Array arr);
 
@@ -505,6 +519,8 @@ public:
      *
      * @param region_list Array input records which define region sets and elements
      * @param map Map to which is loaded data
+     *
+     * TODO: Method is obsolete, functionality is moved to Mesh, remove after full implementation of new regions
      */
     void read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map);
 
@@ -512,7 +528,7 @@ public:
      * Read two operands from input array of strings and check if given names
      * are existing sets. Return pair of checked set names.
      */
-    pair<string,string> get_and_check_operands(const Input::Array & operands) const;
+    std::vector<string> get_and_check_operands(const Input::Array & operands) const;
 
     /**
      * Print table with base information of all regions stored in RegionDB.
@@ -597,8 +613,11 @@ private:
      * Prepare region sets for union, intersection and difference operation.
      * Get sets of names set_name_1 and set_name_2 and sort them.
      * Throws ExcUnknownSet if the set with given name does not exist.
+     *
+     * TODO: First method is obsolete, remove after full implementation of new regions and update documentation
      */
     void prepare_sets( const string & set_name_1, const string & set_name_2, RegionSet & set_1, RegionSet & set_2) const;
+    void prepare_set( const string & set_name, RegionSet & set) const;
 
     /**
      * Create label of region in format: "region_"+id
@@ -614,6 +633,8 @@ private:
 
     /**
      * Replace dimension of existing region with undefined_dim.
+     *
+     * TODO: check and make revision of this method according to a new conception of regions.
      */
     Region replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary);
 

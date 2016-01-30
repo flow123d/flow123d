@@ -180,12 +180,39 @@ const int RegionSetFromElements::registrar =
 RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 : RegionSetBase(mesh)
 {
-	string set_name = rec.val<string>("name");
-	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
+	RegionSet region_set;
+	string name_of_set = rec.val<string>("name");
+	Input::Iterator<Input::Array> region_ids = rec.find<Input::Array>("region_ids");
+	Input::Iterator<Input::Array> regions = rec.find<Input::Array>("regions");
 
-	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
-	RegionSet region_set = mesh->region_db().union_sets( set_names.first, set_names.second );
-	region_db_.add_set(set_name, region_set);
+	if (region_ids) {
+		for (Input::Iterator<unsigned int> it_ids = region_ids->begin<unsigned int>();
+				it_ids != region_ids->end();
+		        ++it_ids) {
+			try {
+				Region reg = region_db_.find_id(*it_ids);
+				if (reg.is_valid()) {
+					if ( std::find(region_set.begin(), region_set.end(), reg)==region_set.end() ) {
+						region_set.push_back(reg); // add region if doesn't exist in set
+					}
+				} else {
+					xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
+				}
+			} catch(RegionDB::ExcUniqueRegionId &e) {
+				e << region_ids->ei_address();
+				throw;
+			}
+		}
+	}
+
+	if (regions) {
+		std::vector<string> set_names = mesh->region_db().get_and_check_operands(*regions);
+		for (string set_name : set_names) {
+			region_set = region_db_.union_sets( region_set, set_name );
+		}
+	}
+
+	region_db_.add_set(name_of_set, region_set);
 }
 
 
@@ -196,7 +223,9 @@ const IT::Record & RegionSetUnion::get_region_input_type()
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
-		.declare_key("region_labels", IT::Array( IT::String(), 2,2 ), IT::Default::obligatory(),
+		.declare_key("region_ids", IT::Array( IT::Integer(0)),
+				"List of region ID numbers that has to be added to the region set.")
+		.declare_key("regions", IT::Array( IT::String() ),
 				"Defines region as a union of given pair of regions.")
 		.close();
 }
@@ -216,12 +245,14 @@ const int RegionSetUnion::registrar =
 RegionSetDifference::RegionSetDifference(const Input::Record &rec, Mesh *mesh)
 : RegionSetBase(mesh)
 {
-	string set_name = rec.val<string>("name");
-	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
+	string name_of_set = rec.val<string>("name");
+	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("regions");
 
-	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
-	RegionSet region_set = mesh->region_db().difference( set_names.first, set_names.second );
-	region_db_.add_set(set_name, region_set);
+	std::vector<string> set_names = mesh->region_db().get_and_check_operands(*labels);
+	if ( set_names.size() != 2 ) THROW(RegionDB::ExcWrongOpNumber() << RegionDB::EI_NumOp(set_names.size()) << labels->ei_address() );
+
+	RegionSet region_set = mesh->region_db().difference( set_names[0], set_names[1] );
+	region_db_.add_set(name_of_set, region_set);
 }
 
 
@@ -232,7 +263,7 @@ const IT::Record & RegionSetDifference::get_region_input_type()
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
-		.declare_key("region_labels", IT::Array( IT::String(), 2, 2 ), IT::Default::obligatory(),
+		.declare_key("regions", IT::Array( IT::String(), 2, 2 ), IT::Default::obligatory(),
 				"Defines region as a difference of given pair of regions.")
 		.close();
 }
@@ -252,12 +283,16 @@ const int RegionSetDifference::registrar =
 RegionSetIntersection::RegionSetIntersection(const Input::Record &rec, Mesh *mesh)
 : RegionSetBase(mesh)
 {
-	string set_name = rec.val<string>("name");
-	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("region_labels");
+	string name_of_set = rec.val<string>("name");
+	Input::Iterator<Input::Array> regions = rec.find<Input::Array>("regions");
+	std::vector<string> set_names = mesh->region_db().get_and_check_operands(*regions);
 
-	pair<string,string> set_names = mesh->region_db().get_and_check_operands(*labels);
-	RegionSet region_set = mesh->region_db().intersection( set_names.first, set_names.second );
-	region_db_.add_set(set_name, region_set);
+	RegionSet region_set = region_db_.get_region_set(set_names[0]);
+	for (unsigned int i=1; i<set_names.size(); i++) {
+		region_set = region_db_.intersection( region_set, set_names[i] );
+	}
+
+	region_db_.add_set(name_of_set, region_set);
 }
 
 
@@ -268,7 +303,7 @@ const IT::Record & RegionSetIntersection::get_region_input_type()
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
-		.declare_key("region_labels", IT::Array( IT::String(), 2,2 ), IT::Default::obligatory(),
+		.declare_key("regions", IT::Array( IT::String(), 2 ), IT::Default::obligatory(),
 				"Defines region as an intersection of given pair of regions.")
 		.close();
 }
