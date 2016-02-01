@@ -54,8 +54,18 @@ class StructureChanger:
             return node.key.span.start.line-1, node.key.span.start.column-1, \
                 node.key.span.end.line-1, node.key.span.end.column-1
         return node.start.line-1, node.start.column-1, \
-            node.start.line-1, node.start.column,
-            
+            node.start.line-1, node.start.column
+
+    @staticmethod
+    def get_indentation(lines, l):
+        """get indentation of block thet start in set line"""
+        for i in range(l, len(lines)):
+            indentation = re.search(r'^(\s*)(\S.*)$', lines[i])
+            if indentation is None:
+                continue
+            return len(indentation.group(1))
+        return 0
+    
     @staticmethod
     def paste_structure(lines, line, add,  after_line, strip_empty=False):
         """
@@ -175,13 +185,30 @@ class StructureChanger:
     def change_tag(cls, lines, node, old,  new):
         """change node tag"""        
         l1, c1, l2, c2 = StructureChanger.node_pos(node)
-        return cls.replace(lines, new,  old,  l1, c1, l2, c2 )        
+        return cls.replace(lines, '!'+new,  '!'+old,  l1, c1, l2, c2 )        
         
     @classmethod
     def add_tag(cls, lines, node, new):
         """add node tag"""
-        l1, c1, l2, c2 = StructureChanger.key_pos(node)
-        return cls.replace(lines, ': ' + new,  ":",  l1, c1, l2, c2 )
+        if node.parent.implementation is DataNode.Implementation.sequence:       
+            l1, c1, l2, c2 = StructureChanger.value_pos(node)
+            if c1 < len(lines[l1]) and not lines[l1][c1:].isspace():
+                na = NodeAnalyzer(lines, node.parent)
+                node_type = na. get_node_structure_type()       
+                if node_type is DataNode.StructureType.json_array:
+                    lines[l1] = lines[l1][:c1] + '!' + new + ' ' + lines[l1][c1:]
+                else:
+                    lines.insert(l1+1, c1*' ' +  lines[l1][c1:])
+                    lines[l1] = lines[l1][:c1] + '!' + new                    
+            else:
+                lines[l1] = lines[l1][:c1] + '!' + new
+            return True
+        elif node.parent.implementation is DataNode.Implementation.mapping:
+            if not cls.replace(lines, ': !' + new + ' ',  ":",  l1, c1, l2, c2 ):
+                l1, c1, l2, c2 = StructureChanger.key_pos(node)
+                return cls.replace(lines, ' : !' + new + ' ',  " :",  l1, c1, l2, c2 )
+            return True
+        return False
         
     
     @staticmethod    
@@ -273,7 +300,10 @@ class StructureChanger:
             if c1 > 0:
                 add.append(indent*" " + lines[l1][c1:])
                 from_line += 1
-            indentation2 = re.search(r'^(\s*)(\S.*)$', lines[l1])
+                
+            indentation2 = re.search(r'^(\s*- )(\S.*)$', lines[l1])
+            if indentation2 is None:
+                indentation2 = re.search(r'^(\s*)(\S.*)$', lines[l1])
             if indentation2 is None:
                 indentation2 = 0
             else:
@@ -336,7 +366,7 @@ class StructureChanger:
         return l1, c1
         
     @staticmethod
-    def _add_comments(lines, l1, c1, l2, c2):
+    def add_comments(lines, l1, c1, l2, c2):
         """Try find comments before and after node and add it to node"""
         nl1 = l1
         nc1 = c1

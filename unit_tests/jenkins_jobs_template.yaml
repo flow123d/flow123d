@@ -9,6 +9,8 @@
     # default template fields
     node: "{platform}"
     workspace: "F123-{platform}-{build-type}"
+    logrotate: 
+      daysToKeep: 200
     wrappers:
       - build-name:
           name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
@@ -759,17 +761,28 @@
 
 
 
+
 ####################################################################
 # Multijob  project - (windows package tests)
 #
 # Simple multijob which test whether are packed installators functional
-#   Testing consist of 4 steps:
+#   Testing consist of 5 steps:
 #      1) download  - download and save zip file from server (http://flow.nti.tul.cz/packages/ by default)
 #      2) install   - run NSIS silent (console only) instalation
 #      3) run       - run binary flow123d using absolute path of flow123d binary
 #      4) python    - run simple test (03 - flow_implicit), checks profiler report generation
 #                       AND mainly test embedded Python for report convertion to txt file
 #      5) uninstall - run NSIS silent uninstall and remove remaining files
+
+- defaults:
+    name: flow123d-package-test
+    # default template fields
+    node: packages
+    workspace: c:\package_tests\
+    logrotate: 
+      daysToKeep: 200
+
+
 - project:
     name: "Windows package tests"
     action: [ "download,install", run, python_test, uninstall ]
@@ -782,12 +795,13 @@
 # template for single testing step (install, uninstall, ...)
 - job-template:
     name: "Windows-{arch}-package-{action}"
-    node: windows_packages
-    workspace: c:\package_tests\
     display-name: "Windows {arch} package - {action}"
+    node: windows_packages
+    defaults: flow123d-package-test
+    workspace: c:\package_tests\
     builders:
       - batch: |
-          "C:/Program Files (x86)/python27/python" scripts/package.py -a {arch} -m {action}
+          python package.py -a {arch} -m {action} --version %GIT_BRANCH%
 
 
 ########################################################################
@@ -796,13 +810,20 @@
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED, FAILURE}
 - job-template:
     name: "Windows-{arch}-package-all"
+    display-name: "Windows {arch} package multijob"
     node: windows_packages
+    defaults: flow123d-package-test
+    workspace: c:\package_tests\
     scm:
       - git:
-          url: https://github.com/x3mSpeedy/Flow123d-package-test.git
-          basedir: scripts
-    workspace: c:\package_tests\
-    display-name: "Windows {arch} package multijob"
+          remotes:
+             - origin: 
+                 url: https://github.com/flow123d/flow123d.git
+             - packages: 
+                 url: https://github.com/x3mSpeedy/Flow123d-package-test.git
+          branches:
+            - origin/master
+            - origin/JHY_continuous_package_testing
     triggers: 
       # run every day around 5 AM even if there is no change in code
       - timed: "H 5  * * *"
@@ -810,26 +831,35 @@
     builders:
       - batch: |
             rd /s /q windows_x86_{arch}
+            git checkout -f packages/master
       - multijob:
           condition: COMPLETED
           name: 'Install'
           projects:
-            - { name: "Windows-{arch}-package-download,install", condition: COMPLETED }
+            - name: "Windows-{arch}-package-download,install"
+              condition: COMPLETED
+              predefined-parameters: GIT_BRANCH=$GIT_BRANCH
       - multijob:
           condition: COMPLETED
           name: 'Run test'
           projects:
-            - { name: "Windows-{arch}-package-run", condition: COMPLETED }
+            - name: "Windows-{arch}-package-run"
+              condition: COMPLETED
+              predefined-parameters: GIT_BRANCH=$GIT_BRANCH
       - multijob:
           condition: COMPLETED
           name: 'Python test'
           projects:
-            - { name: "Windows-{arch}-package-python_test", condition: COMPLETED }
+            - name: "Windows-{arch}-package-python_test"
+              condition: COMPLETED
+              predefined-parameters: GIT_BRANCH=$GIT_BRANCH
       - multijob:
           condition: COMPLETED
           name: 'Uninstall'
           projects:
-            - { name: "Windows-{arch}-package-uninstall", condition: COMPLETED }
+            - name: "Windows-{arch}-package-uninstall"
+              condition: COMPLETED
+              predefined-parameters: GIT_BRANCH=$GIT_BRANCH
 
 
 
@@ -856,9 +886,10 @@
 # template for single testing step (install, uninstall, ...)
 - job-template:
     name: "Linux-{arch}-package-{action}"
+    display-name: "Linux {arch} package - {action}"
     node: linux_packages
     workspace: F123-linux-packages
-    display-name: "Linux {arch} package - {action}"
+    defaults: flow123d-package-test
     triggers: 
       # run every day around 5 AM even if there is no change in code
       - timed: "H 5  * * *"
@@ -869,7 +900,7 @@
           option: project
     builders:
       - shell: |
-          python scripts/package.py -a {arch} -m {action}
+          python package.py -a {arch} -m {action} --version $GIT_BRANCH
 
 
 ########################################################################
@@ -878,36 +909,54 @@
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED, FAILURE}
 - job-template:
     name: "Linux-{arch}-package-all"
+    display-name: "Linux {arch} package multijob"
     node: linux_packages
+    workspace: F123-linux-packages
+    defaults: flow123d-package-test
     scm:
       - git:
-          url: https://github.com/x3mSpeedy/Flow123d-package-test.git
-          basedir: scripts
-    workspace: F123-linux-packages
-    display-name: "Linux {arch} package multijob"
+          remotes:
+             - origin: 
+                 url: https://github.com/flow123d/flow123d.git
+             - packages: 
+                 url: https://github.com/x3mSpeedy/Flow123d-package-test.git
+          branches:
+            - origin/master
+            - origin/JHY_continuous_package_testing
     project-type: multijob
     builders:
       - shell: |
+            # remove previous package
             rm -rf linux_x86_{arch}
+            # checkout to repo
+            git checkout -f packages/master
       - multijob:
           condition: COMPLETED
           name: 'Install'
           projects:
-            - { name: "Linux-{arch}-package-download,install", condition: COMPLETED }
+            - name: "Linux-{arch}-package-download,install"
+              condition: COMPLETED
+              predefined-parameters: GIT_BRANCH=$GIT_BRANCH
       - multijob:
           condition: COMPLETED
           name: 'Run test'
           projects:
-            - { name: "Linux-{arch}-package-run", condition: COMPLETED }
+            - name: "Linux-{arch}-package-run"
+              condition: COMPLETED
+              predefined-parameters: GIT_BRANCH=$GIT_BRANCH
       - multijob:
           condition: COMPLETED
           name: 'Python test'
           projects:
-            - { name: "Linux-{arch}-package-python_test", condition: COMPLETED }
+            - name: "Linux-{arch}-package-python_test"
+              condition: COMPLETED
+              predefined-parameters: GIT_BRANCH=$GIT_BRANCH
       - multijob:
           condition: COMPLETED
           name: 'Uninstall'
           projects:
-            - { name: "Linux-{arch}-package-uninstall", condition: COMPLETED }
+            - name: "Linux-{arch}-package-uninstall"
+              condition: COMPLETED
+              predefined-parameters: GIT_BRANCH=$GIT_BRANCH
 
 
