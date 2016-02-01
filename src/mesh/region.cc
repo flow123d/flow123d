@@ -321,21 +321,6 @@ RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_na
 	return set_union;
 }
 
-RegionSet RegionDB::union_sets( RegionSet target_set, const string & source_set_name) const {
-	RegionSet set_union;
-	RegionSet source_set;
-	RegionSet::iterator it;
-
-	prepare_set(source_set_name, source_set);
-	std::stable_sort(target_set.begin(), target_set.end(), Region::comp);
-
-	set_union.resize(target_set.size() + source_set.size());
-	it = std::set_union(target_set.begin(), target_set.end(), source_set.begin(), source_set.end(), set_union.begin(), Region::comp);
-	set_union.resize(it - set_union.begin());
-
-	return set_union;
-}
-
 
 RegionSet RegionDB::intersection( const string & set_name_1, const string & set_name_2) const {
 	RegionSet set_insec;
@@ -350,29 +335,13 @@ RegionSet RegionDB::intersection( const string & set_name_1, const string & set_
 	return set_insec;
 }
 
-RegionSet RegionDB::intersection( RegionSet target_set, const string & source_set_name) const {
-	RegionSet set_insec;
-	RegionSet source_set;
-	RegionSet::iterator it;
-
-	prepare_set(source_set_name, source_set);
-	std::stable_sort(target_set.begin(), target_set.end(), Region::comp);
-
-	set_insec.resize(target_set.size() + source_set.size());
-	it = std::set_intersection(target_set.begin(), target_set.end(), source_set.begin(), source_set.end(), set_insec.begin(), Region::comp);
-	set_insec.resize(it - set_insec.begin());
-
-	return set_insec;
-}
-
 
 RegionSet RegionDB::difference( const string & set_name_1, const string & set_name_2) const {
 	RegionSet set_diff;
 	RegionSet set_1, set_2;
 	RegionSet::iterator it;
 
-	prepare_set(set_name_1, set_1);
-	prepare_set(set_name_2, set_2);
+	prepare_sets(set_name_1, set_name_2, set_1, set_2);
 	set_diff.resize(set_1.size() + set_2.size());
 	it = std::set_difference(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_diff.begin(), Region::comp);
 	set_diff.resize(it - set_diff.begin());
@@ -394,15 +363,6 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 
 	std::stable_sort(set_1.begin(), set_1.end(), Region::comp);
 	std::stable_sort(set_2.begin(), set_2.end(), Region::comp);
-}
-
-
-
-void RegionDB::prepare_set( const string & set_name, RegionSet & set) const {
-	std::map<std::string, RegionSet>::const_iterator it = sets_.find(set_name);
-	if ( it == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name)); }
-	set = (*it).second;
-	std::stable_sort(set.begin(), set.end(), Region::comp);
 }
 
 

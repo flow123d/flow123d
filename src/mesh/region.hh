@@ -158,6 +158,10 @@ public:
     RegionIdx operator() (const Region &)
         {return RegionIdx(idx_); }
 
+    /// Comparative method of two regions
+    static bool comp(const Region &a, const Region &b)
+    { return a.idx_ < b.idx_; }
+
     /// Returns label of the region (using RegionDB)
     std::string label() const;
 
@@ -184,10 +188,6 @@ protected:
     Region(unsigned int index, const RegionDB &db)
     : RegionIdx(index), db_(&db)
     {}
-
-    /// Comparative method of two regions
-    static bool comp(const Region &a, const Region &b)
-    { return a.idx_ < b.idx_; }
 
     /// Global variable with information about all regions.
     const RegionDB *db_;
@@ -464,10 +464,9 @@ public:
      * @param set_name_2 Name of second RegionSet
      * @return RegionSet created of union operation
      *
-     * TODO: First method is obsolete, remove after full implementation of new regions and update documentation
+     * TODO: Method is obsolete, remove after full implementation of new regions
      */
     RegionSet union_sets( const string & set_name_1, const string & set_name_2) const;
-    RegionSet union_sets( RegionSet target_set, const string & source_set_name) const;
 
     /**
      * Get RegionSets of specified names and create their intersection.
@@ -477,10 +476,9 @@ public:
      * @param set_name_2 Name of second RegionSet
      * @return RegionSet created of intersection operation
      *
-     * TODO: First method is obsolete, remove after full implementation of new regions and update documentation
+     * TODO: Method is obsolete, remove after full implementation of new regions
      */
     RegionSet intersection( const string & set_name_1, const string & set_name_2) const;
-    RegionSet intersection( RegionSet target_set, const string & source_set_name) const;
 
     /**
      * Get RegionSets of specified names and create their difference
@@ -489,6 +487,8 @@ public:
      * @param set_name_1 Name of first RegionSet
      * @param set_name_2 Name of second RegionSet
      * @return RegionSet created of difference operation
+     *
+     * TODO: Method is obsolete, remove after full implementation of new regions
      */
     RegionSet difference( const string & set_name_1, const string & set_name_2) const;
 
@@ -614,10 +614,9 @@ private:
      * Get sets of names set_name_1 and set_name_2 and sort them.
      * Throws ExcUnknownSet if the set with given name does not exist.
      *
-     * TODO: First method is obsolete, remove after full implementation of new regions and update documentation
+     * TODO: Method is obsolete, remove after full implementation of new regions
      */
     void prepare_sets( const string & set_name_1, const string & set_name_2, RegionSet & set_1, RegionSet & set_2) const;
-    void prepare_set( const string & set_name, RegionSet & set) const;
 
     /**
      * Create label of region in format: "region_"+id

@@ -180,11 +180,11 @@ const int RegionSetFromElements::registrar =
 RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 : RegionSetBase(mesh)
 {
-	RegionSet region_set;
 	string name_of_set = rec.val<string>("name");
 	Input::Iterator<Input::Array> region_ids = rec.find<Input::Array>("region_ids");
 	Input::Iterator<Input::Array> regions = rec.find<Input::Array>("regions");
 
+	std::set<Region, bool (*)(const Region&, const Region&)> set(Region::comp);
 	if (region_ids) {
 		for (Input::Iterator<unsigned int> it_ids = region_ids->begin<unsigned int>();
 				it_ids != region_ids->end();
@@ -192,9 +192,7 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 			try {
 				Region reg = region_db_.find_id(*it_ids);
 				if (reg.is_valid()) {
-					if ( std::find(region_set.begin(), region_set.end(), reg)==region_set.end() ) {
-						region_set.push_back(reg); // add region if doesn't exist in set
-					}
+					set.insert(reg); // add region if doesn't exist in set
 				} else {
 					xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
 				}
@@ -208,10 +206,15 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 	if (regions) {
 		std::vector<string> set_names = mesh->region_db().get_and_check_operands(*regions);
 		for (string set_name : set_names) {
-			region_set = region_db_.union_sets( region_set, set_name );
+			RegionSet r_set = region_db_.get_region_set(set_name);
+			set.insert(r_set.begin(), r_set.end());
 		}
 	}
 
+	RegionSet region_set(set.begin(), set.end());
+	if (region_set.size() == 0) {
+		THROW( ExcEmptyRegionSetResult() << EI_Operation_Type("Union") << rec.ei_address() );
+	}
 	region_db_.add_set(name_of_set, region_set);
 }
 
@@ -251,8 +254,21 @@ RegionSetDifference::RegionSetDifference(const Input::Record &rec, Mesh *mesh)
 	std::vector<string> set_names = mesh->region_db().get_and_check_operands(*labels);
 	if ( set_names.size() != 2 ) THROW(RegionDB::ExcWrongOpNumber() << RegionDB::EI_NumOp(set_names.size()) << labels->ei_address() );
 
-	RegionSet region_set = mesh->region_db().difference( set_names[0], set_names[1] );
-	region_db_.add_set(name_of_set, region_set);
+	RegionSet set_1 = region_db_.get_region_set( set_names[0] );
+	RegionSet set_2 = region_db_.get_region_set( set_names[1] );
+	RegionSet set_diff;
+
+	std::stable_sort(set_1.begin(), set_1.end(), Region::comp);
+	std::stable_sort(set_2.begin(), set_2.end(), Region::comp);
+	set_diff.resize(set_1.size() + set_2.size());
+
+	RegionSet::iterator it = std::set_difference(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_diff.begin(), Region::comp);
+	set_diff.resize(it - set_diff.begin());
+
+	if (set_diff.size() == 0) {
+		THROW( ExcEmptyRegionSetResult() << EI_Operation_Type("Difference") << rec.ei_address() );
+	}
+	region_db_.add_set(name_of_set, set_diff);
 }
 
 
@@ -289,9 +305,12 @@ RegionSetIntersection::RegionSetIntersection(const Input::Record &rec, Mesh *mes
 
 	RegionSet region_set = region_db_.get_region_set(set_names[0]);
 	for (unsigned int i=1; i<set_names.size(); i++) {
-		region_set = region_db_.intersection( region_set, set_names[i] );
+		region_set = this->intersection( region_set, set_names[i] );
 	}
 
+	if (region_set.size() == 0) {
+		THROW( ExcEmptyRegionSetResult() << EI_Operation_Type("Intersection") << rec.ei_address() );
+	}
 	region_db_.add_set(name_of_set, region_set);
 }
 
@@ -313,3 +332,18 @@ const int RegionSetIntersection::registrar =
 		Input::register_class< RegionSetIntersection, const Input::Record &, Mesh * >("Intersection") +
 		RegionSetIntersection::get_region_input_type().size();
 
+
+RegionSet RegionSetIntersection::intersection( RegionSet target_set, const string & source_set_name) const {
+	RegionSet set_insec;
+	RegionSet source_set = region_db_.get_region_set( source_set_name );
+	RegionSet::iterator it;
+
+	std::stable_sort(target_set.begin(), target_set.end(), Region::comp);
+	std::stable_sort(source_set.begin(), source_set.end(), Region::comp);
+
+	set_insec.resize(target_set.size() + source_set.size());
+	it = std::set_intersection(target_set.begin(), target_set.end(), source_set.begin(), source_set.end(), set_insec.begin(), Region::comp);
+	set_insec.resize(it - set_insec.begin());
+
+	return set_insec;
+}

@@ -33,6 +33,9 @@ public:
     DECLARE_EXCEPTION( ExcNonexistingLabel, << "Non-existing label of region: " << EI_Region_Label::qval << "\n" \
                                              << "You must also set ID or use existing label.\n");
 
+    TYPEDEF_ERR_INFO( EI_Operation_Type, const std::string);
+    DECLARE_INPUT_EXCEPTION( ExcEmptyRegionSetResult, << "Empty result of " << EI_Operation_Type::val << " operation.");
+
 protected:
     /// Constructor
     RegionSetBase(Mesh *mesh);
@@ -192,6 +195,14 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
+    /**
+     * Get RegionSet of specified name and create its intersection with target RegionSet.
+     *
+     * @param target_set First RegionSet
+     * @param set_name Name of second RegionSet
+     * @return RegionSet created of intersection operation
+     */
+    RegionSet intersection( RegionSet target_set, const string & source_set_name) const;
 };
 
 
