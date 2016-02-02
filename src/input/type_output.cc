@@ -504,7 +504,7 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
     stream << "{" << endl;
     stream << "\"id\" : " << type->hash_str() << "," << endl;
     stream << "\"input_type\" : \"" + type->class_name() + "\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
     type->write_attributes(stream);
 }
 
