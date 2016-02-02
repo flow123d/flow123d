@@ -53,7 +53,7 @@ class texlist(list):
         :param value:
         :return:
         """
-        self.append("{" + value + "}")
+        self.append("{" + str(value) + "}")
         return self
 
     def add_s(self, value=''):
@@ -147,7 +147,7 @@ class texlist(list):
         :return:
         """
         self.slash('textlangle')
-        self.add(self.escape(namespace + value + ' ').lower())
+        self.add(self.escape(namespace + str(value) + ' ').lower())
         self.slash('textrangle')
 
         return self
@@ -213,7 +213,7 @@ class texlist(list):
             print exception_type, exception_value, tb
             traceback.print_exception(exception_type, exception_value, tb)
             traceback.print_stack()
-            raise exception_value
+            return False
 
         self.counter -= 1
         if self.counter == 0:

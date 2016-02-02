@@ -1,9 +1,13 @@
 # encoding: utf-8
 # author:   Jan Hybs
+from __future__ import absolute_import
+
 import cgi
-from ist.nodes import Integer, String, DescriptionNode, ISTNode, ComplexNode
+from ist.nodes import ISTNode, ComplexNode
 from ist.utils.htmltree import htmltree
 
+from utils.logger import Logger
+logger = Logger(__name__)
 
 class NotImplementedException(Exception):
     pass
@@ -78,9 +82,9 @@ class HTMLRecordKeyDefault(object):
         self.html.info('Default value: ')
         with self.html.open('span', attrib={ 'class': 'item-value chevron header-info skew' }):
             if len(str(self_default.value)):
-                self.html.span(self_default.value)
+                self.html.span(str(self_default.value))
             else:
-                self.html.span(self_default.type)
+                self.html.span(str(self_default.type))
 
         return self.html.current()
 
@@ -88,9 +92,9 @@ class HTMLRecordKeyDefault(object):
         self.html.info('Default value: ')
         with self.html.open('span', attrib={ 'class': 'item-value chevron skew' }):
             if len(str(self_default.value)):
-                self.html.span(self_default.value)
+                self.html.span(str(self_default.value))
             else:
-                self.html.span(self_default.type)
+                self.html.span(str(self_default.type))
         return self.html.current()
 
 
@@ -166,11 +170,11 @@ class HTMLArray(HTMLUniversal):
                     self.info(' ')
                     self.span(cgi.escape(str(self_array.range)))
                 self.info(' of ')
-                self.span(subtype.get_type())
+                self.span(subtype.input_type)
 
             if issubclass(subtype.__class__, ComplexNode):
                 with self.open('span', attrib={ 'class': 'item-value chevron' }):
-                    self.link(subtype.get_name())
+                    self.link(subtype.type_name)
 
             self.tag('br')
             HTMLRecordKeyDefault(self).format_as_child(record_key.default, record_key, record)
@@ -210,28 +214,28 @@ class HTMLSelection(HTMLItemFormatter):
                 self.info('Selection ')
             with self.open('span', attrib={ 'class': 'item-value chevron' }):
                 if self_selection.include_in_format():
-                    self.link(self_selection.get_name())
+                    self.link(self_selection.type_name)
                 else:
-                    self.span(self_selection.get_name())
+                    self.span(self_selection.type_name)
 
             self.tag('br')
             HTMLRecordKeyDefault(self).format_as_child(record_key.default, record_key, record)
 
-        self.h(record_key.key, record.get_name())
+        self.h(record_key.key, record.type_name)
 
         self.description(record_key.description)
 
     def format(self, selection):
-        self.root.attrib['id'] = htmltree.chain_values(selection.get_name())
-        self.root.attrib['data-name'] = htmltree.chain_values(selection.get_name())
+        self.root.attrib['id'] = htmltree.chain_values(selection.type_name)
+        self.root.attrib['data-name'] = htmltree.chain_values(selection.type_name)
         with self.open('header'):
-            self.h2(selection.name)
+            self.h2(selection.type_name)
             self.description(selection.description)
 
         with self.open('ul', attrib={ 'class': 'item-list' }):
             for selection_value in selection.values:
                 with self.open('li'):
-                    self.h3(selection_value.get_name())
+                    self.h3(selection_value.name)
                     self.description(selection_value.description)
 
         return self
@@ -251,26 +255,26 @@ class HTMLAbstractRecord(HTMLItemFormatter):
                 self.info('abstract type ')
             with self.open('span', attrib={ 'class': 'item-value chevron' }):
                 if abstract_record.include_in_format():
-                    self.link(abstract_record.get_name())
+                    self.link(abstract_record.type_name)
                 else:
-                    self.span(abstract_record.get_name())
+                    self.span(abstract_record.type_name)
 
             self.tag('br')
             HTMLRecordKeyDefault(self).format_as_child(record_key.default, record_key, record)
 
-        self.h(record_key.key, record.get_name())
+        self.h(record_key.key, record.type_name)
         self.description(record_key.description)
 
     def format(self, abstract_record):
-        self.root.attrib['id'] = htmltree.chain_values(abstract_record.get_name())
-        self.root.attrib['data-name'] = htmltree.chain_values(abstract_record.get_name())
+        self.root.attrib['id'] = htmltree.chain_values(abstract_record.type_name)
+        self.root.attrib['data-name'] = htmltree.chain_values(abstract_record.type_name)
         with self.open('header'):
-            self.h2(abstract_record.name)
+            self.h2(abstract_record.type_name)
 
             if abstract_record.default_descendant:
                 reference = abstract_record.default_descendant.get_reference()
                 self.italic('Default descendant ')
-                self.link(reference.get_name())
+                self.link(reference.type_name)
 
             self.description(abstract_record.description)
 
@@ -278,6 +282,7 @@ class HTMLAbstractRecord(HTMLItemFormatter):
         with self.open('ul', attrib={ 'class': 'item-list' }):
             for descendant in abstract_record.implementations:
                 reference = descendant.get_reference()
+                print descendant, reference
                 with self.open('li'):
                     self.link(reference.type_name)
                     self.info(' - ')
@@ -298,20 +303,20 @@ class HTMLRecord(HTMLItemFormatter):
                 self.info('Record ')
             with self.open('span', attrib={ 'class': 'item-value chevron' }):
                 if self_record.include_in_format():
-                    self.link(self_record.get_name())
+                    self.link(self_record.type_name)
                 else:
-                    self.span(self_record.get_name())
+                    self.span(self_record.type_name)
 
             self.tag('br')
             HTMLRecordKeyDefault(self).format_as_child(record_key.default, record_key, record)
 
-        self.h(record_key.key, record.get_name())
+        self.h(record_key.key, record.type_name)
 
         self.description(record_key.description)
 
     def format(self, record):
-        self.root.attrib['id'] = htmltree.chain_values(record.get_name())
-        self.root.attrib['data-name'] = htmltree.chain_values(record.get_name())
+        self.root.attrib['id'] = htmltree.chain_values(record.type_name)
+        self.root.attrib['data-name'] = htmltree.chain_values(record.type_name)
         reference_list = record.implements
         with self.open('header'):
             self.h2(record.type_name)
@@ -319,7 +324,7 @@ class HTMLRecord(HTMLItemFormatter):
             if reference_list:
                 for reference in reference_list:
                     self.italic('implements abstract type: ')
-                    self.link(reference.get_reference().name)
+                    self.link(reference.get_reference().type_name)
 
             if record.reducible_to_key:
                 if reference_list:
@@ -386,22 +391,27 @@ class HTMLFormatter(object):
         """
         html = htmltree('div')
         html.id('input-reference')
-
+        logger.info('Processing items...')
         for item in items:
+            logger.info(' - item ' + str(item))
             # format only IST nodes
-            if issubclass(item.__class__, ISTNode):
+            if not issubclass(item.__class__, ISTNode):
+                logger.info(' - item type not supported: %s' % str(item))
+                continue
 
-                # do no format certain objects
-                if not item.include_in_format():
-                    continue
+            # do no format certain objects
+            if not item.include_in_format():
+                logger.info(' - item skipped')
+                continue
 
-                try:
-                    fmt = HTMLFormatter.get_formatter_for(item)
-                    fmt.format(item)
-                    html.add(fmt.current())
-                except NotImplementedException as e:
-                    # NotImplementedException
-                    pass
+            try:
+                logger.info(' - item formatting...')
+                fmt = HTMLFormatter.get_formatter_for(item)
+                fmt.format(item)
+                html.add(fmt.current())
+            except NotImplementedException as e:
+                # NotImplementedException
+                pass
 
         return html
 
@@ -431,8 +441,8 @@ class HTMLFormatter(object):
         html.bold('Records ')
         HTMLFormatter._add_items(sorted_items, html, 'Record', reverse=False)
 
-        html.bold('Abstract record ')
-        HTMLFormatter._add_items(sorted_items, html, 'AbstractRecord', reverse=False)
+        html.bold('Abstract records ')
+        HTMLFormatter._add_items(sorted_items, html, 'Abstract', reverse=False)
 
         html.bold('Selections ')
         HTMLFormatter._add_items(sorted_items, html, 'Selection', reverse=False)
@@ -469,29 +479,29 @@ class HTMLFormatter(object):
                     if type and not item.input_type == type:
                         continue
 
-                    if prev_name == item.get_name():
+                    if prev_name == item.type_name:
                         continue
 
-                    prev_name = item.get_name()
+                    prev_name = item.type_name
 
-                    with html.open('li', attrib={'data-name': item.get_name()}):
-                        with html.open('a', '', html.generate_href(item.get_name())):
+                    with html.open('li', attrib={'data-name': item.type_name}):
+                        with html.open('a', '', html.generate_href(item.type_name)):
                             if reverse:
-                                html.span(item.get_name())
-                                html.span(item.get_type()[0], attrib={ 'class': 'shortcut-r' })
+                                html.span(item.type_name)
+                                html.span(item.input_type[0], attrib={ 'class': 'shortcut-r' })
                             else:
-                                html.span(item.get_type()[0], attrib={ 'class': 'shortcut' })
-                                html.span(item.get_name())
+                                html.span(item.input_type[0], attrib={ 'class': 'shortcut' })
+                                html.span(item.type_name)
 
     @staticmethod
     def __cmp(a, b):
         try:
-            name_a = a.get_name()
+            name_a = a.type_name
         except:
             name_a = None
 
         try:
-            name_b = b.get_name()
+            name_b = b.type_name
         except:
             name_b = None
 

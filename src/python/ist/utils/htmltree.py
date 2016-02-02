@@ -260,7 +260,7 @@ class htmltree(object):
         # add debug info
         if exception_type:
             print exception_type, exception_value, traceback
-            raise exception_value
+            return False
 
         self.counter -= 1
         self.roots.pop()

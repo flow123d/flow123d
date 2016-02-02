@@ -13,7 +13,7 @@
 \KeyItem{\hyperB{SequentialCoupling::secondary-equation}{secondary\_equation}}{abstract type: \Alink{IT::Transport}{Transport}}{\textlangle{\it optional }\textrangle}{}{The equation that depends (the velocity field) on the result of the primary equation.}
 \end{RecordType}
 """
-from ist.nodes import Bool, AbstractRecord, Selection, Integer, DescriptionNode, String, ISTNode
+from ist.nodes import Integer, String, ISTNode, ComplexNode
 from ist.utils.texlist import texlist
 
 ur"""
@@ -70,9 +70,9 @@ class LatexSelection (LatexItemFormatter):
         with tex:
             tex.append ('selection: ')
             if self_selection.include_in_format ():
-                tex.Alink (self_selection.name)
+                tex.Alink (self_selection.type_name)
             else:
-                tex.append (tex.escape (self_selection.name))
+                tex.append (tex.escape (self_selection.type_name))
 
         tex.add_s (record_key.default.value)
         tex.add ()
@@ -115,7 +115,7 @@ class LatexSelection (LatexItemFormatter):
 
         with tex.element ():
             with tex:
-                tex.hyperB (selection.name)
+                tex.hyperB (selection.type_name)
             tex.add_description_field (selection.description)
 
             for selection_value in selection.values:
@@ -205,7 +205,7 @@ class LatexAbstractRecord (LatexItemFormatter):
 
         with tex:
             tex.append ('abstract type: ')
-            tex.Alink (abstract_record.name)
+            tex.Alink (abstract_record.type_name)
 
         tex.extend (
             LatexRecordKeyDefault ().format_as_child (record_key.default, record_key, record)
@@ -243,14 +243,14 @@ class LatexAbstractRecord (LatexItemFormatter):
         tex = texlist (self.tag_name)
         with tex.element ():
             with tex:
-                tex.hyperB (abstract_record.name)
+                tex.hyperB (abstract_record.type_name)
 
             if abstract_record.default_descendant:
                 reference = abstract_record.default_descendant.get_reference ()
                 with tex:
                     tex.Alink (reference.type_name)
                 with tex:
-                    tex.AddDoc (abstract_record.name)
+                    tex.AddDoc (abstract_record.type_name)
             else:
                 tex.add ()
                 tex.add ()
@@ -446,7 +446,7 @@ class LatexRecord (LatexItemFormatter):
             if reference_list:
                 with tex:
                     for reference in reference_list:
-                        tex.Alink (reference.get_reference ().name)
+                        tex.Alink (reference.get_reference ().type_name)
             else:
                 tex.add ()
 
@@ -557,7 +557,7 @@ class LatexArray (LatexUniversal):
             if type (subtype) == String:
                 tex.append (' (generic)')
 
-            if issubclass (subtype.__class__, DescriptionNode):
+            if issubclass (subtype.__class__, ComplexNode):
                 tex.append (': ')
                 tex.Alink (subtype.get ('type_name', 'name'))
             else:

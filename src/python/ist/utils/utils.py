@@ -2,15 +2,14 @@
 # author:   Jan Hybs
 
 
-
-
 class Field(object):
     """
     Helper class for Single Field in IST node
     """
-    def __init__(self, name, value=None, type=str):
+    def __init__(self, name, value=None, type=str, save_as=None):
         self.name = name
         self.value = value
+        self.save_as = save_as or self.name
         self.type = type if value is None else value.__class__
 
     def __repr__(self):

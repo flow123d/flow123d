@@ -20,7 +20,7 @@ class SimpleTableFormatter (object):
 
         self.bodyRows = []
         self.maxBodySize = None
-        self.headerFields = ("tag", "call count (max)", "max T", "min/max T", "avg T", "total T", "source", "line")
+        self.headerFields = ("tag", "call count", "max time", "max/min t", "avg time", "total", "source", "line")
         self.styles = {
             "linesep": os.linesep, "padding": 0,
             "min_width": 9, "colsep": '',
@@ -154,38 +154,23 @@ class SimpleTableFormatter (object):
             if str(json["file-path"]).startswith (self.styles.remove_prefix):
                 path = path[len (self.styles.remove_prefix):]
 
-            # safe average
-            if (json["call-count-sum"] != 0) :
-              avg_cumul_time = json["cumul-time-sum"] / json["call-count-sum"]
-            else: 
-              avg_cumul_time = json["cumul-time-sum"]
-              
-            # safe min max ratio  
-            cumul_time_max = max(json["cumul-time-max"], json["cumul-time-min"])
-            cumul_time_min = min(json["cumul-time-max"], json["cumul-time-min"])              
-            if (json["cumul-time-max"] > 0) :  
-              min_max_ratio = cumul_time_min / cumul_time_max
-            else:
-              min_max_ratio=0
-                            
             self.append_to_body ((
                 ("<", "{abs_prc:6.2f} {leading} {rel_prc:5.2f} {tag}".format (
                     abs_prc=abs_prc, leading=self.styles.leading_char * (level - 1), rel_prc=rel_prc, tag=json["tag"])),
-                ("^", "{:d}".format (json["call-count-max"])),
+                ("^", "{:d}".format (json["call-count"])),
                 ("^", "{:1.4f}".format (json["cumul-time-max"])),
-                ("^", "{:1.4f}".format (min_max_ratio)),
-                ("^", "{:1.4f}".format (avg_cumul_time)),
+                ("^", "{:1.4f}".format (json["cumul-time-max"] / json["cumul-time-min"])),
+                ("^", "{:1.4f}".format (json["cumul-time-sum"] / json["call-count-sum"])),
                 ("^", "{:1.4f}".format (json["cumul-time-sum"])),
                 ("<", "{path:s}, {function:s}()".format (function=json["function"], path=path)),
                 ("^", "{line:5d}".format (line=json["file-line"]))
             ))
 
-        #try:
-        if "children" in json:
-          for child in json["children"]:
-              self.process_body (child, level + 1)
-        #except Exception as e:
-        #    pass
+        try:
+            for child in json["children"]:
+                self.process_body (child, level + 1)
+        except Exception as e:
+            pass
 
     def timedelta_milliseconds (self, td):
         return td.days * 86400000 + td.seconds * 1000 + td.microseconds / 1000

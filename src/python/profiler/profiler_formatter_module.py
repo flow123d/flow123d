@@ -11,8 +11,10 @@ Package contains:
 
 @url https://github.com/flow123d/flow123d
 """
-
+import os
+import sys
 import system.versions
+from utils.logger import Logger
 
 system.versions.require_version_2 ()
 
@@ -20,6 +22,7 @@ import json
 import datetime
 import importlib
 
+logger = Logger(__name__)
 
 class ProfilerJSONDecoder (json.JSONDecoder):
     """Class overriding JSONDecoder which possess default python json decoding method.
@@ -111,48 +114,70 @@ class ProfilerFormatter (object):
                 pass
         return result
 
-    def convert (self, json_location, output_file=None, formatter="SimpleTableFormatter", styles=[]):
+    def convert(self, json_location, output_file=None, formatter="SimpleTableFormatter", styles=[]):
         """Converts file @ json_location to output_file (if set) using given formatter name"""
         # read file to JSON
-        #try:
-        with open (json_location, 'r') as fp:
-            jsonObj = json.load (fp, encoding="utf-8", cls=ProfilerJSONDecoder)
-        #except Exception as exception:
-        #    # return string with message on error
-        #    return str (exception)
+        logger.info('Processing file "%s"', json_location)
 
-        #try:
-        # split styles fields declaration
-        styles = [value.replace ('\\n', '\n').replace ('\\t', '\t').replace ('\\r', '\r') for value in styles]
-        styles = dict (item.split (":", 1) for item in styles)
-        # grab instance and hand over styles
-        instance = ProfilerFormatter.get_class_instance (formatter)
-        instance.set_styles (styles)
-        # format json object
-        output = instance.format (jsonObj)
-        #except Exception as exception:
-        #    # return string with message on error
-        #    return str (exception)
+        if not os.path.exists(json_location):
+            logger.error('File "%s" does not exists', json_location)
+            raise IOError('Empty json file {:s}'.format(json_location))
 
-        #try:
-        # if output file is specified write result there
-        if output_file is not None:
-            with open (output_file, "w") as fp:
-                fp.write (output)
-            print '{} file generated'.format (output_file)
-        # otherwise just print result to stdout
-        else:
-            print output
-        #except Exception as exception:
-        #    # return string with message on error
-        #    return str (exception)
+        try:
+            with open(json_location, 'r') as fp:
+                json_data = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
+
+                if not json_data:
+                    logger.error('Empty json file "%s"', json_location)
+                    raise IOError('Empty json file {:s}'.format(json_location))
+
+                if 'program-name' not in json_data:
+                    logger.error('No "program-name" field in json file "%s"', json_location)
+                    raise IOError('No "program-name" field in json file {:s}'.format(json_location))
+
+                if json_data['program-name'] != 'Flow123d':
+                    logger.error('Incorrect "program-name" value in json file "%s"', json_location)
+                    raise IOError('Incorrect "program-name" value in json file {:s}'.format(json_location))
+
+        except Exception as ex:
+            # return string with message on error
+            logger.exception('Error while parsing json file ' + json_location, ex)
+            logger.error("File size: %d %s", os.stat(json_location).st_size, str(os.stat(json_location)))
+            raise ex
 
 
-        # return True on success
-        #return True
+        try:
+            # split styles fields declaration
+            styles = [value.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r') for value in styles]
+            styles = dict(item.split(":", 1) for item in styles)
+            # grab instance and hand over styles
+            instance = ProfilerFormatter.get_class_instance(formatter)
+            instance.set_styles(styles)
+            # format json object
+            output = instance.format(json_data)
+        except Exception as ex:
+            # return string with message on error
+            logger.exception('Error while formatting file ' + json_location, ex)
+            raise ex
+
+        try:
+            # if output file is specified write result there
+            if output_file is not None:
+                with open(output_file, "w") as fp:
+                    fp.write(output)
+                logger.info('File "%s" generated', output_file)
+            # otherwise just print result to stdout
+            else:
+                print output
+        except Exception as ex:
+            # return string with message on error
+            logger.exception('Cannot save file ' + output_file, ex)
+            raise ex
+
+        return True
 
 
 def convert (json_location, output_file, formatter):
-  """Simple iface method for c api"""
-  fmt = ProfilerFormatter ()
-  return fmt.convert (json_location, output_file, formatter)
+    """Simple iface method for c api"""
+    fmt = ProfilerFormatter ()
+    return fmt.convert (json_location, output_file, formatter)

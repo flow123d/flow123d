@@ -2,13 +2,16 @@
 # author:   Jan Hybs
 
 #
-import json, datetime
+from __future__ import absolute_import
 
+import json, datetime
 from ist.formatters.json2html import HTMLFormatter
 from ist.formatters.json2latex import LatexFormatter
 from ist.nodes import TypedList
 from ist.utils.htmltree import htmltree
 
+from utils.logger import Logger
+logger = Logger(__name__)
 
 class ProfilerJSONDecoder(json.JSONDecoder):
     def decode(self, json_string):

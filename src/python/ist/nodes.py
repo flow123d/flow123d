@@ -11,34 +11,16 @@ class ISTNode(object):
     # type of the object (similar to __class__.__name__)
     __type__ = ''
 
-    # name of the field, which stores value by which can be this object searched
-    __name_field__ = ''
+    # simple fields
+    _fields = [
+        Field('id'),
+        Field('type_name'),
+        Field('input_type'),
+    ]
 
-    # name of the field, which stores value, which is the most important to this object
-    __value_field__ = ''
+    def __init__(self):
+        pass
 
-    _fields = []
-
-
-    def get_name(self):
-        """
-        :return: node name based on class __name__ field
-        """
-        return getattr(self, self.__name_field__)
-
-
-    def get_type(self):
-        """
-        :return: node  __type__ field
-        """
-        return self.__type__
-
-
-    def get_value(self):
-        """
-        :return: node value based on class __value_field__ field
-        """
-        return getattr(self, self.__value_field__)
 
     def parse(self, o={ }):
         """
@@ -58,7 +40,7 @@ class ISTNode(object):
                 value = o.get(field.name)
 
             # create attribute on class instance
-            self.__setattr__(field.name, value)
+            self.__setattr__(field.save_as, value)
             if field.name == 'id' and value is not None:
                 Globals.items[value] = self
 
@@ -85,7 +67,6 @@ class ISTNode(object):
 
         raise Exception('no valid attribute within {} found on {}'.format(args, self.__class__.__name__))
 
-
     def copy(self):
         """
         Return copy of this instance
@@ -94,7 +75,7 @@ class ISTNode(object):
         return self.__class__()
 
     def __repr__(self):
-        return '<{self.__class__.__name__} {self._fields}>'.format(self=self)
+        return '<{self.__class__.__name__}[{self.id}] {self._fields}>'.format(self=self)
 
 
 class Reference(ISTNode):
@@ -102,9 +83,12 @@ class Reference(ISTNode):
     Class representing reference object
     """
     __type__ = 'Reference'
-    __value_field__ = 'ref_id'
 
-    def parse(self, o=''):
+    def __init__(self):
+        self.ref_id = None
+
+
+    def parse(self, o={ }):
         self.ref_id = o
         return self
 
@@ -129,8 +113,6 @@ class NumberRange(ISTNode):
     Class representing simple number range
     """
     __type__ = 'Range'
-    __name_field__ = ''
-    __value_field__ = ''
 
     def __init__(self, always_visible=True):
         super(NumberRange, self).__init__()
@@ -154,7 +136,7 @@ class NumberRange(ISTNode):
 
     def is_pointless(self):
         """
-        Wheather is information within this instance beneficial
+        Whether is information within this instance beneficial
         """
         return self._format() in ('[0, ]', '[, ]', '(-inf, +inf)')
 
@@ -188,7 +170,6 @@ class DoubleRange(NumberRange):
     Class representing Double number range
     """
     __type__ = 'Range'
-    __name_field__ = ''
 
     def __init__(self, always_visible=False):
         super(DoubleRange, self).__init__(always_visible)
@@ -200,77 +181,48 @@ class DoubleRange(NumberRange):
         return DoubleRange(self.always_visible)
 
 
-class AbstractNode(ISTNode):
-    """
-    Abstract node for more complex nodes
-    """
-    _fields = ISTNode._fields + [
-        Field('id'),
-        Field('input_type')
-    ]
-
-
-class Attribute(AbstractNode):
+class Attribute(ISTNode):
     """
     Class representing attribute node
     """
     __type__ = 'Attribute'
-    __name_field__ = 'name'
-    __value_field__ = 'value'
-
-    _fields = AbstractNode._fields + [
-        Field('name'),
-        Field('value')
-    ]
 
 
-class DescriptionNode(AbstractNode):
+class AttributeNode(ISTNode):
     """
-    Class representing node with description
-    """
-    _fields = AbstractNode._fields + [
-        Field('description')
-    ]
-
-
-class ComplexNode(DescriptionNode):
-    """
-    Class representing the most complex nodes (records and similar)
+    Class representing the most complex nodes (records selections abstract)
 with description and supporting attributes
     """
-    _fields = DescriptionNode._fields + [
+    _fields = ISTNode._fields + [
         Field('attributes', AttributeDict(Attribute))
     ]
 
 
-class SelectionValue(DescriptionNode):
+class SelectionValue(AttributeNode):
     """
     Class representing selection node
     """
     __type__ = 'Selection value'
-    __name_field__ = 'name'
-    __value_field__ = 'name'
 
-    _fields = DescriptionNode._fields + [
+    _fields = AttributeNode._fields + [
+        Field('description'),
         Field('name')
     ]
 
 
-class RecordKeyDefault(AbstractNode):
+class RecordKeyDefault(ISTNode):
     """
     Class representing default value in record key
     """
     __type__ = 'Defaults'
-    __name_field__ = ''
-    __value_field__ = 'value'
 
-    _fields = AbstractNode._fields + [
+    _fields = [
         Field('type'),
         Field('value')
     ]
 
 
-class RecordKey(DescriptionNode):
+class RecordKey(ISTNode):
     """
     Class representing one record key
     """
@@ -278,31 +230,25 @@ class RecordKey(DescriptionNode):
     __name_field__ = 'key'
     __value_field__ = 'default'
 
-    _fields = DescriptionNode._fields + [
+    _fields = [
         Field('key'),
         Field('type', Reference()),
-        Field('default', RecordKeyDefault())
+        Field('default', RecordKeyDefault()),
+        Field('description')
     ]
 
     def include_in_format(self):
         return self.key.find('TYPE') == -1
 
 
-class String(AbstractNode):
+class String(AttributeNode):
     """
     Class representing string
     """
     __type__ = 'String'
-    __name_field__ = ''
-    __value_field__ = 'name'
-
-    _fields = AbstractNode._fields + [
-        Field('name'),
-        Field('full_name')
-    ]
 
 
-class Double(AbstractNode):
+class Double(AttributeNode):
     """
     Class representing double
     """
@@ -310,14 +256,12 @@ class Double(AbstractNode):
     __name_field__ = ''
     __value_field__ = 'range'
 
-    _fields = AbstractNode._fields + [
-        Field('name'),
-        Field('full_name'),
+    _fields = AttributeNode._fields + [
         Field('range', DoubleRange())
     ]
 
 
-class Integer(AbstractNode):
+class Integer(AttributeNode):
     """
     Class representing int
     """
@@ -325,14 +269,12 @@ class Integer(AbstractNode):
     __name_field__ = ''
     __value_field__ = 'range'
 
-    _fields = AbstractNode._fields + [
-        Field('name'),
-        Field('full_name'),
+    _fields = AttributeNode._fields + [
         Field('range', NumberRange())
     ]
 
 
-class FileName(AbstractNode):
+class FileName(AttributeNode):
     """
     Class representing filename type
     """
@@ -340,28 +282,22 @@ class FileName(AbstractNode):
     __name_field__ = ''
     __value_field__ = 'file_mode'
 
-    _fields = AbstractNode._fields + [
-        Field('name'),
-        Field('full_name'),
+    _fields = AttributeNode._fields + [
         Field('file_mode')
     ]
 
 
-class Bool(AbstractNode):
+class Bool(AttributeNode):
     """
     Class representing boolean
     """
     __type__ = 'Bool'
-    __name_field__ = ''
-    __value_field__ = ''
 
-    _fields = AbstractNode._fields + [
-        Field('name'),
-        Field('full_name')
+    _fields = AttributeNode._fields + [
     ]
 
 
-class Array(AbstractNode):
+class Array(AttributeNode):
     """
     Class representing Array structure
     """
@@ -369,10 +305,24 @@ class Array(AbstractNode):
     __name_field__ = ''
     __value_field__ = 'range'
 
-    _fields = AbstractNode._fields + [
+    _fields = AttributeNode._fields + [
         Field('range', NumberRange(False)),
         Field('subtype', Reference())
     ]
+
+
+class ComplexNode(AttributeNode):
+    """
+    Class for Record, Selection and AbstracRecord
+    """
+    __type__ = 'Complex type'
+
+    _fields = AttributeNode._fields + [
+        Field('description')
+    ]
+
+    def __repr__(self):
+        return '<{self.__class__.__name__}[{self.id}] {self.type_name}>'.format(self=self)
 
 
 class Record(ComplexNode):
@@ -380,13 +330,8 @@ class Record(ComplexNode):
     Class representing record node in IST
     """
     __type__ = 'Record'
-    __name_field__ = 'type_name'
-    __value_field__ = 'type_name'
 
     _fields = ComplexNode._fields + [
-        Field('type_name'),
-        Field('input_type'),
-        Field('type_full_name'),
         Field('keys', TypedList(RecordKey)),
         Field('implements', TypedList(Reference)),
         Field('reducible_to_key')
@@ -398,14 +343,10 @@ class AbstractRecord(ComplexNode):
     Class representing AbstractRecord node in IST
     """
     __type__ = 'AbstractRecord'
-    __name_field__ = 'name'
-    __value_field__ = 'name'
 
-    _fields = Record._fields + [
+    _fields = ComplexNode._fields + [
         Field('implementations', TypedList(Reference)),
         Field('default_descendant', Reference()),
-        Field('full_name'),
-        Field('name')
     ]
 
 
@@ -414,31 +355,25 @@ class Selection(ComplexNode):
     Class representing Selection node in IST
     """
     __type__ = 'Selection'
-    __name_field__ = 'name'
-    __value_field__ = 'name'
 
     _fields = ComplexNode._fields + [
         Field('values', TypedList(SelectionValue)),
-        Field('name'),
-        Field('full_name')
     ]
 
     def include_in_format(self):
-        return self.name.find('TYPE') == -1
+        return self.type_name.find('TYPE') == -1
 
-class Parameter(AbstractNode):
+
+class Parameter(AttributeNode):
     """
     Class representing Parameter node in IST
     """
     __type__ = 'Selection'
-    __name_field__ = 'name'
-    __value_field__ = 'name'
 
-    _fields = AbstractNode._fields + [
-        Field('name'),
+    _fields = AttributeNode._fields + [
     ]
 
-# all acceptable input_type
+# all acceptable input_type values
 registered_nodes = {
     'Record': Record,
     'AbstractRecord': AbstractRecord,
