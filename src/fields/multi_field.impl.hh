@@ -66,12 +66,12 @@ bool MultiField<spacedim, Value>::set_time(
 	}
 
 	// set time for sub fields
-	bool any=false;
+	set_time_result_ = TimeStatus::constant;
 	for( SubFieldType &field : sub_fields_) {
-		if (field.set_time(time))
-			any = true;
+        if (field.set_time(time))
+            set_time_result_ = TimeStatus::changed;
 	}
-    return any;
+    return (set_time_result_ == TimeStatus::changed);
 }
 
 
