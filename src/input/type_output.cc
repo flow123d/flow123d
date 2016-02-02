@@ -524,6 +524,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
     for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
         string dft_type, dft_value;
         get_default(it, dft_type, dft_value);
+        if (dft_type != "value at declaration") 
+            dft_value = "\"" + escape_description(dft_value) + "\"";
 
         if (it != type->begin()) {
             stream << "," << endl;
