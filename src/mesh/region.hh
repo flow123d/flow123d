@@ -206,7 +206,8 @@ protected:
  * Regions stored in region set are always unique
  */
 typedef std::vector<Region> RegionSet;
-
+/// Type representing a map of RegionSets.
+typedef std::map<std::string, RegionSet > RegionSetTable;
 
 
 /**
@@ -598,7 +599,7 @@ private:
     unsigned int n_bulk_;
 
     /// Map of region sets
-    std::map<std::string, RegionSet > sets_;
+    RegionSetTable sets_;
 
     /// Make part of general RegionSet table.
     RegionSet all, bulk, boundary;

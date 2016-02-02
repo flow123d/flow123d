@@ -284,7 +284,7 @@ unsigned int RegionDB::bulk_size() const {
 
 
 void RegionDB::add_to_set( const string& set_name, Region region) {
-	std::map<std::string, RegionSet>::iterator it = sets_.find(set_name);
+	RegionSetTable::iterator it = sets_.find(set_name);
 
 	if (it == sets_.end()) {
 		RegionSet set;
@@ -352,8 +352,8 @@ RegionSet RegionDB::difference( const string & set_name_1, const string & set_na
 
 void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_2,
 		RegionSet & set_1, RegionSet & set_2) const {
-	std::map<std::string, RegionSet>::const_iterator it_1 = sets_.find(set_name_1);
-	std::map<std::string, RegionSet>::const_iterator it_2 = sets_.find(set_name_2);
+	RegionSetTable::const_iterator it_1 = sets_.find(set_name_1);
+	RegionSetTable::const_iterator it_2 = sets_.find(set_name_2);
 
 	if ( it_1 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_1)); }
 	if ( it_2 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_2)); }
@@ -384,7 +384,7 @@ std::vector<string> RegionDB::get_and_check_operands(const Input::Array & operan
 
 
 RegionSet RegionDB::get_region_set(const string & set_name) const {
-	std::map<std::string, RegionSet>::const_iterator it = sets_.find(set_name);
+	RegionSetTable::const_iterator it = sets_.find(set_name);
 	if ( it == sets_.end() ) {
 		return RegionSet();
 	}
@@ -574,7 +574,7 @@ void RegionDB::print_region_table(ostream& stream) const {
 	stream << endl << "----------- Table of all regions: -----------" << endl;
 	stream << std::setfill(' ') << setw(6) << "id" << " dim label" << setw(12) << "" << "contains regions" << endl;
 	// print data
-	for (std::map<std::string, RegionSet>::const_iterator it = sets_.begin(); it != sets_.end(); ++it) { // iterates through RegionSets
+	for (RegionSetTable::const_iterator it = sets_.begin(); it != sets_.end(); ++it) { // iterates through RegionSets
 		unsigned int reg_id = RegionIdx::undefined;
 		string rset_label = it->first;
 		LabelIter label_it = region_table_.get<Label>().find(rset_label);
