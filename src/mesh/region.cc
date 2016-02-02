@@ -85,7 +85,7 @@ const unsigned int RegionDB::undefined_dim = 10;
 
 /// Default constructor
 RegionDB::RegionDB()
-: closed_(false), n_boundary_(0), n_bulk_(0)  {
+: closed_(false), n_boundary_(0), n_bulk_(0), max_index_(0)  {
 
     // adding implicit boundary and bulk regions
     // How to deal with dimension, clean solution is to have implicit region for every
@@ -526,6 +526,9 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
 	if ( ! region_table_.insert( RegionItem(index, id, label, dim) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
+	if (max_index_ < id) {
+		max_index_ = id;
+	}
 
 	Region reg = Region(index, *this);
 	RegionSet region_set;

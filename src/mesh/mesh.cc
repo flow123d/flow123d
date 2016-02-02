@@ -767,8 +767,13 @@ void Mesh::read_regions_from_input(Input::Array region_list)
 		reg_ptr = (*it).factory< RegionSetBase, const Input::Record &, Mesh * >(*it, this);
 		reg_ptr.reset();
 	}
+}
 
-	this->region_db_.close();
+void Mesh::check_and_finish()
+{
+	modify_element_ids(region_db_.el_to_reg_map_);
+	region_db_.el_to_reg_map_.clear();
+	region_db_.close();
 }
 
 //-----------------------------------------------------------------------------

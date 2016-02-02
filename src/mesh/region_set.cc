@@ -16,7 +16,8 @@ namespace IT = Input::Type;
  */
 
 RegionSetBase::RegionSetBase(Mesh *mesh)
-: region_db_(mesh->region_db_) {}
+: region_db_(mesh->region_db_),
+  el_to_reg_map_(mesh->region_db_.el_to_reg_map_) {}
 
 IT::Abstract & RegionSetBase::get_input_type() {
 	return IT::Abstract("Region", "Abstract record for Region.")
@@ -110,28 +111,38 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 {
 	unsigned int region_id;
 	string region_label = rec.val<string>("name");
+	Region reg = mesh->region_db().find_label(region_label);
 
 	Input::Iterator<unsigned int> it = rec.find<unsigned int>("id");
-	if (it) {
-		region_id = (*it);
+
+	if ( reg.is_valid() ) { // region with the specified label exists
+		region_id = reg.id();
+		if (it) {
+			if ( region_id != (*it) )
+				THROW( ExcInconsistentLabelId() << EI_Label(region_label) << EI_ID( *it ) << rec.ei_address()  );
+		}
 	} else {
-		Region reg = mesh->region_db().find_label(region_label);
-		if ( reg.is_valid() ) region_id = reg.id();
-		else THROW( ExcNonexistingLabel() << EI_Region_Label(region_label) );
+		if (it) {
+			region_id = (*it);
+		} else {
+			region_id = this->get_max_region_index();
+		}
+		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim);
 	}
 
-	region_db_.add_region(region_id, region_label);
-
-    Input::Array element_list;
+	Input::Array element_list;
 	if (rec.opt_val("element_list", element_list) ) {
 		std::vector<unsigned int> element_ids;
 		for (Input::Iterator<unsigned int> it_element = element_list.begin<unsigned int>();
 				it_element != element_list.end();
 		        ++it_element) {
-			element_ids.push_back( *it_element );
+			std::map<unsigned int, unsigned int>::iterator it_map = el_to_reg_map_.find((*it_element));
+			if (it_map != el_to_reg_map_.end()) {
+				xprintf(Warn, "Element with id %u has rewrite region.\n", (*it_element));
+			}
+			el_to_reg_map_.insert( std::make_pair((*it_element), region_id) );
 
 		}
-		mesh->modify_element_ids(region_id, element_ids);
 	}
 }
 

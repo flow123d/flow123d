@@ -379,6 +379,8 @@ public:
     /**
      * As the previous, but generates automatic label of form 'region_ID' if the region with same ID is not already present. Set bulk region.
      * Meant to be used when reading elements from MSH file. Again, if the region is defined already, we just check consistency.
+     *
+     * TODO: check and make revision of this method according to a new conception of regions.
      */
     Region add_region(unsigned int id, unsigned int dim);
 
@@ -597,6 +599,8 @@ private:
     unsigned int n_boundary_;
     /// Number of bulk regions
     unsigned int n_bulk_;
+    /// Maximal value of Region::id()
+    unsigned int max_index_;
 
     /// Map of region sets
     RegionSetTable sets_;
@@ -609,6 +613,11 @@ private:
      * that are not explicitly in the mesh file.
      */
     Region implicit_bulk_, implicit_boundary_;
+
+    /**
+     * Represents the relevance of elements to regions. Defined by user in input file.
+     */
+    MapElementIDToRegionID el_to_reg_map_;
 
     /**
      * Prepare region sets for union, intersection and difference operation.
@@ -650,6 +659,8 @@ private:
     	return (label.size() != 0) && (label[0] == '.');
     }
 
+    friend class Mesh;
+    friend class RegionSetBase;
 };
 
 
