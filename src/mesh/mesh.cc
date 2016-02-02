@@ -219,6 +219,7 @@ void Mesh::read_gmsh_from_stream(istream &in, bool close_region_db) {
     START_TIMER("Reading mesh - from_stream");
     
     GmshMeshReader reader(in);
+    reader.read_physical_names(this);
     reader.read_mesh(this);
     setup_topology();
     //close region_db_.
@@ -241,6 +242,7 @@ void Mesh::init_from_input() {
 
     // read raw mesh, add regions from GMSH file
     GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
+    reader.read_physical_names(this);
     reader.read_mesh(this);
     // possibly add implicit_boundary region.
     setup_topology();

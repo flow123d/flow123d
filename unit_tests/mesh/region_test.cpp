@@ -5,17 +5,16 @@
  *      Author: jb
  */
 
-#define TEST_USE_PETSC
-#include <flow_gtest_mpi.hh>
+#include <flow_gtest.hh>
 
 #include "mesh/region.hh"
 #include "mesh/mesh.h"
 #include "mesh/region_set.hh"
+#include "mesh/msh_gmshreader.h"
 #include "input/type_base.hh"
 #include "input/type_output.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
-#include "system/sys_profiler.hh"
 #include <map>
 
 #include <boost/lexical_cast.hpp>
@@ -309,12 +308,11 @@ const string read_new_regions = R"JSON(
 TEST(NewRegion, read_new_regions) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Profiler::initialize();
-
     FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    GmshMeshReader reader(mesh_file);
     Mesh * mesh = new Mesh;
-    ifstream in(string( mesh_file ).c_str());
-    mesh->read_gmsh_from_stream(in, false);
+	reader.read_physical_names(mesh);
+	reader.read_mesh(mesh);
 
 	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
 	Input::ReaderToStorage json_reader( read_new_regions, element_map_array_input_type, Input::FileFormat::format_JSON);

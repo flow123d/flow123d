@@ -30,6 +30,7 @@ TEST(GMSHReader, read_mesh_from_stream) {
     Mesh mesh;
     GmshMeshReader reader(ss);
 
+    reader.read_physical_names(&mesh);
     reader.read_mesh(&mesh);
 
     EXPECT_EQ(9, mesh.n_elements());
@@ -48,6 +49,7 @@ TEST(GMSHReader, read_mesh_from_file) {
     Mesh mesh;
     GmshMeshReader reader(mesh_file);
 
+    reader.read_physical_names(&mesh);
     reader.read_mesh(&mesh);
 
     EXPECT_EQ(216, mesh.n_elements());
@@ -64,6 +66,7 @@ TEST(GMSHReader, get_element_data) {
     FilePath mesh_file("fields/simplest_cube_data.msh", FilePath::input_file);
 
     Mesh mesh;
+    ReaderInstances::instance()->get_reader(mesh_file)->read_physical_names(&mesh);
     ReaderInstances::instance()->get_reader(mesh_file)->read_mesh(&mesh);
 
     std::vector<int> el_ids;
@@ -201,6 +204,7 @@ TEST(ReaderInstances, get_reader) {
 		FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
 		std::shared_ptr<GmshMeshReader> mesh_reader = ReaderInstances::instance()->get_reader(mesh_file);
 
+		reader.read_physical_names(&mesh);
 		mesh_reader->read_mesh(&mesh);
 		EXPECT_EQ(118, mesh.n_nodes());
 	}
@@ -210,6 +214,7 @@ TEST(ReaderInstances, get_reader) {
 		FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
 		std::shared_ptr<GmshMeshReader> mesh_reader = ReaderInstances::instance()->get_reader(mesh_file);
 
+		reader.read_physical_names(&mesh);
 		mesh_reader->read_mesh(&mesh);
 		EXPECT_EQ(8, mesh.n_nodes());
 	}
