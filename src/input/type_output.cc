@@ -205,6 +205,14 @@ void OutputBase::clear_processed_types() {
 }
 
 
+bool OutputBase::was_written(std::size_t hash)
+{
+    bool in_set = ( processed_types_hash_.find(hash) != processed_types_hash_.end() );
+    if (! in_set) processed_types_hash_.insert(hash);
+    return in_set;
+}
+
+
 
 
 /*******************************************************************
@@ -428,6 +436,17 @@ void OutputText::print_impl(ostream& stream, const Parameter *type) {
  */
 
 
+OutputJSONMachine::OutputJSONMachine(const Record &root_type, RevNumData rev_num_data) 
+: OutputBase()
+{
+    root_type_ =  root_type;
+    rev_num_data_ = rev_num_data;
+
+    format_head="{ \"version\" :";
+    format_inner=",\n\"ist_nodes\" : [\n";
+    format_full_hash="{}],\n";
+    format_tail="}\n";
+}
 
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
@@ -461,6 +480,7 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 	print_program_info(stream);
 	stream << format_inner;
 
+    print_base( stream, &root_type_);
 	for (Input::TypeRepository<Selection>::TypeRepositoryMapIter it = Input::TypeRepository<Selection>::get_instance().begin();
 			it != Input::TypeRepository<Selection>::get_instance().end(); ++it) {
 		print_base( stream, it->second.get() );
