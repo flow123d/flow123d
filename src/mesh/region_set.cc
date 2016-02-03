@@ -33,9 +33,26 @@ IT::Abstract & RegionSetBase::get_input_type() {
 RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 : RegionSetBase(mesh)
 {
+	Region reg;
 	string region_label = rec.val<string>("name");
 	unsigned int region_id = rec.val<unsigned int>("id");
-	region_db_.add_region(region_id, region_label);
+
+	reg = mesh->region_db().find_label(region_label);
+	if ( reg.is_valid() ) {
+		if ( region_id != reg.id() )
+			THROW( ExcInconsistentLabelId() << EI_Label(region_label) << EI_ID( region_id ) << rec.ei_address() );
+	} else {
+		try {
+			reg = mesh->region_db().find_id(region_id);
+		} catch(RegionDB::ExcUniqueRegionId &e) {
+			e << rec.ei_address();
+		}
+		if ( reg.is_valid() ) {
+			region_db_.rename_region(reg, region_label);
+		} else {
+			THROW( ExcAddFromIdRegion() << EI_Label(region_label) << EI_ID(region_id) << rec.ei_address() );
+		}
+	}
 }
 
 
@@ -66,18 +83,14 @@ const int RegionSetFromId::registrar =
 RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 : RegionSetBase(mesh)
 {
-	string region_name;
+	string new_name = rec.val<string>("name");
 	string mesh_label = rec.val<string>("mesh_label");
-	if ( !rec.opt_val<string>("name", region_name) ) {
-		region_name = mesh_label;
-	}
 
 	Region reg = mesh->region_db().find_label(mesh_label);
-	if (reg == Region()) {
-		xprintf(Warn, "Unknown region in mesh with label '%s'\n", mesh_label.c_str());
+	if ( reg.is_valid() ) {
+		region_db_.rename_region(reg, new_name);
 	} else {
-		unsigned int region_id = reg.id();
-		region_db_.add_region(region_id, region_name);
+		xprintf(Warn, "Unknown region in mesh with label '%s'\n", mesh_label.c_str());
 	}
 }
 
@@ -87,7 +100,7 @@ const IT::Record & RegionSetFromLabel::get_region_input_type()
 {
     return IT::Record("From_Label", "Region declared by mesh_label and name.")
         .derive_from(RegionSetBase::get_input_type())
-		.declare_key("name", IT::String(),
+		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
 		.declare_key("mesh_label", IT::String(), IT::Default::obligatory(),
 				"The mesh_label is e.g. physical volume name in GMSH format.")
