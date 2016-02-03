@@ -262,6 +262,7 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
+    OutputJSONMachine(RevNumData rev_num_data);
 	OutputJSONMachine(const Record &root_type, RevNumData rev_num_data);
 
 	ostream& print(ostream& stream) override;

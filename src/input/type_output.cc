@@ -435,17 +435,23 @@ void OutputText::print_impl(ostream& stream, const Parameter *type) {
  * implementation of OutputJSONMachine
  */
 
-
-OutputJSONMachine::OutputJSONMachine(const Record &root_type, RevNumData rev_num_data) 
+OutputJSONMachine::OutputJSONMachine(RevNumData rev_num_data) 
 : OutputBase()
-{
-    root_type_ =  root_type;
+{    
     rev_num_data_ = rev_num_data;
 
     format_head="{ \"version\" :";
     format_inner=",\n\"ist_nodes\" : [\n";
     format_full_hash="{}],\n";
-    format_tail="}\n";
+    format_tail="}\n";   
+}
+
+
+
+OutputJSONMachine::OutputJSONMachine(const Record &root_type, RevNumData rev_num_data) 
+: OutputJSONMachine(rev_num_data)
+{
+    root_type_ =  root_type;
 }
 
 
