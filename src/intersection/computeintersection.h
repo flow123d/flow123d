@@ -30,6 +30,8 @@ template<unsigned int, unsigned int> class IntersectionPoint;
  * Remove init() methods.
  * Wouldn't a flag for final dimension object help code structure?
  * 
+ * When solve allocating plucker products, solve also destroying plucker coordinates.
+ * 
  * @brief Computes the intersection of an abscissa and a triangle.
  */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
