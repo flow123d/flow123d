@@ -90,8 +90,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(Inters
     // compute local barycentric coordinates of IP: see formula (3) on pg. 12 in BP VF
     // local alfa = w2/sum; local beta = w1/sum; => local barycentric coordinates in the triangle
     // where sum = w0+w1+w2
-    
-    double w_sum = 0;
+
     // plucker products with correct signs according to ref_element, ordered by sides
     double w[3] = {signed_plucker_product(0),
                    signed_plucker_product(1),
@@ -298,12 +297,12 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< 
         compute_plucker(IP);
         
         // if computing 1d-2d intersection as final product, cut the line
-        arma::vec::fixed<2> theta;
+        arma::vec2 theta;
         double t = IP.local_bcoords_A()[1];
         if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
                 // possibly set abscissa vertex {0,1}
-                if( fabs(t) <= geometry_epsilon)       { theta = {1,0}; IP.set_topology_A(0,0);}
-                else if(fabs(1-t) <= geometry_epsilon) { theta = {0,1}; IP.set_topology_A(1,0);}
+                if( fabs(t) <= geometry_epsilon)       { theta = {1,0}; IP.set_topology_A(0,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
+                else if(fabs(1-t) <= geometry_epsilon) { theta = {0,1}; IP.set_topology_A(1,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
                 IP12s.push_back(IP);
                 return true;
         }
