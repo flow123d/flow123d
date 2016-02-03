@@ -300,7 +300,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< 
         arma::vec2 theta;
         double t = IP.local_bcoords_A()[1];
         if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
-                // possibly set abscissa vertex {0,1}
+                // possibly set abscissa vertex {0,1} - not probabilistic
                 if( fabs(t) <= geometry_epsilon)       { theta = {1,0}; IP.set_topology_A(0,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
                 else if(fabs(1-t) <= geometry_epsilon) { theta = {0,1}; IP.set_topology_A(1,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
                 IP12s.push_back(IP);
@@ -502,13 +502,13 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 
         if(t1 == 0) // interpolate IP a1
         {
-            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
-                                                                                              a2.local_bcoords_B(), 
-                                                                                              a1.local_bcoords_A()[1],
-                                                                                              a2.local_bcoords_A()[1], 
-                                                                                              t1);
-            arma::vec::fixed<2> inter({1 - t1, t1});    // barycentric coords
-            a1.set_coordinates(inter,interpolovane);
+            arma::vec4 local_tetra = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
+                                                                                   a2.local_bcoords_B(), 
+                                                                                   a1.local_bcoords_A()[1],
+                                                                                   a2.local_bcoords_A()[1], 
+                                                                                   t1);
+            arma::vec2 local_abscissa({1 - t1, t1});    // abscissa local barycentric coords
+            a1.set_coordinates(local_abscissa,local_tetra);
 //             DBGMSG("E-E 0\n");
             // set topology: node 0 of the line, tetrahedron
             a1.set_topology(0, 0, 0,3);
@@ -521,13 +521,13 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
         }
         else if(t2 == 1) // interpolate IP a2
         {
-            arma::vec::fixed<4> interpolovane = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
-                                                                                              a2.local_bcoords_B(), 
-                                                                                              a1.local_bcoords_A()[1],
-                                                                                              a2.local_bcoords_A()[1], 
-                                                                                              t2);
-            arma::vec::fixed<2> inter({1 - t2, t2});      // barycentric coords
-            a2.set_coordinates(inter,interpolovane);
+            arma::vec4 local_tetra = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
+                                                                                   a2.local_bcoords_B(), 
+                                                                                   a1.local_bcoords_A()[1],
+                                                                                   a2.local_bcoords_A()[1], 
+                                                                                   t2);
+            arma::vec2 local_abscissa({1 - t2, t2});    // abscissa local barycentric coords
+            a2.set_coordinates(local_abscissa,local_tetra);
 //             DBGMSG("E-E 1\n");
             // set topology: node 1 of the line, tetrahedron
             a2.set_topology(1, 0, 0,3);
@@ -630,8 +630,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(computeintersection::I
 	std::vector<IntersectionPoint<1,3>> IP13s;
 	unsigned int pocet_13_pruniku;
 
-	for(unsigned int i = 0; i < RefElement<2>::n_lines;i++){    // go through triangle lines
-		pocet_13_pruniku = CI13[(3-i)%3].compute(IP13s);
+	for(unsigned int triangle_line = 0; triangle_line < RefElement<2>::n_lines; triangle_line++){    // go through triangle lines
+		pocet_13_pruniku = CI13[triangle_line].compute(IP13s);
         ASSERT(pocet_13_pruniku < 3, "Impossible number of intersection.");
 //         DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
         
@@ -639,14 +639,14 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(computeintersection::I
             IntersectionPoint<1,3> IP (IP13s[IP13s.size()-n]);
             
             IntersectionPoint<3,1> IP31(IP);             // switch idx_A and idx_B and coords
-            IntersectionPoint<3,2> IP32(IP31, (3-i)%3);  // interpolation uses local_bcoords_B and given idx_B
+            IntersectionPoint<3,2> IP32(IP31, triangle_line);  // interpolation uses local_bcoords_B and given idx_B
             IntersectionPoint<2,3> IP23(IP32);           // switch idx_A and idx_B and coords back
             
             if( IP.dim_A() == 0 ) // if IP is vertex of triangle
             {
-                // we are on line (3-i)%3 of the triangle, and IP.idx_A contains local node of the line
+                // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
-                IP23.set_topology_A(RefElement<2>::interact<0,1>((3-i)%3)[IP.idx_A()], 0);
+                IP23.set_topology_A(RefElement<2>::interact<0,1>(triangle_line)[IP.idx_A()], 0);
             }
             
             local_polygon.add_ipoint(IP23);
@@ -663,17 +663,17 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(computeintersection::I
 		CI12[5].set_plucker_product(CI13[i].get_plucker_product(2,2),i);
 	}
 
-	for(unsigned int i = 0; i < 6;i++){
-		if(CI12[i].compute(IP12s, false)){
+	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++){
+		if(CI12[tetra_edge].compute(IP12s, false)){
             IntersectionPoint<1,2> IP = IP12s.back();
             // Check whether the IP is on the abscissa (side of triangle)
 			if((IP.local_bcoords_A())[0] <= 1 && (IP.local_bcoords_A())[0] >= 0){
 // 				DBGMSG("CI23: number of 1-2 intersections = %d\n",pocet_pruniku);
 				IntersectionPoint<2,1> IP21(IP);
-				IntersectionPoint<2,3> IP23(IP21,i);
+				IntersectionPoint<2,3> IP23(IP21,tetra_edge);
                 
                 if(IP.dim_A() == 0) // IP is vertex of line (i.e. line of tetrahedron)
-                    IP23.set_topology_B(RefElement<3>::interact<0,1>(i)[IP.idx_A()], 0);
+                    IP23.set_topology_B(RefElement<3>::interact<0,1>(tetra_edge)[IP.idx_A()], 0);
                 
 				//IP23.print();
 				local_polygon.add_ipoint(IP23);
