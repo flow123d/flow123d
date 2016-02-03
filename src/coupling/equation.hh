@@ -69,24 +69,45 @@ public:
 
     /**
      * Common initialization constructor.
+     * Implementation of particular equation should set just basic things in the constructor and postpone
+     * its initialization including initialization of its fields to the initialize method. The reason is
+     * that when the equation is part of a coupling the coupling may set some setting of the equation from
+     * the coupling level so that initialization use correct parameters.
+     * TODO: Which mechanism we use to pass setting form the coupling to its equations. Either use dedicated setters
+     * this however prevent generic coupling or use input storage to set data from upper level.
      */
     EquationBase(Mesh &mesh, const Input::Record in_rec);
+
+
+    /**
+     * This method should initialize fields of the equation.
+     * All members (e.g. number of components) that are necessary for the field initialization must be set
+     * between construction and call of initialize.
+     * After this method the upper level coupling may set sharing of some fields between equations.
+     */
+    virtual void initialize() {
+      if (equation_empty_) DBGMSG("Calling 'initialize' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'initialize' of '%s' is not implemented.\n",typeid(*this).name());
+    }
+
+    /**
+     *  Initialization of the solution in the zero time.
+     *
+     *  There may be fields that can not be initialized in the initialize method
+     *  as they are provided by the coupling. Fields coming from coupling
+     *  has to be set after the initialize method and before zero_time_step.
+     */
+    virtual void zero_time_step() {
+      if (equation_empty_) DBGMSG("Calling 'zero_time_step' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'zero_time_step' of '%s' is not implemented.\n",typeid(*this).name());
+    }
+
 
     /**
      * Require virtual destructor also for child classes.
      */
     virtual ~EquationBase() {};
 
-    /**
-     *  Initialization of the solution in the zero time.
-     *  There is lot of things that can not be done in the constructor
-     *  since we have not fully initialized fields yet. Fields coming from coupling
-     *  has to be set after the constructor and before zero_time_step.
-     */
-    virtual void zero_time_step() {
-      if (equation_empty_) DBGMSG("Calling 'zero_time_step' of empty equation '%s'.\n",typeid(*this).name());
-      else DBGMSG("Method 'zero_time_step' of '%s' is not implemented.\n",typeid(*this).name());
-    }
 
     /**
      *  Calculation of the next time step and its output.
@@ -96,14 +117,7 @@ public:
       else DBGMSG("Method 'update_solution' of '%s' is not implemented.\n",typeid(*this).name());
     }
 
-    ///Initialize fields.
-    /** 
-     * All members that are needed to set fields must be set at this moment (e.g. number of components).
-     */
-    virtual void initialize() {
-      if (equation_empty_) DBGMSG("Calling 'initialize' of empty equation '%s'.\n",typeid(*this).name());
-      else DBGMSG("Method 'initialize' of '%s' is not implemented.\n",typeid(*this).name());      
-    }
+
     
     /**
      * Fix the next discrete time for computation.
