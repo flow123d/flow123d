@@ -15,6 +15,7 @@
 #include "input/type_output.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
+#include "system/sys_profiler.hh"
 #include <map>
 
 #include <boost/lexical_cast.hpp>
@@ -262,106 +263,123 @@ const string read_new_regions = R"JSON(
 [
 	{
 		TYPE="From_Id",
+		name = "3D front rename",
+		id = 40
+	},
+	{
+		TYPE="From_Label",
+		name = "3D back rename",
+		mesh_label = "3D back"
+	},
+	{
+		TYPE="From_Elements",
 		name = "label_0",
-		id = 0
+		element_list = [6]
 	},
 	{
 		TYPE="From_Elements",
 		name = "label_1",
 		id = 1,
-		element_list = [8, 5, 6]
+		element_list = [8, 5]
 	},
 	{
-		TYPE="From_Label",
+		TYPE="From_Elements",
+		name = "3D front rename",
+		element_list = [4]
+	},
+	{
+		TYPE="Union",
 		name = "label_2",
-		mesh_label = "3D back"
+		regions = ["3D front rename", "label_1"]
 	},
 	{
 		TYPE="Union",
 		name = "label_3",
-		regions = ["label_0", "label_1"]
+		regions = ["3D front rename", "3D back rename"]
 	},
 	{
 		TYPE="Union",
 		name = "label_4",
-		regions = ["label_0", "label_2"]
-	},
-	{
-		TYPE="Union",
-		name = "label_5",
 		region_ids = [37, 38],
-		regions = ["label_0", "label_1", "label_2"]
+		regions = ["3D front rename", "label_1", "3D back rename"]
 	},
 	{
 		TYPE="Difference",
-		name = "label_6",
-		regions = ["label_3", "label_4"]
+		name = "label_5",
+		regions = ["label_2", "label_3"]
 	},
 	{
 		TYPE="Intersection",
-		name = "label_7",
-		regions = ["label_3", "label_4", "label_5"]
+		name = "label_6",
+		regions = ["label_2", "label_3", "label_4"]
 	}
 ]
 )JSON";
 
 TEST(NewRegion, read_new_regions) {
+    Profiler::initialize();
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
     GmshMeshReader reader(mesh_file);
     Mesh * mesh = new Mesh;
-	reader.read_physical_names(mesh);
-	reader.read_mesh(mesh);
 
 	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
 	Input::ReaderToStorage json_reader( read_new_regions, element_map_array_input_type, Input::FileFormat::format_JSON);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
+	reader.read_physical_names(mesh);
 	mesh->read_regions_from_input(i_arr);
+	reader.read_mesh(mesh);
+	mesh->check_and_finish();
 
 	const RegionDB & region_db = mesh->region_db();
 	region_db.print_region_table(cout);
 
-	EXPECT_EQ( 1, region_db.get_region_set("label_0").size() );
-	EXPECT_EQ( 0, region_db.get_region_set("label_0")[0].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("3D front rename").size() );
+	EXPECT_EQ(40, region_db.get_region_set("3D front rename")[0].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("3D back rename").size() );
+	EXPECT_EQ(39, region_db.get_region_set("3D back rename")[0].id() );
+
+	EXPECT_EQ(  1, region_db.get_region_set("label_0").size() );
+	EXPECT_EQ(103, region_db.get_region_set("label_0")[0].id() );
 
 	EXPECT_EQ( 1, region_db.get_region_set("label_1").size() );
 	EXPECT_EQ( 1, region_db.get_region_set("label_1")[0].id() );
 
-	EXPECT_EQ( 1, region_db.get_region_set("label_2").size() );
-	EXPECT_EQ(39, region_db.get_region_set("label_2")[0].id() );
+	EXPECT_EQ( 2, region_db.get_region_set("label_2").size() );
+	EXPECT_EQ(40, region_db.get_region_set("label_2")[0].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_2")[1].id() );
 
 	EXPECT_EQ( 2, region_db.get_region_set("label_3").size() );
-	EXPECT_EQ( 0, region_db.get_region_set("label_3")[0].id() );
-	EXPECT_EQ( 1, region_db.get_region_set("label_3")[1].id() );
+	EXPECT_EQ(39, region_db.get_region_set("label_3")[0].id() );
+	EXPECT_EQ(40, region_db.get_region_set("label_3")[1].id() );
 
-	EXPECT_EQ( 2, region_db.get_region_set("label_4").size() );
-	EXPECT_EQ(39, region_db.get_region_set("label_4")[0].id() );
-	EXPECT_EQ( 0, region_db.get_region_set("label_4")[1].id() );
+	EXPECT_EQ( 5, region_db.get_region_set("label_4").size() );
+	EXPECT_EQ(37, region_db.get_region_set("label_4")[0].id() );
+	EXPECT_EQ(38, region_db.get_region_set("label_4")[1].id() );
+	EXPECT_EQ(39, region_db.get_region_set("label_4")[2].id() );
+	EXPECT_EQ(40, region_db.get_region_set("label_4")[3].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_4")[4].id() );
 
-	EXPECT_EQ( 5, region_db.get_region_set("label_5").size() );
-	EXPECT_EQ(37, region_db.get_region_set("label_5")[0].id() );
-	EXPECT_EQ(38, region_db.get_region_set("label_5")[1].id() );
-	EXPECT_EQ(39, region_db.get_region_set("label_5")[2].id() );
-	EXPECT_EQ( 0, region_db.get_region_set("label_5")[3].id() );
-	EXPECT_EQ( 1, region_db.get_region_set("label_5")[4].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_5").size() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_5")[0].id() );
 
 	EXPECT_EQ( 1, region_db.get_region_set("label_6").size() );
-	EXPECT_EQ( 1, region_db.get_region_set("label_6")[0].id() );
-
-	EXPECT_EQ( 1, region_db.get_region_set("label_7").size() );
-	EXPECT_EQ( 0, region_db.get_region_set("label_7")[0].id() );
+	EXPECT_EQ(40, region_db.get_region_set("label_6")[0].id() );
 
 	EXPECT_EQ( 1, region_db.get_region_set("3D back").size() );
 	EXPECT_EQ(39, region_db.get_region_set("3D back")[0].id() );
 
-	EXPECT_EQ(37, mesh->element[0].region().id() );
-	EXPECT_EQ(39, mesh->element[3].region().id() );
-	EXPECT_EQ( 1, mesh->element[4].region().id() );
-	EXPECT_EQ( 1, mesh->element[5].region().id() );
-	EXPECT_EQ( 1, mesh->element[7].region().id() );
-	EXPECT_EQ("label_2", mesh->element[3].region().label() );
+	EXPECT_EQ( 37, mesh->element[0].region().id() );
+	EXPECT_EQ( 40, mesh->element[3].region().id() );
+	EXPECT_EQ(  1, mesh->element[4].region().id() );
+	EXPECT_EQ(103, mesh->element[5].region().id() );
+	EXPECT_EQ( 40, mesh->element[6].region().id() );
+	EXPECT_EQ(  1, mesh->element[7].region().id() );
+	EXPECT_EQ("3D front rename", mesh->element[3].region().label() );
 }
 
 
