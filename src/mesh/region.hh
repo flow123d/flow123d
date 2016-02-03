@@ -385,6 +385,18 @@ public:
     Region add_region(unsigned int id, unsigned int dim);
 
     /**
+     * Change label of given Region.
+     */
+    Region rename_region( Region reg, const std::string &new_label );
+
+    /**
+     * Returns region given the pair of id - dim.
+     * If region doesn't exist, checks if exists region with given id and undefined_dim, replaces
+     * its dimension and returns its. In other cases throws exception.
+     */
+    Region get_region(unsigned int id, unsigned int dim);
+
+    /**
      * Returns a @p Region with given @p label. If it is not found it returns @p undefined Region.
      */
     Region find_label(const std::string &label) const;

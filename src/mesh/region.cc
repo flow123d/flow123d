@@ -185,6 +185,56 @@ Region RegionDB::add_region(unsigned int id, unsigned int dim) {
 }
 
 
+Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
+	ASSERT(reg.is_valid(), "Non-existing region can't be renamed to '%s'.\n", new_label.c_str());
+
+	// test if region with new_label exists
+	LabelIter it_label = region_table_.get<Label>().find(new_label);
+    if (it_label != region_table_.get<Label>().end() ) {
+        if ( reg.id() == it_label->index ) {
+            return reg;
+        } else {
+            // region with same label and other ID exists
+            THROW(ExcNonuniqueLabel() << EI_Label(new_label) << EI_ID(reg.id()) << EI_IDOfOtherLabel(it_label->get_id()) );
+        }
+    }
+
+	// replace region label
+	unsigned int index = reg.idx();
+	//bool boundary = is_boundary(new_label); // check old x new boundary flag - take account in adding of region set
+
+	RegionItem item(index, reg.id(), new_label, reg.dim());
+	region_table_.replace(
+			region_table_.get<Index>().find(index),
+            item);
+
+	Region new_reg = Region(index, *this);
+	RegionSet region_set;
+	region_set.push_back( new_reg );
+	this->add_set(new_label, region_set);
+	return new_reg;
+}
+
+
+Region RegionDB::get_region(unsigned int id, unsigned int dim) {
+	DimIDIter it_id = region_table_.get<DimId>().find(DimID(dim,id));
+    if ( it_id!=region_table_.get<DimId>().end() ) {
+        // Region found.
+    	return Region(it_id->index, *this);
+    }
+
+    DimIDIter it_undef_dim = region_table_.get<DimId>().find(DimID(undefined_dim,id));
+	if (it_undef_dim == region_table_.get<DimId>().end() ) {
+		// Region doesn't exist.
+		THROW( ExcUnknownRegion() << EI_ID(id) << EI_dim(dim) );
+    }
+
+	// Region with same ID and undefined_dim exists, replace undefined_dim
+	bool boundary = is_boundary(it_undef_dim->label);
+	return replace_region_dim(it_undef_dim, dim, boundary);
+}
+
+
 Region RegionDB::find_label(const std::string &label) const
 {
     LabelIter it_label = region_table_.get<Label>().find(label);
