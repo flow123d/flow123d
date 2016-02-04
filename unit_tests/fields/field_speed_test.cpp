@@ -276,9 +276,8 @@ public:
 
 	    field_.set_mesh(*(this->mesh_));
 	    field_.set_components(component_names_);
-	    field_.set_limit_side(LimitSide::right);
 	    TimeGovernor tg(0.0, 0.5);
-	    set_of_field_.set_time(tg.step());
+	    set_of_field_.set_time(tg.step(), LimitSide::right);
 	}
 
 
