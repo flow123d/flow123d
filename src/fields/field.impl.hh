@@ -264,8 +264,10 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
         	if ( time_step.gt(last_time_in_history) ) {
         		// in smooth time_step
         		i_history=0;
+        		is_jump_time_=false;
         	} else {
         		// time_step .eq. input_time; i.e. jump time
+        	    is_jump_time_=true;
         		if (limit_side == LimitSide::right) {
         			i_history=0;
         		} else {

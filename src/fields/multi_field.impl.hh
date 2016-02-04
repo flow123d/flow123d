@@ -67,9 +67,10 @@ bool MultiField<spacedim, Value>::set_time(
 
 	// set time for sub fields
 	bool any=false;
+	is_jump_time_=false;
 	for( SubFieldType &field : sub_fields_) {
-		if (field.set_time(time, limit_side))
-			any = true;
+		if (field.set_time(time, limit_side)) any = true;
+		is_jump_time_ = is_jump_time_ ||  field.is_jump_time();
 	}
     return any;
 }

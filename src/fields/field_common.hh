@@ -227,6 +227,36 @@ public:
     double time() const
     { return last_time_; }
 
+    /**
+     * Returns true if the field change algorithm for the current time set through the @p set_time method.
+     * This happen for all times in the field descriptors on the input of this particular field.
+     */
+    bool is_jump_time() {
+        return is_jump_time_;
+    }
+
+    /**
+     * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true
+     * otherwise it returns false.
+     * Then one can call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
+     * pointing to "virtual" element on which Field::value returns constant value.
+     * Unlike the Field<>::field_result method, this one provides no value, so it have common header (arguments, return type) and
+     * could be part of FieldCommon and FieldSet which is useful in some applications.
+     *
+     * TODO:Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
+     * becomes necessary it is possible to incorporate such test into set_time method and in this method just return precomputed result.
+     */
+    virtual bool is_constant(Region reg) =0;
+
+    /**
+     * Returns true if set_time_result_ is not @p TimeStatus::constant.
+     * Returns the same value as last set_time method.
+     */
+    bool changed() const
+    {
+        ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
+        return ( (set_time_result_ == TimeStatus::changed) );
+    }
 
     /**
      * Common part of the field descriptor. To get finished record
@@ -298,28 +328,6 @@ public:
     virtual void output(std::shared_ptr<OutputTime> stream) =0;
 
 
-    /**
-     * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true
-     * otherwise it returns false.
-     * Then one can call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
-     * pointing to "virtual" element on which Field::value returns constant value.
-     * Unlike the Field<>::field_result method, this one provides no value, so it have common header (arguments, return type) and
-     * could be part of FieldCommon and FieldSet which is useful in some applications.
-     *
-     * TODO:Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
-     * becomes necessary it is possible to incorporate such test into set_time method and in this method just return precomputed result.
-     */
-    virtual bool is_constant(Region reg) =0;
-
-    /**
-     * Returns true if set_time_result_ is not @p TimeStatus::constant.
-     * Returns the same value as last set_time method.
-     */
-    bool changed() const
-    {
-        ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
-        return ( (set_time_result_ == TimeStatus::changed) );
-    }
 
     /**
      * Sets @p component_index_
@@ -468,7 +476,11 @@ protected:
         unknown     //<  Before first call of set_time.
     };
 
-    /// Status of @p history.
+    // TODO: Merge time information: set_time_result_, last_time_, last_limit_side_, is_jump_time into
+    // a single structure with single getter.
+    /**
+     * Status of @p history.
+     */
     TimeStatus set_time_result_;
 
     /**
@@ -477,6 +489,12 @@ protected:
      */
     double last_time_ = -numeric_limits<double>::infinity();
     LimitSide last_limit_side_ = LimitSide::left;
+
+    /**
+     * Set to true by the @p set_time method the field algorithm change on any region.
+     * Accessible through the @p is_jump_time method.
+     */
+    bool is_jump_time_;
 
     /**
      * Output data type used in the output() method. Can be different for different field copies.

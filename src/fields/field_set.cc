@@ -152,6 +152,13 @@ bool FieldSet::is_constant(Region reg) const {
 }
 
 
+bool FieldSet::is_jump_time() const {
+    bool is_jump = false;
+    for(auto field : field_list) is_jump = is_jump || field->is_jump_time();
+    return is_jump;
+}
+
+
 
 void FieldSet::output(std::shared_ptr<OutputTime> stream) {
 	START_TIMER("Fill OutputData");
