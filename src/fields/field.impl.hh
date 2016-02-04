@@ -313,10 +313,25 @@ void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 
 
 template<int spacedim, class Value>
-FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm) const {
-    auto f = region_fields_[elm.region().idx()];
-    if (f) return f->field_result();
-    else return result_none;
+FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
+
+    FieldResult result_all = result_none;
+    for(Region &reg : region_set) {
+        auto f = region_fields_[reg.idx()];
+        if (f) {
+            FieldResult fr = f->field_result();
+            if (result_all == result_none) // first region
+                result_all = fr;
+            else if (fr != result_all)
+                return result_other; // if results from individual regions are different
+        } else return result_none; // if field is undefined on any region of the region set
+    }
+
+    if (result_all == result_constant && region_set.size() > 1)
+        return result_other; // constant result for individual regions could be non-constant on the whole region set
+
+    return result_all;
+
 }
 
 

@@ -24,6 +24,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include <ostream>
+#include <cmath>
 
 namespace IT=Input::Type;
 
@@ -37,39 +38,6 @@ namespace IT=Input::Type;
 TYPEDEF_ERR_INFO( EI_InputMsg, const string );
 DECLARE_INPUT_EXCEPTION( ExcFV_Input, << "Wrong field value input: " << EI_InputMsg::val );
 
-
-/**
- * Mimics arma::mat<std::string>.
- */
-class StringTensor {
-public:
-    StringTensor( unsigned int n_rows, unsigned int n_cols )
-    : n_rows(n_rows),n_cols(n_cols),n_elem(n_rows*n_cols), values_(n_elem) {}
-
-    StringTensor(const std::string &value)
-    : n_rows(1), n_cols(1), n_elem(1), values_(1, value) {}
-
-    std::string & at(unsigned int row) { return at(row,0); }
-    std::string & at(unsigned int row, unsigned int col) { return values_[col*n_rows+row]; }
-    void zeros() {
-        for( auto &elem: values_) elem = "0.0";
-    }
-    unsigned int n_rows;
-    unsigned int n_cols;
-    unsigned int n_elem;
-    operator std::string() {
-        ASSERT_EQUAL( n_elem, 1);
-        return values_[0];
-    }
-    const std::string * memptr() {
-    	return &(values_[0]);
-    }
-private:
-    std::vector<std::string>  values_;
-
-};
-
-
 typedef unsigned int FieldEnum;
 
 
@@ -79,17 +47,7 @@ namespace internal {
 // Helper functions to get scalar type name
 std::string type_name_(double);
 std::string type_name_(int);
-std::string type_name_(std::string);
 std::string type_name_(FieldEnum);
-
-
-inline double &scalar_value_conversion(double &ref) {return ref;}
-inline int &scalar_value_conversion(int &ref) {return ref;}
-inline FieldEnum &scalar_value_conversion(FieldEnum &ref) {return ref;}
-inline std::string &scalar_value_conversion(StringTensor &ref) {
-    ASSERT( ref.n_rows==1 , "Converting StringTensor(n,m) too std::string with m!=1 or n!=1.");
-    return ref.at(0,0);
-}
 
 
 /**
@@ -100,9 +58,6 @@ struct InputType { typedef Input::Type::Double type; };
 
 template <>
 struct InputType<int> { typedef Input::Type::Integer type; };
-
-template <>
-struct InputType<std::string> { typedef Input::Type::String type; };    // for FieldFormula
 
 template <>
 struct InputType<FieldEnum> { typedef Input::Type::Selection type; };
@@ -125,20 +80,6 @@ template <int NRows, class ET>
 struct ReturnType<NRows,1,ET> { typedef typename arma::Col<ET>::template fixed<NRows> return_type; };
 
 
-// string element type (for FieldFormula)
-template<int NRows, int NCols>
-struct ReturnType<NRows, NCols, std::string> { typedef StringTensor return_type; };
-
-template<>
-struct ReturnType<1,1, std::string> { typedef StringTensor return_type; };
-
-template <>
-struct ReturnType<0,1, std::string> { typedef StringTensor return_type; };
-
-template <int NRows>
-struct ReturnType<NRows,1, std::string> { typedef StringTensor return_type; };
-
-
 // FiledEnum element type - this just returns types with ET=unsigned int, however input should be different
 template<int NRows, int NCols>
 struct ReturnType<NRows, NCols, FieldEnum> { typedef typename arma::Mat<unsigned int>::template fixed<NRows, NCols> return_type; };
@@ -156,18 +97,122 @@ struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>
 // Resolution of helper functions for raw constructor
 template <class RT> inline RT & set_raw_scalar(RT &val, double *raw_data) { return *raw_data;}
 template <class RT> inline RT & set_raw_scalar(RT &val, int *raw_data) { return *raw_data;}
-template <class RT> inline RT & set_raw_scalar(RT &val, string *raw_data) { return val;}
 template <class RT> inline RT & set_raw_scalar(RT &val, FieldEnum *raw_data) { return *raw_data;}
 
 template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
-template <class RT> inline RT & set_raw_vec(RT &val, string *raw_data) { return val;}
 template <class RT> inline RT & set_raw_vec(RT &val, FieldEnum *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 
 template <class RT> inline RT & set_raw_fix(RT &val, double *raw_data) {  val = RT(raw_data); return val;}
 template <class RT> inline RT & set_raw_fix(RT &val, int *raw_data) { val = RT(raw_data); return val;}
-template <class RT> inline RT & set_raw_fix(RT &val, string *raw_data) { return val;}
 template <class RT> inline RT & set_raw_fix(RT &val, FieldEnum *raw_data) { val = RT(raw_data); return val;}
+
+
+
+// Resolution of input accessor for vector values of enums,
+template <class ET>
+struct AccessTypeDispatch { typedef ET type;};
+template <>
+struct AccessTypeDispatch<unsigned int> { typedef Input::Enum type; };
+
+
+
+
+/**
+ * Initialize an Armadillo matrix from the input.
+ * Since only limited methods are used we can use this template to initialize StringTensor as well.
+ * Used methodas are: at(row,col), zeros()
+ */
+template<class MatrixType>
+void init_matrix_from_input( MatrixType &value, Input::Array rec ) {
+    typedef typename MatrixType::elem_type ET;
+    unsigned int nrows = value.n_rows;
+    unsigned int ncols = value.n_cols;
+
+    Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
+    if (it->size() == 1 && nrows == ncols) {
+        // square tensor
+        // input = 3  expands  to [ [ 3 ] ]; init to  3 * (identity matrix)
+        // input = [1, 2, 3] expands to [[1], [2], [3]]; init to diag. matrix
+        // input = [1, 2, 3, .. , (N+1)*N/2], ....     ; init to symmetric matrix [ [1 ,2 ,3], [2, 4, 5], [ 3, 5, 6] ]
+        if (rec.size() == 1)  {// scalar times identity
+            value.zeros();
+            ET scalar=*(it->begin<ET>());
+            for(unsigned int i=0; i< nrows; i++) value.at(i,i)=scalar;
+        } else if (rec.size() == nrows) { // diagonal vector
+            value.zeros();
+            for(unsigned int i=0; i< nrows; i++, ++it) value.at(i,i)=*(it->begin<ET>());
+        } else if (rec.size() == (nrows+1)*nrows/2) { // symmetric part
+            for( unsigned int row=0; row<nrows; row++)
+                for( unsigned int col=0; col<ncols; col++)
+                    if (row <= col) {
+                        value.at(row,col) = *(it->begin<ET>());
+                        ++it;
+                    } else value.at(row,col) = value.at(col,row);
+        } else {
+            THROW( ExcFV_Input()
+                    << EI_InputMsg(
+                            boost::str(boost::format("Initializing symmetric matrix %dx%d by vector of wrong size %d, should be 1, %d, or %d.")
+                            % nrows % ncols % rec.size() % nrows % ((nrows+1)*nrows/2)))
+                    << rec.ei_address()
+
+                 );
+        }
+
+    } else {
+        // accept only full tensor
+        if (rec.size() == nrows && it->size() == ncols) {
+
+            for (unsigned int row = 0; row < nrows; row++, ++it) {
+                if (it->size() != ncols)
+                    THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
+                                         << rec.ei_address());
+                Input::Iterator<ET> col_it = it->begin<ET>();
+                for (unsigned int col = 0; col < ncols; col++, ++col_it)
+                    value.at(row, col) = *col_it;
+            }
+        } else {
+            THROW( ExcFV_Input()
+                    << EI_InputMsg(
+                            boost::str(boost::format("Initializing matrix %dx%d by matrix of wrong size %dx%d.")
+                                % nrows % ncols % rec.size() % it->size() ))
+                    << rec.ei_address()
+                 );
+        }
+    }
+}
+
+/**
+ * Initialize an Armadillo vector from the input.
+ * Since only limited methods are used we can use this template to initialize StringTensor as well.
+ * Used methodas are: at(row,col), zeros()
+ */
+template<class VectorType>
+void init_vector_from_input( VectorType &value, Input::Array rec ) {
+    typedef typename VectorType::elem_type ET;
+    unsigned int nrows = value.n_rows;
+
+    typedef typename AccessTypeDispatch<ET>::type InnerType;
+    Input::Iterator<InnerType> it = rec.begin<InnerType>();
+
+    if ( rec.size() == 1 ) {
+        for(unsigned int i=0; i< nrows; i++)
+            value.at(i)=ET(*it);
+    } else if ( rec.size() == nrows ) {
+        for(unsigned int i=0; i< nrows; i++, ++it) {
+            value.at(i)=ET(*it);
+        }
+    } else {
+        THROW( ExcFV_Input()
+                << EI_InputMsg(
+                        boost::str(boost::format("Initializing vector of size %d by vector of size %d.")
+                            % nrows % rec.size() ))
+                << rec.ei_address()
+             );
+    }
+}
+
+
 
 } // namespace internal
 
@@ -180,16 +225,6 @@ template <class RT> inline RT & set_raw_fix(RT &val, FieldEnum *raw_data) { val 
  * ET is type of elements, n_cols and n_rows gives fixed dimensions of the tensor value (nx1 is vector, 1x1 is scalar,
  * 0x1 is variable size vector, 0x0 is variable size tensor (not implemented yet) )
  *
- * TODO:
- * This wrapper serves at least to several different things:
- * - Unified reading of input values (for FieldConstant, FieldFormula, etc.)
- *    provided by init_from_input
- * - Unified InputType objects, provided by type_name(), get_input_type()
- *
- * - For unified matrix-like access even to scalar and vector values, without compromising performance.
- *    provided by operator(); n_cols, n_rows, from_raw, ...
- *
- * Maybe it could be better to split these two functions into two distinguish but related classes.
  *
  */
 template <int NRows, int NCols, class ET>
@@ -219,61 +254,8 @@ public:
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
     const ET * mem_ptr() { return value_.memptr(); }
 
-
     void init_from_input( AccessType rec ) {
-        Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
-        if (it->size() == 1 && NRows == NCols) {
-            // square tensor
-            // input = 3  expands  to [ [ 3 ] ]; init to  3 * (identity matrix)
-            // input = [1, 2, 3] expands to [[1], [2], [3]]; init to diag. matrix
-            // input = [1, 2, 3, .. , (N+1)*N/2], ....     ; init to symmetric matrix [ [1 ,2 ,3], [2, 4, 5], [ 3, 5, 6] ]
-
-
-                if (rec.size() == 1)  {// scalar times identity
-                    value_.zeros();
-                    ET scalar=*(it->begin<ET>());
-                    for(unsigned int i=0; i< NRows; i++) value_.at(i,i)=scalar;
-                } else if (rec.size() == NRows) { // diagonal vector
-                    value_.zeros();
-                    for(unsigned int i=0; i< NRows; i++, ++it) value_.at(i,i)=*(it->begin<ET>());
-                } else if (rec.size() == (NRows+1)*NRows/2) { // symmetric part
-                    for( unsigned int row=0; row<NRows; row++)
-                        for( unsigned int col=0; col<NCols; col++)
-                            if (row <= col) {
-                                value_.at(row,col) = *(it->begin<ET>());
-                                ++it;
-                            } else value_.at(row,col) = value_.at(col,row);
-                } else {
-                    THROW( ExcFV_Input()
-                    		<< EI_InputMsg(
-                    				boost::str(boost::format("Initializing symmetric matrix %dx%d by vector of wrong size %d, should be 1, %d, or %d.")
-                                	% NRows % NCols % rec.size() % NRows % ((NRows+1)*NRows/2)))
-                    		<< rec.ei_address()
-
-                         );
-                }
-
-        } else {
-            // accept only full tensor
-            if (rec.size() == NRows && it->size() == NCols) {
-
-                for (unsigned int row = 0; row < NRows; row++, ++it) {
-                    if (it->size() != NCols)
-                        THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
-                        		             << rec.ei_address());
-                    Input::Iterator<ET> col_it = it->begin<ET>();
-                    for (unsigned int col = 0; col < NCols; col++, ++col_it)
-                        value_.at(row, col) = *col_it;
-                }
-            } else {
-                THROW( ExcFV_Input()
-                		<< EI_InputMsg(
-                				boost::str(boost::format("Initializing matrix %dx%d by matrix of wrong size %dx%d.")
-                					% NRows % NCols % rec.size() % it->size() ))
-                		<< rec.ei_address()
-                     );
-            }
-        }
+        internal::init_matrix_from_input(value_, rec);
     }
 
     void set_n_comp(unsigned int) {};
@@ -288,14 +270,28 @@ public:
     inline operator return_type() const
         { return value_;}
 
+    // Set value to matrix of zeros.
+    void zeros() {
+        value_.zeros();
+    }
+    // Set value to identity matrix.
+    void eye() {
+        value_.eye();
+    }
+    // Set value to matrix of ones.
+    void ones() {
+        value_.ones();
+    }
+    // Elementwise equivalence.
+    bool equal_to(const  return_type &other) {
+        return arma::max(arma::max(arma::abs(value_ - other))) < 4*std::numeric_limits<ET>::epsilon();
+    }
+
 private:
     return_type &value_;
 };
 
-template <class ET>
-struct AccessTypeDispatch { typedef ET type;};
-template <>
-struct AccessTypeDispatch<unsigned int> { typedef Input::Enum type; };
+
 
 
 
@@ -307,7 +303,7 @@ public:
     typedef ET element_type;
     typedef typename internal::ReturnType<1, 1, ET>::return_type return_type;
     typedef typename internal::InputType<ET>::type ElementInputType;
-    typedef typename AccessTypeDispatch<ET>::type AccessType;
+    typedef typename internal::AccessTypeDispatch<ET>::type AccessType;
     const static int NRows_ = 1;
     const static int NCols_ = 1;
 
@@ -324,7 +320,7 @@ public:
      * A reference to a work space @p val has to be provided for efficient work with vector and matrix values.
      */
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
-    const ET * mem_ptr() { return &(internal::scalar_value_conversion(value_)); }
+    const ET * mem_ptr() { return &(value_); }
 
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
@@ -334,12 +330,27 @@ public:
     inline unsigned int n_rows() const
         { return 1; }
     inline ET &operator() ( unsigned int, unsigned int )
-        { return internal::scalar_value_conversion(value_); }
+        { return value_; }
     inline ET operator() ( unsigned int i, unsigned int j) const
-        { return internal::scalar_value_conversion(value_); }
-
+        { return value_; }
     inline operator return_type() const
         { return value_;}
+
+    // Set value to matrix of zeros.
+    void zeros() {
+        value_=0;
+    }
+    // Set value to identity matrix.
+    void eye() {
+        value_=1;
+    }
+    // Set value to matrix of ones.
+    void ones() {
+        value_=1;
+    }
+    bool equal_to(const  return_type &other) {
+        return std::abs(value_ - other) < 4*std::numeric_limits<ET>::epsilon();
+    }
 
 private:
     return_type &value_;
@@ -372,24 +383,7 @@ public:
 
 
     void init_from_input( AccessType rec ) {
-        typedef typename AccessTypeDispatch<ET>::type InnerType;
-        Input::Iterator<InnerType> it = rec.begin<InnerType>();
-
-        if ( rec.size() == 1 ) {
-            for(unsigned int i=0; i< n_rows(); i++)
-                value_.at(i)=ET(*it);
-        } else if ( rec.size() == n_rows() ) {
-            for(unsigned int i=0; i< n_rows(); i++, ++it) {
-                value_.at(i)=ET(*it);
-            }
-        } else {
-            THROW( ExcFV_Input()
-            		<< EI_InputMsg(
-            				boost::str(boost::format("Initializing vector of size %d by vector of size %d.")
-                        		% n_rows() % rec.size() ))
-                    << rec.ei_address()
-                 );
-        }
+        internal::init_vector_from_input(value_, rec);
     }
 
     void set_n_comp(unsigned int n_comp) { value_ = return_type(n_comp,1); };
@@ -404,6 +398,24 @@ public:
 
     inline operator return_type() const
         { return value_;}
+
+    // Set value to matrix of zeros.
+    void zeros() {
+        value_.zeros();
+    }
+    // Set value to identity matrix.
+    void eye() {
+        value_.ones();
+    }
+    // Set value to matrix of ones.
+    void ones() {
+        value_.ones();
+    }
+    // Elementwise equivalence.
+    bool equal_to(const  return_type &other) {
+        return arma::max(arma::abs(value_ - other)) < 4*std::numeric_limits<ET>::epsilon();
+    }
+
 
 private:
     return_type &value_;
@@ -432,22 +444,7 @@ public:
     const ET * mem_ptr() { return value_.memptr(); }
 
     void init_from_input( AccessType rec ) {
-        Input::Iterator<ET> it = rec.begin<ET>();
-
-        if ( rec.size() == 1 ) {
-            for(unsigned int i=0; i< n_rows(); i++)
-                value_.at(i)=*it;
-        } else if ( rec.size() == NRows ) {
-            for(unsigned int i=0; i< NRows; i++, ++it)
-                value_.at(i)=*it;
-        } else {
-            THROW( ExcFV_Input()
-            		<< EI_InputMsg(
-            				boost::str(boost::format("Initializing fixed vector of size %d by vector of size %d.")
-                        		% n_rows() % rec.size() ))
-                    << rec.ei_address()
-                 );
-        }
+        internal::init_vector_from_input(value_, rec);
     }
 
     void set_n_comp(unsigned int) {};
@@ -463,11 +460,96 @@ public:
     inline operator return_type() const
         { return value_;}
 
+    // Set value to matrix of zeros.
+    void zeros() {
+        value_.zeros();
+    }
+    // Set value to identity matrix.
+    void eye() {
+        value_.ones();
+    }
+    // Set value to matrix of ones.
+    void ones() {
+        value_.ones();
+    }
+    // Elementwise equivalence.
+    bool equal_to(const  return_type &other) {
+        return arma::max(arma::abs(value_ - other)) < 4*std::numeric_limits<ET>::epsilon();
+    }
+
 private:
     return_type &value_;
 };
 
 
+
+//****************************************************************************
+// string tensor (for FieldFormula)
+
+
+/**
+ * Mimics arma::mat<std::string>. Used in FieldFormula
+ */
+class StringTensor {
+public:
+    typedef std::string elem_type;
+
+    StringTensor( unsigned int n_rows, unsigned int n_cols )
+    : n_rows(n_rows),n_cols(n_cols), values_(n_rows*n_cols) {}
+
+    std::string & at(unsigned int row) { return at(row,0); }
+    std::string & at(unsigned int row, unsigned int col) { return values_[col*n_rows+row]; }
+
+    void zeros() {
+        for( auto &elem: values_) elem = "0.0";
+    }
+    unsigned int n_rows;
+    unsigned int n_cols;
+private:
+    std::vector<std::string>  values_;
+
+};
+
+
+template<int NRows, int NCols>
+struct StringTensorInput
+{
+    typedef Input::Array AccessType;
+    static IT::Array get_input_type() {
+        if (NRows == NCols) {
+            // for square tensors allow initialization by diagonal vector, etc.
+            return IT::Array( IT::Array( IT::String(), 1), 1 );
+        }
+        else {
+            return IT::Array( IT::Array( IT::String(), NCols, NCols), NRows, NRows );
+        }
+
+    }
+
+    static void init_from_input(StringTensor &tensor, AccessType input) {
+        internal::init_matrix_from_input(tensor, input);
+    }
+};
+
+template<>
+struct StringTensorInput<1,1> {
+    typedef std::string AccessType;
+    static IT::String get_input_type() { return IT::String(); }
+    static void init_from_input(StringTensor &tensor, AccessType input) {
+        tensor.at(0,0) = input;
+    }
+};
+
+template<int Nrows>
+struct StringTensorInput<Nrows,1> {
+    typedef Input::Array AccessType;
+    static IT::Array get_input_type() {
+        return IT::Array( IT::String(), 1);
+    }
+    static void init_from_input(StringTensor &tensor, AccessType input) {
+        internal::init_vector_from_input(tensor, input);
+    }
+};
 
 
 

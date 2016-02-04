@@ -308,10 +308,12 @@ public:
     /**
      * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true
      * otherwise it returns false.
-     * Then one call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
+     * Then one can call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
      * pointing to "virtual" element on which Field::value returns constant value.
+     * Unlike the Field<>::field_result method, this one provides no value, so it have common header (arguments, return type) and
+     * could be part of FieldCommon and FieldSet which is useful in some applications.
      *
-     * Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
+     * TODO:Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
      * becomes necessary it is possible to incorporate such test into set_time method and in this method just return precomputed result.
      */
     virtual bool is_constant(Region reg) =0;
