@@ -1,5 +1,7 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
+
 import cgi
 
 import xml.etree.ElementTree as ET
@@ -29,7 +31,7 @@ class htmltree(object):
         :param no_escape: whether to escape value
         :return: element
         """
-        attrib_copy = {}
+        attrib_copy = { }
         if 'cls' in kwargs:
             attrib_copy['class'] = kwargs.pop('cls')
 
@@ -77,21 +79,26 @@ class htmltree(object):
                 self.span(title)
         return self
 
-
-    def h2(self, value='', attrib={ }, **kwargs):
+    def main_section_title(self, item, attrib={ }, **kwargs):
         """
         Method creates level 2 header also with "on the side" href with icon
           to this href
+        :type item: ist.nodes.TypeSelection or ist.nodes.TypeRecord or ist.nodes.TypeAbstract
+        """
+        with self.open('span', '', { 'class': 'pull-right side-anchor' }):
+            href_attrib = self.generate_href(item.id)
+            href_attrib.update({ 'title': 'Permalink to this section' })
+            with self.open('a', '', href_attrib):
+                self.span(' ', { 'class': 'glyphicon glyphicon-link', 'aria-hidden': 'true' })
+        self.tag('h2', item.name, attrib, **kwargs)
+
+    def h2(self, value='', attrib={ }, **kwargs):
+        """
+        Method creates level 3 header
         :param value: header title
         :param attrib: optional attribute
         :return: element
         """
-        with self.open('span', '', { 'class': 'pull-right side-anchor' }):
-            href_attrib = self.generate_href(value)
-            href_attrib.update({ 'title': 'Permalink to this section' })
-            with self.open('a', '', href_attrib):
-                self.span(' ', { 'class': 'glyphicon glyphicon-link', 'aria-hidden': 'true' })
-
         # attrib.update(self.generate_id(value))
         self.tag('h2', value, attrib, **kwargs)
 
@@ -158,7 +165,7 @@ class htmltree(object):
         """
         return self.tag('span', value, attrib, **kwargs)
 
-    def info(self, value='', attrib={"class": 'leading-text'}, **kwargs):
+    def info(self, value='', attrib={ "class": 'leading-text' }, **kwargs):
         """
         Method creates info element
         :param value: span optional text
@@ -212,6 +219,13 @@ class htmltree(object):
         """
         return self.tag('a', text if text else target, attrib=self.generate_href(target, ns))
 
+    def link_to_main(self, item):
+        """
+        :type item: ist.nodes.TypeSelection or ist.nodes.TypeRecord or ist.nodes.TypeAbstract
+        """
+        # return self.tag('a', item.name + '(' + item.id + ')', self.generate_href(item.id))
+        return self.tag('a', item.name, self.generate_href(item.id))
+
     def open(self, tag_name, value='', attrib={ }, **kwargs):
         """
         Method opens current element, shifts current top.
@@ -232,6 +246,7 @@ class htmltree(object):
         :param value:
         :return:
         """
+        # self.tag('span', 'DESCRIPTION', attrib={ 'class': 'desc-title' })
         if not value:
             return self.tag('div', 'no description provided', cls='description no-description')
 
@@ -259,7 +274,6 @@ class htmltree(object):
         """
         # add debug info
         if exception_type:
-            print exception_type, exception_value, traceback
             return False
 
         self.counter -= 1
@@ -282,7 +296,7 @@ class htmltree(object):
         :param location: css file location relative to server
         :return: element
         """
-        self.tag('link', '', rel='stylesheet', type='text/css', media='screen', href=location )
+        self.tag('link', '', rel='stylesheet', type='text/css', media='screen', href=location)
 
     def script(self, location):
         """
@@ -290,7 +304,7 @@ class htmltree(object):
         :param location: css file location relative to server
         :return: element
         """
-        self.tag('script', '', attrib={}, type='text/javascript', src=location)
+        self.tag('script', '', attrib={ }, type='text/javascript', src=location)
 
     def id(self, id):
         """

@@ -2,27 +2,54 @@
 # author:   Jan Hybs
 import logging, traceback
 import datetime
-
-logging.basicConfig(
-    filename='python.log',
-    level=logging.INFO,
-    format='%(asctime)s %(name)s %(levelname)-4s: %(message)s'
-)
+import sys, os
 
 
 class Logger(object):
-    def __init__(self, name):
+
+    _global_logger = None
+
+    @staticmethod
+    def instance():
+        if Logger._global_logger is None:
+            log_level = 'warning'
+            for index in range(len(sys.argv)):
+                arg = str(sys.argv[index])
+                if arg.startswith('--log'):
+                    if arg == '--log':
+                        log_level = sys.argv[index+1].strip()
+                    else:
+                        log_level = arg.replace('--log=', '').strip()
+            log_level = getattr(logging, log_level.upper())
+
+            # set global log level
+            fmt = logging.Formatter('%(asctime)s %(name)-15s %(levelname)s: %(message)s')
+            logging.root.setLevel(log_level)
+            Logger._global_logger = Logger('ROOT', log_level, fmt)
+
+        return Logger._global_logger
+
+    def __init__(self, name, level=logging.INFO, fmt=None):
         self.logger = logging.getLogger(name)
 
-        # add console log
-        if __debug__:
-            stream = logging.StreamHandler()
-            stream.setLevel(logging.INFO)
-            self.logger.addHandler(stream)
 
-        with open('python.log', 'a+') as fp:
-            fp.write('-' * 110)
-            fp.write('\n')
+        f = os.path.join(os.getcwd(),'python.log')
+        stream_logger = logging.StreamHandler()
+        stream_logger.setLevel(level)
+        stream_logger.setFormatter(fmt)
+
+        file_logger = logging.FileHandler(f)
+        file_logger.setLevel(level)
+        file_logger.setFormatter(fmt)
+
+        self.logger.addHandler(stream_logger)
+        self.logger.addHandler(file_logger)
+
+        # add empty lines if file contains some previous logs
+        if os.stat(f).st_size != 0:
+            with open(f, 'a+') as fp:
+                fp.write('\n'*3)
+        # start logging
         self.info("{:%d-%m-%Y %H:%M:%S}".format(datetime.datetime.now()))
 
     def _log_traceback(self, method):

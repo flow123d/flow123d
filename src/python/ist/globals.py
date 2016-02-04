@@ -1,6 +1,6 @@
 # encoding: utf-8
 # author:   Jan Hybs
-from ist.utils.utils import TypedList
+
 
 
 class Globals(object):
@@ -28,12 +28,13 @@ class Globals(object):
         :param value: string fields name
         :return:
         """
-        from ist.nodes import Record
+        from ist.nodes import TypeRecord
+        from ist.base import List
 
-        if type(element) is Record:
+        if type(element) is TypeRecord:
             return getattr(element, value, None)
 
-        if type(element) is TypedList:
+        if type(element) is List:
             for item in element:
                 try:
                     if item.get('key', 'name').lower() == value.lower():
@@ -83,4 +84,4 @@ class Globals(object):
                 # no such attribute
                 pass
 
-        return (None, None, None)
+        return None, None, None

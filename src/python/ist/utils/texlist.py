@@ -1,10 +1,10 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
+
 import re
-import traceback
 from ist.formatters.html2latex import Html2Latex
 from ist.formatters.markdown2html import markdown2html
-from ist.utils.htmltree import htmltree
 
 
 class texlist(list):
@@ -210,9 +210,6 @@ class texlist(list):
         """
         # add debug info
         if exception_type:
-            print exception_type, exception_value, tb
-            traceback.print_exception(exception_type, exception_value, tb)
-            traceback.print_stack()
             return False
 
         self.counter -= 1
@@ -237,7 +234,7 @@ class texlist(list):
         :return: self
         """
         # return self.escape (value.strip ().replace ('\n', '\\\\'))
-        html = self.m2h.parse(''+value+'', True)
+        html = self.m2h.parse('' + value + '', True)
         latex = Html2Latex(html)
         result = latex.to_latex()
         result = self.escape(''.join(result))
@@ -264,6 +261,7 @@ class texlist(list):
         value = re.sub(r'\$ElementData', r'\$ElementData', value)
         value = value \
             .replace('_', '\\_') \
+            .replace("'", "'") \
             .replace('->', '$\\rightarrow$') \
             .replace('<-', '$\\leftarrow$') \
             .replace('\n\n', '\n')
