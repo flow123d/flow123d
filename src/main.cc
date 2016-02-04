@@ -233,10 +233,10 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     		cerr << "Failed to open file '" << json_filename << "'" << endl;
         } else {
             // create the root Record
-            get_input_type();
-	        Input::Type::TypeBase::lazy_finish();
-	        json_stream << Input::Type::OutputJSONMachine( this->get_rev_num_data() );
-	        json_stream.close();
+            it::Record root_type = get_input_type();
+            Input::Type::TypeBase::lazy_finish();
+            json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
+            json_stream.close();
         }
         exit( exit_output );
     }

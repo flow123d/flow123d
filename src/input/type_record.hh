@@ -89,7 +89,7 @@ public:
      * @endcode
      */
     static Default read_time(const std::string & description)
-    { return Default(default_at_read_time, "\""+ description + "\""); }
+    { return Default(default_at_read_time, description ); }
 
     /**
      * Factory function to make an empty default value which is obligatory.
@@ -101,7 +101,7 @@ public:
      * @endcode
      */
     inline static Default obligatory()
-    { return Default(no_default_obligatory_type, "\"OBLIGATORY\""); }
+    { return Default(no_default_obligatory_type, "OBLIGATORY"); }
 
     /**
      * Factory function to make an empty default value which is optional.
@@ -114,7 +114,7 @@ public:
      * @endcode
      */
     inline static Default optional()
-    { return Default(no_default_optional_type, "\"OPTIONAL\""); }
+    { return Default(no_default_optional_type, "OPTIONAL"); }
 
     /**
      * Returns true if the default value is or will be available when someone tries to read the value.
