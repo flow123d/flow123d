@@ -239,12 +239,6 @@ TEST_F(SomeEquation, collective_interface) {
     EXPECT_EQ(mesh_,data["velocity"].mesh());
     EXPECT_EQ(mesh_,data["reaction_type"].mesh());
 
-    EXPECT_EQ(LimitSide::unknown,data["init_pressure"].limit_side());
-    data.set_limit_side(LimitSide::right);
-    EXPECT_EQ(LimitSide::right,data["init_pressure"].limit_side());
-    EXPECT_EQ(LimitSide::right,data["velocity"].limit_side());
-    EXPECT_EQ(LimitSide::right,data["reaction_type"].limit_side());
-
     // flags_add
     FieldFlag::Flags matrix(
         FieldSet::equation_input
