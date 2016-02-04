@@ -330,25 +330,25 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
 
 void DarcyFlowMH_Steady::zero_time_step() {
+    data_.set_time_limit(LimitSide::right);
+    data_.set_time(time_->step());
+    // zero_time_term means steady case
+    bool zero_time_term_from_right
+        = data_.storativity.field_result(mesh->region_db.get_region_set("BULK")) == result_zeros;
+
     create_linear_system();
-    read_init_condition(); // Possible solution guess for steady case.
-    //assembly_linear_system();
+    /* TODO:
+     * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
+     * - Steady solution as an intitial condition may be forced by setting inti_time =-1, and set data for the steady solver in that time.
+     *   Solver should be able to switch from and to steady case depending on the zero time term.
+     */
 
-    if (is_steady) {
-
-        /* TODO:
-         * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
-         * - Introduce key, 'steady_initial_condition'. Which could be used to start from steady initial case
-         * as well as indicating steady solver. Problem: initial steady problem need to set limit_side::left, however staedy solver
-         * should set limit_side::right. But this is problematic, since it seems that limit_side may not be property of the solver, but could be set by user.
-         *
-         */
-        solve_nonlinear();
-
-        //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
-        //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
-
+    read_initial_condition(); // Possible solution guess for steady case.
+    if (zero_time_term_from_right) {
+        // steady case
+        solve_nonlinear(); // with right limit data
     }
+    //solution_output(T,right_limit); // data for time T in any case
     output_data();
 }
 
@@ -358,16 +358,44 @@ void DarcyFlowMH_Steady::zero_time_step() {
 void DarcyFlowMH_Steady::update_solution() {
     START_TIMER("Solving MH system");
 
-
     if (time_->is_end()) return;
     time_->next_time();
     if (time_->t() == TimeGovernor::inf_time) return; // end time of steady TimeGovernor
-    solve_nonlinear();
 
+    data_.set_time_limit(LimitSide::left);
+    data_.set_time(time_->step());
+    bool zero_time_term_from_left
+        = data_.storativity.field_result(mesh->region_db.get_region_set("BULK")) == result_zeros;
+    bool jump_time = false;
+        //= data_storativity.is_jump_time();
+    if (! zero_time_term_from_left) {
+        // time term not treated as zero
+        // Unsteady solution up to the T.
+        solve_nonlinear(); // with left limit data
+        if (jump_time) {
+            xprintf(Warn, "Output of solution discontinuous in time not supported yet.\n");
+            //solution_output(T, left_limit); // output use time T- delta*dt
+            //output_data();
+        }
+    }
+    data_.set_time_limit(LimitSide::right);
+    data_.set_time(time_->step());
+    bool zero_time_term_from_right
+        = data_.storativity.field_result(mesh->region_db.get_region_set("BULK")) == result_zeros;
+    if (zero_time_term_from_right) {
+        solve_nonlinear(); // with right limit data
+
+    } else if (! zero_time_term_from_left && jump_time) {
+        xprintf(Warn, "Discontinuous time term not supported yet.\n");
+        //solution_transfer(); // internally call set_time(T, left) and set_time(T,right) again
+        //solve_nonlinear(); // with right limit data
+    }
+    //solution_output(T,right_limit); // data for time T in any case
     output_data();
 
-    //if (time_->is_steady()) time_->next_time();
 }
+
+
 
 void DarcyFlowMH_Steady::solve_nonlinear()
 {

@@ -297,7 +297,6 @@ protected:
     }*/
 
 
-
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
     void make_serial_scatter();
@@ -504,7 +503,7 @@ class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 public:
 
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
-    DarcyFlowMH_Unsteady();
+    //DarcyFlowMH_Unsteady();
 
     static const Input::Type::Record & get_input_type();
 protected:
