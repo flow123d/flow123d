@@ -3,8 +3,8 @@ $MeshFormat
 $EndMeshFormat
 $PhysicalNames
 3
-1 7  "Horni OKP"
-1 8  "Dolni OKP"
+1 5  "Horni OKP"
+1 6  "Dolni OKP"
 2 11  "Zajmova oblast"
 $EndPhysicalNames
 $Nodes
