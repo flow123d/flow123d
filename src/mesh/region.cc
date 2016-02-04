@@ -239,12 +239,12 @@ Region RegionDB::get_region(unsigned int id, unsigned int dim) {
     DimIDIter it_undef_dim = region_table_.get<DimId>().find(DimID(undefined_dim,id));
 	if (it_undef_dim == region_table_.get<DimId>().end() ) {
 		// Region doesn't exist.
-		THROW( ExcUnknownRegion() << EI_ID(id) << EI_dim(dim) );
+		return Region();
+    } else {
+    	// Region with same ID and undefined_dim exists, replace undefined_dim
+    	bool boundary = is_boundary(it_undef_dim->label);
+    	return replace_region_dim(it_undef_dim, dim, boundary);
     }
-
-	// Region with same ID and undefined_dim exists, replace undefined_dim
-	bool boundary = is_boundary(it_undef_dim->label);
-	return replace_region_dim(it_undef_dim, dim, boundary);
 }
 
 
@@ -577,6 +577,12 @@ void RegionDB::create_label_from_id(const string & label, unsigned int id) {
 	stringstream ss;
 	ss << "region_" << id;
 	ss.str(label);
+}
+
+string RegionDB::create_label_from_id(unsigned int id) const {
+	stringstream ss;
+	ss << "region_" << id;
+	return ss.str();
 }
 
 Region RegionDB::insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary) {

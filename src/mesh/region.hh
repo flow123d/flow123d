@@ -550,6 +550,13 @@ public:
      */
     void print_region_table(ostream& stream) const;
 
+    /**
+     * Create label of region in format: "region_"+id
+     *
+     * Use if label is not set.
+     */
+    string create_label_from_id(unsigned int id) const;
+
 
 private:
 
@@ -644,6 +651,8 @@ private:
      * Create label of region in format: "region_"+id
      *
      * Use if label is not set.
+     *
+     * TODO: Method is obsolete, remove after full implementation of new regions
      */
     void create_label_from_id(const string & label, unsigned int id);
 

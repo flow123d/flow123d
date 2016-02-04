@@ -164,6 +164,9 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
             // allocate element arrays TODO: should be in mesh class
             Element *ele=nullptr;
             RegionIdx region_idx = mesh->region_db_.get_region( region_id, dim );
+            if ( !region_idx.is_valid() ) {
+            	region_idx = mesh->region_db_.add_region( region_id, mesh->region_db_.create_label_from_id(region_id), dim );
+            }
 
             if (region_idx.is_boundary()) {
                 ele = mesh->bc_elements.add_item(id);
