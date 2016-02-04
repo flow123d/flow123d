@@ -130,7 +130,7 @@ class ISTFormatter(object):
                                             btn_cls = dict()
 
                                             btn_cls['data-type'] = 'record'
-                                            btn_cls['class'] = 'btn btn-warning btn-filter'
+                                            btn_cls['class'] = 'btn btn-warning btn-filter active'
                                             html_body.tag('a', 'Records', btn_cls)
 
                                             btn_cls['data-type'] = 'abstract-record'
@@ -138,7 +138,7 @@ class ISTFormatter(object):
                                             html_body.tag('a', 'Abstract records', btn_cls)
 
                                             btn_cls['data-type'] = 'selection'
-                                            btn_cls['class'] = 'btn btn-info btn-filter'
+                                            btn_cls['class'] = 'btn btn-info btn-filter active'
                                             html_body.tag('a', 'Selections', btn_cls)
 
                             with html_body.open('div', cls='row'):

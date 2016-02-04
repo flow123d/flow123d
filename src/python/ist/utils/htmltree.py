@@ -92,6 +92,14 @@ class htmltree(object):
                 self.span(' ', { 'class': 'glyphicon glyphicon-link', 'aria-hidden': 'true' })
         self.tag('h2', item.name, attrib, **kwargs)
 
+    def mark_as_obsolete(self, element):
+        """
+        :type item: ist.nodes.TypeSelection or ist.nodes.TypeRecord or ist.nodes.TypeAbstract
+        """
+        self.tag('p', 'This element is marked as obsolete and may not be present in next version',
+                 attrib={ 'class': 'obsolete' }
+        )
+
     def h2(self, value='', attrib={ }, **kwargs):
         """
         Method creates level 3 header

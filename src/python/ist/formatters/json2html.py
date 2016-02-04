@@ -59,6 +59,10 @@ class HTMLSelection(HTMLItemFormatter):
         """
         self.root.attrib['id'] = htmltree.chain_values(selection.id)
         self.root.attrib['data-name'] = htmltree.chain_values(selection.name)
+
+        if selection.attributes.obsolete:
+            self.root.attrib['data-obsolete'] = '1'
+            self.mark_as_obsolete(selection)
         with self.open('header'):
             self.main_section_title(selection)
             self.description(selection.description)
