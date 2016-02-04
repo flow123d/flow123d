@@ -664,6 +664,14 @@ private:
      */
     Region find_by_dimid(DimIDIter it_id, unsigned int id, const std::string &label, bool boundary);
 
+    /*
+     * Add region to given set. Create the set if it does not exist.
+     *
+     * @param set_name Set from which it is erased region
+     * @param region Erased region
+     */
+    void erase_from_set( const string& set_name, Region region);
+
     /**
      * Return boundary flag for given label. Label of boundary region must start by '.' symbol.
      */

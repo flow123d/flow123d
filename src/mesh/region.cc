@@ -201,7 +201,8 @@ Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
 
 	// replace region label
 	unsigned int index = reg.idx();
-	//bool boundary = is_boundary(new_label); // check old x new boundary flag - take account in adding of region set
+	sets_.erase( reg.label() ); // remove RegionSet of old name
+	bool old_boundary_flag = reg.is_boundary(); // check old x new boundary flag - take account in adding to sets
 
 	RegionItem item(index, reg.id(), new_label, reg.dim());
 	region_table_.replace(
@@ -209,9 +210,21 @@ Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
             item);
 
 	Region new_reg = Region(index, *this);
+	// add region to sets
 	RegionSet region_set;
 	region_set.push_back( new_reg );
 	this->add_set(new_label, region_set);
+	if (old_boundary_flag != reg.is_boundary()) {
+		// move region between BULK and BOUNDARY sets
+		if (old_boundary_flag) {
+			erase_from_set("BOUNDARY", reg );
+			add_to_set("BULK", reg );
+		} else {
+			erase_from_set("BULK", reg );
+			add_to_set("BOUNDARY", reg );
+		}
+	}
+
 	return new_reg;
 }
 
@@ -295,19 +308,6 @@ unsigned int RegionDB::get_dim(unsigned int idx) const {
 
 void RegionDB::close() {
     closed_=true;
-    // set default sets
-   for(unsigned int i=0; i< size(); i++) {
-       Region reg(i, *this);
-
-       if (reg.is_boundary() && (reg.boundary_idx() < boundary_size()) ) {
-           add_to_set("BOUNDARY", reg );
-           add_to_set("ALL", reg);
-       } else
-       if ( (! reg.is_boundary()) && (reg.bulk_idx() < bulk_size()) ) {
-           add_to_set("BULK", reg );
-           add_to_set("ALL", reg);
-       }
-    }
 }
 
 
@@ -354,6 +354,23 @@ void RegionDB::add_set( const string& set_name, const RegionSet & set) {
     // add region only if it is not in the set
     if (sets_.find(set_name) == sets_.end()) {
 	    sets_.insert( std::make_pair(set_name, set) );
+	}
+}
+
+
+void RegionDB::erase_from_set( const string& set_name, Region region) {
+	RegionSetTable::iterator it = sets_.find(set_name);
+
+	if (it != sets_.end()) {
+		RegionSet & set = (*it).second;
+		auto set_it = std::find(set.begin(), set.end(), region);
+		if ( set_it!=set.end() ) {
+			set.erase(set_it);
+		} else {
+			xprintf(Warn, "Erased region was not found in set '%s'", set_name.c_str());
+		}
+	} else {
+		xprintf(Warn, "Region set '%s' doesn't exist.", set_name.c_str());
 	}
 }
 
@@ -581,10 +598,18 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 	}
 
 	Region reg = Region(index, *this);
+    // add region to sets
 	RegionSet region_set;
 	region_set.push_back( reg );
 	this->add_set(reg.label(), region_set);
-	return reg;
+	add_to_set("ALL", reg);
+    if (reg.is_boundary()) {
+        add_to_set("BOUNDARY", reg );
+    } else {
+        add_to_set("BULK", reg );
+    }
+
+    return reg;
 }
 
 Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary) {

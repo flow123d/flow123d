@@ -370,8 +370,9 @@ TEST(NewRegion, read_new_regions) {
 	EXPECT_EQ( 1, region_db.get_region_set("label_6").size() );
 	EXPECT_EQ(40, region_db.get_region_set("label_6")[0].id() );
 
-	EXPECT_EQ( 1, region_db.get_region_set("3D back").size() );
-	EXPECT_EQ(39, region_db.get_region_set("3D back")[0].id() );
+	EXPECT_EQ( 8, region_db.get_region_set("ALL").size() );
+	EXPECT_EQ( 6, region_db.get_region_set("BULK").size() );
+	EXPECT_EQ( 2, region_db.get_region_set("BOUNDARY").size() );
 
 	EXPECT_EQ( 37, mesh->element[0].region().id() );
 	EXPECT_EQ( 40, mesh->element[3].region().id() );
