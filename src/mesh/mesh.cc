@@ -266,19 +266,9 @@ void Mesh::init_from_input() {
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
 		ElementIter ele = this->element.find_id(elem_to_region.first);
-		ele->region_idx_ = region_db_.add_region( elem_to_region.second, ele->dim() );
+		ele->region_idx_ = region_db_.get_region( elem_to_region.second, ele->dim() );
 	}
 }
-
-
-
-void Mesh::modify_element_ids(unsigned int region_id, std::vector<unsigned int> element_ids_vec) {
-	for (auto elem_to_region : element_ids_vec) {
-		ElementIter ele = this->element.find_id(elem_to_region);
-		ele->region_idx_ = region_db_.add_region( region_id, ele->dim() );
-	}
-}
-
 
 
 

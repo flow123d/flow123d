@@ -275,11 +275,6 @@ public:
     vector< vector< vector<unsigned int> > > side_nodes;
 
     /**
-     * Possibly modify region id of elements sets by user in "regions" part of input file.
-     */
-    void modify_element_ids(unsigned int region_id, std::vector<unsigned int> element_ids_vec);
-
-    /**
      * Check usage of regions, set regions to elements defined by user, close RegionDB
      */
     void check_and_finish();
