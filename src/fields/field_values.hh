@@ -24,6 +24,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include <ostream>
+#include <cmath>
 
 namespace IT=Input::Type;
 
@@ -269,6 +270,23 @@ public:
     inline operator return_type() const
         { return value_;}
 
+    // Set value to matrix of zeros.
+    void zeros() {
+        value_.zeros();
+    }
+    // Set value to identity matrix.
+    void eye() {
+        value_.eye();
+    }
+    // Set value to matrix of ones.
+    void ones() {
+        value_.ones();
+    }
+    // Elementwise equivalence.
+    bool equal_to(const  return_type &other) {
+        return arma::max(arma::max(arma::abs(value_ - other))) < 4*std::numeric_limits<ET>::epsilon();
+    }
+
 private:
     return_type &value_;
 };
@@ -318,6 +336,22 @@ public:
     inline operator return_type() const
         { return value_;}
 
+    // Set value to matrix of zeros.
+    void zeros() {
+        value_=0;
+    }
+    // Set value to identity matrix.
+    void eye() {
+        value_=1;
+    }
+    // Set value to matrix of ones.
+    void ones() {
+        value_=1;
+    }
+    bool equal_to(const  return_type &other) {
+        return std::abs(value_ - other) < 4*std::numeric_limits<ET>::epsilon();
+    }
+
 private:
     return_type &value_;
 };
@@ -365,6 +399,24 @@ public:
     inline operator return_type() const
         { return value_;}
 
+    // Set value to matrix of zeros.
+    void zeros() {
+        value_.zeros();
+    }
+    // Set value to identity matrix.
+    void eye() {
+        value_.ones();
+    }
+    // Set value to matrix of ones.
+    void ones() {
+        value_.ones();
+    }
+    // Elementwise equivalence.
+    bool equal_to(const  return_type &other) {
+        return arma::max(arma::abs(value_ - other)) < 4*std::numeric_limits<ET>::epsilon();
+    }
+
+
 private:
     return_type &value_;
 };
@@ -407,6 +459,23 @@ public:
 
     inline operator return_type() const
         { return value_;}
+
+    // Set value to matrix of zeros.
+    void zeros() {
+        value_.zeros();
+    }
+    // Set value to identity matrix.
+    void eye() {
+        value_.ones();
+    }
+    // Set value to matrix of ones.
+    void ones() {
+        value_.ones();
+    }
+    // Elementwise equivalence.
+    bool equal_to(const  return_type &other) {
+        return arma::max(arma::abs(value_ - other)) < 4*std::numeric_limits<ET>::epsilon();
+    }
 
 private:
     return_type &value_;
