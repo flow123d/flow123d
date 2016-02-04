@@ -45,6 +45,11 @@ Actions:
     - add-key - add set key to path. Key parent should be existing abstract record.
       if optional parameters value or type is set, corresponding key parameter is 
       added.
+    - replace-value - Replace value on set path. Parameters pattern and 
+      replacement have same meaning as in python regular Expression 
+      function re.sub, where is pass on. Json style of transformation script
+      requare duplication of all backslashed characters in pattern and 
+      replacement parameters.
 
 Description:
     Transformator check se json transformation file. If this file is in bad format,
@@ -100,6 +105,7 @@ Wildchars Example::
 import json
 import re
 import copy
+from enum import Enum
 
 from .loader import Loader
 from ..data_node import DataNode
@@ -111,16 +117,18 @@ from data.format import get_root_input_type_from_json
 class Transformator:
     """Transform yaml file to new version"""
     __actions__=["delete-key", "move-key", "rename-type", "move-key-forward",
-                          "change-value", "merge-arrays", "add-key", "scale-value"]
+                          "change-value", "merge-arrays", "add-key", "scale-value",  "replace-value"]
     __source_paths__ = {"delete-key":"path","move-key-forward":"path", "move-key":"source_path", 
                                       "rename-type":"path", "change-value":"path", "merge-arrays":"source_path", 
-                                      "add-key":"path", "scale-value":"path"}
-    __destination_paths__ = {"delete-key":None,"move-key-forward":None, "move-key":["destination_path"],
+                                      "add-key":"path", "scale-value":"path", "replace-value":"path"}
+    __destination_paths__ = {"delete-key":None,"move-key-forward":None, "move-key":["destination_path", 'set_type_path'],
                                           "rename-type":None, "change-value":None, "merge-arrays":["destination_path",
-                                          "addition_path"], "add-key":None, "scale-value":None}
-    
+                                          "addition_path"], "add-key":None, "scale-value":None, "replace-value":None}
+
     def __init__(self, transform_file, data=None):
         """init"""
+        self.err=[]
+        """Array of transformation errors"""
         if transform_file is not None:
             self._transformation = json.loads(transform_file)
         else:
@@ -162,6 +170,10 @@ class Transformator:
             elif action['action'] == "add-key":
                 self._check_parameter("path", action['parameters'], action['action'], i) 
                 self._check_parameter("key", action['parameters'], action['action'], i)
+            elif action['action'] == "replace-value":
+                self._check_parameter("path", action['parameters'], action['action'], i)
+                self._check_parameter("pattern", action['parameters'], action['action'], i)
+                self._check_parameter("replacement", action['parameters'], action['action'], i)
             elif action['action'] == "scale-value":
                 self._check_parameter("path", action['parameters'], action['action'], i)
                 self._check_parameter("scale", action['parameters'], action['action'], i)
@@ -211,9 +223,26 @@ class Transformator:
             return self._transformation['name']
         return ""
 
+    class _Severity(Enum):
+        """Severity of a notification."""
+        info = "Info"
+        warning = "Warning"
+        error = "Error"
+
+    def _add_notification(self, text, severity, action, node=None):
+        """Add notification to err variable"""
+        location = "Action:"+action['action']
+        if Transformator.__source_paths__[action['action']] is not None:
+            path_parameter = Transformator.__source_paths__[action['action']]
+            path = action['parameters'][path_parameter]
+            location += ", "  + path_parameter + ":" + path 
+        if node is not None:
+            location += ", Node:"  + node.absolute_path  
+        self.err.append("{0}[{1}]:{2}".format(severity.value, location, text))
+
     def transform(self, yaml, cfg):
         """transform yaml file"""
-        # TODO: cls.root = autoconvert(cls.root, cls.root_input_type)
+        self.err=[]
         notification_handler = NotificationHandler()
         loader = Loader(notification_handler)
         root = loader.load(yaml)
@@ -239,10 +268,10 @@ class Transformator:
                         try:
                             node = root.get_node_at_path(action['parameters']['set_type_path']) 
                             if node.type is not None:
-                                StructureChanger.change_tag(lines, node, node.type, action['parameters']['new_type'])
+                                StructureChanger.change_tag(lines, node, node.type.value, action['parameters']['new_type'].strip())
                             else:
-                                StructureChanger.add_tag(lines, node, action['parameters']['new_type'])                                
-                            changes = True                                
+                                StructureChanger.add_tag(lines, node, action['parameters']['new_type'].strip()) 
+                            changes = True
                         except:
                             pass
                 elif action['action'] == "rename-type":
@@ -251,6 +280,8 @@ class Transformator:
                     changes = self._move_key_forward(root, lines, action)
                 elif action['action'] == "change-value":
                     changes = self._change_value(root, lines, action)
+                elif action['action'] == "replace-value":
+                    changes = self._replace_value(root, lines, action)
                 elif action['action'] == "merge-arrays":
                     changes = self._add_array(root, lines, action)
                     if 'destination_path' in action['parameters']:
@@ -449,14 +480,13 @@ class Transformator:
             raise TransformationFileFormatError(
                 "Parent of path (" + self._get_paths_str(action, 'path') + ") must be abstract record")
         if is_root:
-            intendation1 = 0
+            indentation1 = 0
             pl1 = 0
             pc1 = 0
         else:
-            intendation1 = re.search(r'^(\s*)(\S.*)$', lines[pl1])
-            intendation1 = len(intendation1.group(1)) + 2
-        l1, c1, l2, c2 = StructureChanger._add_comments(lines, l1, c1, l2, c2)
-        add = StructureChanger.copy_structure(lines, l1, c1, l2, c2, intendation1)
+            indentation1 = StructureChanger.get_indentation(lines, pl1) + 2
+        l1, c1, l2, c2 = StructureChanger.add_comments(lines, l1, c1, l2, c2)
+        add = StructureChanger.copy_structure(lines, l1, c1, l2, c2, indentation1)
         pl1, pc1 = StructureChanger.skip_tar(lines, pl1, pc1, pl2, pc2)
         action['parameters']['deep'] = True
         self._delete_key(root, lines, action)
@@ -556,7 +586,7 @@ class Transformator:
         l1, c1, l2, c2 = anchor_node.span.start.line-1, anchor_node.span.start.column-1, \
             anchor_node.span.end.line-1, anchor_node.span.end.column-1
         l1, c1 = StructureChanger.skip_tar(lines, l1, c1, l2, c2)
-        hlpl1, hlpc1, l2, c2 = StructureChanger._add_comments(lines, l1, c1, l2, c2)
+        hlpl1, hlpc1, l2, c2 = StructureChanger.add_comments(lines, l1, c1, l2, c2)
         dl1, dc1, dl2, dc2 = StructureChanger.node_pos(ref_node)
         intend = re.search(r'^(\s*)(\S.*)$', lines[dl1])
         intend = len(intend.group(1)) + 2
@@ -667,13 +697,12 @@ class Transformator:
                     "Parent of destination path (" + self._get_paths_str(action, 'destination_path') +
                     ") must be abstract record")
         if node1.parent is None:
-            intendation1 = 0
+            indentation1 = 0
         else:
-            intendation1 = re.search(r'^(\s*)(\S.*)$', lines[dl1])
-            intendation1 = len(intendation1.group(1)) + 2
-        
-        sl1, sc1, sl2, sc2 = StructureChanger._add_comments(lines, sl1, sc1, sl2, sc2)
-        add = StructureChanger.copy_structure(lines, sl1, sc1, sl2, sc2, intendation1)
+            indentation1 = StructureChanger.get_indentation(lines, dl1) + 2
+
+        sl1, sc1, sl2, sc2 = StructureChanger.add_comments(lines, sl1, sc1, sl2, sc2)
+        add = StructureChanger.copy_structure(lines, sl1, sc1, sl2, sc2, indentation1)
         # rename key
         i = node1.key.span.start.line - sl1 - 1
         add[i] = re.sub(parent1.group(2) + r"\s*:", new_node + ":", add[i])        
@@ -686,8 +715,8 @@ class Transformator:
                 " is overlapped")
         if sl1 < dl2:
             # source before dest, first copy
-            intendation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
-            StructureChanger.paste_structure(lines, dl2, add, len(intendation2.group(1)) < dc2)
+            indentation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
+            StructureChanger.paste_structure(lines, dl2, add, len(indentation2.group(1)) < dc2)
             action['parameters']['path'] = action['parameters']['source_path']
             action['parameters']['deep'] = True
             self._delete_key(root, lines, action)
@@ -696,8 +725,8 @@ class Transformator:
             action['parameters']['path'] = action['parameters']['source_path']
             action['parameters']['deep'] = True
             self._delete_key(root, lines, action)
-            intendation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
-            StructureChanger.paste_structure(lines, dl2, add, len(intendation2.group(1)) < dc2)        
+            indentation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
+            StructureChanger.paste_structure(lines, dl2, add, len(indentation2.group(1)) < dc2)        
         return True
         
     def _add_array(self, root, lines, action):
@@ -734,10 +763,9 @@ class Transformator:
                 "Source and addition nodes can't contains each other (" + 
                 self._get_paths_str(action, 'source_path') + ")")
         
-        intendation1 = re.search(r'^(\s*)(\S.*)$', lines[sl1])
-        intendation1 = len(intendation1.group(1))
-        al1, ac1, al2, ac2 = StructureChanger._add_comments(lines, al1, ac1, al2, ac2)
-        add = StructureChanger.copy_structure(lines, al1, ac1, al2, ac2, intendation1)
+        indentation1 = StructureChanger.get_indentation(lines, sl1)
+        al1, ac1, al2, ac2 = StructureChanger.add_comments(lines, al1, ac1, al2, ac2)
+        add = StructureChanger.copy_structure(lines, al1, ac1, al2, ac2, indentation1)
  
         if al2 < sl1 or (al2 == sl1 and al2 < sc1):
             # source after addition, first delete
@@ -758,8 +786,8 @@ class Transformator:
             node = root.get_node_at_path(action['parameters']['path'])
         except:
             return False
-        old = '!' + action['parameters']['old_name'] 
-        new = '!' + action['parameters']['new_name']
+        old = action['parameters']['old_name'] 
+        new = action['parameters']['new_name']
  
         StructureChanger.change_tag(lines, node, old,  new)
         return True
@@ -789,8 +817,11 @@ class Transformator:
         except:
             return False
         if node.implementation != DataNode.Implementation.scalar:
-            raise TransformationFileFormatError(
-                    "Specified path (" + self._get_paths_str(action, 'path') + ") is not scalar type node." )
+            self._add_notification(
+                "Specified path '{0}',  is not scalar type node, action is ignored".format(
+                self._get_paths_str(action, 'path')),  self._Severity.warning , action, node
+            )
+            return False
         old = action['parameters']['old_value'] 
         new = action['parameters']['new_value']
         l1, c1, l2, c2 =  StructureChanger.value_pos(node)
@@ -804,17 +835,42 @@ class Transformator:
         except:
             return False
         if node.implementation != DataNode.Implementation.scalar:
-            raise TransformationFileFormatError(
-                    "Specified path (" + self._get_paths_str(action, 'path') + ") is not scalar type node." )
+            self._add_notification(
+                "Specified path '{0}', is not scalar type node, action is ignored".format(
+                self._get_paths_str(action, 'path')),  self._Severity.warning , action, node
+            )
+            return False
         try:
             value =  float(node.value)
         except ValueError:
-            raise TransformationFileFormatError(
-                    "Type of value in specified path (" 
-                    + self._get_paths_str(action, 'path') + ") is not numeric." )
+            self._add_notification(
+                "Type of value in specified path '{0}', is not numeric, action is ignored".format(
+                self._get_paths_str(action, 'path')),  self._Severity.warning , action, node
+            )
+            return False
         l1, c1, l2, c2 =  StructureChanger.value_pos(node)
         return StructureChanger.replace(lines, str(scale*value),   lines[l1][c1:c2],  l1, c1, l2, c2 )
 
+    def _replace_value(self, root, lines, action):
+        """Rename type transformation"""
+        try:
+            node = root.get_node_at_path(action['parameters']['path'])
+        except:
+            return False
+        if node.implementation != DataNode.Implementation.scalar:
+            self._add_notification(
+                "Specified path '{0}',  is not scalar type node, action is ignored".format(
+                self._get_paths_str(action, 'path')),  self._Severity.warning , action, node
+            )
+            return False
+        pattern = action['parameters']['pattern'] 
+        replacement = action['parameters']['replacement']
+        old = str(node.value)
+        new = re.sub( pattern, replacement, old)
+        if new != old:
+            l1, c1, l2, c2 =  StructureChanger.value_pos(node)
+            return StructureChanger.replace(lines, new,  old,  l1, c1, l2, c2 )
+        return False    
         
     def _add_key(self, root, lines, action):
         """Add key to abstract record"""
@@ -841,9 +897,9 @@ class Transformator:
             add = StructureChanger.add_key(key, 0, value, tag)
             lines.insert(l1,  add)
         else:
-            intendation = re.search(r'^(\s*)(\S.*)$', lines[l1])
-            intendation = len(intendation.group(1)) + 2            
-            add = StructureChanger.add_key(key, intendation, value, tag)
+            indentation = re.search(r'^(\s*)(\S.*)$', lines[l1])
+            indentation = len(indentation.group(1)) + 2            
+            add = StructureChanger.add_key(key, indentation, value, tag)
             lines.insert(l1+1, add)
         return True
 

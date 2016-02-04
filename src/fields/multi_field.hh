@@ -54,9 +54,17 @@ namespace IT=Input::Type;
 template<int spacedim, class Value>
 class MultiField : public FieldCommon {
 public:
-    //typedef FieldBase<spacedim, Value> SubFieldBaseType;
+    typedef FieldAlgorithmBase<spacedim, Value> SubFieldBaseType;
     typedef Field<spacedim, Value> SubFieldType;
     typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldValue_<0,1,typename Value::element_type> MultiFieldValue;
+
+    TYPEDEF_ERR_INFO( EI_MultiFieldName, const string );
+    TYPEDEF_ERR_INFO( EI_Size, unsigned int );
+    TYPEDEF_ERR_INFO( EI_ExpectedSize, unsigned int );
+    DECLARE_INPUT_EXCEPTION( Exc_InvalidMultiFieldSize, << "Invalid size " << EI_Size::val
+    		<< "of the MultiField " << EI_MultiFieldName::qval << ", expected size: " << EI_ExpectedSize::val );
 
     class MultiFieldFactory : public Field<spacedim, Value>::FactoryBase {
     public:
@@ -83,7 +91,7 @@ public:
      */
     const IT::Instance &get_input_type() override;
 
-    IT::Record &get_multifield_input_type() override;
+    IT::Array &get_multifield_input_type() override;
 
     /**
      * Abstract method to update field to the new time level.
@@ -133,7 +141,7 @@ public:
      */
     inline SubFieldType &operator[](unsigned int idx)
     {
-    	ASSERT(idx < sub_fields_.size(), "Index of subfield is out of range.\n");
+    	ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
     	return sub_fields_[idx];
     }
 
@@ -142,7 +150,21 @@ public:
      *
      * Must be call after setting components, mesh and limit side.
      */
-    void set_up_components();
+    void setup_components();
+
+    /**
+     * Returns vector of value in one given point @p on an element given by ElementAccessor @p elm.
+     * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
+     */
+    virtual typename MultiFieldValue::return_type value(const Point &p, const ElementAccessor<spacedim> &elm) const;
+
+    /**
+     * Returns std::vector of vector values in several points at once. The base class implements
+     * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
+     * but this overhead can be negligible for more complex fields as Python of Formula.
+     */
+    virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+                             std::vector<typename MultiFieldValue::return_type>  &value_list) const;
 
     void set_input_list(const Input::Array &list) override;
 
@@ -152,6 +174,8 @@ private:
     /// Helper class members, used only for input record
     SubFieldType sub_field_type_;
     TransposedField transposed_field_;
+    /// Full list of input field descriptors from which the subfields of MultiField are set.
+    Input::Array full_input_list_;
 };
 
 

@@ -40,11 +40,11 @@ while on the outflow $\Gamma_I^-$ we prescribe zero diffusive flux:
 \[ T = T_D \mbox{ on }\Gamma_I^+\cup\Gamma_D. \]
 \item \textbf{total\_flux}
 On $\Gamma_{TF}$ we impose total energy flux condition:
-\[ \left(\varrho_l c_l T \vc q - \delta\Lambda\nabla T\right)\cdot\vc n = \delta(f^T_N+\sigma^T_R(T-T_D)). \]
-with user-defined \hyperA{HeatTransfer-DG-Data::bc-flux}{energy flux} $f^T_N$ [J$\mathrm{m}^{-2}\mathrm{s}^{-1}$],
+\[ \left(-\varrho_l c_l T \vc q + \delta\Lambda\nabla T\right)\cdot\vc n = \delta(f^T_N+\sigma^T_R(T_D-T)). \]
+with user-defined \hyperA{HeatTransfer-DG-Data::bc-flux}{incoming energy flux} $f^T_N$ [J$\mathrm{m}^{-2}\mathrm{s}^{-1}$],
 \hyperA{HeatTransfer-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^T_R$ [J$\mathrm{m}^{-2}\mathrm{s}^{-1}\mathrm{K}^{-1}$] and \hyperA{HeatTransfer-DG-Data::bc-temperature}{reference temperature} $T_D$.
 \item \textbf{diffusive\_flux} Finally on $\Gamma_{DF}$ we prescribe diffusive energy flux (similarly as above):
-\[ -\delta\Lambda\nabla T\cdot\vc n = \delta(f^T_N+\sigma^T_R(T-T_D)). \]
+\[ \delta\Lambda\nabla T\cdot\vc n = \delta(f^T_N+\sigma^T_R(T_D-T)). \]
 \end{itemize}
 We mention several typical uses of boundary conditions:
 \begin{itemize}
@@ -92,12 +92,12 @@ F^T_{C1} = q^T_{21}.
 
 \paragraph{Energy balance.}
 The heat equation satisfies the balance of energy in the following form:
-$$ e(0) + \int_0^t s(\tau) \,d\tau - \int_0^t f(\tau) \,d\tau = e(t) $$
+$$ e(0) + \int_0^t s(\tau) \,d\tau + \int_0^t f(\tau) \,d\tau = e(t) $$
 for any instant $t$ in the computational time interval.
 Here
 $$ e(t) := \sum_{d=1}^3\int_{\Omega^d}(\delta \tilde s T)(t,\vc x)\,d\vc x, $$
 $$ s(t) := \sum_{d=1}^3\int_{\Omega^d}F_S^T(t,\vc x)\,d\vc x, $$
-$$ f(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(\varrho_l c_l T\vc q - \delta\Lambda\nabla T\right)(t,\vc x)\cdot\vc n \,d\vc x $$
+$$ f(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(-\varrho_l c_l T\vc q + \delta\Lambda\nabla T\right)(t,\vc x)\cdot\vc n \,d\vc x $$
 is the energy [J], the volume source [J$\mathrm{s}^{-1}$] and the energy flux [J$\mathrm{s}^{-1}$] at time $t$, respectively.
 The energy, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{energy\_balance.txt}.
 

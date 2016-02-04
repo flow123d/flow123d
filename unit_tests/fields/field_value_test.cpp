@@ -294,18 +294,18 @@ TEST(FieldValue_, string_values_init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Record rec_type = Input::Type::Record("FieldValueTest","")
-		.declare_key("double_scalar",get_instance< FieldValue_<1,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
+		.declare_key("double_scalar", StringTensorInput<1,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_fix_vector_full",get_instance< FieldValue_<3,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_vector_const",get_instance< FieldValue_<3,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_vector_full",StringTensorInput<3,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_vector_const",StringTensorInput<3,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_vector_full",get_instance< FieldValue_<0,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_vector_const",get_instance< FieldValue_<0,1,std::string> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_vector_full",StringTensorInput<0,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_vector_const",StringTensorInput<0,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_fix_tensor_full",get_instance< FieldValue_<2,3,std::string> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_symm",get_instance< FieldValue_<2,2,std::string> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_diag",get_instance< FieldValue_<2,2,std::string> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_cdiag",get_instance< FieldValue_<2,2,std::string> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_full",StringTensorInput<2,3>::get_input_type(), Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_symm",StringTensorInput<2,2>::get_input_type(), Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_diag",StringTensorInput<2,2>::get_input_type(), Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_cdiag",StringTensorInput<2,2>::get_input_type(), Input::Type::Default::obligatory(),"" )
 
     	.close();
 
@@ -315,76 +315,76 @@ TEST(FieldValue_, string_values_init_from_input) {
 
 
     {
-        typedef FieldValue_<1,1,std::string> T; T::return_type x_val(1,1); T val(x_val);
-        val.init_from_input(in_rec.val<std::string>("double_scalar"));
-        EXPECT_EQ(x_val.at(0,0), "x");
+        StringTensor val(1,1);
+        StringTensorInput<1,1>::init_from_input(val, in_rec.val<std::string>("double_scalar"));
+        EXPECT_EQ(val.at(0,0), "x");
     }
 
 
     {
-        typedef FieldValue_<3,1,std::string> T; T::return_type x_val(3,1); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_fix_vector_full"));
-        EXPECT_EQ( "x",x_val.at(0));
-        EXPECT_EQ( "y",x_val.at(1));
-        EXPECT_EQ( "z",x_val.at(2));
+        StringTensor val(3,1);
+        StringTensorInput<3,1>::init_from_input(val, in_rec.val<Input::Array>("double_fix_vector_full"));
+        EXPECT_EQ( "x",val.at(0));
+        EXPECT_EQ( "y",val.at(1));
+        EXPECT_EQ( "z",val.at(2));
     }
     {
-        typedef FieldValue_<3,1,std::string> T; T::return_type x_val(3,1); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_fix_vector_const"));
-        EXPECT_EQ( "x",x_val.at(0));
-        EXPECT_EQ( "x",x_val.at(1));
-        EXPECT_EQ( "x",x_val.at(2));
-    }
-
-
-    {
-        typedef FieldValue_<0,1,std::string> T; T::return_type x_val(2,1); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_vector_full"));
-        EXPECT_EQ( "x",x_val.at(0));
-        EXPECT_EQ( "y",x_val.at(1));
-    }
-    {
-        typedef FieldValue_<0,1,std::string> T; T::return_type x_val(3,1); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_vector_const"));
-        EXPECT_EQ( "x",x_val.at(0));
-        EXPECT_EQ( "x",x_val.at(1));
-        EXPECT_EQ( "x",x_val.at(2));
+        StringTensor val(3,1);
+        StringTensorInput<3,1>::init_from_input(val, in_rec.val<Input::Array>("double_fix_vector_const"));
+        EXPECT_EQ( "x",val.at(0));
+        EXPECT_EQ( "x",val.at(1));
+        EXPECT_EQ( "x",val.at(2));
     }
 
 
     {
-        typedef FieldValue_<2,3,std::string> T; T::return_type x_val(2,3); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_full"));
-        EXPECT_EQ( "x",x_val.at(0,0));
-        EXPECT_EQ( "y",x_val.at(0,1));
-        EXPECT_EQ( "z",x_val.at(0,2));
-        EXPECT_EQ( "x*x",x_val.at(1,0));
-        EXPECT_EQ( "y*y",x_val.at(1,1));
-        EXPECT_EQ( "z*z",x_val.at(1,2));
+        StringTensor val(2,1);
+        StringTensorInput<0,1>::init_from_input(val, in_rec.val<Input::Array>("double_vector_full"));
+        EXPECT_EQ( "x",val.at(0));
+        EXPECT_EQ( "y",val.at(1));
     }
     {
-        typedef FieldValue_<2,2,std::string> T; T::return_type x_val(2,2); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_symm"));
-        EXPECT_EQ( "x*x",x_val.at(0,0));
-        EXPECT_EQ( "x*y",x_val.at(0,1));
-        EXPECT_EQ( "x*y",x_val.at(1,0));
-        EXPECT_EQ( "y*y",x_val.at(1,1));
+        StringTensor val(3,1);
+        StringTensorInput<0,1>::init_from_input(val, in_rec.val<Input::Array>("double_vector_const"));
+        EXPECT_EQ( "x",val.at(0));
+        EXPECT_EQ( "x",val.at(1));
+        EXPECT_EQ( "x",val.at(2));
+    }
+
+
+    {
+        StringTensor val(2,3);
+        StringTensorInput<2,3>::init_from_input(val, in_rec.val<Input::Array>("double_fix_tensor_full"));
+        EXPECT_EQ( "x",val.at(0,0));
+        EXPECT_EQ( "y",val.at(0,1));
+        EXPECT_EQ( "z",val.at(0,2));
+        EXPECT_EQ( "x*x",val.at(1,0));
+        EXPECT_EQ( "y*y",val.at(1,1));
+        EXPECT_EQ( "z*z",val.at(1,2));
     }
     {
-        typedef FieldValue_<2,2,std::string> T; T::return_type x_val(2,2); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_diag"));
-        EXPECT_EQ( "x*x",x_val.at(0,0));
-        EXPECT_EQ( "0.0",x_val.at(0,1));
-        EXPECT_EQ( "0.0",x_val.at(1,0));
-        EXPECT_EQ( "y*y",x_val.at(1,1));
+        StringTensor val(2,2);
+        StringTensorInput<2,2>::init_from_input(val, in_rec.val<Input::Array>("double_fix_tensor_symm"));
+        EXPECT_EQ( "x*x",val.at(0,0));
+        EXPECT_EQ( "x*y",val.at(0,1));
+        EXPECT_EQ( "x*y",val.at(1,0));
+        EXPECT_EQ( "y*y",val.at(1,1));
     }
     {
-        typedef FieldValue_<2,2,std::string> T; T::return_type x_val(2,2); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_cdiag"));
-        EXPECT_EQ( "x*y*z",x_val.at(0,0));
-        EXPECT_EQ( "0.0",x_val.at(0,1));
-        EXPECT_EQ( "0.0",x_val.at(1,0));
-        EXPECT_EQ( "x*y*z",x_val.at(1,1));
+        StringTensor val(2,2);
+        StringTensorInput<2,2>::init_from_input(val, in_rec.val<Input::Array>("double_fix_tensor_diag"));
+        EXPECT_EQ( "x*x",val.at(0,0));
+        EXPECT_EQ( "0.0",val.at(0,1));
+        EXPECT_EQ( "0.0",val.at(1,0));
+        EXPECT_EQ( "y*y",val.at(1,1));
+    }
+    {
+        StringTensor val(2,2);
+        StringTensorInput<2,2>::init_from_input(val, in_rec.val<Input::Array>("double_fix_tensor_cdiag"));
+        EXPECT_EQ( "x*y*z",val.at(0,0));
+        EXPECT_EQ( "0.0",val.at(0,1));
+        EXPECT_EQ( "0.0",val.at(1,0));
+        EXPECT_EQ( "x*y*z",val.at(1,1));
     }
 }
 

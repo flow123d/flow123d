@@ -96,7 +96,7 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
     	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
-    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) );
+    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
 	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
@@ -137,7 +137,7 @@ void ConvectionTransport::initialize()
 	data_.output_fields.set_mesh(*mesh_);
 	data_.output_fields.set_limit_side(LimitSide::right);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
-	data_.conc_mobile.set_up_components();
+	data_.conc_mobile.setup_components();
 	data_.region_id = GenericField<3>::region_id(*mesh_);
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
@@ -368,7 +368,7 @@ void ConvectionTransport::set_boundary_conditions()
                         {
                         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
                         	{
-                        		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
+//                         		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
                         		balance_->add_flux_vec_value(subst_idx[sbi], loc_b, flux*value[sbi]);
                         	}
                         }

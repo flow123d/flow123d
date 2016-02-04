@@ -116,16 +116,26 @@ public:
     Field(const string &name, bool bc = false);
 
     /**
+     * Constructor that must be used for create of MultiField components.
+     *
+     * Set parameters @p component_index_, @p shared_->input_name_ and @p name_.
+     * Parameter name_ of Field is consisted of component name and MultiField name.
+     */
+    Field(unsigned int component_index, string input_name, string name = "");
+
+    /**
      * Copy constructor. Keeps shared history, declaration data, mesh.
      */
     Field(const Field &other);
 
     /**
-     * Assignment operator. Same properties as copy constructor.
+     * Assignment operator. Same properties as copy constructor, but class member name_ is not copied.
      *
      * Question: do we really need this, isn't copy constructor enough?
      * Answer: It is necessary in (usual) case when Field instance is created as the class member
      * but is filled later by assignment possibly from other class.
+     * TODO: operator can be merged with copy constructor, but we must provide to set correct value
+     * of name in method copy_from
      */
     Field &operator=(const Field &other);
 
@@ -138,7 +148,7 @@ public:
      */
     const IT::Instance &get_input_type() override;
 
-    IT::Record &get_multifield_input_type() override;
+    IT::Array &get_multifield_input_type() override;
 
 
     /**
@@ -167,9 +177,9 @@ public:
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().
+     * See also Field<>::field_result which provide better information about special field values.
      */
     bool is_constant(Region reg) override;
-
 
     /**
      * Assigns given @p field to all regions in given region set @p domain.
@@ -214,11 +224,18 @@ public:
 
 
     /**
-     * Special field values spatially constant. Could allow optimization of tensor multiplication and
+     * @brief Indicates special field states.
+     *
+     * Return possible values from the enum @p FieldResult, see description there.
+     * The initial state is @p field_none, if the field is correctly set on all regions of the @p region_set given as parameter
+     * we return state @p field_other
+     * - Special field values spatially constant. Could allow optimization of tensor multiplication and
      * tensor or vector addition. field_result_ should be set in constructor and in set_time method of particular Field implementation.
      * We return value @p result_none, if the field is not initialized on the region of the given element accessor @p elm.
+     * Other possible results are: result_zeros, result_eye, result_ones, result_constant, result_other
+     * see @p FieldResult for explanation.
      */
-    inline FieldResult field_result( ElementAccessor<spacedim> &elm) const;
+    inline FieldResult field_result( RegionSet region_set) const;
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

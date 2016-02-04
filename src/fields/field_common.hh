@@ -159,6 +159,17 @@ public:
      * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
      */
     void set_components(const std::vector<string> &names) {
+    	// Test of unique values in names vector for MultiField
+    	if (multifield_) {
+			std::vector<string> cpy = names;
+			std::sort( cpy.begin(), cpy.end() );
+			cpy.erase( std::unique( cpy.begin(), cpy.end() ), cpy.end() );
+			if (names.size() != cpy.size()) {
+				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
+													+ " has set non-unique names of components.") );
+			}
+    	}
+
         shared_->comp_names_ = names;
         shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
     }
@@ -254,7 +265,7 @@ public:
      * Returns input type for MultiField instance.
      * TODO: temporary solution, see @p multifield_
      */
-    virtual IT::Record &get_multifield_input_type() =0;
+    virtual IT::Array &get_multifield_input_type() =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
@@ -297,10 +308,12 @@ public:
     /**
      * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true
      * otherwise it returns false.
-     * Then one call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
+     * Then one can call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
      * pointing to "virtual" element on which Field::value returns constant value.
+     * Unlike the Field<>::field_result method, this one provides no value, so it have common header (arguments, return type) and
+     * could be part of FieldCommon and FieldSet which is useful in some applications.
      *
-     * Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
+     * TODO:Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
      * becomes necessary it is possible to incorporate such test into set_time method and in this method just return precomputed result.
      */
     virtual bool is_constant(Region reg) =0;
@@ -373,7 +386,7 @@ protected:
     	/**
     	 * Empty constructor.
     	 */
-    	SharedData() : list_idx_(-1) {};
+    	SharedData() : list_idx_(0) {};
 
         /**
          * True for boundary fields.
@@ -418,14 +431,14 @@ protected:
         const Mesh *mesh_;
 
         /**
-         * List of input field descriptors from which the field is set.
+         * Vector of input field descriptors from which the field is set.
          */
         vector<Input::Record> input_list_;
 
         /**
          * Index to current position of input field descriptor.
          */
-        int list_idx_;
+        unsigned int list_idx_;
 
         /**
          * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.

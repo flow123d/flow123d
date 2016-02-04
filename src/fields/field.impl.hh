@@ -60,6 +60,21 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 
 template<int spacedim, class Value>
+Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name)
+: data_(std::make_shared<SharedData>())
+{
+	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
+	// this invariant is kept also by n_comp setter
+	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
+	this->set_component_index(component_index);
+	this->name_ = (name=="") ? input_name : name;
+	this->shared_->input_name_ = input_name;
+
+	this->multifield_ = false;
+}
+
+
+template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
@@ -116,11 +131,11 @@ const it::Instance &Field<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
-it::Record &Field<spacedim,Value>::get_multifield_input_type() {
+it::Array &Field<spacedim,Value>::get_multifield_input_type() {
 	ASSERT(false, "This method can't be used for Field");
 
-	static it::Record rec = it::Record();
-	return rec;
+	static it::Array arr = it::Array( it::Integer() );
+	return arr;
 }
 
 
@@ -298,10 +313,25 @@ void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 
 
 template<int spacedim, class Value>
-FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm) const {
-    auto f = region_fields_[elm.region().idx()];
-    if (f) return f->field_result();
-    else return result_none;
+FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
+
+    FieldResult result_all = result_none;
+    for(Region &reg : region_set) {
+        auto f = region_fields_[reg.idx()];
+        if (f) {
+            FieldResult fr = f->field_result();
+            if (result_all == result_none) // first region
+                result_all = fr;
+            else if (fr != result_all)
+                return result_other; // if results from individual regions are different
+        } else return result_none; // if field is undefined on any region of the region set
+    }
+
+    if (result_all == result_constant && region_set.size() > 1)
+        return result_other; // constant result for individual regions could be non-constant on the whole region set
+
+    return result_all;
+
 }
 
 
@@ -316,18 +346,19 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
         while( shared_->list_idx_ < shared_->input_list_.size()
         	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
 
+        	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
         	// get domain specification
         	RegionSet domain;
         	std::string domain_name;
         	unsigned int id;
-			if (shared_->input_list_[shared_->list_idx_].opt_val("region", domain_name)) {
+			if (actual_list_item.opt_val("region", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 				if (domain.size() == 0) {
 					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << shared_->input_list_[shared_->list_idx_].ei_address() );
+							<< RegionDB::EI_Label(domain_name) << actual_list_item.ei_address() );
 				}
 
-			} else if (shared_->input_list_[shared_->list_idx_].opt_val("rid", id)) {
+			} else if (actual_list_item.opt_val("rid", id)) {
 				try {
 					Region region = mesh()->region_db().find_id(id);
 					if(region.is_valid())
@@ -335,19 +366,19 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 					else
 					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
-					e << shared_->input_list_[shared_->list_idx_].ei_address();
+					e << actual_list_item.ei_address();
 					throw;
 				}
 			} else {
 				THROW(ExcMissingDomain()
-						<< shared_->input_list_[shared_->list_idx_].ei_address() );
+						<< actual_list_item.ei_address() );
 			}
 		    
 			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
 
 			// get field instance   
 			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
-				FieldBasePtr field_instance = (*rit)->create_field(shared_->input_list_[shared_->list_idx_], *this);
+				FieldBasePtr field_instance = (*rit)->create_field(actual_list_item, *this);
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
@@ -475,7 +506,6 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
     	}
 	}
 
-    shared_->list_idx_ = 0;
 }
 
 

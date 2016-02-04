@@ -14,6 +14,7 @@
 
 set -x
 
+
 cd ${0%/*}/../build_tree/bin
 if [ "$1" == "cygwin" ]
 then
@@ -29,18 +30,18 @@ then
 else  
   if [ -x  ./flow123d ]
   then
+    # detect shared libs
     loader=`ldd flow123d | grep "/ld" | sed 's/^\t*\(\/.*\) (.*)$/\1/'`
-    libs_non_system=`ldd flow123d | grep " => /" | grep -v 'libc\.\|libdl\.\|libgcc_s\.\|libgfortran\.\|libm\.\|libstdc++\.\|librt\.' | sed 's/^.* => \(\/.*\) (.*)$/\1/'`
-    libs_system=`ldd flow123d | grep " => /" | grep 'libc\.\|libdl\.\|libgcc_s\.\|libgfortran\.\|libm\.\|libstdc++\.\|librt\.' | sed 's/^.* => \(\/.*\) (.*)$/\1/'`
-    libs_system="${libs_system} ${loader}"
+    libs=`ldd flow123d | grep -n "^/" | sed 's/^.* => \(\/.*\) (.*)$/\1/'`
     
+    # copy shared libs
     echo "Copy flow123d shared libraries ..."
-    echo $libs_non_system
-    echo $libs_system
     if [ ! -d ../lib ]; then mkdir ../lib; fi
-    if [ ! -d ../lib/system ]; then mkdir ../lib/system; fi
-    cp $libs_non_system ../lib
-    cp $libs_system ../lib/system
+    cp ${libs} ../lib
+    
+    # manually copy and rename file to bin dir so cmake can make it executable
+    cp ${loader} ./ld-linux-loader.so
+    chmod +x "./ld-linux-loader.so"
   fi
 fi
 

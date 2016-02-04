@@ -45,9 +45,10 @@ void check_tensor_field(std::shared_ptr<TensorField> field,const  std::string& e
 
     for(auto point : points) {
     	result = field->value( point, elem);
-    	arma::umat match = (  exp == result );
-    	if (!match.max()) cout << "Expected: " << exp << endl << "Result: "<< result << endl;
-    	EXPECT_TRUE( match.max());
+    	arma::umat mat_match = (  exp == result );
+    	bool mat_equal = arma::min( arma::min(mat_match));
+    	if (! mat_equal) cout << "Expected: " << exp << endl << "Result: "<< result << endl;
+    	EXPECT_TRUE( mat_equal );
     }
 }
 

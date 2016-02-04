@@ -20,6 +20,7 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "fields/field_constant.hh"
+#include "fields/field_set.hh"
 
 #include "system/sys_profiler.hh"
 
@@ -537,6 +538,7 @@ TYPED_TEST(FieldFix, constructors) {
 
 
 
+
 string field_input = R"INPUT(
 {
    sorption_type="linear",   
@@ -644,6 +646,114 @@ TEST(Field, init_from_input) {
 
 }
 
+
+
+string field_input_list = R"INPUT(
+[
+    {
+        region="1D diagonal",
+        scalar=0,
+        vector=0,
+        tensor=0
+    },
+    {
+        region="2D XY diagonal",
+        scalar=1,
+        vector=1,
+        tensor=[1,1,1,1,1,1]
+    },
+    {
+        region="3D front",
+        scalar=2,
+        vector=2,
+        tensor=2
+    },
+    {
+        region="3D back",
+        scalar={TYPE="FieldFormula", value="0"},
+        vector={TYPE="FieldFormula", value="0"},
+        tensor=1
+    }
+]
+)INPUT";
+
+namespace it = Input::Type;
+
+class TestFieldSet : public FieldSet
+{
+public:
+    TestFieldSet() {
+        ADD_FIELD(scalar, "").units(UnitSI::dimensionless());
+        ADD_FIELD(vector, "").units(UnitSI::dimensionless());
+        ADD_FIELD(tensor, "").units(UnitSI::dimensionless());
+    }
+    Field<3, FieldValue<3>::Scalar > scalar;
+    Field<3, FieldValue<3>::VectorFixed > vector;
+    Field<3, FieldValue<3>::TensorFixed > tensor;
+};
+
+TEST(Field, field_result) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    Profiler::initialize();
+
+    TimeGovernor tg(0.0, 1.0);
+
+    Mesh mesh;
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
+    mesh.read_gmsh_from_stream(in);
+
+    it::Array main_array =IT::Array(
+            TestFieldSet().make_field_descriptor_type("TestFieldSet")
+            .close()
+        );
+
+    // read input string
+    Input::ReaderToStorage reader( field_input_list, main_array, Input::FileFormat::format_JSON );
+    Input::Array array=reader.get_root_interface<Input::Array>();
+
+    TestFieldSet data;
+    data.set_mesh(mesh);
+    data.set_input_list(array);
+    data.set_limit_side(LimitSide::right);
+
+    Region diagonal_1d = mesh.region_db().find_label("1D diagonal");
+    Region diagonal_2d = mesh.region_db().find_label("2D XY diagonal");
+    Region front_3d = mesh.region_db().find_label("3D front");
+    Region back_3d = mesh.region_db().find_label("3D back");
+    Region top_side = mesh.region_db().find_label(".top side");
+    Region bottom_side = mesh.region_db().find_label(".bottom side");
+
+    EXPECT_EQ( result_none, data.scalar.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_none, data.scalar.field_result({diagonal_2d}) );
+    EXPECT_EQ( result_none, data.vector.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_none, data.vector.field_result({front_3d}) );
+    EXPECT_EQ( result_none, data.tensor.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_none, data.tensor.field_result({back_3d}) );
+    // time 0
+    data.set_time(tg.step());
+    EXPECT_EQ( result_zeros, data.scalar.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_zeros, data.vector.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_zeros, data.tensor.field_result({diagonal_1d}) );
+
+    EXPECT_EQ( result_ones, data.scalar.field_result({diagonal_2d}) );
+    EXPECT_EQ( result_ones, data.vector.field_result({diagonal_2d}) );
+    EXPECT_EQ( result_ones, data.tensor.field_result({diagonal_2d}) );
+
+    EXPECT_EQ( result_constant, data.tensor.field_result({front_3d}) );
+    EXPECT_EQ( result_constant, data.tensor.field_result({front_3d}) );
+    EXPECT_EQ( result_constant, data.tensor.field_result({front_3d}) );
+
+    EXPECT_EQ( result_other, data.scalar.field_result({back_3d}) );
+    EXPECT_EQ( result_other, data.vector.field_result({back_3d}) );
+    EXPECT_EQ( result_eye, data.tensor.field_result({back_3d}) );
+
+
+    EXPECT_EQ( result_other, data.scalar.field_result({diagonal_1d, diagonal_2d}) );
+    EXPECT_EQ( result_other, data.vector.field_result({diagonal_1d, diagonal_2d}) );
+    EXPECT_EQ( result_other, data.tensor.field_result({diagonal_1d, diagonal_2d}) );
+
+}
 
 
 

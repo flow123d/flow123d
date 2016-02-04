@@ -21,6 +21,7 @@
 
 #include "multi_field.hh"
 #include "fields/field_algo_base.hh"
+#include "input/input_exception.hh"
 
 namespace it = Input::Type;
 
@@ -32,6 +33,7 @@ template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField()
 : FieldCommon()
 {
+	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
 }
 
@@ -48,17 +50,8 @@ const it::Instance &  MultiField<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
-it::Record &  MultiField<spacedim,Value>::get_multifield_input_type() {
-	static it::Record type= it::Record("MultiField", "Record for all time-space functions.")
-		.has_obligatory_type_key()
-		.declare_key("component_names", it::Array( it::String() ), it::Default::read_time("Can be get from source of MultiField."),
-			"Names of MultiField components.")
-		.declare_key("common", transposed_field_.get_input_type(), it::Default::optional(),
-			"Supplied to components subtree.")
-		.declare_key("components", it::Array( sub_field_type_.get_input_type() ), it::Default::read_time("Converts from 'common' key."),
-			"Components of Multifield.")
-		.close();
-
+it::Array &  MultiField<spacedim,Value>::get_multifield_input_type() {
+	static it::Array type = it::Array( SubFieldBaseType::get_input_type_instance(shared_->input_element_selection_), 1);
 	return type;
 }
 
@@ -69,7 +62,7 @@ bool MultiField<spacedim, Value>::set_time(
 {
 	// initialization of Multifield for first call
 	if (sub_fields_.size() == 0) {
-	    set_up_components();
+	    setup_components();
 	}
 
 	// set time for sub fields
@@ -130,25 +123,33 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::set_up_components() {
-	ASSERT(this->shared_->comp_names_.size(), "Vector of component names is empty!\n");
+void MultiField<spacedim, Value>::setup_components() {
+	unsigned int comp_size = this->shared_->comp_names_.size();
+	string full_name;
+	ASSERT(comp_size, "Vector of component names is empty!\n");
 	ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
 
-    sub_fields_.resize( this->shared_->comp_names_.size() );
-    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
+    sub_fields_.reserve( comp_size );
+    for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
     {
+    	if (this->shared_->comp_names_[i_comp].length() == 0)
+    		full_name = name();
+    	else {
+    		full_name = this->shared_->comp_names_[i_comp] + "_" + name();
+    	}
+
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name) );
     	sub_fields_[i_comp].units( units() );
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
     	sub_fields_[i_comp].add_factory( std::make_shared<MultiFieldFactory>(i_comp) );
-    	sub_fields_[i_comp].set_component_index(i_comp);
 
-    	if (this->shared_->comp_names_[i_comp].length() == 0)
-    		sub_fields_[i_comp].name( name() );
-    	else {
-    		sub_fields_[i_comp].name_ = this->shared_->comp_names_[i_comp] + "_" + name();
-    		sub_fields_[i_comp].shared_->input_name_ = name();
+    	if (this->shared_->input_default_!="") {
+    		sub_fields_[i_comp].shared_->input_default_ = this->shared_->input_default_;
     	}
+
+    	sub_fields_[i_comp].flags_ = this->flags_;
+    	sub_fields_[i_comp].set_input_list(this->full_input_list_);
     }
 }
 
@@ -158,9 +159,41 @@ template<int spacedim, class Value>
 void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
-	set_up_components();
-	for( SubFieldType &field : sub_fields_) {
-		field.set_input_list(list);
+    // Check sizes of Arrays defined MultiField in field descriptors
+    for (Input::Iterator<Input::Record> it = list.begin<Input::Record>();
+					it != list.end();
+					++it) {
+    	Input::Array mf_array;
+    	if ( it->opt_val(this->input_name(), mf_array) ) {
+    		unsigned int comp_size = this->shared_->comp_names_.size();
+    		if (mf_array.size() != 1 && mf_array.size() != comp_size)
+    			THROW( Exc_InvalidMultiFieldSize() << EI_MultiFieldName(this->input_name())
+    					<< EI_Size(mf_array.size()) << EI_ExpectedSize(comp_size) << list.ei_address() );
+    	}
+    }
+
+    this->full_input_list_ = list;
+}
+
+
+template<int spacedim, class Value>
+typename MultiField<spacedim, Value>::MultiFieldValue::return_type MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
+    typename MultiFieldValue::return_type ret(size(), 1);
+    for (unsigned int i_comp=0; i_comp < size(); i_comp++) {
+    	ret(i_comp, 0) = sub_fields_[i_comp].value(p,elm);
+    }
+
+    return ret;
+}
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+                   std::vector<typename MultiFieldValue::return_type>  &value_list) const {
+	ASSERT_EQUAL( point_list.size(), value_list.size() );
+	for(unsigned int i=0; i< point_list.size(); i++) {
+		value_list[i]=this->value(point_list[i], elm);
 	}
 }
 
@@ -168,27 +201,23 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
 
 template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record descriptor_rec, const FieldCommon &field) {
-	Input::Record multifield_rec;
-	if (descriptor_rec.opt_val(field.input_name(), multifield_rec));
-	Input::Iterator<Input::AbstractRecord> it_common = multifield_rec.find<Input::AbstractRecord>("common");
-	Input::Iterator<Input::Array> it_components = multifield_rec.find<Input::Array>("components");
-	if (it_common && !it_components) {
-		it_common->transpose_to( multifield_rec, "components", spacedim );
-		it_components = multifield_rec.find<Input::Array>("components");
-	}
-
-	ASSERT(it_components, "Failed to fill 'components' array of multifield: %s.", field.input_name().c_str());
-	ASSERT(index_ < it_components->size(), "Index of MultiField component is out of range.\n");
-
-	unsigned int position = 0;
-	for (auto it = it_components->begin<Input::AbstractRecord>(); it != it_components->end(); ++it, ++position)
+	Input::Array multifield_arr;
+	if (descriptor_rec.opt_val(field.input_name(), multifield_arr))
 	{
-		if (index_ == position) {
-			typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
-			field_algo_base->set_component_idx(index_);
-			return field_algo_base;
-		}
+		//ASSERT(multifield_arr.size() == 1 || multifield_arr.size() == field.n_comp(),
+		//		"Invalid size of Array defined for MultiField '%s'!\n", field.input_name().c_str());
+		unsigned int position = 0;
+		auto it = multifield_arr.begin<Input::AbstractRecord>();
+		if (multifield_arr.size() > 1)
+			while (index_ != position) {
+				++it; ++position;
+			}
+
+		typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
+		field_algo_base->set_component_idx(index_);
+		return field_algo_base;
 	}
+
 	return NULL;
 }
 
@@ -196,7 +225,7 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
-	return in_rec.find<Input::Record>(input_name);
+	return in_rec.find<Input::Array>(input_name);
 }
 
 

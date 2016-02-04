@@ -13,7 +13,7 @@ from helpers import (notification_handler, AutocompleteHelper,
                      StructureAnalyzer, shortcuts)
 from ist import InfoTextGenerator
 
-from data.import_json import parse_con, fix_tags, rewrite_comments
+from data.import_json import parse_con, fix_tags, rewrite_comments, fix_intendation
 from data import export_con
 from data.yaml import Loader
 from data.yaml import Transformator, TransformationFileFormatError
@@ -323,6 +323,8 @@ class MEConfig:
             cls.imported_file_name = dir_path + cls.imported_file_name + '.yaml'
             cls.curr_file = None
             cls.update()
+            cls.document = fix_intendation(cls.document, cls.root)
+            cls.update()
             cls.document, need_move_forward = fix_tags(cls.document, cls.root)
             cls.update()
             cls.document = rewrite_comments(con, cls.document, cls.root)
@@ -482,7 +484,13 @@ class MEConfig:
         if res:
             try:
                 cls.document = transformator.transform(cls.document, cls)
-            except TransformationFileFormatError as err:
+                if len(transformator.err)>0:
+                    if cls.main_window is not None:
+                        cls._report_notify(transformator.err)
+                    else:
+                        for err in transformator.err:
+                            print(err)
+            except TransformationFileFormatError as err :
                 if cls.main_window is not None:
                     cls._report_error("Transformation format error", err)
                 else:
@@ -516,3 +524,10 @@ class MEConfig:
         from geomop_dialogs import GMErrorDialog
         err_dialog = GMErrorDialog(cls.main_window)
         err_dialog.open_error_dialog(mess, err)
+        
+    @classmethod
+    def _report_notify(cls, errs):
+        """Report an error with dialog."""
+        from geomop_dialogs import GMErrorDialog
+        err_dialog = GMErrorDialog(cls.main_window)
+        err_dialog.open_error_report_dialog(errs)
