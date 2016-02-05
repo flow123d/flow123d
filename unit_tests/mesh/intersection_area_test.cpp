@@ -26,9 +26,9 @@ using namespace std;
 using namespace computeintersection;
 
 static const std::string profiler_file = "intersection_profiler.log";
-static const unsigned int profiler_loop = 10000;
+static const unsigned int profiler_loop = 1;
 
-/******************************************************************************************** TEST 1d-2d ****/
+// ******************************************************************************************* TEST 1d-2d ****
 
 /// Create results for the meshes in directory 'site_13d'.
 void fill_12d_solution(std::vector<std::vector<computeintersection::IntersectionPoint<1,2>>> &ips)
@@ -79,7 +79,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
     
     for(unsigned int i=0; i < ipc.size(); i++)
     {
-        DBGMSG("---------- check IP[%d] ----------",i);
+        DBGMSG("---------- check IP[%d] ----------\n",i);
         EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_A()[0], ips[i].local_bcoords_A()[0]);
         EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_A()[1], ips[i].local_bcoords_A()[1]);
         EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_B()[0], ips[i].local_bcoords_B()[0]);
@@ -179,11 +179,12 @@ TEST(intersections_12d, all) {
     Profiler::uninitialize();
 }
 
+//*/
 
 
 //*
 
-// ******************************************************************************************** TEST 1d-3d ***
+// ******************************************************************************************* TEST 1d-3d ****
 
 /// Create results for the meshes in directory 'site_13d'.
 void fill_13d_solution(std::vector<computeintersection::IntersectionLine> &ils)
@@ -259,7 +260,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     
     for(unsigned int i=0; i < ilc.size(); i++)
     {
-        DBGMSG("---------- check IP[%d] ----------",i);
+        DBGMSG("---------- check IP[%d] ----------\n",i);
         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_A()[0], il[i].local_bcoords_A()[0]);
         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_A()[1], il[i].local_bcoords_A()[1]);
         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[0], il[i].local_bcoords_B()[0]);
@@ -309,7 +310,7 @@ TEST(intersections_13d, all) {
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir (dir_name.c_str())) != NULL) {
-        //print all the files and directories within directory
+        // print all the files and directories within directory 
         xprintf(Msg,"Testing mesh files: \n");
         while ((ent = readdir (dir)) != NULL) {
             string fname = ent->d_name;
@@ -410,7 +411,8 @@ TEST(intersections_13d, all) {
 
 //*
 
-// ******************************************************************************************** TEST 2d-3d ****
+
+// ******************************************************************************************* TEST 2d-3d ****
 void compute_intersection_area_23d(Mesh *mesh)
 {
     double area1, area2 = 0;

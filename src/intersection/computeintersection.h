@@ -19,6 +19,8 @@ class IntersectionPolygon;
 class Plucker;
 template<unsigned int, unsigned int> class IntersectionPoint;
 
+static const double plucker_empty = std::numeric_limits<double>::infinity();
+
 /******************************************************************
  * 	TŘÍDA PRO VÝPOČET SIMPLEX 1 - SIMPLEX 2
  * ****************************************************************/
@@ -36,11 +38,14 @@ template<unsigned int, unsigned int> class IntersectionPoint;
  */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
 public:
-    /// Default constructor.
+    /// Default constructor. Use when this is NOT final intersection object.
 	ComputeIntersection();
-    /// Constructor, sets abscissa and triangle object.
+    /** @brief Constructor, sets abscissa and triangle object.
+     * Use when this is final intersection object.
+     * It allocates memory, computes plucker coordinates and products.
+     */
 	ComputeIntersection(Simplex<1> &abscissa, Simplex<2> &triangle);
-	~ComputeIntersection(){}
+	~ComputeIntersection();
 
     // Why this is not done in constructor?
     // Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
@@ -118,9 +123,12 @@ public:
     /// Prints out all the Plucker coordinates.
 	void print_plucker_coordinates(std::ostream &os);
 
-private:
-    /// Resets Plucker products to NULL.
+    /// Resets Plucker products to 'nullptr'.
+    /// Use this CAREFULLY as it does not destroy the objects.
+    /// It is intended to be used only from higher dimensions when before destroying.
     void clear_all();
+    
+private:
     /// Computes Plucker coordinates (abscissa, triangle lines) and Plucker products.
     void compute_plucker_products();
     
@@ -140,7 +148,7 @@ private:
      */
     bool compute_pathologic(unsigned int side, IntersectionPoint<1,2> &IP);
     
-    
+    /// Flag 'computed'; is true is intersection has been computed already.
     bool computed_;
     
 	Simplex<1> *abscissa_;
@@ -148,9 +156,8 @@ private:
 
 	Plucker* plucker_coordinates_abscissa_;
 	std::vector<Plucker *> plucker_coordinates_triangle_;
-
-    //TODO: allocate at the top level intersection object, use NaN to indicate plucker products not computed yet, also Destroy!
-	double *plucker_products_[3];
+    /// Pointers to Plucker products of abscissa and triangle side.
+	std::vector<double *> plucker_products_;
 };
 
 
@@ -168,9 +175,14 @@ template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
 
 public:
 
-	ComputeIntersection();
+	/// Default constructor. Use when this is NOT final intersection object.
+    ComputeIntersection();
+    /** @brief Constructor, sets abscissa and tetrahedron object.
+     * Use when this is final intersection object.
+     * It allocates memory, computes plucker coordinates and products.
+     */
 	ComputeIntersection(Simplex<1> &abscissa,Simplex<3> &tetrahedron);
-	~ComputeIntersection() {}
+	~ComputeIntersection();
 	
 	void init();
     
@@ -204,15 +216,15 @@ public:
     Plucker *get_pc_tetrahedron(unsigned int edge_idx){
 		return plucker_coordinates_tetrahedron[edge_idx];
     }
-        
-    /**
-     * @brief Gets the Plucker product of the abscissa and tetrahedron side.
-     * 
-     * @param side_idx is index of tetrahedron side (triangle) [0...3]
-     * @param edge_idx is local index triangle side (tetrahedron edge) [0...2]
-     * @return double*
-     */
-    double* get_plucker_product(unsigned int side_idx, unsigned edge_idx);
+    
+    /// Sets the pointer to Plucker product of abscissa and tetrahedron edge of given @p edge_idx.
+    void set_plucker_product(double * number, unsigned edge_idx){
+        plucker_products_[edge_idx] = number;
+    }
+    /// Gets the pointer to Plucker product of abscissa and tetrahedron edge of given @p edge_idx.
+    double* get_plucker_product(unsigned edge_idx){
+        return plucker_products_[edge_idx];
+    }
     //@}
     
 	/// Prints out the Plucker coordinates of abscissa and tetrahedron edges.
@@ -220,10 +232,17 @@ public:
     /// Prints out the Plucker coordinates of tetrahedron edges in a tree of tetrahedron sides (triangles).
 	void print_plucker_coordinates_tree(std::ostream &os);
 
+    /// Resets Plucker products to 'nullptr'.
+    /// Use this CAREFULLY as it does not destroy the objects.
+    /// It is intended to be used only from higher dimensions when before destroying.
+    void clear_all();
+    
 private:
+    
     Plucker* plucker_coordinates_abscissa_;
 	std::vector<Plucker *> plucker_coordinates_tetrahedron;
-
+    /// Pointers to Plucker products of abscissa and tetrahedron edges.
+    std::vector<double *> plucker_products_;
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[4];
 };
 
@@ -242,7 +261,7 @@ public:
 	ComputeIntersection();
 
 	ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron);
-    ~ComputeIntersection() {};
+    ~ComputeIntersection();
 
 	void init();
 	void compute(IntersectionPolygon &local_polygon);
@@ -258,6 +277,9 @@ private:
 	std::vector<Plucker *> plucker_coordinates_triangle_;
 	std::vector<Plucker *> plucker_coordinates_tetrahedron;
 
+    /// Pointers to Plucker products of triangle sides and tetrahedron edges.
+    std::vector<double *> plucker_products_;
+    
 	// Computing objects
 	ComputeIntersection<Simplex<1>, Simplex<3>> CI13[3];
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];

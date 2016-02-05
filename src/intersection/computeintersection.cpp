@@ -20,26 +20,53 @@ ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection()
 : computed_(false), abscissa_(nullptr), triangle_(nullptr)
 {
     plucker_coordinates_abscissa_ = nullptr;
-	plucker_coordinates_triangle_.resize(3);
+	plucker_coordinates_triangle_.resize(3, nullptr);
+    plucker_products_.resize(3, nullptr);
 };
 
 ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(computeintersection::Simplex< 1 >& abscissa, 
                                                                  computeintersection::Simplex< 2 >& triangle)
 : computed_(false), abscissa_(&abscissa), triangle_(&triangle)
 {
-    plucker_coordinates_abscissa_ = new Plucker();
+    // in this constructor, we suppose this is the final object -> we create all data members
+    plucker_coordinates_abscissa_ = new Plucker((*abscissa_)[0].point_coordinates(),
+                                                (*abscissa_)[1].point_coordinates());
+    
     plucker_coordinates_triangle_.resize(3);
-
-	for(unsigned int i = 0; i < 3;i++){
-		plucker_coordinates_triangle_[i] = new Plucker();
+	for(unsigned int side = 0; side < 3; side++){
+		plucker_coordinates_triangle_[side] = new Plucker((*triangle_)[side][0].point_coordinates(), 
+                                                          (*triangle_)[side][1].point_coordinates());
 	}
 
-	clear_all();
+    // compute new Plucker products
+    plucker_products_.resize(3, nullptr);
+    for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
+        plucker_products_[side] = new double((*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]));
+    }
 };
 
+ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::~ComputeIntersection()
+{
+    if(plucker_coordinates_abscissa_ != nullptr)
+        delete plucker_coordinates_abscissa_;
+        
+    for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
+        if(plucker_products_[side] != nullptr)
+            delete plucker_products_[side];
+        if(plucker_coordinates_triangle_[side] != nullptr)
+            delete plucker_coordinates_triangle_[side];
+    }
+}
+
+
 void ComputeIntersection<Simplex<1>, Simplex<2>>::clear_all(){
-	for(unsigned int i = 0; i < 3;i++)
-		plucker_products_[i] = nullptr;
+    // unset all pointers
+    for(unsigned int side = 0; side < RefElement<2>::n_sides; side++)
+    {
+        plucker_products_[side] = nullptr;
+        plucker_coordinates_triangle_[side] = nullptr;
+    }
+    plucker_coordinates_abscissa_ = nullptr;
 };
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
@@ -47,13 +74,13 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
     // if not already computed, compute plucker coordinates of abscissa
 	if(!plucker_coordinates_abscissa_->is_computed()){
 		plucker_coordinates_abscissa_->compute((*abscissa_)[0].point_coordinates(),
-											  (*abscissa_)[1].point_coordinates());
+                                               (*abscissa_)[1].point_coordinates());
 	}
 	// if not already computed, compute plucker coordinates of triangle sides
 	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
 		if(!plucker_coordinates_triangle_[side]->is_computed()){
 			plucker_coordinates_triangle_[side]->compute((*triangle_)[side][0].point_coordinates(), 
-                                                        (*triangle_)[side][1].point_coordinates());
+                                                         (*triangle_)[side][1].point_coordinates());
 		}
 	}
 
@@ -63,16 +90,11 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
     
 	// compute Plucker products (abscissa X triangle side)
 	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
-		if(plucker_products_[side] == nullptr){
-//             (*plucker_coordinates_abscissa_).toString();
-//             (*plucker_coordinates_triangle_[side]).toString();
-			plucker_products_[side] = new double((*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]));
-            
-//             DBGMSG("triangle side:\n");
-//             (*triangle_)[side][0].point_coordinates().print();
-//             (*triangle_)[side][1].point_coordinates().print();
-		}
-// 		DBGMSG("Plucker product = %f\n", *(plucker_products_[side]));
+        ASSERT(plucker_products_[side],"Undefined plucker product.");
+        if(*plucker_products_[side] == plucker_empty){
+           *plucker_products_[side] = (*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]);
+        }
+//      DBGMSG("Plucker product = %f\n", *(plucker_products_[side]));
 	}
 
 };
@@ -286,7 +308,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 
 bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< IntersectionPoint< 1, 2 > >& IP12s)
 {
-    compute_plucker_products();
+    //compute_plucker_products();
     computed_ = true;
     
     // test whether all plucker products have the same sign
@@ -375,6 +397,7 @@ ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection()
 {
     plucker_coordinates_abscissa_ = nullptr;
     plucker_coordinates_tetrahedron.resize(6, nullptr);
+    plucker_products_.resize(6, nullptr);
 };
 
 ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(computeintersection::Simplex< 1 >& abscissa, 
@@ -388,22 +411,57 @@ ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(computeintersec
 	}
 
     set_data(abscissa, tetrahedron);
+    
+    // compute Plucker products (abscissa X tetrahedron line)
+    plucker_products_.resize(6, nullptr);
+    for(unsigned int line = 0; line < RefElement<3>::n_lines; line++){
+        plucker_products_[line] = new double(plucker_empty);
+        
+    }
 };
 
+ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::~ComputeIntersection()
+{
+    // unset pointers:
+    for(unsigned int side = 0; side <  RefElement<3>::n_sides; side++)
+        CI12[side].clear_all();
+    
+    // then delete objects:
+    if(plucker_coordinates_abscissa_ != nullptr)
+        delete plucker_coordinates_abscissa_;
+    
+    for(unsigned int line = 0; line < RefElement<3>::n_lines; line++){
+        if(plucker_products_[line] != nullptr)
+            delete plucker_products_[line];
+        if(plucker_coordinates_tetrahedron[line] != nullptr)
+            delete plucker_coordinates_tetrahedron[line];
+    }
+}
 
+void ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::clear_all()
+{
+    // unset all pointers
+    for(unsigned int side = 0; side < RefElement<3>::n_lines; side++)
+    {
+        plucker_products_[side] = nullptr;
+        plucker_coordinates_tetrahedron[side] = nullptr;
+    }
+    plucker_coordinates_abscissa_ = nullptr;
+}
 
 void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
-    
-	for(unsigned int i = 0; i < 4;i++){
-		CI12[i].set_pc_abscissa(plucker_coordinates_abscissa_);
-	}
 
-	for(unsigned int j = 0; j < 4;j++){ // for each side of tetrahedron
-		for(unsigned int i = 0; i < 3;i++){ // for each side of triangle
-			CI12[j].set_pc_triangle(plucker_coordinates_tetrahedron[RefElement<3>::interact<1,2>(j)[i]], i);
+	for(unsigned int side = 0; side <  RefElement<3>::n_sides; side++){
+		for(unsigned int line = 0; line < RefElement<3>::n_lines_per_side; line++){
+			CI12[side].set_pc_triangle(plucker_coordinates_tetrahedron[
+                                            RefElement<3>::interact<1,2>(side)[line]], line);
+            
+            CI12[side].set_plucker_product(
+                plucker_products_[RefElement<3>::interact<1,2>(side)[line]],
+                line);
 		}
-	}
-
+		CI12[side].set_pc_abscissa(plucker_coordinates_abscissa_);
+	}  
 };
 
 void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(computeintersection::Simplex< 1 >& abscissa, 
@@ -420,13 +478,6 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 
     // loop over sides of tetrahedron 
 	for(unsigned int side = 0;side < RefElement<3>::n_sides && pocet_pruniku < 2;side++){
-
-        // update plucker products of the side
-        //TODO depends on reference element: loop over edges of the side; 
-        // possibly can be removed after passing plucker products
-		for(unsigned int j = 0; j < side;j++){
-			CI12[side].set_plucker_product(CI12[j].get_plucker_product(side-1),j);
-		}
 		if(!CI12[side].is_computed() // if not computed yet
             && CI12[side].compute(IP12s, true)){    // compute; if intersection exists then continue
 
@@ -563,17 +614,6 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::print_plucker_coordinates_tree
 		}
 };
 
-// void ComputeIntersection<Simplex<1>, Simplex<3>>::set_plucker_product(double* number, unsigned int index_CI, unsigned index_edge){
-// 	CI12[index_CI].set_plucker_product(number, index_edge);
-// };
-
-double* ComputeIntersection<Simplex<1>, Simplex<3>>::get_plucker_product(unsigned int side_idx, unsigned int edge_idx){
-	return CI12[side_idx].get_plucker_product(edge_idx);
-};
-
-
-
-
 
 
 /*************************************************************************************************************
@@ -583,6 +623,7 @@ ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection()
 {
     plucker_coordinates_triangle_.resize(3, nullptr);
     plucker_coordinates_tetrahedron.resize(6, nullptr);
+    plucker_products_.resize(3*6, nullptr);
 };
 
 
@@ -601,27 +642,69 @@ ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(Simplex<2> &tri
 		plucker_coordinates_triangle_[i] = new Plucker();
 		CI13[i].set_data(triangle.abscissa(i) , tetrahedron);
 	}
+	
+	// compute Plucker products (triangle side X tetrahedron line)
+	// order: triangle sides X tetrahedron lines:
+	// TS[0] X TL[0..6]; TS[1] X TL[0..6]; TS[1] X TL[0..6]
+	unsigned int np = RefElement<2>::n_sides *  RefElement<3>::n_lines;
+	plucker_products_.resize(np, nullptr);
+    for(unsigned int line = 0; line < np; line++){
+        plucker_products_[line] = new double(plucker_empty);
+        
+    }
 };
 
+ComputeIntersection< Simplex< 2  >, Simplex< 3  > >::~ComputeIntersection()
+{
+    // unset pointers:
+    for(unsigned int triangle_side = 0; triangle_side < RefElement<2>::n_sides; triangle_side++)
+        CI13[triangle_side].clear_all();
+        
+    for(unsigned int line = 0; line < RefElement<3>::n_lines; line++)
+        CI12[line].clear_all();
+    
+    // then delete objects:
+    unsigned int np = RefElement<2>::n_sides *  RefElement<3>::n_lines;
+    for(unsigned int line = 0; line < np; line++){
+            if(plucker_products_[line] != nullptr)
+                delete plucker_products_[line];
+    }
+    
+    for(unsigned int i = 0; i < RefElement<3>::n_lines;i++){
+        if(plucker_coordinates_tetrahedron[i] != nullptr)
+            delete plucker_coordinates_tetrahedron[i];
+    }
+    for(unsigned int i = 0; i < RefElement<2>::n_sides;i++){
+        if(plucker_coordinates_triangle_[i] != nullptr)
+            delete plucker_coordinates_triangle_[i];
+    }
+};
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 
     // set pointers to Plucker coordinates for 1D-2D
-	for(unsigned int i = 0; i < 6;i++){
-		CI12[i].set_pc_abscissa(plucker_coordinates_tetrahedron[i]);
-		for(unsigned int j = 0; j < 3;j++){
-			CI12[i].set_pc_triangle(plucker_coordinates_triangle_[j],j);
-		}
-	}
-	
-	// set pointers to Plucker coordinates for 1D-3D
-	for(unsigned int i = 0; i < 3;i++){
-		CI13[i].set_pc_abscissa(plucker_coordinates_triangle_[i]);
-		for(unsigned int j = 0; j < 6;j++){
-			CI13[i].set_pc_tetrahedron(plucker_coordinates_tetrahedron[j],j);
-		}
-		CI13[i].init();
-	}
+    // set pointers to Plucker coordinates for 1D-3D
+    // distribute Plucker products - CI13
+    for(unsigned int triangle_side = 0; triangle_side < RefElement<2>::n_sides; triangle_side++){
+        for(unsigned int line = 0; line < RefElement<3>::n_lines; line++){
+            CI13[triangle_side].set_plucker_product(
+                    plucker_products_[triangle_side * RefElement<3>::n_lines + line],
+                    line);
+            CI12[line].set_plucker_product(
+                    plucker_products_[triangle_side * RefElement<3>::n_lines + line],
+                    triangle_side);
+            
+            CI13[triangle_side].set_pc_tetrahedron(plucker_coordinates_tetrahedron[line],line);
+            CI12[line].set_pc_triangle(plucker_coordinates_triangle_[triangle_side],triangle_side);
+        }
+        CI13[triangle_side].set_pc_abscissa(plucker_coordinates_triangle_[triangle_side]);
+        CI13[triangle_side].init();
+    }
+    
+    // set pointers to Plucker coordinates for 1D-2D
+    for(unsigned int line = 0; line < RefElement<3>::n_lines; line++)
+        CI12[line].set_pc_abscissa(plucker_coordinates_tetrahedron[line]);
+
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(computeintersection::IntersectionPolygon& local_polygon){
@@ -652,16 +735,6 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(computeintersection::I
             local_polygon.add_ipoint(IP23);
         }
     }
-
-    // Optimalization: reusage of the Plucker coordinates products already computed
-	for(unsigned int i = 0; i < 3;i++){
-		CI12[0].set_plucker_product(CI13[i].get_plucker_product(0,0),i);
-		CI12[1].set_plucker_product(CI13[i].get_plucker_product(0,1),i);
-		CI12[2].set_plucker_product(CI13[i].get_plucker_product(0,2),i);
-		CI12[3].set_plucker_product(CI13[i].get_plucker_product(1,1),i);
-		CI12[4].set_plucker_product(CI13[i].get_plucker_product(1,2),i);
-		CI12[5].set_plucker_product(CI13[i].get_plucker_product(2,2),i);
-	}
 
 	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++){
 		if(CI12[tetra_edge].compute(IP12s, false)){
