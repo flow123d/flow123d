@@ -1,0 +1,52 @@
+flow123d_version: 1.8.9
+problem: !SequentialCoupling
+  description: Steady flow with Seepage face boundary condition
+  #      * The test problem use square computational domain and emulate slope of the top surface
+  #      * by prescribing the switch pressure (hS) as a linear function.
+  #      * The output could be visualized with Paraview using ref_output/flow_seepage.pvsm.
+  #      * According to the internal output, the interface between h<hS and h:hS should be
+  #      * just in the middle. However since we can not display values on the boundary yet, the
+  #      * velocities in the elements (z component in the left view) seem to have negative Z component
+  #      * even on the right half of the domain so the switch point seems to be slightly on the right.
+  #      * On the other hand the "plot over line" of the pressure and the switch pressure near the boundary
+  #      * clearly displays the switch point in for x:0.5. Again the pressure is slightly above the switch pressure
+  #      * since we do not plot values directly on the boundary.
+  mesh:
+    mesh_file: ${INPUT}/square_xz.msh
+  primary_equation: !SteadyDarcy_MH
+    n_schurs: 2
+    input_fields:
+      - region: plane
+        conductivity: 0.001
+      - region: .top
+        bc_type: seepage
+        bc_switch_pressure: !FieldFormula
+          value: -x+0.5
+        bc_flux: -0.0005
+      # ,
+    output:
+      # 
+      #         { region:".bottom",
+      #           bc_type:"neumann" // zero flux
+      #         },
+      #         { region:".right",
+      #           bc_type:"dirichlet",
+      #           bc_piezo_head:1.25
+      #         },
+      #         { region:".left",
+      #           bc_type:"dirichlet",
+      #           bc_piezo_head:0.75
+      #         }
+      output_stream: 
+        file: ./test05.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-07

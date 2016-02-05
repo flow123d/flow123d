@@ -5,23 +5,23 @@ problem: !SequentialCoupling
     mesh_file: ${INPUT}/square_2d.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: plane
-      conductivity: 1
-    - region: BOUNDARY
-      time: 0
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: '0'
-    - region: BOUNDARY
-      time: 1
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x
-    - region: BOUNDARY
-      time: 2
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: 2*x
+      - region: plane
+        conductivity: 1
+      - region: BOUNDARY
+        time: 0
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: '0'
+      - region: BOUNDARY
+        time: 1
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x
+      - region: BOUNDARY
+        time: 2
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 2*x
     n_schurs: 2
     output:
       output_stream:
@@ -31,9 +31,9 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07

@@ -6,44 +6,44 @@ problem: !SequentialCoupling
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     data:
-    - region: 2d_porous_block_left
-      cross_section: 1
-      anisotropy: 0.1
-    - region: 2d_porous_block_right
-      cross_section: 1
-      anisotropy: 0.1
-    - region: 1d_fracture_ends
-      cross_section: 0.007071
-      sigma: 2828
-      anisotropy: 10
-    - region: 1d_fracture
-      cross_section: 0.007071
-      sigma: 2828
-      anisotropy: 10
-    - region: .2d_bottom_left
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: '1.1'
-    - region: .1d_bottom_fracture
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: '1.1'
-    - region: .2d_bottom_right
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: '1.1'
-    - region: .2d_top_left
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: '1.0'
-    - region: .1d_top_fracture
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: '1.0'
-    - region: .2d_top_right
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: '1.0'
+      - region: 2d_porous_block_left
+        cross_section: 1
+        anisotropy: 0.1
+      - region: 2d_porous_block_right
+        cross_section: 1
+        anisotropy: 0.1
+      - region: 1d_fracture_ends
+        cross_section: 0.007071
+        sigma: 2828
+        anisotropy: 10
+      - region: 1d_fracture
+        cross_section: 0.007071
+        sigma: 2828
+        anisotropy: 10
+      - region: .2d_bottom_left
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: '1.1'
+      - region: .1d_bottom_fracture
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: '1.1'
+      - region: .2d_bottom_right
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: '1.1'
+      - region: .2d_top_left
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: '1.0'
+      - region: .1d_top_fracture
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: '1.0'
+      - region: .2d_top_right
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: '1.0'
     output:
       balance_output: balance.out
       output_stream: 
