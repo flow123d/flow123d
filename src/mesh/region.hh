@@ -314,6 +314,7 @@ public:
     TYPEDEF_ERR_INFO( EI_dim, unsigned int);
     TYPEDEF_ERR_INFO( EI_IDOfOtherLabel, unsigned int);
     TYPEDEF_ERR_INFO( EI_LabelOfOtherID, const std::string);
+    TYPEDEF_ERR_INFO( EI_RegionAddress, const std::string);
     DECLARE_EXCEPTION( ExcAddingIntoClosed, << "Can not add label=" << EI_Label::qval << " into closed MaterialDispatch.\n");
     DECLARE_EXCEPTION( ExcNonuniqueID, << "Non-unique ID during add of elementary region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
                                              << "other elementary region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n");
@@ -325,6 +326,9 @@ public:
     DECLARE_EXCEPTION( ExcCantAdd, << "Can not add new elementary region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
 
     DECLARE_EXCEPTION( ExcUnknownRegion, << "Region with id: " << EI_ID::qval << " and dim: " << EI_dim::qval << " doesn't exist." );
+
+    DECLARE_EXCEPTION( ExcUnusedRegion, << "Region with id: " << EI_ID::qval << " and label: " << EI_Label::qval
+    									<< ", " << EI_RegionAddress::val << " is not used in any element." );
 
     DECLARE_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
 
@@ -366,7 +370,7 @@ public:
      *
      * TODO: check and make revision of this method according to a new conception of regions.
      */
-    Region add_region(unsigned int id, const std::string &label, unsigned int dim);
+    Region add_region(unsigned int id, const std::string &label, unsigned int dim, const std::string &address ="");
 
     /**
      * As the previous, but set the 'boundary; flag according to the label (labels starting with dot '.' are boundary).
@@ -557,6 +561,18 @@ public:
      */
     string create_label_from_id(unsigned int id) const;
 
+    /**
+     * Return address for given index @p idx.
+     */
+    const std::string & get_region_address(unsigned int idx) const;
+
+    /**
+     * Mark region with given index @p idx as used.
+     *
+     * Use if region is assigned to element.
+     */
+    void mark_used_region(unsigned int idx);
+
 
 private:
 
@@ -565,8 +581,8 @@ private:
 
     /// One item in region database
     struct RegionItem {
-        RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim)
-            : index(index), id(dim, id), label(label) {}
+        RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim, const std::string &address, bool used=false)
+            : index(index), id(dim, id), label(label), used(used), address(address) {}
 
         unsigned int get_id() const {return id.second;}
         unsigned int dim() const {return id.first;}
@@ -575,6 +591,10 @@ private:
         unsigned int index;
         DimID id;
         std::string label;
+        // Flag signed if region is assigned to element(s)
+        bool used;
+        // Address where region was created (address in input file or section in mesh file)
+        std::string address;
     };
 
     // tags
@@ -659,7 +679,7 @@ private:
     /**
      * Insert new region into database.
      */
-    Region insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
+    Region insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary, const std::string &address);
 
     /**
      * Replace dimension of existing region with undefined_dim.
@@ -680,6 +700,13 @@ private:
      * @param region Erased region
      */
     void erase_from_set( const string& set_name, Region region);
+
+    /**
+     * Iterate all stored regions and check if regions are assigned to element(s).
+     *
+     * Unused region throws exception.
+     */
+    void check_regions();
 
     /**
      * Return boundary flag for given label. Label of boundary region must start by '.' symbol.

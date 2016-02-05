@@ -165,8 +165,10 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
             Element *ele=nullptr;
             RegionIdx region_idx = mesh->region_db_.get_region( region_id, dim );
             if ( !region_idx.is_valid() ) {
-            	region_idx = mesh->region_db_.add_region( region_id, mesh->region_db_.create_label_from_id(region_id), dim );
+            	region_idx = mesh->region_db_.add_region( region_id, mesh->region_db_.create_label_from_id(region_id),
+            											  dim, "defined in '$Element' section" );
             }
+            mesh->region_db_.mark_used_region(region_idx.idx());
 
             if (region_idx.is_boundary()) {
                 ele = mesh->bc_elements.add_item(id);
@@ -220,7 +222,7 @@ void GmshMeshReader::read_physical_names(Mesh * mesh) {
             unsigned int id = lexical_cast<unsigned int>(*tok_); ++tok_;
             string name = *tok_; ++tok_;
 
-            mesh->region_db_.add_region(id, name, dim);
+            mesh->region_db_.add_region(id, name, dim, "defined in '$PhysicalNames' section");
         }
 
     } catch (bad_lexical_cast &) {

@@ -260,6 +260,7 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
 		ElementIter ele = this->element.find_id(elem_to_region.first);
 		ele->region_idx_ = region_db_.get_region( elem_to_region.second, ele->dim() );
+		region_db_.mark_used_region(ele->region_idx_.idx());
 	}
 }
 
@@ -506,6 +507,7 @@ void Mesh::make_neighbours_and_edges()
                     // fill boundary element
                     ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
                     bc_ele->init(e->dim()-1, this, region_db_.implicit_boundary_region() );
+                    region_db_.mark_used_region( bc_ele->region_idx_.idx() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
 
                     // fill Boundary object
@@ -757,6 +759,7 @@ void Mesh::check_and_finish()
 	modify_element_ids(region_db_.el_to_reg_map_);
 	region_db_.el_to_reg_map_.clear();
 	region_db_.close();
+	region_db_.check_regions();
 }
 
 //-----------------------------------------------------------------------------

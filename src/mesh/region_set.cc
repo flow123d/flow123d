@@ -6,6 +6,8 @@
  */
 
 #include "mesh/region_set.hh"
+#include <string>
+#include <sstream>
 
 
 namespace IT = Input::Type;
@@ -50,7 +52,9 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 		if ( reg.is_valid() ) {
 			region_db_.rename_region(reg, region_label);
 		} else {
-			region_db_.add_region(region_id, region_label, RegionDB::undefined_dim);
+			stringstream ss;
+			ss << "declare at address \'" << rec.address_string() << "\'";
+			region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, ss.str() );
 		}
 	}
 }
@@ -140,7 +144,9 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 		} else {
 			region_id = this->get_max_region_index();
 		}
-		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim);
+		stringstream ss;
+		ss << "declare at address \'" << rec.address_string() << "\'";
+		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, ss.str() );
 	}
 
 	Input::Array element_list;

@@ -102,11 +102,11 @@ Region RegionDB::implicit_boundary_region() {
         return Region(it_id->index, *this);
     }
 
-    return insert_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary);
+    return insert_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary, "");
 }
 
 
-Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim) {
+Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, const std::string &address) {
 	bool boundary = is_boundary(label);
     DimIDIter it_id = region_table_.get<DimId>().find(DimID(dim,id));
     if (it_id != region_table_.get<DimId>().end() ) {
@@ -126,7 +126,7 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
         THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->get_id()) );
     }
 
-    return insert_region(id, label, dim, boundary);
+    return insert_region(id, label, dim, boundary, address);
 }
 
 
@@ -143,7 +143,7 @@ Region RegionDB::add_region(unsigned int id, const std::string &label) {
     	// replace region label
     	unsigned int index = it_only_id->index;
 
-    	RegionItem item(index, it_only_id->get_id(), label, it_only_id->dim());
+    	RegionItem item(index, it_only_id->get_id(), label, it_only_id->dim(), "");
     	region_table_.replace(
     			region_table_.get<Index>().find(index),
                 item);
@@ -161,7 +161,7 @@ Region RegionDB::add_region(unsigned int id, const std::string &label) {
         THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->get_id()) );
     }
 
-    return insert_region(id, label, undefined_dim, boundary);
+    return insert_region(id, label, undefined_dim, boundary, "");
 }
 
 
@@ -181,7 +181,7 @@ Region RegionDB::add_region(unsigned int id, unsigned int dim) {
     // else
     stringstream ss;
     ss << "region_" << id;
-    return insert_region(id, ss.str(), dim, false);
+    return insert_region(id, ss.str(), dim, false, "");
 }
 
 
@@ -204,7 +204,7 @@ Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
 	sets_.erase( reg.label() ); // remove RegionSet of old name
 	bool old_boundary_flag = reg.is_boundary(); // check old x new boundary flag - take account in adding to sets
 
-	RegionItem item(index, reg.id(), new_label, reg.dim());
+	RegionItem item(index, reg.id(), new_label, reg.dim(), this->get_region_address(index));
 	region_table_.replace(
 			region_table_.get<Index>().find(index),
             item);
@@ -302,6 +302,28 @@ unsigned int RegionDB::get_dim(unsigned int idx) const {
     RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
     ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
     return  it->dim();
+}
+
+
+
+const std::string & RegionDB::get_region_address(unsigned int idx) const {
+    RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
+    ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    return it->address;
+}
+
+
+
+void RegionDB::mark_used_region(unsigned int idx) {
+    RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
+    ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    if ( !it->used ) {
+    	unsigned int index = it->index;
+    	RegionItem item(index, it->get_id(), it->label, it->dim(), it->address, true);
+    	region_table_.replace(
+    			region_table_.get<Index>().find(index),
+                item);
+    }
 }
 
 
@@ -585,7 +607,7 @@ string RegionDB::create_label_from_id(unsigned int id) const {
 	return ss.str();
 }
 
-Region RegionDB::insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary) {
+Region RegionDB::insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary, const std::string &address) {
 	if (closed_) THROW( ExcAddingIntoClosed() << EI_Label(label) << EI_ID(id) );
 
 	unsigned int index;
@@ -597,7 +619,7 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 		n_bulk_++;
 	}
 	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
-	if ( ! region_table_.insert( RegionItem(index, id, label, dim) ).second )
+	if ( ! region_table_.insert( RegionItem(index, id, label, dim, address) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
 	if (max_index_ < id) {
 		max_index_ = id;
@@ -624,7 +646,7 @@ Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bo
 
 	unsigned int index = it_undef_dim->index;
 
-	RegionItem item(index, it_undef_dim->get_id(), it_undef_dim->label, dim);
+	RegionItem item(index, it_undef_dim->get_id(), it_undef_dim->label, dim, this->get_region_address(index));
 	region_table_.replace(
 			region_table_.get<Index>().find(index),
             item);
@@ -685,4 +707,16 @@ void RegionDB::print_region_table(ostream& stream) const {
 		stream << endl;
 	}
 	stream << "---------------------------------------------" << endl << endl;
+}
+
+
+void RegionDB::check_regions() {
+	ASSERT(closed_, "RegionDB not closed yet.\n");
+
+	for (RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().begin();
+			it!= region_table_.get<Index>().end();
+			++it) {
+		if (!it->used)
+			THROW(ExcUnusedRegion() << EI_Label(it->label) << EI_ID(it->get_id()) << EI_RegionAddress(it->address) );
+	}
 }
