@@ -282,7 +282,7 @@ protected:
         FEValues<dim,3> velocity_interpolation_fv_;
 
         // data shared by assemblers of different dimension
-        AssemblyData d;
+        AssemblyData ad_;
 
     };
     
@@ -321,7 +321,7 @@ protected:
      * Must be called after create_linear_system.
      *
      */
-    virtual void read_init_condition()
+    virtual void read_initial_condition()
     {  };
 
     /**
@@ -370,7 +370,6 @@ protected:
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 	int is_linear_;
-	bool is_steady;
 	double tolerance_;
 	unsigned int max_n_it_;
 
@@ -507,7 +506,7 @@ public:
 
     static const Input::Type::Record & get_input_type();
 protected:
-    void read_init_condition() override;
+    void read_initial_condition() override;
     void modify_system() override;
     void setup_time_term();
     

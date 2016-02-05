@@ -52,7 +52,7 @@ protected:
     /// Registrar of class to factory
     static const int registrar;
 
-    void read_init_condition() override;
+    void read_initial_condition() override;
     void modify_system() override;
     void assembly_source_term() override;
     void setup_time_term();

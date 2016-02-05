@@ -204,7 +204,7 @@ DarcyFlowMH_Steady::EqData::EqData()
     ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
     	init_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(storativity,"Storativity.", "1.0" );
+    ADD_FIELD(storativity,"Storativity.", "0.0" );
     	storativity.units( UnitSI().m(-1) );
 
     //time_term_fields = this->subset({"storativity"});
@@ -226,7 +226,7 @@ DarcyFlowMH_Steady::Assembly<dim>::Assembly(AssemblyData ad)
   velocity_interpolation_quad_(0), // veloctiy values in barycenter
   velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
-  d(ad)
+  ad_(ad)
 {
 }
 
@@ -258,7 +258,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
   el_4_loc(nullptr)
 
 {
-    is_steady=true;
+
     is_linear_=true;
     tolerance_=0.01;
     max_n_it_=100;
@@ -288,8 +288,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
         data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
         data_.mark_input_times(this->mark_type());
-        data_.set_limit_side(LimitSide::right);
-        data_.set_time(time_->step());
+        //data_.set_limit_side(LimitSide::right);
+        //data_.set_time(time_->step());
     }
     output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
@@ -329,11 +329,13 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 }
 
 
-void DarcyFlowMH_Steady::zero_time_step() {
-    	data_.set_time(time_->step(), LimitSide::right);
+
+void DarcyFlowMH_Steady::zero_time_step()
+{
+    data_.set_time(time_->step(), LimitSide::right);
     // zero_time_term means steady case
     bool zero_time_term_from_right
-        = data_.storativity.field_result(mesh->region_db.get_region_set("BULK")) == result_zeros;
+        = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
     create_linear_system();
     /* TODO:
@@ -354,19 +356,18 @@ void DarcyFlowMH_Steady::zero_time_step() {
 //=============================================================================
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
 //=============================================================================
-void DarcyFlowMH_Steady::update_solution() {
+void DarcyFlowMH_Steady::update_solution()
+{
     START_TIMER("Solving MH system");
 
     if (time_->is_end()) return;
     time_->next_time();
     if (time_->t() == TimeGovernor::inf_time) return; // end time of steady TimeGovernor
 
-    data_.set_time_limit(LimitSide::left);
-    data_.set_time(time_->step());
+    data_.set_time(time_->step(), LimitSide::left);
     bool zero_time_term_from_left
-        = data_.storativity.field_result(mesh->region_db.get_region_set("BULK")) == result_zeros;
-    bool jump_time = false;
-        //= data_storativity.is_jump_time();
+        = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    bool jump_time = data_.storativity.is_jump_time();
     if (! zero_time_term_from_left) {
         // time term not treated as zero
         // Unsteady solution up to the T.
@@ -377,10 +378,10 @@ void DarcyFlowMH_Steady::update_solution() {
             //output_data();
         }
     }
-    data_.set_time_limit(LimitSide::right);
-    data_.set_time(time_->step());
+
+    data_.set_time(time_->step(), LimitSide::right);
     bool zero_time_term_from_right
-        = data_.storativity.field_result(mesh->region_db.get_region_set("BULK")) == result_zeros;
+        = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     if (zero_time_term_from_right) {
         solve_nonlinear(); // with right limit data
 
@@ -528,8 +529,8 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
     local_matrix.zeros(ndofs, ndofs);
 
     double scale = 1
-                   / d.data->conductivity.value( ele->centre(), ele->element_accessor() )
-                   / d.data->cross_section.value( ele->centre(), ele->element_accessor() );
+                   / ad_.data->conductivity.value( ele->centre(), ele->element_accessor() )
+                   / ad_.data->cross_section.value( ele->centre(), ele->element_accessor() );
                            
     for (unsigned int k=0; k<qsize; k++)
     {
@@ -539,7 +540,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
                 local_matrix[i*ndofs+j] += 
                         scale
                         * arma::dot(fe_values_.shape_vector(i,k),
-                                    (d.data->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
+                                    (ad_.data->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
                                      * fe_values_.shape_vector(j,k)
                                    ) 
                         * fe_values_.JxW(k);
@@ -553,16 +554,16 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, Elem
     //START_TIMER("Assembly<dim>::assembly_local_vb");
     // compute normal vector to side
     arma::vec3 nv;
-    ElementFullIter ele_higher = d.mesh->element.full_iter(ngh->side()->element());
+    ElementFullIter ele_higher = ad_.mesh->element.full_iter(ngh->side()->element());
     fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
     nv = fe_side_values_.normal_vector(0);
 
-    double value = d.data->sigma.value( ele->centre(), ele->element_accessor()) *
-                    2*d.data->conductivity.value( ele->centre(), ele->element_accessor()) *
-                    arma::dot(d.data->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-                    d.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-                    d.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
-                    d.data->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+    double value = ad_.data->sigma.value( ele->centre(), ele->element_accessor()) *
+                    2*ad_.data->conductivity.value( ele->centre(), ele->element_accessor()) *
+                    arma::dot(ad_.data->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+                    ad_.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                    ad_.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                    ad_.data->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
                     ngh->side()->measure();
 
     local_vb[0] = -value;   local_vb[1] = value;
@@ -580,11 +581,11 @@ arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIte
     
     velocity_interpolation_fv_.reinit(ele);
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        flux_in_center += d.mh_dh->side_flux( *(ele->side( li ) ) )
+        flux_in_center += ad_.mh_dh->side_flux( *(ele->side( li ) ) )
                   * velocity_interpolation_fv_.shape_vector(li,0);
     }
 
-    flux_in_center /= d.data->cross_section.value(ele->centre(), ele->element_accessor() );
+    flux_in_center /= ad_.data->cross_section.value(ele->centre(), ele->element_accessor() );
     return flux_in_center;
 }
 
@@ -599,6 +600,7 @@ arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIte
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 {
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
+    is_linear_=true;
     
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
@@ -1212,9 +1214,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
 void DarcyFlowMH_Steady::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-    {
-        data_.set_time(time_->step(), LimitSide::right);
-    }
+    bool is_steady = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 	//DBGMSG("Assembly linear system\n");
 	if (data_.changed()) {
 		//DBGMSG("  Data changed\n");
@@ -1231,7 +1231,8 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
-	    if (!is_steady) {
+
+	    if (! is_steady) {
 	        START_TIMER("fix time term");
 	    	//DBGMSG("    setup time term\n");
 	    	// assembly time term and rhs
@@ -1246,7 +1247,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 	    END_TIMER("full assembly");
 	} else {
 		START_TIMER("modify system");
-		if (!is_steady) {
+		if (! is_steady) {
 			modify_system();
 		} else {
 			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
@@ -1700,7 +1701,7 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
     : DarcyFlowMH_Steady(mesh_in, in_rec)
 {
-    is_steady=false;
+
     /*
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	data_.mark_input_times(this->mark_type());
@@ -1722,7 +1723,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
 }
 
 
-void DarcyFlowMH_Unsteady::read_init_condition()
+void DarcyFlowMH_Unsteady::read_initial_condition()
 {
 
     VecDuplicate(schur0->get_solution(), &previous_solution);

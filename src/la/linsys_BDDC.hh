@@ -78,7 +78,9 @@ public:
 
     double compute_residual() override
     {
-        return 0;
+        // until we have correct function for residual we
+        // return a practical infinity
+        return numeric_limits<double>::max();
     }
 
     ~LinSys_BDDC( );
