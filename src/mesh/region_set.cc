@@ -50,7 +50,7 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 		if ( reg.is_valid() ) {
 			region_db_.rename_region(reg, region_label);
 		} else {
-			THROW( ExcAddFromIdRegion() << EI_Label(region_label) << EI_ID(region_id) << rec.ei_address() );
+			region_db_.add_region(region_id, region_label, RegionDB::undefined_dim);
 		}
 	}
 }
