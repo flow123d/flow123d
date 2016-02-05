@@ -25,6 +25,9 @@
 using namespace std;
 using namespace computeintersection;
 
+static const std::string profiler_file = "intersection_profiler.log";
+static const unsigned int profiler_loop = 10000;
+
 /******************************************************************************************** TEST 1d-2d ****/
 
 /// Create results for the meshes in directory 'site_13d'.
@@ -65,7 +68,7 @@ std::vector<computeintersection::IntersectionPoint<1,2>> permute_coords(std::vec
 
 void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection::IntersectionPoint<1,2>> &ips)
 {
-    xprintf(Msg, "Computing 1d-2d intersections.\n");
+    DBGMSG("Computing 1d-2d intersections.\n");
     InspectElements ie(mesh);
     ie.compute_intersections<1,2>();
     
@@ -76,7 +79,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
     
     for(unsigned int i=0; i < ipc.size(); i++)
     {
-        cout << "---------- check IP[" << i << "] ----------" << endl;
+        DBGMSG("---------- check IP[%d] ----------",i);
         EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_A()[0], ips[i].local_bcoords_A()[0]);
         EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_A()[1], ips[i].local_bcoords_A()[1]);
         EXPECT_DOUBLE_EQ(ipc[i].local_bcoords_B()[0], ips[i].local_bcoords_B()[0]);
@@ -165,18 +168,22 @@ TEST(intersections_12d, all) {
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
-            compute_intersection_12d(&mesh, permute_coords(solution[s], permutations[p]));
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
+                compute_intersection_12d(&mesh, permute_coords(solution[s], permutations[p]));
             xprintf(Msg, "==============\n");
         }
     }
+    std::fstream fs;
+    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::trunc);
+    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }
 
 
 
+//*
 
-
-/******************************************************************************************** TEST 1d-3d ****/
+// ******************************************************************************************** TEST 1d-3d ***
 
 /// Create results for the meshes in directory 'site_13d'.
 void fill_13d_solution(std::vector<computeintersection::IntersectionLine> &ils)
@@ -214,9 +221,8 @@ void fill_13d_solution(std::vector<computeintersection::IntersectionLine> &ils)
     ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,1})/2,arma::vec::fixed<4>({1,2,0,1})/4));
 }
 
-/**
- * Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
- */
+
+//Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
 computeintersection::IntersectionLine permute_coords(computeintersection::IntersectionLine il, unsigned int permute[4])
 {
     computeintersection::IntersectionLine new_il = il;
@@ -237,7 +243,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     double length1, length2 = 0;
 
     // compute intersection
-    xprintf(Msg, "Computing intersection length by NEW algorithm\n");
+    DBGMSG("Computing intersection length by NEW algorithm\n");
     InspectElements ie(mesh);
     ie.compute_intersections<1,3>();
     
@@ -253,7 +259,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     
     for(unsigned int i=0; i < ilc.size(); i++)
     {
-        cout << "---------- check IP[" << i << "] ----------" << endl;
+        DBGMSG("---------- check IP[%d] ----------",i);
         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_A()[0], il[i].local_bcoords_A()[0]);
         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_A()[1], il[i].local_bcoords_A()[1]);
         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[0], il[i].local_bcoords_B()[0]);
@@ -266,7 +272,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
 
     //TODO: delete comparison with NGH
     // compute intersection by NGH
-    xprintf(Msg, "Computing intersection length by NGH algorithm\n");
+    DBGMSG("Computing intersection length by NGH algorithm\n");
     TAbscissa tabs;
     TTetrahedron tte;
     TIntersectionType it = line;
@@ -286,7 +292,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     GetIntersection(tabs, tte, it, length2); // get only relative length of the intersection to the abscissa
     length2 *= tabs.Length(); 
     
-    xprintf(Msg,"Length of intersection line: (intersections) %.16e,\t(NGH) %.16e\n", length1, length2);
+    DBGMSG("Length of intersection line: (intersections) %.16e,\t(NGH) %.16e\n", length1, length2);
 //     EXPECT_NEAR(length1, length2, 1e-12);
     EXPECT_DOUBLE_EQ(length1,length2);
 }
@@ -303,7 +309,7 @@ TEST(intersections_13d, all) {
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir (dir_name.c_str())) != NULL) {
-        /* print all the files and directories within directory */
+        //print all the files and directories within directory
         xprintf(Msg,"Testing mesh files: \n");
         while ((ent = readdir (dir)) != NULL) {
             string fname = ent->d_name;
@@ -389,24 +395,28 @@ TEST(intersections_13d, all) {
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
-            compute_intersection_13d(&mesh, permute_coords(solution[s], permutations[p]));
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
+                compute_intersection_13d(&mesh, permute_coords(solution[s], permutations[p]));
             xprintf(Msg, "==============\n");
         }
     }
+    std::fstream fs;
+    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }
 
+//*/
 
+//*
 
-
-
-/******************************************************************************************** TEST 2d-3d ****/
+// ******************************************************************************************** TEST 2d-3d ****
 void compute_intersection_area_23d(Mesh *mesh)
 {
     double area1, area2 = 0;
 
     // compute intersection by NGH
-    xprintf(Msg, "Computing polygon area by NGH algorithm\n");
+    DBGMSG("Computing polygon area by NGH algorithm\n");
     TTriangle ttr;
     TTetrahedron tte;
     TIntersectionType it = area;
@@ -435,14 +445,14 @@ void compute_intersection_area_23d(Mesh *mesh)
     
     
     // compute intersection
-    xprintf(Msg, "Computing polygon area by NEW algorithm\n");
+    DBGMSG("Computing polygon area by NEW algorithm\n");
     InspectElements ie(mesh);
     ie.compute_intersections<2,3>();
     area1 = ie.polygon_area();
 
 //     ie.print_mesh_to_file("output_intersection");
     
-    xprintf(Msg,"Polygon area: (intersections) %.16e,\t(NGH) %.16e\n", area1, area2);
+    DBGMSG("Polygon area: (intersections) %.16e,\t(NGH) %.16e\n", area1, area2);
     EXPECT_NEAR(area1, area2, 1e-14);
 //     EXPECT_DOUBLE_EQ(area1,area2);
 }
@@ -459,7 +469,7 @@ TEST(area_intersections, all) {
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir (dir_name.c_str())) != NULL) {
-        /* print all the files and directories within directory */
+        // print all the files and directories within directory 
         xprintf(Msg,"Testing mesh files: \n");
         while ((ent = readdir (dir)) != NULL) {
             string fname = ent->d_name;
@@ -516,10 +526,16 @@ TEST(area_intersections, all) {
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
-            compute_intersection_area_23d(&mesh);
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
+                compute_intersection_area_23d(&mesh);
             xprintf(Msg, "==============\n");
         }
     }
+    
+    std::fstream fs;
+    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }
 
+//*/

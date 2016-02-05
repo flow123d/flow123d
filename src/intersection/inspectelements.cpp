@@ -31,7 +31,7 @@ void InspectElements::compute_intersections_init<1,2>(){
     flag_for_3D_elements.assign(mesh->n_elements(), -1);
     closed_elements.assign(mesh->n_elements(), false);
     intersection_point_list.assign(mesh->n_elements(),std::vector<IntersectionPoint<1,2>>());
-
+    
     if(elements_bb.size() == 0){
         elements_bb.resize(mesh->n_elements());
         bool first_2d_element = true;
@@ -131,13 +131,16 @@ void InspectElements::compute_intersections<1,2>(){
 
 //                     vector<IntersectionPoint> IPs;
 //                     IPs.reserve(2);
+                    START_TIMER("Compute intersection 12");
                     ComputeIntersection<Simplex<1>, Simplex<2>> CI_12(abscissa, triangle);
+                    bool ip_found = CI_12.compute_final(intersection_point_list[elm->index()]);
+                    END_TIMER("Compute intersection 12");
                     
 //                     DBGMSG("IL IPs:\n");
 //                     for(unsigned int i=0; i < il.size(); i++)
 //                         std::cout << il.points()[i];
                     
-                    if(CI_12.compute_final(intersection_point_list[elm->index()])){
+                    if(ip_found){
                         closed_elements[elm->index()] = true;
                         flag_for_3D_elements[ele->index()] = elm->index();
 
@@ -185,9 +188,11 @@ void InspectElements::compute_intersections<1,3>(){
 					update_tetrahedron(ele);
 
 					IntersectionLine il(elm->index(), ele->index());
+                    START_TIMER("Compute intersection 13");
 					ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
 					CI_13.init();
 					CI_13.compute(il.points());
+                    END_TIMER("Compute intersection 13");
 
 //                     DBGMSG("IL IPs:\n");
 //                     for(unsigned int i=0; i < il.size(); i++)
@@ -342,21 +347,21 @@ void InspectElements::prolongate(const ProlongationPoint &pp){
 
 template<>
 void InspectElements::compute_intersections<2,3>(){
-	{ START_TIMER("Incializace pruniku");
+	{   START_TIMER("Intersection initialization");
 		compute_intersections_init<2,3>();
-		END_TIMER("Inicializace pruniku");}
+		END_TIMER("Intersection initialization");}
 
 		BIHTree bt(mesh, 20);
 		//bool nalezen = false;
 
-		{ START_TIMER("Prochazeni vsech elementu");
+		{ START_TIMER("Element iteration");
 		FOR_ELEMENTS(mesh, elm) {
 			if (elm->dim() == 2 && !closed_elements[elm.index()] && elements_bb[elm->index()].intersect(mesh_3D_bb)) {
 				update_triangle(elm);
 				std::vector<unsigned int> searchedElements;
 				bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
 
-				{ START_TIMER("Hlavni vypocet");
+				{ START_TIMER("Bounding box element iteration");
 				for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
 				{
 					unsigned int idx = *it;
@@ -365,9 +370,11 @@ void InspectElements::compute_intersections<2,3>(){
 					if (ele->dim() == 3 && flag_for_3D_elements[ele->index()] != (int)(elm->index())) {
 						update_tetrahedron(ele);
 						IntersectionPolygon il(elm.index(), ele->index());
+                        START_TIMER("Compute intersection 23");
 						ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
 						CI_23.init();
 						CI_23.compute(il);
+                        END_TIMER("Compute intersection 23");
 
                         //TODO: how does prolongation work when there are 1 or 2 IPs?
 						if(il.size() > 2){
@@ -377,7 +384,7 @@ void InspectElements::compute_intersections<2,3>(){
 							il.trace_polygon(prolongation_table);
 							//il.printTracingTable();
 
-							{ START_TIMER("Prochazeni vsech front");
+							{ START_TIMER("Prolongation queue");
 
 							intersection_list[elm.index()].push_back(il);
 							flag_for_3D_elements[ele->index()] = elm.index();
@@ -418,7 +425,7 @@ void InspectElements::compute_intersections<2,3>(){
 								}
 
 							}
-							END_TIMER("Prochazeni vsech front");}
+							END_TIMER("Prolongation queue");}
 							//prunik = true;
 							break; // ukončí procházení dalších bounding boxů
 						}
@@ -430,12 +437,12 @@ void InspectElements::compute_intersections<2,3>(){
 				/*if(nalezen){
 					break;
 				}*/
-				END_TIMER("Hlavni vypocet");}
+				END_TIMER("Bounding box element iteration");}
 
 			}
 		}
 
-		END_TIMER("Prochazeni vsech elementu");}
+		END_TIMER("Element iteration");}
 
 };
 
