@@ -63,7 +63,9 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 
 const IT::Record & RegionSetFromId::get_region_input_type()
 {
-    return IT::Record("From_Id", "Region declared by id and name.")
+    return IT::Record("From_Id", "Region declared by id and name.\n"
+    					"Allows to create new region with given id and label\n"
+    					"or specify existing region by id which will be renamed.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
@@ -102,10 +104,10 @@ RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 
 const IT::Record & RegionSetFromLabel::get_region_input_type()
 {
-    return IT::Record("From_Label", "Region declared by mesh_label and name.")
+    return IT::Record("From_Label", "Allows to rename existing region specified by mesh_label.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
-				"Label (name) of the region. Has to be unique in one mesh.\n")
+				"New label (name) of the region. Has to be unique in one mesh.")
 		.declare_key("mesh_label", IT::String(), IT::Default::obligatory(),
 				"The mesh_label is e.g. physical volume name in GMSH format.")
 		.close();
@@ -157,7 +159,7 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 		        ++it_element) {
 			std::map<unsigned int, unsigned int>::iterator it_map = el_to_reg_map_.find((*it_element));
 			if (it_map != el_to_reg_map_.end()) {
-				xprintf(Warn, "Element with id %u has rewrite region.\n", (*it_element));
+				xprintf(Warn, "Region assigned to element with id %u will be rewritten.\n", (*it_element));
 			}
 			el_to_reg_map_.insert( std::make_pair((*it_element), region_id) );
 
@@ -169,14 +171,17 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 
 const IT::Record & RegionSetFromElements::get_region_input_type()
 {
-    return IT::Record("From_Elements", "Region declared by name and enum of elements.")
+    return IT::Record("From_Elements", "Region declared by name, ID and enum of elements.\n"
+    								   "Allows to get existing region or create new and assign\n"
+    								   "elements to its. Elements are specified by ids.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
 		.declare_key("id", IT::Integer(0), IT::Default::optional(),
-				"The ID of the region to which you assign label.")
+				"The ID of the region to which you assign label.\n"
+				"If new region is created and ID is not set, unique ID will be generated automatically.")
 		.declare_key("element_list", IT::Array( IT::Integer(0) ), IT::Default::optional(),
-				"Specification of the region by the list of elements. This is not recomended")
+				"Specification of the region by the list of elements. This is not recommended")
 		.close();
 }
 
@@ -252,7 +257,8 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 
 const IT::Record & RegionSetUnion::get_region_input_type()
 {
-    return IT::Record("Union", "Defines region as a union of given two or more regions.")
+    return IT::Record("Union", "Defines region as a union of given two or more regions.\n"
+    						   "Regions can be given by names or IDs or both ways together.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
