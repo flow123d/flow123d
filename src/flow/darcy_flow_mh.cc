@@ -360,9 +360,9 @@ void DarcyFlowMH_Steady::update_solution()
 {
     START_TIMER("Solving MH system");
 
-    if (time_->is_end()) return;
+
     time_->next_time();
-    if (time_->t() == TimeGovernor::inf_time) return; // end time of steady TimeGovernor
+    //if (time_->t() == TimeGovernor::inf_time) return; // end time of steady TimeGovernor
 
     data_.set_time(time_->step(), LimitSide::left);
     bool zero_time_term_from_left
@@ -377,6 +377,13 @@ void DarcyFlowMH_Steady::update_solution()
             //solution_output(T, left_limit); // output use time T- delta*dt
             //output_data();
         }
+    }
+
+    if (time_->is_end()) {
+        // output for unsteady case, end_time should not be the jump time
+        // but rether check that
+        if (! zero_time_term_from_left && ! jump_time) output_data();
+        return;
     }
 
     data_.set_time(time_->step(), LimitSide::right);
