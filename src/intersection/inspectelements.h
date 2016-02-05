@@ -112,22 +112,6 @@ public:
 };
 
 
-
-
-
-template<unsigned int subdim, unsigned int dim> 
-void InspectElements::compute_intersections()
-{
-        ASSERT(0, "Method not implemented for given dim and subdim.");
-}
-
-template<unsigned int subdim, unsigned int dim> 
-void InspectElements::compute_intersections_init()
-{
-        ASSERT(0, "Method not implemented for given dim and subdim.");
-}
-
-
 inline const std::vector< IntersectionLine >& InspectElements::list_intersection_lines(unsigned int ele_idx)
 {
     ASSERT_LESS(ele_idx, intersection_line_list.size());
@@ -137,9 +121,18 @@ inline const std::vector< IntersectionLine >& InspectElements::list_intersection
 inline const vector< IntersectionPoint< 1, 2 > >& InspectElements::list_intersection_points(unsigned int ele_idx)
 {
     ASSERT_LESS(ele_idx, intersection_point_list.size());
+    //cout << intersection_point_list.size();
     return intersection_point_list[ele_idx];
 }
 
+
+// Declaration of specializations implemented in cpp:
+template<> void InspectElements::compute_intersections_init<1,2>();
+template<> void InspectElements::compute_intersections_init<1,3>();
+template<> void InspectElements::compute_intersections_init<2,3>();
+template<> void InspectElements::compute_intersections<1,2>();
+template<> void InspectElements::compute_intersections<1,3>();
+template<> void InspectElements::compute_intersections<2,3>();
 
 } // END namespace
 
