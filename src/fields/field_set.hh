@@ -182,13 +182,6 @@ public:
     }
 
     /**
-     * Collective interface to @p FieldCommon::set_limit_side().
-     */
-    void set_limit_side(LimitSide side) {
-    	for(FieldCommon *field : field_list) field->set_limit_side(side);
-    }
-
-    /**
      * Collective interface to @p FieldCommonBase::flags_add().
      * @param mask   mask to set for all fields in the field set.
      */
@@ -199,8 +192,8 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    void set_time(const TimeStep &time) {
-        for(FieldCommon *field : field_list) field->set_time(time);
+    void set_time(const TimeStep &time, LimitSide limit_side) {
+        for(FieldCommon *field : field_list) field->set_time(time, limit_side);
     }
 
     /**
@@ -227,6 +220,12 @@ public:
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     bool is_constant(Region reg) const;
+
+    /**
+     * Collective interface to @p FieldCommonBase::is_jump_time().
+     */
+    bool is_jump_time() const;
+
 
     /**
      * Collective interface to @p FieldCommonBase::output().

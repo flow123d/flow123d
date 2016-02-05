@@ -330,8 +330,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
 
 void DarcyFlowMH_Steady::zero_time_step() {
-    data_.set_time_limit(LimitSide::right);
-    data_.set_time(time_->step());
+    	data_.set_time(time_->step(), LimitSide::right);
     // zero_time_term means steady case
     bool zero_time_term_from_right
         = data_.storativity.field_result(mesh->region_db.get_region_set("BULK")) == result_zeros;
@@ -1214,7 +1213,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
     {
-        data_.set_time(time_->step());
+        data_.set_time(time_->step(), LimitSide::right);
     }
 	//DBGMSG("Assembly linear system\n");
 	if (data_.changed()) {
@@ -1705,8 +1704,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
     /*
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	data_.mark_input_times(this->mark_type());
-	data_.set_limit_side(LimitSide::right);
-	data_.set_time(time_->step());
+	data_.set_time(time_->step(), LimitSide::right);
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 	//balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());

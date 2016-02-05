@@ -253,7 +253,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-//    data_.set_limit_side(LimitSide::right);
     data_.region_id = GenericField<3>::region_id(*Model::mesh_);
 
 
@@ -265,7 +264,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     feo = new FEObjects(Model::mesh_, dg_order);
     DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
 
-    data_.set_limit_side(LimitSide::left);
 }
 
 
@@ -418,7 +416,7 @@ void TransportDG<Model>::zero_time_step()
 {
 	START_TIMER(Model::ModelEqData::name());
 	data_.mark_input_times(Model::time_->equation_fixed_mark_type());
-	data_.set_time(Model::time_->step());
+	data_.set_time(Model::time_->step(), LimitSide::left);
 
 
     // set initial conditions
@@ -477,7 +475,7 @@ void TransportDG<Model>::update_solution()
 	Model::time_->view("TDG");
     
     START_TIMER("data reinit");
-    data_.set_time(Model::time_->step());
+    data_.set_time(Model::time_->step(), LimitSide::left);
     END_TIMER("data reinit");
     
 	// assemble mass matrix
@@ -642,7 +640,7 @@ void TransportDG<Model>::output_data()
 
     // gather the solution from all processors
     output_vector_gather();
-    data_.subset(FieldFlag::allow_output).set_time( Model::time_->step() );
+    data_.subset(FieldFlag::allow_output).set_time( Model::time_->step(), LimitSide::left);
     data_.output(Model::output_stream_);
 
 	Model::output_data();
