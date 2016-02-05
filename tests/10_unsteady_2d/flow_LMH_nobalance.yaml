@@ -9,18 +9,18 @@ problem: !SequentialCoupling
     mesh_file: ${INPUT}/test10.msh
   primary_equation: !UnsteadyDarcy_LMH
     input_fields:
-    - region: plane
-      anisotropy: 0.02
-      init_pressure: 0
-      # default
-      storativity: 1
-      # default
-    - region: .bc_inflow
-      bc_type: dirichlet
-      bc_pressure: 100
-    - region: .bc_outflow
-      bc_type: dirichlet
-      bc_pressure: 0
+      - region: plane
+        anisotropy: 0.02
+        init_pressure: 0
+        # default
+        storativity: 1
+        # default
+      - region: .bc_inflow
+        bc_type: dirichlet
+        bc_pressure: 100
+      - region: .bc_outflow
+        bc_type: dirichlet
+        bc_pressure: 0
     n_schurs: 2
     output:
       output_stream: 
@@ -30,9 +30,9 @@ problem: !SequentialCoupling
         time_step: 0.25
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     balance: false
     solver: !Petsc
       a_tol: 1.0e-07
