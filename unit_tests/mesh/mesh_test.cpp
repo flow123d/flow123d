@@ -82,19 +82,29 @@ TEST(MeshTopology, make_neighbours_and_edges) {
 
 
 // Test input for mesh
-const string mesh_input = R"JSON(
-{ 
-  mesh_file="mesh/simplest_cube.msh",
-  regions=[{id=3000, name="new region", element_list=[6,7]},
-           {id=37, name="1D rename"}],
-  sets=[{name="3D", region_ids=[39,40]}]
-}
-)JSON";
+const string mesh_input = R"YAML(
+mesh_file: "mesh/simplest_cube.msh"
+regions:
+ - !From_Elements
+   id: 3000
+   name: new region
+   element_list:
+    - 6
+    - 7
+ - !From_Id
+   id: 37
+   name: 1D rename
+ - !Union
+   name: 3D
+   region_ids:
+    - 39
+    - 40
+)YAML";
 
 TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::ReaderToStorage reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_YAML );
     auto rec = reader.get_root_interface<Input::Record>();
     Mesh mesh( rec );
     mesh.init_from_input();
