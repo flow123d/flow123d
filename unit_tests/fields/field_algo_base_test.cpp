@@ -462,9 +462,28 @@ TYPED_TEST(FieldFix, set_time) {
 	this->set_input_list( this->input_list(list_ok) );
 
 	// time = 0.0
-	TimeGovernor tg(0.0, 1.0);
+	TimeGovernor tg(0.0, 0.5);
 	this->set_time(tg.step(), LimitSide::right);
-	this->_value_( *this );
+	EXPECT_EQ(0, this->_value_( *this ));
+	EXPECT_TRUE( this->is_jump_time() );
+
+	tg.next_time();
+	this->set_time(tg.step(), LimitSide::left);
+	EXPECT_EQ(0, this->_value_( *this ));
+    EXPECT_FALSE( this->is_jump_time() );
+
+    this->set_time(tg.step(), LimitSide::right);
+    EXPECT_EQ(0, this->_value_( *this ));
+    EXPECT_FALSE( this->is_jump_time() );
+
+    tg.next_time();
+    this->set_time(tg.step(), LimitSide::left);
+    EXPECT_EQ(0, this->_value_( *this ));
+    EXPECT_TRUE( this->is_jump_time() );
+
+    this->set_time(tg.step(), LimitSide::right);
+    EXPECT_EQ(1, this->_value_( *this ));
+    EXPECT_TRUE( this->is_jump_time() );
 
 }
 
