@@ -27,6 +27,32 @@ InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 InspectElements::~InspectElements(){};
 
 template<>
+void InspectElements::compute_intersections_init<1,2>(){
+    flag_for_3D_elements.assign(mesh->n_elements(), -1);
+    closed_elements.assign(mesh->n_elements(), false);
+    intersection_point_list.assign(mesh->n_elements(),std::vector<IntersectionPoint<1,2>>());
+    
+    if(elements_bb.size() == 0){
+        elements_bb.resize(mesh->n_elements());
+        bool first_2d_element = true;
+        FOR_ELEMENTS(mesh, elm) {
+
+            elements_bb[elm->index()] = elm->bounding_box();
+
+                if (elm->dim() == 2){
+                    if(first_2d_element){
+                        first_2d_element = false;
+                        mesh_3D_bb = elements_bb[elm->index()];
+                    }else{
+                        mesh_3D_bb.expand(elements_bb[elm->index()].min());
+                        mesh_3D_bb.expand(elements_bb[elm->index()].max());
+                    }
+                }
+        }
+    }
+};
+
+template<>
 void InspectElements::compute_intersections_init<1,3>(){
 	flag_for_3D_elements.assign(mesh->n_elements(), -1);
 	closed_elements.assign(mesh->n_elements(), false);
@@ -79,6 +105,63 @@ void InspectElements::compute_intersections_init<2,3>(){
 };
 
 template<>
+void InspectElements::compute_intersections<1,2>(){
+
+    compute_intersections_init<1,2>();
+    BIHTree bt(mesh, 20);
+
+    FOR_ELEMENTS(mesh, elm) {
+        if (elm->dim() == 1 &&                                  // is 1D element
+            !closed_elements[elm->index()] &&                   // is not closed yet
+            elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 2D mesh bounding box
+        {
+            DBGMSG("-----Nalezen 1D element------ \n");
+
+            update_abscissa(elm);
+            std::vector<unsigned int> searchedElements;
+            bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
+
+            // go through all 2D elements that can have possibly intersection with 1D elements bounding box
+            for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++){
+                int idx = *it;
+                ElementFullIter ele = mesh->element( idx );
+                if (ele->dim() == 2 && flag_for_3D_elements[ele->index()] == -1) {
+
+                    update_triangle(ele);
+
+//                     vector<IntersectionPoint> IPs;
+//                     IPs.reserve(2);
+                    START_TIMER("Compute intersection 12");
+                    ComputeIntersection<Simplex<1>, Simplex<2>> CI_12(abscissa, triangle);
+                    bool ip_found = CI_12.compute_final(intersection_point_list[elm->index()]);
+                    END_TIMER("Compute intersection 12");
+                    
+//                     DBGMSG("IL IPs:\n");
+//                     for(unsigned int i=0; i < il.size(); i++)
+//                         std::cout << il.points()[i];
+                    
+                    if(ip_found){
+                        closed_elements[elm->index()] = true;
+                        flag_for_3D_elements[ele->index()] = elm->index();
+
+                        //TODO: prolongation in parallel pathologic case (2 IPs) (I dont know what about IP being triangle vertex)
+//                         prolongate_elements(il, elm, ele);
+// 
+//                         while(!prolongation_point_queue.empty()){
+// 
+//                             prolongate((ProlongationPoint)prolongation_point_queue.front());
+//                             prolongation_point_queue.pop();
+// 
+//                         }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+template<>
 void InspectElements::compute_intersections<1,3>(){
 
 	compute_intersections_init<1,3>();
@@ -105,9 +188,11 @@ void InspectElements::compute_intersections<1,3>(){
 					update_tetrahedron(ele);
 
 					IntersectionLine il(elm->index(), ele->index());
+                    START_TIMER("Compute intersection 13");
 					ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
 					CI_13.init();
 					CI_13.compute(il.points());
+                    END_TIMER("Compute intersection 13");
 
 //                     DBGMSG("IL IPs:\n");
 //                     for(unsigned int i=0; i < il.size(); i++)
@@ -262,21 +347,21 @@ void InspectElements::prolongate(const ProlongationPoint &pp){
 
 template<>
 void InspectElements::compute_intersections<2,3>(){
-	{ START_TIMER("Incializace pruniku");
+	{   START_TIMER("Intersection initialization");
 		compute_intersections_init<2,3>();
-		END_TIMER("Inicializace pruniku");}
+		END_TIMER("Intersection initialization");}
 
 		BIHTree bt(mesh, 20);
 		//bool nalezen = false;
 
-		{ START_TIMER("Prochazeni vsech elementu");
+		{ START_TIMER("Element iteration");
 		FOR_ELEMENTS(mesh, elm) {
 			if (elm->dim() == 2 && !closed_elements[elm.index()] && elements_bb[elm->index()].intersect(mesh_3D_bb)) {
 				update_triangle(elm);
 				std::vector<unsigned int> searchedElements;
 				bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
 
-				{ START_TIMER("Hlavni vypocet");
+				{ START_TIMER("Bounding box element iteration");
 				for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
 				{
 					unsigned int idx = *it;
@@ -285,9 +370,11 @@ void InspectElements::compute_intersections<2,3>(){
 					if (ele->dim() == 3 && flag_for_3D_elements[ele->index()] != (int)(elm->index())) {
 						update_tetrahedron(ele);
 						IntersectionPolygon il(elm.index(), ele->index());
+                        START_TIMER("Compute intersection 23");
 						ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
 						CI_23.init();
 						CI_23.compute(il);
+                        END_TIMER("Compute intersection 23");
 
                         //TODO: how does prolongation work when there are 1 or 2 IPs?
 						if(il.size() > 2){
@@ -297,7 +384,7 @@ void InspectElements::compute_intersections<2,3>(){
 							il.trace_polygon(prolongation_table);
 							//il.printTracingTable();
 
-							{ START_TIMER("Prochazeni vsech front");
+							{ START_TIMER("Prolongation queue");
 
 							intersection_list[elm.index()].push_back(il);
 							flag_for_3D_elements[ele->index()] = elm.index();
@@ -338,7 +425,7 @@ void InspectElements::compute_intersections<2,3>(){
 								}
 
 							}
-							END_TIMER("Prochazeni vsech front");}
+							END_TIMER("Prolongation queue");}
 							//prunik = true;
 							break; // ukončí procházení dalších bounding boxů
 						}
@@ -350,12 +437,12 @@ void InspectElements::compute_intersections<2,3>(){
 				/*if(nalezen){
 					break;
 				}*/
-				END_TIMER("Hlavni vypocet");}
+				END_TIMER("Bounding box element iteration");}
 
 			}
 		}
 
-		END_TIMER("Prochazeni vsech elementu");}
+		END_TIMER("Element iteration");}
 
 };
 

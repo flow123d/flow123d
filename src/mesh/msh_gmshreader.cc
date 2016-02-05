@@ -56,7 +56,9 @@ GmshMeshReader::GmshMeshReader(std::istream &in)
 
 
 GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
-{}
+{
+    if(current_cache_ != nullptr) delete current_cache_;
+}
 
 
 

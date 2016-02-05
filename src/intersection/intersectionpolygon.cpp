@@ -138,6 +138,10 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
 
                 DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",row, object_index, i);
             } break;
+            default:
+                ASSERT(0,"Unsupported dimension of intersection object A.");
+                row = object_index = 0; // suppress compilation warnings
+              break;
         }
         
         // determine the first row set
@@ -147,13 +151,13 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
         trace_table_x[row][1] = i;
     }
     
-    DBGMSG("Trace table:\n");
-    for(unsigned int i = 0; i < 7;i++){
-        cout << "i=" << i << "  ";
-        for(unsigned int j = 0; j < 2;j++)
-            std::cout << trace_table_x[i][j] << "  ";
-        cout << endl;
-    }
+//     DBGMSG("Trace table:\n");
+//     for(unsigned int i = 0; i < 7;i++){
+//         cout << "i=" << i << "  ";
+//         for(unsigned int j = 0; j < 2;j++)
+//             std::cout << trace_table_x[i][j] << "  ";
+//         cout << endl;
+//     }
     ASSERT_LESS(first_row_index,tt_size);
     
     
@@ -195,6 +199,7 @@ void IntersectionPolygon::trace_polygon_convex_hull(std::vector<unsigned int> &p
     // sort IPs using IP's operator <
 	std::sort(i_points_.begin(),i_points_.end());
 
+    //TODO: think about removing?? at this point we have already found IPs, no need to remove them...
 	// Remove duplicit IPs, use geometry epsilon for comparison
 	for(unsigned int i = 0; i < i_points_.size()-1; i++){
 		if((fabs(i_points_[i].local_bcoords_A()[0] - i_points_[i+1].local_bcoords_A()[0]) < geometry_epsilon) &&
