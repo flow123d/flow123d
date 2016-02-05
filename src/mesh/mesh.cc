@@ -154,6 +154,7 @@ Mesh::~Mesh() {
         if (ele->edge_idx_) delete[] ele->edge_idx_;
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+        if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
     for(unsigned int idx=0; idx < this->bc_elements.size(); idx++) {
