@@ -138,9 +138,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_fields.set_limit_side(LimitSide::right);
-
-
 	output_stream = OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream"));
 	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 	output_stream->mark_output_times(darcy_flow->time());
@@ -199,7 +196,7 @@ void DarcyFlowMHOutput::output()
 
       {
           START_TIMER("evaluate output fields");
-          output_fields.fields_for_output.set_time(darcy_flow->time().step());
+          output_fields.fields_for_output.set_time(darcy_flow->time().step(), LimitSide::right);
           output_fields.fields_for_output.output(output_stream);
       }
 

@@ -204,7 +204,7 @@ public:
      *
      * Returns true if the field has been changed.
      */
-    bool set_time(const TimeStep &time) override;
+    bool set_time(const TimeStep &time, LimitSide limit_side) override;
 
     /**
      * Check that other has same type and assign from it.

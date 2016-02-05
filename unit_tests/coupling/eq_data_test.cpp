@@ -192,9 +192,8 @@ protected:
         inputs.push_back( in_rec.val<Input::Array>("data") );
 
         data.set_mesh(*mesh);
-        data.set_limit_side(LimitSide::right);
         data.set_input_list( inputs[input_last] );
-        data.set_time(tg.step());
+        data.set_time(tg.step(), LimitSide::right);
     }
 
     virtual void TearDown() {

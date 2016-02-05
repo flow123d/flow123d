@@ -104,7 +104,7 @@ public:
      * and use this vector  to name individual components. Should be called after the setters derived from
      * FieldCommonBase.
      */
-    bool set_time(const TimeStep &time) override;
+    bool set_time(const TimeStep &time, LimitSide limit_side) override;
 
     /**
      * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
