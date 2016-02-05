@@ -139,7 +139,7 @@ void IntersectionPolygon::trace_polygon_opt(std::vector<unsigned int> &prolongat
                 DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",row, object_index, i);
             } break;
             default:
-                ASSERT("Unsupported dimension of intersection object A.");
+                ASSERT(0,"Unsupported dimension of intersection object A.");
                 row = object_index = 0; // suppress compilation warnings
               break;
         }
