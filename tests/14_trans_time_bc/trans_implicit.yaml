@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test14 - 2D transport with time variable boundarty
   mesh:

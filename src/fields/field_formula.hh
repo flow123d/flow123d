@@ -23,6 +23,7 @@
 #include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
 #include "input/factory.hh"
+#include "fields/field_values.hh"
 
 #include <string>
 using namespace std;
@@ -73,14 +74,10 @@ public:
     virtual ~FieldFormula();
 
 private:
-    // FieldValue_ wrapper for matrix of strings
-    typedef FieldValue_<Value::NRows_, Value::NCols_, std::string> StringValue;
+    typedef StringTensorInput<Value::NRows_,Value::NCols_> STI;
 
     // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
-    typename StringValue::return_type formula_matrix_;
-
-    // FieldValue_ wrapper for unified reading of the input
-    StringValue formula_matrix_helper_;
+    StringTensor formula_matrix_;
 
     // Matrix of parsers corresponding to the formula matrix returned by formula_matrix_helper_
     std::vector< std::vector<FunctionParser> > parser_matrix_;

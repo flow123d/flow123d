@@ -101,7 +101,7 @@ SorptionBase::EqData::EqData(const string &output_field_name)
             .flags(FieldFlag::input_copy);
     
     output_fields += *this;
-    output_fields += conc_solid.name(output_field_name).units( UnitSI().kg().m(-3) );
+    output_fields += conc_solid.name(output_field_name).units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
 }
 
 
@@ -119,14 +119,16 @@ SorptionBase::~SorptionBase(void)
   if (data_ != nullptr) delete data_;
 
   VecScatterDestroy(&(vconc_out_scatter));
-  VecDestroy(vconc_solid);
+  if (vconc_solid != NULL) {
+	  VecDestroy(vconc_solid);
 
-  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
-  {
-    //no mpi vectors
-    xfree(conc_solid[sbi]);
+	  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+	  {
+		//no mpi vectors
+		xfree(conc_solid[sbi]);
+	  }
+	  xfree(conc_solid);
   }
-  xfree(conc_solid);
 }
 
 void SorptionBase::make_reactions()
@@ -316,15 +318,13 @@ void SorptionBase::initialize_fields()
 
   data_->set_components( std::vector<std::string>(n_substances_, "") );
   data_->set_mesh(*mesh_);
-  data_->set_limit_side(LimitSide::right);
 
   //initialization of output
   output_array = input_record_.val<Input::Array>("output_fields");
   data_->conc_solid.set_components(substances_.names());
   data_->output_fields.set_mesh(*mesh_);
-  data_->output_fields.set_limit_side(LimitSide::right);
   data_->output_fields.output_type(OutputTime::ELEM_DATA);
-  data_->conc_solid.set_up_components();
+  data_->conc_solid.setup_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
       // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
@@ -342,13 +342,13 @@ void SorptionBase::zero_time_step()
   ASSERT(output_stream_,"Null output stream.");
   ASSERT_LESS(0, substances_.size());
   
-  data_->set_time(time_->step());
+  data_->set_time(time_->step(), LimitSide::right);
   set_initial_condition();
   make_tables();
     
   // write initial condition
   output_vector_gather();
-  data_->output_fields.set_time(time_->step());
+  data_->output_fields.set_time(time_->step(), LimitSide::right);
   data_->output_fields.output(output_stream_);
   
   if(reaction_liquid) reaction_liquid->zero_time_step();
@@ -376,7 +376,7 @@ void SorptionBase::set_initial_condition()
 
 void SorptionBase::update_solution(void)
 {
-  data_->set_time(time_->step()); // set to the last computed time
+  data_->set_time(time_->step(), LimitSide::right); // set to the last computed time
 
   // if parameters changed during last time step, reinit isotherms and eventualy 
   // update interpolation tables in the case of constant rock matrix parameters
@@ -506,6 +506,6 @@ void SorptionBase::output_data(void )
     output_vector_gather();
 
     // Register fresh output data
-    data_->output_fields.set_time(time_->step());
+    data_->output_fields.set_time(time_->step(), LimitSide::right);
     data_->output_fields.output(output_stream_);
 }

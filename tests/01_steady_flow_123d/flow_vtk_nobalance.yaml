@@ -1,7 +1,8 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
-  mesh:
-    mesh_file: ./input/test1_new.msh
+  # test auto conversion for the Mesh record
+  mesh: ./input/test1_new.msh
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:

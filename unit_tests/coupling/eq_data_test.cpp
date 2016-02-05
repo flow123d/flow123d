@@ -192,9 +192,8 @@ protected:
         inputs.push_back( in_rec.val<Input::Array>("data") );
 
         data.set_mesh(*mesh);
-        data.set_limit_side(LimitSide::right);
         data.set_input_list( inputs[input_last] );
-        data.set_time(tg.step());
+        data.set_time(tg.step(), LimitSide::right);
     }
 
     virtual void TearDown() {
@@ -234,11 +233,10 @@ TEST_F(SomeEquation, values) {
                 value=1.1
               },
             init_conc = [ 1, 2, 3, 4],
+            // MultiField
             conc_mobile = {
-                TYPE="MultiField",
-                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
-                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
-                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+                TYPE="FieldConstant", 
+                value=[1, 2, 3, 4]
               }
           },
           { region="2D XY diagonal",
@@ -262,10 +260,8 @@ TEST_F(SomeEquation, values) {
                 value=["x", "10+x", "20+x", "30+x"]
             },
             conc_mobile = {
-                TYPE="MultiField",
-                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
-                common={TYPE="FieldConstant", value=[5, 6, 7, 8]},
-                components=[ {TYPE="FieldConstant", value=5}, {TYPE="FieldConstant", value=6}, {TYPE="FieldConstant", value=7}, {TYPE="FieldConstant", value=8}]
+                TYPE="FieldConstant", 
+                value=[5, 6, 7, 8]
               }
           },
           { rid=102,
@@ -299,8 +295,9 @@ TEST_F(SomeEquation, values) {
 
     // bulk fields
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
+    auto conc_mobile_val = data.conc_mobile.value(p, el_1d);
     for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
-        EXPECT_DOUBLE_EQ( 1.0 + i, data.conc_mobile[i].value(p, el_1d) );
+        EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );
     }
 
     FieldValue<3>::TensorFixed::return_type value = data.anisotropy.value(p, el_1d);
@@ -317,8 +314,9 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ( 1.0, value.at(2,2) );
 
     EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_2d) );
+    conc_mobile_val = data.conc_mobile.value(p, el_2d);
     for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
-        EXPECT_DOUBLE_EQ( 1.0 + i, data.conc_mobile[i].value(p, el_2d) );
+        EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );
     }
 
     // init_conc - variable length vector

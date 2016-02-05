@@ -60,6 +60,21 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 
 template<int spacedim, class Value>
+Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name)
+: data_(std::make_shared<SharedData>())
+{
+	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
+	// this invariant is kept also by n_comp setter
+	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
+	this->set_component_index(component_index);
+	this->name_ = (name=="") ? input_name : name;
+	this->shared_->input_name_ = input_name;
+
+	this->multifield_ = false;
+}
+
+
+template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
@@ -116,11 +131,11 @@ const it::Instance &Field<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
-it::Record &Field<spacedim,Value>::get_multifield_input_type() {
+it::Array &Field<spacedim,Value>::get_multifield_input_type() {
 	ASSERT(false, "This method can't be used for Field");
 
-	static it::Record rec = it::Record();
-	return rec;
+	static it::Array arr = it::Array( it::Integer() );
+	return arr;
 }
 
 
@@ -213,28 +228,28 @@ void Field<spacedim, Value>::set_field(
 
 
 template<int spacedim, class Value>
-bool Field<spacedim, Value>::set_time(const TimeStep &time)
+bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit_side)
 {
 	ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
-	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side on field '%s' before calling set_time.\n",name().c_str());
 
     // We perform set_time only once for every time.
-    if (time.end() == last_time_)  return changed();
-    last_time_=time.end();
+    if (time_step.end() == last_time_ &&
+        limit_side == last_limit_side_ )  return changed();
+    last_time_=time_step.end();
+    last_limit_side_ = limit_side;
 
-        // possibly update our control field
-        if (no_check_control_field_) {
-                no_check_control_field_->set_limit_side(limit_side_);
-                no_check_control_field_->set_time(time);
-        }
+    // possibly update our control field
+    if (no_check_control_field_) {
+            no_check_control_field_->set_time(time_step, limit_side);
+    }
         
     set_time_result_ = TimeStatus::constant;
     
     // read all descriptors satisfying time.ge(input_time)
-    update_history(time);
+    update_history(time_step);
     check_initialized_region_fields_();
 
-    // set time on all regions
+    // set time_step on all regions
     // for regions that match type of the field domain
     for(const Region &reg: mesh()->region_db().get_region_set("ALL") ) {
     	auto rh = data_->region_history_[reg.idx()];
@@ -246,12 +261,14 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time)
         	unsigned int history_size=rh.size();
         	unsigned int i_history;
         	// set history index
-        	if ( time.gt(last_time_in_history) ) {
-        		// in smooth time
+        	if ( time_step.gt(last_time_in_history) ) {
+        		// in smooth time_step
         		i_history=0;
+        		is_jump_time_=false;
         	} else {
-        		// time .eq. input_time; i.e. jump time
-        		if (limit_side_ == LimitSide::right) {
+        		// time_step .eq. input_time; i.e. jump time
+        	    is_jump_time_=true;
+        		if (limit_side == LimitSide::right) {
         			i_history=0;
         		} else {
         			i_history=1;
@@ -266,7 +283,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time)
         		set_time_result_ = TimeStatus::changed;
         	}
         	// let FieldBase implementation set the time
-    		if ( new_ptr->set_time(time) )  set_time_result_ = TimeStatus::changed;
+    		if ( new_ptr->set_time(time_step) )  set_time_result_ = TimeStatus::changed;
 
         }
     }
@@ -298,10 +315,25 @@ void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 
 
 template<int spacedim, class Value>
-FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm) const {
-    auto f = region_fields_[elm.region().idx()];
-    if (f) return f->field_result();
-    else return result_none;
+FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
+
+    FieldResult result_all = result_none;
+    for(Region &reg : region_set) {
+        auto f = region_fields_[reg.idx()];
+        if (f) {
+            FieldResult fr = f->field_result();
+            if (result_all == result_none) // first region
+                result_all = fr;
+            else if (fr != result_all)
+                return result_other; // if results from individual regions are different
+        } else return result_none; // if field is undefined on any region of the region set
+    }
+
+    if (result_all == result_constant && region_set.size() > 1)
+        return result_other; // constant result for individual regions could be non-constant on the whole region set
+
+    return result_all;
+
 }
 
 
@@ -316,18 +348,19 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
         while( shared_->list_idx_ < shared_->input_list_.size()
         	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
 
+        	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
         	// get domain specification
         	RegionSet domain;
         	std::string domain_name;
         	unsigned int id;
-			if (shared_->input_list_[shared_->list_idx_].opt_val("region", domain_name)) {
+			if (actual_list_item.opt_val("region", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 				if (domain.size() == 0) {
 					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << shared_->input_list_[shared_->list_idx_].ei_address() );
+							<< RegionDB::EI_Label(domain_name) << actual_list_item.ei_address() );
 				}
 
-			} else if (shared_->input_list_[shared_->list_idx_].opt_val("rid", id)) {
+			} else if (actual_list_item.opt_val("rid", id)) {
 				try {
 					Region region = mesh()->region_db().find_id(id);
 					if(region.is_valid())
@@ -335,19 +368,19 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 					else
 					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
-					e << shared_->input_list_[shared_->list_idx_].ei_address();
+					e << actual_list_item.ei_address();
 					throw;
 				}
 			} else {
 				THROW(ExcMissingDomain()
-						<< shared_->input_list_[shared_->list_idx_].ei_address() );
+						<< actual_list_item.ei_address() );
 			}
 		    
 			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
 
 			// get field instance   
 			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
-				FieldBasePtr field_instance = (*rit)->create_field(shared_->input_list_[shared_->list_idx_], *this);
+				FieldBasePtr field_instance = (*rit)->create_field(actual_list_item, *this);
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
@@ -475,7 +508,6 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
     	}
 	}
 
-    shared_->list_idx_ = 0;
 }
 
 

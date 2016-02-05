@@ -98,7 +98,7 @@ DualPorosity::EqData::EqData()
         .flags( FieldFlag::input_copy );
 
   output_fields += *this;
-  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) );
+  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
@@ -202,15 +202,13 @@ void DualPorosity::initialize_fields()
   //setting fields in data
   data_.set_components(substances_.names());
   data_.set_mesh(*mesh_);
-  data_.set_limit_side(LimitSide::right);
   
   //initialization of output
   output_array = input_record_.val<Input::Array>("output_fields");
   data_.output_fields.set_components(substances_.names());
   data_.output_fields.set_mesh(*mesh_);
-  data_.output_fields.set_limit_side(LimitSide::right);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
-  data_.conc_immobile.set_up_components();
+  data_.conc_immobile.setup_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
@@ -242,12 +240,12 @@ void DualPorosity::zero_time_step()
 	  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
-  data_.set_time(time_->step(0));
+  data_.set_time(time_->step(0), LimitSide::right);
   set_initial_condition();
   
   // write initial condition
   output_vector_gather();
-  data_.output_fields.set_time(time_->step(0));
+  data_.output_fields.set_time(time_->step(0), LimitSide::right);
   data_.output_fields.output(output_stream_);
   
   if(reaction_mobile)
@@ -275,7 +273,7 @@ void DualPorosity::set_initial_condition()
 
 void DualPorosity::update_solution(void) 
 {
-  data_.set_time(time_->step(-2));
+  data_.set_time(time_->step(-2), LimitSide::right);
  
   START_TIMER("dual_por_exchange_step");
   for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++) 
@@ -392,7 +390,7 @@ void DualPorosity::output_data(void )
     output_vector_gather();
 
     // Register fresh output data
-    data_.output_fields.set_time(time_->step());
+    data_.output_fields.set_time(time_->step(), LimitSide::right);
     data_.output_fields.output(output_stream_);
     
     if (reaction_mobile) reaction_mobile->output_data();

@@ -50,9 +50,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     data_.mark_input_times(this->mark_type());
 
-
-    data_.set_limit_side(LimitSide::right);
-    data_.set_time(time_->step());
+    data_.set_time(time_->step(), LimitSide::right);
 
     output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
     //balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());

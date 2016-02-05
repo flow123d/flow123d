@@ -1,0 +1,205 @@
+{
+  "name": "Main transformation file",
+  "description": "Template for creating transformation file",
+  "old_format": "",
+  "new_format": "",
+  "actions":[
+    { 
+      "NAME" : "BOUNDARY to .BOUNDARY in mesh",
+      "action": "change-value",
+      "parameters": {
+        "path": "/problem/mesh/sets/*/intersection/0",
+        "old_value": "BOUNDARY",
+        "new_value": ".BOUNDARY"        
+      }
+    },
+    { 
+      "NAME" : "BOUNDARY to .BOUNDARY in mesh",
+      "action": "change-value",
+      "parameters": {
+        "path": "/problem/mesh/sets/*/intersection/1",
+        "old_value": "BOUNDARY",
+        "new_value": ".BOUNDARY"        
+      }
+    },
+    { 
+      "NAME" : "BOUNDARY to .BOUNDARY in mesh",
+      "action": "change-value",
+      "parameters": {
+        "path": "/problem/mesh/sets/*/union/0",
+        "old_value": "BOUNDARY",
+        "new_value": ".BOUNDARY"        
+      }
+    },
+    { 
+      "NAME" : "BOUNDARY to .BOUNDARY in mesh",
+      "action": "change-value",
+      "parameters": {
+        "path": "/problem/mesh/sets/*/union/1",
+        "old_value": "BOUNDARY",
+        "new_value": ".BOUNDARY"        
+      }
+    },
+    { 
+      "NAME" : "BOUNDARY to .BOUNDARY in mesh",
+      "action": "change-value",
+      "parameters": {
+        "path": "/problem/mesh/sets/*/difference/0",
+        "old_value": "BOUNDARY",
+        "new_value": ".BOUNDARY"        
+      }
+    },
+    { 
+      "NAME" : "BOUNDARY to .BOUNDARY in mesh",
+      "action": "change-value",
+      "parameters": {
+        "path": "/problem/mesh/sets/*/difference/1",
+        "old_value": "BOUNDARY",
+        "new_value": ".BOUNDARY"        
+      }
+    },
+    { 
+      "NAME" : "BOUNDARY to .BOUNDARY in mesh",
+      "action": "change-value",
+      "parameters": {
+        "path": "**/input_fields/*/r_set",
+        "old_value": "BOUNDARY",
+        "new_value": ".BOUNDARY"        
+      }
+    },      
+    { 
+      "NAME" : "mesh elementary regions setup, name",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/regions/*/name",
+        "destination_path":"/problem/mesh/regions_elementary/$1/name"
+      }
+    },
+    { 
+      "NAME" : "mesh elementary regions setup, from_id",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/regions/*/id",
+        "destination_path":"/problem/mesh/regions_elementary/$1/id",
+        "set_type_path":"/problem/mesh/regions_elementary/$1/",
+        "new_type":"From_ID"  
+      }
+    },
+    { 
+      "NAME" : "mesh elementary regions setup, from_element_list",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/regions/*/element_list",
+        "destination_path":"/problem/mesh/regions_elementary/$1/element_list",
+        "set_type_path":"/problem/mesh/regions_elementary/$1/",
+        "COMMENT": "We overwrite type From_ID, set by previous rule",
+        "new_type":"From_Elements"  
+      }
+    },
+     { 
+      "NAME" : "mesh sets setup, name",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/name",
+        "destination_path":"/problem/mesh/sets_new/$1/name",
+	"create_path":true
+      }
+    },   
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, region_ids",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/region_ids",
+        "destination_path":"/problem/mesh/sets_new/$1/region_ids",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Union",
+        "create_path":true  
+      }
+    },
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, region_labels",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/region_labels",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Union", 
+        "create_path":true 
+      }
+    },
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, union",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/union",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Union",
+        "create_path":true  
+      }
+    },
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, intersection",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/intersection",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Intersection",
+        "create_path":true  
+      }
+    },
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, difference",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/difference",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Difference",
+        "create_path":true  
+      }
+    },
+    {
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/mesh/sets",
+        "deep": true	
+      }
+    },
+    {
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/mesh/regions",
+        "deep": true
+      }
+    },
+    {
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path":"/problem/mesh/sets_new",
+        "addition_path":"/problem/mesh/regions_elementary",
+        "destination_path":"/problem/mesh/regions"        
+      }
+    },
+
+    { 
+      "NAME" : "region to r_set",
+      "TODO": "Need to check that target key 'region' is not used.",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"**/input_fields/*/r_set",
+        "destination_path":"$1/input_fields/$2/region"
+      }
+    },
+    { 
+      "NAME" : "region to r_set",
+      "TODO": "Need to check that target key 'region' is not used.",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"**/input_fields/*/r_set",
+        "destination_path":"$1/input_fields/$2/region"
+      }
+    }           
+  ]             
+}

@@ -22,15 +22,14 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 string field_constant_input = R"JSON(
 {
     common={ 
-        TYPE="MultiField", 
-        component_names=[ "field_1", "field_2", "field_3" ],
-        common={ TYPE="FieldConstant", value=[1, 2, 3]}
+        TYPE="FieldConstant", 
+        value=[1, 2, 3]
     },
-    transposed={ 
-        TYPE="MultiField", 
-        component_names=[ "field_1", "field_2", "field_3" ],
-        components=[ { TYPE="FieldConstant", value=1}, { TYPE="FieldConstant", value=2}, { TYPE="FieldConstant", value=3} ]
-    }
+    transposed=[ 
+        { TYPE="FieldConstant", value=1},
+        { TYPE="FieldConstant", value=2},
+        { TYPE="FieldConstant", value=3}
+    ]
 }
 )JSON";
 
@@ -44,17 +43,13 @@ TEST(TransposeTo, field_constant) {
 	Input::ReaderToStorage json_reader(field_constant_input, in_rec, Input::FileFormat::format_JSON);
 	Input::Record input = json_reader.get_root_interface<Input::Record>();
 
-	Input::Record common = input.val<Input::Record>("common");
-	Input::Record transposed = input.val<Input::Record>("transposed");
+	Input::Array common = input.val<Input::Array>("common");
+	Input::Array transposed = input.val<Input::Array>("transposed");
 
-	Input::Iterator<Input::AbstractRecord> it_common = common.find<Input::AbstractRecord>("common");
-	it_common->transpose_to( common, "components", 3 );
+	EXPECT_EQ(common.size(), transposed.size());
 
-	Input::Iterator<Input::Array> it_common_comp = common.find<Input::Array>("components");
-	Input::Iterator<Input::Array> it_transposed_comp = transposed.find<Input::Array>("components");
-
-	auto it_c = it_common_comp->begin<Input::AbstractRecord>();
-	for (auto it_t = it_transposed_comp->begin<Input::AbstractRecord>(); it_t != it_transposed_comp->end(); ++it_t, ++it_c) {
+	auto it_c = common.begin<Input::AbstractRecord>();
+	for (auto it_t = transposed.begin<Input::AbstractRecord>(); it_t != transposed.end(); ++it_t, ++it_c) {
 		Input::Record rec_t = (*it_t);
 		Input::Record rec_c = (*it_c);
 		EXPECT_DOUBLE_EQ( rec_t.val<double>("value"), rec_c.val<double>("value") );

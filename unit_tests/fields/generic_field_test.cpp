@@ -23,13 +23,11 @@ TEST(GenericField, all) {
     region_id.flags(FieldFlag::input_copy);
 
     subdomain = GenericField<3>::subdomain(mesh);
-    subdomain.set_limit_side(LimitSide::right);
-    subdomain.set_time(TimeGovernor().step());
+    subdomain.set_time(TimeGovernor().step(), LimitSide::right);
     // TODO: After we have support to read partitioning form the MSH file.
 
     region_id = GenericField<3>::region_id(mesh);
-    region_id.set_limit_side(LimitSide::right);
-    region_id.set_time(TimeGovernor().step());
+    region_id.set_time(TimeGovernor().step(), LimitSide::right);
     FOR_ELEMENTS(&mesh, ele)
     	EXPECT_EQ( ele->region().id(),
     			   region_id.value(ele->centre(), ele->element_accessor())

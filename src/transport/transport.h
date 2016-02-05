@@ -81,7 +81,7 @@ public:
 		BCField<3, FieldValue<3>::Vector> bc_conc;
 
 		/// Initial concentrations.
-		Field<3, FieldValue<3>::Vector> init_conc;
+		MultiField<3, FieldValue<3>::Scalar> init_conc;
 
 		Field<3, FieldValue<3>::Integer> region_id;
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.

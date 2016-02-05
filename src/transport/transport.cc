@@ -96,7 +96,7 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
     	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
-    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) );
+    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
 	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
@@ -126,7 +126,6 @@ void ConvectionTransport::initialize()
     data_.set_components(substances_.names());
     data_.set_mesh(*mesh_);
     data_.set_input_list( input_rec.val<Input::Array>("input_fields") );
-    data_.set_limit_side(LimitSide::right);
 
     make_transport_partitioning();
     alloc_transport_vectors();
@@ -135,9 +134,8 @@ void ConvectionTransport::initialize()
 	// register output vectors
 	data_.output_fields.set_components(substances_.names());
 	data_.output_fields.set_mesh(*mesh_);
-	data_.output_fields.set_limit_side(LimitSide::right);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
-	data_.conc_mobile.set_up_components();
+	data_.conc_mobile.setup_components();
 	data_.region_id = GenericField<3>::region_id(*mesh_);
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
@@ -368,7 +366,7 @@ void ConvectionTransport::set_boundary_conditions()
                         {
                         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
                         	{
-                        		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
+//                         		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
                         		balance_->add_flux_vec_value(subst_idx[sbi], loc_b, flux*value[sbi]);
                         	}
                         }
@@ -480,7 +478,7 @@ void ConvectionTransport::zero_time_step()
 	ASSERT_EQUAL(time_->tlevel(), 0);
 
 	data_.mark_input_times(target_mark_type);
-	data_.set_time(time_->step());
+	data_.set_time(time_->step(), LimitSide::right);
 
     set_initial_condition();
 
@@ -503,7 +501,7 @@ void ConvectionTransport::zero_time_step()
 bool ConvectionTransport::assess_time_constraint(double& time_constraint)
 {
     ASSERT(mh_dh, "Null MH object.\n" );
-    data_.set_time(time_->step()); // set to the last computed time
+    data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
     
     START_TIMER("data reinit");
     
@@ -861,7 +859,7 @@ void ConvectionTransport::output_data() {
     if (time_->is_current( time_->marks().type_output() )) {
         output_vector_gather();
 
-		data_.output_fields.set_time(time_->step());
+		data_.output_fields.set_time(time_->step(), LimitSide::right);
 		data_.output_fields.output(output_stream_);
 
     }

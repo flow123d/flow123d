@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test of boundary conditions for transport
   mesh:
@@ -31,7 +32,7 @@ problem: !SequentialCoupling
       - region: .left
         bc_type: total_flux
         bc_flux: !FieldFormula
-          value: 7.5*4*y*(1-y)
+          value: -(7.5*4*y*(1-y))
       - region: .right
         bc_type: inflow
         bc_conc: 10

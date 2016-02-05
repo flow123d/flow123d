@@ -34,13 +34,10 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
-    static auto value_type = StringValue::get_input_type();
-    auto instance_ = value_type.make_instance({ std::make_pair("element_input_type", boost::make_shared<it::String>()) });
-
 
     return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
             .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
-            .declare_key("value", instance_.first , it::Default::obligatory(),
+            .declare_key("value", STI::get_input_type() , it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
                                         "entries of scalar, vector, or tensor value respectively.\n"
                                         "For vector values, you can use just one string to enter homogeneous vector.\n"
@@ -64,9 +61,9 @@ const int FieldFormula<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
-  formula_matrix_helper_(formula_matrix_), parser_matrix_(this->value_.n_rows())
+  formula_matrix_(this->value_.n_rows(), this->value_.n_cols())
 {
+    parser_matrix_.resize(this->value_.n_rows());
     for(unsigned int row=0; row < this->value_.n_rows(); row++) {
         parser_matrix_[row].resize(this->value_.n_cols());
     }
@@ -77,7 +74,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
     // read formulas form input
-    formula_matrix_helper_.init_from_input( rec.val<typename StringValue::AccessType>("value") );
+    STI::init_from_input( formula_matrix_, rec.val<typename STI::AccessType>("value") );
     value_input_address_ = rec.address_string();
 }
 

@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test6 - Coupling between dimension 2D-3D - influence of sigma and cross
     section parameters.
@@ -21,9 +22,9 @@ problem: !SequentialCoupling
       conductivity: 2
       # K_3d
     - region: .2d_fraction
-      bc_type: neumann
+      bc_type: total_flux
       bc_flux: !FieldFormula
-        value: '0'
+        value: '-(0)'
     - region: .3d_cube
       bc_type: dirichlet
       bc_piezo_head: !FieldFormula

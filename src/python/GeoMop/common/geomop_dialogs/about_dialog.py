@@ -15,7 +15,6 @@ class GMAboutDialog(QDialog):
         """Initializes the class."""
         super(GMAboutDialog, self).__init__(parent)
 
-        changelog_file_path = Version.get_changelog_path()
         version = Version()
 
         self.version = version.version
@@ -23,7 +22,7 @@ class GMAboutDialog(QDialog):
         self.date = version.date
 
         try:
-            with open(changelog_file_path) as changelog_file:
+            with open(Version.CHANGELOG_FILE_PATH) as changelog_file:
                 changelog = changelog_file.read()
         except FileNotFoundError:
             changelog = 'Changelog not found!'

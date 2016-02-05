@@ -205,6 +205,14 @@ void OutputBase::clear_processed_types() {
 }
 
 
+bool OutputBase::was_written(std::size_t hash)
+{
+    bool in_set = ( processed_types_hash_.find(hash) != processed_types_hash_.end() );
+    if (! in_set) processed_types_hash_.insert(hash);
+    return in_set;
+}
+
+
 
 
 /*******************************************************************
@@ -427,7 +435,24 @@ void OutputText::print_impl(ostream& stream, const Parameter *type) {
  * implementation of OutputJSONMachine
  */
 
+OutputJSONMachine::OutputJSONMachine(RevNumData rev_num_data) 
+: OutputBase()
+{    
+    rev_num_data_ = rev_num_data;
 
+    format_head="{ \"version\" :";
+    format_inner=",\n\"ist_nodes\" : [\n";
+    format_full_hash="{}],\n";
+    format_tail="}\n";   
+}
+
+
+
+OutputJSONMachine::OutputJSONMachine(const Record &root_type, RevNumData rev_num_data) 
+: OutputJSONMachine(rev_num_data)
+{
+    root_type_ =  root_type;
+}
 
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
@@ -461,6 +486,7 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 	print_program_info(stream);
 	stream << format_inner;
 
+    print_base( stream, &root_type_);
 	for (Input::TypeRepository<Selection>::TypeRepositoryMapIter it = Input::TypeRepository<Selection>::get_instance().begin();
 			it != Input::TypeRepository<Selection>::get_instance().end(); ++it) {
 		print_base( stream, it->second.get() );
@@ -484,7 +510,7 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
     stream << "{" << endl;
     stream << "\"id\" : " << type->hash_str() << "," << endl;
     stream << "\"input_type\" : \"" + type->class_name() + "\"," << endl;
-    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
     type->write_attributes(stream);
 }
 
@@ -524,6 +550,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
     for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
         string dft_type, dft_value;
         get_default(it, dft_type, dft_value);
+        if (dft_type != "value at declaration") 
+            dft_value = "\"" + escape_description(dft_value) + "\"";
 
         if (it != type->begin()) {
             stream << "," << endl;

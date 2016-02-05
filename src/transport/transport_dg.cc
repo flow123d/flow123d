@@ -253,7 +253,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-//    data_.set_limit_side(LimitSide::right);
     data_.region_id = GenericField<3>::region_id(*Model::mesh_);
 
 
@@ -265,7 +264,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     feo = new FEObjects(Model::mesh_, dg_order);
     DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
 
-    data_.set_limit_side(LimitSide::left);
 }
 
 
@@ -318,7 +316,7 @@ void TransportDG<Model>::initialize()
 	data_.output_field.set_mesh(*Model::mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
 
-    data_.output_field.set_up_components();
+    data_.output_field.setup_components();
 	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 	{
 		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
@@ -418,7 +416,7 @@ void TransportDG<Model>::zero_time_step()
 {
 	START_TIMER(Model::ModelEqData::name());
 	data_.mark_input_times(Model::time_->equation_fixed_mark_type());
-	data_.set_time(Model::time_->step());
+	data_.set_time(Model::time_->step(), LimitSide::left);
 
 
     // set initial conditions
@@ -477,7 +475,7 @@ void TransportDG<Model>::update_solution()
 	Model::time_->view("TDG");
     
     START_TIMER("data reinit");
-    data_.set_time(Model::time_->step());
+    data_.set_time(Model::time_->step(), LimitSide::left);
     END_TIMER("data reinit");
     
 	// assemble mass matrix
@@ -642,7 +640,7 @@ void TransportDG<Model>::output_data()
 
     // gather the solution from all processors
     output_vector_gather();
-    data_.subset(FieldFlag::allow_output).set_time( Model::time_->step() );
+    data_.subset(FieldFlag::allow_output).set_time( Model::time_->step(), LimitSide::left);
     data_.output(Model::output_stream_);
 
 	Model::output_data();
@@ -1380,7 +1378,7 @@ void TransportDG<Model>::set_boundary_conditions()
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
-						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]-bc_fluxes[k][sbi])*fe_values_side.JxW(k);
+						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]+bc_fluxes[k][sbi])*fe_values_side.JxW(k);
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
@@ -1399,7 +1397,7 @@ void TransportDG<Model>::set_boundary_conditions()
 				{
 					for (unsigned int k=0; k<qsize; k++)
 					{
-						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]-bc_fluxes[k][sbi])*fe_values_side.JxW(k);
+						double bc_term = csection[k]*(bc_sigma[k][sbi]*bc_ref_values[k][sbi]+bc_fluxes[k][sbi])*fe_values_side.JxW(k);
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}

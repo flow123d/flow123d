@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test of boundary conditions for transport
   mesh:
@@ -29,17 +30,17 @@ problem: !SequentialCoupling
         init_conc: 5
       - region: .left
         bc_type: diffusive_flux
-        bc_flux: 0.1
+        bc_flux: -0.1
       - region: .right
         bc_type: diffusive_flux
         bc_conc: 10
         bc_robin_sigma: 1
       - region: .top
         bc_type: diffusive_flux
-        bc_flux: -0.1
+        bc_flux: 0.1
       - region: .bottom
         bc_type: diffusive_flux
-        bc_flux: -0.1
+        bc_flux: 0.1
       solver: *anchor3
     output_stream: 
       file: ./transport.pvd

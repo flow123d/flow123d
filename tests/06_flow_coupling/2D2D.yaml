@@ -1,3 +1,4 @@
+flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: 2D2D test - Steady flow in 2D block with fracture, fracture as 2D porous
     subdomain
