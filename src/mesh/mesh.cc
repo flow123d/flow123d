@@ -60,10 +60,9 @@ const IT::Record & Mesh::get_input_type() {
 	    .allow_auto_conversion("mesh_file")
 		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 				"Input file with mesh description.")
-		.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
-				"List of additional region definitions not contained in the mesh.")
-		.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
-				"List of region set definitions. There are three region sets implicitly defined:\n\n"
+		.declare_key("regions", IT::Array( RegionSetBase::get_input_type() ), IT::Default::optional(),
+				"List of additional region and region set definitions not contained in the mesh.\n"
+				"There are three region sets implicitly defined:\n\n"
 				" - ALL (all regions of the mesh)\n - BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
 		.close();
@@ -216,6 +215,10 @@ void Mesh::count_element_types() {
 
 void Mesh::read_gmsh_from_stream(istream &in, bool close_region_db) {
   
+	/*
+	 * TODO: This method needs check in issue 'Review mesh setting'.
+	 * See @p modify_element_ids method
+	 */
     START_TIMER("Reading mesh - from_stream");
     
     GmshMeshReader reader(in);
@@ -231,10 +234,6 @@ void Mesh::read_gmsh_from_stream(istream &in, bool close_region_db) {
 
 
 void Mesh::init_from_input() {
-	/*
-	 * TODO: This method needs check in issue 'Review mesh setting'.
-	 * See @p modify_element_ids method
-	 */
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
@@ -243,21 +242,15 @@ void Mesh::init_from_input() {
     // read raw mesh, add regions from GMSH file
     GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
     reader.read_physical_names(this);
+    // create regions from input
+    if (in_record_.opt_val("regions", region_list)) {
+        this->read_regions_from_input(region_list);
+    }
     reader.read_mesh(this);
     // possibly add implicit_boundary region.
     setup_topology();
-    // create regions from our input
-    if (in_record_.opt_val("regions", region_list)) {
-        region_db_.read_regions_from_input(region_list, el_to_reg_map);
-    }
-    modify_element_ids(el_to_reg_map);
-    //close region_db_.
-    region_db_.close();
-    // create sets
-    Input::Array set_list;
-    if (in_record_.opt_val("sets", set_list)) {
-        region_db_.read_sets_from_input(set_list);
-    }
+    // finish mesh initialization
+    this->check_and_finish();
 }
 
 
