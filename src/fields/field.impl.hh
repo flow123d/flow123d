@@ -232,9 +232,16 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 {
 	ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
 
-    // We perform set_time only once for every time.
-    if (time_step.end() == last_time_ &&
-        limit_side == last_limit_side_ )  return changed();
+    // Skip setting time if the new time is equal to current time of the field
+	// and if either the field is continuous in that time or the current limit side is same as the new one.
+    if (time_step.end() == last_time_) {
+        if ( ! is_jump_time() ||
+             limit_side == last_limit_side_) {
+            last_limit_side_ = limit_side;
+            return changed();
+        }
+    }
+
     last_time_=time_step.end();
     last_limit_side_ = limit_side;
 
