@@ -237,8 +237,6 @@ void Mesh::init_from_input() {
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
-    RegionDB::MapElementIDToRegionID el_to_reg_map;
-
     // read raw mesh, add regions from GMSH file
     GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
     reader.read_physical_names(this);
