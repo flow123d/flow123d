@@ -83,21 +83,30 @@ const it::Selection & DarcyFlowMH_Steady::get_mh_mortar_selection() {
 
 const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
 	return it::Selection("DarcyFlow_BC_Type")
-               .add_value(none, "none",
-                       "Homogeneous Neumann boundary condition. Zero flux")
-               .add_value(dirichlet, "dirichlet",
-                       "Dirichlet boundary condition. "
-                       "Specify the pressure head through the 'bc_pressure' field "
-                       "or the piezometric head through the 'bc_piezo_head' field.")
-//                .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water inflow by the 'bc_flux' field.")
-//                .add_value(robin, "robin", "Robin boundary condition. Water inflow equal to (($\\sigma (h^R - h)$)). "
-//                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
-//                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
-               .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
-		       "Water inflow equal to (($q^N + \\sigma (h^R - h)$)). "
-                        "Specify the water inflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
-			"and the reference pressure head or pieozmetric head through 'bc_pressure' or 'bc_piezo_head' respectively.")
-			   .close();
+        .add_value(none, "none",
+            "Homogeneous Neumann boundary condition. Zero flux")
+        .add_value(dirichlet, "dirichlet",
+            "Dirichlet boundary condition. "
+            "Specify the pressure head through the 'bc_pressure' field "
+            "or the piezometric head through the 'bc_piezo_head' field.")
+        .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
+            "Water inflow equal to (($q^N + \\sigma (h^R - h)$)). "
+            "Specify the water inflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
+            "and the reference pressure head or pieozmetric head through 'bc_pressure' or 'bc_piezo_head' respectively.")
+        .add_value(seepage, "seepage",
+            "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
+            "is described by the pair of inequalities:"
+            "(($h \\le h_d^D$)) and (($ q \\le q_d^N)), where the equality holds in at least one of them. Caution! Setting $q_d^N$ strictly negative"
+            "may lead to an ill posed problem since a positive outflow is enforced."
+            "Parameters (($h_d^D$)) and (($q_d^N)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
+            )
+        .add_value(river, "river",
+            "River boundary condition. For the water level above the bedrock, (($H > H^S$)), the Robin boundary condition is used with the inflow given by: "
+            "(( $q^N + \\sigma(H^D - H)$ )). For the water level under the bedrock, constant infiltration is used "
+            "(( $q^N + \\sigma(H^D - H^S)$ )). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
+            " ``bc_sigma, ``bc_flux``."
+            )
+        .close();
 }
 
 
@@ -183,11 +192,11 @@ DarcyFlowMH_Steady::EqData::EqData()
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' save the bc_type='none'."
-		"See documentation of 'bc_type' for exact mening of 'bc_pressure' in individual boundary condition types.", "0.0");
+		"See documentation of 'bc_type' for exact meaning of 'bc_pressure' in individual boundary condition types.", "0.0");
     	bc_pressure.disable_where(bc_type, {none/*, neumann*/} );
         bc_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(bc_flux,"Incomming water boundary flux. Used for bc_types : 'none', 'total_flux', 'seepage', 'river'.", "0.0");
+    ADD_FIELD(bc_flux,"Incoming water boundary flux. Used for bc_types : 'none', 'total_flux', 'seepage', 'river'.", "0.0");
     	bc_flux.disable_where(bc_type, {none, dirichlet/*, robin*/} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
@@ -690,7 +699,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     unsigned int loc_edge_idx = bcd->bc_ele_idx_;
                     char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
                     double bc_pressure = data_.bc_switch_pressure.value(b_ele.centre(), b_ele);
-                    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
                     double side_flux=bc_flux * bcd->element()->measure() * cross_section;
 
                     if (switch_dirichlet) {
@@ -728,17 +737,18 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 
                     double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
                     double bc_switch_pressure = data_.bc_switch_pressure.value(b_ele.centre(), b_ele);
+                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
                     double & solution_head = ls->get_solution_array()[edge_row];
 
                     if (solution_head > bc_switch_pressure) {
                         // Robin BC
-                        ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
+                        ls->rhs_set_value(edge_row, bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
                         ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
                     } else {
                         // Neumann BC
-                        double bc_flux = bc_sigma*(bc_switch_pressure - bc_pressure);
-                        ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
+                        double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
+                        ls->rhs_set_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
                     }
                 } else {
                     xprintf(UsrErr, "BC type not supported.\n");

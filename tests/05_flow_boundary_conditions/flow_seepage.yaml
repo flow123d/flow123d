@@ -22,7 +22,7 @@ problem: !SequentialCoupling
         bc_type: seepage
         bc_switch_pressure: !FieldFormula
           value: -x+0.5
-        bc_flux: -0.0005
+        bc_flux: 0.0005
       # ,
     output:
       # 
