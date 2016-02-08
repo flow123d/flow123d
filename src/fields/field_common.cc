@@ -49,7 +49,7 @@ FieldCommon::FieldCommon(const FieldCommon & other)
 
 IT::Record FieldCommon::field_descriptor_record(const string& record_name) {
     return IT::Record(record_name, field_descriptor_record_description(record_name))
-                     .declare_key("region", IT::String(), "Label of the region where to set fields. ")
+                     .declare_key("region", IT::Array( IT::String(), 1 ), "Labels of the regions where to set fields. ")
                      .declare_key("rid", IT::Integer(0), "ID of the region where to set fields." )
                      .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
                              "Apply field setting in this record after this time.\n"

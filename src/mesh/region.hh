@@ -158,6 +158,10 @@ public:
     RegionIdx operator() (const Region &)
         {return RegionIdx(idx_); }
 
+    /// Comparative method of two regions
+    static bool comp(const Region &a, const Region &b)
+    { return a.idx_ < b.idx_; }
+
     /// Returns label of the region (using RegionDB)
     std::string label() const;
 
@@ -184,10 +188,6 @@ private:
     Region(unsigned int index, const RegionDB &db)
     : RegionIdx(index), db_(&db)
     {}
-
-    /// Comparative method of two regions
-    static bool comp(const Region &a, const Region &b)
-    { return a.idx_ < b.idx_; }
 
     /// Global variable with information about all regions.
     const RegionDB *db_;

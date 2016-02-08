@@ -351,14 +351,22 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
         	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
         	// get domain specification
         	RegionSet domain;
+        	Input::Array domain_name_array;
         	std::string domain_name;
         	unsigned int id;
-			if (actual_list_item.opt_val("region", domain_name)) {
-				domain = mesh()->region_db().get_region_set(domain_name);
-				if (domain.size() == 0) {
-					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << actual_list_item.ei_address() );
+			if (actual_list_item.opt_val("region", domain_name_array)) {
+				std::set<Region, bool (*)(const Region&, const Region&)> set(Region::comp);
+				std::vector<string> domain_names;
+				domain_name_array.copy_to(domain_names);
+				for (std::string set_name : domain_names) {
+					RegionSet r_set = mesh()->region_db().get_region_set(set_name);
+					if (r_set.size() == 0) {
+						THROW( RegionDB::ExcUnknownSetOperand()
+								<< RegionDB::EI_Label(set_name) << actual_list_item.ei_address() );
+					}
+					set.insert(r_set.begin(), r_set.end());
 				}
+				domain = RegionSet(set.begin(), set.end());
 
 			} else if (actual_list_item.opt_val("rid", id)) {
 				try {
