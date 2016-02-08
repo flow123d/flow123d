@@ -19,8 +19,9 @@
  * Base class represented regions.
  *
  * Every descendant must contain:
- *  - constructor what adds region to RegionDB
+ *  - constructor what adds region to RegionDB with arguments Input::Record and Mesh
  *  - static generating function created Input Type Record
+ *  - static registrar class member for registration class to factory
  */
 class RegionSetBase {
 public:
@@ -53,6 +54,10 @@ protected:
 
 /**
  * Region declared by id and name.
+ *
+ * Allows to create new region with given id and label or specify existing region by id
+ * which will be renamed. If existing label is given, it must correspond with appropriate
+ * id in RegionDB.
  */
 class RegionSetFromId : public RegionSetBase {
 public:
@@ -74,7 +79,8 @@ private:
 
 
 /**
- * Region declared by mesh_label and name
+ * Region allows to rename existing region specified by mesh_label (e.g. physical volume
+ * name in GMSH format).
  */
 class RegionSetFromLabel : public RegionSetBase {
 public:
@@ -96,7 +102,10 @@ private:
 
 
 /**
- * Region declared by name and enum of elements
+ * Region declared by name, ID and enum of elements.
+ *
+ * Allows to get existing region or create new and assign elements to its. Elements are
+ * specified by ids. If id of new region is not set, it is generated automatically.
  */
 class RegionSetFromElements : public RegionSetBase {
 public:
@@ -140,7 +149,10 @@ private:
 
 
 /**
- * Region defined as union of other regions
+ * Defines region as a union of given two or more other regions.
+ *
+ * Regions can be given by names or IDs or both ways together. Non-empty set must be the result
+ * of the operation.
  */
 class RegionSetUnion : public RegionSetBase {
 public:
@@ -162,7 +174,9 @@ private:
 
 
 /**
- * Region defined as difference of two other regions
+ * Defines region as a difference of given pair of regions.
+ *
+ * Non-empty set must be the result of the operation.
  */
 class RegionSetDifference : public RegionSetBase {
 public:
@@ -184,7 +198,9 @@ private:
 
 
 /**
- * Region defined as intersection of other regions
+ * Defines region as an intersection of given two or more regions.
+ *
+ * Non-empty set must be the result of the operation.
  */
 class RegionSetIntersection : public RegionSetBase {
 public:
