@@ -214,12 +214,8 @@ void Mesh::count_element_types() {
 }
 
 
-void Mesh::read_gmsh_from_stream(istream &in, bool close_region_db) {
+void Mesh::read_gmsh_from_stream(istream &in) {
   
-	/*
-	 * TODO: This method needs check in issue 'Review mesh setting'.
-	 * See @p modify_element_ids method
-	 */
     START_TIMER("Reading mesh - from_stream");
     
     GmshMeshReader reader(in);
@@ -227,9 +223,7 @@ void Mesh::read_gmsh_from_stream(istream &in, bool close_region_db) {
     reader.read_mesh(this);
     setup_topology();
     //close region_db_.
-    if (close_region_db) {
-    	region_db_.close();
-    }
+   	region_db_.close();
 }
 
 

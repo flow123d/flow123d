@@ -194,10 +194,9 @@ public:
     /**
      * Reads mesh from stream.
      *
-     * Method is especially used in unit tests and allows to select
-     * if region_db_ should be closed.
+     * Method is especially used in unit tests.
      */
-    void read_gmsh_from_stream(istream &in, bool close_region_db = true);
+    void read_gmsh_from_stream(istream &in);
     /**
      * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
      */
