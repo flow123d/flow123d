@@ -5,9 +5,7 @@
  *      Author: jb
  */
 
-#define TEST_USE_MPI
-
-#include <flow_gtest_mpi.hh>
+#include <flow_gtest.hh>
 
 #include "system/global_defs.h"
 
@@ -49,7 +47,7 @@ TEST(TokenizerPosition, compare_speed) {
 	EXPECT_EQ(position_data.size(), file_line_count);
 
 	Profiler::initialize();
-	FilePath in_file("/system/tokenizer_speed.txt", FilePath::input_file);
+	FilePath in_file("./system/tokenizer_speed.txt", FilePath::input_file);
 
 	// read data by tokenizer
 	{
@@ -94,7 +92,7 @@ TEST(TokenizerPosition, compare_speed) {
 		binary_file.close();
 	}
 
-	Profiler::instance()->output(MPI_COMM_WORLD, cout);
+	Profiler::instance()->output(cout);
 	Profiler::uninitialize();
 }
 
