@@ -79,14 +79,14 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned
 };
 
 template<unsigned int N, unsigned int M>
-arma::vec::fixed< 3  > IntersectionPoint<N,M>::coords(ElementFullIter ele)
+arma::vec::fixed< 3  > IntersectionPoint<N,M>::coords(ElementFullIter ele) const
 {
     ASSERT(N == ele->dim(), "Element vs intersection point dimension mismatch.");
     
     arma::vec::fixed< 3  > c;
     c.zeros();
     for(unsigned int i=0; i<N+1; i++)
-        c += local_bcoords_A_[i+1]*ele->node[i]->point();
+        c += local_bcoords_A_[i]*ele->node[i]->point();
         
     return c;
 }

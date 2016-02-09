@@ -135,7 +135,7 @@ public:
     //@}
     
     
-    arma::vec::fixed<3> coords(ElementFullIter ele);
+    arma::vec::fixed<3> coords(ElementFullIter ele) const;
     
     /// Returns true, if this is a pathologic case.
     bool is_pathologic() const;
