@@ -74,7 +74,7 @@ void GmshMeshReader::read_nodes(Mesh* mesh) {
     using namespace boost;
     xprintf(Msg, "- Reading nodes...");
 
-    if (! tok_.skip_to("$Nodes")) xprintf(UsrErr,"Missing section '$Nodes' in the GMSH input file: %s\n",tok_.f_name().c_str());
+    if (! tok_.skip_to("$Nodes")) THROW(ExcMissingSection() << EI_Section("$Nodes") << EI_GMSHFile(tok_.f_name()) );
     try {
     	tok_.next_line(false);
         unsigned int n_nodes = lexical_cast<unsigned int> (*tok_);;
@@ -95,7 +95,7 @@ void GmshMeshReader::read_nodes(Mesh* mesh) {
         }
 
     } catch (bad_lexical_cast &) {
-        xprintf(UsrErr, "Wrong format of number, %s.\n", tok_.position_msg().c_str());
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
     }
     xprintf(Msg, " %d nodes read. \n", mesh->node_vector.size());
 }
@@ -106,7 +106,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     using namespace boost;
     xprintf(Msg, "- Reading elements...");
 
-    if (! tok_.skip_to("$Elements")) xprintf(UsrErr,"Missing section '$Elements' in the GMSH input file: %s\n",tok_.f_name().c_str());
+    if (! tok_.skip_to("$Elements")) THROW(ExcMissingSection() << EI_Section("$Elements") << EI_GMSHFile(tok_.f_name()) );
     try {
     	tok_.next_line(false);
         unsigned int n_elements = lexical_cast<unsigned int> (*tok_);
@@ -143,7 +143,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
                     break;
                 default:
                     dim = 0;
-                    xprintf(UsrErr, "Element %d is of the unsupported type %d\n", id, type);
+                    THROW(ExcUnsupportedType() << EI_ElementId(id) << EI_ElementType(type) << EI_GMSHFile(tok_.f_name()) );
                     break;
             }
 
@@ -194,7 +194,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
         }
 
     } catch (bad_lexical_cast &) {
-        xprintf(UsrErr, "Wrong format of number, %s.\n", tok_.position_msg().c_str());
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
     }
 
     mesh->n_all_input_elements_=mesh->element.size() + mesh->bc_elements.size();
@@ -226,7 +226,7 @@ void GmshMeshReader::read_physical_names(Mesh * mesh) {
         }
 
     } catch (bad_lexical_cast &) {
-        xprintf(UsrErr, "Wrong format of number, %s.\n", tok_.position_msg().c_str());
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
     }
 }
 
@@ -283,7 +283,7 @@ void GmshMeshReader::read_data_header(GMSH_DataHeader &head) {
         for(;n_int>0;n_int--) tok_.next_line(false);
         head.position = tok_.get_position();
     } catch (bad_lexical_cast &) {
-                xprintf(UsrErr, "Wrong format of the $ElementData header, %s.\n", tok_.position_msg().c_str());
+    	THROW(ExcWrongFormat() << EI_Type("$ElementData header") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
     }
 }
 
@@ -365,7 +365,8 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	            }
 	            // skip the line if ID on the line  < actual ID in the map el_ids
 	        } catch (bad_lexical_cast &) {
-	            xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
+	        	THROW(ExcWrongFormat() << EI_Type("$ElementData line") << EI_TokenizerMsg(tok_.position_msg())
+	        			<< EI_GMSHFile(tok_.f_name()) );
 	        }
 	    // possibly skip remaining lines after break
 	    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;

@@ -80,10 +80,23 @@ public:
 	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
 	TYPEDEF_ERR_INFO(EI_GMSHFile, std::string);
 	TYPEDEF_ERR_INFO(EI_Time, double);
+	TYPEDEF_ERR_INFO(EI_Type, std::string);
+	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
+	TYPEDEF_ERR_INFO(EI_Section, std::string);
+	TYPEDEF_ERR_INFO(EI_ElementId, int);
+	TYPEDEF_ERR_INFO(EI_ElementType, int);
 	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
 			<< "No data for field: "<< EI_FieldName::qval
 			<< " and time: "<< EI_Time::val
 			<< " in the input file: "<< EI_GMSHFile::qval);
+	DECLARE_EXCEPTION(ExcWrongFormat,
+			<< "Wrong format of " << EI_Type::val << ", " << EI_TokenizerMsg::val << "\n"
+			<< "in the input file: " << EI_GMSHFile::qval);
+	DECLARE_EXCEPTION(ExcMissingSection,
+			<< "Missing section " << EI_Section::qval << " in the GMSH input file: " << EI_GMSHFile::qval);
+	DECLARE_EXCEPTION(ExcUnsupportedType,
+			<< "Element " << EI_ElementId::val << "in the GMSH input file " << EI_GMSHFile::qval
+			<< " is of the unsupported type " << EI_ElementType::val );
 
 	/**
 	 * Map of ElementData sections in GMSH file.
