@@ -76,8 +76,8 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm),
  row_4_el(nullptr),
- el_ds(nullptr),
- el_4_loc(nullptr)
+ el_4_loc(nullptr),
+ el_ds(nullptr)
 {
 
     Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
@@ -92,8 +92,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),
   row_4_el(nullptr),
-  el_ds(nullptr),
-  el_4_loc(nullptr)
+  el_4_loc(nullptr),
+  el_ds(nullptr)
 {
     reinit(in_record_);
 }
@@ -288,8 +288,10 @@ void Mesh::setup_topology() {
     // create parallel distribution and numbering of elements
     int *id_4_old = new int[element.size()];
     int i = 0;
-    FOR_ELEMENTS(this, ele) id_4_old[i++] = ele.index();
+    FOR_ELEMENTS(this, ele)
+        id_4_old[i++] = ele.index();
     part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
+
     delete[] id_4_old;
 }
 

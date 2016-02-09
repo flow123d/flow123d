@@ -429,7 +429,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
         this->tolerance_ = 1E-6;
         Input::Record rec;
         if (input_record_.opt_val<Input::Record>("nonlinear_solver", rec)) {
-            this->tolerance_ = rec.val<double>("tolerance", 1E-6);
+            this->tolerance_ = rec.val<double>("tolerance");
         }
     }
 
@@ -445,7 +445,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
         //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
         residual_norm = schur0->compute_residual();
-        xprintf(Msg, "Nonlin iter: %d %d(%d) %g\n",n_it, l_it, convergedReason, residual_norm);
+        xprintf(Msg, "Nonlin iter: %d %d (%d) %g\n",n_it, l_it, convergedReason, residual_norm);
 
         n_it++;
     }
@@ -652,8 +652,15 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
         double cross_section = data_.cross_section.value(ele->centre(), ele->element_accessor());
 
         for (unsigned int i = 0; i < nsides; i++) {
-            side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
-            edge_row = edge_rows[i] = row_4_edge[ele->side(i)->edge_idx()];
+            unsigned int idx_side= mh_dh.side_dof( ele->side(i) );
+/*            if (! side_ds->is_local(idx_side)) {
+                cout << el_ds->myp() << " : iside: " << ele.index() << " [" << el_ds->begin() << ", " << el_ds->end() << "]" << endl;
+                cout << el_ds->myp() << " : iside: " << idx_side << " [" << side_ds->begin() << ", " << side_ds->end() << "]" << endl;
+
+            }*/
+            unsigned int idx_edge= ele->side(i)->edge_idx();
+            side_row = side_rows[i] = side_row_4_id[idx_side];
+            edge_row = edge_rows[i] = row_4_edge[idx_edge];
             bcd=ele->side(i)->cond();
 
             // gravity term on RHS
@@ -675,23 +682,13 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     ls->rhs_set_value(edge_row, -bc_pressure);
                     ls->mat_set_value(edge_row, edge_row, -1.0);
 
-//                } else if ( type == EqData::neumann) {
-//                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
-//                    ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
-//
-//                } else if ( type == EqData::robin) {
-//                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
-//                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-//                    ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
-//                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-//
-		} else if ( type == EqData::total_flux) {
-		    // internally we work with outward flux
-		    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
-		    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
-                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-                    ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
+                } else if ( type == EqData::total_flux) {
+                    // internally we work with outward flux
+                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+                            double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
+                            ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+                            ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
 
                 } else if (type==EqData::seepage) {
                     is_linear_=false;
@@ -703,29 +700,47 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     double side_flux=bc_flux * bcd->element()->measure() * cross_section;
 
                     if (switch_dirichlet) {
-                        // check and possibly fix flux
-                        double & solution_flux = ls->get_solution_array()[side_row];
+                        // check and possibly switch to flux BC
+                        // The switch raise error on the corresponding edge row.
+                        // Magnitude of the error is abs(solution_flux - side_flux).
+                        ASSERT(rows_ds->is_local(side_row), "" );
+                        unsigned int loc_side_row = side_row - rows_ds->begin();
+                        double & solution_flux = ls->get_solution_array()[loc_side_row];
+                        //DBGMSG("x: %g, to neum, p: %g f: %g -> f: %g\n",b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
                         if ( solution_flux < side_flux) {
+
                             solution_flux = side_flux;
                             switch_dirichlet=0;
+
                         }
                     } else {
-                        // check and possibly fix pressure value on the side
-                        // is it always local? Maybe not.
-                        double & solution_head = ls->get_solution_array()[edge_row];
+                        // check and possibly switch to  pressure BC
+                        // TODO: What is the appropriate DOF in not local?
+                        // The switch raise error on the corresponding side row.
+                        // Magnitude of the error is abs(solution_head - bc_pressure)
+                        // Since usually K is very large, this error would be much
+                        // higher then error caused by the inverse switch, this
+                        // cause that a solution  with the flux violating the
+                        // flux inequality leading may be accepted, while the error
+                        // in pressure inequality is always satisfied.
+                        ASSERT(rows_ds->is_local(edge_row), "" );
+                        unsigned int loc_edge_row = edge_row - rows_ds->begin();
+                        double & solution_head = ls->get_solution_array()[loc_edge_row];
+                        //DBGMSG("x: %g, to dirich, p: %g -> p: %g f: %g\n",b_ele.centre()[0], solution_head, bc_pressure,  bc_flux);
                         if ( solution_head > bc_pressure) {
+
                             solution_head = bc_pressure;
                             switch_dirichlet=1;
                         }
                     }
                     if (switch_dirichlet) {
-                        DBGMSG("x: %g, dirich: 1, p: %g\n",b_ele.centre()[0], bc_pressure);
+                        DBGMSG("x: %g, dirich, bcp: %g\n",b_ele.centre()[0], bc_pressure);
                         c_val = 0.0;
                         loc_side_rhs[i] -= bc_pressure;
                         ls->rhs_set_value(edge_row, -bc_pressure);
                         ls->mat_set_value(edge_row, edge_row, -1.0);
                     } else {
-                        DBGMSG("x: %g, dirich: 0, q: %g  q/dx: %g\n",b_ele.centre()[0], side_flux, bc_flux);
+                        DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], side_flux, bc_flux);
                         ls->rhs_set_value(edge_row, side_flux);
                     }
 
@@ -1583,30 +1598,30 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     el_4_loc = mesh_->get_el_4_loc();
     el_ds = mesh_->get_el_ds();
 
-        //optimal element part; loc. els. id-> new el. numbering
-        Distribution init_edge_ds(DistributionLocalized(), mesh_->n_edges(), PETSC_COMM_WORLD);
-        // partitioning of edges, edge belongs to the proc of his first element
-        // this is not optimal but simple
-        loc_part = new int[init_edge_ds.lsize()];
-        id_4_old = new int[mesh_->n_edges()];
-        {
-            loc_i = 0;
-            FOR_EDGES(mesh_, edg ) {
-                unsigned int i_edg = edg - mesh_->edges.begin();
-                // partition
-                e_idx = mesh_->element.index(edg->side(0)->element());
-                if (init_edge_ds.is_local(i_edg)) {
-                    // find (new) proc of the first element of the edge
-                    loc_part[loc_i++] = el_ds->get_proc(row_4_el[e_idx]);
-                }
-                // id array
-                id_4_old[i_edg] = i_edg;
+    //optimal element part; loc. els. id-> new el. numbering
+    Distribution init_edge_ds(DistributionLocalized(), mesh_->n_edges(), PETSC_COMM_WORLD);
+    // partitioning of edges, edge belongs to the proc of his first element
+    // this is not optimal but simple
+    loc_part = new int[init_edge_ds.lsize()];
+    id_4_old = new int[mesh_->n_edges()];
+    {
+        loc_i = 0;
+        FOR_EDGES(mesh_, edg ) {
+            unsigned int i_edg = edg - mesh_->edges.begin();
+            // partition
+            e_idx = mesh_->element.index(edg->side(0)->element());
+            if (init_edge_ds.is_local(i_edg)) {
+                // find (new) proc of the first element of the edge
+                loc_part[loc_i++] = el_ds->get_proc(row_4_el[e_idx]);
             }
+            // id array
+            id_4_old[i_edg] = i_edg;
         }
+    }
 
-        Partitioning::id_maps(mesh_->n_edges(), id_4_old, init_edge_ds, loc_part, edge_ds, edge_4_loc, row_4_edge);
-        delete[] loc_part;
-        delete[] id_4_old;
+    Partitioning::id_maps(mesh_->n_edges(), id_4_old, init_edge_ds, loc_part, edge_ds, edge_4_loc, row_4_edge);
+    delete[] loc_part;
+    delete[] id_4_old;
 
     //optimal side part; loc. sides; id-> new side numbering
     Distribution init_side_ds(DistributionBlock(), mesh_->n_sides(), PETSC_COMM_WORLD);
