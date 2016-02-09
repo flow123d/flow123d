@@ -33,16 +33,13 @@ ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(computeintersec
                                                 (*abscissa_)[1].point_coordinates());
     
     plucker_coordinates_triangle_.resize(3);
+    plucker_products_.resize(3);
 	for(unsigned int side = 0; side < 3; side++){
 		plucker_coordinates_triangle_[side] = new Plucker((*triangle_)[side][0].point_coordinates(), 
                                                           (*triangle_)[side][1].point_coordinates());
-	}
-
-    // compute new Plucker products
-    plucker_products_.resize(3, nullptr);
-    for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
+        // allocate and compute new Plucker products
         plucker_products_[side] = new double((*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]));
-    }
+	}
 };
 
 ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::~ComputeIntersection()
@@ -76,27 +73,24 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
 		plucker_coordinates_abscissa_->compute((*abscissa_)[0].point_coordinates(),
                                                (*abscissa_)[1].point_coordinates());
 	}
+
+//  DBGMSG("Abscissa:\n");
+//     (*abscissa_)[0].point_coordinates().print();
+//     (*abscissa_)[1].point_coordinates().print();
+
 	// if not already computed, compute plucker coordinates of triangle sides
 	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
 		if(!plucker_coordinates_triangle_[side]->is_computed()){
 			plucker_coordinates_triangle_[side]->compute((*triangle_)[side][0].point_coordinates(), 
                                                          (*triangle_)[side][1].point_coordinates());
 		}
-	}
-
-// 	DBGMSG("Abscissa:\n");
-//     (*abscissa_)[0].point_coordinates().print();
-//     (*abscissa_)[1].point_coordinates().print();
-    
-	// compute Plucker products (abscissa X triangle side)
-	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
-        ASSERT(plucker_products_[side],"Undefined plucker product.");
+		
+		ASSERT(plucker_products_[side],"Undefined plucker product.");
         if(*plucker_products_[side] == plucker_empty){
            *plucker_products_[side] = (*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]);
         }
 //      DBGMSG("Plucker product = %f\n", *(plucker_products_[side]));
 	}
-
 };
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::set_data(computeintersection::Simplex< 1 >& abscissa, 
@@ -405,19 +399,15 @@ ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(computeintersec
 {
     plucker_coordinates_abscissa_ = new Plucker();
     plucker_coordinates_tetrahedron.resize(6);
-
-	for(unsigned int i = 0; i < 6;i++){
-		plucker_coordinates_tetrahedron[i] = new Plucker();
-	}
+    plucker_products_.resize(6);
+    
+    for(unsigned int line = 0; line < RefElement<3>::n_lines; line++){
+        plucker_coordinates_tetrahedron[line] = new Plucker();
+        // compute Plucker products (abscissa X tetrahedron line)
+        plucker_products_[line] = new double(plucker_empty);   
+    }
 
     set_data(abscissa, tetrahedron);
-    
-    // compute Plucker products (abscissa X tetrahedron line)
-    plucker_products_.resize(6, nullptr);
-    for(unsigned int line = 0; line < RefElement<3>::n_lines; line++){
-        plucker_products_[line] = new double(plucker_empty);
-        
-    }
 };
 
 ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::~ComputeIntersection()
