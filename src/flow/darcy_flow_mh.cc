@@ -734,13 +734,13 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         }
                     }
                     if (switch_dirichlet) {
-                        DBGMSG("x: %g, dirich, bcp: %g\n",b_ele.centre()[0], bc_pressure);
+                    //    DBGMSG("x: %g, dirich, bcp: %g\n",b_ele.centre()[0], bc_pressure);
                         c_val = 0.0;
                         loc_side_rhs[i] -= bc_pressure;
                         ls->rhs_set_value(edge_row, -bc_pressure);
                         ls->mat_set_value(edge_row, edge_row, -1.0);
                     } else {
-                        DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], side_flux, bc_flux);
+                    //    DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], side_flux, bc_flux);
                         ls->rhs_set_value(edge_row, side_flux);
                     }
 
@@ -754,14 +754,18 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     double bc_switch_pressure = data_.bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    double & solution_head = ls->get_solution_array()[edge_row];
+                    ASSERT(rows_ds->is_local(edge_row), "" );
+                    unsigned int loc_edge_row = edge_row - rows_ds->begin();
+                    double & solution_head = ls->get_solution_array()[loc_edge_row];
 
                     if (solution_head > bc_switch_pressure) {
                         // Robin BC
+                        //DBGMSG("x: %g, robin, bcp: %g\n",b_ele.centre()[0], bc_pressure);
                         ls->rhs_set_value(edge_row, bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
                         ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
                     } else {
                         // Neumann BC
+                        //DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], bc_switch_pressure, bc_pressure);
                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
                         ls->rhs_set_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
                     }

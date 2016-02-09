@@ -51,4 +51,4 @@ problem: !SequentialCoupling
         - velocity_p0
     balance: true
     solver: !Petsc
-      a_tol: 1.0e-0
+      a_tol: 1.0e-07
