@@ -35,6 +35,7 @@ add_test_directory("${libs}")
     define_mpi_test(intersection_2_3 1)
     define_mpi_test(ngh_intersection_2_3 1)
     define_mpi_test(intersection_area 1)
+    define_mpi_test(intersection_prolongation 1)
     define_mpi_test(simplex_class 1)
     define_test(ref_element)
     
