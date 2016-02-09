@@ -66,10 +66,18 @@ class InspectElements {
 	void update_triangle(const ElementFullIter &el);
 	void update_tetrahedron(const ElementFullIter &el);
 
-    // Used only for 1d-3d
-	void prolongate_elements(const IntersectionLine &il, const ElementFullIter &elm, const ElementFullIter &ele);
-	void prolongate_1D_element(const ElementFullIter &elm, const ElementFullIter &ele);
-	void prolongate(const ProlongationPoint &pp);
+    /** @brief Prolongates the intersection.
+     * According to properties of IPs of intersection line it prolongates:
+     * A] to neghboring 1D element, if the IP is the end point of 1D element,
+     * B] to neghboring 3D element, if the IP is on the side of 3D element.
+     */
+	void prolongate_1D_decide(const IntersectionLine &il, const ElementFullIter &ele_1d, const ElementFullIter &ele_3d);
+    
+    /** @brief Computes intersection of given 1d (\p ele_1d) and 3d (\p ele_3d) elements and prolongates.
+     * Attention: abscissa and tetrahedron must be already updated!
+     * Can be called recusively in prolongation process from prolongate_elements().
+     */
+	void prolongate_1D_element(const ElementFullIter &ele_1d, const ElementFullIter &ele_3d);
     
     // Used only for 2d-3d
     void computeIntersections2d3d();

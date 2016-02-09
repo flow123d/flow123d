@@ -165,17 +165,19 @@ template<>
 void InspectElements::compute_intersections<1,3>(){
 
 	compute_intersections_init<1,3>();
-	//computeIntersections2d3dInit();
 	BIHTree bt(mesh, 20);
 
+    // Find the first candidates (1D elements) for intersection.
 	FOR_ELEMENTS(mesh, elm) {
         if (elm->dim() == 1 &&                                  // is 1D element
             !closed_elements[elm->index()] &&                   // is not closed yet
             elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
         {
-            DBGMSG("-----Nalezen 1D element------ \n");
-
+            DBGMSG("----- Found 1D element candidate for intersection [idx = %d]------ \n",elm->index());
+            flag_for_3D_elements.assign(mesh->n_elements(), -1);
+            
 			update_abscissa(elm);
+            // create vector of elements which bounding box interact with bounding box of 1D element
 			std::vector<unsigned int> searchedElements;
 			bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
 
@@ -203,13 +205,19 @@ void InspectElements::compute_intersections<1,3>(){
 						flag_for_3D_elements[ele->index()] = elm->index();
 						intersection_line_list[elm->index()].push_back(il);
 
-						prolongate_elements(il, elm, ele);
+						prolongate_1D_decide(il, elm, ele);
 
 						while(!prolongation_point_queue.empty()){
-
-							prolongate((ProlongationPoint)prolongation_point_queue.front());
+                            ProlongationPoint pp = prolongation_point_queue.front();
+                            DBGMSG("Prolongation queue compute in 3d ele_idx %d.\n",pp.elm_3D_idx);
+                            
+                            ElementFullIter e1d = mesh->element(pp.elm_1D_idx),
+                                            e3d = mesh->element(pp.elm_3D_idx);
+                            update_abscissa(e1d);
+                            update_tetrahedron(e3d);
+                            prolongate_1D_element(e1d, e3d);
+                            
 							prolongation_point_queue.pop();
-
 						}
 						break;
 					}
@@ -219,22 +227,23 @@ void InspectElements::compute_intersections<1,3>(){
 	}
 }
 
-void InspectElements::prolongate_elements(const IntersectionLine &il, const ElementFullIter &elm, const ElementFullIter &ele){
+void InspectElements::prolongate_1D_decide(const computeintersection::IntersectionLine& il, const ElementFullIter& ele_1d, const ElementFullIter& ele_3d){
 	for(const IntersectionPoint<1,3> &IP : il.points()) {
 		if(IP.dim_A() == 0) { 
             // if IP is end of the 1D element
             // prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
-
-            SideIter elm_side = elm->side(IP.idx_A());  // side of 1D element is vertex
+            SideIter elm_side = ele_1d->side(IP.idx_A());  // side of 1D element is vertex
 			Edge *edg = elm_side->edge();
 			for(int j=0; j < edg->n_sides;j++) {
-
+                
 				SideIter other_side=edg->side(j);
 				if (other_side != elm_side) {
 
 					unsigned int sousedni_element = other_side->element()->index();
 					if(!closed_elements[sousedni_element]){
-						prolongate_1D_element(other_side->element(), ele);  //computes intersection with the same tetrahedron
+                        DBGMSG("Call prolongate 1D to %d.\n", sousedni_element);
+                        update_abscissa(other_side->element());
+						prolongate_1D_element(other_side->element(), ele_3d);  //computes intersection with the same tetrahedron
 					}
 				}
 			}
@@ -245,105 +254,53 @@ void InspectElements::prolongate_elements(const IntersectionLine &il, const Elem
             {
                 // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
                 case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
-                            edges.push_back(&(mesh->edges[ele->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
+                            edges.push_back(&(mesh->edges[ele_3d->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
                         break;
                 
                 // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
                 case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
-                            edges.push_back(&(mesh->edges[ele->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
+                            edges.push_back(&(mesh->edges[ele_3d->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
                         break;
                         
                 // IP is on a side of tetrahedron; only possible edge is from the given side
-                case 2: edges.push_back(&(mesh->edges[ele->edge_idx_[IP.idx_B()]]));
+                case 2: edges.push_back(&(mesh->edges[ele_3d->edge_idx_[IP.idx_B()]]));
                         break;
                 default: ASSERT_LESS(IP.dim_B(),3);
             }
             
             for(Edge* edg : edges)
             for(int j=0; j < edg->n_sides;j++) {
-                if (edg->side(j)->element() != ele) {
+                if (edg->side(j)->element() != ele_3d) {
                     unsigned int sousedni_element = edg->side(j)->element()->index();
 
                     if(flag_for_3D_elements[sousedni_element] == -1){
-                        flag_for_3D_elements[sousedni_element] = elm->index();
-                        ProlongationPoint pp = {elm->index(), sousedni_element, ele->index()};
+                        DBGMSG("Prolongate push to queue %d.\n", sousedni_element);
+                        flag_for_3D_elements[sousedni_element] = ele_1d->index();
+                        ProlongationPoint pp = {ele_1d->index(), sousedni_element, ele_3d->index()};
                         prolongation_point_queue.push(pp);
                     }
                 }   
             }
         }  
-//         if(il[i].is_vertex()){
-// 
-//             SideIter elm_side = elm->side((unsigned int)(1-il[i].local_bcoords_A()[0]));
-//             Edge *edg = elm_side->edge();
-//             for(int j=0; j < edg->n_sides;j++) {
-// 
-//                 SideIter other_side=edg->side(j);
-//                 if (other_side != elm_side) {
-// 
-//                     unsigned int sousedni_element = other_side->element()->index();
-//                     if(!closed_elements[sousedni_element]){
-//                         prolongate_1D_element(other_side->element(), ele);
-//                     }
-//                 }
-//             }
-//         }else{
-// 			SideIter elm_side = ele->side((unsigned int)(3-il[i].idx_B())); //ele->side(3-stena);
-// 			
-// 			Edge *edg = elm_side->edge();
-//             
-// 			for(int j=0; j < edg->n_sides;j++) {
-// 
-// 				SideIter other_side=edg->side(j);
-// 				if (other_side != elm_side) {
-// 					unsigned int sousedni_element = other_side->element()->index();
-// 
-// 					if(flag_for_3D_elements[sousedni_element] == -1){ // || (flag_for_3D_elements[sousedni_element] != (int)elm->index() && !intersectionExists(elm->index(),sousedni_element))){
-// 						flag_for_3D_elements[sousedni_element] = elm->index();
-// 						ProlongationPoint pp = {elm->index(), sousedni_element, ele->index()};
-// 						prolongation_point_queue.push(pp);
-// 					}
-// 				}
-// 			}
-// 		}
 	}
 };
 
-void InspectElements::prolongate_1D_element(const ElementFullIter &elm, const ElementFullIter &ele){
+void InspectElements::prolongate_1D_element(const ElementFullIter& ele_1d, const ElementFullIter& ele_3d){
 
-    update_abscissa(elm);
-    closed_elements[elm->index()] = true;
+    DBGMSG("Prolongate 1D: %d in %d.\n", ele_1d->index(), ele_3d->index());
+    closed_elements[ele_1d->index()] = true;
 
-    IntersectionLine il(elm->index(), ele->index());
+    IntersectionLine il(ele_1d->index(), ele_3d->index());
     ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
     CI_13.init();
     CI_13.compute(il.points());
 
     if(il.size() > 1){
-        intersection_line_list[elm->index()].push_back(il);
-        prolongate_elements(il, elm, ele);
+        //cout << il[0] << il[1];
+        intersection_line_list[ele_1d->index()].push_back(il);
+        prolongate_1D_decide(il, ele_1d, ele_3d);
     }
 };
-
-void InspectElements::prolongate(const ProlongationPoint &pp){
-
-    ElementFullIter elm = mesh->element(pp.elm_1D_idx);
-    ElementFullIter ele = mesh->element(pp.elm_3D_idx);
-
-    update_abscissa(elm);
-    update_tetrahedron(ele);
-
-    IntersectionLine il(elm->index(), ele->index());
-    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(abscissa, tetrahedron);
-    CI_13.init();
-    CI_13.compute(il.points());
-
-    if(il.size() > 1){
-        intersection_line_list[elm->index()].push_back(il);
-        prolongate_elements(il, elm, ele);
-    }
-
-}
 
 template<>
 void InspectElements::compute_intersections<2,3>(){
@@ -868,8 +825,17 @@ double InspectElements::line_length()
 
     for(unsigned int i = 0; i < intersection_line_list.size(); i++){
         for(unsigned int j = 0; j < intersection_line_list[i].size();j++){
-            double t1d_length = mesh->element(intersection_line_list[i][j].ele_1d_idx())->measure();
+            ElementFullIter ele = mesh->element(intersection_line_list[i][j].ele_1d_idx());            
+            double t1d_length = ele->measure();
             double local_length = intersection_line_list[i][j].compute_length();
+            
+            arma::vec3 from = intersection_line_list[i][j][0].coords(ele);
+            arma::vec3 to = intersection_line_list[i][j][1].coords(ele);
+            DBGMSG("sublength from [%f %f %f] to [%f %f %f] = %f\n",
+                   from[0], from[1], from[2], 
+                   to[0], to[1], to[2],
+                   local_length*t1d_length);
+            
             subtotal += local_length*t1d_length;
         }
     }
