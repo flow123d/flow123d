@@ -220,14 +220,25 @@ TEST(Profiler, absolute_time) {
     Profiler::instance()->output(MPI_COMM_WORLD, sout);
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     
-    int mpi_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    // try to transform profiler data using python
+    Profiler::instance()->output(MPI_COMM_WORLD);
+    Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
     
+    int ierr, mpi_rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    EXPECT_EQ( ierr, 0 );
+    
+    // 0 processor will have valid profiler report
+    // other processors should have empty string only
     if (mpi_rank == 0) {
-
+        // test timer resolution, requiring atleast 2 digit places
         EXPECT_NE( sout.str().find("cumul-time-min\": \"1.00"), string::npos );
         EXPECT_NE( sout.str().find("cumul-time-max\": \"1.00"), string::npos );
+    } else {
+        EXPECT_TRUE( sout.str().empty() );
     }
+    
+    
 
     Profiler::uninitialize();
 }
@@ -316,35 +327,24 @@ TEST(Profiler, structure) {
     std::stringstream sout;
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::instance()->output(MPI_COMM_WORLD, sout);
+
+
+    int ierr, mpi_rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    EXPECT_EQ( ierr, 0 );
     
-    int mpi_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    
+    // 0 processor will have valid profiler report
+    // other processors should have empty string only
     if (mpi_rank == 0) {
         // when using find, we need to compare result to string::npos value (which indicates not found)
         EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
         EXPECT_NE( sout.str().find("\"tag\": \"sub1\""), string::npos );
+    } else {
+        EXPECT_TRUE( sout.str().empty() );
     }
-
+    
     Profiler::uninitialize();
 
-}
-
-
-TEST(Profiler, memory_add_calls) {
-    int allocated = 0;
-    Profiler::initialize();
-    allocated += alloc_and_dealloc<int>(250);
-    {
-        for (int i = 0; i < 10000; i++) {
-            START_TIMER("A");
-            allocated += alloc_and_dealloc<int>(25);
-            END_TIMER("A");
-        }
-    }
-    Profiler::instance()->propagate_timers();
-    EXPECT_EQ(AM, allocated);
-    Profiler::uninitialize();
 }
 
 TEST(Profiler, memory_profiler) {

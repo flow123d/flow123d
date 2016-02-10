@@ -177,9 +177,9 @@ public:
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().
+     * See also Field<>::field_result which provide better information about special field values.
      */
     bool is_constant(Region reg) override;
-
 
     /**
      * Assigns given @p field to all regions in given region set @p domain.
@@ -204,7 +204,7 @@ public:
      *
      * Returns true if the field has been changed.
      */
-    bool set_time(const TimeStep &time) override;
+    bool set_time(const TimeStep &time, LimitSide limit_side) override;
 
     /**
      * Check that other has same type and assign from it.
@@ -224,11 +224,18 @@ public:
 
 
     /**
-     * Special field values spatially constant. Could allow optimization of tensor multiplication and
+     * @brief Indicates special field states.
+     *
+     * Return possible values from the enum @p FieldResult, see description there.
+     * The initial state is @p field_none, if the field is correctly set on all regions of the @p region_set given as parameter
+     * we return state @p field_other
+     * - Special field values spatially constant. Could allow optimization of tensor multiplication and
      * tensor or vector addition. field_result_ should be set in constructor and in set_time method of particular Field implementation.
      * We return value @p result_none, if the field is not initialized on the region of the given element accessor @p elm.
+     * Other possible results are: result_zeros, result_eye, result_ones, result_constant, result_other
+     * see @p FieldResult for explanation.
      */
-    inline FieldResult field_result( ElementAccessor<spacedim> &elm) const;
+    inline FieldResult field_result( RegionSet region_set) const;
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

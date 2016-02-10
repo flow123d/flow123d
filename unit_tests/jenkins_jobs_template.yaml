@@ -9,6 +9,8 @@
     # default template fields
     node: "{platform}"
     workspace: "F123-{platform}-{build-type}"
+    logrotate: 
+      daysToKeep: 200
     wrappers:
       - build-name:
           name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
@@ -240,6 +242,7 @@
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
+          skip-tag: true
 
     triggers: 
       - github
@@ -313,6 +316,7 @@
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
           wipe-workspace: yes
+          skip-tag: true
           branches:
             - master
             - 1.8.2
@@ -688,6 +692,7 @@
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
+          skip-tag: true
           branches: 
             - master
 
@@ -768,6 +773,16 @@
 #      2) run_inside - run binary flow123d from within bin folder
 #      3) run_outside - run binary flow123d from outside of bin folder (currently not working, path value is not updated)
 #      4) uninstall - cmd uninstall and file removal
+
+- defaults:
+    name: flow123d-package-test
+    # default template fields
+    node: packages
+    workspace: c:\package_tests\
+    logrotate: 
+      daysToKeep: 200
+
+
 - project:
     name: "Windows package tests"
     action: [ install, run_inside, run_outside, python_test, uninstall ]
@@ -780,8 +795,7 @@
 # template for single testing step (install, uninstall, ...)
 - job-template:
     name: "Windows-{arch}-package-{action}"
-    node: packages
-    workspace: c:\package_tests\
+    defaults: flow123d-package-test      
     display-name: "Windows {arch} package - {action}"
     builders:
       - batch: |
@@ -793,9 +807,8 @@
 #
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED, FAILURE}
 - job-template:
-    name: "Windows-{arch}-package-all"
-    node: packages
-    workspace: c:\package_tests\
+    name: "Windows-{arch}-package-all"  
+    defaults: flow123d-package-test      
     display-name: "Windows {arch} package multijob"
     project-type: multijob
     builders:            

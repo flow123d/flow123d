@@ -20,6 +20,7 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "fields/field_constant.hh"
+#include "fields/field_set.hh"
 
 #include "system/sys_profiler.hh"
 
@@ -459,12 +460,30 @@ TYPED_TEST(FieldFix, set_time) {
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
 	this->set_input_list( this->input_list(list_ok) );
-	this->set_limit_side(LimitSide::right);
 
 	// time = 0.0
-	TimeGovernor tg(0.0, 1.0);
-	this->set_time(tg.step());
-	this->_value_( *this );
+	TimeGovernor tg(0.0, 0.5);
+	this->set_time(tg.step(), LimitSide::right);
+	EXPECT_EQ(0, this->_value_( *this ));
+	EXPECT_TRUE( this->is_jump_time() );
+
+	tg.next_time();
+	this->set_time(tg.step(), LimitSide::left);
+	EXPECT_EQ(0, this->_value_( *this ));
+    EXPECT_FALSE( this->is_jump_time() );
+
+    this->set_time(tg.step(), LimitSide::right);
+    EXPECT_EQ(0, this->_value_( *this ));
+    EXPECT_FALSE( this->is_jump_time() );
+
+    tg.next_time();
+    this->set_time(tg.step(), LimitSide::left);
+    EXPECT_EQ(0, this->_value_( *this ));
+    EXPECT_TRUE( this->is_jump_time() );
+
+    this->set_time(tg.step(), LimitSide::right);
+    EXPECT_EQ(1, this->_value_( *this ));
+    EXPECT_TRUE( this->is_jump_time() );
 
 }
 
@@ -499,38 +518,37 @@ TYPED_TEST(FieldFix, constructors) {
 
 	this->field_.set_input_list(this->input_list(list_ok));
 	field_default.set_input_list(this->input_list(list_ok));
-	this->field_.set_limit_side(LimitSide::right);
-	field_default.set_limit_side(LimitSide::right);
+
+
 
 	TimeGovernor tg(2.0, 1.0);
 
 	typename TestFixture::FieldType f2(this->field_);	// default constructor
 	field_default = this->field_; // assignment, should overwrite name "b" by name "a"
-	f2.set_limit_side(LimitSide::right);
+
 
 	// tg = 2.0
-	f2.set_time(tg.step());
+	f2.set_time(tg.step(), LimitSide::right);
 	EXPECT_EQ(0,this->_value_(f2));
 	EXPECT_ASSERT_DEATH( {this->_value_(this->field_);}, "");
-	this->field_.set_time(tg.step());
+	this->field_.set_time(tg.step(), LimitSide::right);
 	EXPECT_EQ(0,this->_value_(this->field_));
 
 	// tg = 3.0
 	tg.next_time();
-	this->field_.set_time(tg.step());
+	this->field_.set_time(tg.step(), LimitSide::right);
 	EXPECT_EQ(0,this->_value_(this->field_));
 
 	// tg = 4.0
 	tg.next_time();
-	this->field_.set_time(tg.step());
+	this->field_.set_time(tg.step(), LimitSide::right);
 	EXPECT_EQ(1,this->_value_(this->field_));
 	EXPECT_EQ(0,this->_value_(f2));
-	EXPECT_ASSERT_DEATH( {field_default.set_time(tg);}, "Must set limit side");
 
-	field_default.set_limit_side(LimitSide::right);
-	field_default.set_time(tg.step());
+	field_default.set_time(tg.step(), LimitSide::right);
 	EXPECT_EQ(1,this->_value_(field_default));
 }
+
 
 
 
@@ -599,13 +617,13 @@ TEST(Field, init_from_input) {
     init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
     conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"));
 
-    sorption_type.set_limit_side(LimitSide::right);
-    init_conc.set_limit_side(LimitSide::right);
-    conductivity.set_limit_side(LimitSide::right);
 
-    sorption_type.set_time(TimeGovernor().step());
-    init_conc.set_time(TimeGovernor().step());
-    conductivity.set_time(TimeGovernor().step());
+
+
+
+    sorption_type.set_time(TimeGovernor().step(), LimitSide::right);
+    init_conc.set_time(TimeGovernor().step(), LimitSide::right);
+    conductivity.set_time(TimeGovernor().step(), LimitSide::right);
 
     {	
 
@@ -646,6 +664,114 @@ TEST(Field, init_from_input) {
 
 
 
+string field_input_list = R"INPUT(
+[
+    {
+        region="1D diagonal",
+        scalar=0,
+        vector=0,
+        tensor=0
+    },
+    {
+        region="2D XY diagonal",
+        scalar=1,
+        vector=1,
+        tensor=[1,1,1,1,1,1]
+    },
+    {
+        region="3D front",
+        scalar=2,
+        vector=2,
+        tensor=2
+    },
+    {
+        region="3D back",
+        scalar={TYPE="FieldFormula", value="0"},
+        vector={TYPE="FieldFormula", value="0"},
+        tensor=1
+    }
+]
+)INPUT";
+
+namespace it = Input::Type;
+
+class TestFieldSet : public FieldSet
+{
+public:
+    TestFieldSet() {
+        ADD_FIELD(scalar, "").units(UnitSI::dimensionless());
+        ADD_FIELD(vector, "").units(UnitSI::dimensionless());
+        ADD_FIELD(tensor, "").units(UnitSI::dimensionless());
+    }
+    Field<3, FieldValue<3>::Scalar > scalar;
+    Field<3, FieldValue<3>::VectorFixed > vector;
+    Field<3, FieldValue<3>::TensorFixed > tensor;
+};
+
+TEST(Field, field_result) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    Profiler::initialize();
+
+    TimeGovernor tg(0.0, 1.0);
+
+    Mesh mesh;
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
+    mesh.read_gmsh_from_stream(in);
+
+    it::Array main_array =IT::Array(
+            TestFieldSet().make_field_descriptor_type("TestFieldSet")
+            .close()
+        );
+
+    // read input string
+    Input::ReaderToStorage reader( field_input_list, main_array, Input::FileFormat::format_JSON );
+    Input::Array array=reader.get_root_interface<Input::Array>();
+
+    TestFieldSet data;
+    data.set_mesh(mesh);
+    data.set_input_list(array);
+
+
+    Region diagonal_1d = mesh.region_db().find_label("1D diagonal");
+    Region diagonal_2d = mesh.region_db().find_label("2D XY diagonal");
+    Region front_3d = mesh.region_db().find_label("3D front");
+    Region back_3d = mesh.region_db().find_label("3D back");
+    Region top_side = mesh.region_db().find_label(".top side");
+    Region bottom_side = mesh.region_db().find_label(".bottom side");
+
+    EXPECT_EQ( result_none, data.scalar.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_none, data.scalar.field_result({diagonal_2d}) );
+    EXPECT_EQ( result_none, data.vector.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_none, data.vector.field_result({front_3d}) );
+    EXPECT_EQ( result_none, data.tensor.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_none, data.tensor.field_result({back_3d}) );
+    // time 0
+    data.set_time(tg.step(), LimitSide::right);
+    EXPECT_EQ( result_zeros, data.scalar.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_zeros, data.vector.field_result({diagonal_1d}) );
+    EXPECT_EQ( result_zeros, data.tensor.field_result({diagonal_1d}) );
+
+    EXPECT_EQ( result_ones, data.scalar.field_result({diagonal_2d}) );
+    EXPECT_EQ( result_ones, data.vector.field_result({diagonal_2d}) );
+    EXPECT_EQ( result_ones, data.tensor.field_result({diagonal_2d}) );
+
+    EXPECT_EQ( result_constant, data.tensor.field_result({front_3d}) );
+    EXPECT_EQ( result_constant, data.tensor.field_result({front_3d}) );
+    EXPECT_EQ( result_constant, data.tensor.field_result({front_3d}) );
+
+    EXPECT_EQ( result_other, data.scalar.field_result({back_3d}) );
+    EXPECT_EQ( result_other, data.vector.field_result({back_3d}) );
+    EXPECT_EQ( result_eye, data.tensor.field_result({back_3d}) );
+
+
+    EXPECT_EQ( result_other, data.scalar.field_result({diagonal_1d, diagonal_2d}) );
+    EXPECT_EQ( result_other, data.vector.field_result({diagonal_1d, diagonal_2d}) );
+    EXPECT_EQ( result_other, data.tensor.field_result({diagonal_1d, diagonal_2d}) );
+
+}
+
+
 
 
 
@@ -677,8 +803,8 @@ TEST(Field, init_from_default) {
         // test default initialization of scalar field
         scalar_field.input_default( "45.0" );
         scalar_field.set_mesh(mesh);
-        scalar_field.set_limit_side(LimitSide::right);
-        scalar_field.set_time(TimeGovernor().step());
+
+        scalar_field.set_time(TimeGovernor().step(), LimitSide::right);
 
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(0)) );
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(6)) );
@@ -691,8 +817,8 @@ TEST(Field, init_from_default) {
 
         // test death of set_time without default value
         scalar_field.set_mesh(mesh);
-        scalar_field.set_limit_side(LimitSide::right);
-        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor().step());} , ExcXprintfMsg, "Missing value of the input field");
+
+        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor().step(), LimitSide::right);} , ExcXprintfMsg, "Missing value of the input field");
     }
 
     {
@@ -701,8 +827,8 @@ TEST(Field, init_from_default) {
         enum_field.input_selection( &get_test_type_selection() );
         enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
-        enum_field.set_limit_side(LimitSide::right);
-        enum_field.set_time(TimeGovernor().step());
+
+        enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
@@ -773,15 +899,15 @@ TEST(Field, disable_where) {
     bc_type.set_field(RegionSet(1, mesh.region_db().find_id(-3)), neumann_type );
     bc_flux.set_field(RegionSet(1, mesh.region_db().find_id(-3)), one );
 
-    bc_type.set_limit_side(LimitSide::right);
-    bc_flux.set_limit_side(LimitSide::right);
-    bc_value.set_limit_side(LimitSide::right);
-    bc_sigma.set_limit_side(LimitSide::right);
 
-    bc_type.set_time(TimeGovernor().step());
-    bc_flux.set_time(TimeGovernor().step());
-    bc_value.set_time(TimeGovernor().step());
-    bc_sigma.set_time(TimeGovernor().step());
+
+
+
+
+    bc_type.set_time(TimeGovernor().step(), LimitSide::right);
+    bc_flux.set_time(TimeGovernor().step(), LimitSide::right);
+    bc_value.set_time(TimeGovernor().step(), LimitSide::right);
+    bc_sigma.set_time(TimeGovernor().step(), LimitSide::right);
 }
 
 

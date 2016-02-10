@@ -89,7 +89,7 @@ public:
      * @endcode
      */
     static Default read_time(const std::string & description)
-    { return Default(default_at_read_time, description); }
+    { return Default(default_at_read_time, description ); }
 
     /**
      * Factory function to make an empty default value which is obligatory.

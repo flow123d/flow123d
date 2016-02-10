@@ -43,8 +43,7 @@ namespace IT=Input::Type;
  */
 enum class LimitSide {
     left=0,
-    right=1,
-    unknown=2   // undefined value
+    right=1
 };
 
 
@@ -189,17 +188,6 @@ public:
     virtual void set_input_list(const Input::Array &list) =0;
 
     /**
-     * Set side of limit when calling @p set_time
-     * with jump time, i.e. time where the field change implementation on some region.
-     * Wee assume that implementations prescribe only smooth fields.
-     * This method invalidate result of
-     * @p changed() so it should be called just before @p set_time.
-     * Can be different for different field copies.
-     */
-    void set_limit_side(LimitSide side)
-    { this->limit_side_=side; }
-
-    /**
      * Getters.
      */
     const std::string &input_name() const
@@ -229,9 +217,6 @@ public:
     const Mesh * mesh() const
     { return shared_->mesh_;}
 
-    LimitSide limit_side() const
-    { return limit_side_;}
-
     FieldFlag::Flags &flags()
     { return flags_; }
 
@@ -242,6 +227,36 @@ public:
     double time() const
     { return last_time_; }
 
+    /**
+     * Returns true if the field change algorithm for the current time set through the @p set_time method.
+     * This happen for all times in the field descriptors on the input of this particular field.
+     */
+    bool is_jump_time() {
+        return is_jump_time_;
+    }
+
+    /**
+     * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true
+     * otherwise it returns false.
+     * Then one can call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
+     * pointing to "virtual" element on which Field::value returns constant value.
+     * Unlike the Field<>::field_result method, this one provides no value, so it have common header (arguments, return type) and
+     * could be part of FieldCommon and FieldSet which is useful in some applications.
+     *
+     * TODO:Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
+     * becomes necessary it is possible to incorporate such test into set_time method and in this method just return precomputed result.
+     */
+    virtual bool is_constant(Region reg) =0;
+
+    /**
+     * Returns true if set_time_result_ is not @p TimeStatus::constant.
+     * Returns the same value as last set_time method.
+     */
+    bool changed() const
+    {
+        ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
+        return ( (set_time_result_ == TimeStatus::changed) );
+    }
 
     /**
      * Common part of the field descriptor. To get finished record
@@ -288,8 +303,16 @@ public:
      * set time to 0.0.
      *
      * Different field copies can be set to different times.
+     *
+     * TODO: update following:
+     * Set side of limit when calling @p set_time
+     * with jump time, i.e. time where the field change implementation on some region.
+     * Wee assume that implementations prescribe only smooth fields.
+     * This method invalidate result of
+     * @p changed() so it should be called just before @p set_time.
+     * Can be different for different field copies.
      */
-    virtual  bool set_time(const TimeStep &time) =0;
+    virtual  bool set_time(const TimeStep &time, LimitSide limit_side) =0;
 
     /**
      * Check that @p other is instance of the same Field<..> class and
@@ -305,26 +328,6 @@ public:
     virtual void output(std::shared_ptr<OutputTime> stream) =0;
 
 
-    /**
-     * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true
-     * otherwise it returns false.
-     * Then one call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
-     * pointing to "virtual" element on which Field::value returns constant value.
-     *
-     * Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
-     * becomes necessary it is possible to incorporate such test into set_time method and in this method just return precomputed result.
-     */
-    virtual bool is_constant(Region reg) =0;
-
-    /**
-     * Returns true if set_time_result_ is not @p TimeStatus::constant.
-     * Returns the same value as last set_time method.
-     */
-    bool changed() const
-    {
-        ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
-        return ( (set_time_result_ == TimeStatus::changed) );
-    }
 
     /**
      * Sets @p component_index_
@@ -465,11 +468,6 @@ protected:
     std::shared_ptr<SharedData> shared_;
 
     /**
-     * Which value is returned for times where field is discontinuous.
-     */
-    LimitSide limit_side_;
-
-    /**
      * Result of last set time method
      */
     enum class TimeStatus {
@@ -478,13 +476,25 @@ protected:
         unknown     //<  Before first call of set_time.
     };
 
-    /// Status of @p history.
+    // TODO: Merge time information: set_time_result_, last_time_, last_limit_side_, is_jump_time into
+    // a single structure with single getter.
+    /**
+     * Status of @p history.
+     */
     TimeStatus set_time_result_;
 
     /**
      * Last set time. Can be different for different field copies.
+     * Store also time limit, since the field may be discontinuous.
      */
     double last_time_ = -numeric_limits<double>::infinity();
+    LimitSide last_limit_side_ = LimitSide::left;
+
+    /**
+     * Set to true by the @p set_time method the field algorithm change on any region.
+     * Accessible through the @p is_jump_time method.
+     */
+    bool is_jump_time_;
 
     /**
      * Output data type used in the output() method. Can be different for different field copies.
@@ -515,16 +525,13 @@ protected:
      */
     friend std::ostream &operator<<(std::ostream &stream, const FieldCommon &field) {
 
-        string limit_side_str =
-            (field.limit_side_ == LimitSide::left  ? "left" :
-            (field.limit_side_ == LimitSide::right ? "right" :
-              "unknown"));
+        vector<string> limit_side_str = {"left", "right"};
 
         stream
         << "field name:" << field.name()
-        << " limit side:" << limit_side_str
         << " n. comp.:" << field.n_comp()
-        << " last time:" << field.last_time_;
+        << " last time:" << field.last_time_
+        << " last limit side:" << limit_side_str[(unsigned int) field.last_limit_side_];
         return stream;
     }
 };

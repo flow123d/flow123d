@@ -58,7 +58,7 @@ it::Array &  MultiField<spacedim,Value>::get_multifield_input_type() {
 
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::set_time(
-		const TimeStep &time)
+		const TimeStep &time, LimitSide limit_side)
 {
 	// initialization of Multifield for first call
 	if (sub_fields_.size() == 0) {
@@ -67,9 +67,10 @@ bool MultiField<spacedim, Value>::set_time(
 
 	// set time for sub fields
 	bool any=false;
+	is_jump_time_=false;
 	for( SubFieldType &field : sub_fields_) {
-		if (field.set_time(time))
-			any = true;
+		if (field.set_time(time, limit_side)) any = true;
+		is_jump_time_ = is_jump_time_ ||  field.is_jump_time();
 	}
     return any;
 }
@@ -141,7 +142,6 @@ void MultiField<spacedim, Value>::setup_components() {
     	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name) );
     	sub_fields_[i_comp].units( units() );
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
-    	sub_fields_[i_comp].set_limit_side(this->limit_side_);
     	sub_fields_[i_comp].add_factory( std::make_shared<MultiFieldFactory>(i_comp) );
 
     	if (this->shared_->input_default_!="") {
