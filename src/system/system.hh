@@ -130,19 +130,24 @@ char * xstrtok(char *s, int position = -1);
 char * xstrtok(char*,const char* delim, int position = -1);
 int    xchomp( char * s );
 
-
+/**
+ * Wrapper to check return codes of C functions. In particular PETSC calls.
+ */
 inline void chkerr(unsigned int ierr) {
 	do {
 		if (ierr != 0) THROW( ExcChkErr() << EI_ErrCode(ierr));
 	} while (0);
 }
 
+/**
+ * Wrapper to check return codes of C functions. In particular PETSC calls.
+ * This version do the check just as an debugging assert. So the code is empty
+ * in release version.
+ */
 inline void chkerr_assert(unsigned int ierr) {
-	if (debug_asserts_view) {
-		do {
-			if (ierr != 0) THROW( ExcChkErrAssert() << EI_ErrCode(ierr));
-		} while (0);
-	}
+#ifdef FLOW123D_DEBUG_ASSERTS
+    chkerr(ierr);
+#endif
 }
 
 #endif

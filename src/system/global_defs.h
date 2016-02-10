@@ -172,15 +172,6 @@
 #endif
 
 
-#ifdef FLOW123D_DEBUG_ASSERTS
-
-static const int debug_asserts_view = 1;
-
-#else
-
-static const int debug_asserts_view = 0;
-
-#endif
 
 
 /**
