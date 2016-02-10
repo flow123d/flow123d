@@ -3,6 +3,7 @@
 # author:   Jan Hybs
 
 import re
+from ist.base import Unicode
 from ist.formatters.html2latex import Html2Latex
 from ist.formatters.markdown2html import markdown2html
 
@@ -119,6 +120,8 @@ class texlist(list):
         :param text: optional text (otherwise url is used)
         :return: self
         """
+        if type(url) is Unicode:
+            url = url.value
         ns = ns if ns.endswith('::') else ns + '::'
         ns = ns if url.find('::') == -1 else ''
 

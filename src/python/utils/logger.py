@@ -11,6 +11,9 @@ class Logger(object):
 
     @staticmethod
     def instance():
+        """
+        :rtype : Logger
+        """
         if Logger._global_logger is None:
             log_level = 'warning'
             for index in range(len(sys.argv)):

@@ -3,7 +3,7 @@
 # author:   Jan Hybs
 
 from ist.extras import TypeSelectionValue, TypeReference, TypeRecordKey, TypeRange, TypeAttributes
-from ist.base import Field, Parsable, Dict, InputType, List
+from ist.base import Field, Parsable, Dict, InputType, List, Unicode
 
 
 class TypeSelection(Parsable):
@@ -18,14 +18,15 @@ class TypeSelection(Parsable):
     """
     __fields__ = [
         Field("id", index=True),
-        Field("values", t=List, subtype=TypeSelectionValue),
-        Field(["name", "type_name"]),
+        Field("values", t=List, subtype=TypeSelectionValue, link_to_parent=True),
+        Field(["name", "type_name"], index=True),
         Field("input_type", t=InputType),
         Field("attributes", t=TypeAttributes),
         Field("description"),
     ]
 
     def __init__(self):
+        super(TypeSelection, self).__init__()
         self.id = None
         self.values = None
         self.name = None
@@ -35,6 +36,13 @@ class TypeSelection(Parsable):
 
     def include_in_format(self):
         return self.name.find('TYPE') == -1
+
+    def get_fields(self, *args):
+        for arg in args:
+            for sub_item in self.values:
+                if sub_item.name.lower() == arg.lower():
+                    return sub_item
+
 
 class TypeRecord(Parsable):
     """
@@ -46,20 +54,21 @@ class TypeRecord(Parsable):
     :type input_type         : InputType
     :type attributes         : ist.extras.TypeAttributes
     :type description        : unicode
-    :type reducible_to_key   : unicode
+    :type reducible_to_key   : Unicode
     """
     __fields__ = [
         Field("id", index=True),
-        Field("keys", t=List, subtype=TypeRecordKey),
-        Field(["name", "type_name"]),
+        Field("keys", t=List, subtype=TypeRecordKey, link_to_parent=True),
+        Field(["name", "type_name"], index=True),
         Field("implements", t=List, subtype=TypeReference),
         Field("input_type", t=InputType),
         Field("attributes", t=TypeAttributes),
         Field("description"),
-        Field("reducible_to_key"),
+        Field("reducible_to_key", t=Unicode, link_to_parent=True),
     ]
 
     def __init__(self):
+        super(TypeRecord, self).__init__()
         self.id = None
         self.keys = None
         self.name = None
@@ -68,6 +77,13 @@ class TypeRecord(Parsable):
         self.attributes = None
         self.description = None
         self.reducible_to_key = None
+
+    def get_fields(self, *args):
+        for arg in args:
+            for sub_item in self.keys:
+                if sub_item.key.lower() == arg.lower():
+                    return sub_item
+
 
 class TypeAbstract(Parsable):
     """
@@ -82,7 +98,7 @@ class TypeAbstract(Parsable):
     """
     __fields__ = [
         Field("id", index=True),
-        Field(["name", "type_name"]),
+        Field(["name", "type_name"], index=True),
         Field("input_type", t=InputType),
         Field("attributes", t=TypeAttributes),
         Field("description"),
@@ -91,6 +107,7 @@ class TypeAbstract(Parsable):
     ]
 
     def __init__(self):
+        super(TypeAbstract, self).__init__()
         self.id = None
         self.name = None
         self.input_type = None
@@ -116,6 +133,7 @@ class TypeString(Parsable):
     ]
 
     def __init__(self):
+        super(TypeString, self).__init__()
         self.id = None
         self.name = None
         self.input_type = None
@@ -140,6 +158,7 @@ class TypeDouble(Parsable):
     ]
 
     def __init__(self):
+        super(TypeDouble, self).__init__()
         self.id = None
         self.range = None
         self.name = None
@@ -165,6 +184,7 @@ class TypeFilename(Parsable):
     ]
 
     def __init__(self):
+        super(TypeFilename, self).__init__()
         self.id = None
         self.name = None
         self.file_mode = None
@@ -188,6 +208,7 @@ class TypeBool(Parsable):
     ]
 
     def __init__(self):
+        super(TypeBool, self).__init__()
         self.id = None
         self.name = None
         self.input_type = None
@@ -212,6 +233,7 @@ class TypeInteger(Parsable):
     ]
 
     def __init__(self):
+        super(TypeInteger, self).__init__()
         self.id = None
         self.range = None
         self.name = None
@@ -239,6 +261,7 @@ class TypeArray(Parsable):
     ]
 
     def __init__(self):
+        super(TypeArray, self).__init__()
         self.id = None
         self.range = None
         self.subtype = None
@@ -263,6 +286,7 @@ class TypeParameter(Parsable):
     ]
 
     def __init__(self):
+        super(TypeParameter, self).__init__()
         self.id = None
         self.name = None
         self.input_type = None

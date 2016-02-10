@@ -197,4 +197,3 @@ class SimpleTableFormatter (object):
 
     def timedelta_milliseconds (self, td):
         return td.days * 86400000 + td.seconds * 1000 + td.microseconds / 1000
-

@@ -3,7 +3,8 @@
 # author:   Jan Hybs
 
 from ist.globals import Globals
-from ist.base import Parsable, Field, List
+from ist.base import Parsable, Field, List, Dict, InputType
+from ist.utils.htmltree import htmltree
 
 
 class TypeReference(Parsable):
@@ -41,6 +42,7 @@ class TypeSelectionValue(Parsable):
     """
     :type name           : unicode
     :type description    : unicode
+    :type parent         : Parsable
     """
     __fields__ = [
         Field('name'),
@@ -48,8 +50,20 @@ class TypeSelectionValue(Parsable):
     ]
 
     def __init__(self):
+        super(TypeSelectionValue, self).__init__()
         self.name = None
         self.description = None
+
+    @property
+    def href_id(self):
+        if self.parent:
+            return htmltree.secure('{self.parent.href_id}-{self.name}'.format(self=self))
+        return self.name
+
+
+    @property
+    def href_id(self):
+        return htmltree.secure(self.name)
 
 
 class TypeRecordKeyDefault(Parsable):
@@ -63,6 +77,7 @@ class TypeRecordKeyDefault(Parsable):
     ]
 
     def __init__(self):
+        super(TypeRecordKeyDefault, self).__init__()
         self.type = None
         self.value = None
 
@@ -77,11 +92,12 @@ class TypeRecordKey(Parsable):
     __fields__ = [
         Field('key'),
         Field('type', t=TypeReference),
-        Field('default', t=TypeRecordKeyDefault),
+        Field('default', t=TypeRecordKeyDefault, link_to_parent=True),
         Field('description'),
     ]
 
     def __init__(self):
+        super(TypeRecordKey, self).__init__()
         self.key = None
         self.type = None
         self.default = None
@@ -89,6 +105,16 @@ class TypeRecordKey(Parsable):
 
     def include_in_format(self):
         return True
+
+    @property
+    def href_id(self):
+        if self.parent:
+            return htmltree.secure('{self.parent.href_id}-{self.key}'.format(self=self))
+        return self.key
+
+    @property
+    def href_name(self):
+        return htmltree.secure(self.key)
 
 
 class TypeRange(Parsable):
@@ -171,22 +197,37 @@ class TypeAttributes(Parsable):
     :type link_name      : unicode
     :type parameters     : list[TypeAttributeParameter]
     :type generic_type   : ist.extras.TypeReference
+    :type input_type     : InputType
     """
     __fields__ = [
-        Field('obsolete', t=bool),
+        Field('obsolete', t=str),
         Field('link_name', index=True),
         Field('parameters', t=List, subtype=TypeAttributeParameter),
         Field('generic_type', t=TypeReference),
     ]
 
     def __init__(self):
+        super(TypeAttributes, self).__init__()
         self.obsolete = None
         self.link_name = None
         self.parameters = None
         self.generic_type = None
+        self.input_type = InputType().parse('')
 
     def __repr__(self):
         if self.obsolete is None and self.link_name is None \
                 and self.parameters is None and self.generic_type is None:
             return '{}'
         return super(TypeAttributes, self).__repr__()
+
+    def get_parameters_dict(self):
+        """
+        :rtype : Dict
+        """
+        if not self.parameters:
+            return Dict()
+
+        result = Dict()
+        for p in self.parameters:
+            result[p.name] = p
+        return result
