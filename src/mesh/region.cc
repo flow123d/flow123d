@@ -416,23 +416,22 @@ void RegionDB::print_region_table(ostream& stream) const {
 		} else {
 			stream << "     -   -";
 		}
-		unsigned int indent = 17 - rset_label.length();
-		stream << " " << rset_label << setw(indent) << "";
+		stream << " " << std::left << setw(17) << rset_label << std::right;
 		if (it->second.size() > 1) {
 			// prints IDs of Regions (if their count is 2 or more)
 			for (RegionSet::const_iterator set_it = it->second.begin(); set_it!=it->second.end(); ++set_it) {
 				if (set_it != it->second.begin()) stream << ", ";
-				stream << set_it->id();
+				stream << set_it->label();
 			}
 		} else if ( it->second.size() == 1 && (it->second)[0].id() != reg_id ) {
 			// for one Region in RegionSet prints ID only if RegionSet is not wrapper of Region
-			stream << (it->second)[0].id();
+			stream << (it->second)[0].label();
 		} else {
 			stream << "-";
 		}
 		stream << endl;
 	}
-	stream << "---------------------------------------------" << endl << endl;
+	stream << std::setfill('-') << setw(45) << "" << std::setfill(' ') << endl << endl;
 }
 
 
