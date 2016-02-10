@@ -52,8 +52,8 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 		if ( reg.is_valid() ) {
 			region_db_.rename_region(reg, region_label);
 		} else {
-			stringstream ss;
-			region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
+			unsigned int dim = rec.val<unsigned int>("dim", RegionDB::undefined_dim);
+			region_db_.add_region(region_id, region_label, dim, rec.address_string() );
 		}
 	}
 }
@@ -70,6 +70,9 @@ const IT::Record & RegionSetFromId::get_region_input_type()
 				"Label (name) of the region. Has to be unique in one mesh.\n")
 		.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
 				"The ID of the region to which you assign label.")
+		.declare_key("dim", IT::Integer(0), IT::Default::optional(),
+				"The dim of the region to which you assign label. "
+				"Value is taken into account only if new region is created.")
 		.close();
 }
 
@@ -149,19 +152,17 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
 	}
 
-	Input::Array element_list;
-	if (rec.opt_val("element_list", element_list) ) {
-		std::vector<unsigned int> element_ids;
-		for (Input::Iterator<unsigned int> it_element = element_list.begin<unsigned int>();
-				it_element != element_list.end();
-		        ++it_element) {
-			std::map<unsigned int, unsigned int>::iterator it_map = el_to_reg_map_.find((*it_element));
-			if (it_map != el_to_reg_map_.end()) {
-				xprintf(Warn, "Region assigned to element with id %u will be rewritten.\n", (*it_element));
-			}
-			el_to_reg_map_.insert( std::make_pair((*it_element), region_id) );
-
+	Input::Array element_list = rec.val<Input::Array>("element_list");
+	std::vector<unsigned int> element_ids;
+	for (Input::Iterator<unsigned int> it_element = element_list.begin<unsigned int>();
+			it_element != element_list.end();
+	        ++it_element) {
+		std::map<unsigned int, unsigned int>::iterator it_map = el_to_reg_map_.find((*it_element));
+		if (it_map != el_to_reg_map_.end()) {
+			xprintf(Warn, "Region assigned to element with id %u will be rewritten.\n", (*it_element));
 		}
+		el_to_reg_map_.insert( std::make_pair((*it_element), region_id) );
+
 	}
 }
 
@@ -178,8 +179,8 @@ const IT::Record & RegionSetFromElements::get_region_input_type()
 		.declare_key("id", IT::Integer(0), IT::Default::optional(),
 				"The ID of the region to which you assign label.\n"
 				"If new region is created and ID is not set, unique ID will be generated automatically.")
-		.declare_key("element_list", IT::Array( IT::Integer(0) ), IT::Default::optional(),
-				"Specification of the region by the list of elements. This is not recommended")
+		.declare_key("element_list", IT::Array( IT::Integer(0), 1 ), IT::Default::obligatory(),
+				"Specification of the region by the list of elements.")
 		.close();
 }
 
@@ -222,16 +223,17 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 		for (Input::Iterator<unsigned int> it_ids = region_ids->begin<unsigned int>();
 				it_ids != region_ids->end();
 		        ++it_ids) {
+			Region reg;
 			try {
-				Region reg = region_db_.find_id(*it_ids);
-				if (reg.is_valid()) {
-					set.insert(reg); // add region if doesn't exist in set
-				} else {
-					xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
-				}
+				reg = region_db_.find_id(*it_ids);
 			} catch(RegionDB::ExcUniqueRegionId &e) {
 				e << region_ids->ei_address();
 				throw;
+			}
+			if (reg.is_valid()) {
+				set.insert(reg); // add region if doesn't exist in set
+			} else {
+				xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
 			}
 		}
 	}
@@ -286,7 +288,7 @@ RegionSetDifference::RegionSetDifference(const Input::Record &rec, Mesh *mesh)
 	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("regions");
 
 	std::vector<string> set_names = mesh->region_db().get_and_check_operands(*labels);
-	if ( set_names.size() != 2 ) THROW(RegionDB::ExcWrongOpNumber() << RegionDB::EI_NumOp(set_names.size()) << labels->ei_address() );
+	ASSERT( set_names.size() == 2, "Wrong number of operands. Expect 2.\n" );
 
 	RegionSet set_1 = region_db_.get_region_set( set_names[0] );
 	RegionSet set_2 = region_db_.get_region_set( set_names[1] );

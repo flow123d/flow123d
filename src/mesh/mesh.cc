@@ -738,12 +738,11 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
 
 void Mesh::read_regions_from_input(Input::Array region_list)
 {
-	std::shared_ptr<RegionSetBase> reg_ptr;
 	for (Input::Iterator<Input::AbstractRecord> it = region_list.begin<Input::AbstractRecord>();
 				it != region_list.end();
 				++it) {
-		reg_ptr = (*it).factory< RegionSetBase, const Input::Record &, Mesh * >(*it, this);
-		reg_ptr.reset();
+		// constructor has side effect in the mesh - create new region or set and store them to Mesh::region_db_
+		(*it).factory< RegionSetBase, const Input::Record &, Mesh * >(*it, this);
 	}
 }
 

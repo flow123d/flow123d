@@ -323,9 +323,6 @@ public:
 
     DECLARE_INPUT_EXCEPTION( ExcUnknownSetOperand, << "Operation with unknown region set: " << EI_Label::qval);
 
-    TYPEDEF_ERR_INFO( EI_NumOp, unsigned int);
-    DECLARE_INPUT_EXCEPTION( ExcWrongOpNumber, << "Wrong number of operands. Expect 2, given: " << EI_NumOp::val);
-
     DECLARE_INPUT_EXCEPTION(ExcUniqueRegionId, << "Id of elementary region must be unique, id: " << EI_ID::val );
 
     /// Default constructor
