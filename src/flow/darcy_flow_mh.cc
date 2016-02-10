@@ -353,10 +353,15 @@ void DarcyFlowMH_Steady::zero_time_step()
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
 
-    read_initial_condition(); // Possible solution guess for steady case.
+
     if (zero_time_term_from_right) {
         // steady case
+        //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
+    } else {
+        read_initial_condition();
+        assembly_linear_system(); // in particular due to balance
+        // TODO: reconstruction of solution in zero time.
     }
     //solution_output(T,right_limit); // data for time T in any case
     output_data();
