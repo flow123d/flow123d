@@ -60,13 +60,6 @@ def makeExtension (*args, **kwargs):
     return MdLatexExtension (*args, **kwargs)
 
 
-# from markdown.treeprocessors import Treeprocessor
-#
-# class FootnoteTreeprocessor(Treeprocessor):
-# def run(self, root):
-# root.text = '!!!!!!!!!!!!!!!'
-
-
 class MdLatexSupport (object):
     def __init__ (self):
         self.latex = []
@@ -81,7 +74,7 @@ class MdLatexSupport (object):
         return '<span class="md-expression">{{{}}}</span>'.format (latex)
 
     def prepare (self, html):
-        regex = r'\(\(([\w\d\s{}\[\]\\\?;$^?_/+!&=*<>~ ()-]*?)\)\)'
+        regex = r'\(\(([\w\d\s{}\[\]\\\?;$^?_/+!&=*<>~ (),-]*?)\)\)'
 
         secured_html = re.sub (regex, self._match_prepare, html, re.S | re.M | re.UNICODE)
         return secured_html

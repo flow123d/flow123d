@@ -63,8 +63,8 @@ class TypeSelectionValue(Parsable):
 
 
     @property
-    def href_id(self):
-        return htmltree.secure(self.name)
+    def href_name(self):
+        return self.name
 
 
 class TypeRecordKeyDefault(Parsable):
