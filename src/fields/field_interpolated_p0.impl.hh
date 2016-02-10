@@ -199,8 +199,6 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 					}
 					total_measure += measure;
 				}
-			} else {
-				xprintf(Err, "Dimension of element in source mesh must be 3!\n");
 			}
 		}
 
