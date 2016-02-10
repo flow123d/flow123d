@@ -18,13 +18,16 @@ class Logger(object):
         """
         if Logger._global_logger is None:
             log_level = 'warning'
-            for index in range(len(sys.argv)):
-                arg = str(sys.argv[index])
-                if arg.startswith('--log'):
-                    if arg == '--log':
-                        log_level = sys.argv[index + 1].strip()
-                    else:
-                        log_level = arg.replace('--log=', '').strip()
+            try:
+                for index in range(len(sys.argv)):
+                    arg = str(sys.argv[index])
+                    if arg.startswith('--log'):
+                        if arg == '--log':
+                            log_level = sys.argv[index + 1].strip()
+                        else:
+                            log_level = arg.replace('--log=', '').strip()
+            except Exception as e:
+                pass
             log_level = getattr(logging, log_level.upper())
 
             # set global log level
