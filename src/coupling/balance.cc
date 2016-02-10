@@ -208,7 +208,7 @@ void Balance::allocate(unsigned int n_loc_dofs,
 
 	for (unsigned int c=0; c<n_quant; ++c)
 	{
-		MatCreateAIJ(PETSC_COMM_WORLD,
+		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
 				n_loc_dofs,
 				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
@@ -217,9 +217,9 @@ void Balance::allocate(unsigned int n_loc_dofs,
 				0,
 				(rank_==0)?0:n_bulk_regs_per_dof,
 				0,
-				&(region_mass_matrix_[c]));
+				&(region_mass_matrix_[c])));
 
-		MatCreateAIJ(PETSC_COMM_WORLD,
+		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
 				be_regions_.size(),
 				n_loc_dofs,
 				PETSC_DECIDE,
@@ -228,9 +228,9 @@ void Balance::allocate(unsigned int n_loc_dofs,
 				0,
 				0,
 				0,
-				&(be_flux_matrix_[c]));
+				&(be_flux_matrix_[c])));
 
-		MatCreateAIJ(PETSC_COMM_WORLD,
+		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
 				n_loc_dofs,
 				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
@@ -239,9 +239,9 @@ void Balance::allocate(unsigned int n_loc_dofs,
 				0,
 				(rank_==0)?0:n_bulk_regs_per_dof,
 				0,
-				&(region_source_matrix_[c]));
+				&(region_source_matrix_[c])));
 
-		MatCreateAIJ(PETSC_COMM_WORLD,
+		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
 				n_loc_dofs,
 				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
@@ -250,20 +250,20 @@ void Balance::allocate(unsigned int n_loc_dofs,
 				0,
 				(rank_==0)?0:n_bulk_regs_per_dof,
 				0,
-				&(region_source_rhs_[c]));
+				&(region_source_rhs_[c])));
 
-		VecCreateMPI(PETSC_COMM_WORLD,
+		chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 				be_regions_.size(),
 				PETSC_DECIDE,
-				&(be_flux_vec_[c]));
+				&(be_flux_vec_[c])));
 
-		VecCreateMPI(PETSC_COMM_WORLD,
+		chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
-				&(region_source_vec_[c]));
+				&(region_source_vec_[c])));
 	}
 
-	MatCreateAIJ(PETSC_COMM_WORLD,
+	chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
 			be_regions_.size(),
 			(rank_==0)?mesh_->region_db().boundary_size():0,
 			PETSC_DECIDE,
@@ -273,35 +273,35 @@ void Balance::allocate(unsigned int n_loc_dofs,
 			(rank_==0)?0:1,
 			0,
 			&region_be_matrix_
-			);
-	VecGetOwnershipRange(be_flux_vec_[0], &be_offset_, NULL);
+			));
+	chkerr(VecGetOwnershipRange(be_flux_vec_[0], &be_offset_, NULL));
 	for (unsigned int loc_el=0; loc_el<be_regions_.size(); ++loc_el)
 	{
-		MatSetValue(region_be_matrix_,
+	    chkerr(MatSetValue(region_be_matrix_,
 				be_offset_+loc_el,
 				be_regions_[loc_el],
 				1,
-				INSERT_VALUES);
+				INSERT_VALUES));
 	}
-	MatAssemblyBegin(region_be_matrix_, MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(region_be_matrix_, MAT_FINAL_ASSEMBLY);
+	chkerr(MatAssemblyBegin(region_be_matrix_, MAT_FINAL_ASSEMBLY));
+	chkerr(MatAssemblyEnd(region_be_matrix_, MAT_FINAL_ASSEMBLY));
 
 	double *ones_array;
-	VecCreateMPI(PETSC_COMM_WORLD,
+	chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 			n_loc_dofs,
 			PETSC_DECIDE,
-			&ones_);
-	VecGetArray(ones_, &ones_array);
+			&ones_));
+	chkerr(VecGetArray(ones_, &ones_array));
 	fill_n(ones_array, n_loc_dofs, 1);
-	VecRestoreArray(ones_, &ones_array);
+	chkerr(VecRestoreArray(ones_, &ones_array));
 
-	VecCreateMPI(PETSC_COMM_WORLD,
+	chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 			be_regions_.size(),
 			PETSC_DECIDE,
-			&ones_be_);
-	VecGetArray(ones_be_, &ones_array);
+			&ones_be_));
+	chkerr(VecGetArray(ones_be_, &ones_array));
 	fill_n(ones_array, be_regions_.size(), 1);
-	VecRestoreArray(ones_be_, &ones_array);
+	chkerr(VecRestoreArray(ones_be_, &ones_array));
 
 	allocation_done_ = true;
 }
@@ -310,51 +310,51 @@ void Balance::allocate(unsigned int n_loc_dofs,
 void Balance::start_mass_assembly(unsigned int quantity_idx)
 {
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
-	MatZeroEntries(region_mass_matrix_[quantity_idx]);
+	chkerr(MatZeroEntries(region_mass_matrix_[quantity_idx]));
 }
 
 
 void Balance::start_flux_assembly(unsigned int quantity_idx)
 {
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
-	MatZeroEntries(be_flux_matrix_[quantity_idx]);
-	VecZeroEntries(be_flux_vec_[quantity_idx]);
+	chkerr(MatZeroEntries(be_flux_matrix_[quantity_idx]));
+	chkerr(VecZeroEntries(be_flux_vec_[quantity_idx]));
 }
 
 
 void Balance::start_source_assembly(unsigned int quantity_idx)
 {
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
-	MatZeroEntries(region_source_matrix_[quantity_idx]);
-	MatZeroEntries(region_source_rhs_[quantity_idx]);
-	VecZeroEntries(region_source_vec_[quantity_idx]);
+	chkerr(MatZeroEntries(region_source_matrix_[quantity_idx]));
+	chkerr(MatZeroEntries(region_source_rhs_[quantity_idx]));
+	chkerr(VecZeroEntries(region_source_vec_[quantity_idx]));
 }
 
 
 void Balance::finish_mass_assembly(unsigned int quantity_idx)
 {
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
-	MatAssemblyBegin(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY);
+	chkerr(MatAssemblyBegin(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+	chkerr(MatAssemblyEnd(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 }
 
 void Balance::finish_flux_assembly(unsigned int quantity_idx)
 {
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
-	MatAssemblyBegin(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY);
-	VecAssemblyBegin(be_flux_vec_[quantity_idx]);
-	VecAssemblyEnd(be_flux_vec_[quantity_idx]);
+	chkerr(MatAssemblyBegin(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+	chkerr(MatAssemblyEnd(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+	chkerr(VecAssemblyBegin(be_flux_vec_[quantity_idx]));
+	chkerr(VecAssemblyEnd(be_flux_vec_[quantity_idx]));
 }
 
 void Balance::finish_source_assembly(unsigned int quantity_idx)
 {
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
-	MatAssemblyBegin(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY);
-	MatAssemblyBegin(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY);
-	MatMultTranspose(region_source_rhs_[quantity_idx], ones_, region_source_vec_[quantity_idx]);
+	chkerr(MatAssemblyBegin(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+	chkerr(MatAssemblyEnd(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+	chkerr(MatAssemblyBegin(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY));
+	chkerr(MatAssemblyEnd(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY));
+	chkerr(MatMultTranspose(region_source_rhs_[quantity_idx], ones_, region_source_vec_[quantity_idx]));
 }
 
 
@@ -449,19 +449,20 @@ void Balance::calculate_cumulative_sources(unsigned int quantity_idx,
 
 	Vec bulk_vec;
 
-	VecCreateMPIWithArray(PETSC_COMM_WORLD,
+	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
 			(rank_==0)?mesh_->region_db().bulk_size():0,
 			PETSC_DECIDE,
 			&(sources_[quantity_idx][0]),
-			&bulk_vec);
+			&bulk_vec));
 
 	// compute sources on bulk regions: S'.u + s
-	VecZeroEntries(bulk_vec);
-	MatMultTransposeAdd(region_source_matrix_[quantity_idx], solution, region_source_vec_[quantity_idx], bulk_vec);
+	chkerr(VecZeroEntries(bulk_vec));
+	chkerr(MatMultTransposeAdd(region_source_matrix_[quantity_idx],
+	        solution, region_source_vec_[quantity_idx], bulk_vec));
 
 	double sum_sources;
-	VecSum(bulk_vec, &sum_sources);
+	chkerr(VecSum(bulk_vec, &sum_sources));
 	VecDestroy(&bulk_vec);
 
 	if (rank_ == 0)
@@ -480,27 +481,27 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 
 	Vec boundary_vec;
 
-	VecCreateMPIWithArray(PETSC_COMM_WORLD,
+	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
 			(rank_==0)?mesh_->region_db().boundary_size():0,
 			PETSC_DECIDE,
 			&(fluxes_[quantity_idx][0]),
-			&boundary_vec);
+			&boundary_vec));
 
 	// compute fluxes on boundary regions: R'.(F.u + f)
-	VecZeroEntries(boundary_vec);
+	chkerr(VecZeroEntries(boundary_vec));
 	Vec temp;
-	VecDuplicate(ones_be_, &temp);
-	MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp);
+	chkerr(VecDuplicate(ones_be_, &temp));
+	chkerr(MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp));
 	// Since internally we keep outgoing fluxes, we change sign
 	// to write to output _incoming_ fluxes.
-	VecScale(temp, -1);
-	MatMultTranspose(region_be_matrix_, temp, boundary_vec);
-	VecDestroy(&temp);
+	chkerr(VecScale(temp, -1));
+	chkerr(MatMultTranspose(region_be_matrix_, temp, boundary_vec));
+	chkerr(VecDestroy(&temp));
 
 	double sum_fluxes;
-	VecSum(boundary_vec, &sum_fluxes);
-	VecDestroy(&boundary_vec);
+	chkerr(VecSum(boundary_vec, &sum_fluxes));
+	chkerr(VecDestroy(&boundary_vec));
 
 	if (rank_ == 0)
 		// sum fluxes in one step
@@ -515,16 +516,16 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
 	Vec bulk_vec;
 
-	VecCreateMPIWithArray(PETSC_COMM_WORLD,
+	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
 			(rank_==0)?mesh_->region_db().bulk_size():0,
 			PETSC_DECIDE,
 			&(output_array[0]),
-			&bulk_vec);
+			&bulk_vec));
 
 	// compute mass on regions: M'.u
-	VecZeroEntries(bulk_vec);
-	MatMultTranspose(region_mass_matrix_[quantity_idx], solution, bulk_vec);
+	chkerr(VecZeroEntries(bulk_vec));
+	chkerr(MatMultTranspose(region_mass_matrix_[quantity_idx], solution, bulk_vec));
 	VecDestroy(&bulk_vec);
 }
 
@@ -535,28 +536,28 @@ void Balance::calculate_source(unsigned int quantity_idx,
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
 	Vec bulk_vec;
 
-	VecCreateMPIWithArray(PETSC_COMM_WORLD,
+	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
 			(rank_==0)?mesh_->region_db().bulk_size():0,
 			PETSC_DECIDE,
 			&(sources_[quantity_idx][0]),
-			&bulk_vec);
+			&bulk_vec));
 
 	// compute sources on bulk regions: S'.u + s
-	VecZeroEntries(bulk_vec);
-	MatMultTransposeAdd(region_source_matrix_[quantity_idx],
+	chkerr(VecZeroEntries(bulk_vec));
+	chkerr(MatMultTransposeAdd(region_source_matrix_[quantity_idx],
 			solution,
 			region_source_vec_[quantity_idx],
-			bulk_vec);
+			bulk_vec));
 
 	// compute positive/negative sources
 	int lsize;
 	Vec mat_r, rhs_r;
 	const double *sol_array, *mat_array, *rhs_array;
-	VecGetLocalSize(solution, &lsize);
-	VecDuplicate(solution, &mat_r);
-	VecDuplicate(solution, &rhs_r);
-	VecGetArrayRead(solution, &sol_array);
+	chkerr(VecGetLocalSize(solution, &lsize));
+	chkerr(VecDuplicate(solution, &mat_r));
+	chkerr(VecDuplicate(solution, &rhs_r));
+	chkerr(VecGetArrayRead(solution, &sol_array));
 	for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
 	{
 		MatGetColumnVector(region_source_matrix_[quantity_idx], mat_r, r);
@@ -577,7 +578,7 @@ void Balance::calculate_source(unsigned int quantity_idx,
 		VecRestoreArrayRead(mat_r, &mat_array);
 		VecRestoreArrayRead(rhs_r, &rhs_array);
 	}
-	VecRestoreArrayRead(solution, &sol_array);
+	chkerr(VecRestoreArrayRead(solution, &sol_array));
 	VecDestroy(&rhs_r);
 	VecDestroy(&mat_r);
 	VecDestroy(&bulk_vec);
@@ -590,25 +591,27 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
 	Vec boundary_vec;
 
-	VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, (rank_==0)?mesh_->region_db().boundary_size():0, PETSC_DECIDE, &(fluxes_[quantity_idx][0]), &boundary_vec);
+	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1,
+	        (rank_==0)?mesh_->region_db().boundary_size():0,
+	        PETSC_DECIDE, &(fluxes_[quantity_idx][0]), &boundary_vec));
 
 	// compute fluxes on boundary regions: R'.(F.u + f)
-	VecZeroEntries(boundary_vec);
+	chkerr(VecZeroEntries(boundary_vec));
 	Vec temp;
-	VecDuplicate(ones_be_, &temp);
-	MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp);
+	chkerr(VecDuplicate(ones_be_, &temp));
+	chkerr(MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp));
 	// Since internally we keep outgoing fluxes, we change sign
 	// to write to output _incoming_ fluxes.
-	VecScale(temp, -1);
-	MatMultTranspose(region_be_matrix_, temp, boundary_vec);
+	chkerr(VecScale(temp, -1));
+	chkerr(MatMultTranspose(region_be_matrix_, temp, boundary_vec));
 
 	// compute positive/negative fluxes
 	fluxes_in_[quantity_idx].assign(mesh_->region_db().boundary_size(), 0);
 	fluxes_out_[quantity_idx].assign(mesh_->region_db().boundary_size(), 0);
 	const double *flux_array;
 	int lsize;
-	VecGetArrayRead(temp, &flux_array);
-	VecGetLocalSize(temp, &lsize);
+	chkerr(VecGetArrayRead(temp, &flux_array));
+	chkerr(VecGetLocalSize(temp, &lsize));
 	for (int e=0; e<lsize; ++e)
 	{
 		if (flux_array[e] < 0)
@@ -616,7 +619,7 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 		else
 			fluxes_in_[quantity_idx][be_regions_[e]] += flux_array[e];
 	}
-	VecRestoreArrayRead(temp, &flux_array);
+	chkerr(VecRestoreArrayRead(temp, &flux_array));
 	VecDestroy(&temp);
 	VecDestroy(&boundary_vec);
 }
