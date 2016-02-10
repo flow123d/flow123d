@@ -54,7 +54,7 @@ const unsigned int RegionDB::undefined_dim = 10;
 
 /// Default constructor
 RegionDB::RegionDB()
-: closed_(false), n_boundary_(0), n_bulk_(0), max_index_(0)  {
+: closed_(false), n_boundary_(0), n_bulk_(0), max_id_(0)  {
 
     // adding implicit boundary and bulk regions
     // How to deal with dimension, clean solution is to have implicit region for every
@@ -115,7 +115,9 @@ Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
 
 	// replace region label
 	unsigned int index = reg.idx();
-	sets_.erase( reg.label() ); // remove RegionSet of old name
+	RegionSetTable::iterator it = sets_.find(reg.label()); // rename set
+	std::swap(sets_[new_label], it->second);
+	sets_.erase(it);
 	bool old_boundary_flag = reg.is_boundary(); // check old x new boundary flag - take account in adding to sets
 
 	RegionItem item(index, reg.id(), new_label, reg.dim(), this->get_region_address(index));
@@ -123,13 +125,8 @@ Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
 			region_table_.get<Index>().find(index),
             item);
 
-	Region new_reg = Region(index, *this);
-	// add region to sets
-	RegionSet region_set;
-	region_set.push_back( new_reg );
-	this->add_set(new_label, region_set);
-	if (old_boundary_flag != reg.is_boundary()) {
-		// move region between BULK and BOUNDARY sets
+	if (old_boundary_flag != reg.is_boundary()) { // move region between BULK and BOUNDARY sets
+		xprintf(Warn, "Change boundary flag of region with id %d and label %s.\n", reg.id(), new_label.c_str());
 		if (old_boundary_flag) {
 			erase_from_set("BOUNDARY", reg );
 			add_to_set("BULK", reg );
@@ -139,7 +136,7 @@ Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
 		}
 	}
 
-	return new_reg;
+	return Region(index, *this);
 }
 
 
@@ -296,18 +293,12 @@ void RegionDB::add_set( const string& set_name, const RegionSet & set) {
 
 void RegionDB::erase_from_set( const string& set_name, Region region) {
 	RegionSetTable::iterator it = sets_.find(set_name);
+	ASSERT(it != sets_.end(), "Region set '%s' doesn't exist.", set_name.c_str());
+	RegionSet & set = (*it).second;
 
-	if (it != sets_.end()) {
-		RegionSet & set = (*it).second;
-		auto set_it = std::find(set.begin(), set.end(), region);
-		if ( set_it!=set.end() ) {
-			set.erase(set_it);
-		} else {
-			xprintf(Warn, "Erased region was not found in set '%s'", set_name.c_str());
-		}
-	} else {
-		xprintf(Warn, "Region set '%s' doesn't exist.", set_name.c_str());
-	}
+	auto set_it = std::find(set.begin(), set.end(), region);
+	ASSERT(set_it != set.end(), "Erased region was not found in set '%s'", set_name.c_str());
+	set.erase(set_it);
 }
 
 
@@ -356,8 +347,8 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
 	if ( ! region_table_.insert( RegionItem(index, id, label, dim, address) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
-	if (max_index_ < id) {
-		max_index_ = id;
+	if (max_id_ < id) {
+		max_id_ = id;
 	}
 
 	Region reg = Region(index, *this);

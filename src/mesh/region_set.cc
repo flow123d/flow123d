@@ -53,8 +53,7 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 			region_db_.rename_region(reg, region_label);
 		} else {
 			stringstream ss;
-			ss << "declare at address \'" << rec.address_string() << "\'";
-			region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, ss.str() );
+			region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
 		}
 	}
 }
@@ -144,11 +143,10 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 		if (it) {
 			region_id = (*it);
 		} else {
-			region_id = this->get_max_region_index();
+			region_id = this->get_max_region_id();
 		}
 		stringstream ss;
-		ss << "declare at address \'" << rec.address_string() << "\'";
-		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, ss.str() );
+		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
 	}
 
 	Input::Array element_list;

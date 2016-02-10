@@ -317,7 +317,7 @@ public:
     DECLARE_EXCEPTION( ExcUnknownRegion, << "Region with id: " << EI_ID::qval << " and dim: " << EI_dim::qval << " doesn't exist." );
 
     DECLARE_EXCEPTION( ExcUnusedRegion, << "Region with id: " << EI_ID::qval << " and label: " << EI_Label::qval
-    									<< ", " << EI_RegionAddress::val << " is not used in any element." );
+    									<< ", defined in " << EI_RegionAddress::qval << " is not used in any element." );
 
     DECLARE_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
 
@@ -354,10 +354,11 @@ public:
      * 4)                             , in different   : warning ID has already assigned label
      *
      * Parameter @p id is any unique non-negative integer, parameter @p label is unique string identifier of the region,
-     * @p dim is dimension of reference elements in the region and @p boundary is true if the region consist of boundary elements
-     * (where one can apply boundary condition).
+     * @p dim is dimension of reference elements in the region, @p boundary is true if the region consist of boundary elements
+     * (where one can apply boundary condition) and @p address contains source of region (address in input file or section in
+     * mesh file).
      */
-    Region add_region(unsigned int id, const std::string &label, unsigned int dim, const std::string &address ="");
+    Region add_region(unsigned int id, const std::string &label, unsigned int dim, const std::string &address ="implicit");
 
     /**
      * Change label of given Region.
@@ -554,7 +555,7 @@ private:
     /// Number of bulk regions
     unsigned int n_bulk_;
     /// Maximal value of Region::id()
-    unsigned int max_index_;
+    unsigned int max_id_;
 
     /// Map of region sets
     RegionSetTable sets_;

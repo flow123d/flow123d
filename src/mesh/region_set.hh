@@ -46,8 +46,8 @@ protected:
     /// Reference to map stored relevance of elements to regions.
     RegionDB::MapElementIDToRegionID &el_to_reg_map_;
 
-    unsigned int get_max_region_index() {
-    	return region_db_.max_index_+1;
+    unsigned int get_max_region_id() {
+    	return region_db_.max_id_+1;
     }
 };
 
