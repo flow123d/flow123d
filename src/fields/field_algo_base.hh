@@ -40,12 +40,20 @@
 
 
 
-/// Result type have sense only for larger Value types like vectors and tensors.
+/**
+ * Indication of special field states. Returned by Field<>::field_result.
+ * Individual states have values corresponding to week ordering of the states according
+ * to the exactness of the value. May possibly be helpful in implementation, e.g.
+ * one can use (field_result >= result_constant) to check that the field is constant on given region.
+ */
 typedef enum  {
-    result_none,    // field not set
-    result_zero,    // zero scalar, vector, or tensor
-    result_one,     // unit scalar (1.0), identity tensor
-    result_other
+    result_none=0,      // field not set
+    result_other=1,     // field initialized but no particular result information
+    result_constant=2,  // spatially constant result
+    result_zeros=10,    // zero scalar, vector, or tensor
+    result_ones=20,     // all elements equal to 1.0
+    result_eye=21       // identity tensor
+
 } FieldResult;
 
 

@@ -228,28 +228,28 @@ void Field<spacedim, Value>::set_field(
 
 
 template<int spacedim, class Value>
-bool Field<spacedim, Value>::set_time(const TimeStep &time)
+bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit_side)
 {
 	ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
-	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side on field '%s' before calling set_time.\n",name().c_str());
 
     // We perform set_time only once for every time.
-    if (time.end() == last_time_)  return changed();
-    last_time_=time.end();
+    if (time_step.end() == last_time_ &&
+        limit_side == last_limit_side_ )  return changed();
+    last_time_=time_step.end();
+    last_limit_side_ = limit_side;
 
-        // possibly update our control field
-        if (no_check_control_field_) {
-                no_check_control_field_->set_limit_side(limit_side_);
-                no_check_control_field_->set_time(time);
-        }
+    // possibly update our control field
+    if (no_check_control_field_) {
+            no_check_control_field_->set_time(time_step, limit_side);
+    }
         
     set_time_result_ = TimeStatus::constant;
     
     // read all descriptors satisfying time.ge(input_time)
-    update_history(time);
+    update_history(time_step);
     check_initialized_region_fields_();
 
-    // set time on all regions
+    // set time_step on all regions
     // for regions that match type of the field domain
     for(const Region &reg: mesh()->region_db().get_region_set("ALL") ) {
     	auto rh = data_->region_history_[reg.idx()];
@@ -261,12 +261,14 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time)
         	unsigned int history_size=rh.size();
         	unsigned int i_history;
         	// set history index
-        	if ( time.gt(last_time_in_history) ) {
-        		// in smooth time
+        	if ( time_step.gt(last_time_in_history) ) {
+        		// in smooth time_step
         		i_history=0;
+        		is_jump_time_=false;
         	} else {
-        		// time .eq. input_time; i.e. jump time
-        		if (limit_side_ == LimitSide::right) {
+        		// time_step .eq. input_time; i.e. jump time
+        	    is_jump_time_=true;
+        		if (limit_side == LimitSide::right) {
         			i_history=0;
         		} else {
         			i_history=1;
@@ -281,7 +283,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time)
         		set_time_result_ = TimeStatus::changed;
         	}
         	// let FieldBase implementation set the time
-    		if ( new_ptr->set_time(time) )  set_time_result_ = TimeStatus::changed;
+    		if ( new_ptr->set_time(time_step) )  set_time_result_ = TimeStatus::changed;
 
         }
     }
@@ -313,10 +315,25 @@ void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 
 
 template<int spacedim, class Value>
-FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm) const {
-    auto f = region_fields_[elm.region().idx()];
-    if (f) return f->field_result();
-    else return result_none;
+FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
+
+    FieldResult result_all = result_none;
+    for(Region &reg : region_set) {
+        auto f = region_fields_[reg.idx()];
+        if (f) {
+            FieldResult fr = f->field_result();
+            if (result_all == result_none) // first region
+                result_all = fr;
+            else if (fr != result_all)
+                return result_other; // if results from individual regions are different
+        } else return result_none; // if field is undefined on any region of the region set
+    }
+
+    if (result_all == result_constant && region_set.size() > 1)
+        return result_other; // constant result for individual regions could be non-constant on the whole region set
+
+    return result_all;
+
 }
 
 

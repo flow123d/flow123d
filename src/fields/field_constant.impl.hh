@@ -69,6 +69,34 @@ FieldConstant<spacedim, Value> &FieldConstant<spacedim, Value>::set_value(const 
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec) {
     this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
+
+    typename Value::return_type tmp_value;
+    Value tmp_field_value(tmp_value);
+    tmp_field_value.set_n_comp(this->n_comp());
+
+    tmp_field_value.zeros();
+    if ( this->value_.equal_to(tmp_value) ) {
+        this->field_result_ = result_zeros;
+        return;
+    }
+
+
+    tmp_field_value.ones();
+    if ( this->value_.equal_to(tmp_value) ) {
+        this->field_result_ = result_ones;
+        return;
+    }
+
+    // This check must be the last one, since for scalar and vector values ones() == eye().
+    // For vector, eye() does nothing. So, the value of tmp_value remains equal to ones().
+    tmp_field_value.eye();
+    if ( this->value_.equal_to(tmp_value) ) {
+        this->field_result_ = result_eye;
+        return;
+    }
+
+
+    this->field_result_ = result_constant;
 }
 
 

@@ -183,7 +183,8 @@ void Profiler::initialize()
 Profiler::Profiler()
 : actual_node(0),
   task_size_(1),
-  start_time( time(NULL) )
+  start_time( time(NULL) ),
+  json_filepath("")
 
 {
 #ifdef FLOW123D_DEBUG_PROFILER

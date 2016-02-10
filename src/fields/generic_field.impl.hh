@@ -37,11 +37,9 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 		field_algo->set_value(reg.id());
 		region_id.set_field(
 				{reg} ,
-				field_algo);
+				field_algo,
+				0.0); // time=0.0
 	}
-
-	//region_id.set_time(0.0);
-
 	return region_id;
 }
 
@@ -59,8 +57,6 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 		make_shared< FieldElementwise<spacedim, FieldValue<3>::Integer> >(field_subdomain_data, 1),
 		0.0); // time=0.0
 
-
-	//subdomain.set_time(0.0);
 	return subdomain;
 }
 

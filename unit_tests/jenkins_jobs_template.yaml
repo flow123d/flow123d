@@ -242,6 +242,7 @@
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
+          skip-tag: true
 
     triggers: 
       - github
@@ -315,6 +316,7 @@
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
           wipe-workspace: yes
+          skip-tag: true
           branches:
             - master
             - 1.8.2
@@ -691,6 +693,7 @@
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
+          skip-tag: true
           branches: 
             - master
 
