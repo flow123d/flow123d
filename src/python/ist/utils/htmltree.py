@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-import cgi
-
+from __future__ import absolute_import
+import re, cgi
 import xml.etree.ElementTree as ET
-import re
 from ist.formatters.markdown2html import markdown2html
 
 

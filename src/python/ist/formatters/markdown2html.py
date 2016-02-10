@@ -1,7 +1,10 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
-from xml.etree import ElementTree as ET
+
+from __future__ import absolute_import
 import markdown
+from xml.etree import ElementTree as ET
 from ist.formatters.extensions.md_latex import MdLatexSupport
 
 

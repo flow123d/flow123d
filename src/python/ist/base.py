@@ -3,7 +3,6 @@
 # author:   Jan Hybs
 
 from __future__ import absolute_import
-
 from ist.globals import Globals
 from ist.utils.htmltree import htmltree
 from utils.logger import Logger
@@ -14,7 +13,7 @@ class InputType(object):
     SELECTION = 4
     RECORD = 1
     ABSTRACT = 2
-    ABSTRACTRECORD = ABSTRACT
+    ABSTRACT_RECORD = ABSTRACT
     ARRAY = 8
     INTEGER = 16
     DOUBLE = 32
@@ -96,7 +95,7 @@ class Parsable(object):
     def add_ref(self, ref):
         self.references.append(ref)
 
-    def parse(self, json_data={ }):
+    def parse(self, json_data={}):
         for field in self.__fields__:
             value = field.parse(json_data)
 
@@ -133,7 +132,7 @@ class Parsable(object):
     @property
     def debug_name(self):
         # if getattr(self, 'name', None) and getattr(self, 'id', None):
-        #     return '{self.name}[{self.id}]'.format(self=self)
+        # return '{self.name}[{self.id}]'.format(self=self)
         return self.name
 
     @property
@@ -144,7 +143,7 @@ class Parsable(object):
         :return:
         """
         # if getattr(self, 'attributes', None) and self.attributes.link_name:
-        #     return self.attributes.link_name
+        # return self.attributes.link_name
 
         # if getattr(self, 'unique_name', None):
         #     return self.unique_name
@@ -161,7 +160,7 @@ class Parsable(object):
         :return:
         """
         # if getattr(self, 'attributes', None) and self.attributes.link_name:
-        #     return self.attributes.link_name
+        # return self.attributes.link_name
         #
         if getattr(self, 'unique_name', None):
             return htmltree.secure(self.unique_name)
@@ -211,7 +210,7 @@ class Parsable(object):
         return list(set(self.references))
         # result = []
         # for item in Globals.iterate():
-        #     for key in getattr(item, 'keys', []):
+        # for key in getattr(item, 'keys', []):
         #         if key.type.get_reference().id == self.id:
         #             result.append(item)
         #         if key.type.get_reference().input_type == InputType.ARRAY:
@@ -264,6 +263,7 @@ class Unicode(Parsable):
     """
     :type value          : unicode
     """
+
     def __init__(self):
         super(Parsable, self).__init__()
         self.value = u''
@@ -284,7 +284,7 @@ class Unicode(Parsable):
     @property
     def href_name(self):
         # if self.parent:
-        #     return '{self.parent.href_name}-{self.value}'.format(self=self)
+        # return '{self.parent.href_name}-{self.value}'.format(self=self)
         return self.value
 
     @property

@@ -1,12 +1,10 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 from __future__ import absolute_import
 from ist.base import InputType
-
 from utils.logger import Logger
-
-
 from ist.nodes import TypeInteger, TypeString
 from ist.utils.texlist import texlist
 

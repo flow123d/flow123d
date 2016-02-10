@@ -1,9 +1,10 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-import re, os, sys
+from __future__ import absolute_import
+import re, os
 from utils.dotdict import DotDict
-
 from utils.logger import Logger
 
 

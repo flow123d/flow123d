@@ -1,14 +1,11 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-import os
-import datetime
+from __future__ import absolute_import
+import os, re, datetime
 from subprocess import CalledProcessError
-import re
 from utils.logger import Logger
-
-
-logger = Logger(__name__)
 
 
 class DoxySection(object):
@@ -47,7 +44,6 @@ class DoxySection(object):
             elif not self.lines and not self.obligatory:
                 return ''
 
-
         if self.formatted:
             result = '\n * @{:7s} {:s}'.format(self.section, *lines)
             for line in lines[1:]:
@@ -65,7 +61,7 @@ class LicenseManager(object):
     """
 
     def __init__(self, license_text, license_start, license_end,
-                 variables={ }, replace_only=False, whitespace=False,
+                 variables={}, replace_only=False, whitespace=False,
                  old_variables=True):
         self.license_start = license_start
         self.license_stop = license_end
@@ -171,7 +167,7 @@ class LicenseManager(object):
 
         # find old variables
         section = None
-        old_vars = { }
+        old_vars = {}
         for line in old_license.split('\n'):
             new_section_name, new_section_value = self._find_section(line)
             if new_section_name:
@@ -206,7 +202,7 @@ class LicenseManager(object):
         :param file_path:
         :return:
         """
-        logger.info ('Processing {:s}'.format(file_path))
+        Logger.instance().info('Processing {:s}'.format(file_path))
         with open(file_path, 'r') as fp:
             file_content = fp.read()
 
@@ -215,7 +211,7 @@ class LicenseManager(object):
 
         if li_start == 0 and li_end == 0:
             if self.replace_only:
-                logger.info('File {:s} skipped, no license found'.format(file_path))
+                Logger.instance().info('File {:s} skipped, no license found'.format(file_path))
                 return
 
         if li_start is not None and li_end is not None:
@@ -234,9 +230,9 @@ class LicenseManager(object):
 
             if self.git:
                 variables.update({
-                    'last_change': self._secure_output('git log -1 --format=%cd '+ file_path),
-                    'last_author': self._secure_output('git log -1 --format=%cn '+ file_path),
-                    'last_email':  self._secure_output('git log -1 --format=%ce '+ file_path)
+                    'last_change': self._secure_output('git log -1 --format=%cd ' + file_path),
+                    'last_author': self._secure_output('git log -1 --format=%cn ' + file_path),
+                    'last_email': self._secure_output('git log -1 --format=%ce ' + file_path)
                 })
 
             license_text = self.license_text.strip() if self.whitespace else self.license_text

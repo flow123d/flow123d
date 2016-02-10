@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
+from __future__ import absolute_import
 from ist.globals import Globals
 from ist.base import Parsable, Field, List, Dict, InputType
 from ist.utils.htmltree import htmltree

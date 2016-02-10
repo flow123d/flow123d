@@ -1,5 +1,8 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
+
+from __future__ import absolute_import
 import xml.etree.ElementTree as ET
 
 

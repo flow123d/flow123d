@@ -1,4 +1,5 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 """
@@ -19,19 +20,20 @@ Options:
                         'tex' or 'html' output
 
 """
-import json
-from ist.base import InputType
-from ist.utils.htmltree import htmltree
+
+from __future__ import absolute_import
+
 import pathfix
 pathfix.append_to_path()
 
 import system.versions
 system.versions.require_version_2()
 
-import sys
+import sys, json
 from optparse import OptionParser
 from utils.logger import Logger
-
+from ist.base import InputType
+from ist.utils.htmltree import htmltree
 from ist.nodes import TypeRecord, TypeAbstract, TypeSelection, TypeString, TypeDouble, TypeInteger, TypeBool, TypeArray, \
     TypeParameter, TypeFilename
 
@@ -121,7 +123,7 @@ def main():
                         key.type.get_reference().subtype.get_reference().add_ref(item)
                     else:
                         key.type.get_reference().add_ref(item)
-            if item.input_type == InputType.ABSTRACTRECORD:
+            if item.input_type == InputType.ABSTRACT_RECORD:
                 for imp in getattr(item, 'implementations', []):
                     imp.get_reference().add_ref(item)
 

@@ -1,12 +1,11 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
-from __future__ import absolute_import
 
+from __future__ import absolute_import
 import cgi
-from ist.globals import Globals
 from ist.utils.htmltree import htmltree
 from ist.base import InputType, NotImplementedException
-
 from utils.logger import Logger
 
 

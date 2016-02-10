@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
+from __future__ import absolute_import
 from ist.extras import TypeSelectionValue, TypeReference, TypeRecordKey, TypeRange, TypeAttributes
-from ist.base import Field, Parsable, Dict, InputType, List, Unicode
+from ist.base import Field, Parsable, InputType, List, Unicode
 
 
 class TypeSelection(Parsable):

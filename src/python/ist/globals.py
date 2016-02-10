@@ -1,8 +1,8 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 from __future__ import absolute_import
-import re
 from utils.logger import Logger
 
 
@@ -36,7 +36,7 @@ class Globals(object):
         elif type.lower() in ('s', 'selection'):
             return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.SELECTION]
         elif type.lower() in ('a', 'ar', 'abstract'):
-            return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.ABSTRACTRECORD]
+            return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.ABSTRACT_RECORD]
 
     @staticmethod
     def get_url_by_name(label, item_type=''):

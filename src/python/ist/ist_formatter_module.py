@@ -1,16 +1,12 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-#
 from __future__ import absolute_import
-
-import json, datetime
-import re
+import re, json, datetime
 from ist.formatters.json2html import HTMLFormatter
 from ist.formatters.json2latex import LatexFormatter
-from ist.globals import Globals
 from ist.utils.htmltree import htmltree
-
 from utils.logger import Logger
 
 
@@ -179,7 +175,7 @@ class ISTFormatter(object):
         html.add(html_body.current())
 
         # try:
-        #     Logger.instance().info('Trying module BeautifulSoup')
+        # Logger.instance().info('Trying module BeautifulSoup')
         #     from BeautifulSoup import BeautifulSoup
         #
         #     Logger.instance().info('Converting to html string')

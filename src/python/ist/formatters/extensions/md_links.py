@@ -1,20 +1,21 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 
-'''
-MdLatex Extension for Python-Markdown
+"""
+MDLinks Extension for Python-Markdown
 ======================================
 
 Converts [[type_value]] to relative links.
-'''
+"""
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
+import re
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
 from markdown.util import etree
-import re
 from ist.globals import Globals
 from utils.logger import Logger
 

@@ -1,4 +1,5 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 """
@@ -11,20 +12,13 @@ Package contains:
 
 @url https://github.com/flow123d/flow123d
 """
-import os
-import sys
-import system.versions
+
+from __future__ import absolute_import
+import os, json, datetime, importlib
 from utils.logger import Logger
 
-system.versions.require_version_2 ()
 
-import json
-import datetime
-import importlib
-
-logger = Logger(__name__)
-
-class ProfilerJSONDecoder (json.JSONDecoder):
+class ProfilerJSONDecoder(json.JSONDecoder):
     """Class overriding JSONDecoder which possess default python json decoding method.
     This class decodes given json string and converts values to proper type since everything is represented as string
     Basic conversion are:
@@ -37,79 +31,79 @@ class ProfilerJSONDecoder (json.JSONDecoder):
     """
 
 
-    def decode (self, json_string):
+    def decode(self, json_string):
         """Decodes json_string which is string that is given to json.loads method"""
-        default_obj = super (ProfilerJSONDecoder, self).decode (json_string)
+        default_obj = super(ProfilerJSONDecoder, self).decode(json_string)
 
-        self.intFields          = ["file-line", "call-count", "call-count-min", "call-count-max", "call-count-sum"]
-        self.floatFields        = ["cumul-time", "cumul-time-min", "cumul-time-max", "cumul-time-sum", "percent", "run-duration"]
-        self.intFieldsRoot      = ["task-size", "run-process-count"]
-        self.floatFieldsRoot    = ["timer-resolution"]
-        self.dateFields         = ["run-started-at", "run-finished-at"]
+        self.intFields = ["file-line", "call-count", "call-count-min", "call-count-max", "call-count-sum"]
+        self.floatFields = ["cumul-time", "cumul-time-min", "cumul-time-max", "cumul-time-sum", "percent",
+                            "run-duration"]
+        self.intFieldsRoot = ["task-size", "run-process-count"]
+        self.floatFieldsRoot = ["timer-resolution"]
+        self.dateFields = ["run-started-at", "run-finished-at"]
 
-
-        self.convert_fields (default_obj, self.intFields, int)
-        self.convert_fields (default_obj, self.floatFields, float)
-        self.convert_fields (default_obj, self.intFieldsRoot, int, False)
-        self.convert_fields (default_obj, self.floatFieldsRoot, float, False)
-        self.convert_fields (default_obj, self.dateFields, self.parse_date, False)
+        self.convert_fields(default_obj, self.intFields, int)
+        self.convert_fields(default_obj, self.floatFields, float)
+        self.convert_fields(default_obj, self.intFieldsRoot, int, False)
+        self.convert_fields(default_obj, self.floatFieldsRoot, float, False)
+        self.convert_fields(default_obj, self.dateFields, self.parse_date, False)
 
         return default_obj
 
 
-    def default_serializer (self, obj):
+    def default_serializer(self, obj):
         """Default JSON serializer."""
-        if isinstance (obj, datetime.datetime):
-            return obj.strftime ("%m/%d/%y %H:%M:%S")
-        return str (obj)
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime("%m/%d/%y %H:%M:%S")
+        return str(obj)
 
-    def parse_date (self, str):
+    def parse_date(self, str):
         """Default parsing method for date"""
-        return datetime.datetime.strptime (str, "%m/%d/%y %H:%M:%S")
+        return datetime.datetime.strptime(str, "%m/%d/%y %H:%M:%S")
 
-    def convert_fields (self, obj, fields, fun, rec=True):
+    def convert_fields(self, obj, fields, fun, rec=True):
         """Recursive value type conversion"""
         for field in fields:
             for prop in obj:
                 if prop == field:
-                    obj[prop] = fun (obj[prop])
+                    obj[prop] = fun(obj[prop])
         if rec:
             try:
                 for child in obj["children"]:
-                    self.convert_fields (child, fields, fun)
+                    self.convert_fields(child, fields, fun)
             except:
                 pass
 
 
-class ProfilerFormatter (object):
+class ProfilerFormatter(object):
     """
     Class which dynamically loads formatter and perform conversion
     """
 
 
     @staticmethod
-    def get_class_instance (cls):
+    def get_class_instance(cls):
         """Method returns class instance upon given name in profiler.formatters.* ns"""
-        module = importlib.import_module ("profiler.formatters." + cls)
-        class_ = getattr (module, cls)
-        instance = class_ ()
+        module = importlib.import_module("profiler.formatters." + cls)
+        class_ = getattr(module, cls)
+        instance = class_()
         return instance
 
 
     @staticmethod
-    def list_formatters ():
+    def list_formatters():
         """Method return list of all available formatters.
         Formatter is every class in profiler.formatters.* ns which possesses method format
         """
         result = []
         import pkgutil
 
-        for module_loader, name, ispkg in pkgutil.iter_modules (['formatters']):
+        for module_loader, name, ispkg in pkgutil.iter_modules(['formatters']):
             try:
-                module = importlib.import_module ("formatters." + name)
-                class_ = getattr (module, name)
-                if getattr (class_, 'format') is not None and callable (getattr (class_, 'format')):
-                    result.append (name)
+                module = importlib.import_module("formatters." + name)
+                class_ = getattr(module, name)
+                if getattr(class_, 'format') is not None and callable(getattr(class_, 'format')):
+                    result.append(name)
             except:
                 pass
         return result
@@ -117,10 +111,10 @@ class ProfilerFormatter (object):
     def convert(self, json_location, output_file=None, formatter="SimpleTableFormatter", styles=[]):
         """Converts file @ json_location to output_file (if set) using given formatter name"""
         # read file to JSON
-        logger.info('Processing file "%s"', json_location)
+        Logger.instance().info('Processing file "%s"', json_location)
 
         if not os.path.exists(json_location):
-            logger.error('File "%s" does not exists', json_location)
+            Logger.instance().error('File "%s" does not exists', json_location)
             raise IOError('Empty json file {:s}'.format(json_location))
 
         try:
@@ -128,23 +122,22 @@ class ProfilerFormatter (object):
                 json_data = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
 
                 if not json_data:
-                    logger.error('Empty json file "%s"', json_location)
+                    Logger.instance().error('Empty json file "%s"', json_location)
                     raise IOError('Empty json file {:s}'.format(json_location))
 
                 if 'program-name' not in json_data:
-                    logger.error('No "program-name" field in json file "%s"', json_location)
+                    Logger.instance().error('No "program-name" field in json file "%s"', json_location)
                     raise IOError('No "program-name" field in json file {:s}'.format(json_location))
 
                 if json_data['program-name'] != 'Flow123d':
-                    logger.error('Incorrect "program-name" value in json file "%s"', json_location)
+                    Logger.instance().error('Incorrect "program-name" value in json file "%s"', json_location)
                     raise IOError('Incorrect "program-name" value in json file {:s}'.format(json_location))
 
         except Exception as ex:
             # return string with message on error
-            logger.exception('Error while parsing json file ' + json_location, ex)
-            logger.error("File size: %d %s", os.stat(json_location).st_size, str(os.stat(json_location)))
+            Logger.instance().exception('Error while parsing json file ' + json_location, ex)
+            Logger.instance().error("File size: %d %s", os.stat(json_location).st_size, str(os.stat(json_location)))
             raise ex
-
 
         try:
             # split styles fields declaration
@@ -157,7 +150,7 @@ class ProfilerFormatter (object):
             output = instance.format(json_data)
         except Exception as ex:
             # return string with message on error
-            logger.exception('Error while formatting file ' + json_location, ex)
+            Logger.instance().exception('Error while formatting file ' + json_location, ex)
             raise ex
 
         try:
@@ -165,19 +158,19 @@ class ProfilerFormatter (object):
             if output_file is not None:
                 with open(output_file, "w") as fp:
                     fp.write(output)
-                logger.info('File "%s" generated', output_file)
+                Logger.instance().info('File "%s" generated', output_file)
             # otherwise just print result to stdout
             else:
                 print output
         except Exception as ex:
             # return string with message on error
-            logger.exception('Cannot save file ' + output_file, ex)
+            Logger.instance().exception('Cannot save file ' + output_file, ex)
             raise ex
 
         return True
 
 
-def convert (json_location, output_file, formatter):
+def convert(json_location, output_file, formatter):
     """Simple iface method for c api"""
-    fmt = ProfilerFormatter ()
-    return fmt.convert (json_location, output_file, formatter)
+    fmt = ProfilerFormatter()
+    return fmt.convert(json_location, output_file, formatter)

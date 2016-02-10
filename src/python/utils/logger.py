@@ -1,12 +1,14 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
+
+from __future__ import absolute_import
 import logging, traceback
 import datetime
 import sys, os
 
 
 class Logger(object):
-
     _global_logger = None
 
     @staticmethod
@@ -20,7 +22,7 @@ class Logger(object):
                 arg = str(sys.argv[index])
                 if arg.startswith('--log'):
                     if arg == '--log':
-                        log_level = sys.argv[index+1].strip()
+                        log_level = sys.argv[index + 1].strip()
                     else:
                         log_level = arg.replace('--log=', '').strip()
             log_level = getattr(logging, log_level.upper())
@@ -35,8 +37,7 @@ class Logger(object):
     def __init__(self, name, level=logging.INFO, fmt=None):
         self.logger = logging.getLogger(name)
 
-
-        f = os.path.join(os.getcwd(),'python.log')
+        f = os.path.join(os.getcwd(), 'python.log')
         stream_logger = logging.StreamHandler()
         stream_logger.setLevel(level)
         stream_logger.setFormatter(fmt)
@@ -51,7 +52,7 @@ class Logger(object):
         # add empty lines if file contains some previous logs
         if os.stat(f).st_size != 0:
             with open(f, 'a+') as fp:
-                fp.write('\n'*3)
+                fp.write('\n' * 3)
         # start logging
         self.info("{:%d-%m-%Y %H:%M:%S}".format(datetime.datetime.now()))
 
