@@ -50,10 +50,26 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 			e << rec.ei_address();
 		}
 		if ( reg.is_valid() ) {
-			region_db_.rename_region(reg, region_label);
+			try {
+				region_db_.rename_region(reg, region_label);
+			} catch (RegionDB::ExcNonuniqueLabel &e) {
+				e << rec.ei_address();
+				throw;
+			}
 		} else {
 			unsigned int dim = rec.val<unsigned int>("dim", RegionDB::undefined_dim);
-			region_db_.add_region(region_id, region_label, dim, rec.address_string() );
+			try {
+				region_db_.add_region(region_id, region_label, dim, rec.address_string() );
+			} catch (RegionDB::ExcNonuniqueLabel &e) {
+				e << rec.ei_address();
+				throw;
+			} catch (RegionDB::ExcAddingIntoClosed &e) {
+				e << rec.ei_address();
+				throw;
+			} catch (RegionDB::ExcCantAdd &e) {
+				e << rec.ei_address();
+				throw;
+			}
 		}
 	}
 }
@@ -96,7 +112,12 @@ RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 
 	Region reg = mesh->region_db().find_label(mesh_label);
 	if ( reg.is_valid() ) {
-		region_db_.rename_region(reg, new_name);
+		try {
+			region_db_.rename_region(reg, new_name);
+		} catch (RegionDB::ExcNonuniqueLabel &e) {
+			e << rec.ei_address();
+			throw;
+		}
 	} else {
 		xprintf(Warn, "Unknown region in mesh with label '%s'\n", mesh_label.c_str());
 	}
@@ -149,7 +170,18 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 			region_id = this->get_max_region_id();
 		}
 		stringstream ss;
-		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
+		try {
+			region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
+		} catch (RegionDB::ExcNonuniqueLabel &e) {
+			e << rec.ei_address();
+			throw;
+		} catch (RegionDB::ExcAddingIntoClosed &e) {
+			e << rec.ei_address();
+			throw;
+		} catch (RegionDB::ExcCantAdd &e) {
+			e << rec.ei_address();
+			throw;
+		}
 	}
 
 	Input::Array element_list = rec.val<Input::Array>("element_list");

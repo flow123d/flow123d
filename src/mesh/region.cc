@@ -442,6 +442,6 @@ void RegionDB::check_regions() {
 			it!= region_table_.get<Index>().end();
 			++it) {
 		if (!it->used)
-			THROW(ExcUnusedRegion() << EI_Label(it->label) << EI_ID(it->get_id()) << EI_RegionAddress(it->address) );
+			THROW(ExcUnusedRegion() << EI_Label(it->label) << EI_ID(it->get_id()) << Input::EI_Address(it->address) );
 	}
 }
