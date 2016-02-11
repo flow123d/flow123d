@@ -130,8 +130,8 @@ class ProfilerFormatter(object):
                     raise IOError('No "program-name" field in json file {:s}'.format(json_location))
 
                 if json_data['program-name'] != 'Flow123d':
-                    Logger.instance().error('Incorrect "program-name" value in json file "%s"', json_location)
-                    raise IOError('Incorrect "program-name" value in json file {:s}'.format(json_location))
+                    Logger.instance().debug(str(json_data))
+                    Logger.instance().warning('File "%s" does not exists', json_location)
 
         except Exception as ex:
             # return string with message on error
