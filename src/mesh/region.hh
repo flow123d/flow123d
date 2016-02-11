@@ -268,16 +268,9 @@ region_sets = [
  * Mesh reading proccess:
  * 1) Read PhysicalNames form GMSH file, populate RegionDB (DONE in GMSH reader, may need small modifications)
  * 2) Read region definitions from the input, see
- *
- * Mesh::read_regions_from_input(Input::Array region_list);
- *
- *
- *    (TODO in RegionDB, also creates (and return to Mesh) element regions modification map: std::map< unsigned int, RegionIdx>
- *     that maps element IDs to the new region names, GMSH reader should have setter method to accept this map
- *     and modify the elements during reading)
- * 3) Read boundary key of the Mesh record and mark appropriate regions as boundary (TODO in RegionDB)
- * 4) Read nodes (DONE in GMSH reader)
- * 5) Read elements, per element:
+ *    - Mesh::read_regions_from_input(Input::Array region_list);
+ * 3) Read nodes (DONE in GMSH reader)
+ * 4) Read elements, per element:
  *    - possibly modify region according map
  *    - find element ID:
  *       if found: add_region(ID, get_label, dim, get_boundary_flag) // possibly set dimension of the region if it is undefined
@@ -285,7 +278,7 @@ region_sets = [
  *    - if region is boundary put element into Mesh::bc_elements
  *      else put it into Mesh::element
  *  ---
- *  6) Setup topology - we has to connect Boundary with existing bc_elements, and add the remaining elements,
+ *  5) Setup topology - we has to connect Boundary with existing bc_elements, and add the remaining elements,
  *     after we remove support for old bCD files we may skip creation of remaining boundary elements since there will be no way how to set
  *     BC on them.
  *
