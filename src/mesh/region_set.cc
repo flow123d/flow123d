@@ -249,8 +249,11 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 	string name_of_set = rec.val<string>("name");
 	Input::Iterator<Input::Array> region_ids = rec.find<Input::Array>("region_ids");
 	Input::Iterator<Input::Array> regions = rec.find<Input::Array>("regions");
+	std::vector<string> set_names;
 
-	std::set<Region, bool (*)(const Region&, const Region&)> set(Region::comp);
+	if (regions) {
+		set_names = mesh->region_db().get_and_check_operands(*regions);
+	}
 	if (region_ids) {
 		for (Input::Iterator<unsigned int> it_ids = region_ids->begin<unsigned int>();
 				it_ids != region_ids->end();
@@ -263,22 +266,15 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 				throw;
 			}
 			if (reg.is_valid()) {
-				set.insert(reg); // add region if doesn't exist in set
+				set_names.push_back( reg.label() );
 			} else {
 				xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
 			}
 		}
+
 	}
 
-	if (regions) {
-		std::vector<string> set_names = mesh->region_db().get_and_check_operands(*regions);
-		for (string set_name : set_names) {
-			RegionSet r_set = region_db_.get_region_set(set_name);
-			set.insert(r_set.begin(), r_set.end());
-		}
-	}
-
-	RegionSet region_set(set.begin(), set.end());
+	RegionSet region_set = region_db_.union_set(set_names);
 	if (region_set.size() == 0) {
 		THROW( ExcEmptyRegionSetResult() << EI_Operation_Type("Union") << rec.ei_address() );
 	}

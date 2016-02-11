@@ -475,6 +475,11 @@ public:
      */
     void mark_used_region(unsigned int idx);
 
+    /**
+     * Create union of RegionSets of given names defined in @p set_names.
+     */
+    RegionSet union_set(std::vector<string> set_names) const;
+
 
 private:
 

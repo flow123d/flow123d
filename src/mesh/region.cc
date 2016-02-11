@@ -445,3 +445,15 @@ void RegionDB::check_regions() {
 			THROW(ExcUnusedRegion() << EI_Label(it->label) << EI_ID(it->get_id()) << Input::EI_Address(it->address) );
 	}
 }
+
+
+RegionSet RegionDB::union_set(std::vector<string> set_names) const {
+	std::set<Region, bool (*)(const Region&, const Region&)> set(Region::comp);
+
+	for (string set_name : set_names) {
+		RegionSet r_set = get_region_set(set_name);
+		set.insert(r_set.begin(), r_set.end());
+	}
+
+	return RegionSet(set.begin(), set.end());
+}
