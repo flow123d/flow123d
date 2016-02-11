@@ -348,7 +348,7 @@ int Profiler::find_child(const CodePoint &cp) {
         child_idx=timer.child_timers[idx];
         ASSERT_LESS( child_idx, timers_.size());
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
-        idx = ( (unsigned int)(idx)==Timer::max_n_childs ? 0 : idx+1 );
+        idx = ( (unsigned int)(idx)==(Timer::max_n_childs - 1) ? 0 : idx+1 );
     } while ( (unsigned int)(idx) != cp.hash_idx_ ); // passed through whole array
     return -1;
 }
