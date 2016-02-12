@@ -296,7 +296,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
                 (data_.gravity_, "bc_switch_piezo_head") );
 
         data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-        data_.mark_input_times(this->mark_type());
+        data_.mark_input_times(time_->equation_fixed_mark_type());
         //data_.set_limit_side(LimitSide::right);
         //data_.set_time(time_->step());
     }
