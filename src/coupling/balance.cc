@@ -367,13 +367,13 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 {
 	PetscInt reg_array[1] = { (int)region_idx };
 
-	MatSetValues(region_mass_matrix_[quantity_idx],
+	chkerr_assert(MatSetValues(region_mass_matrix_[quantity_idx],
 			dof_indices.size(),
 			&(dof_indices[0]),
 			1,
 			reg_array,
 			&(values[0]),
-			ADD_VALUES);
+			ADD_VALUES));
 }
 
 
@@ -383,14 +383,13 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 		const vector<double> &values)
 {
 	PetscInt elem_array[1] = { int(be_offset_+elem_idx) };
-
-	MatSetValues(be_flux_matrix_[quantity_idx],
+	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
 			1,
 			elem_array,
 			dof_indices.size(),
 			&(dof_indices[0]),
 			&(values[0]),
-			ADD_VALUES);
+			ADD_VALUES));
 }
 
 
@@ -401,13 +400,13 @@ void Balance::add_source_matrix_values(unsigned int quantity_idx,
 {
 	PetscInt reg_array[1] = { (int)region_idx };
 
-	MatSetValues(region_source_matrix_[quantity_idx],
+	chkerr_assert(MatSetValues(region_source_matrix_[quantity_idx],
 			dof_indices.size(),
 			&(dof_indices[0]),
 			1,
 			reg_array,
 			&(values[0]),
-			ADD_VALUES);
+			ADD_VALUES));
 }
 
 
@@ -415,10 +414,10 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 		unsigned int elem_idx,
 		double value)
 {
-	VecSetValue(be_flux_vec_[quantity_idx],
+    chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
 			be_offset_+elem_idx,
 			value,
-			ADD_VALUES);
+			ADD_VALUES));
 }
 
 
@@ -429,13 +428,13 @@ void Balance::add_source_rhs_values(unsigned int quantity_idx,
 {
 	PetscInt reg_array[1] = { (int)region_idx };
 
-	MatSetValues(region_source_rhs_[quantity_idx],
+	chkerr_assert(MatSetValues(region_source_rhs_[quantity_idx],
 			dof_indices.size(),
 			&(dof_indices[0]),
 			1,
 			reg_array,
 			&(values[0]),
-			ADD_VALUES);
+			ADD_VALUES));
 }
 
 
