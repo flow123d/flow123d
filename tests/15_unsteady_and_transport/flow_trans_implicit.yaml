@@ -13,6 +13,7 @@ problem: !SequentialCoupling
         water_source_density: !FieldFormula
           value: -x
         init_piezo_head: 0
+        storativity: 1.0
       - region: .left
         bc_type: dirichlet
         bc_pressure: 0
