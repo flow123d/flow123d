@@ -366,7 +366,9 @@ void ConvectionTransport::set_boundary_conditions()
                         {
                         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
                         	{
-//                         		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
+                        	    // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
+                        	    // So we have to add also values that may be non-zero in future due to changing velocity field.
+                         		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
                         		balance_->add_flux_vec_value(subst_idx[sbi], loc_b, flux*value[sbi]);
                         	}
                         }
@@ -406,7 +408,7 @@ void ConvectionTransport::compute_concentration_sources() {
   //temporary variables
   unsigned int loc_el, sbi;
   double measure, por_m, source, diag;
-  double max_cfl;
+
   Element *ele;
   ElementAccessor<3> ele_acc;
   arma::vec3 p;
@@ -439,7 +441,8 @@ void ConvectionTransport::compute_concentration_sources() {
             src_density = data_.sources_density.value(p, ele_acc);
             src_conc = data_.sources_conc.value(p, ele_acc);
             src_sigma = data_.sources_sigma.value(p, ele_acc);
-                
+
+            double max_cfl=0;
             for (sbi = 0; sbi < n_substances(); sbi++)
             {      
                 source = src_density(sbi) + src_sigma(sbi) * src_conc(sbi);
@@ -462,7 +465,6 @@ void ConvectionTransport::compute_concentration_sources() {
             }
             
             cfl_source_[loc_el] = max_cfl;
-            max_cfl = 0;
         }
         
         if (balance_ != nullptr) balance_->finish_source_assembly(subst_idx);
