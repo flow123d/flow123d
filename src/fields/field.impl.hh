@@ -256,6 +256,8 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     update_history(time_step);
     check_initialized_region_fields_();
 
+    //
+    is_jump_time_=false;
     // set time_step on all regions
     // for regions that match type of the field domain
     for(const Region &reg: mesh()->region_db().get_region_set("ALL") ) {
@@ -267,11 +269,12 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
         	double last_time_in_history = rh.front().first;
         	unsigned int history_size=rh.size();
         	unsigned int i_history;
+        	ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+
         	// set history index
         	if ( time_step.gt(last_time_in_history) ) {
         		// in smooth time_step
         		i_history=0;
-        		is_jump_time_=false;
         	} else {
         		// time_step .eq. input_time; i.e. jump time
         	    is_jump_time_=true;
