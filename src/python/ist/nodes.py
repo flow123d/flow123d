@@ -442,6 +442,7 @@ class Parameter(AbstractNode):
 registered_nodes = {
     'Record': Record,
     'AbstractRecord': AbstractRecord,
+    'Abstract': AbstractRecord,
     'Selection': Selection,
     'String': String,
     'Double': Double,

@@ -6,11 +6,16 @@
  */
 
 #include <flow_gtest.hh>
+
 #include "mesh/region.hh"
+#include "mesh/mesh.h"
+#include "mesh/region_set.hh"
+#include "mesh/msh_gmshreader.h"
 #include "input/type_base.hh"
 #include "input/type_output.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
+#include "system/sys_profiler.hh"
 #include <map>
 
 #include <boost/lexical_cast.hpp>
@@ -59,7 +64,7 @@ TEST(Region, all) {
     }
 
     {
-    Region r=region_db.add_region(1003, 3);
+    Region r=region_db.add_region(1003, region_db.create_label_from_id(1003), 3);
     EXPECT_EQ(5, r.idx() );
     EXPECT_EQ(2, r.bulk_idx() );
     EXPECT_EQ("region_1003", r.label() );
@@ -100,7 +105,7 @@ TEST(Region, add_nonunique_id_region) {
 	RegionDB region_db;
 
 	{
-		Region r=region_db.add_region(1, "user_defined_name");
+		Region r=region_db.add_region(1, "user_defined_name", RegionDB::undefined_dim);
 	    EXPECT_EQ(1, r.idx() );
 	    EXPECT_FALSE( r.is_boundary() );
 	    EXPECT_EQ(0, r.bulk_idx() );
@@ -133,124 +138,175 @@ TEST(Region, add_nonunique_id_region) {
 
 }
 
-const string read_sets_json = R"JSON(
-[
-	{
-		name = "set_1",
-		region_ids= [ 2, 1 ],
-		region_labels = 
-		[
-		   ".label_3",
-		   "label_2"
-		] 
-	},
-	{
-		name = "set_2",
-		region_ids= 0 
-	},
-	{
-		name = "set_3",
-		region_ids= [ 4, 2, 3 ] 
-	},
-	{
-		name = "set_4",
-		union= 
-		[
-		   "set_1",
-		   "set_2"
-		] 
-	},
-	{
-		name = "set_5",
-		difference= 
-		[
-		   "set_1",
-		   "set_3"
-		] 
-	},
-	{
-		name = "set_6",
-		intersection= 
-		[
-		   "set_1",
-		   "set_3"
-		] 
-	}
-]
-)JSON";
 
-TEST(Region, read_sets_from_input) {
-	Input::Type::Array region_set_array_input_type( RegionDB::get_region_set_input_type() );
-	Input::ReaderToStorage json_reader( read_sets_json, region_set_array_input_type, Input::FileFormat::format_JSON);
+const string read_regions_yaml = R"YAML(
+- !From_Id
+  name: 3D front rename
+  id: 40
+- !From_Label
+  name: 3D back rename
+  mesh_label: 3D back
+- !From_Elements
+  name: label_0
+  element_list:
+   - 6
+- !From_Elements
+  name: label_1
+  id: 1
+  element_list:
+   - 8
+   - 5
+- !Union
+  name: label_2
+  regions:
+   - 3D front rename
+   - label_1
+- !Union
+  name: label_3
+  regions: 
+   - 3D front rename
+   - 3D back rename
+- !Union
+  name: label_4
+  region_ids: 
+   - 37
+   - 38
+  regions:
+   - 3D front rename
+   - label_1
+   - 3D back rename
+- !Difference
+  name: label_5
+  regions:
+   - label_2
+   - label_3
+- !Intersection
+  name: label_6
+  regions:
+   - label_2
+   - label_3
+   - label_4
+)YAML";
+
+TEST(Region, read_regions_from_yaml) {
+    Profiler::initialize();
+
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    GmshMeshReader reader(mesh_file);
+    Mesh * mesh = new Mesh;
+
+	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
+	Input::ReaderToStorage json_reader( read_regions_yaml, element_map_array_input_type, Input::FileFormat::format_YAML);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
-	RegionDB region_db;
-	region_db.add_region(0, "label_0", 1);
-	region_db.add_region(1, "label_1", 1);
-	region_db.add_region(2, "label_2", 2);
-	region_db.add_region(3, ".label_3", 2);
-	region_db.add_region(4, "label_4", 3);
+	reader.read_physical_names(mesh);
+	mesh->read_regions_from_input(i_arr);
+	reader.read_mesh(mesh);
+	mesh->check_and_finish();
 
-	region_db.read_sets_from_input(i_arr);
+	const RegionDB & region_db = mesh->region_db();
+	region_db.print_region_table(cout);
 
-	EXPECT_EQ(3, region_db.get_region_set("set_1").size() );
-	EXPECT_EQ(2, region_db.get_region_set("set_1")[0].id() );
-    EXPECT_EQ(1, region_db.get_region_set("set_1")[1].id() );
-    EXPECT_EQ(3, region_db.get_region_set("set_1")[2].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("3D front rename").size() );
+	EXPECT_EQ(40, region_db.get_region_set("3D front rename")[0].id() );
 
-    EXPECT_EQ(1, region_db.get_region_set("set_2").size() );
-    EXPECT_EQ(0, region_db.get_region_set("set_2")[0].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("3D back rename").size() );
+	EXPECT_EQ(39, region_db.get_region_set("3D back rename")[0].id() );
 
-	EXPECT_EQ(3, region_db.get_region_set("set_3").size() );
-	EXPECT_EQ(4, region_db.get_region_set("set_3")[0].id() );
-    EXPECT_EQ(2, region_db.get_region_set("set_3")[1].id() );
-    EXPECT_EQ(3, region_db.get_region_set("set_3")[2].id() );
+	EXPECT_EQ(  1, region_db.get_region_set("label_0").size() );
+	EXPECT_EQ(103, region_db.get_region_set("label_0")[0].id() );
 
-    EXPECT_EQ(4, region_db.get_region_set("set_4").size() );
-    EXPECT_EQ(3, region_db.get_region_set("set_4")[0].id() );
-    EXPECT_EQ(0, region_db.get_region_set("set_4")[1].id() );
-    EXPECT_EQ(1, region_db.get_region_set("set_4")[2].id() );
-    EXPECT_EQ(2, region_db.get_region_set("set_4")[3].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_1").size() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_1")[0].id() );
 
-    EXPECT_EQ(1, region_db.get_region_set("set_5").size() );
-    EXPECT_EQ(1, region_db.get_region_set("set_5")[0].id() );
+	EXPECT_EQ( 2, region_db.get_region_set("label_2").size() );
+	EXPECT_EQ(40, region_db.get_region_set("label_2")[0].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_2")[1].id() );
 
-    EXPECT_EQ(2, region_db.get_region_set("set_6").size() );
-    EXPECT_EQ(3, region_db.get_region_set("set_6")[0].id() );
-    EXPECT_EQ(2, region_db.get_region_set("set_6")[1].id() );
+	EXPECT_EQ( 2, region_db.get_region_set("label_3").size() );
+	EXPECT_EQ(39, region_db.get_region_set("label_3")[0].id() );
+	EXPECT_EQ(40, region_db.get_region_set("label_3")[1].id() );
+
+	EXPECT_EQ( 5, region_db.get_region_set("label_4").size() );
+	EXPECT_EQ(37, region_db.get_region_set("label_4")[0].id() );
+	EXPECT_EQ(38, region_db.get_region_set("label_4")[1].id() );
+	EXPECT_EQ(39, region_db.get_region_set("label_4")[2].id() );
+	EXPECT_EQ(40, region_db.get_region_set("label_4")[3].id() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_4")[4].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("label_5").size() );
+	EXPECT_EQ( 1, region_db.get_region_set("label_5")[0].id() );
+
+	EXPECT_EQ( 1, region_db.get_region_set("label_6").size() );
+	EXPECT_EQ(40, region_db.get_region_set("label_6")[0].id() );
+
+	EXPECT_EQ( 8, region_db.get_region_set("ALL").size() );
+	EXPECT_EQ( 6, region_db.get_region_set("BULK").size() );
+	EXPECT_EQ( 2, region_db.get_region_set("BOUNDARY").size() );
+
+	EXPECT_EQ( 37, mesh->element[0].region().id() );
+	EXPECT_EQ( 39, mesh->element[3].region().id() );
+	EXPECT_EQ(  1, mesh->element[4].region().id() );
+	EXPECT_EQ(103, mesh->element[5].region().id() );
+	EXPECT_EQ( 40, mesh->element[6].region().id() );
+	EXPECT_EQ(  1, mesh->element[7].region().id() );
+	EXPECT_EQ("label_1", mesh->element[4].region().label() );
 }
 
-const string read_element_map_json = R"JSON(
-[
+
+const string invalid_input_1 = R"YAML(
+- !From_Id
+  name: 3D front
+  id: 37
+)YAML";
+
+const string invalid_input_2 = R"YAML(
+- !From_Elements
+  name: 3D back
+  id: 41
+  element_list:
+   - 6
+)YAML";
+
+const string invalid_input_3 = R"YAML(
+- !Intersection
+  name: insec
+  regions:
+   - 3D front
+   - 3D back
+)YAML";
+
+TEST(Region, read_regions_error_messages) {
+    Profiler::initialize();
+
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    GmshMeshReader reader(mesh_file);
+    Mesh * mesh = new Mesh;
+	reader.read_physical_names(mesh);
+
 	{
-		name = "label_0",
-		id = 0,
-		element_list = [0, 5, 9]
-	},
-	{
-		name = "label_1",
-		id = 1,
-		element_list = [8, 5, 3, 1]
+		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
+		Input::ReaderToStorage json_reader( invalid_input_1, element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
+		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionDB::ExcNonuniqueLabel, "id: 37, label: '3D front'");
 	}
-]
-)JSON";
-
-TEST(Region, read_element_map_from_input) {
-
-	Input::Type::Array element_map_array_input_type( RegionDB::get_region_input_type() );
-	Input::ReaderToStorage json_reader( read_element_map_json, element_map_array_input_type, Input::FileFormat::format_JSON);
-	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
-
-	RegionDB region_db;
-	RegionDB::MapElementIDToRegionID map;
-	region_db.read_regions_from_input(i_arr, map);
-
-	EXPECT_EQ(0, ( *(map.find(0)) ).second );
-	EXPECT_EQ(1, ( *(map.find(1)) ).second );
-	EXPECT_EQ(1, ( *(map.find(3)) ).second );
-	EXPECT_EQ(0, ( *(map.find(5)) ).second );
-	EXPECT_EQ(1, ( *(map.find(8)) ).second );
-	EXPECT_EQ(0, ( *(map.find(9)) ).second );
+	{
+		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
+		Input::ReaderToStorage json_reader( invalid_input_2, element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
+		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionDB::ExcNonuniqueLabel, "id: 41, label: '3D back'");
+	}
+	{
+		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
+		Input::ReaderToStorage json_reader( invalid_input_3, element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
+		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionSetBase::ExcEmptyRegionSetResult,
+				"Empty result of Intersection operation.");
+	}
 }
 
 
@@ -312,8 +368,8 @@ TEST(RegionDB, speed_add_region_id) {
         int ii=0;
 
         for(int step=0;step < STEPS; step++) {
-            ii+= region_db.add_region(3, 1).idx();
-            ii+= region_db.add_region(9, 1).idx();
+            ii+= region_db.add_region(3, region_db.create_label_from_id(3), 1).idx();
+            ii+= region_db.add_region(9, region_db.create_label_from_id(9), 1).idx();
         }
    cout << ii << endl;
 }

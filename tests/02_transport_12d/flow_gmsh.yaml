@@ -3,28 +3,30 @@ problem: !SequentialCoupling
   description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
   mesh:
     mesh_file: ./input/compatible.msh
-    sets:
-    - name: subset
-      region_labels:
-      - 2d
-      - 1d
-    - name: .sides
-      region_labels:
-      - .2d
-      - .1d
+    regions:
+      - !Union
+        name: subset
+        regions:
+          - 2d
+          - 1d
+      - !Union
+        name: .sides
+        regions:
+          - .2d
+          - .1d
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: 1d
-      anisotropy: 10
-      cross_section: 1
-      sigma: 0.05
-    - region: 2d
-      anisotropy: 1
-      cross_section: 1
-    - region: .sides
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x
+      - region: 1d
+        anisotropy: 10
+        cross_section: 1
+        sigma: 0.05
+      - region: 2d
+        anisotropy: 1
+        cross_section: 1
+      - region: .sides
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x
     balance:
       format: gnuplot
     output:
@@ -34,21 +36,21 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
   secondary_equation: !Transport_OS
     transport: !Convection_FV
       input_fields:
-      - region: .sides
-        bc_conc: !FieldFormula
-          value: x/12.75
-      - region: subset
-        init_conc: 0
-        porosity: 0.25
+        - region: .sides
+          bc_conc: !FieldFormula
+            value: x/12.75
+        - region: subset
+          init_conc: 0
+          porosity: 0.25
     output_stream:
       file: ./transport.msh
       format: !gmsh
@@ -56,8 +58,8 @@ problem: !SequentialCoupling
       time_step: 0.5
       name: transport_output_stream
     substances:
-    - A
-    - B
+      - A
+      - B
     time:
       end_time: 5.0
     balance:
@@ -65,41 +67,41 @@ problem: !SequentialCoupling
       format: gnuplot
     reaction_term: !DualPorosity
       input_fields:
-      - region: subset
-        diffusion_rate_immobile:
-        - 0.01
-        - 0.01
-        porosity_immobile: 0.25
-        init_conc_immobile:
-        - 0.0
-        - 0.0
+        - region: subset
+          diffusion_rate_immobile:
+            - 0.01
+            - 0.01
+          porosity_immobile: 0.25
+          init_conc_immobile:
+            - 0.0
+            - 0.0
       output_fields: []
       reaction_mobile: !SorptionMobile
         solvent_density: 1.0
         substances:
-        - A
-        - B
+          - A
+          - B
         solubility:
-        - 1.0
-        - 1.0
+          - 1.0
+          - 1.0
         input_fields: &anchor1
-        - region: subset
-          rock_density: 1.0
-          sorption_type:
-          - linear
-          - freundlich
-          isotherm_mult: 0.02
-          isotherm_other:
-          - 0
-          - 0.5
+          - region: subset
+            rock_density: 1.0
+            sorption_type:
+              - linear
+              - freundlich
+            isotherm_mult: 0.02
+            isotherm_other:
+              - 0
+              - 0.5
         output_fields: []
       reaction_immobile: !SorptionImmobile
         solvent_density: 1.0
         substances:
-        - A
-        - B
+          - A
+          - B
         solubility:
-        - 1.0
-        - 1.0
+          - 1.0
+          - 1.0
         input_fields: *anchor1
         output_fields: []

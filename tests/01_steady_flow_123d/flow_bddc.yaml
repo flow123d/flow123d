@@ -8,33 +8,33 @@ problem: !SequentialCoupling
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
-    - region: 1d_channel
-      anisotropy: 10
-      sigma: 0.05
-    - region: 2d_fracture_1
-      anisotropy: 1
-      sigma: 0.5
-    - region: 2d_fracture_2
-      anisotropy: 1
-      sigma: 0.5
-    - region: 3d_cube
-      anisotropy: 0.1
-    - region: .1d_channel
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x-z
-    - region: .2d_fracture_1
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x-z
-    - region: .2d_fracture_2
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x-z
-    - region: .3d_cube
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x-z
+      - region: 1d_channel
+        anisotropy: 10
+        sigma: 0.05
+      - region: 2d_fracture_1
+        anisotropy: 1
+        sigma: 0.5
+      - region: 2d_fracture_2
+        anisotropy: 1
+        sigma: 0.5
+      - region: 3d_cube
+        anisotropy: 0.1
+      - region: .1d_channel
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .2d_fracture_1
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .2d_fracture_2
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .3d_cube
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
     balance: true
     output:
       output_stream: 
@@ -43,10 +43,10 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - piezo_head_p0
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     solver: !Bddc
       r_tol: 1.0e-11
       max_it: 10000

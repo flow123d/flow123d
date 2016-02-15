@@ -5,9 +5,9 @@ problem: !SequentialCoupling
     mesh_file: ./input/mesh.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: BOUNDARY
-      bc_type: dirichlet
-      bc_pressure: 0
+      - region: BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
     output:
       output_stream: 
         file: ./flow.pvd
@@ -15,8 +15,8 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - velocity_p0
+        - pressure_p0
+        - velocity_p0
     balance: true
     solver: !Petsc &anchor3
       a_tol: 1.0e-12
@@ -24,23 +24,23 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
-      - region: domain
-        diff_m: 0.01
-        sources_density: 0
-        init_conc: 5
-      - region: .left
-        bc_type: diffusive_flux
-        bc_flux: -0.1
-      - region: .right
-        bc_type: diffusive_flux
-        bc_conc: 10
-        bc_robin_sigma: 1
-      - region: .top
-        bc_type: diffusive_flux
-        bc_flux: 0.1
-      - region: .bottom
-        bc_type: diffusive_flux
-        bc_flux: 0.1
+        - region: domain
+          diff_m: 0.01
+          sources_density: 0
+          init_conc: 5
+        - region: .left
+          bc_type: diffusive_flux
+          bc_flux: -0.1
+        - region: .right
+          bc_type: diffusive_flux
+          bc_conc: 10
+          bc_robin_sigma: 1
+        - region: .top
+          bc_type: diffusive_flux
+          bc_flux: 0.1
+        - region: .bottom
+          bc_type: diffusive_flux
+          bc_flux: 0.1
       solver: *anchor3
     output_stream: 
       file: ./transport.pvd
@@ -49,7 +49,7 @@ problem: !SequentialCoupling
       time_step: 1
       name: transport_output_stream
     substances:
-    - tracer
+      - tracer
     time:
       end_time: 10
     balance:

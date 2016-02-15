@@ -108,6 +108,7 @@ public:
 		START_TIMER("create mesh");
 		GmshMeshReader reader(mesh_file);
 		mesh = new Mesh();
+		reader.read_physical_names(mesh);
 		reader.read_mesh(mesh);
 		END_TIMER("create mesh");
 
@@ -289,6 +290,7 @@ TEST(BIH_Tree_Test, 2d_mesh) {
     Mesh mesh;
 	GmshMeshReader reader(mesh_file);
 
+	reader.read_physical_names(&mesh);
 	reader.read_mesh(&mesh);
 	unsigned int element_limit=20;
 	BIHTree bt(&mesh, element_limit);
