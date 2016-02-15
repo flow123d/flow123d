@@ -402,34 +402,50 @@ Region RegionDB::find_by_dimid(DimIDIter it_id, unsigned int id, const std::stri
 void RegionDB::print_region_table(ostream& stream) const {
 	ASSERT(closed_, "RegionDB not closed yet.\n");
 
-	// print header
-	stream << endl << "----------- Table of all regions: -----------" << endl;
-	stream << std::setfill(' ') << setw(6) << "id" << " dim label" << setw(12) << "" << "contains regions" << endl;
-	// print data
+	// stratified regions by type
+	std::vector<std::string> boundaries, bulks, sets;
 	for (RegionSetTable::const_iterator it = sets_.begin(); it != sets_.end(); ++it) { // iterates through RegionSets
-		unsigned int reg_id = RegionIdx::undefined;
 		string rset_label = it->first;
 		LabelIter label_it = region_table_.get<Label>().find(rset_label);
 		if ( label_it != region_table_.get<Label>().end() ) { // checks if Region with same label as RegionSet exists
-			reg_id = label_it->get_id(); // stores ID of Region - used if RegionSet contains only one Region
-			stream << setw(6) << reg_id << setw(4) << label_it->dim();
+			if ( (rset_label.size() > 0) && (rset_label[0] == '.') ) boundaries.push_back(rset_label);
+			else bulks.push_back(rset_label);
 		} else {
-			stream << "     -   -";
+			sets.push_back(rset_label);
 		}
-		stream << " " << std::left << setw(17) << rset_label << std::right;
-		if (it->second.size() > 1) {
-			// prints IDs of Regions (if their count is 2 or more)
-			for (RegionSet::const_iterator set_it = it->second.begin(); set_it!=it->second.end(); ++set_it) {
-				if (set_it != it->second.begin()) stream << ", ";
-				stream << set_it->label();
+
+	}
+
+	// print table
+	stream << endl << "----------- Table of all regions: -----------";
+	if (boundaries.size()) {
+		stream << endl << " - Boundary elementary regions -" << endl;
+		stream << std::setfill(' ') << "name" << setw(14) << "" << setw(6) << "id" << " dim" << endl; // table header
+		for (std::vector<std::string>::iterator it = boundaries.begin(); it < boundaries.end(); ++it) {
+			LabelIter label_it = region_table_.get<Label>().find(*it);
+			stream << std::left << setw(18) << (*it) << std::right << setw(6) << label_it->get_id() << setw(4) << label_it->dim() << endl;
+		}
+	}
+	if (bulks.size()) {
+		stream << endl << " - Bulk elementary regions -" << endl;
+		stream << "name" << setw(14) << "" << setw(6) << "id" << " dim" << endl; // table header
+		for (std::vector<std::string>::iterator it = bulks.begin(); it < bulks.end(); ++it) {
+			LabelIter label_it = region_table_.get<Label>().find(*it);
+			stream << std::left << setw(18) << (*it) << std::right << setw(6) << label_it->get_id() << setw(4) << label_it->dim() << endl;
+		}
+	}
+	if (sets.size()) {
+		stream << endl << " - Sets of regions -" << endl;
+		stream << "name" << setw(14) << "" << "contains regions" << endl; // table header
+		for (std::vector<std::string>::const_iterator it = sets.begin(); it < sets.end(); ++it) {
+			RegionSetTable::const_iterator set_it = sets_.find(*it);
+			stream << std::left << setw(18) << (*it) << std::right << "[";
+			for (RegionSet::const_iterator r_it = set_it->second.begin(); r_it!=set_it->second.end(); ++r_it) {
+				if (r_it != set_it->second.begin()) stream << ", ";
+				stream << "\"" << r_it->label() << "\"";
 			}
-		} else if ( it->second.size() == 1 && (it->second)[0].id() != reg_id ) {
-			// for one Region in RegionSet prints ID only if RegionSet is not wrapper of Region
-			stream << (it->second)[0].label();
-		} else {
-			stream << "-";
+			stream << "]" << endl;
 		}
-		stream << endl;
 	}
 	stream << std::setfill('-') << setw(45) << "" << std::setfill(' ') << endl << endl;
 }
