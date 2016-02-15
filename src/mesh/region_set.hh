@@ -30,11 +30,6 @@ public:
      */
     static Input::Type::Abstract & get_input_type();
 
-    TYPEDEF_ERR_INFO( EI_Label, const std::string);
-    TYPEDEF_ERR_INFO( EI_ID, unsigned int);
-    DECLARE_INPUT_EXCEPTION( ExcInconsistentLabelId, << "Inconsistent elementary region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "Label matches an existing elementary region with different id.");
-
     TYPEDEF_ERR_INFO( EI_Operation_Type, const std::string);
     DECLARE_INPUT_EXCEPTION( ExcEmptyRegionSetResult, << "Empty result of " << EI_Operation_Type::val << " operation.");
 

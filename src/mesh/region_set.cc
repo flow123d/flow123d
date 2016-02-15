@@ -39,37 +39,31 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 	string region_label = rec.val<string>("name");
 	unsigned int region_id = rec.val<unsigned int>("id");
 
-	reg = mesh->region_db().find_label(region_label);
+	try {
+		reg = mesh->region_db().find_id(region_id);
+	} catch(RegionDB::ExcUniqueRegionId &e) {
+		e << rec.ei_address();
+	}
 	if ( reg.is_valid() ) {
-		if ( region_id != reg.id() )
-			THROW( ExcInconsistentLabelId() << EI_Label(region_label) << EI_ID( region_id ) << rec.ei_address() );
-	} else {
 		try {
-			reg = mesh->region_db().find_id(region_id);
-		} catch(RegionDB::ExcUniqueRegionId &e) {
+			region_db_.rename_region(reg, region_label);
+		} catch (RegionDB::ExcNonuniqueLabel &e) {
 			e << rec.ei_address();
+			throw;
 		}
-		if ( reg.is_valid() ) {
-			try {
-				region_db_.rename_region(reg, region_label);
-			} catch (RegionDB::ExcNonuniqueLabel &e) {
-				e << rec.ei_address();
-				throw;
-			}
-		} else {
-			unsigned int dim = rec.val<unsigned int>("dim", RegionDB::undefined_dim);
-			try {
-				region_db_.add_region(region_id, region_label, dim, rec.address_string() );
-			} catch (RegionDB::ExcNonuniqueLabel &e) {
-				e << rec.ei_address();
-				throw;
-			} catch (RegionDB::ExcAddingIntoClosed &e) {
-				e << rec.ei_address();
-				throw;
-			} catch (RegionDB::ExcCantAdd &e) {
-				e << rec.ei_address();
-				throw;
-			}
+	} else {
+		unsigned int dim = rec.val<unsigned int>("dim", RegionDB::undefined_dim);
+		try {
+			region_db_.add_region(region_id, region_label, dim, rec.address_string() );
+		} catch (RegionDB::ExcNonuniqueLabel &e) {
+			e << rec.ei_address();
+			throw;
+		} catch (RegionDB::ExcAddingIntoClosed &e) {
+			e << rec.ei_address();
+			throw;
+		} catch (RegionDB::ExcCantAdd &e) {
+			e << rec.ei_address();
+			throw;
 		}
 	}
 }
@@ -157,31 +151,23 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 
 	Input::Iterator<unsigned int> it = rec.find<unsigned int>("id");
 
-	if ( reg.is_valid() ) { // region with the specified label exists
-		region_id = reg.id();
-		if (it) {
-			if ( region_id != (*it) )
-				THROW( ExcInconsistentLabelId() << EI_Label(region_label) << EI_ID( *it ) << rec.ei_address()  );
-		}
+	if (it) {
+		region_id = (*it);
 	} else {
-		if (it) {
-			region_id = (*it);
-		} else {
-			region_id = this->get_max_region_id();
-		}
-		stringstream ss;
-		try {
-			region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
-		} catch (RegionDB::ExcNonuniqueLabel &e) {
-			e << rec.ei_address();
-			throw;
-		} catch (RegionDB::ExcAddingIntoClosed &e) {
-			e << rec.ei_address();
-			throw;
-		} catch (RegionDB::ExcCantAdd &e) {
-			e << rec.ei_address();
-			throw;
-		}
+		region_id = this->get_max_region_id();
+	}
+	stringstream ss;
+	try {
+		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
+	} catch (RegionDB::ExcNonuniqueLabel &e) {
+		e << rec.ei_address();
+		throw;
+	} catch (RegionDB::ExcAddingIntoClosed &e) {
+		e << rec.ei_address();
+		throw;
+	} catch (RegionDB::ExcCantAdd &e) {
+		e << rec.ei_address();
+		throw;
 	}
 
 	Input::Array element_list = rec.val<Input::Array>("element_list");
@@ -203,8 +189,8 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 const IT::Record & RegionSetFromElements::get_region_input_type()
 {
     return IT::Record("From_Elements", "Region declared by name, ID and enum of elements.\n"
-    								   "Allows to get existing region or create new and assign\n"
-    								   "elements to its. Elements are specified by ids.")
+    								   "Allows to create new region and assign elements to its.\n"
+    								   "Elements are specified by ids.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")

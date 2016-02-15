@@ -156,10 +156,6 @@ const string read_regions_yaml = R"YAML(
   element_list:
    - 8
    - 5
-- !From_Elements
-  name: 3D front rename
-  element_list:
-   - 4
 - !Union
   name: label_2
   regions:
@@ -251,12 +247,66 @@ TEST(Region, read_regions_from_yaml) {
 	EXPECT_EQ( 2, region_db.get_region_set("BOUNDARY").size() );
 
 	EXPECT_EQ( 37, mesh->element[0].region().id() );
-	EXPECT_EQ( 40, mesh->element[3].region().id() );
+	EXPECT_EQ( 39, mesh->element[3].region().id() );
 	EXPECT_EQ(  1, mesh->element[4].region().id() );
 	EXPECT_EQ(103, mesh->element[5].region().id() );
 	EXPECT_EQ( 40, mesh->element[6].region().id() );
 	EXPECT_EQ(  1, mesh->element[7].region().id() );
-	EXPECT_EQ("3D front rename", mesh->element[3].region().label() );
+	EXPECT_EQ("label_1", mesh->element[4].region().label() );
+}
+
+
+const string invalid_input_1 = R"YAML(
+- !From_Id
+  name: 3D front
+  id: 37
+)YAML";
+
+const string invalid_input_2 = R"YAML(
+- !From_Elements
+  name: 3D back
+  id: 41
+  element_list:
+   - 6
+)YAML";
+
+const string invalid_input_3 = R"YAML(
+- !Intersection
+  name: insec
+  regions:
+   - 3D front
+   - 3D back
+)YAML";
+
+TEST(Region, read_regions_error_messages) {
+    Profiler::initialize();
+
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    GmshMeshReader reader(mesh_file);
+    Mesh * mesh = new Mesh;
+	reader.read_physical_names(mesh);
+
+	{
+		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
+		Input::ReaderToStorage json_reader( invalid_input_1, element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
+		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionDB::ExcNonuniqueLabel, "id: 37, label: '3D front'");
+	}
+	{
+		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
+		Input::ReaderToStorage json_reader( invalid_input_2, element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
+		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionDB::ExcNonuniqueLabel, "id: 41, label: '3D back'");
+	}
+	{
+		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
+		Input::ReaderToStorage json_reader( invalid_input_3, element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
+		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionSetBase::ExcEmptyRegionSetResult,
+				"Empty result of Intersection operation.");
+	}
 }
 
 
