@@ -174,18 +174,8 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
     // measured from zero even though some memory is being in use
     parent.petsc_peak_memory += max(parent.petsc_peak_memory, child.petsc_peak_memory);
     parent.max_allocated_ += max(parent.max_allocated_, child.max_allocated_);
-    
 }
 
-void Profiler::propagate_timers() {
-    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-        unsigned int child_timer = timers_[0].child_timers[i];
-        if ((signed int)child_timer != timer_no_child) {
-            // propagate metrics from child to Whole-Program time-frame
-            accept_from_child(timers_[0], timers_[child_timer]);
-        }
-    }
-}
 
 void Timer::pause() {
     // get the maximum resident set size (memory used) for the program.
@@ -268,7 +258,10 @@ string Timer::code_point_str() const {
 
 
 Profiler * Profiler::instance() { 
-    initialize();
+    if (_instance == NULL) {
+        MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
+        _instance = new Profiler();
+    }
     return _instance;
  } 
 
@@ -279,11 +272,7 @@ const long Profiler::malloc_map_reserve = 100 * 1000;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
 void Profiler::initialize() {
-    if (_instance == NULL) {
-        MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
-        _instance = new Profiler();
-        set_memory_monitoring(true);
-    }
+    set_memory_monitoring(true);
 }
 
 
@@ -300,6 +289,17 @@ Profiler::Profiler()
 #endif
 }
 
+
+
+void Profiler::propagate_timers() {
+    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
+        unsigned int child_timer = timers_[0].child_timers[i];
+        if ((signed int)child_timer != timer_no_child) {
+            // propagate metrics from child to Whole-Program time-frame
+            accept_from_child(timers_[0], timers_[child_timer]);
+        }
+    }
+}
 
 
 
@@ -321,7 +321,7 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 
 int  Profiler::start_timer(const CodePoint &cp) {
-    Timer parent_timer = timers_[actual_node];
+    Timer &parent_timer = timers_[actual_node];
     //DBGMSG("Start timer: %s\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
@@ -409,49 +409,8 @@ void Profiler::stop_timer(const CodePoint &cp) {
 
 
 void Profiler::stop_timer(int timer_index) {
-    unsigned int timer_idx;
-    if (timer_index <0) timer_idx=actual_node;
-    else timer_idx = timer_index;
-
-    ASSERT_LESS( timer_idx, timers_.size() );
-
-    if (! timers_[timer_idx].running() ) return;
-
-    unsigned int child_timer = actual_node;
-    if ( timer_idx != actual_node ) {
-        // timer to close is not actual - we search for it above actual
-        for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer)
-            if ( (unsigned int)(timer_idx) == node) {
-                // found above - close all nodes between
-                for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_idx].tag().c_str(), timers_[actual_node].tag().c_str());
-                    timers_[actual_node].stop(true);
-                }
-                // close 'node' itself
-                timers_[actual_node].stop(false);
-                actual_node=timers_[actual_node].parent_timer;
-                
-                // actual_node == child_timer indicates this is root
-                if (actual_node == child_timer)
-                    return;
-                
-                // resume current timer
-                timers_[actual_node].resume();
-            }
-        // node not found - do nothing
-        return;
-    }
-
-    // node to close match the actual
-    timers_[actual_node].stop(false);
-    actual_node=timers_[actual_node].parent_timer;
-    
-    // actual_node == child_timer indicates this is root
-    if (actual_node == child_timer)
-        return;
-    
-    // resume current timer
-    timers_[actual_node].resume();
+    // stop_timer with CodePoint type
+    stop_timer(*timers_[timer_index].code_point_);
 }
 
 
@@ -462,23 +421,30 @@ void Profiler::add_calls(unsigned int n_calls) {
 
 
 
-void Profiler::notify_malloc(const size_t size) {
-    if (timers_.size() <= actual_node)
+void Profiler::notify_malloc(const size_t size, const long p) {
+    if (!monitor_memory)
         return;
+
+    MemoryAlloc::malloc_map()[p] = static_cast<int>(size);
     timers_[actual_node].total_allocated_ += size;
     timers_[actual_node].current_allocated_ += size;
     timers_[actual_node].alloc_called++;
         
     if (timers_[actual_node].current_allocated_ > timers_[actual_node].max_allocated_)
         timers_[actual_node].max_allocated_ = timers_[actual_node].current_allocated_;
-    
 }
 
 
 
-void Profiler::notify_free(const size_t size) {
-    if (timers_.size() <= actual_node)
+void Profiler::notify_free(const long p) {
+    if (!monitor_memory)
         return;
+    
+    int size = sizeof(p);
+    if (MemoryAlloc::malloc_map()[(long)p] > 0) {
+        size = MemoryAlloc::malloc_map()[(long)p];
+        MemoryAlloc::malloc_map().erase((long)p);
+    }
     timers_[actual_node].total_deallocated_ += size;
     timers_[actual_node].current_allocated_ -= size;
     timers_[actual_node].dealloc_called++;
@@ -872,76 +838,35 @@ void * Profiler::operator new (size_t size) {
     return malloc (size);
 }
 
+void Profiler::operator delete (void* p) {
+    free(p);
+}
 
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
 	void * p = malloc(size);
-    
-    if (!Profiler::is_initialized()) {
-        MemoryAlloc::init_overhead_map()[(long)p] = static_cast<int>(size);
-    }else
-    
-    if (Profiler::get_memory_monitoring()) {
-        Profiler::instance()->notify_malloc(size);
-        MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
-    }
-
+    Profiler::instance()->notify_malloc(size, (long)p);
 	return p;
 }
 
 void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     void * p = malloc(size);
-    
-    if (!Profiler::is_initialized()) {
-        MemoryAlloc::init_overhead_map()[(long)p] = static_cast<int>(size);
-    }else
-    
-    if (Profiler::get_memory_monitoring()) {
-        Profiler::instance()->notify_malloc(size);
-        MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
-    }
-    
-
+    Profiler::instance()->notify_malloc(size, (long)p);
 	return p;
 }
 
 void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
     void * p = malloc(size);
-    
-    if (!Profiler::is_initialized()) {
-        MemoryAlloc::init_overhead_map()[(long)p] = static_cast<int>(size);
-    }else
-    
-    if (Profiler::get_memory_monitoring()) {
-        Profiler::instance()->notify_malloc(size);
-        MemoryAlloc::malloc_map()[(long)p] = static_cast<int>(size);
-    }
-
+    Profiler::instance()->notify_malloc(size, (long)p);
 	return p;
 }
 
 void operator delete( void *p) throw() {
-    if (Profiler::get_memory_monitoring()) {
-    	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
-    		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
-    		MemoryAlloc::malloc_map().erase((long)p);
-    	} else {
-    		Profiler::instance()->notify_free(sizeof(p));
-    	}
-    }
-
+    Profiler::instance()->notify_free((long)p);
 	free(p);
 }
 
 void operator delete[]( void *p) throw() {
-    if (Profiler::get_memory_monitoring()) {
-    	if (MemoryAlloc::malloc_map()[(long)p] > 0) {
-    		Profiler::instance()->notify_free(MemoryAlloc::malloc_map()[(long)p]);
-    		MemoryAlloc::malloc_map().erase((long)p);
-    	} else {
-    		Profiler::instance()->notify_free(sizeof(p));
-    	}
-    }
-
+    Profiler::instance()->notify_free((long)p);
 	free(p);
 }
 

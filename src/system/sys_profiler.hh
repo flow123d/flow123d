@@ -566,12 +566,12 @@ public:
      * Notification about allocation of given size.
      * Increase total allocated memory in current profiler frame.
      */
-    void notify_malloc(const size_t size );
+    void notify_malloc(const size_t size, const long p);
     /**
      * Notification about freeing memory of given size.
      * Increase total deallocated memory in current profiler frame.
      */
-    void notify_free(const size_t size );
+    void notify_free(const long p);
 
     /**
      * Return average profiler timer resolution in seconds
@@ -666,9 +666,16 @@ public:
     static bool is_initialized() { return (_instance != NULL); }
     
     /**
-     * Check if the instance was created.
+     * Class-specific allocation function new. Called by the usual
+     * single-object new-expressions if allocating an object of type Profiler.
      */
     static void* operator new (size_t sz);
+    /**
+     * Class-specific allocation function delete. Deallocates storage 
+     * previously allocated by a matching operator new. These deallocation
+     * functions are called by delete-expressions.
+     */
+    static void operator delete (void* p);
     
     /**
      * Public setter to turn on/off memory monitoring
