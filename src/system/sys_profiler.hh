@@ -56,6 +56,7 @@
 #include <boost/unordered_map.hpp>
 #include "time_point.hh"
 #include "petscsys.h" 
+#include "simple_allocator.hh"
 
 
 // namespace alias
@@ -80,10 +81,6 @@ public:
 
 // Assuming all compilers support constexpr
 #define CONSTEXPR_ constexpr
-
-// macro which does nothing but silence g++ compiler warning
-// about unused variable
-#define UNUSED(expr) (void)(expr)
 
 using namespace std;
 
@@ -224,60 +221,7 @@ inline CONSTEXPR_ unsigned int str_hash(const char * str, unsigned int default_v
  */
 #define CODE_POINT_EXT(tag, subtag) CodePoint(tag, subtag, __FILE__, __func__, __LINE__)
 
-/**
- * Simple allocator which uses default malloc and free functions. Dields allocated
- *   with this allocator will not be included in overall memory consumption.
- */
-template<class T>
-class SimpleAllocator {
-public:
-    typedef size_t size_type;
-    typedef ptrdiff_t difference_type;
-    typedef T *pointer;
-    typedef const T *const_pointer;
-    typedef T &reference;
-    typedef const T &const_reference;
-    typedef T value_type;
 
-    SimpleAllocator() { }
-
-    SimpleAllocator(const SimpleAllocator &) { }
-
-
-    pointer allocate(size_type n, const void * = 0) {
-        T *t = (T *) malloc(n * sizeof(T));
-        return t;
-    }
-
-    void deallocate(void *p, size_type) {
-        if (p) {
-            free(p);
-        }
-    }
-
-    pointer address(reference x) const { return &x; }
-
-    const_pointer address(const_reference x) const { return &x; }
-
-    SimpleAllocator<T> &operator=(const SimpleAllocator &) { return *this; }
-
-    void construct(pointer p, const T &val) { new((T *) p) T(val); }
-
-    void destroy(pointer p) { p->~T(); }
-
-    size_type max_size() const { return size_t(-1); }
-
-    template<class U>
-    struct rebind {
-        typedef SimpleAllocator<U> other;
-    };
-
-    template<class U>
-    SimpleAllocator(const SimpleAllocator<U> &) { }
-
-    template<class U>
-    SimpleAllocator &operator=(const SimpleAllocator<U> &) { return *this; }
-};
 
 
 /**
@@ -357,19 +301,6 @@ public:
      * Start the timer. If it is already started, just increase number of starts (recursions) and calls.
      */
     void start();
-    /**
-     * Pause current timer, save measured petsc memory information util resume
-     */
-    void pause();
-    /**
-     * Resume current timer, load measured petsc memory information
-     */
-    void resume();
-    /**
-     * Debug information of the timer
-     */
-    void info();
-    
 
     /**
      * If number of starts (recursions) drop back to zero, we stop the timer and add the period to the cumulative time.
@@ -406,6 +337,21 @@ public:
 
 
 protected:
+    
+    /**
+     * Pauses current timer, save measured petsc memory information util resume.
+     * We get Petsc maximum memory usage via PetscMemoryGetMaximumUsage call
+     * and save this value into temp value. (we override local maximum if temp
+     * value is greater)
+     */
+    void pause();
+    /**
+     * Resume current timer. e tell Petsc to monitor the maximum memory 
+     * usage once again. We call PetscMemorySetGetMaximumUsage so later in 
+     * resume() method will PetscMemoryGetMaximumUsage method work.
+     */
+    void resume();
+    
     /**
      *   Start time when frame opens.
      */
@@ -444,19 +390,26 @@ protected:
     int child_timers[max_n_childs];
 
     /**
-     * Total number of bytes allocated directly in this frame (not include subframes).
+     * Total number of bytes allocated in this frame. After 
+     * Profiler::propagate_timers call will also contain values from children.
      */
     size_t total_allocated_;
     /**
-     * Total number of bytes deallocated directly in this frame (not include subframes).
+     * Total number of bytes deallocated in this frame. After 
+     * Profiler::propagate_timers call, will also contain values from children.
      */
     size_t total_deallocated_;
     /**
-     * Maximum number of bytes allocated at one time in this frame (not include subframes).
+     * Maximum number of bytes allocated at one time in this frame. After 
+     * Profiler::propagate_timers call, maximum value will be taken from this
+     * Timer and also from all children Timers.
      */
     size_t max_allocated_;
     /**
-     * Current number of bytes allocated in this frame (not include subframes).
+     * Current number of bytes allocated in this frame at the same time. 
+     * This value is used to monitor maximum bytes allocated. When notify_free
+     * and notify_malloc is called this values is changed and new maximum 
+     * is tested.
      */
     size_t current_allocated_;
     
@@ -469,33 +422,37 @@ protected:
      */
     int dealloc_called;
     
-    /**
-     * Number of bytes used by Petsc at the start of time-frame
-     */
-    PetscLogDouble petsc_start_memory;
-    /**
-     * Number of bytes used by Petsc at the end of time-frame
-     */
-    PetscLogDouble petsc_end_memory;
-    /**
-     * Difference between start and end of a petsc memory usage 
-     */
-    PetscLogDouble petsc_memory_difference;
-    /**
-     * Maximum amount of memory used that was PetscMalloc()ed at any time 
-     * during this run.
-     *
-     * The memory usage reported here includes all Fortran arrays (that may be
-     * used in application-defined sections of code).
-     */
-    PetscLogDouble petsc_peak_memory;
-    /**
-     * local aximum amount of memory used that was PetscMalloc()ed 
-     * used during time-frame pause/resume
-     */
-    PetscLogDouble petsc_local_peak_memory;
+    #ifdef FLOW123D_HAVE_PETSC
+        /**
+         * Number of bytes used by Petsc at the start of time-frame
+         */
+        PetscLogDouble petsc_start_memory;
+        /**
+         * Number of bytes used by Petsc at the end of time-frame
+         */
+        PetscLogDouble petsc_end_memory;
+        /**
+         * Difference between start and end of a petsc memory usage 
+         */
+        PetscLogDouble petsc_memory_difference;
+        /**
+         * Maximum amount of memory used that was PetscMalloc()ed at any time 
+         * during this run.
+         *
+         * The memory usage reported here includes all Fortran arrays (that may be
+         * used in application-defined sections of code).
+         */
+        PetscLogDouble petsc_peak_memory;
+        /**
+         * Local maximum amount of memory used that was PetscMalloc()ed 
+         * used during time-frame pause/resume. Auxilary variable for storing 
+         * local memory used when pause is called.
+         */
+        PetscLogDouble petsc_local_peak_memory;
+    #endif // FLOW123D_HAVE_PETSC
     
     friend class Profiler;
+    friend std::ostream & operator <<(std::ostream&, const Timer&);
 
 };
 
@@ -714,11 +671,6 @@ public:
     static void* operator new (size_t sz);
     
     /**
-     * Method will propagate values from children timers to its parents
-     */
-    void propagate_timers ();
-
-    /**
      * Public setter to turn on/off memory monitoring
      * @param value whether to turn monitoring on or off
      */
@@ -736,6 +688,19 @@ private:
      * Whether to monitor operator 'new/delete'
      */
     static bool monitor_memory;
+    
+    /**
+     * When creating Profiler also reserve some bytes in malloc_map so overhead 
+     * of creating single items is lowered. This value is passed as parameter in
+     * map.reserve() method so it indicates how many objects (pointers) are 
+     * allocated at first.
+     */
+    static const long malloc_map_reserve;
+    
+    /**
+     * Method will propagate values from children timers to its parents
+     */
+    void propagate_timers ();
     
     /**
      * Method for exchanging metrics from child timer to its parent timer
@@ -769,7 +734,7 @@ private:
     static Profiler* _instance;
 
     /// Vector of all timers. Whole tree is stored in this array.
-    vector<Timer, SimpleAllocator<Timer>> timers_;
+    vector<Timer, internal::SimpleAllocator<Timer>> timers_;
 
     /// Index of the actual timer node. Negative value means 'unset'.
     unsigned int actual_node;
@@ -861,8 +826,8 @@ public:
  */
 // gcc version 4.9 and lower has following bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=59751
 // fix in version 4.9: https://gcc.gnu.org/gcc-4.9/changes.html#cxx
-// typedef unordered_map<long, int, hash<long>, equal_to<long>, SimpleAllocator<pair<const long, int>>> unordered_map_with_alloc;
-typedef boost::unordered_map<long, int, boost::hash<long>, equal_to<long>, SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
+// typedef unordered_map<long, int, hash<long>, equal_to<long>, internal::SimpleAllocator<pair<const long, int>>> unordered_map_with_alloc;
+typedef boost::unordered_map<long, int, boost::hash<long>, equal_to<long>, internal::SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
 class MemoryAlloc {
 public:
     /**

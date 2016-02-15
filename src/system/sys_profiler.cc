@@ -130,15 +130,19 @@ Timer::Timer(const CodePoint &cp, int parent)
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
 }
 
-void Timer::info() {
-    cout << "  Timer: " << tag() << " " << this << endl;
-    cout << "          malloc: " << total_allocated_ << endl;
-    cout << "          dalloc: " << total_deallocated_ << endl;
-    cout << "          start: " << petsc_start_memory << endl;
-    cout << "          stop : " << petsc_end_memory << endl;
-    cout << "          diff : " << petsc_memory_difference << " (" << petsc_end_memory - petsc_start_memory << ")" << endl;
-    cout << "          peak : " << petsc_peak_memory << " (" << petsc_local_peak_memory << ")" << endl;
-    cout << endl;
+/**
+ * Debug information of the timer
+ */
+ostream & operator <<(ostream& os, const Timer& timer) {
+    os << "  Timer: " << timer.tag() << endl;
+    os << "          malloc: " << timer.total_allocated_ << endl;
+    os << "          dalloc: " << timer.total_deallocated_ << endl;
+    os << "          start: " << timer.petsc_start_memory << endl;
+    os << "          stop : " << timer.petsc_end_memory << endl;
+    os << "          diff : " << timer.petsc_memory_difference << " (" << timer.petsc_end_memory - timer.petsc_start_memory << ")" << endl;
+    os << "          peak : " << timer.petsc_peak_memory << " (" << timer.petsc_local_peak_memory << ")" << endl;
+    os << endl;
+    return os;
 }
 
 
@@ -271,11 +275,12 @@ Profiler * Profiler::instance() {
 
 static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
 Profiler* Profiler::_instance = NULL;
+const long Profiler::malloc_map_reserve = 100 * 1000;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
 void Profiler::initialize() {
     if (_instance == NULL) {
-        MemoryAlloc::malloc_map().reserve(100*1000);
+        MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
         _instance = new Profiler();
         set_memory_monitoring(true);
     }
@@ -377,9 +382,8 @@ void Profiler::stop_timer(const CodePoint &cp) {
                 timers_[actual_node].stop(false);
                 actual_node = timers_[actual_node].parent_timer;
                 
-                // workaround for time-frame 0, if (actual_node >=0) would make more sense
-                //   but time-frame 0 has also parent_timer equal to 0
-                if (actual_node == child_timer && actual_node == 0)
+                // actual_node == child_timer indicates this is root
+                if (actual_node == child_timer)
                     return;
                 
                 // resume current timer
@@ -394,9 +398,8 @@ void Profiler::stop_timer(const CodePoint &cp) {
     timers_[actual_node].stop(false);
     actual_node = timers_[actual_node].parent_timer;
     
-    // workaround for time-frame 0, if (actual_node >=0) would make more sense
-    //   but time-frame 0 has also parent_timer equal to 0
-    if (actual_node == child_timer && actual_node == 0)
+    // actual_node == child_timer indicates this is root
+    if (actual_node == child_timer)
         return;
     
     // resume current timer
@@ -428,9 +431,8 @@ void Profiler::stop_timer(int timer_index) {
                 timers_[actual_node].stop(false);
                 actual_node=timers_[actual_node].parent_timer;
                 
-                // workaround for time-frame 0, if (actual_node >=0) would make more sense
-                //   but time-frame 0 has also parent_timer equal to 0
-                if (actual_node == child_timer && actual_node == 0)
+                // actual_node == child_timer indicates this is root
+                if (actual_node == child_timer)
                     return;
                 
                 // resume current timer
@@ -444,9 +446,8 @@ void Profiler::stop_timer(int timer_index) {
     timers_[actual_node].stop(false);
     actual_node=timers_[actual_node].parent_timer;
     
-    // workaround for time-frame 0, if (actual_node >=0) would make more sense
-    //   but time-frame 0 has also parent_timer equal to 0
-    if (actual_node == child_timer && actual_node == 0)
+    // actual_node == child_timer indicates this is root
+    if (actual_node == child_timer)
         return;
     
     // resume current timer
@@ -597,11 +598,10 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     propagate_timers();
     
     // stop monitoring memory
-    bool memory_monitoring_ = get_memory_monitoring();
+    bool temp_memory_monitoring = get_memory_monitoring();
     set_memory_monitoring(false);
 
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    UNUSED(ierr);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
@@ -658,14 +658,13 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
     }
     // restore memory monitoring
-    set_memory_monitoring(memory_monitoring_);
+    set_memory_monitoring(temp_memory_monitoring);
 }
 
 
 void Profiler::output(MPI_Comm comm) {
     int mpi_rank, ierr;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    UNUSED(ierr);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     if (mpi_rank == 0) {
         output(comm, *get_default_output_stream());
@@ -837,12 +836,14 @@ void Profiler::uninitialize() {
 
 bool Profiler::monitor_memory = false;
 void Profiler::set_memory_monitoring(const bool value) {
-    if (value && !monitor_memory) {
-        cout << "Memory monitoring is ON" << endl;
-    }
-    if (!value && monitor_memory) {
-        cout << "Memory monitoring is OFF" << endl;
-    }
+    #ifdef FLOW123D_DEBUG
+        if (value && !monitor_memory) {
+            cout << "Memory monitoring is ON" << endl;
+        }
+        if (!value && monitor_memory) {
+            cout << "Memory monitoring is OFF" << endl;
+        }
+    #endif // FLOW123D_DEBUG
     monitor_memory = value;
 }
 
