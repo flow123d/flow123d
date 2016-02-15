@@ -158,6 +158,10 @@ public:
     RegionIdx operator() (const Region &)
         {return RegionIdx(idx_); }
 
+    /// Comparative method of two regions
+    static bool comp(const Region &a, const Region &b)
+    { return a.idx_ < b.idx_; }
+
     /// Returns label of the region (using RegionDB)
     std::string label() const;
 
@@ -175,7 +179,7 @@ public:
         return *db_;
     }
 
-private:
+protected:
     /**
      * Create accessor from the index. Should be private since implementation specific.
      * We need some way how to iterate over: all regions, boundary regions, bulk regions -
@@ -184,10 +188,6 @@ private:
     Region(unsigned int index, const RegionDB &db)
     : RegionIdx(index), db_(&db)
     {}
-
-    /// Comparative method of two regions
-    static bool comp(const Region &a, const Region &b)
-    { return a.idx_ < b.idx_; }
 
     /// Global variable with information about all regions.
     const RegionDB *db_;
@@ -206,7 +206,8 @@ private:
  * Regions stored in region set are always unique
  */
 typedef std::vector<Region> RegionSet;
-
+/// Type representing a map of RegionSets.
+typedef std::map<std::string, RegionSet > RegionSetTable;
 
 
 /**
@@ -267,18 +268,9 @@ region_sets = [
  * Mesh reading proccess:
  * 1) Read PhysicalNames form GMSH file, populate RegionDB (DONE in GMSH reader, may need small modifications)
  * 2) Read region definitions from the input, see
- *
- * typedef std::map<unsigned int, unsigned int> MapElementIDToRegionID;
- * RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map);
- *
- *
- *    (TODO in RegionDB, also creates (and return to Mesh) element regions modification map: std::map< unsigned int, RegionIdx>
- *     that maps element IDs to the new region names, GMSH reader should have setter method to accept this map
- *     and modify the elements during reading)
- * 3) Read region sets - TODO in RegionDB
- * 4) Read boundary key of the Mesh record and mark appropriate regions as boundary (TODO in RegionDB)
- * 5) Read nodes (DONE in GMSH reader)
- * 6) Read elements, per element:
+ *    - Mesh::read_regions_from_input(Input::Array region_list);
+ * 3) Read nodes (DONE in GMSH reader)
+ * 4) Read elements, per element:
  *    - possibly modify region according map
  *    - find element ID:
  *       if found: add_region(ID, get_label, dim, get_boundary_flag) // possibly set dimension of the region if it is undefined
@@ -286,7 +278,7 @@ region_sets = [
  *    - if region is boundary put element into Mesh::bc_elements
  *      else put it into Mesh::element
  *  ---
- *  7) Setup topology - we has to connect Boundary with existing bc_elements, and add the remaining elements,
+ *  5) Setup topology - we has to connect Boundary with existing bc_elements, and add the remaining elements,
  *     after we remove support for old bCD files we may skip creation of remaining boundary elements since there will be no way how to set
  *     BC on them.
  *
@@ -299,39 +291,28 @@ public:
      */
     typedef std::map<unsigned int, unsigned int> MapElementIDToRegionID;
 
-    /**
-     * Format of input record which defined elements and their affiliation to region sets
-     */
-    static const Input::Type::Record & get_region_input_type();
-    /**
-     * Format of input record which defined regions and their affiliation to region sets
-     */
-    static const Input::Type::Record & get_region_set_input_type();
-
     TYPEDEF_ERR_INFO( EI_Label, const std::string);
     TYPEDEF_ERR_INFO( EI_ID, unsigned int);
     TYPEDEF_ERR_INFO( EI_IDOfOtherLabel, unsigned int);
     TYPEDEF_ERR_INFO( EI_LabelOfOtherID, const std::string);
-    DECLARE_EXCEPTION( ExcAddingIntoClosed, << "Can not add label=" << EI_Label::qval << " into closed MaterialDispatch.\n");
-    DECLARE_EXCEPTION( ExcNonuniqueID, << "Non-unique ID during add of region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "other region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n");
-    DECLARE_EXCEPTION( ExcNonuniqueLabel, << "Non-unique label during add of region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "other region with same label but different ID: " << EI_IDOfOtherLabel::val << " already exists\n");
-    DECLARE_EXCEPTION( ExcInconsistentBoundary, << "Inconsistent add of region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "both ID and label match an existing region with different boundary flag.");
-    DECLARE_EXCEPTION( ExcInconsistentDimension, << "Inconsistent add of region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "both ID and label match an existing region with different dimension.");
+    DECLARE_INPUT_EXCEPTION( ExcAddingIntoClosed, << "Can not add label=" << EI_Label::qval << " into closed MaterialDispatch.\n");
+    DECLARE_EXCEPTION( ExcNonuniqueID, << "Non-unique ID during add of elementary region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "other elementary region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n");
+    DECLARE_INPUT_EXCEPTION( ExcNonuniqueLabel, << "Non-unique label during add of elementary region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "other elementary region with same label but different ID: " << EI_IDOfOtherLabel::val << " already exists\n");
+    DECLARE_EXCEPTION( ExcInconsistentBoundary, << "Inconsistent add of elementary region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "both ID and label match an existing elementary region with different boundary flag.");
 
-    DECLARE_EXCEPTION( ExcCantAdd, << "Can not add new region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
+    DECLARE_INPUT_EXCEPTION( ExcCantAdd, << "Can not add new elementary region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
 
-    DECLARE_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
+    DECLARE_INPUT_EXCEPTION( ExcUnusedRegion, << "Region with id: " << EI_ID::qval << " and label: " << EI_Label::qval
+    									<< " is not used in any element." );
+
+    DECLARE_INPUT_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
 
     DECLARE_INPUT_EXCEPTION( ExcUnknownSetOperand, << "Operation with unknown region set: " << EI_Label::qval);
 
-    TYPEDEF_ERR_INFO( EI_NumOp, unsigned int);
-    DECLARE_INPUT_EXCEPTION( ExcWrongOpNumber, << "Wrong number of operands. Expect 2, given: " << EI_NumOp::val);
-
-    DECLARE_INPUT_EXCEPTION(ExcUniqueRegionId, << "Id of region must be unique, id: " << EI_ID::val );
+    DECLARE_INPUT_EXCEPTION(ExcUniqueRegionId, << "Id of elementary region must be unique, id: " << EI_ID::val );
 
     /// Default constructor
     RegionDB();
@@ -359,23 +340,23 @@ public:
      * 4)                             , in different   : warning ID has already assigned label
      *
      * Parameter @p id is any unique non-negative integer, parameter @p label is unique string identifier of the region,
-     * @p dim is dimension of reference elements in the region and @p boundary is true if the region consist of boundary elements
-     * (where one can apply boundary condition).
-     *
+     * @p dim is dimension of reference elements in the region, @p boundary is true if the region consist of boundary elements
+     * (where one can apply boundary condition) and @p address contains source of region (address in input file or section in
+     * mesh file).
      */
-    Region add_region(unsigned int id, const std::string &label, unsigned int dim);
+    Region add_region(unsigned int id, const std::string &label, unsigned int dim, const std::string &address ="implicit");
 
     /**
-     * As the previous, but set the 'boundary; flag according to the label (labels starting with dot '.' are boundary).
-     * Used in read_regions_from_input ( with undefined dimension) to read regions given in 'regions' key of the 'mesh' input record.
+     * Change label of given Region.
      */
-    Region add_region(unsigned int id, const std::string &label);
+    Region rename_region( Region reg, const std::string &new_label );
 
     /**
-     * As the previous, but generates automatic label of form 'region_ID' if the region with same ID is not already present. Set bulk region.
-     * Meant to be used when reading elements from MSH file. Again, if the region is defined already, we just check consistency.
+     * Returns region given the pair of id - dim.
+     * If region doesn't exist, checks if exists region with given id and undefined_dim, replaces
+     * its dimension and returns its. In other cases throws exception.
      */
-    Region add_region(unsigned int id, unsigned int dim);
+    Region get_region(unsigned int id, unsigned int dim);
 
     /**
      * Returns a @p Region with given @p label. If it is not found it returns @p undefined Region.
@@ -454,35 +435,6 @@ public:
     void add_set( const string& set_name, const RegionSet & set);
 
     /**
-     * Get RegionSets of specified names and create their union
-     *
-     * @param set_name_1 Name of first RegionSet
-     * @param set_name_2 Name of second RegionSet
-     * @return RegionSet created of union operation
-     */
-    RegionSet union_sets( const string & set_name_1, const string & set_name_2);
-
-    /**
-     * Get RegionSets of specified names and create their intersection.
-     * Throws ExcUnknownSet for invalid name.
-     *
-     * @param set_name_1 Name of first RegionSet
-     * @param set_name_2 Name of second RegionSet
-     * @return RegionSet created of intersection operation
-     */
-    RegionSet intersection( const string & set_name_1, const string & set_name_2);
-
-    /**
-     * Get RegionSets of specified names and create their difference
-     * Throws ExcUnknownSet for invalid name.
-     *
-     * @param set_name_1 Name of first RegionSet
-     * @param set_name_2 Name of second RegionSet
-     * @return RegionSet created of difference operation
-     */
-    RegionSet difference( const string & set_name_1, const string & set_name_2);
-
-    /**
      * Get region set of specified name. Three sets are defined by default:
      * "ALL" - set of all regions both bulk and boundary.
      * "BULK" - set of all bulk regions
@@ -494,21 +446,39 @@ public:
     RegionSet get_region_set(const string & set_name) const;
 
     /**
-     * Reads region sets defined by user in input file
-     * Format of input record is defined in variable RegionDB::get_region_set_input_type()
-     *
-     * @param arr Array input records which define region sets
+     * Read two operands from input array of strings and check if given names
+     * are existing sets. Return pair of checked set names.
      */
-    void read_sets_from_input(Input::Array arr);
+    std::vector<string> get_and_check_operands(const Input::Array & operands) const;
 
     /**
-     * Reads elements and their affiliation to region sets defined by user in input file
-     * Format of input record is defined in method RegionDB::get_region_input_type()
-     *
-     * @param region_list Array input records which define region sets and elements
-     * @param map Map to which is loaded data
+     * Print table with base information of all regions stored in RegionDB.
      */
-    void read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map);
+    void print_region_table(ostream& stream) const;
+
+    /**
+     * Create label of region in format: "region_"+id
+     *
+     * Use if label is not set.
+     */
+    string create_label_from_id(unsigned int id) const;
+
+    /**
+     * Return address for given index @p idx.
+     */
+    const std::string & get_region_address(unsigned int idx) const;
+
+    /**
+     * Mark region with given index @p idx as used.
+     *
+     * Use if region is assigned to element.
+     */
+    void mark_used_region(unsigned int idx);
+
+    /**
+     * Create union of RegionSets of given names defined in @p set_names.
+     */
+    RegionSet union_set(std::vector<string> set_names) const;
 
 
 private:
@@ -518,8 +488,8 @@ private:
 
     /// One item in region database
     struct RegionItem {
-        RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim)
-            : index(index), id(dim, id), label(label) {}
+        RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim, const std::string &address, bool used=false)
+            : index(index), id(dim, id), label(label), used(used), address(address) {}
 
         unsigned int get_id() const {return id.second;}
         unsigned int dim() const {return id.first;}
@@ -528,6 +498,10 @@ private:
         unsigned int index;
         DimID id;
         std::string label;
+        // Flag signed if region is assigned to element(s)
+        bool used;
+        // Address where region was created (address in input file or section in mesh file)
+        std::string address;
     };
 
     // tags
@@ -571,9 +545,11 @@ private:
     unsigned int n_boundary_;
     /// Number of bulk regions
     unsigned int n_bulk_;
+    /// Maximal value of Region::id()
+    unsigned int max_id_;
 
     /// Map of region sets
-    std::map<std::string, RegionSet > sets_;
+    RegionSetTable sets_;
 
     /// Make part of general RegionSet table.
     RegionSet all, bulk, boundary;
@@ -585,29 +561,14 @@ private:
     Region implicit_bulk_, implicit_boundary_;
 
     /**
-     * Prepare region sets for union, intersection and difference operation.
-     * Get sets of names set_name_1 and set_name_2 and sort them.
-     * Throws ExcUnknownSet if the set with given name does not exist.
+     * Represents the relevance of elements to regions. Defined by user in input file.
      */
-    void prepare_sets( const string & set_name_1, const string & set_name_2, RegionSet & set_1, RegionSet & set_2);
-
-    /**
-     * Read two operands from input array of strings and check if given names
-     * are existing sets. Return pair of checked set names.
-     */
-    pair<string,string> get_and_check_operands(const Input::Array & operands);
-
-    /**
-     * Create label of region in format: "region_"+id
-     *
-     * Use if label is not set.
-     */
-    void create_label_from_id(const string & label, unsigned int id);
+    MapElementIDToRegionID el_to_reg_map_;
 
     /**
      * Insert new region into database.
      */
-    Region insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
+    Region insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary, const std::string &address);
 
     /**
      * Replace dimension of existing region with undefined_dim.
@@ -619,6 +580,21 @@ private:
      */
     Region find_by_dimid(DimIDIter it_id, unsigned int id, const std::string &label, bool boundary);
 
+    /*
+     * Add region to given set. Create the set if it does not exist.
+     *
+     * @param set_name Set from which it is erased region
+     * @param region Erased region
+     */
+    void erase_from_set( const string& set_name, Region region);
+
+    /**
+     * Iterate all stored regions and check if regions are assigned to element(s).
+     *
+     * Unused region throws exception.
+     */
+    void check_regions();
+
     /**
      * Return boundary flag for given label. Label of boundary region must start by '.' symbol.
      */
@@ -626,6 +602,8 @@ private:
     	return (label.size() != 0) && (label[0] == '.');
     }
 
+    friend class Mesh;
+    friend class RegionSetBase;
 };
 
 

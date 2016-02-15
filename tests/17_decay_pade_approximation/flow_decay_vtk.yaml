@@ -6,11 +6,11 @@ problem: !SequentialCoupling
     mesh_file: ./input/sit_decay.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - rid: 1
-      anisotropy: 0.01
-    - region: BOUNDARY
-      bc_type: dirichlet
-      bc_piezo_head: 0
+      - rid: 1
+        anisotropy: 0.01
+      - region: BOUNDARY
+        bc_type: dirichlet
+        bc_piezo_head: 0
     output:
       output_stream: 
         file: ./decay.pvd
@@ -18,29 +18,29 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
   secondary_equation: !Transport_OS
     transport: !Convection_FV
       input_fields:
-      - rid: 1
-        init_conc:
-        - 0.01
-        - 0.02
-        - 0.03
-        - 0.04
-        - 0.05
-      - region: BOUNDARY
-        bc_conc:
-        - 0.01
-        - 0.02
-        - 0.03
-        - 0.04
-        - 0.05
+        - rid: 1
+          init_conc:
+            - 0.01
+            - 0.02
+            - 0.03
+            - 0.04
+            - 0.05
+        - region: BOUNDARY
+          bc_conc:
+            - 0.01
+            - 0.02
+            - 0.03
+            - 0.04
+            - 0.05
     output_stream: 
       file: ./transport_decay.pvd
       format: !vtk
@@ -48,11 +48,11 @@ problem: !SequentialCoupling
       time_step: 0.5
       name: transport_output_stream
     substances:
-    - A
-    - B
-    - C
-    - D
-    - E
+      - A
+      - B
+      - C
+      - D
+      - E
     time:
       end_time: 10.0
     reaction_term: !RadioactiveDecay
@@ -60,21 +60,21 @@ problem: !SequentialCoupling
         nominator_degree: 3
         denominator_degree: 3
       decays:
-      - radionuclide: A
-        half_life: 1.3863
-        products:
-        - B
-      - radionuclide: B
-        half_life: 2.3105
-        products:
-        - C
-      - radionuclide: C
-        half_life: 1.5403
-        products:
-        - D
-      - radionuclide: D
-        half_life: 1.1552
-        products:
-        - E
+        - radionuclide: A
+          half_life: 1.3863
+          products:
+            - B
+        - radionuclide: B
+          half_life: 2.3105
+          products:
+            - C
+        - radionuclide: C
+          half_life: 1.5403
+          products:
+            - D
+        - radionuclide: D
+          half_life: 1.1552
+          products:
+            - E
     balance:
       cumulative: true

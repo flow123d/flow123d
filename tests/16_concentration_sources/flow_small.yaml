@@ -8,11 +8,11 @@ problem: !SequentialCoupling
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
-    - region: ALL
-      conductivity: 1.0e-10
-    - region: .boundary
-      bc_type: dirichlet
-      bc_pressure: 0
+      - region: ALL
+        conductivity: 1.0e-10
+      - region: .boundary
+        bc_type: dirichlet
+        bc_pressure: 0
     output:
       output_stream: 
         file: ./flow_test16.pvd
@@ -20,9 +20,9 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     balance:
       cumulative: true
     solver: !Petsc
@@ -31,31 +31,31 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !Convection_FV
       input_fields:
-      - region: .boundary
-        bc_conc: 0
-      - region: ALL
-        init_conc:
-        - 0
-        - 0.9
-        - 0
-        sources_sigma:
-        - 3
-        - 3
-        - 10
-        sources_conc:
-        - 0.6
-        - 0.6
-        - 0.6
-        porosity: 0.9
+        - region: .boundary
+          bc_conc: 0
+        - region: ALL
+          init_conc:
+            - 0
+            - 0.9
+            - 0
+          sources_sigma:
+            - 3
+            - 3
+            - 10
+          sources_conc:
+            - 0.6
+            - 0.6
+            - 0.6
+          porosity: 0.9
     output_stream: 
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
       time_step: 0.2
     substances:
-    - A
-    - B
-    - C
+      - A
+      - B
+      - C
     balance:
       cumulative: true
     time:

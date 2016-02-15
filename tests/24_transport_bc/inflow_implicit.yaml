@@ -5,10 +5,10 @@ problem: !SequentialCoupling
     mesh_file: ./input/mesh.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: BOUNDARY
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: (x-0.5)*y
+      - region: BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: (x-0.5)*y
     output:
       output_stream: 
         file: ./flow.pvd
@@ -16,8 +16,8 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - velocity_p0
+        - pressure_p0
+        - velocity_p0
     balance: true
     solver: !Petsc &anchor3
       a_tol: 1.0e-12
@@ -25,30 +25,30 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
-      - region: .right
-        bc_conc: 1
-      - region: .bottom
-        bc_conc: 2
-      - region: .top
-        bc_conc: 3
-      - region: domain
-        diff_m: !FieldFormula
-          value: if(y>0.5,0,1e-2)
+        - region: .right
+          bc_conc: 1
+        - region: .bottom
+          bc_conc: 2
+        - region: .top
+          bc_conc: 3
+        - region: domain
+          diff_m: !FieldFormula
+            value: if(y>0.5,0,1e-2)
       solver: *anchor3
     output_stream: 
       file: ./transport.pvd
       format: !vtk
         variant: ascii
       time_list:
-      - 0
-      - 0.25
-      - 0.5
-      - 1
-      - 2
-      - 10
+        - 0
+        - 0.25
+        - 0.5
+        - 1
+        - 2
+        - 10
       name: transport_output_stream
     substances:
-    - tracer
+      - tracer
     time:
       end_time: 10
       max_dt: 0.25
