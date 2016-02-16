@@ -308,6 +308,8 @@ public:
     DECLARE_INPUT_EXCEPTION( ExcUnusedRegion, << "Region with id: " << EI_ID::qval << " and label: " << EI_Label::qval
     									<< " is not used in any element." );
 
+    DECLARE_INPUT_EXCEPTION( ExcUnknownRegion, << "Unknown region with id: " << EI_ID::val );
+
     DECLARE_INPUT_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
 
     DECLARE_INPUT_EXCEPTION( ExcUnknownSetOperand, << "Operation with unknown region set: " << EI_Label::qval);
