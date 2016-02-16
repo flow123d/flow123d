@@ -423,32 +423,32 @@ protected:
     int dealloc_called;
     
     #ifdef FLOW123D_HAVE_PETSC
-        /**
-         * Number of bytes used by Petsc at the start of time-frame
-         */
-        PetscLogDouble petsc_start_memory;
-        /**
-         * Number of bytes used by Petsc at the end of time-frame
-         */
-        PetscLogDouble petsc_end_memory;
-        /**
-         * Difference between start and end of a petsc memory usage 
-         */
-        PetscLogDouble petsc_memory_difference;
-        /**
-         * Maximum amount of memory used that was PetscMalloc()ed at any time 
-         * during this run.
-         *
-         * The memory usage reported here includes all Fortran arrays (that may be
-         * used in application-defined sections of code).
-         */
-        PetscLogDouble petsc_peak_memory;
-        /**
-         * Local maximum amount of memory used that was PetscMalloc()ed 
-         * used during time-frame pause/resume. Auxilary variable for storing 
-         * local memory used when pause is called.
-         */
-        PetscLogDouble petsc_local_peak_memory;
+    /**
+     * Number of bytes used by Petsc at the start of time-frame
+     */
+    PetscLogDouble petsc_start_memory;
+    /**
+     * Number of bytes used by Petsc at the end of time-frame
+     */
+    PetscLogDouble petsc_end_memory;
+    /**
+     * Difference between start and end of a petsc memory usage 
+     */
+    PetscLogDouble petsc_memory_difference;
+    /**
+     * Maximum amount of memory used that was PetscMalloc()ed at any time 
+     * during this run.
+     *
+     * The memory usage reported here includes all Fortran arrays (that may be
+     * used in application-defined sections of code).
+     */
+    PetscLogDouble petsc_peak_memory;
+    /**
+     * Local maximum amount of memory used that was PetscMalloc()ed 
+     * used during time-frame pause/resume. Auxilary variable for storing 
+     * local memory used when pause is called.
+     */
+    PetscLogDouble petsc_local_peak_memory;
     #endif // FLOW123D_HAVE_PETSC
     
     friend class Profiler;
@@ -843,17 +843,6 @@ public:
      *   related to profiler after profiler initialization phase
      */
 	static unordered_map_with_alloc & malloc_map();
-    /**
-     * Create static map containing <allocation address, allocation size> pairs
-     * map is used to store ONLY allocation before profiler is fully initialized
-     */
-    static unordered_map_with_alloc & init_overhead_map();
-    /**
-     * Sums given map and returns sum value
-     * @param  map unordered_map_with_alloc map
-     * @return     total sum of a given map
-     */
-    static int sum(unordered_map_with_alloc & map);
 };
 
 

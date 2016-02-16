@@ -10,6 +10,7 @@
 #include <sstream>
 
 
+#define private public
 
 #define TEST_USE_MPI
 #define TEST_USE_PETSC
@@ -428,7 +429,7 @@ TEST(Profiler, Petsc_memory) {
 
 TEST(Profiler, memory_propagation){
     const int SIZE = 25;
-    int allocated_Whole = 0;
+    int allocated_whole = 0;
     int allocated_A = 0;
     int allocated_B = 0;
     int allocated_C = 0;
@@ -436,8 +437,9 @@ TEST(Profiler, memory_propagation){
     
     Profiler::initialize();
     {
-        allocated_Whole += alloc_and_dealloc<int>(SIZE);
-        EXPECT_EQ(AM, allocated_Whole);
+        allocated_whole = AM;
+        allocated_whole += alloc_and_dealloc<int>(SIZE);
+        EXPECT_EQ(AM, allocated_whole);
         
         START_TIMER("A");
             allocated_A += alloc_and_dealloc<int>(10 * SIZE);
@@ -456,18 +458,23 @@ TEST(Profiler, memory_propagation){
             
             allocated_A += alloc_and_dealloc<int>(10 * SIZE);
             
-            START_TIMER("D");
-                allocated_D += alloc_and_dealloc<int>(1 * SIZE);
-            END_TIMER("D");
+            for(int i = 0; i < 5; i++) {
+                START_TIMER("D");
+                    allocated_D += alloc_and_dealloc<int>(1 * SIZE);
+                END_TIMER("D");
+                START_TIMER("D");
+                    allocated_D += alloc_and_dealloc<int>(1 * SIZE);
+                END_TIMER("D");
+            }
             allocated_A += allocated_D;
             
+            
         END_TIMER("A");
-        allocated_Whole += allocated_A;
+        allocated_whole += allocated_A;
     }
     Profiler::instance()->propagate_timers();
-    EXPECT_EQ(AM, allocated_Whole);
+    EXPECT_EQ(AM, allocated_whole);
     EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 }
 

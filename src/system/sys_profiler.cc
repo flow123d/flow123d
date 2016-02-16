@@ -106,6 +106,7 @@ long MPI_Functions::max(long* val, MPI_Comm comm) {
 
 const int timer_no_child=-1;
 
+#ifdef FLOW123D_HAVE_PETSC
 Timer::Timer(const CodePoint &cp, int parent)
 : start_time(TimePoint()),
   cumul_time(0.0),
@@ -129,6 +130,26 @@ Timer::Timer(const CodePoint &cp, int parent)
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
 }
+#else
+Timer::Timer(const CodePoint &cp, int parent)
+: start_time(TimePoint()),
+  cumul_time(0.0),
+  call_count(0),
+  start_count(0),
+  code_point_(&cp),
+  full_hash_(cp.hash_),
+  hash_idx_(cp.hash_idx_),
+  parent_timer(parent),
+  total_allocated_(0),
+  total_deallocated_(0),
+  max_allocated_(0),
+  current_allocated_(0),
+  alloc_called(0),
+  dealloc_called(0)
+{
+    for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
+}
+#endif // FLOW123D_HAVE_PETSC
 
 /**
  * Debug information of the timer
@@ -164,7 +185,8 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
     parent.total_deallocated_ += child.total_deallocated_;
     parent.alloc_called += child.alloc_called;
     parent.dealloc_called += child.dealloc_called;
-
+    
+#ifdef FLOW123D_HAVE_PETSC
     // add differences from child
     parent.petsc_memory_difference += child.petsc_memory_difference;
     parent.current_allocated_ += child.current_allocated_;
@@ -172,29 +194,37 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
     // when computing maximum, we take greater value from parent and child
     // peak value from child are however realtive. Value from child is always
     // measured from zero even though some memory is being in use
-    parent.petsc_peak_memory += max(parent.petsc_peak_memory, child.petsc_peak_memory);
-    parent.max_allocated_ += max(parent.max_allocated_, child.max_allocated_);
+    parent.petsc_peak_memory = max(parent.petsc_peak_memory, child.petsc_peak_memory);
+#endif // FLOW123D_HAVE_PETSC
+    
+    parent.max_allocated_ = max(parent.max_allocated_, child.max_allocated_);
 }
 
 
 void Timer::pause() {
+#ifdef FLOW123D_HAVE_PETSC
     // get the maximum resident set size (memory used) for the program.
     PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
     if (petsc_peak_memory < petsc_local_peak_memory)
         petsc_peak_memory = petsc_local_peak_memory;
+#endif // FLOW123D_HAVE_PETSC
 }
 
 void Timer::resume() {
+#ifdef FLOW123D_HAVE_PETSC
     // tell PETSc to monitor the maximum memory usage so
     //   that PetscMemoryGetMaximumUsage() will work.
     PetscMemorySetGetMaximumUsage();
+#endif // FLOW123D_HAVE_PETSC
 }
 
 void Timer::start() {
+#ifdef FLOW123D_HAVE_PETSC
     // Tell PETSc to monitor the maximum memory usage so
     //   that PetscMemoryGetMaximumUsage() will work.
     PetscMemorySetGetMaximumUsage();
     PetscMemoryGetCurrentUsage (&petsc_start_memory);
+#endif // FLOW123D_HAVE_PETSC
     
     if (start_count == 0) {
         start_time = TimePoint();
@@ -206,6 +236,7 @@ void Timer::start() {
 
 
 bool Timer::stop(bool forced) {
+#ifdef FLOW123D_HAVE_PETSC
     // get current memory usage
     PetscMemoryGetCurrentUsage (&petsc_end_memory);
     petsc_memory_difference += petsc_end_memory - petsc_start_memory;
@@ -214,7 +245,8 @@ bool Timer::stop(bool forced) {
     PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
     if (petsc_peak_memory < petsc_local_peak_memory)
         petsc_peak_memory = petsc_local_peak_memory;
-        
+#endif // FLOW123D_HAVE_PETSC
+    
     if (forced) start_count=1;
 
     if (start_count == 1) {
@@ -272,6 +304,7 @@ const long Profiler::malloc_map_reserve = 100 * 1000;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
 void Profiler::initialize() {
+    instance();
     set_memory_monitoring(true);
 }
 
@@ -351,7 +384,7 @@ int Profiler::find_child(const CodePoint &cp) {
         if (timer.child_timers[idx] == timer_no_child) break; // tag is not there
 
         child_idx=timer.child_timers[idx];
-        ASSERT_LESS( child_idx, timers_.size());
+        // ASSERT_LESS( child_idx, timers_.size());
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
         idx = ( (unsigned int)(idx)==(Timer::max_n_childs - 1) ? 0 : idx+1 );
     } while ( (unsigned int)(idx) != cp.hash_idx_ ); // passed through whole array
@@ -410,6 +443,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
 
 void Profiler::stop_timer(int timer_index) {
     // stop_timer with CodePoint type
+    ASSERT(timer_index == actual_node, "Assert error: timer_index != actual_node: %d != %d", timer_index, actual_node);
     stop_timer(*timers_[timer_index].code_point_);
 }
 
@@ -589,8 +623,6 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         int alloc_called = timer.alloc_called;
         int dealloc_called = timer.dealloc_called;
         
-        long petsc_memory_difference = (long)timer.petsc_memory_difference;
-        long petsc_peak_memory = (long)timer.petsc_peak_memory;
         
         save_mpi_metric<double>(node, comm, &cumul_time, "cumul-time");
         save_mpi_metric<int>(node, comm, &call_count, "call-count");
@@ -602,8 +634,12 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         save_mpi_metric<int>(node, comm, &alloc_called, "memory-alloc-called");
         save_mpi_metric<int>(node, comm, &dealloc_called, "memory-dealloc-called");
         
+#ifdef FLOW123D_HAVE_PETSC
+        long petsc_memory_difference = (long)timer.petsc_memory_difference;
+        long petsc_peak_memory = (long)timer.petsc_peak_memory;
         save_mpi_metric<long>(node, comm, &petsc_memory_difference, "memory-petsc-diff");
         save_mpi_metric<long>(node, comm, &petsc_peak_memory, "memory-petsc-peak");
+#endif // FLOW123D_HAVE_PETSC
         
         return MPI_Functions::sum(&cumul_time, comm);
     };
@@ -671,9 +707,6 @@ void Profiler::output(ostream &os) {
         int alloc_called = timer.alloc_called;
         int dealloc_called = timer.dealloc_called;
         
-        long petsc_memory_difference = (long)timer.petsc_memory_difference;
-        long petsc_peak_memory = (long)timer.petsc_peak_memory;
-        
         save_nonmpi_metric<double>(node, &cumul_time, "cumul-time");
         save_nonmpi_metric<int>(node, &call_count, "call-count");
         
@@ -684,8 +717,12 @@ void Profiler::output(ostream &os) {
         save_nonmpi_metric<int>(node, &alloc_called, "memory-alloc-called");
         save_nonmpi_metric<int>(node, &dealloc_called, "memory-dealloc-called");
         
+#ifdef FLOW123D_HAVE_PETSC
+        long petsc_memory_difference = (long)timer.petsc_memory_difference;
+        long petsc_peak_memory = (long)timer.petsc_peak_memory;
         save_nonmpi_metric<long>(node, &petsc_memory_difference, "memory-petsc-diff");
         save_nonmpi_metric<long>(node, &petsc_peak_memory, "memory-petsc-peak");
+#endif // FLOW123D_HAVE_PETSC
         
         return cumul_time;
     };
@@ -820,18 +857,6 @@ bool Profiler::get_memory_monitoring() {
 unordered_map_with_alloc & MemoryAlloc::malloc_map() {
     static unordered_map_with_alloc static_malloc_map;
     return static_malloc_map;
-}
-
-unordered_map_with_alloc & MemoryAlloc::init_overhead_map() {
-    static unordered_map_with_alloc static_init_overhead_map;
-    return static_init_overhead_map;
-}
-
-int MemoryAlloc::sum(unordered_map_with_alloc & map) {
-    int total = 0;
-    for (auto it=map.begin(); it!=map.end(); it++)
-        total += it->second;
-    return total;
 }
 
 void * Profiler::operator new (size_t size) {
