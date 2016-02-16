@@ -351,32 +351,28 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
         	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
         	// get domain specification
         	RegionSet domain;
-        	std::string domain_name;
+        	Input::Array domain_name_array;
         	unsigned int id;
-			if (actual_list_item.opt_val("region", domain_name)) {
-				domain = mesh()->region_db().get_region_set(domain_name);
-				if (domain.size() == 0) {
-					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << actual_list_item.ei_address() );
-				}
+			if (actual_list_item.opt_val("region", domain_name_array)) {
+				std::vector<string> domain_names = mesh()->region_db().get_and_check_operands(domain_name_array);
+				domain = mesh()->region_db().union_set(domain_names);
 
 			} else if (actual_list_item.opt_val("rid", id)) {
+				Region region;
 				try {
-					Region region = mesh()->region_db().find_id(id);
-					if(region.is_valid())
-					    domain.push_back(region);
-					else
-					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
+					region = mesh()->region_db().find_id(id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
 					e << actual_list_item.ei_address();
 					throw;
 				}
+				if (region.is_valid())
+				    domain.push_back(region);
+				else
+				    THROW(RegionDB::ExcUnknownRegion() << RegionDB::EI_ID(id) );
 			} else {
 				THROW(ExcMissingDomain()
 						<< actual_list_item.ei_address() );
 			}
-		    
-			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
 
 			// get field instance   
 			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
