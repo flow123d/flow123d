@@ -126,3 +126,28 @@ TEST(Mesh, init_from_input) {
     EXPECT_EQ( 40, set[1].id() );
 
 }
+
+
+// simplest mesh
+string small_mesh = R"CODE(
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$Nodes
+4
+1 -1 1 1
+2 -1 -1 1
+3 1 1 -1
+4 -1 1 -1
+$EndNodes
+$Elements
+1
+1 4 2 39 40 2 3 1 4
+$EndElements
+)CODE";
+
+TEST(Mesh, decompose_problem) {
+    Mesh mesh;
+    stringstream in(small_mesh.c_str());
+    EXPECT_THROW_WHAT( { mesh.read_gmsh_from_stream(in); }, Partitioning::ExcDecomposeMesh, "Mesh is too small, n_elements: 1");
+}
