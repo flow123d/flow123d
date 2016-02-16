@@ -562,7 +562,7 @@ void TransportDG<Model>::update_solution()
     	for (unsigned int i=0; i<n_subst_; i++)
     	{
     		ls[i]->finish_assembly();
-
+                if (rhs[i] != nullptr) VecDestroy(&rhs[i]);
     		VecDuplicate(*( ls[i]->get_rhs() ), &rhs[i]);
     		VecCopy(*( ls[i]->get_rhs() ), rhs[i]);
     	}

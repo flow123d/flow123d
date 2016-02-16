@@ -191,11 +191,12 @@ void SchurComplement::form_schur()
 		// get C block, loc_size_B removed
 		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( Compl->get_matrix() ) );
 		// compute complement = (-1)cA+xA = Bt*IA*B - C
+		MatStructure pattern = (mat_reuse==MAT_INITIAL_MATRIX)?SUBSET_NONZERO_PATTERN:SAME_NONZERO_PATTERN;
 		if ( is_negative_definite() ) {
-			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, SUBSET_NONZERO_PATTERN);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, pattern);
 		} else {
 			ierr+=MatScale(*( Compl->get_matrix() ),-1.0);
-			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, SUBSET_NONZERO_PATTERN);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, pattern);
 		}
 		Compl->set_matrix_changed();
 
