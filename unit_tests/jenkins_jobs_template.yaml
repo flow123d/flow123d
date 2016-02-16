@@ -779,13 +779,12 @@
 #      5) uninstall - run NSIS silent uninstall and remove remaining files
 
 - defaults:
-    name: flow123d-package-test
+    name: flow123d-windows-package-test
     # default template fields
-    node: packages
+    node: windows_packages
     workspace: c:\package_tests\
     logrotate: 
       daysToKeep: 200
-
 
 - project:
     name: "Windows package tests"
@@ -800,9 +799,7 @@
 - job-template:
     name: "Windows-{arch}-package-{action}"
     display-name: "Windows {arch} package - {action}"
-    node: windows_packages
-    defaults: flow123d-package-test
-    workspace: c:\package_tests\
+    defaults: flow123d-windows-package-test
     builders:
       - batch: |
           python package.py -a {arch} -m {action} --version %GIT_BRANCH%
@@ -815,9 +812,7 @@
 - job-template:
     name: "Windows-{arch}-package-all"
     display-name: "Windows {arch} package multijob"
-    node: windows_packages
-    defaults: flow123d-package-test
-    workspace: c:\package_tests\
+    defaults: flow123d-windows-package-test
     scm:
       - git:
           remotes:
@@ -878,6 +873,17 @@
 #      4) python    - run simple test (03 - flow_implicit), checks profiler report generation
 #                       AND mainly test embedded Python for report convertion to txt file
 #      5) uninstall - rm -rf install location
+
+- defaults:
+    name: flow123d-linux-package-test
+    # default template fields
+    node: linux_packages
+    workspace: F123-linux-packages
+    logrotate: 
+      daysToKeep: 200
+
+
+      
 - project:
     name: "Linux package tests"
     action: [ "download,install", run, python_test, uninstall ]
@@ -891,9 +897,7 @@
 - job-template:
     name: "Linux-{arch}-package-{action}"
     display-name: "Linux {arch} package - {action}"
-    node: linux_packages
-    workspace: F123-linux-packages
-    defaults: flow123d-package-test
+    defaults: flow123d-linux-package-test
     triggers: 
       # run every day around 5 AM even if there is no change in code
       - timed: "H 5  * * *"
@@ -914,9 +918,7 @@
 - job-template:
     name: "Linux-{arch}-package-all"
     display-name: "Linux {arch} package multijob"
-    node: linux_packages
-    workspace: F123-linux-packages
-    defaults: flow123d-package-test
+    defaults: flow123d-linux-package-test
     scm:
       - git:
           remotes:
@@ -962,5 +964,3 @@
             - name: "Linux-{arch}-package-uninstall"
               condition: COMPLETED
               predefined-parameters: GIT_BRANCH=$GIT_BRANCH
-
-
