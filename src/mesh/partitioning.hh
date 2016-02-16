@@ -44,6 +44,13 @@ public:
     static const Input::Type::Selection & get_tool_sel();
     static const Input::Type::Record & get_input_type();
 
+	TYPEDEF_ERR_INFO(EI_MeshFile, std::string);
+	TYPEDEF_ERR_INFO(EI_NElems, unsigned int);
+	TYPEDEF_ERR_INFO(EI_NProcs, unsigned int);
+	DECLARE_EXCEPTION(ExcDecomposeMesh,
+			<< "Decomposition of mesh defined in the input file " << EI_MeshFile::qval << " can't be done.\n"
+			<< "Mesh is too small, n_elements: " << EI_NElems::val << ", n_processors: " << EI_NProcs::val );
+
     /**
      *  Constructor. A pointer to the mesh and accessor to an input record have to be provided.
      */
