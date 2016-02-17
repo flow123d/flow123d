@@ -183,7 +183,7 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,
 
     int mesh_size = old_ds.size();
     int num_of_procs = old_ds.np();
-    if (mesh_size < 2 * num_of_procs) { // check if decomposing is possible
+    if (mesh_size < num_of_procs) { // check if decomposing is possible
         THROW( ExcDecomposeMesh() << EI_NElems( mesh_size ) << EI_NProcs( num_of_procs ) );
     }
 
