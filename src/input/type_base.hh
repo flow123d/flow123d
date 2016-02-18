@@ -233,13 +233,6 @@ protected:
     /// Check if JSON string is valid
     bool validate_json(json_string str) const;
 
-    /**
-     * Add attributes to hash of the type specification.
-     *
-     * Method must be called in content_hash() method of TypeBase descendants.
-     */
-    void attribute_content_hash(std::size_t &seed) const;
-
     /// Create JSON output from @p parameter_map formatted as attribute.
     json_string print_parameter_map_to_json(ParameterMap parameter_map) const;
 
@@ -251,6 +244,12 @@ protected:
 
     /// flag is true if type should be root of generic subtree
     bool root_of_generic_subtree_;
+
+    /// hash string of generic type if type is derived, or empty string
+    std::string generic_type_;
+
+    /// map of parameters if type is part of generic subtree
+    boost::shared_ptr<ParameterMap> parameter_map_;
 
     friend class Array;
     friend class Record;
