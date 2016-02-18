@@ -26,6 +26,15 @@ problem: !SequentialCoupling
         bc_pressure: !FieldFormula
           value: -x+0.6
         bc_robin_sigma: 0.0004
+#      - time: 1.0
+#        region: .top
+#        bc_type: river
+#        bc_switch_pressure: !FieldFormula
+#          value: -x
+#        bc_pressure: !FieldFormula
+#          value: -x
+#        bc_robin_sigma: 0.0004
+        
       # ,
     output:
       # 
@@ -44,6 +53,7 @@ problem: !SequentialCoupling
         file: ./flow_river_square.pvd
         format: !vtk
           variant: ascii
+#        add_input_times: true          
       output_fields:
         - piezo_head_p0
         - pressure_p0
@@ -52,3 +62,5 @@ problem: !SequentialCoupling
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
+    nonlinear_solver:
+        tolerance: 1e-6
