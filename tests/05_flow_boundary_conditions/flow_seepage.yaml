@@ -23,6 +23,11 @@ problem: !SequentialCoupling
         bc_switch_pressure: !FieldFormula
           value: -x+0.5
         bc_flux: 0.0005
+      - time: 1.0
+        region: .top
+        bc_switch_pressure: !FieldFormula
+          value: -1.1*x+0.5
+        
       # ,
     output:
       # 
@@ -42,6 +47,7 @@ problem: !SequentialCoupling
         format: !vtk
           variant: ascii
         name: flow_output_stream
+        add_input_times: true
       output_fields:
         - piezo_head_p0
         - pressure_p0
@@ -53,3 +59,4 @@ problem: !SequentialCoupling
       a_tol: 1.0e-07
     nonlinear_solver:  
       tolerance: 1e-5
+      max_it: 5

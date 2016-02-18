@@ -435,10 +435,11 @@ void DarcyFlowMH_Steady::solve_nonlinear()
         Input::Record rec;
         if (input_record_.opt_val<Input::Record>("nonlinear_solver", rec)) {
             this->tolerance_ = rec.val<double>("tolerance");
+            this->max_n_it_  = rec.val<unsigned int>("max_it");
         }
     }
 
-    while (residual_norm > this->tolerance_ || n_it > this->max_n_it_) {
+    while (residual_norm > this->tolerance_ &&  n_it < this->max_n_it_) {
 
         int convergedReason = schur0->solve();
         this -> postprocess();
