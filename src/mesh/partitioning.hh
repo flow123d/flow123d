@@ -48,8 +48,8 @@ public:
 	TYPEDEF_ERR_INFO(EI_NElems, unsigned int);
 	TYPEDEF_ERR_INFO(EI_NProcs, unsigned int);
 	DECLARE_EXCEPTION(ExcDecomposeMesh,
-			<< "Decomposition of mesh defined in the input file " << EI_MeshFile::qval << " can't be done.\n"
-			<< "Mesh is too small, n_elements: " << EI_NElems::val << ", n_processors: " << EI_NProcs::val );
+			<< "Number of processors " << EI_NProcs::val << " greater then number of elements "
+			<< EI_NElems::val << ". Can not make partitioning of the mesh " << EI_MeshFile::qval << ".\n" );
 
     /**
      *  Constructor. A pointer to the mesh and accessor to an input record have to be provided.

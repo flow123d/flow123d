@@ -149,5 +149,6 @@ $EndElements
 TEST(Mesh, decompose_problem) {
     Mesh mesh;
     stringstream in(small_mesh.c_str());
-    EXPECT_THROW_WHAT( { mesh.read_gmsh_from_stream(in); }, Partitioning::ExcDecomposeMesh, "Mesh is too small, n_elements: 1");
+    EXPECT_THROW_WHAT( { mesh.read_gmsh_from_stream(in); }, Partitioning::ExcDecomposeMesh,
+    		"greater then number of elements 1. Can not make partitioning of the mesh");
 }
