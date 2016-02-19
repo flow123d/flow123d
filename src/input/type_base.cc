@@ -112,7 +112,7 @@ void TypeBase::add_attribute(std::string name, json_string val) {
 void TypeBase::write_attributes(ostream& stream) const {
 	// print hash of generic type and parameters into separate keys
 	if (generic_type_.size()) {
-		stream << "\"generic_type\" : \"" << generic_type_ << "\"" << endl;
+		stream << "\"generic_type\" : " << generic_type_ << endl;
 	}
 	if (parameter_map_->size()) {
 		json_string param_val = this->print_parameter_map_to_json(*parameter_map_);
