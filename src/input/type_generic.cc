@@ -105,12 +105,10 @@ bool Instance::finish(bool is_generic) {
 
 std::string print_parameter_vec(std::vector<TypeBase::ParameterPair> vec) {
 	stringstream ss;
-	ss << "[ ";
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = vec.begin(); vec_it!=vec.end(); vec_it++) {
 		if (vec_it != vec.begin()) ss << ", ";
 		ss << "\"" << vec_it->first << "\"";
 	}
-	ss << " ]";
 
 	return ss.str();
 }
@@ -131,8 +129,11 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
 	}
 
 	// add array of parameters to attributes of generic type
-	if (attributes_->find("parameters") == attributes_->end() )
-		generic_type_.add_attribute( "parameters", print_parameter_vec(parameters_) );
+	if (attributes_->find("parameters") == attributes_->end() ) {
+		stringstream ss;
+		ss << "[ " << print_parameter_vec(parameters_) << " ]";
+		generic_type_.add_attribute( "parameters", ss.str() );
+	}
 
 #ifdef FLOW123D_DEBUG_ASSERTS
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = parameters_.begin(); vec_it!=parameters_.end(); vec_it++) {
