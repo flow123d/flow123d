@@ -329,9 +329,9 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 	}
 	// Set attributes
 	rec.set_parameters_attribute(parameter_map);
-	rec.parameter_map_ = boost::make_shared<ParameterMap>(parameter_map);
+	rec.parameter_map_ = parameter_map;
 	rec.add_attribute("generic_type", this->hash_str());
-	rec.generic_type_ = this->hash_str();
+	rec.generic_type_hash_ = this->content_hash();
 
 	return std::make_pair( boost::make_shared<Record>(rec.close()), parameter_map );
 }
@@ -343,8 +343,8 @@ Record Record::deep_copy() const {
 	rec.data_->closed_ = false;
 	rec.data_->finished = false;
 	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
-	rec.generic_type_ = this->generic_type_;
-	rec.parameter_map_ = boost::make_shared<ParameterMap>(*parameter_map_);
+	rec.generic_type_hash_ = this->generic_type_hash_;
+	rec.parameter_map_ = this->parameter_map_;
 	return rec;
 }
 

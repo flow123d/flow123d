@@ -54,13 +54,13 @@ using namespace std;
 
 TypeBase::TypeBase()
 : attributes_( boost::make_shared<attribute_map>() ), root_of_generic_subtree_(false),
-  generic_type_(""), parameter_map_( boost::make_shared<ParameterMap>() ) {}
+  generic_type_hash_(0) {}
 
 
 
 TypeBase::TypeBase(const TypeBase& other)
 : attributes_(other.attributes_), root_of_generic_subtree_(other.root_of_generic_subtree_),
-  generic_type_(other.generic_type_), parameter_map_(other.parameter_map_) {}
+  generic_type_hash_(other.generic_type_hash_), parameter_map_(other.parameter_map_) {}
 
 
 
@@ -111,11 +111,11 @@ void TypeBase::add_attribute(std::string name, json_string val) {
 
 void TypeBase::write_attributes(ostream& stream) const {
 	// print hash of generic type and parameters into separate keys
-	if (generic_type_.size()) {
-		stream << "\"generic_type\" : " << generic_type_ << endl;
+	if (generic_type_hash_) {
+		stream << "\"generic_type\" : " << hash_str(generic_type_hash_) << endl;
 	}
-	if (parameter_map_->size()) {
-		json_string param_val = this->print_parameter_map_to_json(*parameter_map_);
+	if (parameter_map_.size()) {
+		json_string param_val = this->print_parameter_map_to_json(parameter_map_);
 		if (validate_json(param_val)) {
 			stream << "\"parameters\" : " << param_val << endl;
 		} else {
@@ -236,9 +236,9 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	json_string val = this->print_parameter_map_to_json(parameter_map);
 	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
 	(*arr.attributes_)["parameters"] = val;
-	arr.parameter_map_ = boost::make_shared<ParameterMap>(parameter_map);
+	arr.parameter_map_ = parameter_map;
 	(*arr.attributes_)["generic_type"] = TypeBase::hash_str();
-	arr.generic_type_ = TypeBase::hash_str();
+	arr.generic_type_hash_ = this->content_hash();
 
 	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );
 }

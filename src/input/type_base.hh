@@ -246,10 +246,10 @@ protected:
     bool root_of_generic_subtree_;
 
     /// hash string of generic type if type is derived, or empty string
-    std::string generic_type_;
+    TypeHash generic_type_hash_;
 
     /// map of parameters if type is part of generic subtree
-    boost::shared_ptr<ParameterMap> parameter_map_;
+    ParameterMap parameter_map_;
 
     friend class Array;
     friend class Record;
