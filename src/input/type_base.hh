@@ -253,6 +253,7 @@ protected:
 
     friend class Array;
     friend class Record;
+    friend class OutputBase;
 };
 
 /**

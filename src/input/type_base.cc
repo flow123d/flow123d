@@ -110,20 +110,6 @@ void TypeBase::add_attribute(std::string name, json_string val) {
 
 
 void TypeBase::write_attributes(ostream& stream) const {
-	// print hash of generic type and parameters into separate keys
-	if (generic_type_hash_) {
-		stream << "\"generic_type\" : " << hash_str(generic_type_hash_) << endl;
-	}
-	if (parameter_map_.size()) {
-		json_string param_val = this->print_parameter_map_to_json(parameter_map_);
-		if (validate_json(param_val)) {
-			stream << "\"parameters\" : " << param_val << endl;
-		} else {
-			xprintf(PrgErr, "Invalid JSON format of 'parameters' key in type '%s'.\n", this->type_name().c_str());
-		}
-	}
-
-	// print map of attributes
 	stream << "\"attributes\" : {" << endl;
 	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
         if (it != attributes_->begin()) {
