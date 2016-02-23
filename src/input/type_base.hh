@@ -186,9 +186,6 @@ public:
     /// Add attribute to map
     void add_attribute(std::string name, json_string val);
 
-    /// Print JSON output of attributes to @p stream.
-    void write_attributes(ostream& stream) const;
-
     /// Create instance of generic type, replace parameters in input tree by type stored in @p vec.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
 
