@@ -661,11 +661,6 @@ public:
     static void uninitialize();
 
     /**
-     * Check if the instance was created.
-     */
-    static bool is_initialized() { return (_instance != NULL); }
-    
-    /**
      * Class-specific allocation function new. Called by the usual
      * single-object new-expressions if allocating an object of type Profiler.
      */
@@ -892,8 +887,6 @@ public:
     inline double actual_cumulative_time() const
     { return 0.0; }
     static void uninitialize();
-    static bool is_initialized() { return (_instance != NULL); }
-
 private:
     static Profiler* _instance;
     Profiler() {}
