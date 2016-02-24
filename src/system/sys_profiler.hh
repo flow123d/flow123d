@@ -679,22 +679,34 @@ public:
     
     /**
      * Public setter to turn on/off memory monitoring
-     * @param value whether to turn monitoring on or off
+     * @param global_monitor whether to turn global monitoring on or off
+     * @param petsc_monitor petsc monitoring
      */
-    void static set_memory_monitoring(const bool value);
+    void static set_memory_monitoring(const bool global_monitor, const bool petsc_monitor);
     
     /**
      * Public getter to memory monitoring
      * @return memory monitoring status
      */
-    bool static get_memory_monitoring();
+    bool static get_global_memory_monitoring();
+    
+    /**
+     * Public getter to petsc memory monitoring
+     * @return memory monitoring status
+     */
+    bool static get_petsc_memory_monitoring();
 
 private:
     
     /**
      * Whether to monitor operator 'new/delete'
      */
-    static bool monitor_memory;
+    static bool global_monitor_memory;
+    
+    /**
+     * Whether to monitor petsc memory usage
+     */
+    static bool petsc_monitor_memory;
     
     /**
      * When creating Profiler also reserve some bytes in malloc_map so overhead 
