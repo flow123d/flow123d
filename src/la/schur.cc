@@ -189,14 +189,14 @@ void SchurComplement::form_schur()
 		ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
 
 		// get C block, loc_size_B removed
-		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( Compl->get_matrix() ) );
+		if (Compl->get_matrix() != nullptr) MatDestroy( const_cast<Mat *>( Compl->get_matrix() ) );
+		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, MAT_INITIAL_MATRIX, const_cast<Mat *>( Compl->get_matrix() ) );
 		// compute complement = (-1)cA+xA = Bt*IA*B - C
-		MatStructure pattern = (mat_reuse==MAT_INITIAL_MATRIX)?SUBSET_NONZERO_PATTERN:SAME_NONZERO_PATTERN;
 		if ( is_negative_definite() ) {
-			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, pattern);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, SUBSET_NONZERO_PATTERN);
 		} else {
 			ierr+=MatScale(*( Compl->get_matrix() ),-1.0);
-			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, pattern);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, SUBSET_NONZERO_PATTERN);
 		}
 		Compl->set_matrix_changed();
 
