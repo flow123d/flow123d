@@ -172,8 +172,11 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     					<< EI_Size(mf_array.size()) << EI_ExpectedSize(comp_size) << list.ei_address() );
     	}
     }
-
+    
     this->full_input_list_ = list;
+    
+    // Save the full array for future use in FieldCommon::mark_input_times().
+    list.copy_to(shared_->input_list_);
 }
 
 
