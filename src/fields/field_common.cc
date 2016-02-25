@@ -66,10 +66,11 @@ const std::string FieldCommon::field_descriptor_record_description(const string&
 
 
 
-void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
+void FieldCommon::mark_input_times(const TimeGovernor &tg) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
     // pass through field descriptors containing key matching field name.
+    TimeMark::Type mark_type = tg.equation_fixed_mark_type();
     double time;
     for( auto &item : shared_->input_list_) {
         time = item.val<double>("time"); // default time=0

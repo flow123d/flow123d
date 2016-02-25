@@ -477,7 +477,7 @@ void ConvectionTransport::zero_time_step()
 {
 	ASSERT_EQUAL(time_->tlevel(), 0);
 
-	data_.mark_input_times(target_mark_type);
+	data_.mark_input_times(*time_);
 	data_.set_time(time_->step(), LimitSide::right);
 
     set_initial_condition();

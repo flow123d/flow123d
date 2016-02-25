@@ -308,7 +308,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     if (make_tg) {
     	// steady time governor
     	time_ = new TimeGovernor();
-    	data_.mark_input_times(this->mark_type());
+    	data_.mark_input_times(this->time());
     	data_.set_time(time_->step(), LimitSide::right);
 
     	create_linear_system();
@@ -1553,7 +1553,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
     : DarcyFlowMH_Steady(mesh_in, in_rec, false)
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-	data_.mark_input_times(this->mark_type());
+	data_.mark_input_times(this->time());
 	data_.set_time(time_->step(), LimitSide::right);
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));

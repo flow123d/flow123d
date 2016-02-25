@@ -246,8 +246,8 @@ TYPED_TEST(FieldFix, mark_input_times) {
 	this->field_.set_input_list(this->input_list(list_ok));
 
 	TimeGovernor tg;
-	TimeMark::Type mark_type = tg.marks().new_mark_type();
-	this->field_.mark_input_times(mark_type);
+	TimeMark::Type mark_type = tg.marks().type_fixed_time();
+	this->field_.mark_input_times(tg);
 	auto it = tg.marks().next(tg, mark_type);
 	EXPECT_EQ( 1, it->time());
 	EXPECT_TRUE( it->match_mask(mark_type) );
