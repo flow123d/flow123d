@@ -1,6 +1,15 @@
 List of all changes in user interface and major internal changes.
 ************************************************
 
+#Flow123d version 1.8.4
+(2016-02-24)
+
+* Workaround for a mysterious memory leak in Petsc 3.4.x in the MatAXPY method.
+* Fix of memory leak in TransportDG.
+* Implementation of signal handler for better debugging information when terminated by system signal. 
+
+************************************************
+
 #Flow123d version 1.8.3
 (2015-06-19)
 
