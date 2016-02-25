@@ -110,7 +110,10 @@ public:
      * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
      */
     void set_mesh(const Mesh &mesh) override;
-
+    
+    
+    MultiField &set_bc(bool is_bc)
+    { shared_->bc_ = is_bc; return *this; }
 
     /**
      * Polymorphic copy. Check correct type, allows copy of MultiField or Field.

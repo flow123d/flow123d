@@ -138,10 +138,11 @@ void MultiField<spacedim, Value>::setup_components() {
     		full_name = this->shared_->comp_names_[i_comp] + "_" + name();
     	}
 
-    	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name) );
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name, is_bc()) );
     	sub_fields_[i_comp].units( units() );
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
+        sub_fields_[i_comp].input_selection(shared_->input_element_selection_);
     	sub_fields_[i_comp].add_factory( std::make_shared<MultiFieldFactory>(i_comp) );
 
     	if (this->shared_->input_default_!="") {

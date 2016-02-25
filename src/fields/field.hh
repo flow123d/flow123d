@@ -121,7 +121,7 @@ public:
      * Set parameters @p component_index_, @p shared_->input_name_ and @p name_.
      * Parameter name_ of Field is consisted of component name and MultiField name.
      */
-    Field(unsigned int component_index, string input_name, string name = "");
+    Field(unsigned int component_index, string input_name, string name = "", bool bc = false);
 
     /**
      * Copy constructor. Keeps shared history, declaration data, mesh.
