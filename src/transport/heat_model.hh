@@ -42,11 +42,11 @@ public:
 		/// Type of boundary condition (see also BC_Type)
         BCField<3, FieldValue<3>::Enum > bc_type;
 		/// Dirichlet boundary condition for temperature.
-		BCField<3, FieldValue<3>::Vector> bc_dirichlet_value;
+		MultiField<3, FieldValue<3>::Scalar> bc_dirichlet_value;
 		/// Flux value in total/diffusive flux b.c.
-		BCField<3, FieldValue<3>::Vector > bc_flux;
+		MultiField<3, FieldValue<3>::Scalar > bc_flux;
 		/// Transition coefficient in total/diffusive flux b.c.
-		BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
+		MultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial temperature.
 		Field<3, FieldValue<3>::Scalar> init_temperature;
 		/// Porosity of solid.

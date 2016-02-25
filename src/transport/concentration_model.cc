@@ -65,6 +65,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 : TransportEqData()
 {
     *this+=bc_type
+            .set_bc(true)
             .name("bc_type")
             .description(
             "Type of boundary condition.")
@@ -73,18 +74,21 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .input_selection( &get_bc_type_selection() )
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=bc_dirichlet_value
+            .set_bc(true)
             .name("bc_conc")
             .units( UnitSI().kg().m(-3) )
             .description("Dirichlet boundary condition (for each substance).")
             .input_default("0.0")
             .flags_add( in_rhs );
 	*this+=bc_flux
+	        .set_bc(true)
 			.name("bc_flux")
 			.description("Flux in Neumann boundary condition.")
 			.units( UnitSI().kg().m().s(-1).md() )
 			.input_default("0.0")
 			.flags_add(FieldFlag::in_rhs);
 	*this+=bc_robin_sigma
+	        .set_bc(true)
 			.name("bc_robin_sigma")
 			.description("Conductivity coefficient in Robin boundary condition.")
 			.units( UnitSI().m(4).s(-1).md() )

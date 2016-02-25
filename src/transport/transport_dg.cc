@@ -252,7 +252,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
 //    data_.set_limit_side(LimitSide::right);
     data_.region_id = GenericField<3>::region_id(*Model::mesh_);
 
@@ -272,7 +271,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 template<class Model>
 void TransportDG<Model>::initialize()
 {
-	data_.set_components(Model::substances_.names());
+    data_.set_components(Model::substances_.names());
+    data_.set_input_list( input_rec.val<Input::Array>("input_fields") );
 
     // DG stabilization parameters on boundary edges
     gamma.resize(Model::n_substances());

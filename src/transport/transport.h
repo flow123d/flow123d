@@ -78,7 +78,7 @@ public:
 		 * Boundary conditions (Dirichlet) for concentrations.
 		 * They are applied only on water inflow part of the boundary.
 		 */
-		BCField<3, FieldValue<3>::Vector> bc_conc;
+		MultiField<3, FieldValue<3>::Scalar> bc_conc;
 
 		/// Initial concentrations.
 		MultiField<3, FieldValue<3>::Scalar> init_conc;
