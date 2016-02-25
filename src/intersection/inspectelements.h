@@ -83,8 +83,8 @@ class InspectElements {
     void computeIntersections2d3d();
     void computeIntersections2d3dProlongation(const ProlongationLine &pl);
     void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, 
-                                                      const ElementFullIter &elm, 
-                                                      const ElementFullIter &ele);
+                                                      const ElementFullIter &ele_2d, 
+                                                      const ElementFullIter &ele_3d);
 
     bool intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
 

@@ -313,7 +313,10 @@ void InspectElements::compute_intersections<2,3>(){
 
 		{ START_TIMER("Element iteration");
 		FOR_ELEMENTS(mesh, elm) {
-			if (elm->dim() == 2 && !closed_elements[elm.index()] && elements_bb[elm->index()].intersect(mesh_3D_bb)) {
+			if (elm->dim() == 2 &&                                  // is 2D element
+                !closed_elements[elm.index()] &&                    // is not closed yet
+                elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
+            {    
 				update_triangle(elm);
 				std::vector<unsigned int> searchedElements;
 				bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
@@ -351,9 +354,24 @@ void InspectElements::compute_intersections<2,3>(){
 							// PRODLUŽOVÁNÍ
 							computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
 
+                            // - find first intersection polygon
+                            // - fill both prolongation queue in 2D and 3D
+                            // - clear prolongation queue:
+                            //      - clear 3D prolongation queue:
+                            //          - compute CI
+                            //          - fill both prolongation queue 2D and 3D
+                            //          - repeat until 3D queue is empty
+                            //      - we can close the 2D element which we started with
+                            //      - clear 2D prolongation queue:
+                            //          - compute CI
+                            //          - fill both prolongation queue 2D and 3D
+                            //          - repeat until 2D queue is empty
+                            //      - emptying 2D queue could fill 3D queue again, so repeat
 							while(1){
 								while(!prolongation_line_queue_3D.empty()){
-									computeIntersections2d3dProlongation((ProlongationLine)prolongation_line_queue_3D.front());
+                                    ProlongationLine pl = prolongation_line_queue_3D.front();
+                                    DBGMSG("Prolongation queue compute in 3d ele_idx %d.\n",pl.elm_3D_idx);
+									computeIntersections2d3dProlongation(pl);
 									prolongation_line_queue_3D.pop();
 
 								}
@@ -364,11 +382,14 @@ void InspectElements::compute_intersections<2,3>(){
 
 								element_2D_index = -1;
 								if(!prolongation_line_queue_2D.empty()){
-									computeIntersections2d3dProlongation((ProlongationLine)prolongation_line_queue_2D.front());
+                                    ProlongationLine pl = prolongation_line_queue_2D.front();
+                                    DBGMSG("Prolongation queue compute in 2d ele_idx %d.\n",pl.elm_2D_idx);
+									computeIntersections2d3dProlongation(pl);
 									prolongation_line_queue_2D.pop();
 
 								}
 
+								// TODO shoud not this be further, just before 'break' when queues are empty??
 								if(element_2D_index >= 0){
 									closed_elements[element_2D_index] = true;
 
@@ -377,7 +398,6 @@ void InspectElements::compute_intersections<2,3>(){
 								element_2D_index = -1;
 
 								if(prolongation_line_queue_2D.empty() && prolongation_line_queue_3D.empty()){
-
 									break;
 								}
 
@@ -404,35 +424,33 @@ void InspectElements::compute_intersections<2,3>(){
 };
 
 
-void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele){
+void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector< unsigned int >& prolongation_table, 
+                                                                   const ElementFullIter& ele_2d, 
+                                                                   const ElementFullIter& ele_3d){
 
-
-	unsigned int elm_2D = ele->index();
-	//xprintf(Msg, "========PRODLUZUJI========\n");
 	for(unsigned int i = 0; i < prolongation_table.size();i++){
 
-		unsigned int stena;
-		unsigned int typ_elm;
+		unsigned int side;
+		bool is_triangle_side = true;
 
 		if(prolongation_table[i] >= 4){
-			stena = prolongation_table[i] - 4;
-			typ_elm = 0;
+			side = prolongation_table[i] - 4;
 		}else{
-			stena = prolongation_table[i];
-			typ_elm = 1;
+			side = prolongation_table[i];
+			is_triangle_side = false;
 		}
 
-		//cout << "[" << stena << "," << typ_elm << "]" << endl;
+        DBGMSG("prolongation table: %d %d\n", side, is_triangle_side);
 
-
-		if(typ_elm == 0){
-			// prodlužuji hranou
+		if(is_triangle_side){
+			// prolongation through the triangle side
 
 			//xprintf(Msg,"Procházím hranu(%d) na id elementu(%d), hrana(%d)\n"
-			//					, stena,elm->index(),elm->side(2-stena)->el_idx());
+			//					, side,elm->index(),elm->side(2-side)->el_idx());
 
 
-			SideIter elm_side = elm->side((3-stena)%3);
+// 			SideIter elm_side = elm->side((3-side)%3);
+            SideIter elm_side = ele_2d->side(side);
 
 
 			Edge *edg = elm_side->edge();
@@ -442,28 +460,30 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<u
 				if (other_side != elm_side) {
 					unsigned int sousedni_element = other_side->element()->index(); // 2D element
 
+                    DBGMSG("2d sousedni_element %d\n", sousedni_element);
 							//xprintf(Msg, "Naleznut sousedni element elementu(3030) s ctyrstenem(%d)\n", ele->index());
-							//xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)\n",elm->index(),stena,other_side->element()->index(),other_side->el_idx());
+							//xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)\n",elm->index(),side,other_side->element()->index(),other_side->el_idx());
 
 
-						if(!intersectionExists(sousedni_element,elm_2D)){
+						if(!intersectionExists(sousedni_element,ele_3d->index())){
 							//flag_for_3D_elements[ele->index()] = sousedni_element;
-
+                            DBGMSG("2d prolong\n");
 							// Vytvoření průniku bez potřeby počítání
-							IntersectionPolygon il_other(sousedni_element, elm_2D);
+							IntersectionPolygon il_other(sousedni_element, ele_3d->index());
 							intersection_list[sousedni_element].push_back(il_other);
 
 							//ProlongationLine pl2(sousedni_element, elm_2D, intersection_list[sousedni_element].size() - 1);
-							ProlongationLine pl2 = {sousedni_element, elm_2D, intersection_list[sousedni_element].size() - 1, -1, -1};
+							ProlongationLine pl2 = {sousedni_element, ele_3d->index(), intersection_list[sousedni_element].size() - 1, -1, -1};
 							prolongation_line_queue_2D.push(pl2);
 						}
 				}
 			}
 
 		}else{
-			// prodlužuji stěnou
+			// prolongation through the tetrahedron side
 
-			SideIter elm_side = ele->side((unsigned int)(3-stena)); //ele->side(3-stena);
+// 			SideIter elm_side = ele->side((unsigned int)(3-side)); //ele->side(3-side);
+            SideIter elm_side = ele_3d->side(side);
 			Edge *edg = elm_side->edge();
 
 			for(int j=0; j < edg->n_sides;j++) {
@@ -473,17 +493,30 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<u
 
 					unsigned int sousedni_element = other_side->element()->index();
 
+                    DBGMSG("3d sousedni_element %d\n", sousedni_element);
 
-					if(flag_for_3D_elements[sousedni_element] == -1 || (flag_for_3D_elements[sousedni_element] != (int)elm->index() && !intersectionExists(elm->index(),sousedni_element))){
-						flag_for_3D_elements[sousedni_element] = elm->index();
+                    // TODO: flag_for_3D_elements seems to be optimalisation:
+                    // - rename it, describe it and test that it is really useful !!
+                    // how it probably works: 
+                    // - if "-1" then no intersection has been computed for the 3D element
+                    // - if not "-1" check the index of actual 2D element 
+                    //   (most probable case, that we are looking along 2D element back to 3D element, which we have just computed)
+                    // - if it is another 2D element, then go through all found intersections of the 3D element and test it..
+                    
+					if(flag_for_3D_elements[sousedni_element] == -1 || 
+                        (flag_for_3D_elements[sousedni_element] != (int)ele_2d->index() && !intersectionExists(ele_2d->index(),sousedni_element))){
+						
+                        flag_for_3D_elements[sousedni_element] = ele_2d->index();
 						// Jedná se o vnitřní čtyřstěny v trojúhelníku
 
+                        DBGMSG("3d prolong\n");
+                        
 						// Vytvoření průniku bez potřeby počítání
-						IntersectionPolygon il_other(elm.index(), sousedni_element);
-						intersection_list[elm.index()].push_back(il_other);
+						IntersectionPolygon il_other(ele_2d.index(), sousedni_element);
+						intersection_list[ele_2d.index()].push_back(il_other);
 
 						//ProlongationLine pl2(elm.index(), sousedni_element, intersection_list[elm.index()].size() - 1);
-						ProlongationLine pl2 = {elm.index(), sousedni_element, intersection_list[elm.index()].size() - 1, -1, -1};
+						ProlongationLine pl2 = {ele_2d.index(), sousedni_element, intersection_list[ele_2d.index()].size() - 1, -1, -1};
 						prolongation_line_queue_3D.push(pl2);
 
 					}
