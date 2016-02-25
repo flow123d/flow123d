@@ -189,7 +189,10 @@ void SchurComplement::form_schur()
 		ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
 
 		// get C block, loc_size_B removed
-		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( Compl->get_matrix() ) );
+		// We destroy and newly create the complement matrix because otherwise
+		// memory was leaked in MatAXPY (with Petsc 3.4 and parallel run).
+		if ( Compl->get_matrix() != nullptr ) ierr+=MatDestroy( const_cast<Mat *>( Compl->get_matrix() ) );
+		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, MAT_INITIAL_MATRIX, const_cast<Mat *>( Compl->get_matrix() ) );
 		// compute complement = (-1)cA+xA = Bt*IA*B - C
 		if ( is_negative_definite() ) {
 			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, SUBSET_NONZERO_PATTERN);
