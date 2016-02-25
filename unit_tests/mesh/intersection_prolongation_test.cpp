@@ -65,8 +65,10 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
 
     // compute intersection
     DBGMSG("Computing intersection length by NEW algorithm\n");
-    InspectElements ie(mesh);
-    ie.compute_intersections<1,3>();
+//     InspectElements ie(mesh);
+//     ie.compute_intersections<1,3>();
+    InspectElementsAlgorithm13 ie(mesh);
+    ie.compute_intersections();
     
 //     //test solution
 //     std::vector<computeintersection::IntersectionLine> pp = ie.list_intersection_lines(1);
@@ -90,7 +92,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
 //     }
     
     length = ie.line_length();
-    ie.print_mesh_to_file_1D("output_intersection_13");
+    //ie.print_mesh_to_file_1D("output_intersection_13");
     DBGMSG("Length of intersection line: (intersections) %.16e\n", length);
 //     EXPECT_NEAR(length1, length2, 1e-12);
     EXPECT_DOUBLE_EQ(length,1.5*std::sqrt(0.27)+0.35+0.2
@@ -131,8 +133,8 @@ TEST(intersection_prolongation_13d, all) {
 //     
 //     std::sort(filenames.begin(), filenames.end(), less<string>());
     
-    std::vector<string> filenames = { //"prolongation_13d_01.msh"
-                                    "prolongation_13d_02.msh"
+    std::vector<string> filenames = {   "prolongation_13d_01.msh",
+                                        //"prolongation_13d_02.msh"
     };
     
     std::vector<IntersectionLine> solution;
@@ -268,7 +270,8 @@ void compute_intersection_23d(Mesh *mesh, const computeintersection::Intersectio
     DBGMSG("Computing intersection area by NEW algorithm\n");
     InspectElements ie(mesh);
     ie.compute_intersections<2,3>();
-    
+//     InspectElementsAlgorithm23 ie(mesh);
+//     ie.compute_intersections();
 //     //test solution
 //     std::vector<computeintersection::IntersectionLine> pp = ie.list_intersection_lines(1);
 //     computeintersection::IntersectionLine ilc;

@@ -28,6 +28,91 @@ template<unsigned int N, unsigned int M> class IntersectionPoint;
 class IntersectionLine;
 class IntersectionPolygon;
     
+
+template<unsigned int dim>
+class InspectElementsAlgorithmBase{
+public:
+    struct Prolongation{
+        unsigned int slave_elm_idx;
+        unsigned int elm_3D_idx;
+        unsigned int dictionary_idx; // index to dictionary with all intersections associated with index of 2D element
+    };
+    
+    
+    InspectElementsAlgorithmBase(Mesh *_mesh);
+    virtual ~InspectElementsAlgorithmBase(){};
+    
+    void compute_intersections();
+
+protected:
+    std::queue<Prolongation> prolongation_queue_slave_;
+    std::queue<Prolongation> prolongation_queue_3D_;
+    
+    // Array of flags, which elements are computed
+    std::vector<bool> closed_elements;
+    std::vector<int> last_slave_for_3D_elements;
+    int slave_element_idx_;   ///< last computed slave element
+    
+    Mesh *mesh;
+    std::vector<BoundingBox> elements_bb;
+    BoundingBox mesh_3D_bb;
+    
+    Simplex<dim> slave_simplex;
+    Simplex<3> tetrahedron;
+    
+    void init();
+    template<unsigned int simplex_dim>
+    void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
+    
+    virtual bool compute_initial_CI(const ElementFullIter &elm, const ElementFullIter &ele_3D) = 0;
+    virtual void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D) = 0;
+    virtual void prolongate(const Prolongation &pr) = 0;
+    
+};
+
+class InspectElementsAlgorithm13 : public InspectElementsAlgorithmBase<1>
+{
+    bool compute_initial_CI(const ElementFullIter &elm, const ElementFullIter &ele_3D) override;
+    void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D) override;
+    void prolongate(const Prolongation &pr) override;
+    
+    bool intersection_exists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
+    
+    //List of intersection lines.
+    std::vector<std::vector<IntersectionLine>> intersection_list_;
+    
+public:
+    InspectElementsAlgorithm13(Mesh *_mesh);
+    ~InspectElementsAlgorithm13();
+    
+        /** @brief Computes the length of 1d-3d line intersection (sum over all lines).
+     * @return the line length
+     */
+    double line_length();
+};
+
+class InspectElementsAlgorithm23 : public InspectElementsAlgorithmBase<2>
+{
+    bool compute_initial_CI(const ElementFullIter &elm, const ElementFullIter &ele_3D) override;
+    void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D) override;
+    void prolongate(const Prolongation &pr) override;
+    
+    bool intersection_exists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
+    
+    std::vector<unsigned int> prolongation_table_;
+    
+    /// List of intersection polygons.
+    std::vector<std::vector<IntersectionPolygon>> intersection_list_;
+
+public:
+    InspectElementsAlgorithm23(Mesh *_mesh);
+    ~InspectElementsAlgorithm23();
+};
+
+
+
+
+
 /**
 * Main class, which takes mesh and you can call method for computing intersections for different dimensions of elements
 * It can compute whole polygon area.
@@ -141,6 +226,11 @@ template<> void InspectElements::compute_intersections_init<2,3>();
 template<> void InspectElements::compute_intersections<1,2>();
 template<> void InspectElements::compute_intersections<1,3>();
 template<> void InspectElements::compute_intersections<2,3>();
+
+// template<> template<> void InspectElementsAlgorithmBase<1>::update_simplex<1>(const ElementFullIter &element,
+//                                                                               Simplex<1> & simplex);
+// template<> template<> void InspectElementsAlgorithmBase<1>::update_simplex<3>(const ElementFullIter &element,
+//                                                                               Simplex<3> & simplex);
 
 } // END namespace
 

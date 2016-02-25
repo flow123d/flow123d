@@ -20,6 +20,512 @@
 
 namespace computeintersection {
 
+template<unsigned int dim>    
+InspectElementsAlgorithmBase<dim>::InspectElementsAlgorithmBase(Mesh* _mesh)
+: slave_element_idx_(-1), mesh(_mesh)
+{}
+    
+InspectElementsAlgorithm13::InspectElementsAlgorithm13(Mesh* _mesh)
+: InspectElementsAlgorithmBase< 1 >(_mesh)
+{
+    intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionLine>());
+}
+
+InspectElementsAlgorithm13::~InspectElementsAlgorithm13()
+{}
+
+
+InspectElementsAlgorithm23::InspectElementsAlgorithm23(Mesh* _mesh)
+: InspectElementsAlgorithmBase< 2 >(_mesh)
+{}
+
+InspectElementsAlgorithm23::~InspectElementsAlgorithm23()
+{}
+
+
+double InspectElementsAlgorithm13::line_length()
+{
+    double subtotal = 0.0;
+
+    for(unsigned int i = 0; i < intersection_list_.size(); i++){
+        for(unsigned int j = 0; j < intersection_list_[i].size();j++){
+            //if(intersection_list_[i][j].size() < 2) continue;
+            ElementFullIter ele = mesh->element(intersection_list_[i][j].ele_1d_idx());            
+            double t1d_length = ele->measure();
+            double local_length = intersection_list_[i][j].compute_length();
+            
+            arma::vec3 from = intersection_list_[i][j][0].coords(ele);
+            arma::vec3 to = intersection_list_[i][j][1].coords(ele);
+            DBGMSG("sublength from [%f %f %f] to [%f %f %f] = %f\n",
+                   from[0], from[1], from[2], 
+                   to[0], to[1], to[2],
+                   local_length*t1d_length);
+            
+            subtotal += local_length*t1d_length;
+        }
+    }
+    return subtotal;
+}
+
+    
+template<unsigned int dim>
+void InspectElementsAlgorithmBase<dim>::init()
+{
+    START_TIMER("Intersection initialization");
+    last_slave_for_3D_elements.assign(mesh->n_elements(), -1);
+    closed_elements.assign(mesh->n_elements(), false);
+
+    if(elements_bb.size() == 0){
+        elements_bb.resize(mesh->n_elements());
+        bool first_3d_element = true;
+        FOR_ELEMENTS(mesh, elm) {
+
+            elements_bb[elm->index()] = elm->bounding_box();
+
+                if (elm->dim() == 3){
+                    if(first_3d_element){
+                        first_3d_element = false;
+                        mesh_3D_bb = elements_bb[elm->index()];
+                    }else{
+                        mesh_3D_bb.expand(elements_bb[elm->index()].min());
+                        mesh_3D_bb.expand(elements_bb[elm->index()].max());
+                    }
+                }
+        }
+    }
+    END_TIMER("Intersection initialization");
+}
+
+template<unsigned int dim>
+template<unsigned int simplex_dim>
+void InspectElementsAlgorithmBase<dim>::update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
+{
+    arma::vec3 *field_of_points[simplex_dim+1];
+    for(unsigned int i=0; i < simplex_dim+1; i++)
+        field_of_points[i]= &(element->node[i]->point());
+    simplex.set_simplices(field_of_points);
+}
+
+
+template<unsigned int dim>
+void InspectElementsAlgorithmBase<dim>::compute_intersections()
+{
+    init();
+    
+    BIHTree bt(mesh, 20);
+
+    {START_TIMER("Element iteration");
+    
+    FOR_ELEMENTS(mesh, elm) {
+        if (elm->dim() == dim &&                                // is 2D element
+            !closed_elements[elm.index()] &&                    // is not closed yet
+            elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
+        {    
+            update_simplex(elm, slave_simplex); // update slave simplex
+            std::vector<unsigned int> searchedElements;
+            bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
+
+            {START_TIMER("Bounding box element iteration");
+            
+            for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
+            {
+                int idx = *it;
+                ElementFullIter ele_3D = mesh->element(idx);
+
+                if (ele_3D->dim() == 3 && last_slave_for_3D_elements[ele_3D->index()] != (int)(elm->index())) {
+                    
+                    DBGMSG("elements %d %d\n",elm->index(), ele_3D->index());
+                    update_simplex(ele_3D, tetrahedron); // update tetrahedron
+                    bool found = compute_initial_CI(elm, ele_3D);
+
+                    //TODO: how does prolongation work when there are 1 or 2 IPs?
+                    if(found){
+                        
+                        last_slave_for_3D_elements[ele_3D->index()] = elm.index();
+
+                        // prolongation:
+                        
+                        prolongation_decide(elm, ele_3D);
+
+                        // - find first intersection polygon
+                        // - fill both prolongation queue in 2D and 3D
+                        // - clear prolongation queue:
+                        //      - clear 3D prolongation queue:
+                        //          - compute CI
+                        //          - fill both prolongation queue 2D and 3D
+                        //          - repeat until 3D queue is empty
+                        //      - we can close the 2D element which we started with
+                        //      - clear 2D prolongation queue:
+                        //          - compute CI
+                        //          - fill both prolongation queue 2D and 3D
+                        //          - repeat until 2D queue is empty
+                        //      - emptying 2D queue could fill 3D queue again, so repeat
+                        while(1){
+                            while(!prolongation_queue_3D_.empty()){
+                                Prolongation pr = prolongation_queue_3D_.front();
+                                DBGMSG("Prolongation queue compute in 3d ele_idx %d.\n",pr.elm_3D_idx);
+                                prolongate(pr);
+                                prolongation_queue_3D_.pop();
+
+                            }
+
+                            if(slave_element_idx_ >= 0) closed_elements[slave_element_idx_] = true;
+
+                            slave_element_idx_ = -1;
+                            
+                            if(!prolongation_queue_slave_.empty()){
+                                Prolongation pr = prolongation_queue_slave_.front();
+                                DBGMSG("Prolongation queue compute in 2d ele_idx %d.\n",pr.slave_elm_idx);
+                                prolongate(pr);
+                                prolongation_queue_slave_.pop();
+
+                            }
+
+                                
+                            if(prolongation_queue_slave_.empty() && prolongation_queue_3D_.empty()){
+                                if(slave_element_idx_ >= 0) closed_elements[slave_element_idx_] = true;
+                                    
+                                slave_element_idx_ = -1;
+                                break;
+                            }
+
+                        }
+                        break; // ukončí procházení dalších bounding boxů
+                    }
+
+                }
+            }
+            // Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
+            closed_elements[elm.index()] = true;
+            END_TIMER("Bounding box element iteration");}
+        }
+    }
+
+    END_TIMER("Element iteration");}
+}
+  
+ 
+ 
+ 
+bool InspectElementsAlgorithm13::compute_initial_CI(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+{
+    IntersectionLine il(elm->index(), ele_3D->index());
+    START_TIMER("Compute intersection 13");
+    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(slave_simplex, tetrahedron);
+    CI_13.init();
+    CI_13.compute(il.points());
+    END_TIMER("Compute intersection 13");
+    
+    if(il.points().size() > 0) {
+        intersection_list_[elm->index()].push_back(il);
+        return true;
+    }
+    else return false;
+}
+
+void InspectElementsAlgorithm13::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+{
+    IntersectionLine il = intersection_list_[elm.index()].back();
+    for(const IntersectionPoint<1,3> &IP : il.points()) {
+        if(IP.dim_A() == 0) { 
+            // if IP is end of the 1D element
+            // prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
+            SideIter elm_side = elm->side(IP.idx_A());  // side of 1D element is vertex
+            Edge *edg = elm_side->edge();
+            for(int j=0; j < edg->n_sides;j++) {
+                
+                SideIter other_side=edg->side(j);
+                if (other_side != elm_side) {
+
+                    unsigned int sousedni_element = other_side->element()->index();
+                    if(!intersection_exists(sousedni_element,ele_3D->index())){
+                    //if(!closed_elements[sousedni_element]){
+                        DBGMSG("1d prolong\n");
+                        
+                        // Vytvoření průniku bez potřeby počítání
+                        IntersectionLine il_other(sousedni_element, ele_3D->index());
+                        intersection_list_[sousedni_element].push_back(il_other);
+                        
+                        Prolongation pr = {sousedni_element, ele_3D->index(), intersection_list_[sousedni_element].size() - 1};
+                        prolongation_queue_slave_.push(pr);
+                    }
+                }
+            }
+        }else{
+            std::vector<Edge*> edges;
+
+            switch (IP.dim_B())
+            {
+                // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
+                case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
+                            edges.push_back(&(mesh->edges[ele_3D->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
+                        break;
+                
+                // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
+                case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
+                            edges.push_back(&(mesh->edges[ele_3D->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
+                        break;
+                        
+                // IP is on a side of tetrahedron; only possible edge is from the given side
+                case 2: edges.push_back(&(mesh->edges[ele_3D->edge_idx_[IP.idx_B()]]));
+                        break;
+                default: ASSERT_LESS(IP.dim_B(),3);
+            }
+            
+            for(Edge* edg : edges)
+            for(int j=0; j < edg->n_sides;j++) {
+                if (edg->side(j)->element() != ele_3D) {
+                    unsigned int sousedni_element = edg->side(j)->element()->index();
+
+                    if(last_slave_for_3D_elements[sousedni_element] == -1 || 
+                        (last_slave_for_3D_elements[sousedni_element] != (int)elm->index() && !intersection_exists(elm->index(),sousedni_element)))
+                    {
+                        last_slave_for_3D_elements[sousedni_element] = elm->index();
+                     
+                        DBGMSG("3d prolong\n");
+                        
+                        // Vytvoření průniku bez potřeby počítání
+                        IntersectionLine il_other(elm.index(), sousedni_element);
+                        intersection_list_[elm.index()].push_back(il_other);
+                        
+                        Prolongation pr = {elm->index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
+                        prolongation_queue_3D_.push(pr);
+                    }
+                    
+//                     if(last_slave_for_3D_elements[sousedni_element] == -1 || 
+//                         (last_slave_for_3D_elements[sousedni_element] != (int)elm->index() && !intersection_exists(elm->index(),sousedni_element))){
+//                         
+//                         last_slave_for_3D_elements[sousedni_element] = elm->index();
+//                         // Jedná se o vnitřní čtyřstěny v trojúhelníku
+// 
+//                         DBGMSG("3d prolong\n");
+//                         
+//                         // Vytvoření průniku bez potřeby počítání
+//                         IntersectionPolygon il_other(elm.index(), sousedni_element);
+//                         intersection_list_[elm.index()].push_back(il_other);
+// 
+//                         Prolongation pr = {elm.index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
+//                         prolongation_queue_3D_.push(pr);
+// 
+//                     }
+                }   
+            }
+        }  
+    }
+}
+
+void InspectElementsAlgorithm13::prolongate(const InspectElementsAlgorithmBase< 1 >::Prolongation& pr)
+{
+    ElementFullIter elm = mesh->element(pr.slave_elm_idx);
+    ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
+    
+    DBGMSG("Prolongate 1D: %d in %d.\n", pr.slave_elm_idx, pr.elm_3D_idx);
+    //closed_elements[pr.slave_elm_idx] = true;
+    
+    update_simplex(elm, slave_simplex);
+    update_simplex(ele_3D, tetrahedron);
+    
+    slave_element_idx_ = pr.slave_elm_idx;
+
+    //IntersectionLine il(pr.slave_elm_idx, pr.elm_3D_idx);
+    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(slave_simplex, tetrahedron);
+    CI_13.init();
+    CI_13.compute(intersection_list_[pr.slave_elm_idx][pr.dictionary_idx].points());
+
+    if(intersection_list_[pr.slave_elm_idx][pr.dictionary_idx].size() > 1){
+        //cout << il[0] << il[1];
+        //intersection_list_[pr.slave_elm_idx].push_back(il);
+        prolongation_decide(elm, ele_3D);
+    }
+}
+
+void InspectElementsAlgorithm23::prolongate(const InspectElementsAlgorithmBase< 2 >::Prolongation& pr)
+{
+    // Měli bychom být vždy ve stejném trojúhelníku, tudíž updateTriangle by měl být zbytečný
+    ElementFullIter elm = mesh->element(pr.slave_elm_idx);
+    ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
+
+    DBGMSG("Prolongate 2D: %d in %d.\n", pr.slave_elm_idx, pr.elm_3D_idx);
+    
+    update_simplex(elm, slave_simplex);
+    update_simplex(ele_3D, tetrahedron);
+
+    slave_element_idx_ = pr.slave_elm_idx;
+
+    ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(slave_simplex, tetrahedron);
+    CI_23.init();
+    CI_23.compute(intersection_list_[pr.slave_elm_idx][pr.dictionary_idx]);
+
+    if(intersection_list_[pr.slave_elm_idx][pr.dictionary_idx].size() > 2){
+        intersection_list_[pr.slave_elm_idx][pr.dictionary_idx].trace_polygon(prolongation_table_);
+        prolongation_decide(elm, ele_3D);
+    }
+}
+
+
+bool InspectElementsAlgorithm23::compute_initial_CI(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+{
+    IntersectionPolygon ip(elm.index(), ele_3D->index());
+    START_TIMER("Compute intersection 23");
+    ComputeIntersection<Simplex<2>,Simplex<3> > CI(slave_simplex, tetrahedron);
+    CI.init();
+    CI.compute(ip);
+    END_TIMER("Compute intersection 23");
+    
+    if(ip.size() > 0) {
+        prolongation_table_.clear();
+        ip.trace_polygon(prolongation_table_);
+        //il.printTracingTable();
+
+        intersection_list_[elm.index()].push_back(ip);
+        return true;
+    }
+    else return false;
+} 
+ 
+void InspectElementsAlgorithm23::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+{
+    for(unsigned int i = 0; i < prolongation_table_.size();i++){
+
+        unsigned int side;
+        bool is_triangle_side = true;
+
+        if(prolongation_table_[i] >= 4){
+            side = prolongation_table_[i] - 4;
+        }else{
+            side = prolongation_table_[i];
+            is_triangle_side = false;
+        }
+
+        DBGMSG("prolongation table: %d %d\n", side, is_triangle_side);
+
+        if(is_triangle_side){
+            // prolongation through the triangle side
+
+            SideIter elm_side = elm->side(side);
+
+
+            Edge *edg = elm_side->edge();
+
+            for(int j=0; j < edg->n_sides;j++) {
+                SideIter other_side=edg->side(j);
+                if (other_side != elm_side) {
+                    unsigned int sousedni_element = other_side->element()->index(); // 2D element
+
+                    DBGMSG("2d sousedni_element %d\n", sousedni_element);
+                            //xprintf(Msg, "Naleznut sousedni element elementu(3030) s ctyrstenem(%d)\n", ele->index());
+                            //xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)\n",elm->index(),side,other_side->element()->index(),other_side->el_idx());
+
+                        if(!intersection_exists(sousedni_element,ele_3D->index())){
+                            //flag_for_3D_elements[ele->index()] = sousedni_element;
+                            DBGMSG("2d prolong\n");
+                            // Vytvoření průniku bez potřeby počítání
+                            IntersectionPolygon il_other(sousedni_element, ele_3D->index());
+                            intersection_list_[sousedni_element].push_back(il_other);
+
+                            Prolongation pr = {sousedni_element, ele_3D->index(), intersection_list_[sousedni_element].size() - 1};
+                            prolongation_queue_slave_.push(pr);
+                        }
+                }
+            }
+
+        }else{
+            // prolongation through the tetrahedron side
+            
+            SideIter elm_side = ele_3D->side(side);
+            Edge *edg = elm_side->edge();
+
+            for(int j=0; j < edg->n_sides;j++) {
+                SideIter other_side=edg->side(j);
+                if (other_side != elm_side) {
+                    //
+
+                    unsigned int sousedni_element = other_side->element()->index();
+
+                    DBGMSG("3d sousedni_element %d\n", sousedni_element);
+
+                    // TODO: flag_for_3D_elements seems to be optimalisation:
+                    // - rename it, describe it and test that it is really useful !!
+                    // how it probably works: 
+                    // - if "-1" then no intersection has been computed for the 3D element
+                    // - if not "-1" check the index of actual 2D element 
+                    //   (most probable case, that we are looking along 2D element back to 3D element, which we have just computed)
+                    // - if it is another 2D element, then go through all found intersections of the 3D element and test it..
+                    
+                    if(last_slave_for_3D_elements[sousedni_element] == -1 || 
+                        (last_slave_for_3D_elements[sousedni_element] != (int)elm->index() && !intersection_exists(elm->index(),sousedni_element))){
+                        
+                        last_slave_for_3D_elements[sousedni_element] = elm->index();
+                        // Jedná se o vnitřní čtyřstěny v trojúhelníku
+
+                        DBGMSG("3d prolong\n");
+                        
+                        // Vytvoření průniku bez potřeby počítání
+                        IntersectionPolygon il_other(elm.index(), sousedni_element);
+                        intersection_list_[elm.index()].push_back(il_other);
+
+                        Prolongation pr = {elm.index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
+                        prolongation_queue_3D_.push(pr);
+
+                    }
+                }
+            }
+
+        }
+
+    }
+}
+
+
+bool InspectElementsAlgorithm13::intersection_exists(unsigned int elm_idx, unsigned int elm_3D_idx)
+{
+    bool found = false;
+
+    for(unsigned int i = 0; i < intersection_list_[elm_idx].size();i++){
+
+        if(intersection_list_[elm_idx][i].ele_3d_idx() == elm_3D_idx){
+            found = true;
+            break;
+        }
+
+    }
+    return found;
+}
+
+bool InspectElementsAlgorithm23::intersection_exists(unsigned int elm_idx, unsigned int elm_3D_idx)
+{
+    bool found = false;
+
+    for(unsigned int i = 0; i < intersection_list_[elm_idx].size();i++){
+
+        if(intersection_list_[elm_idx][i].ele_3d_idx() == elm_3D_idx){
+            found = true;
+            break;
+        }
+    }
+    return found;
+}
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 	element_2D_index = -1;
 };
@@ -875,5 +1381,11 @@ double InspectElements::line_length()
     return subtotal;
 }
 
+
+
+
+// Declaration of specializations implemented in cpp:
+template class InspectElementsAlgorithmBase<1>;
+template class InspectElementsAlgorithmBase<2>;
 
 } // END namespace
