@@ -290,7 +290,7 @@ public:
      * Further development:
      * - we have to distinguish "jump" times and "smooth" times
      */
-    void mark_input_times(TimeMark::Type mark_type);
+    void mark_input_times(const TimeGovernor &tg);
 
     /**
      * Abstract method to update field to the new time level.

@@ -119,6 +119,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 
 void ConvectionTransport::initialize()
 {
+	cout << "ConvectionTransport::initialize()";
     target_mark_type = time_->equation_fixed_mark_type();
 
     cfl_max_step = time_->end_time();
@@ -475,9 +476,10 @@ void ConvectionTransport::compute_concentration_sources() {
 
 void ConvectionTransport::zero_time_step()
 {
+	cout << "ConvectionTransport::zero_time_step()" << endl;
 	ASSERT_EQUAL(time_->tlevel(), 0);
 
-	data_.mark_input_times(target_mark_type);
+	data_.mark_input_times(*time_);
 	data_.set_time(time_->step(), LimitSide::right);
 
     set_initial_condition();
