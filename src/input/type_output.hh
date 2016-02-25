@@ -108,6 +108,9 @@ protected:
     void get_adhoc_parent_name(const AdHocAbstract *a_rec, string &parent_name);
     /// Gets iterator to begin of ancestor_.child_data_ of the given AdHocAbstract type.
     Abstract::ChildDataIter get_adhoc_parent_data(const AdHocAbstract *a_rec);
+    /// Gets data of attributes and parameters of the given type.
+    void get_attr_and_param_data(const TypeBase *type, TypeBase::attribute_map &attr_map,
+    		TypeBase::TypeHash &generic_type_hash, TypeBase::json_string &parameter_map_to_json);
 
 
     /**

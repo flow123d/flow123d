@@ -212,6 +212,15 @@ bool OutputBase::was_written(std::size_t hash)
     return in_set;
 }
 
+void OutputBase::get_attr_and_param_data(const TypeBase *type, TypeBase::attribute_map &attr_map,
+    		TypeBase::TypeHash &generic_type_hash, TypeBase::json_string &parameter_map_to_json) {
+	attr_map = *( type->attributes_.get() );
+	generic_type_hash = type->generic_type_hash_;
+	if (type->parameter_map_.size()) {
+		parameter_map_to_json = type->print_parameter_map_to_json( type->parameter_map_ );
+	}
+}
+
 
 
 
@@ -511,7 +520,27 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
     stream << "\"id\" : " << type->hash_str() << "," << endl;
     stream << "\"input_type\" : \"" + type->class_name() + "\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-    type->write_attributes(stream);
+
+    // write data of parameters and attributes
+    TypeBase::attribute_map attr_map;
+    TypeBase::TypeHash generic_type_hash;
+    TypeBase::json_string parameter_map_to_json;
+    get_attr_and_param_data(type, attr_map, generic_type_hash, parameter_map_to_json);
+	// print hash of generic type and parameters into separate keys
+	if (generic_type_hash) { // print hash of generic type into separate keys
+		stream << "\"generic_type\" : " << TypeBase::hash_str(generic_type_hash) << endl;
+	}
+	if (parameter_map_to_json.size()) { // parameters into separate keys
+		stream << "\"parameters\" : " << parameter_map_to_json << endl;
+	}
+	stream << "\"attributes\" : {" << endl; // print map of attributes
+	for (std::map<std::string, TypeBase::json_string>::iterator it=attr_map.begin(); it!=attr_map.end(); ++it) {
+        if (it != attr_map.begin()) {
+        	stream << "," << endl;
+        }
+		stream << "\"" << it->first << "\" : " << it->second;
+	}
+	stream << endl << "}";
 }
 
 
