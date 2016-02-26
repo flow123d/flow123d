@@ -89,6 +89,7 @@ public:
      * @return the line length
      */
     double line_length();
+    void print_mesh_to_file(std::string name);
 };
 
 class InspectElementsAlgorithm23 : public InspectElementsAlgorithmBase<2>
@@ -107,7 +108,16 @@ class InspectElementsAlgorithm23 : public InspectElementsAlgorithmBase<2>
 public:
     InspectElementsAlgorithm23(Mesh *_mesh);
     ~InspectElementsAlgorithm23();
+    
+    /** @brief Computes the area of 2d-3d polygonal intersections (sum over all polygons).
+     * @return the area of intersection polygon
+     */
+    double polygon_area();
+    void print_mesh_to_file(std::string name);
 };
+
+
+
 
 
 
@@ -226,11 +236,6 @@ template<> void InspectElements::compute_intersections_init<2,3>();
 template<> void InspectElements::compute_intersections<1,2>();
 template<> void InspectElements::compute_intersections<1,3>();
 template<> void InspectElements::compute_intersections<2,3>();
-
-// template<> template<> void InspectElementsAlgorithmBase<1>::update_simplex<1>(const ElementFullIter &element,
-//                                                                               Simplex<1> & simplex);
-// template<> template<> void InspectElementsAlgorithmBase<1>::update_simplex<3>(const ElementFullIter &element,
-//                                                                               Simplex<3> & simplex);
 
 } // END namespace
 

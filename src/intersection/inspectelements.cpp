@@ -37,35 +37,12 @@ InspectElementsAlgorithm13::~InspectElementsAlgorithm13()
 
 InspectElementsAlgorithm23::InspectElementsAlgorithm23(Mesh* _mesh)
 : InspectElementsAlgorithmBase< 2 >(_mesh)
-{}
+{
+    intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionPolygon>());
+}
 
 InspectElementsAlgorithm23::~InspectElementsAlgorithm23()
 {}
-
-
-double InspectElementsAlgorithm13::line_length()
-{
-    double subtotal = 0.0;
-
-    for(unsigned int i = 0; i < intersection_list_.size(); i++){
-        for(unsigned int j = 0; j < intersection_list_[i].size();j++){
-            //if(intersection_list_[i][j].size() < 2) continue;
-            ElementFullIter ele = mesh->element(intersection_list_[i][j].ele_1d_idx());            
-            double t1d_length = ele->measure();
-            double local_length = intersection_list_[i][j].compute_length();
-            
-            arma::vec3 from = intersection_list_[i][j][0].coords(ele);
-            arma::vec3 to = intersection_list_[i][j][1].coords(ele);
-            DBGMSG("sublength from [%f %f %f] to [%f %f %f] = %f\n",
-                   from[0], from[1], from[2], 
-                   to[0], to[1], to[2],
-                   local_length*t1d_length);
-            
-            subtotal += local_length*t1d_length;
-        }
-    }
-    return subtotal;
-}
 
     
 template<unsigned int dim>
@@ -240,7 +217,7 @@ void InspectElementsAlgorithm13::prolongation_decide(const ElementFullIter& elm,
                     unsigned int sousedni_element = other_side->element()->index();
                     if(!intersection_exists(sousedni_element,ele_3D->index())){
                     //if(!closed_elements[sousedni_element]){
-                        DBGMSG("1d prolong\n");
+                        DBGMSG("1d prolong %d in %d\n", sousedni_element, ele_3D->index());
                         
                         // Vytvoření průniku bez potřeby počítání
                         IntersectionLine il_other(sousedni_element, ele_3D->index());
@@ -291,23 +268,6 @@ void InspectElementsAlgorithm13::prolongation_decide(const ElementFullIter& elm,
                         Prolongation pr = {elm->index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
                         prolongation_queue_3D_.push(pr);
                     }
-                    
-//                     if(last_slave_for_3D_elements[sousedni_element] == -1 || 
-//                         (last_slave_for_3D_elements[sousedni_element] != (int)elm->index() && !intersection_exists(elm->index(),sousedni_element))){
-//                         
-//                         last_slave_for_3D_elements[sousedni_element] = elm->index();
-//                         // Jedná se o vnitřní čtyřstěny v trojúhelníku
-// 
-//                         DBGMSG("3d prolong\n");
-//                         
-//                         // Vytvoření průniku bez potřeby počítání
-//                         IntersectionPolygon il_other(elm.index(), sousedni_element);
-//                         intersection_list_[elm.index()].push_back(il_other);
-// 
-//                         Prolongation pr = {elm.index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
-//                         prolongation_queue_3D_.push(pr);
-// 
-//                     }
                 }   
             }
         }  
@@ -506,6 +466,54 @@ bool InspectElementsAlgorithm23::intersection_exists(unsigned int elm_idx, unsig
     return found;
 }
 
+double InspectElementsAlgorithm13::line_length()
+{
+    double subtotal = 0.0;
+
+    for(unsigned int i = 0; i < intersection_list_.size(); i++){
+        for(unsigned int j = 0; j < intersection_list_[i].size();j++){
+            //if(intersection_list_[i][j].size() < 2) continue;
+            ElementFullIter ele = mesh->element(intersection_list_[i][j].ele_1d_idx());            
+            double t1d_length = ele->measure();
+            double local_length = intersection_list_[i][j].compute_length();
+            
+            arma::vec3 from = intersection_list_[i][j][0].coords(ele);
+            arma::vec3 to = intersection_list_[i][j][1].coords(ele);
+            DBGMSG("sublength from [%f %f %f] to [%f %f %f] = %f\n",
+                   from[0], from[1], from[2], 
+                   to[0], to[1], to[2],
+                   local_length*t1d_length);
+            
+            subtotal += local_length*t1d_length;
+        }
+    }
+    return subtotal;
+}
+
+double InspectElementsAlgorithm23::polygon_area()
+{
+    double subtotal = 0.0;
+
+    for(unsigned int i = 0; i < intersection_list_.size(); i++){
+        for(unsigned int j = 0; j < intersection_list_[i].size();j++){
+            double t2dArea = mesh->element(intersection_list_[i][j].ele_2d_idx())->measure();
+            double localArea = intersection_list_[i][j].get_area();
+            subtotal += 2*localArea*t2dArea;
+        }
+    }
+    return subtotal;
+} 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  
  
  
@@ -1382,6 +1390,256 @@ double InspectElements::line_length()
 }
 
 
+
+
+void InspectElementsAlgorithm13::print_mesh_to_file(string name)
+{
+    for(unsigned int i = 0; i < 2;i++){
+        string t_name = name;
+
+        unsigned int number_of_intersection_points = 0;
+        unsigned int number_of_polygons = 0;
+        unsigned int number_of_nodes = mesh->n_nodes();
+        //xprintf(Msg, "Zde6\n");
+        for(unsigned int j = 0; j < intersection_list_.size();j++){
+            number_of_polygons += intersection_list_[j].size();
+            for(unsigned int k = 0; k < intersection_list_[j].size();k++){
+                number_of_intersection_points += intersection_list_[j][k].size();
+            }
+        }
+        //xprintf(Msg, "Zde5\n");
+        FILE * file;
+        if(i == 0){
+            file = fopen((t_name.append("_0.msh")).c_str(),"w");
+        }else{
+            file = fopen((t_name.append("_1.msh")).c_str(),"w");
+        }
+        fprintf(file, "$MeshFormat\n");
+        fprintf(file, "2.2 0 8\n");
+        fprintf(file, "$EndMeshFormat\n");
+        fprintf(file, "$Nodes\n");
+        fprintf(file, "%d\n", (mesh->n_nodes() + number_of_intersection_points));
+        //xprintf(Msg, "Zde4\n");
+        FOR_NODES(mesh, nod){
+            arma::vec3 _nod = nod->point();
+            fprintf(file,"%d %f %f %f\n", nod.id(), _nod[0], _nod[1], _nod[2]);
+        }
+        //xprintf(Msg, "Zde3\n");
+        for(unsigned int j = 0; j < intersection_list_.size();j++){
+            for(unsigned int k = 0; k < intersection_list_[j].size();k++){
+                //xprintf(Msg, "Zde3.1\n");
+                IntersectionLine il = intersection_list_[j][k];
+                //xprintf(Msg, "Zde3.2\n");
+                //xprintf(Msg, "el %d %d\n", il.get_elm1D_idx(), il.get_elm3D_idx());
+                ElementFullIter el1D = mesh->element(il.ele_1d_idx());
+                ElementFullIter el3D = mesh->element(il.ele_3d_idx());
+                //xprintf(Msg, "Zde3.3\n");
+
+                for(unsigned int l = 0; l < il.size(); l++){
+                    //xprintf(Msg, "Zde3.4\n");
+                    //xprintf(Msg, "first\n");
+                    number_of_nodes++;
+                    IntersectionPoint<1,3> IP13 = il[l];
+                    arma::vec3 _global;
+                    if(i == 0){
+                        _global = (IP13.local_bcoords_A())[0] * el1D->node[0]->point()
+                                                           +(IP13.local_bcoords_A())[1] * el1D->node[1]->point();
+                    }else{
+                        _global = (IP13.local_bcoords_B())[0] * el3D->node[0]->point()
+                                                           +(IP13.local_bcoords_B())[1] * el3D->node[1]->point()
+                                                           +(IP13.local_bcoords_B())[2] * el3D->node[2]->point()
+                                                           +(IP13.local_bcoords_B())[3] * el3D->node[3]->point();
+                    }
+                    //xprintf(Msg, "Zde3.5\n");
+                    fprintf(file,"%d %f %f %f\n", number_of_nodes, _global[0], _global[1], _global[2]);
+                }
+            }
+        }
+
+        fprintf(file,"$EndNodes\n");
+        fprintf(file,"$Elements\n");
+        fprintf(file,"%d\n", (number_of_intersection_points/2 + mesh->n_elements()) );
+        //xprintf(Msg, "Zde2\n");
+        FOR_ELEMENTS(mesh, elee){
+            // 1 4 2 30 26 1 2 3 4
+            // 2 2 2 2 36 5 6 7
+            if(elee->dim() == 3){
+                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+                int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+                int id4 = mesh->node_vector.index(elee->node[3]) + 1;
+
+                fprintf(file,"%d 4 2 30 26 %d %d %d %d\n", elee.id(), id1, id2, id3, id4);
+            }else if(elee->dim() == 2){
+                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+                int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+                fprintf(file,"%d 2 2 2 36 %d %d %d\n", elee.id(), id1, id2, id3);
+
+            }else if(elee->dim() == 1){
+                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+                fprintf(file,"%d 1 2 14 16 %d %d\n",elee.id(), id1, id2);
+                //xprintf(Msg, "Missing implementation of printing 1D element to a file\n");
+            }
+        }
+
+
+        //xprintf(Msg, "Zde\n");
+
+        unsigned int number_of_elements = mesh->n_elements();
+        //unsigned int last = 0;
+        unsigned int nodes = mesh->n_nodes();
+
+        for(unsigned int j = 0; j < intersection_list_.size();j++){
+                for(unsigned int k = 0; k < intersection_list_[j].size();k++){
+
+                IntersectionLine il = intersection_list_[j][k];
+
+
+                if(il.size() == 1){
+                    number_of_elements++;
+                    nodes++;
+                    fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes);
+
+                }else if(il.size() == 2){
+                    number_of_elements++;
+                    nodes++;
+                    fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
+                    nodes++;
+                }
+
+
+            }
+        }
+
+        fprintf(file,"$EndElements\n");
+        fclose(file);
+    }
+}
+
+
+void InspectElementsAlgorithm23::print_mesh_to_file(string name)
+{
+    for(unsigned int i = 0; i < 2;i++){
+        string t_name = name;
+
+        unsigned int number_of_intersection_points = 0;
+        unsigned int number_of_polygons = 0;
+        unsigned int number_of_nodes = mesh->n_nodes();
+
+        for(unsigned int j = 0; j < intersection_list_.size();j++){
+            number_of_polygons += intersection_list_[j].size();
+            for(unsigned int k = 0; k < intersection_list_[j].size();k++){
+                number_of_intersection_points += intersection_list_[j][k].size();
+            }
+        }
+
+        FILE * file;
+        if(i == 0){
+            file = fopen((t_name.append("_0.msh")).c_str(),"w");
+        }else{
+            file = fopen((t_name.append("_1.msh")).c_str(),"w");
+        }
+        fprintf(file, "$MeshFormat\n");
+        fprintf(file, "2.2 0 8\n");
+        fprintf(file, "$EndMeshFormat\n");
+        fprintf(file, "$Nodes\n");
+        fprintf(file, "%d\n", (mesh->n_nodes() + number_of_intersection_points));
+
+        FOR_NODES(mesh, nod){
+            arma::vec3 _nod = nod->point();
+            fprintf(file,"%d %f %f %f\n", nod.id(), _nod[0], _nod[1], _nod[2]);
+        }
+
+        for(unsigned int j = 0; j < intersection_list_.size();j++){
+            for(unsigned int k = 0; k < intersection_list_[j].size();k++){
+
+                IntersectionPolygon il = intersection_list_[j][k];
+
+                ElementFullIter el2D = mesh->element(il.ele_2d_idx());
+                ElementFullIter el3D = mesh->element(il.ele_3d_idx());
+
+
+                for(unsigned int l = 0; l < il.size(); l++){
+                    //xprintf(Msg, "first\n");
+                    number_of_nodes++;
+                    IntersectionPoint<2,3> IP23 = il[l];
+                    arma::vec3 _global;
+                    if(i == 0){
+                        _global = (IP23.local_bcoords_A())[0] * el2D->node[0]->point()
+                                                           +(IP23.local_bcoords_A())[1] * el2D->node[1]->point()
+                                                           +(IP23.local_bcoords_A())[2] * el2D->node[2]->point();
+                    }else{
+                        _global = (IP23.local_bcoords_B())[0] * el3D->node[0]->point()
+                                                           +(IP23.local_bcoords_B())[1] * el3D->node[1]->point()
+                                                           +(IP23.local_bcoords_B())[2] * el3D->node[2]->point()
+                                                           +(IP23.local_bcoords_B())[3] * el3D->node[3]->point();
+                    }
+                    fprintf(file,"%d %f %f %f\n", number_of_nodes, _global[0], _global[1], _global[2]);
+                }
+            }
+        }
+
+        fprintf(file,"$EndNodes\n");
+        fprintf(file,"$Elements\n");
+        fprintf(file,"%d\n", (number_of_intersection_points + mesh->n_elements()) );
+
+        FOR_ELEMENTS(mesh, elee){
+            // 1 4 2 30 26 1 2 3 4
+            // 2 2 2 2 36 5 6 7
+            if(elee->dim() == 3){
+                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+                int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+                int id4 = mesh->node_vector.index(elee->node[3]) + 1;
+
+                fprintf(file,"%d 4 2 30 26 %d %d %d %d\n", elee.id(), id1, id2, id3, id4);
+            }else if(elee->dim() == 2){
+                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+                int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+                fprintf(file,"%d 2 2 2 36 %d %d %d\n", elee.id(), id1, id2, id3);
+
+            }else{
+                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+                fprintf(file,"%d 1 2 14 16 %d %d\n",elee.id(), id1, id2);
+                //xprintf(Msg, "Missing implementation of printing 1D element to a file\n");
+            }
+        }
+
+
+        unsigned int number_of_elements = mesh->n_elements();
+        unsigned int last = 0;
+        unsigned int nodes = mesh->n_nodes();
+
+        for(unsigned int j = 0; j < intersection_list_.size();j++){
+                for(unsigned int k = 0; k < intersection_list_[j].size();k++){
+
+                IntersectionPolygon il = intersection_list_[j][k];
+
+                for(unsigned int l = 0; l < il.size(); l++){
+                    number_of_elements++;
+                    nodes++;
+                    if(l == 0){
+                        last = nodes;
+                    }
+
+                    if((l+1) == il.size()){
+                        fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, last);
+                    }else{
+                        fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
+                    }
+
+                }
+            }
+        }
+
+        fprintf(file,"$EndElements\n");
+        fclose(file);
+    }
+}
 
 
 // Declaration of specializations implemented in cpp:
