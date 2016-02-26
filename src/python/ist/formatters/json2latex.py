@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import
 from ist.base import InputType
+from ist.utils.texlist2 import TexList
 from utils.logger import Logger
 from ist.nodes import TypeInteger, TypeString
 from ist.utils.texlist import texlist
@@ -40,7 +41,7 @@ class LatexSelection(LatexItemFormatter):
             if self_selection.include_in_format():
                 tex.Alink(self_selection.name)
             else:
-                tex.append(tex.escape(self_selection.name))
+                tex.append(tex.plain_mode(self_selection.name))
 
         tex.add_s(record_key.default.value)
         tex.add()
@@ -483,6 +484,10 @@ class LatexFormatter(object):
                 continue
 
             Logger.instance().info(' - formatting item: %s' % str(item))
+            a = TexList()
+            a.macro_record_type(item)
+            print a
+            exit()
             fmt = LatexFormatter.get_formatter_for(item)
             if fmt is not None:
                 tex.extend(fmt.format(item))

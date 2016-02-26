@@ -3,8 +3,9 @@
 # author:   Jan Hybs
 
 from __future__ import absolute_import
-from ist.globals import Globals
+from ist.globals import Globals, FormatMode
 from ist.utils.htmltree import htmltree
+from ist.utils.texlist2 import TexList
 from utils.logger import Logger
 
 
@@ -130,12 +131,6 @@ class Parsable(object):
 
 
     @property
-    def debug_name(self):
-        # if getattr(self, 'name', None) and getattr(self, 'id', None):
-        # return '{self.name}[{self.id}]'.format(self=self)
-        return self.name
-
-    @property
     def href_name(self):
         """
         Method will return unique name of this item
@@ -159,17 +154,14 @@ class Parsable(object):
         if link_name was specified in attributes, it will be used
         :return:
         """
-        # if getattr(self, 'attributes', None) and self.attributes.link_name:
-        # return self.attributes.link_name
-        #
-        if getattr(self, 'unique_name', None):
-            return htmltree.secure(self.unique_name)
-        #
-        if getattr(self, 'name', None):
-            return htmltree.secure(self.name)
+        if getattr(self, 'attributes', None) and self.attributes.link_name:
+            value = self.attributes.link_name
+        else:
+            value = self.get('unique_name', 'name', 'id')
 
-        if getattr(self, 'id', None):
-            return htmltree.secure(self.id)
+        if FormatMode.format_mode == FormatMode.LATEX_MODE:
+            return 'IT::{}'.format(TexList.name_mode(value))
+        return htmltree.secure(value)
 
     def get(self, *args):
         """
@@ -290,6 +282,12 @@ class Unicode(Parsable):
     @property
     def href_id(self):
         if self.parent:
+            parent_id = str(self.parent.href_id)
+            if FormatMode.format_mode == FormatMode.LATEX_MODE:
+                if parent_id.startswith('IT::'):
+                    return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.value))
+                return '{}::{}'.format(parent_id, TexList.name_mode(self.value))
+
             return '{self.parent.href_id}-{self.value}'.format(self=self)
         return self.value
 

@@ -4,8 +4,9 @@
 
 from __future__ import absolute_import
 import re, json, datetime
+from ist.formatters.extensions.json2latex2 import LatexFormatter
 from ist.formatters.json2html import HTMLFormatter
-from ist.formatters.json2latex import LatexFormatter
+from ist.globals import FormatMode
 from ist.utils.htmltree import htmltree
 from utils.logger import Logger
 
@@ -21,6 +22,7 @@ class ISTFormatter(object):
     Class for formatting json to other formats
     """
 
+
     @staticmethod
     def json2latex(items, output_file='../../docs/input_reference_red.tex', info=None):
         """
@@ -29,8 +31,8 @@ class ISTFormatter(object):
         :param output_file:
         :return:
         """
-
-        latex_result = ''.join(LatexFormatter.format(items))
+        FormatMode.format_mode = FormatMode.LATEX_MODE
+        latex_result = LatexFormatter.format(items).to_string()
         with open(output_file, 'w') as fp:
             fp.write(latex_result)
 
@@ -47,6 +49,7 @@ class ISTFormatter(object):
          [title, button-control, tree-list, ist, abcd-list]
         :return:
         """
+        FormatMode.format_mode = FormatMode.HTML_MODE
         multi_mode.reverse()
         html_content = HTMLFormatter.format(items)
         html_nav_abc = HTMLFormatter.abc_navigation_bar(items)

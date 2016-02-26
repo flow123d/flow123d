@@ -77,3 +77,9 @@ class Globals(object):
                     return new_key
         Globals.items[key] = item
         return key
+
+
+class FormatMode(object):
+    LATEX_MODE = 1
+    HTML_MODE = 2
+    format_mode = 0

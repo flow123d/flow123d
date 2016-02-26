@@ -95,7 +95,7 @@ class TypeAbstract(Parsable):
     :type attributes         : ist.extras.TypeAttributes
     :type description        : unicode
     :type implementations    : List[ist.extras.TypeReference]
-    :type default_descendant : unicode
+    :type default_descendant : ist.extras.TypeReference
     """
     __fields__ = [
         Field("id", index=True),

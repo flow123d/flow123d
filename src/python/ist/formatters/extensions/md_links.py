@@ -79,6 +79,7 @@ class MdLinks(Pattern):
         item = result[0]
         item_field = result[1]
         a = etree.Element('a')
+        a.set('data-href', 'Alink')
 
         if item_field:
             a.text = link_text or item_field.href_name
@@ -90,6 +91,7 @@ class MdLinks(Pattern):
         else:
             Logger.instance().warning('Link not found %s %s' % (link_type, label) )
             return ''
+        a.set('text', a.text)
         return a
 
 

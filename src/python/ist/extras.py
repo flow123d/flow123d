@@ -3,9 +3,10 @@
 # author:   Jan Hybs
 
 from __future__ import absolute_import
-from ist.globals import Globals
+from ist.globals import Globals, FormatMode
 from ist.base import Parsable, Field, List, Dict, InputType
 from ist.utils.htmltree import htmltree
+from ist.utils.texlist2 import TexList
 
 
 class TypeReference(Parsable):
@@ -58,7 +59,13 @@ class TypeSelectionValue(Parsable):
     @property
     def href_id(self):
         if self.parent:
-            return htmltree.secure('{self.parent.href_id}-{self.name}'.format(self=self))
+            parent_id = str(self.parent.href_id)
+            if FormatMode.format_mode == FormatMode.LATEX_MODE:
+                if parent_id.startswith('IT::'):
+                    return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.name))
+                return '{}::{}'.format(parent_id, TexList.name_mode(self.name))
+
+            return '{self.parent.href_id}-{self.name}'.format(self=self)
         return self.name
 
 
@@ -110,7 +117,13 @@ class TypeRecordKey(Parsable):
     @property
     def href_id(self):
         if self.parent:
-            return htmltree.secure('{self.parent.href_id}-{self.key}'.format(self=self))
+            parent_id = str(self.parent.href_id)
+            if FormatMode.format_mode == FormatMode.LATEX_MODE:
+                if parent_id.startswith('IT::'):
+                    return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.key))
+                return '{}::{}'.format(parent_id, TexList.name_mode(self.key))
+
+            return '{self.parent.href_id}-{self.name}'.format(self=self)
         return self.key
 
     @property
