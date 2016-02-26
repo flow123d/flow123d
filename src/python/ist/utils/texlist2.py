@@ -38,6 +38,11 @@ class TexList(list):
         else:
             self.append(self._OPEN + str(t(value)) + self._CLOSE)
 
+    def comment(self, value):
+        if not self.PRETTY_FORMAT:
+            return
+        self.append(" % " + str(value))
+
     def to_string(self, fix_newlines=True):
         if not fix_newlines:
             return ''.join(self)

@@ -61,37 +61,40 @@ class LatexRecord(TexList):
         :type record: ist.nodes.TypeRecord
         """
         self.begin('RecordType')
-        self._newline()
-        self._tab()
 
         # name
-        with self:
-            self.macro_hyper_b(record)
         self._newline()
         self._tab()
+        with self:
+            self.macro_hyper_b(record)
         # implements
+        self._newline()
+        self._tab()
         with self:
             for impl in (record.implements or []):
                 self.macro_alink(impl.get_reference())
+        self.comment("implements")
+        # conversion key
         self._newline()
         self._tab()
-        # conversion key
         with self:
             if record.reducible_to_key:
                 self.macro_alink(record.reducible_to_key)
-        self._newline()
-        self._tab()
+        self.comment("reducible to key")
         # hyperlink into hand written text TODO
         # LATER it can removed since is not used anymore
-        with self:
-            pass
         self._newline()
         self._tab()
+        with self:
+            pass
+        self.comment("OBSOLETE - hyperlink into hand written text")
         # description
+        self._newline()
+        self._tab()
         with self:
             self.append(self.description(record.description))
-        self._newline()
         # keys
+        self._newline()
         for key in (record.keys or []):
             self._newline()
             self._tab(2)
@@ -131,6 +134,7 @@ class LatexRecord(TexList):
         self._tab(3)
         with self:
             pass
+        self.comment("OBSOLETE - hyperlink into hand written text")
         # description
         self._newline()
         self._tab(3)
@@ -156,14 +160,21 @@ class LatexSelection(TexList):
         self.begin('SelectionType')
 
         # name
+        self._newline()
+        self._tab()
         with self:
             self.macro_hyper_b(selection)
         # description
+        self._newline()
+        self._tab()
         with self:
             self.append(self.description(selection.description))
 
         # values
+        self._newline()
         for key in (selection.values or []):
+            self._newline()
+            self._tab(2)
             with self.item_open('KeyItem'):
                 self.macro_value(key)
 
@@ -174,9 +185,13 @@ class LatexSelection(TexList):
         :type record_key: ist.extras.TypeSelectionValue
         """
         # name
+        self._newline()
+        self._tab(3)
         with self:
             self.macro_hyper_b(selection_value)
         # description
+        self._newline()
+        self._tab(3)
         with self:
             self.append(self.description(selection_value.description))
 
@@ -196,24 +211,35 @@ class LatexAbstractRecord(TexList):
         self.begin('AbstractType')
 
         # name
+        self._newline()
+        self._tab()
         with self:
             self.macro_hyper_b(abstract_record)
         # descendant
+        self._newline()
+        self._tab()
         with self:
             if abstract_record.default_descendant:
                 self.macro_alink(abstract_record.default_descendant.get_reference())
         with self:
                 self.macro_add_doc(abstract_record)
         # description
+        self._newline()
+        self._tab()
         with self:
             self.append(self.description(abstract_record.description))
 
+        # implementations
+        self._newline()
         for impl in abstract_record.implementations:
+            self._newline()
+            self._tab(2)
             with self.item_open('Descendant'):
                 with self:
                     self.macro_alink(impl.get_reference())
 
         self.end('AbstractType')
+
 
 class LatexFormatter(object):
     formatters = {
