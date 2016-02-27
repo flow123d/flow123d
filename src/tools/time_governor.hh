@@ -270,16 +270,25 @@ public:
     /**
      * @brief Sets upper constraint for the next time step estimating.
      * 
-     * This function can only make the constraint stricter. Upper constraint is reset to @p max_dt in next_time().
-     * @param upper is the upper constraint for time step
-     * @return -1, 0 or 1 according to the success
-     * 
-     * - -1: constraint is higher than the permanent upper constraint @p max_dt. Setting failed, no change happened.
-     * - 0: constraint is in the interval of permanent constraints @p min_dt and @p max_dt. The upper constraint has been set.
-     * - 1: constraint is lower than permanent lower constraint @p min_dt. Setting failed, no change happened.
+     * This function can only make the constraint stricter. Upper constraint is reset to @p max_dt after the next_time() call.
+     * The return value mimics result of the comparison: current constraint  compared to  @param upper.
+     * In particular the return values is:
+     * - -1: Current upper constraint is less then the @param upper. No change happen.
+     * -  0: Current constraint interval contains the @param upper. The upper constraint is set.
+     * - +1: Current lower constraint is greater then the @param upper. No change happen.
      */
     int set_upper_constraint(double upper);
     
+    /**
+     * @brief Sets lower constraint for the next time step estimating.
+     *
+     * This function can only make the constraint stricter. Lower constraint is reset to @p min_dt after the next_time() call.
+     * The return value mimics result of the comparison: current constraint  compared to  @param upper.
+     * In particular the return values is:
+     * - -1: Current upper constraint is less then the @param lower. No change happen.
+     * -  0: Current constraint interval contains the @param lower. The lower constraint is set.
+     * - +1: Current upper constraint is greater then the @param lower. No change happen.
+     */
     /**
      * @brief Sets lower constraint for the next time step estimating. 
      * @return -1, 0 or 1 according to the success.
