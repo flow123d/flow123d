@@ -4,9 +4,11 @@ problem: !SequentialCoupling
     sources).'
   mesh:
     mesh_file: ./input/mesh_with_boundary.msh
-    sets:
-      - name: 1d_domain
-        region_labels:
+  # mesh
+    regions:
+      - !Union
+        name: 1d_domain
+        regions:
           - 1d_upper
           - 1d_lower
           - 1d_left_branch

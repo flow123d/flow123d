@@ -4,7 +4,8 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/test18.msh
     regions:
-      - name: center
+      - !From_Elements
+        name: center
         id: 30
         element_list:
           - 45

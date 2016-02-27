@@ -48,44 +48,13 @@ unsigned int Region::dim() const
  */
 
 
-namespace IT=Input::Type;
-
-
-
-const IT::Record & RegionDB::get_region_input_type() {
-	return IT::Record("Region", "Definition of region of elements.")
-		.declare_key("name",IT::String(), IT::Default::obligatory(),
-				"Label (name) of the region. Has to be unique in one mesh.\n")
-		.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
-				"The ID of the region to which you assign label.")
-		.declare_key("element_list", IT::Array( IT::Integer(0) ), IT::Default::optional(),
-				"Specification of the region by the list of elements. This is not recomended")
-		.close();
-}
-
-const IT::Record & RegionDB::get_region_set_input_type() {
-	return IT::Record("RegionSet", "Definition of one region set.")
-        .declare_key("name", IT::String(), IT::Default::obligatory(),
-                "Unique name of the region set.")
-        .declare_key("region_ids", IT::Array( IT::Integer(0)),
-                "List of region ID numbers that has to be added to the region set.")
-        .declare_key("region_labels", IT::Array( IT::String()),
-                "List of labels of the regions that has to be added to the region set.")
-        .declare_key("union", IT::Array( IT::String(), 2,2),
-                "Defines region set as a union of given pair of sets. Overrides previous keys.")
-        .declare_key("intersection", IT::Array( IT::String(), 2,2),
-                "Defines region set as an intersection of given pair of sets. Overrides previous keys.")
-        .declare_key("difference", IT::Array( IT::String(), 2,2),
-                "Defines region set as a difference of given pair of sets. Overrides previous keys.")
-        .close();
-}
 
 const unsigned int RegionDB::undefined_dim = 10;
 
 
 /// Default constructor
 RegionDB::RegionDB()
-: closed_(false), n_boundary_(0), n_bulk_(0)  {
+: closed_(false), n_boundary_(0), n_bulk_(0), max_id_(0)  {
 
     // adding implicit boundary and bulk regions
     // How to deal with dimension, clean solution is to have implicit region for every
@@ -102,11 +71,11 @@ Region RegionDB::implicit_boundary_region() {
         return Region(it_id->index, *this);
     }
 
-    return insert_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary);
+    return insert_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary, "");
 }
 
 
-Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim) {
+Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, const std::string &address) {
 	bool boundary = is_boundary(label);
     DimIDIter it_id = region_table_.get<DimId>().find(DimID(dim,id));
     if (it_id != region_table_.get<DimId>().end() ) {
@@ -126,60 +95,68 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
         THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->get_id()) );
     }
 
-    return insert_region(id, label, dim, boundary);
+    return insert_region(id, label, dim, boundary, address);
 }
 
 
-Region RegionDB::add_region(unsigned int id, const std::string &label) {
-	bool boundary = is_boundary(label);
-	if (label.size() == 0) create_label_from_id(label, id);
+Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
+	ASSERT(reg.is_valid(), "Non-existing region can't be renamed to '%s'.\n", new_label.c_str());
 
-	/*
-	 * TODO: This part of code needs check in issue 'Review mesh setting'.
-	 * See @p Mesh::modify_element_ids method
-	 */
-    OnlyIDIter it_only_id = region_table_.get<OnlyID>().find(id);
-    if (it_only_id != region_table_.get<OnlyID>().end() ) {
-    	// replace region label
-    	unsigned int index = it_only_id->index;
-
-    	RegionItem item(index, it_only_id->get_id(), label, it_only_id->dim());
-    	region_table_.replace(
-    			region_table_.get<Index>().find(index),
-                item);
-
-    	return Region(index, *this);
-    }
-
-    LabelIter it_label = region_table_.get<Label>().find(label);
+	// test if region with new_label exists
+	LabelIter it_label = region_table_.get<Label>().find(new_label);
     if (it_label != region_table_.get<Label>().end() ) {
-        // ID is free, not label
-        THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->get_id()) );
+        if ( reg.id() == it_label->index ) {
+            return reg;
+        } else {
+            // region with same label and other ID exists
+            THROW(ExcNonuniqueLabel() << EI_Label(new_label) << EI_ID(reg.id()) << EI_IDOfOtherLabel(it_label->get_id()) );
+        }
     }
 
-    return insert_region(id, label, undefined_dim, boundary);
+	// replace region label
+	unsigned int index = reg.idx();
+	RegionSetTable::iterator it = sets_.find(reg.label()); // rename set
+	std::swap(sets_[new_label], it->second);
+	sets_.erase(it);
+	bool old_boundary_flag = reg.is_boundary(); // check old x new boundary flag - take account in adding to sets
+
+	RegionItem item(index, reg.id(), new_label, reg.dim(), this->get_region_address(index));
+	region_table_.replace(
+			region_table_.get<Index>().find(index),
+            item);
+
+	if (old_boundary_flag != reg.is_boundary()) { // move region between BULK and BOUNDARY sets
+		xprintf(Warn, "Change boundary flag of region with id %d and label %s.\n", reg.id(), new_label.c_str());
+		if (old_boundary_flag) {
+			erase_from_set("BOUNDARY", reg );
+			add_to_set("BULK", reg );
+		} else {
+			erase_from_set("BULK", reg );
+			add_to_set("BOUNDARY", reg );
+		}
+	}
+
+	return Region(index, *this);
 }
 
 
-Region RegionDB::add_region(unsigned int id, unsigned int dim) {
+Region RegionDB::get_region(unsigned int id, unsigned int dim) {
 	DimIDIter it_id = region_table_.get<DimId>().find(DimID(dim,id));
     if ( it_id!=region_table_.get<DimId>().end() ) {
-        return Region(it_id->index, *this);
+        // Region found.
+    	return Region(it_id->index, *this);
     }
 
     DimIDIter it_undef_dim = region_table_.get<DimId>().find(DimID(undefined_dim,id));
-	if (it_undef_dim != region_table_.get<DimId>().end() ) {
-		// Region with same ID and undefined_dim exists, replace undefined_dim
-		bool boundary = is_boundary(it_undef_dim->label);
-		return replace_region_dim(it_undef_dim, dim, boundary);
+	if (it_undef_dim == region_table_.get<DimId>().end() ) {
+		// Region doesn't exist.
+		return Region();
+    } else {
+    	// Region with same ID and undefined_dim exists, replace undefined_dim
+    	bool boundary = is_boundary(it_undef_dim->label);
+    	return replace_region_dim(it_undef_dim, dim, boundary);
     }
-
-    // else
-    stringstream ss;
-    ss << "region_" << id;
-    return insert_region(id, ss.str(), dim, false);
 }
-
 
 
 Region RegionDB::find_label(const std::string &label) const
@@ -240,30 +217,30 @@ unsigned int RegionDB::get_dim(unsigned int idx) const {
 
 
 
+const std::string & RegionDB::get_region_address(unsigned int idx) const {
+    RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
+    ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    return it->address;
+}
+
+
+
+void RegionDB::mark_used_region(unsigned int idx) {
+    RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
+    ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    if ( !it->used ) {
+    	unsigned int index = it->index;
+    	RegionItem item(index, it->get_id(), it->label, it->dim(), it->address, true);
+    	region_table_.replace(
+    			region_table_.get<Index>().find(index),
+                item);
+    }
+}
+
+
+
 void RegionDB::close() {
     closed_=true;
-    // set default sets
-   for(unsigned int i=0; i< size(); i++) {
-       Region reg(i, *this);
-	   /*
-	    * TODO: Adding of regions to sets needs check in issue 'Review mesh setting'.
-	    * See @p Mesh::modify_element_ids method
-	    */
-   	   RegionSet region_set;
-   	   region_set.push_back( reg );
-
-
-       if (reg.is_boundary() && (reg.boundary_idx() < boundary_size()) ) {
-           add_to_set("BOUNDARY", reg );
-           add_to_set("ALL", reg);
-       	   add_set(reg.label(), region_set);
-       } else
-       if ( (! reg.is_boundary()) && (reg.bulk_idx() < bulk_size()) ) {
-           add_to_set("BULK", reg );
-           add_to_set("ALL", reg);
-       	   add_set(reg.label(), region_set);
-       }
-    }
 }
 
 
@@ -290,7 +267,7 @@ unsigned int RegionDB::bulk_size() const {
 
 
 void RegionDB::add_to_set( const string& set_name, Region region) {
-	std::map<std::string, RegionSet>::iterator it = sets_.find(set_name);
+	RegionSetTable::iterator it = sets_.find(set_name);
 
 	if (it == sets_.end()) {
 		RegionSet set;
@@ -314,84 +291,35 @@ void RegionDB::add_set( const string& set_name, const RegionSet & set) {
 }
 
 
-RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_name_2) {
-	RegionSet set_union;
-	RegionSet set_1, set_2;
-	RegionSet::iterator it;
+void RegionDB::erase_from_set( const string& set_name, Region region) {
+	RegionSetTable::iterator it = sets_.find(set_name);
+	ASSERT(it != sets_.end(), "Region set '%s' doesn't exist.", set_name.c_str());
+	RegionSet & set = (*it).second;
 
-	prepare_sets(set_name_1, set_name_2, set_1, set_2);
-	set_union.resize(set_1.size() + set_2.size());
-	it = std::set_union(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_union.begin(), Region::comp);
-	set_union.resize(it - set_union.begin());
-
-	return set_union;
+	auto set_it = std::find(set.begin(), set.end(), region);
+	ASSERT(set_it != set.end(), "Erased region was not found in set '%s'", set_name.c_str());
+	set.erase(set_it);
 }
 
 
-RegionSet RegionDB::intersection( const string & set_name_1, const string & set_name_2) {
-	RegionSet set_insec;
-	RegionSet set_1, set_2;
-	RegionSet::iterator it;
-
-	prepare_sets(set_name_1, set_name_2, set_1, set_2);
-	set_insec.resize(set_1.size() + set_2.size());
-	it = std::set_intersection(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_insec.begin(), Region::comp);
-	set_insec.resize(it - set_insec.begin());
-
-	return set_insec;
-}
-
-
-RegionSet RegionDB::difference( const string & set_name_1, const string & set_name_2) {
-	RegionSet set_diff;
-	RegionSet set_1, set_2;
-	RegionSet::iterator it;
-
-	prepare_sets(set_name_1, set_name_2, set_1, set_2);
-	set_diff.resize(set_1.size() + set_2.size());
-	it = std::set_difference(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_diff.begin(), Region::comp);
-	set_diff.resize(it - set_diff.begin());
-
-	return set_diff;
-}
-
-
-void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_2,
-		RegionSet & set_1, RegionSet & set_2) {
-	std::map<std::string, RegionSet>::iterator it_1 = sets_.find(set_name_1);
-	std::map<std::string, RegionSet>::iterator it_2 = sets_.find(set_name_2);
-
-	if ( it_1 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_1)); }
-	if ( it_2 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_2)); }
-
-	set_1 = (*it_1).second;
-	set_2 = (*it_2).second;
-
-	std::stable_sort(set_1.begin(), set_1.end(), Region::comp);
-	std::stable_sort(set_2.begin(), set_2.end(), Region::comp);
-}
-
-
-
-pair<string,string> RegionDB::get_and_check_operands(const Input::Array & operands)
+std::vector<string> RegionDB::get_and_check_operands(const Input::Array & operands) const
 {
 	vector<string> names;
 	operands.copy_to(names);
-	if ( names.size() != 2 ) THROW(ExcWrongOpNumber() << EI_NumOp(names.size()) << operands.ei_address() );
-	auto ret_names = pair<string,string>(names[0], names[1]);
-	if ( sets_.find( ret_names.first ) == sets_.end() )
-		THROW( ExcUnknownSet()  << EI_Label( ret_names.first )
-								<< operands.ei_address() );
-	if ( sets_.find( ret_names.second ) == sets_.end() )
-		THROW( ExcUnknownSet()  << EI_Label( ret_names.second )
-								<< operands.ei_address() );
-	return ret_names;
+
+	for (string name : names) {
+		if ( sets_.find( name ) == sets_.end() )
+			THROW( ExcUnknownSet()  << EI_Label( name )
+									<< operands.ei_address() );
+	}
+
+	return names;
 }
 
 
 
 RegionSet RegionDB::get_region_set(const string & set_name) const {
-	std::map<std::string, RegionSet>::const_iterator it = sets_.find(set_name);
+	RegionSetTable::const_iterator it = sets_.find(set_name);
 	if ( it == sets_.end() ) {
 		return RegionSet();
 	}
@@ -399,127 +327,13 @@ RegionSet RegionDB::get_region_set(const string & set_name) const {
 }
 
 
-void RegionDB::read_sets_from_input(Input::Array arr) {
-	for (Input::Iterator<Input::Record> it = arr.begin<Input::Record>();
-			it != arr.end();
-			++it) {
-
-		Input::Record rec = (*it);
-		string set_name;
-		Input::Array region_ids, region_labels;
-		Input::Array union_names, intersection_names, difference_names;
-		RegionSet region_set;
-
-		rec.opt_val("name", set_name);
-
-		if (rec.opt_val("region_ids", region_ids) ) {
-			for (Input::Iterator<unsigned int> it_ids = region_ids.begin<unsigned int>();
-					it_ids != region_ids.end();
-			        ++it_ids) {
-				try {
-					Region reg = find_id(*it_ids);
-					if (reg.is_valid()) {
-						if ( std::find(region_set.begin(), region_set.end(), reg)==region_set.end() ) {
-							region_set.push_back(reg); // add region if doesn't exist
-						}
-					} else {
-						xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
-					}
-				} catch(ExcUniqueRegionId &e) {
-					e << region_ids.ei_address();
-					throw;
-				}
-			}
-		}
-
-		if (rec.opt_val("region_labels", region_labels) ) {
-			for (Input::Iterator<string> it_labels = region_labels.begin<string>();
-					it_labels != region_labels.end();
-			        ++it_labels) {
-				Region reg = find_label(*it_labels);
-				if (reg.is_valid()) {
-					if ( std::find(region_set.begin(), region_set.end(), reg)==region_set.end() ) {
-						region_set.push_back(reg); // add region if doesn't exist
-					}
-				} else {
-					xprintf(Warn, "Region with label %s doesn't exist. Skipping\n", (*it_labels).c_str());
-				}
-			}
-		}
-
-		Input::Iterator<Input::Array> operands = rec.find<Input::Array>("union");
-		if ( operands ) {
-
-			if (region_set.size() != 0) {
-				xprintf(Warn, "Overwriting previous initialization of region set '%s' by union operation.\n", set_name.c_str());
-			}
-
-			pair<string,string> set_names = get_and_check_operands(*operands);
-			region_set = union_sets( set_names.first, set_names.second );
-		}
-
-		operands = rec.find<Input::Array>("intersection");
-		if (operands) {
-
-			if (region_set.size() != 0) {
-				xprintf(Warn, "Overwriting previous initialization of region set '%s' by intersection operation.\n", set_name.c_str());
-			}
-
-			pair<string,string> set_names = get_and_check_operands(*operands);
-			region_set = intersection( set_names.first, set_names.second );
-		}
-
-		operands = rec.find<Input::Array>("difference");
-		if (operands) {
-
-			if (region_set.size() != 0) {
-				xprintf(Warn, "Overwriting previous initialization of region set '%s' by difference operation.\n", set_name.c_str());
-			}
-
-			pair<string,string> set_names = get_and_check_operands(*operands);
-			region_set = difference( set_names.first, set_names.second );
-		}
-
-		add_set(set_name, region_set);
-	}
-}
-
-void RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map) {
-	map.clear();
-
-	for (Input::Iterator<Input::Record> it = region_list.begin<Input::Record>();
-				it != region_list.end();
-				++it) {
-
-		Input::Record rec = (*it);
-		string region_name = rec.val<string>("name");
-		unsigned int region_id = rec.val<unsigned int>("id");
-		add_region(region_id, region_name);
-
-        Input::Array element_list;
-		if (rec.opt_val("element_list", element_list) ) {
-			for (Input::Iterator<unsigned int> it_element = element_list.begin<unsigned int>();
-					it_element != element_list.end();
-			        ++it_element) {
-
-				std::map<unsigned int, unsigned int>::iterator it_map = map.find((*it_element));
-				if (it_map == map.end()) {
-					map.insert( std::make_pair((*it_element), region_id) );
-				} else {
-					xprintf(Warn, "Element with id %u can't be added more than once.\n", (*it_element));
-				}
-			}
-		}
-	}
-}
-
-void RegionDB::create_label_from_id(const string & label, unsigned int id) {
+string RegionDB::create_label_from_id(unsigned int id) const {
 	stringstream ss;
 	ss << "region_" << id;
-	ss.str(label);
+	return ss.str();
 }
 
-Region RegionDB::insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary) {
+Region RegionDB::insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary, const std::string &address) {
 	if (closed_) THROW( ExcAddingIntoClosed() << EI_Label(label) << EI_ID(id) );
 
 	unsigned int index;
@@ -531,9 +345,25 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 		n_bulk_++;
 	}
 	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
-	if ( ! region_table_.insert( RegionItem(index, id, label, dim) ).second )
+	if ( ! region_table_.insert( RegionItem(index, id, label, dim, address) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
-	return Region(index, *this);
+	if (max_id_ < id) {
+		max_id_ = id;
+	}
+
+	Region reg = Region(index, *this);
+    // add region to sets
+	RegionSet region_set;
+	region_set.push_back( reg );
+	this->add_set(reg.label(), region_set);
+	add_to_set("ALL", reg);
+    if (reg.is_boundary()) {
+        add_to_set("BOUNDARY", reg );
+    } else {
+        add_to_set("BULK", reg );
+    }
+
+    return reg;
 }
 
 Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary) {
@@ -542,7 +372,7 @@ Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bo
 
 	unsigned int index = it_undef_dim->index;
 
-	RegionItem item(index, it_undef_dim->get_id(), it_undef_dim->label, dim);
+	RegionItem item(index, it_undef_dim->get_id(), it_undef_dim->label, dim, this->get_region_address(index));
 	region_table_.replace(
 			region_table_.get<Index>().find(index),
             item);
@@ -567,4 +397,79 @@ Region RegionDB::find_by_dimid(DimIDIter it_id, unsigned int id, const std::stri
         THROW(ExcInconsistentBoundary() << EI_Label(label) << EI_ID(id) );
 
     return r_id;
+}
+
+void RegionDB::print_region_table(ostream& stream) const {
+	ASSERT(closed_, "RegionDB not closed yet.\n");
+
+	// stratified regions by type
+	std::vector<std::string> boundaries, bulks, sets;
+	for (RegionSetTable::const_iterator it = sets_.begin(); it != sets_.end(); ++it) { // iterates through RegionSets
+		string rset_label = it->first;
+		LabelIter label_it = region_table_.get<Label>().find(rset_label);
+		if ( label_it != region_table_.get<Label>().end() ) { // checks if Region with same label as RegionSet exists
+			if ( (rset_label.size() > 0) && (rset_label[0] == '.') ) boundaries.push_back(rset_label);
+			else bulks.push_back(rset_label);
+		} else {
+			sets.push_back(rset_label);
+		}
+
+	}
+
+	// print table
+	stream << endl << "----------- Table of all regions: -----------";
+	if (boundaries.size()) {
+		stream << endl << " - Boundary elementary regions -" << endl;
+		stream << std::setfill(' ') << "name" << setw(14) << "" << setw(6) << "id" << " dim" << endl; // table header
+		for (std::vector<std::string>::iterator it = boundaries.begin(); it < boundaries.end(); ++it) {
+			LabelIter label_it = region_table_.get<Label>().find(*it);
+			stream << std::left << setw(18) << (*it) << std::right << setw(6) << label_it->get_id() << setw(4) << label_it->dim() << endl;
+		}
+	}
+	if (bulks.size()) {
+		stream << endl << " - Bulk elementary regions -" << endl;
+		stream << "name" << setw(14) << "" << setw(6) << "id" << " dim" << endl; // table header
+		for (std::vector<std::string>::iterator it = bulks.begin(); it < bulks.end(); ++it) {
+			LabelIter label_it = region_table_.get<Label>().find(*it);
+			stream << std::left << setw(18) << (*it) << std::right << setw(6) << label_it->get_id() << setw(4) << label_it->dim() << endl;
+		}
+	}
+	if (sets.size()) {
+		stream << endl << " - Sets of regions -" << endl;
+		stream << "name" << setw(14) << "" << "contains regions" << endl; // table header
+		for (std::vector<std::string>::const_iterator it = sets.begin(); it < sets.end(); ++it) {
+			RegionSetTable::const_iterator set_it = sets_.find(*it);
+			stream << std::left << setw(18) << (*it) << std::right << "[";
+			for (RegionSet::const_iterator r_it = set_it->second.begin(); r_it!=set_it->second.end(); ++r_it) {
+				if (r_it != set_it->second.begin()) stream << ", ";
+				stream << "\"" << r_it->label() << "\"";
+			}
+			stream << "]" << endl;
+		}
+	}
+	stream << std::setfill('-') << setw(45) << "" << std::setfill(' ') << endl << endl;
+}
+
+
+void RegionDB::check_regions() {
+	ASSERT(closed_, "RegionDB not closed yet.\n");
+
+	for (RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().begin();
+			it!= region_table_.get<Index>().end();
+			++it) {
+		if (!it->used)
+			THROW(ExcUnusedRegion() << EI_Label(it->label) << EI_ID(it->get_id()) << Input::EI_Address(it->address) );
+	}
+}
+
+
+RegionSet RegionDB::union_set(std::vector<string> set_names) const {
+	std::set<Region, bool (*)(const Region&, const Region&)> set(Region::comp);
+
+	for (string set_name : set_names) {
+		RegionSet r_set = get_region_set(set_name);
+		set.insert(r_set.begin(), r_set.end());
+	}
+
+	return RegionSet(set.begin(), set.end());
 }

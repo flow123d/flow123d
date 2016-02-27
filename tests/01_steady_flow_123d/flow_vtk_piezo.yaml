@@ -5,9 +5,10 @@ problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
     mesh_file: ./input/test1_new.msh
-    sets:
-      - name: all_2d
-        region_labels:
+    regions:
+      - !Union
+        name: all_2d
+        regions:
           - 2d_fracture_1
           - 2d_fracture_2
   primary_equation: !SteadyDarcy_MH

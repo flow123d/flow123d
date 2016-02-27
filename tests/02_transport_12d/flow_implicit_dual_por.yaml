@@ -3,13 +3,15 @@ problem: !SequentialCoupling
   description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
   mesh:
     mesh_file: ./input/compatible.msh
-    sets:
-    - name: subset
-      region_labels:
+    regions:
+    - !Union
+      name: subset
+      regions:
       - 2d
       - 1d
-    - name: .sides
-      region_labels:
+    - !Union
+      name: .sides
+      regions:
       - .2d
       - .1d
   primary_equation: !SteadyDarcy_MH

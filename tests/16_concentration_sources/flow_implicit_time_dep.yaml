@@ -5,11 +5,13 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/test16.msh
     regions:
-      - name: left_source
+      - !From_Elements
+        name: left_source
         id: 100
         element_list:
           - 124
-      - name: right_source
+      - !From_Elements
+        name: right_source
         id: 200
         element_list:
           - 721

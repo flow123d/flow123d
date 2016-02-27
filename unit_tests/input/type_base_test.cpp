@@ -309,34 +309,42 @@ Record array_record("RecordOfArrays",
 
 }
 
-TEST(InputTypeAttributes, base_test) {
-	Input::Type::Record rec("rec", "Some record.");
-	rec.add_attribute("attr_1", "\"some attribute\"");
-	rec.add_attribute("attr_2", "\"other attribute\"");
-	rec.add_attribute("numeric", "\"10\"");
-	rec.add_attribute("pair", "[\"0\", \"50\"]");
-	rec.add_attribute("float_point", "\"0.5\"");
 
-	{
-		std::stringstream ss;
-		rec.write_attributes(ss);
-		string str = ss.str();
-		EXPECT_TRUE( str.find("\"attr_1\" : \"some attribute\"") != std::string::npos );
-		EXPECT_TRUE( str.find("\"numeric\" : \"10\"") != std::string::npos );
-		EXPECT_TRUE( str.find("\"pair\" : [\"0\", \"50\"]") != std::string::npos );
-		EXPECT_TRUE( str.find("\"float_point\" : \"0.5\"") != std::string::npos );
-	}
+class InputTypeAttributesTest : public testing::Test, public Input::Type::Record {
+public:
+	InputTypeAttributesTest() : Input::Type::Record("rec", "Some record.") {}
+protected:
 
-	{
-		std::stringstream ss;
-		rec.add_attribute("numeric", "\"5\"");
-		rec.write_attributes(ss);
-		string str = ss.str();
-		EXPECT_FALSE( str.find("\"numeric\" : \"10\"") != std::string::npos );
-		EXPECT_TRUE( str.find("\"numeric\" : \"5\"") != std::string::npos );
-	}
+    virtual void SetUp() {
+    }
+    virtual void TearDown() {
+    };
 
-    EXPECT_THROW_WHAT( { rec.add_attribute("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
+};
+
+TEST_F(InputTypeAttributesTest, base_test) {
+	std::map<std::string, json_string>::iterator it;
+
+	this->add_attribute("attr_1", "\"some attribute\"");
+	this->add_attribute("attr_2", "\"other attribute\"");
+	this->add_attribute("numeric", "\"10\"");
+	this->add_attribute("pair", "[\"0\", \"50\"]");
+	this->add_attribute("float_point", "\"0.5\"");
+
+	EXPECT_TRUE( (it=attributes_->find("attr_1")) != attributes_->end() );
+	EXPECT_STREQ( it->second.c_str(), "\"some attribute\"" );
+	EXPECT_TRUE( (it=attributes_->find("numeric")) != attributes_->end() );
+	EXPECT_STREQ( it->second.c_str(), "\"10\"" );
+	EXPECT_TRUE( (it=attributes_->find("pair")) != attributes_->end() );
+	EXPECT_STREQ( it->second.c_str(), "[\"0\", \"50\"]" );
+	EXPECT_TRUE( (it=attributes_->find("float_point")) != attributes_->end() );
+	EXPECT_STREQ( it->second.c_str(), "\"0.5\"" );
+
+	this->add_attribute("numeric", "\"5\"");
+	EXPECT_TRUE( (it=attributes_->find("numeric")) != attributes_->end() );
+	EXPECT_STREQ( it->second.c_str(), "\"5\"" );
+
+    EXPECT_THROW_WHAT( { this->add_attribute("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
             "Invalid JSON format of attribute 'invalid_attr'." );
 }
 

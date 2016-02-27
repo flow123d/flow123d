@@ -4,9 +4,10 @@ problem: !SequentialCoupling
     substances.
   mesh:
     mesh_file: input/mesh_simple.msh
-    sets:
-      - name: .boundary
-        region_labels:
+    regions:
+      - !Union
+        name: .boundary
+        regions:
           - .back
           - .front
           - .left

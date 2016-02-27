@@ -60,12 +60,12 @@ const IT::Record & Mesh::get_input_type() {
 	    .allow_auto_conversion("mesh_file")
 		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 				"Input file with mesh description.")
-		.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
-				"List of additional region definitions not contained in the mesh.")
-		.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
-				"List of region set definitions. There are three region sets implicitly defined:\n\n"
+		.declare_key("regions", IT::Array( RegionSetBase::get_input_type() ), IT::Default::optional(),
+				"List of additional region and region set definitions not contained in the mesh.\n"
+				"There are three region sets implicitly defined:\n\n"
 				" - ALL (all regions of the mesh)\n - BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
+	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
 		.close();
 }
 
@@ -219,41 +219,31 @@ void Mesh::read_gmsh_from_stream(istream &in) {
     START_TIMER("Reading mesh - from_stream");
     
     GmshMeshReader reader(in);
+    reader.read_physical_names(this);
     reader.read_mesh(this);
     setup_topology();
     //close region_db_.
-    region_db_.close();
+   	region_db_.close();
 }
 
 
 
 void Mesh::init_from_input() {
-	/*
-	 * TODO: This method needs check in issue 'Review mesh setting'.
-	 * See @p modify_element_ids method
-	 */
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
-    RegionDB::MapElementIDToRegionID el_to_reg_map;
-
     // read raw mesh, add regions from GMSH file
     GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
+    reader.read_physical_names(this);
+    // create regions from input
+    if (in_record_.opt_val("regions", region_list)) {
+        this->read_regions_from_input(region_list);
+    }
     reader.read_mesh(this);
     // possibly add implicit_boundary region.
     setup_topology();
-    // create regions from our input
-    if (in_record_.opt_val("regions", region_list)) {
-        region_db_.read_regions_from_input(region_list, el_to_reg_map);
-    }
-    modify_element_ids(el_to_reg_map);
-    //close region_db_.
-    region_db_.close();
-    // create sets
-    Input::Array set_list;
-    if (in_record_.opt_val("sets", set_list)) {
-        region_db_.read_sets_from_input(set_list);
-    }
+    // finish mesh initialization
+    this->check_and_finish();
 }
 
 
@@ -262,10 +252,10 @@ void Mesh::init_from_input() {
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
 		ElementIter ele = this->element.find_id(elem_to_region.first);
-		ele->region_idx_ = region_db_.add_region( elem_to_region.second, ele->dim() );
+		ele->region_idx_ = region_db_.get_region( elem_to_region.second, ele->dim() );
+		region_db_.mark_used_region(ele->region_idx_.idx());
 	}
 }
-
 
 
 
@@ -512,6 +502,7 @@ void Mesh::make_neighbours_and_edges()
                     // fill boundary element
                     ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
                     bc_ele->init(e->dim()-1, this, region_db_.implicit_boundary_region() );
+                    region_db_.mark_used_region( bc_ele->region_idx_.idx() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
 
                     // fill Boundary object
@@ -745,6 +736,28 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
 
     if (boundary_domain) return boundary_elements_id_;
     return bulk_elements_id_;
+}
+
+void Mesh::read_regions_from_input(Input::Array region_list)
+{
+	for (Input::Iterator<Input::AbstractRecord> it = region_list.begin<Input::AbstractRecord>();
+				it != region_list.end();
+				++it) {
+		// constructor has side effect in the mesh - create new region or set and store them to Mesh::region_db_
+		(*it).factory< RegionSetBase, const Input::Record &, Mesh * >(*it, this);
+	}
+}
+
+void Mesh::check_and_finish()
+{
+	modify_element_ids(region_db_.el_to_reg_map_);
+	region_db_.el_to_reg_map_.clear();
+	region_db_.close();
+	region_db_.check_regions();
+
+	if ( in_record_.val<bool>("print_regions") ) {
+		region_db_.print_region_table(cout);
+	}
 }
 
 //-----------------------------------------------------------------------------

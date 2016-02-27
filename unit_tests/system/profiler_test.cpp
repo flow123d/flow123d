@@ -208,9 +208,26 @@ TEST(Profiler, absolute_time) {
     std::stringstream sout;
     Profiler::instance()->output(MPI_COMM_WORLD, sout);
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
-
-    EXPECT_NE( sout.str().find("cumul-time-min\": \"1.00"), string::npos );
-    EXPECT_NE( sout.str().find("cumul-time-max\": \"1.00"), string::npos );
+    
+    // try to transform profiler data using python
+    Profiler::instance()->output(MPI_COMM_WORLD);
+    Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
+    
+    int ierr, mpi_rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    EXPECT_EQ( ierr, 0 );
+    
+    // 0 processor will have valid profiler report
+    // other processors should have empty string only
+    if (mpi_rank == 0) {
+        // test timer resolution, requiring atleast 2 digit places
+        EXPECT_NE( sout.str().find("cumul-time-min\": \"1.00"), string::npos );
+        EXPECT_NE( sout.str().find("cumul-time-max\": \"1.00"), string::npos );
+    } else {
+        EXPECT_TRUE( sout.str().empty() );
+    }
+    
+    
 
     Profiler::uninitialize();
 }
@@ -300,10 +317,21 @@ TEST(Profiler, structure) {
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::instance()->output(MPI_COMM_WORLD, sout);
 
-    // when using find, we need to compare result to string::npos value (which indicates not found)
-    EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
-    EXPECT_NE( sout.str().find("\"tag\": \"sub1\""), string::npos );
 
+    int ierr, mpi_rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    EXPECT_EQ( ierr, 0 );
+    
+    // 0 processor will have valid profiler report
+    // other processors should have empty string only
+    if (mpi_rank == 0) {
+        // when using find, we need to compare result to string::npos value (which indicates not found)
+        EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
+        EXPECT_NE( sout.str().find("\"tag\": \"sub1\""), string::npos );
+    } else {
+        EXPECT_TRUE( sout.str().empty() );
+    }
+    
     Profiler::uninitialize();
 
 }

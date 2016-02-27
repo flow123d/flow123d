@@ -207,8 +207,8 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::mark_input_times().
      */
-    void mark_input_times(TimeMark::Type mark_type) {
-        for(FieldCommon *field : field_list) field->mark_input_times(mark_type);
+    void mark_input_times(const TimeGovernor &tg) {
+    	for(auto field : field_list) field->mark_input_times(mark_type);
     }
 
     /**

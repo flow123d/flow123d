@@ -3,13 +3,15 @@ problem: !SequentialCoupling
   description: heat_transfer
   mesh:
     mesh_file: ./input/test21.msh
-    sets:
-      - name: .bottom
-        region_labels:
+    regions:
+      - !Union
+        name: .bottom
+        regions:
           - .fracture_bottom
           - .rock_bottom
-      - name: .top
-        region_labels:
+      - !Union
+        name: .top
+        regions:
           - .fracture_top
           - .rock_top
   primary_equation: !SteadyDarcy_MH
