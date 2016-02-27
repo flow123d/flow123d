@@ -192,7 +192,7 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 				);
     }
 
-    recent_steps_.set_capacity(2);
+    recent_steps_.set_capacity(size_of_recent_steps_);
     recent_steps_.push_front(TimeStep(init_time));
     init_time_=init_time;
 
@@ -419,12 +419,14 @@ void TimeGovernor::next_time()
 
 
 
-bool TimeGovernor::reduce_timestep(double factor) {
+double TimeGovernor::reduce_timestep(double factor) {
     double prior_dt = dt();
     double new_upper_constraint = factor * dt();
 
     // Revert time.
-    recent_steps_.pop_back();
+//    DBGMSG("tg idx: %d\n", recent_steps_.front().index());
+    recent_steps_.pop_front();
+//    DBGMSG("tg idx: %d\n", recent_steps_.back().index());
     upper_constraint_ = last_upper_constraint_;
     lower_constraint_ = last_lower_constraint_;
 

@@ -87,8 +87,11 @@ TEST(TimeGovernor, step) {
     EXPECT_EQ(1, tg.step(1).index());
     EXPECT_EQ(1, tg.step(-2).index());
 
+    unsigned int n_recent_steps=3;
+    for(int i= 2; i<n_recent_steps; i++) tg.next_time();
+
     EXPECT_THROW( {tg.step(0);}, TimeGovernor::ExcMissingTimeStep);
-    EXPECT_THROW( {tg.step(3);}, TimeGovernor::ExcMissingTimeStep);
+    EXPECT_THROW( {tg.step(n_recent_steps + 1);}, TimeGovernor::ExcMissingTimeStep);
 
 }
 
@@ -223,6 +226,7 @@ TEST (TimeGovernor, time_step_constraints)
     // test reseting of constraints, bounded further by the end_time
     EXPECT_EQ(15,tm_tg->upper_constraint());
 
+    delete tm_tg;
 }
 
 
@@ -436,7 +440,35 @@ TEST (TimeGovernor, time_governor_marks_iterator)
 }
 
 
+TEST(TimeGovernor, reduce_timestep)
+{
+    TimeGovernor::marks().reinit();
+    string tg_in="{time = { start_time = 0.0, end_time = 100.0 } }";
+    TimeGovernor tg( read_input(tg_in));
+    tg.marks().add(TimeMark(10, tg.equation_fixed_mark_type()));
+    tg.set_permanent_constraint(0.5, 20.0);
 
+    tg.set_upper_constraint(5);
+    tg.set_lower_constraint(1);
+    tg.next_time();
+    EXPECT_FLOAT_EQ(0.5, tg.lower_constraint());
+    EXPECT_FLOAT_EQ(20, tg.upper_constraint());
+    EXPECT_FLOAT_EQ(5, tg.t() );
+    tg.set_upper_constraint(5);
+    tg.set_lower_constraint(1);
+
+    double f = tg.reduce_timestep(0.5);
+    EXPECT_FLOAT_EQ(0.5, f );
+    EXPECT_FLOAT_EQ(0.5, tg.lower_constraint());
+    EXPECT_FLOAT_EQ(20, tg.upper_constraint());
+    EXPECT_FLOAT_EQ(2.5, tg.t() );
+
+    f = tg.reduce_timestep(0.1);
+    EXPECT_FLOAT_EQ(0.4, f );
+    EXPECT_FLOAT_EQ(0.5, tg.lower_constraint());
+    EXPECT_FLOAT_EQ(20, tg.upper_constraint());
+    EXPECT_FLOAT_EQ(1, tg.t() );
+}
 
 TEST (TimeGovernor, simple_constructor)
 {

@@ -316,11 +316,11 @@ public:
      * @brief Force timestep reduction in particular in the case of failure of the non-linear solver.
      *
      * Calling this method also force immediate end of the fixed timestep interval.
-     * Returns false if a shorter step is not allowed by the time governor limits.
+     * Returns true reduce factor used. It is larger then given factor if we hit the lower timestep constraint.
      *
      * TODO: How to keep constraints active for the last next_time call.
      */
-    bool reduce_timestep(double factor);
+    double reduce_timestep(double factor);
 
     /**
      *  Returns reference to required time step in the recent history.
@@ -499,7 +499,12 @@ private:
      */
     static const double time_step_precision;
 
-    /// Circular buffer of recent time steps. Implicit size is 2.
+    /**
+     *  Size of the time step buffer, i.e. recent_time_steps_.
+     */
+    static const unsigned int size_of_recent_steps_ = 3;
+
+    /// Circular buffer of recent time steps. Implicit size is 3.
     boost::circular_buffer<TimeStep> recent_steps_;
     /// Initial time.
     double init_time_;
