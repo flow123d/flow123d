@@ -409,10 +409,35 @@ void TimeGovernor::next_time()
         time_step_changed_= (step(-2).length() != step().length());
     }
 
+    last_lower_constraint_ = lower_constraint_;
+    last_upper_constraint_ = upper_constraint_;
     // refreshing the upper_constraint_
     upper_constraint_ = min(end_time_ - t(), max_time_step_);
     lower_constraint_ = min_time_step_;
 
+}
+
+
+
+bool TimeGovernor::reduce_timestep(double factor) {
+    double prior_dt = dt();
+    double new_upper_constraint = factor * dt();
+
+    // Revert time.
+    recent_steps_.pop_back();
+    upper_constraint_ = last_upper_constraint_;
+    lower_constraint_ = last_lower_constraint_;
+
+    // Set constraint.
+    int current_minus_new = set_upper_constraint(new_upper_constraint);
+    if (current_minus_new < 0)
+        // current constraint < reduced dt, should not happen
+        THROW(ExcMessage() << EI_Message("Internal error."));
+
+    next_time();
+
+    // Return false if we hit lower time step constraint.
+    return dt() / prior_dt;
 }
 
 

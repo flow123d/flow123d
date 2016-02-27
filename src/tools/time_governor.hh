@@ -307,8 +307,20 @@ public:
 
     /**
      * @brief Proceed to the next time according to current estimated time step.
+     *
+     * The timestep constraints are relaxed to the permanent constraints.
      */
     void next_time();
+
+    /**
+     * @brief Force timestep reduction in particular in the case of failure of the non-linear solver.
+     *
+     * Calling this method also force immediate end of the fixed timestep interval.
+     * Returns false if a shorter step is not allowed by the time governor limits.
+     *
+     * TODO: How to keep constraints active for the last next_time call.
+     */
+    bool reduce_timestep(double factor);
 
     /**
      *  Returns reference to required time step in the recent history.
@@ -511,6 +523,11 @@ private:
     double max_time_step_;
     /// Permanent lower limit for the time step.
     double min_time_step_;
+
+    /// Upper constraint used for choice of current time.
+    double last_upper_constraint_;
+    /// Lower constraint used for choice of current time.
+    double last_lower_constraint_;
 
     /**
      * When the next time is chosen we need only the lowest fix time. Therefore we use
