@@ -267,52 +267,38 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
 
 int TimeGovernor::set_upper_constraint (double upper)
 {
-    if (upper_constraint_ < upper) 
-    {
+    if (upper_constraint_ < upper) {
         //do not change upper_constraint_
         return -1;
-    }
-    
-    if (lower_constraint_ <= upper) 
-    {
-        //change upper_constraint_ to upper
-        upper_constraint_ = upper;
-        return 0;
-    }
-    
-    if (lower_constraint_ > upper) 
-    {
-        //do not change upper_constraint_
-        return 1;
-    }
-
-    return 0;
+    } else
+        if (lower_constraint_ > upper) {
+            // set upper constraint to the lower constraint
+            upper_constraint_ = lower_constraint_;
+            return 1;
+        } else {
+            //change upper_constraint_ to upper
+            upper_constraint_ = upper;
+            return 0;
+        }
 }
 
 
 
 int TimeGovernor::set_lower_constraint (double lower)
 {   
-    if (upper_constraint_ < lower) 
-    {
-        //do not change lower_constraint_
+    if (upper_constraint_ < lower) {
+        // set lower constraint to the upper constraint
+        lower_constraint_ = upper_constraint_;
         return -1;
-    }
-    
-    if (min_time_step_ <= lower)
-    {
-        //change lower_constraint_ to lower
-        lower_constraint_ = lower;
-        return 0;
-    }
-    
-    if (min_time_step_ > lower)
-    {
-        //do not change lower_constraint_
-        return 1;
-    }
-
-    return 0;
+    } else
+        if (lower_constraint_ > lower) {
+            //do not change lower_constraint_
+            return 1;
+        } else {
+            //change lower_constraint_ to lower
+            lower_constraint_ = lower;
+            return 0;
+        }
 }
 
 
