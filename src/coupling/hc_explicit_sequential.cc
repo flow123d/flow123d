@@ -168,7 +168,11 @@ void HC_ExplicitSequential::run_simulation()
 
     while (! (water->time().is_end() && secondary_eq->time().is_end() ) ) {
 
-        secondary_eq->set_time_upper_constraint(water->time().estimate_dt());
+        if (! water->time().is_end()) {
+            double water_dt=water->time().estimate_dt();
+            secondary_eq->set_time_upper_constraint(water_dt);
+        }
+
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
