@@ -270,16 +270,25 @@ public:
     /**
      * @brief Sets upper constraint for the next time step estimating.
      * 
-     * This function can only make the constraint stricter. Upper constraint is reset to @p max_dt in next_time().
-     * @param upper is the upper constraint for time step
-     * @return -1, 0 or 1 according to the success
-     * 
-     * - -1: constraint is higher than the permanent upper constraint @p max_dt. Setting failed, no change happened.
-     * - 0: constraint is in the interval of permanent constraints @p min_dt and @p max_dt. The upper constraint has been set.
-     * - 1: constraint is lower than permanent lower constraint @p min_dt. Setting failed, no change happened.
+     * This function can only make the constraint stricter. Upper constraint is reset to @p max_dt after the next_time() call.
+     * The return value mimics result of the comparison: current constraint  compared to  @param upper.
+     * In particular the return values is:
+     * - -1: Current upper constraint is less then the @param upper. No change happen.
+     * -  0: Current constraint interval contains the @param upper. The upper constraint is set.
+     * - +1: Current lower constraint is greater then the @param upper. No change happen.
      */
     int set_upper_constraint(double upper);
     
+    /**
+     * @brief Sets lower constraint for the next time step estimating.
+     *
+     * This function can only make the constraint stricter. Lower constraint is reset to @p min_dt after the next_time() call.
+     * The return value mimics result of the comparison: current constraint  compared to  @param upper.
+     * In particular the return values is:
+     * - -1: Current upper constraint is less then the @param lower. No change happen.
+     * -  0: Current constraint interval contains the @param lower. The lower constraint is set.
+     * - +1: Current upper constraint is greater then the @param lower. No change happen.
+     */
     /**
      * @brief Sets lower constraint for the next time step estimating. 
      * @return -1, 0 or 1 according to the success.
@@ -298,8 +307,20 @@ public:
 
     /**
      * @brief Proceed to the next time according to current estimated time step.
+     *
+     * The timestep constraints are relaxed to the permanent constraints.
      */
     void next_time();
+
+    /**
+     * @brief Force timestep reduction in particular in the case of failure of the non-linear solver.
+     *
+     * Calling this method also force immediate end of the fixed timestep interval.
+     * Returns true reduce factor used. It is larger then given factor if we hit the lower timestep constraint.
+     *
+     * TODO: How to keep constraints active for the last next_time call.
+     */
+    double reduce_timestep(double factor);
 
     /**
      *  Returns reference to required time step in the recent history.
@@ -478,7 +499,12 @@ private:
      */
     static const double time_step_precision;
 
-    /// Circular buffer of recent time steps. Implicit size is 2.
+    /**
+     *  Size of the time step buffer, i.e. recent_time_steps_.
+     */
+    static const unsigned int size_of_recent_steps_ = 3;
+
+    /// Circular buffer of recent time steps. Implicit size is 3.
     boost::circular_buffer<TimeStep> recent_steps_;
     /// Initial time.
     double init_time_;
@@ -502,6 +528,11 @@ private:
     double max_time_step_;
     /// Permanent lower limit for the time step.
     double min_time_step_;
+
+    /// Upper constraint used for choice of current time.
+    double last_upper_constraint_;
+    /// Lower constraint used for choice of current time.
+    double last_lower_constraint_;
 
     /**
      * When the next time is chosen we need only the lowest fix time. Therefore we use

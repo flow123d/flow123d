@@ -87,8 +87,11 @@ TEST(TimeGovernor, step) {
     EXPECT_EQ(1, tg.step(1).index());
     EXPECT_EQ(1, tg.step(-2).index());
 
+    unsigned int n_recent_steps=3;
+    for(int i= 2; i<n_recent_steps; i++) tg.next_time();
+
     EXPECT_THROW( {tg.step(0);}, TimeGovernor::ExcMissingTimeStep);
-    EXPECT_THROW( {tg.step(3);}, TimeGovernor::ExcMissingTimeStep);
+    EXPECT_THROW( {tg.step(n_recent_steps + 1);}, TimeGovernor::ExcMissingTimeStep);
 
 }
 
@@ -171,6 +174,60 @@ TEST(TimeGovernor, estimate_dt)
     EXPECT_TRUE(0.1 > tg.estimate_dt());
 }
 
+
+
+TEST (TimeGovernor, time_step_constraints)
+{
+    const string flow_json = R"JSON(
+    {
+    time = { 
+        start_time = 0.0, 
+        end_time = 25.0
+      }
+    }
+    )JSON";
+    //constructing Time Governor from json input string
+    TimeGovernor::marks().reinit();
+    TimeMarks &tm = TimeGovernor::marks();
+    TimeMark::Type my_mark_type = tm.new_mark_type();
+    TimeGovernor *tm_tg = new TimeGovernor( read_input(flow_json), my_mark_type  );
+
+    //set permanent min_dt and max_dt
+    tm_tg->set_permanent_constraint(0.01, 20.0);
+
+    //testing setting of upper constraint
+    //if out of allowed interval, cannot change the user constraints
+    EXPECT_EQ(-1,tm_tg->set_upper_constraint(25.0));
+    EXPECT_EQ(20.0,tm_tg->upper_constraint());
+    EXPECT_EQ(0,tm_tg->set_upper_constraint(5));
+    EXPECT_EQ(5,tm_tg->upper_constraint());
+
+    //testing setting of lower constraint
+    EXPECT_EQ(1,tm_tg->set_lower_constraint(1e-4));
+    EXPECT_EQ(0.01,tm_tg->lower_constraint());
+
+    EXPECT_EQ(0,tm_tg->set_lower_constraint(0.1));
+    EXPECT_EQ(0.1,tm_tg->lower_constraint());
+
+    EXPECT_EQ(-1,tm_tg->set_lower_constraint(10));
+    EXPECT_EQ(5,tm_tg->lower_constraint());
+
+    tm_tg->next_time();
+    // test reseting of constraints
+    EXPECT_EQ(0.01,tm_tg->lower_constraint());
+    EXPECT_EQ(20,tm_tg->upper_constraint());
+
+    // test set upper constraint below the lower constraint
+    EXPECT_EQ(0,tm_tg->set_lower_constraint(5));
+    EXPECT_EQ(1,tm_tg->set_upper_constraint(1));
+    EXPECT_EQ(5,tm_tg->upper_constraint());
+
+    tm_tg->next_time();
+    // test reseting of constraints, bounded further by the end_time
+    EXPECT_EQ(15,tm_tg->upper_constraint());
+
+    delete tm_tg;
+}
 
 
 
@@ -264,25 +321,12 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ(100 ,it->time());
     EXPECT_EQ(inf_time ,(++it)->time());
     //-----------------
-    
+
     //set permanent min_dt and max_dt
     tm_tg->set_permanent_constraint(0.01, 20.0);
-    
-    //testing setting of upper constraint
-    //if out of allowed interval, cannot change the user constraints
-    EXPECT_EQ(-1,tm_tg->set_upper_constraint(25.0));
-    EXPECT_EQ(20.0,tm_tg->upper_constraint());
-    EXPECT_EQ(1,tm_tg->set_upper_constraint(1e-4));
-    EXPECT_EQ(20.0,tm_tg->upper_constraint());
-    
-    //testing setting of lower constraint
-    EXPECT_EQ(-1,tm_tg->set_lower_constraint(25.0));
-    EXPECT_EQ(0.01,tm_tg->lower_constraint());
-    EXPECT_EQ(1,tm_tg->set_lower_constraint(1e-4));
-    EXPECT_EQ(0.01,tm_tg->lower_constraint());
-    
+
     //upper time step constraint fot next change of time_step
-    EXPECT_EQ(0,tm_tg->set_upper_constraint(0.5));
+    EXPECT_EQ(0, tm_tg->set_upper_constraint(0.5));
     
     //cout << "Estimated time (t+dt): " << tm_tg->estimate_time() << endl;
     //fixing time_step until next fixed mark_type (in time 5.0)
@@ -395,6 +439,36 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     delete tm_tg;
 }
 
+
+TEST(TimeGovernor, reduce_timestep)
+{
+    TimeGovernor::marks().reinit();
+    string tg_in="{time = { start_time = 0.0, end_time = 100.0 } }";
+    TimeGovernor tg( read_input(tg_in));
+    tg.marks().add(TimeMark(10, tg.equation_fixed_mark_type()));
+    tg.set_permanent_constraint(0.5, 20.0);
+
+    tg.set_upper_constraint(5);
+    tg.set_lower_constraint(1);
+    tg.next_time();
+    EXPECT_FLOAT_EQ(0.5, tg.lower_constraint());
+    EXPECT_FLOAT_EQ(20, tg.upper_constraint());
+    EXPECT_FLOAT_EQ(5, tg.t() );
+    tg.set_upper_constraint(5);
+    tg.set_lower_constraint(1);
+
+    double f = tg.reduce_timestep(0.5);
+    EXPECT_FLOAT_EQ(0.5, f );
+    EXPECT_FLOAT_EQ(0.5, tg.lower_constraint());
+    EXPECT_FLOAT_EQ(20, tg.upper_constraint());
+    EXPECT_FLOAT_EQ(2.5, tg.t() );
+
+    f = tg.reduce_timestep(0.1);
+    EXPECT_FLOAT_EQ(0.4, f );
+    EXPECT_FLOAT_EQ(0.5, tg.lower_constraint());
+    EXPECT_FLOAT_EQ(20, tg.upper_constraint());
+    EXPECT_FLOAT_EQ(1, tg.t() );
+}
 
 TEST (TimeGovernor, simple_constructor)
 {
