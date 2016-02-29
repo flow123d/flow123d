@@ -124,7 +124,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
         .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"), "Residual tolerance.")
-        .declare_key("max_it", it::Integer(0), it::Default("100"), "Maximal number of iterations before diverging.")
+        .declare_key("max_it", it::Integer(0), it::Default("100"), "Maximal number of iterations (linear solves) of the non-linear solver.")
         .close();
 
     return it::Record("SteadyDarcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
@@ -346,6 +346,7 @@ void DarcyFlowMH_Steady::zero_time_step()
     bool zero_time_term_from_right
         = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
+    nonlinear_iteration_=0;
     create_linear_system();
     /* TODO:
      * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
@@ -357,6 +358,7 @@ void DarcyFlowMH_Steady::zero_time_step()
     if (zero_time_term_from_right) {
         // steady case
         //read_initial_condition(); // Possible solution guess for steady case.
+        use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
         read_initial_condition();
@@ -385,6 +387,7 @@ void DarcyFlowMH_Steady::update_solution()
     if (! zero_time_term_from_left) {
         // time term not treated as zero
         // Unsteady solution up to the T.
+        use_steady_assembly_ = false;
         solve_nonlinear(); // with left limit data
         if (jump_time) {
             xprintf(Warn, "Output of solution discontinuous in time not supported yet.\n");
@@ -404,6 +407,7 @@ void DarcyFlowMH_Steady::update_solution()
     bool zero_time_term_from_right
         = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     if (zero_time_term_from_right) {
+        use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
 
     } else if (! zero_time_term_from_left && jump_time) {
@@ -422,9 +426,9 @@ void DarcyFlowMH_Steady::solve_nonlinear()
 {
     assembly_linear_system();
     double residual_norm = schur0->compute_residual();
-    unsigned int n_it=0, l_it=0;
-    xprintf(Msg, "Nonlin iter: %d %d %g\n",n_it, l_it, residual_norm);
-    n_it++;
+    unsigned int l_it=0;
+    nonlinear_iteration_ = 0;
+    xprintf(Msg, "Nonlin initial res: %d %g\n",nonlinear_iteration_, residual_norm);
 
     // Reduce is_linear flag.
     int is_linear_common;
@@ -439,10 +443,11 @@ void DarcyFlowMH_Steady::solve_nonlinear()
         }
     }
 
-    while (residual_norm > this->tolerance_ &&  n_it < this->max_n_it_) {
+    while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
 
         int convergedReason = schur0->solve();
         this -> postprocess();
+        nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common) break;
@@ -451,9 +456,9 @@ void DarcyFlowMH_Steady::solve_nonlinear()
         //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
         residual_norm = schur0->compute_residual();
-        xprintf(Msg, "Nonlin iter: %d %d (%d) %g\n",n_it, l_it, convergedReason, residual_norm);
+        xprintf(Msg, "Nonlin iter: %d %d (%d) %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
 
-        n_it++;
+
     }
 
     solution_changed_for_scatter=true;
@@ -705,6 +710,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
                     double side_flux=bc_flux * bcd->element()->measure() * cross_section;
 
+                    // ** Update BC type. **
                     if (switch_dirichlet) {
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
@@ -712,9 +718,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         ASSERT(rows_ds->is_local(side_row), "" );
                         unsigned int loc_side_row = side_row - rows_ds->begin();
                         double & solution_flux = ls->get_solution_array()[loc_side_row];
-                        //DBGMSG("x: %g, to neum, p: %g f: %g -> f: %g\n",b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
-                        if ( solution_flux < side_flux) {
 
+                        if ( solution_flux < side_flux) {
+                            //DBGMSG("x: %g, to neum, p: %g f: %g -> f: %g\n",b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
                             solution_flux = side_flux;
                             switch_dirichlet=0;
 
@@ -732,21 +738,24 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         ASSERT(rows_ds->is_local(edge_row), "" );
                         unsigned int loc_edge_row = edge_row - rows_ds->begin();
                         double & solution_head = ls->get_solution_array()[loc_edge_row];
-                        //DBGMSG("x: %g, to dirich, p: %g -> p: %g f: %g\n",b_ele.centre()[0], solution_head, bc_pressure,  bc_flux);
-                        if ( solution_head > bc_pressure) {
 
+                        if ( solution_head > bc_pressure) {
+                            //DBGMSG("x: %g, to dirich, p: %g -> p: %g f: %g\n",b_ele.centre()[0], solution_head, bc_pressure,  bc_flux);
                             solution_head = bc_pressure;
                             switch_dirichlet=1;
                         }
                     }
-                    if (switch_dirichlet) {
-                    //    DBGMSG("x: %g, dirich, bcp: %g\n",b_ele.centre()[0], bc_pressure);
+
+                    // ** Apply BCUpdate BC type. **
+                    // Force Dirichlet type during the first iteration of the unsteady case.
+                    if (switch_dirichlet || (use_steady_assembly_ && nonlinear_iteration_ == 0) ) {
+                        //DBGMSG("x: %g, dirich, bcp: %g\n",b_ele.centre()[0], bc_pressure);
                         c_val = 0.0;
                         loc_side_rhs[i] -= bc_pressure;
                         ls->rhs_set_value(edge_row, -bc_pressure);
                         ls->mat_set_value(edge_row, edge_row, -1.0);
                     } else {
-                    //    DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], side_flux, bc_flux);
+                        //DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], side_flux, bc_flux);
                         ls->rhs_set_value(edge_row, side_flux);
                     }
 
@@ -764,7 +773,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     unsigned int loc_edge_row = edge_row - rows_ds->begin();
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 
-                    if (solution_head > bc_switch_pressure) {
+
+                    // Force Robin type during the first iteration of the unsteady case.
+                    if (solution_head > bc_switch_pressure  || (use_steady_assembly_ && nonlinear_iteration_ ==0)) {
                         // Robin BC
                         //DBGMSG("x: %g, robin, bcp: %g\n",b_ele.centre()[0], bc_pressure);
                         ls->rhs_set_value(edge_row, bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );

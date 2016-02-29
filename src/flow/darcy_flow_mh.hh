@@ -366,12 +366,15 @@ protected:
 
     DarcyFlowMHOutput *output_object;
 
-	int size;				// global size of MH matrix
-	int  n_schur_compls;  	// number of shur complements to make
+	int size;				    // global size of MH matrix
+	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
-	int is_linear_;
+	int is_linear_;             // Hack fo BDDC solver.
+	bool use_steady_assembly_;   // Propagate test for the time term to the assembly.
 	double tolerance_;
 	unsigned int max_n_it_;
+
+	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
 
 

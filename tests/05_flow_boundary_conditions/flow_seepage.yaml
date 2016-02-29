@@ -59,4 +59,4 @@ problem: !SequentialCoupling
       a_tol: 1.0e-07
     nonlinear_solver:  
       tolerance: 1e-5
-      max_it: 5
+      max_it: 4

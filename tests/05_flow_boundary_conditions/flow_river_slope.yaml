@@ -1,0 +1,47 @@
+flow123d_version: 1.8.9
+problem: !SequentialCoupling
+  description: Steady flow with River boundary condition
+  # The test problem use a square computational domain and emulate slope of the top surface
+  # by prescribing boundary (hD) and switch pressure (hS) as linear functions, while
+  # hD > hS to get physically relevant solution (no outflow for h<hS).
+  # The solution can be visualized with Paraview using ref_output/flow_river_square.pvsm.
+  # The "plot over line" near the top surface clearly displays three different parts of the
+  # top boundary. On the left where h<hS, the slope of the solution is smaller due to the limited
+  # inflow, for h>hS to slope is higher. For h>hD, the inflow turns into outflow which is visible on
+  # the velocity field on the left.
+  #
+  # The inflow velocity is sigma*(bc_pressure - bc_switch_pressure) = 0.0004*0.3 = 1.2e-4 
+  
+  mesh:
+    mesh_file: ${INPUT}/slope_surface.msh
+  primary_equation: !SteadyDarcy_MH
+    n_schurs: 2
+    input_fields:
+      - region: plane
+        conductivity: 0.001
+      - region: .top_left  
+        bc_type: total_flux
+        bc_flux: 0.001
+        
+      - region: .top_right
+        bc_type: river
+        bc_switch_pressure: 0
+        bc_pressure: 0
+        bc_robin_sigma: 0.0004
+    output:
+      output_stream:
+        file: ./flow_river_slope.pvd
+        format: !vtk
+          variant: ascii
+#        add_input_times: true          
+      output_fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-07
+    nonlinear_solver:
+        tolerance: 1e-6
+        max_it: 10
