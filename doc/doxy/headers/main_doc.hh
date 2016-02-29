@@ -62,6 +62,8 @@
  *
  * <h2> Main program modules </h2>
  *
+ * <b> @ref input_mod "Input" </b> module defines possible formats and structure of input files and their readers.
+ *
  * <b> @ref mesh_mod Mesh </b> module contains discretization of a multidimensional computational domain and
  *  geometrical coincidence of mesh elements.
  *
@@ -112,9 +114,14 @@
  * System module contains general support classes for: debugging, error handling, profiling. There are also @ref Vector and @ref VectorId classes with
  * their iterators.
  *
- * @defgroup io_mod         Input, Output
- * This module should contain most of inpout and output classes in particular readers and writers for particular file formats. In particular
- * mesh reader, JSON reader, and output into GMSH and VTK data formats.
+ * @defgroup input_mod      Input
+ * This module should contain most of input classes in particular readers for particular file formats. In particular JSON reader, YAML reader, classes
+ * allowing definition and access to nodes of input source tree (IST). Module allows definition of input attributes, which are optional for every node
+ * of IST. Base attributes are defined in @ref Input::Type::InputAttributes.
+ * Defined in Input namespace.
+ *
+ * @defgroup io_mod         Output
+ * This module should contain most of output classes in particular writers for particular file formats. In particular output into GMSH and VTK data formats.
  *
  * @defgroup la_mod         Linear Algebra
  * This module should contain various classes for linear algebra calculations. For small vectors and matrices we would like to use Armadillo library,
