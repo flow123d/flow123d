@@ -123,7 +123,7 @@ class TypeRecordKey(Parsable):
                     return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.key))
                 return '{}::{}'.format(parent_id, TexList.name_mode(self.key))
 
-            return '{self.parent.href_id}-{self.name}'.format(self=self)
+            return '{self.parent.href_id}-{self.key}'.format(self=self)
         return self.key
 
     @property
