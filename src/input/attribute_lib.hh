@@ -21,7 +21,7 @@
 using namespace std;
 
 /**
- * List of base attributes of Flow123D application.
+ * @brief List of base attributes of Flow123D application.
  *
  * TODO: This structure will be move to flow namespace when it will be available.
  */
@@ -42,7 +42,7 @@ namespace Input {
 namespace Type {
 
 /**
- * List of common attributes of Input::Type objects.
+ * @brief List of common attributes of Input::Type objects.
  *
  * These attributes can be used in any Input::Type object.
  */

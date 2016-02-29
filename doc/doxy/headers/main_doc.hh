@@ -62,7 +62,7 @@
  *
  * <h2> Main program modules </h2>
  *
- * <b> @ref input_mod "Input" </b> module defines possible formats and structure of input files and their readers.
+ * <b> @ref input_mod "Input" </b> module defines possible formats and structures of input files and their readers.
  *
  * <b> @ref mesh_mod Mesh </b> module contains discretization of a multidimensional computational domain and
  *  geometrical coincidence of mesh elements.
