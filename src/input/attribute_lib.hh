@@ -21,71 +21,33 @@
 using namespace std;
 
 /**
- * @brief List of base attributes of Flow123D application.
+ * @brief Class with static methods provided special attributes of Flow123D application.
  *
- * TODO: This structure will be move to flow namespace when it will be available.
+ * This class contains only attributes typical for Flow123D application. Base attributes
+ * are stored in @p Input::Type::Attributes.
  */
-struct FlowAttributes {
-	/// Actual version of application.
-	string version;
-	/// Actual revision of application.
-	string revision;
-	/// Display name of branch.
-	string branch;
-	/// Display url.
-	string url;
-};
-
-static FlowAttributes flow_attributes;
-
-namespace Input {
-namespace Type {
-
-/**
- * @brief List of common attributes of Input::Type objects.
- *
- * These attributes can be used in any Input::Type object.
- */
-struct InputAttributes {
+class FlowAttributes {
 	/**
-	 * Indicates that formatter should make the type documentation part
-	 * of the documentation of the type that use it. E.g. documentation
-	 * of a record key contain documentation of its type.
+	 * Reference to generic type from which Input::Type object is derived.
 	 *
-	 * Format of value: string
+	 * Format of value: hash of generic type
 	 */
-	string embedded_doc;
+	inline static string generic_type()
+	{ return "generic_type"; }
 	/**
-	 * Propose custom target name for hypertext reference.
+	 * List of parameters used in generic types or their instances
 	 *
-	 * Format of value: string
+	 * Format of value: list of names or list of pairs (name : value)
 	 */
-	string link_name;
-	/**
-	 * Obsolete type.
-	 *
-	 * Format of value: bool
-	 */
-	string obsolete;
-	/**
-	 * JSON with description of move of the particular type/key (only if
-	 * we allow attributes of keys).
-	 *
-	 * Format of value: string
-	 */
-	string ist_change;
+	inline static string parameters()
+	{ return "parameters"; }
 	/**
 	 * Particular for GeoMop, units in machine readable form
 	 *
 	 * Format of value: string
 	 */
-	string units;
+	inline static string units()
+	{ return "units"; }
 };
-
-static InputAttributes input_attributes;
-
-
-} // closing namespace Type
-} // closing namespace Input
 
 #endif /* ATTRIBUTE_LIB_HH_ */
