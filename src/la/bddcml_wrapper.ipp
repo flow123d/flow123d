@@ -122,7 +122,7 @@ void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const i
     numElem_ = procElemStarts[ nProc_ ];
 
     // check sizes of arrays
-    ASSERT( std::accumulate( nnet.begin(), nnet.end(), 0 ) == inet.size(),
+    ASSERT( std::accumulate( nnet.begin(), nnet.end(), 0 ) == (int)(inet.size()),
                             "array inet size mismatch \n " );
     ASSERT( std::accumulate( nndf.begin(), nndf.end(), 0 ) == numDofsSub_,
                             "array nndf content mismatch: %d %d \n ",  std::accumulate( nndf.begin(), nndf.end(), 0 ), numDofsSub_ );

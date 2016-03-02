@@ -190,6 +190,15 @@ public:
     { rhs_changed_ = true; }
 
     /**
+     * Set relative tolerance, absolute tolerance, and maximum number of iterations of the linear solver.
+     *
+     * For each of these three parameters we first look for the value at user input
+     * if not set we use the value provided to this method and finally the default values are
+     * set by the call of this method in the constructor.
+     */
+    virtual void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) = 0;
+
+    /**
      * Returns true if the system matrix has changed since the last solve.
      */
     bool is_matrix_changed()
@@ -540,12 +549,8 @@ public:
      */
     virtual void set_from_input(const Input::Record in_rec)
     {
-    	if (! in_rec.is_empty()) {
-    		in_rec_ = Input::Record( in_rec );
-    		r_tol_  = in_rec.val<double>("r_tol");
-    		max_it_ = in_rec.val<int>("max_it");
-    		a_tol_  = 0.01 * r_tol_;
-    	}
+        in_rec_ = in_rec;
+        set_tolerances(default_r_tol_, default_a_tol_, default_max_it_);
     }
 
     /**
@@ -561,9 +566,14 @@ public:
     }
 
 protected:
-    double           r_tol_;  // relative tolerance of linear solver
-    double      	 a_tol_;  // absolute tolerance of linear solver
-    int              max_it_; // maximum number of iterations of linear solver
+    // Default values initialized in constructor
+    static constexpr double         default_r_tol_ = 1e-7;
+    static constexpr double         default_a_tol_ = 1e-11;
+    static constexpr unsigned int   default_max_it_ = 1000;
+
+    double           r_tol_;  ///< relative tolerance of linear solver
+    double      	 a_tol_;  ///< absolute tolerance of linear solver
+    unsigned int     max_it_; ///< maximum number of iterations of linear solver
 
     MPI_Comm         comm_;
     SetValuesMode    status_;         //!< Set value status of the linear system.

@@ -43,6 +43,9 @@ public:
      */
     LinSys_PETSC( LinSys_PETSC &other );
 
+
+    void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
+
     /**
      * Returns whole Distribution class for distribution of the solution.
      */
