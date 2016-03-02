@@ -1,19 +1,22 @@
 /**
- * @defgroup input  Input Classes
+ * @defgroup input_mod  Input Classes
  *
  * \section classes Overview of data input classes
  * We assume that the input data of the program can be represented by a tree.
  * The leave nodes of the tree contain actual data and has one of the 'scalar' types
  * represented by the classes in Input::Type namespace : Bool, Integer, Double, String, 
  * and FileName. The branching nodes of the input tree 
- * can be either of type Array or type Record (or AbstractRecord). 
+ * can be either of type Array or type Record (or Abstract).
  * Classes derived from \p Input::Type::TypeBase only describes structure of the input tree
  * which is independent of actual format of the input data. 
+ * All nodes of tree allows definition of input attributes, which are optional for every node.
+ * Base attributes are defined in Input::Type::Attributes, special attributes of Flow123D in
+ * FlowAttributes. These structures contain common attributes, user can define other else.
  * 
  * Instances of the classes from 
  * the Input::Type namespace form a \e declaration-tree  that is later used
- * by a reader of the particular file format (currently we support only JSON through 
- * the Input::JSONToStorage reader) to interpret the input data, check its structure, possibly use default values
+ * by a reader of the particular file format (currently we support YAML and JSON through
+ * the Input::ReaderToStorage reader) to interpret the input data, check its structure, possibly use default values
  * and put the raw data into an intermediate \e storage-tree formed be Input:Storage classes. 
  * 
  * Finally, 
@@ -37,9 +40,9 @@
         color="black", fillcolor="white", style="filled"];
 
   DeclarationTree [label="Declaration tree\n(Input::Type...)",URL="\ref input_types"];
-  InputFile [label="Input file\n(JSON, XML, HDF5)"];
-  Reader [label="Particular reader\n(Input::JSONToStorage)",URL="\ref JSONToStorage"];
-  Storage [label="Data storage tree\n(Input::StorageBase...)",URL="\ref StorageBase"];
+  InputFile [label="Input file\n(YAML, JSON)"];
+  Reader [label="Particular reader\n(Input::ReaderToStorage)",URL="\ref Input::ReaderToStorage"];
+  Storage [label="Data storage tree\n(Input::StorageBase...)",URL="\ref Input::StorageBase"];
   Accessors [label="Data accessors\n(Input::Record, Input::Array, ...)",URL="\ref input_accessors"];
   Doc [label="Input documentation"];
   DataUsage [label="Data usage"];
@@ -59,7 +62,7 @@
  * 
  * \section practical_usage Practical usage
  * 
- * In order to use input interface you have to create \e declaration-tree, namely Selection, Record, and AbstractRecord types
+ * In order to use input interface you have to create \e declaration-tree, namely Selection, Record, and Abstract types
  * has to be declared by specification of its keys. We suggest to have a static method that returns Input::Type::Record 
  * for ever class which is initialized from input interface. Example of usage follows:
  * 
@@ -67,18 +70,11 @@
     class Mesh {
       static Input::Type::Record get_input_type() {
           using namespace Input::Type; 
-          static Record rec("Mesh", "Full description of computational mesh.");
-          
-          if ( ! rec.is_finished() ) {
-              rec.declare_key("mesh_name", String(), Default::optional(),"Optional name of the mesh");
-              rec.declare_key("mesh_file", FileName::input(), Default("mesh.msh"), "Principial mesh input file");
-              rec.declare_key("materials_to_remove", Array(Integer()), "Removes elements with material ID that appears in this list.");
-              
-              // here we refer to declaration of Input::Type::Record of another class Boundary
-              rec.declare_key("boundary",Boundary::get_input_type(), "Boundary description");
-              rec.finish()
-          }  
-          return rec; // copies of complex types are bare pointers to the same declaration data
+          return Record("Mesh", "Full description of computational mesh.")
+              .declare_key("mesh_name", String(), Default::optional(),"Optional name of the mesh")
+              .declare_key("mesh_file", FileName::input(), Default("mesh.msh"), "Principial mesh input file")
+              .declare_key("materials_to_remove", Array(Integer()), "Removes elements with material ID that appears in this list.")
+              .close();
       }  
       
       Mesh( Input::Record input) 
@@ -92,6 +88,6 @@
     }  
  @endcode  
  * 
- * The accessor for the root Input::Record is provided by the reader class ( JSONToStorage.get_root_interface<>() )
+ * The accessor for the root Input::Record is provided by the reader class ( ReaderToStorage.get_root_interface<>() )
  *
  */

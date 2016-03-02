@@ -114,12 +114,6 @@
  * System module contains general support classes for: debugging, error handling, profiling. There are also @ref Vector and @ref VectorId classes with
  * their iterators.
  *
- * @defgroup input_mod      Input
- * This module should contain most of input classes in particular readers for particular file formats. In particular JSON reader, YAML reader, classes
- * allowing definition and access to nodes of input source tree (IST). Module allows definition of input attributes, which are optional for every node
- * of IST. Base attributes are defined in @ref Input::Type::InputAttributes.
- * Defined in Input namespace.
- *
  * @defgroup io_mod         Output
  * This module should contain most of output classes in particular writers for particular file formats. In particular output into GMSH and VTK data formats.
  *
