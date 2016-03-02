@@ -123,6 +123,8 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
         .close();
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
+        .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
+            "Linear solver for MH problem.")
         .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"), "Residual tolerance.")
         .declare_key("max_it", it::Integer(0), it::Default("100"), "Maximal number of iterations (linear solves) of the non-linear solver.")
         .close();
@@ -131,9 +133,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
-        .declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
-                "Linear solver for MH problem.")
-        .declare_key("nonlinear_solver", ns_rec, it::Default::optional(),
+        .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
                 "Non-linear solver for MH problem.")
 
         .declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
@@ -347,7 +347,10 @@ void DarcyFlowMH_Steady::zero_time_step()
         = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
     nonlinear_iteration_=0;
-    create_linear_system();
+    Input::AbstractRecord rec = this->input_record_
+            .val<Input::Record>("nonlinear_solver")
+            .val<Input::AbstractRecord>("linear_solver");
+    create_linear_system(rec);
     /* TODO:
      * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
      * - Steady solution as an intitial condition may be forced by setting inti_time =-1, and set data for the steady solver in that time.
@@ -1163,11 +1166,10 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyFlowMH_Steady::create_linear_system() {
+void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
   
     START_TIMER("preallocation");
 
-    auto in_rec = this->input_record_.val<Input::AbstractRecord>("solver");
     if (schur0 == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {

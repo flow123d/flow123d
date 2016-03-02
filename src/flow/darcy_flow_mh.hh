@@ -314,7 +314,7 @@ protected:
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
      */
-    void create_linear_system();
+    void create_linear_system(Input::AbstractRecord rec);
 
     /**
      * Read initial condition into solution vector.

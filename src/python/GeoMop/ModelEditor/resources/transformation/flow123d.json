@@ -383,6 +383,15 @@
         "addition_path":"/problem/mesh/regions_elementary",
         "destination_path":"/problem/mesh/regions"        
       }
+    },
+    {
+      "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/primary_equation/solver",
+        "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
+        "create_path":true  
+      }
     }
   ]
 }
