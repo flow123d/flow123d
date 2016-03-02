@@ -112,10 +112,13 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
 
 void LinSys_BDDC::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
 {
-    r_tol_ = in_rec_.val<double>("r_tol", r_tol);
-    // BDDC does not use a_tol_
-    a_tol_ = 0.01 * r_tol_;
-    max_it_ = in_rec_.val<unsigned int>("max_it", max_it);
+    if (! in_rec_.is_empty()) {
+        // input record is set
+        r_tol_ = in_rec_.val<double>("r_tol", r_tol);
+        // BDDC does not use a_tol_
+        a_tol_ = 0.01 * r_tol_;
+        max_it_ = in_rec_.val<unsigned int>("max_it", max_it);\
+    }
 }
 
 
