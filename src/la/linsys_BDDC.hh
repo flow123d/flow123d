@@ -45,6 +45,8 @@ public:
                  const int  numSubLoc = 1,
                  const bool swap_sign = false );
 
+    void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
+
     void load_mesh( const int nDim, const int numNodes, const int numDofs,
                     const std::vector<int> & inet, 
                     const std::vector<int> & nnet, 

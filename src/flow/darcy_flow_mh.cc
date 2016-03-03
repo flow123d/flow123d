@@ -1257,10 +1257,7 @@ void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
     }
 
     END_TIMER("preallocation");
-
-    this->tolerance_ = Input::Record(in_rec).val<double>("r_tol");
     make_serial_scatter();
-
 }
 
 
