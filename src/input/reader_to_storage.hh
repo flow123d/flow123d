@@ -44,7 +44,11 @@ typedef enum  {
 
 
 
-/// Enum of possible input types. Values in @p json_type_names must be stored in same order.
+/**
+ * @brief Enum of possible input types.
+ *
+ * Values in @p json_type_names must be stored in same order.
+ */
 typedef enum {
 	obj_type, array_type, str_type, bool_type, int_type, real_type, null_type, scalar_type, undef_type
 } ValueTypes;
@@ -52,9 +56,9 @@ typedef enum {
 
 
 /**
- *  @brief Reader for (slightly) modified JSON files.
+ *  @brief Reader for (slightly) modified input files.
  *
- *  This class implements a reader of modified JSON file format. The modifications include
+ *  This class implements a reader of modified input file format (JSON or YAML). The modifications include
  *  shell-like comments (using hash '#' character), this is implemented in comment_filter.hh,  optional quoting of
  *  keys in JSON objects that do not contain spaces, and possibility to use '=' instead of ':'. So you can write:
  *  @code
@@ -104,19 +108,19 @@ public:
 
 
     /**
-     * Read a storage from input stream. Parameter @p root_type
-     * provides input type tree declaration. See @p read_from_stream for details.
+     * @brief Read a storage from input stream.
+     *
+     * Parameter @p root_type provides input type tree declaration. See @p read_from_stream for details.
      */
     ReaderToStorage(const FilePath &in_file, const Type::TypeBase &root_type);
 
-    /**
-     * Read a storage from string (e.g. complex default value).
-     */
+    /// Read a storage from string (e.g. complex default value).
     ReaderToStorage( const string &default_str, const Type::TypeBase &root_type, FileFormat format);
 
     /**
-     * Returns the root accessor. The template type \p T should correspond
-     * to the kind of the input type at root of the declaration tree.
+     * @brief Returns the root accessor.
+     *
+     * The template type \p T should correspond to the kind of the input type at root of the declaration tree.
      */
     template <class T>
     T get_root_interface() const;
@@ -125,50 +129,56 @@ public:
 protected:
 
     /**
-     * Default constructor.
+     * @brief Default constructor.
+     *
      * Provides common initialization for public constructors.
      */
     ReaderToStorage();
 
     /**
-     * This method actually reads the given stream \p in, checks the data just read against the declaration tree given by \p root_type, and
+     * @brief This method actually reads the given stream \p in
+     *
+     * Checks the data just read against the declaration tree given by \p root_type, and
      * store the data into private storage tree using \p StorageBase classes.
      */
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format);
 
-    /**
-     * Getter for root of the storage tree.
-     */
+    /// Getter for root of the storage tree.
     StorageBase *get_storage()
     { return storage_;}
 
 
     /**
-     * Check correctness of the input given by json_spirit node at head() of PathJSON @p p
+     * @brief Create storage of given @p type.
+     *
+     * Check correctness of the input given by json_spirit or YAML-cpp node at head() of PathBase @p p
      * against type specification @p type. Die on input error (and return NULL).
      * For correct input, creates the storage tree and returns pointer to its root node.
      */
     StorageBase * make_storage(PathBase &p, const Type::TypeBase *type);
 
-    StorageBase * make_storage(PathBase &p, const Type::Record *record);
-    StorageBase * make_storage(PathBase &p, const Type::Abstract *abstr_rec);
-    StorageBase * make_storage(PathBase &p, const Type::Array *array);
+    StorageBase * make_storage(PathBase &p, const Type::Record *record);         ///< Create storage of Type::Record type
+    StorageBase * make_storage(PathBase &p, const Type::Abstract *abstr_rec);    ///< Create storage of Type::Abstract type
+    StorageBase * make_storage(PathBase &p, const Type::Array *array);           ///< Create storage of Type::Array type
+    StorageBase * make_storage(PathBase &p, const Type::Selection *selection);   ///< Create storage of Type::Selection type
+    StorageBase * make_storage(PathBase &p, const Type::Bool *bool_type);        ///< Create storage of Type::Bool type
+    StorageBase * make_storage(PathBase &p, const Type::Integer *int_type);      ///< Create storage of Type::Integer type
+    StorageBase * make_storage(PathBase &p, const Type::Double *double_type);    ///< Create storage of Type::Double type
+    StorageBase * make_storage(PathBase &p, const Type::String *string_type);    ///< Create storage of Type::String type
 
-    StorageBase * make_selection_storage_without_catch(PathBase &p, const Type::Selection *selection);
-    StorageBase * make_storage(PathBase &p, const Type::Selection *selection);
-    StorageBase * make_storage(PathBase &p, const Type::Bool *bool_type);
-    StorageBase * make_storage(PathBase &p, const Type::Integer *int_type);
-    StorageBase * make_storage(PathBase &p, const Type::Double *double_type);
-    StorageBase * make_storage(PathBase &p, const Type::String *string_type);
+    /// Apply transposition and create storage of Type::Array type
     StorageBase * make_transposed_storage(PathBase &p, const Type::TypeBase *type);
+
+    /// Apply conversion to one element storage of Type::Array type
     StorageBase * make_autoconversion_array_storage(PathBase &p, const Type::Array *array, StorageBase *item);
 
+    /// Apply automatic conversion of Type::Record type
     StorageBase * record_automatic_conversion(PathBase &p, const Type::Record *record);
+
+    /// Apply automatic conversion of Type::Abstract type
     StorageBase * abstract_automatic_conversion(PathBase &p, const Type::Abstract *abstr_rec);
 
-    /**
-     * Dispatch according to @p type and create corresponding storage from the given string.
-     */
+    /// Dispatch according to @p type and create corresponding storage from the given string.
     StorageBase * make_storage_from_default( const string &dflt_str, boost::shared_ptr<Type::TypeBase> type);
 
 
@@ -179,7 +189,7 @@ protected:
     const Type::TypeBase *root_type_;
 
     /**
-     * Flag signed that "expected" transposed part of input tree is processed.
+     * @brief Flag signed that "expected" transposed part of input tree is processed.
      *
      * We set this flag if input tree contains another type at position where Array
      * is expected. This type must correspond with type_of_value of Array.

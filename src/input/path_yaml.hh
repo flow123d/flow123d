@@ -38,64 +38,79 @@ namespace Input {
  */
 class PathYAML : public PathBase {
 public:
+	/// Definition of YAML-cpp node.
     typedef YAML::Node Node;
 
+    /// Constructor.
     PathYAML(std::istream &in);
 
     /**
-     * Destructor. Clean nodes_.
+     * @brief Destructor.
+     *
+     * Clean nodes_.
      */
     ~PathYAML() override;
 
     /**
-     * Returns level of actual path. Root has level == 0.
+     * @brief Returns level of actual path.
+     *
+     * Root has level == 0.
      */
     inline int level() const
     { return nodes_.size() - 1; }
 
     /**
-     * Dive into yaml-cpp hierarchy. Store current path and returns true if pointer to new yaml node is not NULL.
+     * @brief Dive into yaml-cpp hierarchy.
+     *
+     * Implements @p PathBase::down(unsigned int)
      */
     bool down(unsigned int index) override;
-    bool down(const std::string& key) override;
 
     /**
-     * Return one level up in the hierarchy.
+     * @brief Dive into yaml-cpp hierarchy.
+     *
+     * Implements @p PathBase::down(const std::string&)
      */
+    bool down(const std::string& key) override;
+
+    /// Return one level up in the hierarchy.
     void up() override;
 
     // These methods are derived from PathBase
-    bool is_null_type() const override;
-    bool get_bool_value() const override;
-    std::int64_t get_int_value() const override;
-    double get_double_value() const override;
-    std::string get_string_value() const override;
-    unsigned int get_node_type_index() const override;
-    bool get_record_key_set(std::set<std::string> &) const override;
-    int get_array_size() const override;
-    bool is_record_type() const override;
-    bool is_array_type() const override;
-    PathYAML * clone() const override;
+    bool is_null_type() const override;                               ///< Implements @p PathBase::is_null_type
+    bool get_bool_value() const override;                             ///< Implements @p PathBase::get_bool_value
+    std::int64_t get_int_value() const override;                      ///< Implements @p PathBase::get_int_value
+    double get_double_value() const override;                         ///< Implements @p PathBase::get_double_value
+    std::string get_string_value() const override;                    ///< Implements @p PathBase::get_string_value
+    unsigned int get_node_type_index() const override;                ///< Implements @p PathBase::get_node_type_index
+    bool get_record_key_set(std::set<std::string> &) const override;  ///< Implements @p PathBase::get_record_key_set
+    int get_array_size() const override;                              ///< Implements @p PathBase::get_array_size
+    bool is_record_type() const override;                             ///< Implements @p PathBase::is_record_type
+    bool is_array_type() const override;                              ///< Implements @p PathBase::is_array_type
+    PathYAML * clone() const override;                                ///< Implements @p PathBase::clone
 
+    /// Implements reading of reference keys, and check of cyclic references.
     PathBase * find_ref_node() override;
 
+    /// Implements @p PathBase::get_descendant_name
     std::string get_descendant_name() const override;
 
 protected:
 
 
-    /**
-     * Pointer to YAML Value object at current path.
-     */
+    /// Pointer to YAML Value object at current path.
     inline const Node &head() const
     { return nodes_.back(); }
 
+    // Pointers to all nodes from the root up to the current path.
     std::vector<Node> nodes_;
 };
 
 
 /**
- * Output operator for PathYAML. Mainly for debugging purposes and error messages.
+ * @brief Output operator for PathYAML.
+ *
+ * Mainly for debugging purposes and error messages.
  */
 std::ostream& operator<<(std::ostream& stream, const PathYAML& path);
 
