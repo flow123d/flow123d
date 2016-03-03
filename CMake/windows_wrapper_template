@@ -1,0 +1,3 @@
+@echo off
+set PYTHONPATH=@PY_WRAPPER_PATHS_WIN@
+flow123d.bin.exe %*
