@@ -32,8 +32,8 @@ namespace Type {
 /**
  * @brief Class for declaration of polymorphic Record.
  *
- * Like the Record class this is only proxy class. It derives all methods from Record, but
- * further  there is method \p no_more_descendants to close adding descendants. After this
+ * Like the Record class this is only proxy class. It allows add Record as descendants, but
+ * further there is method \p no_more_descendants to close adding them. After this
  * you can not derive any Record from this Abstract.
  *
  *
@@ -43,26 +43,8 @@ namespace Type {
  @code
     static Input::Type::Abstract &SomeAbstractClass::get_input_type() {
         using namespace Input::Type;
-        static Abstract rec("Function",
-            "Input for generic time-space function.");
-
-        if (! rec.is_finished()) {
-            // declaration of keys that should be derived
-            rec.declare_key("domain",Domain::get_input_type(),Default::optional(),
-                "Possibly restrict domain of the function.");
-            // Finish adding keys.
-            rec.finish();
-
-            // call construction of derived Records
-            FunctionLinear::get_input_type();
-            FunctionPolynomial::get_input_type();
-            FunctionInterpreted::get_input_type();
-
-            // finish adding descendants.
-            rec.finish();
-        }
-
-        return rec;
+        return Abstract("Function", "Input for generic time-space function.")
+        			.close();
     }
  @endcode
  *
@@ -76,10 +58,11 @@ class Abstract : public TypeBase {
 protected:
 
     /**
-     * Actual data of the abstract record.
+     * @brief Actual data of the abstract record.
      */
     class ChildData {
     public:
+    	/// Constructor
         ChildData(const string &name, const string &description)
         : selection_of_childs( boost::make_shared<Selection> (name + "_TYPE_selection") ),
 		  description_(description),
@@ -90,14 +73,13 @@ protected:
         {}
 
         /**
-         * Selection composed from names of derived Records. Indices are according to
-         * the order of derivation (starting from zero).
+         * @brief Selection composed from names of derived Records.
+         *
+         * Indices are according to the order of derivation (starting from zero).
          */
         boost::shared_ptr< Selection> selection_of_childs;
 
-        /**
-         * Vector of derived Records (proxies) in order of derivation.
-         */
+        /// Vector of derived Records (proxies) in order of derivation.
         vector< Record > list_of_childs;
 
         /// Description of the whole Abstract type.
@@ -113,7 +95,7 @@ protected:
         bool closed_;
 
         /**
-         * Default value of selection_of_childs (used for automatic conversion).
+         * @brief Default value of selection_of_childs (used for automatic conversion).
          *
          * If default value isn't set, selection_default_ is set to obligatory.
          */
@@ -135,101 +117,103 @@ protected:
     };
 
 public:
-    /**
-     * Public typedef of constant iterator into array of keys.
-     */
+    /// Public typedef of constant iterator into array of keys.
     typedef std::vector< Record >::const_iterator ChildDataIter;
 
-    /**
-     * Default constructor.
-     */
+    /// Default constructor.
     Abstract();
 
     /**
-     * Copy constructor. We check that other is non empty.
+     * @brief Copy constructor.
+     *
+     * We check that other is non empty.
      */
     Abstract(const Abstract& other);
 
 
     /**
-     * Basic constructor. You has to provide \p type_name of the new declared Record type and
-     * its \p description.
+     * @brief Basic constructor.
+     *
+     * You has to provide \p type_name of the new declared Abstract type and its \p description.
      */
     Abstract(const string & type_name_in, const string & description);
 
     /**
-     * Implements @p TypeBase::content_hash.
+     * @brief Implements @p TypeBase::content_hash.
      *
      * Hash is calculated by type name, description and hash of attributes.
      */
     TypeHash content_hash() const   override;
 
     /**
-     * Allows shorter input of the Abstract providing the default value to the "TYPE" key.
+     * @brief Allows shorter input of the Abstract providing the default value to the "TYPE" key.
+     *
      * If the input reader come across the Abstract in the declaration tree and the input
      * is not 'record-like' with specified value for TYPE, it tries to use the descendant Record specified by
      * @p type_default parameter of this method. Further auto conversion of such Record may be possible.
      */
     Abstract &allow_auto_conversion(const string &type_default);
 
-    /**
-     *  Can be used to close the Abstract for further declarations of keys.
-     */
+    /// Can be used to close the Abstract for further declarations of keys.
     Abstract &close();
 
     /**
-     *  Finish declaration of the Abstract type.
+     *  @brief Finish declaration of the Abstract type.
      *
      *  Set Abstract as parent of derived Records (for mechanism of
      *  set parent and descendant see \p Record::derive_from)
      */
     bool finish(bool is_generic = false) override;
 
-    /**
-     * Returns reference to the inherited Record with given name.
-     */
+    /// Returns reference to the inherited Record with given name.
     const Record  &get_descendant(const string& name) const;
 
     /**
-     * Returns default descendant if TYPE key has default value, otherwise returns empty Record.
+     * @brief Returns default descendant.
+     *
+     * Returns only if TYPE key has default value, otherwise returns empty Record.
      */
     const Record * get_default_descendant() const;
 
-    /**
-     * Returns reference to Selection type of the implicit key TYPE.
-     */
+    /// Returns reference to Selection type of the implicit key TYPE.
     const Selection &get_type_selection() const;
 
-    /**
-     * Returns number of keys in the child_data_.
-     */
+    /// Returns number of descendants in the child_data_.
     unsigned int child_size() const;
 
-    /**
-     * Implements @p TypeBase::is_finished.
-     */
+    /// Implements @p TypeBase::is_finished.
     virtual bool is_finished() const override;
 
     /// Returns true if @p data_ is closed.
     virtual bool is_closed() const override;
 
-    /// Abstract type name getter.
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Name corresponds to @p data_->type_name_.
+     */
     virtual string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "Abstract"; }
 
     /**
-     * Container-like access to the data of the Record. Returns iterator to the first data.
+     * @brief Container-like access to the descendants of the Abstract.
+     *
+     * Returns iterator to the first data.
      */
     ChildDataIter begin_child_data() const;
 
     /**
-     * Container-like access to the data of the Record. Returns iterator to the last data.
+     * @brief Container-like access to the descendants of the Abstract.
+     *
+     * Returns iterator to the last data.
      */
     ChildDataIter end_child_data() const;
 
     /**
-     * Add inherited Record. This method is used primarily in combination with registration
-     * variable. @see Input::Factory
+     * @brief Add inherited Record.
+     *
+     * This method is used primarily in combination with registration variable. @see Input::Factory
      *
      * Example of usage:
 	 @code
@@ -276,16 +260,7 @@ public:
     //Abstract &set_generic_content_hash(TypeHash generic_content_hash);
 
 protected:
-    /**
-     * This method intentionally have no implementation to
-     * prevents deriving an Abstract form other Abstract.
-     * In such a case the linker should report an undefined reference.
-     */
-    Record &derive_from(Abstract &parent);
-
-    /**
-     * Check if type has set value of default descendants.
-     */
+    /// Check if type has set value of default descendants.
     bool have_default_descendant() const;
 
     /// Actual data of the Abstract.
@@ -296,7 +271,7 @@ protected:
 
 
 /** ******************************************************************************************************************************
- * Class for declaration of polymorphic Record.
+ * @brief Class for declaration of polymorphic Record.
  *
  * Abstract extends on list of descendants provided immediately
  * after construction by add_child(). These descendants derive
@@ -308,25 +283,29 @@ protected:
 class AdHocAbstract : public Abstract {
 	friend class OutputBase;
 public:
-	/**
-	 * Constructor
-	 */
+	/// Constructor
 	AdHocAbstract(const Abstract &ancestor);
 
+    /**
+     * @brief Implements @p TypeBase::content_hash.
+     *
+     * Hash is calculated by type name, description and name of ancestor.
+     */
 	TypeHash content_hash() const   override;
 
+    /// Override @p Type::TypeBase::class_name.
 	string class_name() const override { return "AdHocAbstract"; }
 
 
     /**
-     * Finish declaration of the AdHocAbstract type. Adds descendants of ancestor Abstract,
-     * calls close() and complete keys with non-null pointers to lazy types.
+     * @brief Finish declaration of the AdHocAbstract type.
+     *
+     * Adds descendants of ancestor Abstract, calls close() and complete keys with non-null
+     * pointers to lazy types.
      */
     bool finish(bool is_generic = false) override;
 
-    /**
-     * Add inherited Record.
-     */
+    /// Add inherited Record.
     AdHocAbstract &add_child(const Record &subrec);
 
 protected:

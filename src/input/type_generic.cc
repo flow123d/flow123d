@@ -103,6 +103,7 @@ bool Instance::finish(bool is_generic) {
 }
 
 
+/// Print parameter vector to formatted string.
 std::string print_parameter_vec(std::vector<TypeBase::ParameterPair> vec) {
 	stringstream ss;
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = vec.begin(); vec_it!=vec.end(); vec_it++) {

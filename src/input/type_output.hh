@@ -35,7 +35,10 @@ using namespace std;
 
 /// Stores version of program and other base data of application
 struct RevNumData {
-	std::string version, revision, branch, url;
+	std::string version;    ///< Actual version of application.
+	std::string revision;   ///< Actual revision of application.
+	std::string branch;     ///< Actual branch of application.
+	std::string url;        ///< Url of application.
 };
 
 /**
@@ -56,14 +59,16 @@ class OutputBase {
 public:
 
     /**
-     * @brief Performs output of the documentation into given @p stream. The same effect has the reloaded operator '<<'.
+     * @brief Performs output of the documentation into given @p stream.
+     *
+     * The same effect has the reloaded operator '<<'.
      * Returns reference to the same stream.
      */
     virtual ostream& print(ostream& stream) = 0;
 
 protected:
     /**
-     * Types of documentation output.
+     * @brief Types of documentation output.
      *
      * Used in print_impl methods for basic and full printout of Input::Type
      */
@@ -74,11 +79,7 @@ protected:
 
 
 
-    /**
-     * Constructor
-     *
-     * @param type Stores input sequence
-     */
+    /// Constructor
     OutputBase();
 
 
@@ -113,59 +114,35 @@ protected:
     		TypeBase::TypeHash &generic_type_hash, TypeBase::json_string &parameter_map_to_json);
 
 
-    /**
-     * Perform resolution according to actual @p type (using typeid) and call particular print_impl method.
-     */
+    /// Perform resolution according to actual @p type (using typeid) and call particular print_impl method.
     void print_base(ostream& stream, const TypeBase *type);
 
 
-    /**
-     * Implements printout of Record @p type
-     */
+    /// Implements printout of Record @p type
     virtual void print_impl(ostream& stream, const Record *type) = 0;
-    /**
-     * Implements printout of Array @p type
-     */
+    /// Implements printout of Array @p type
     virtual void print_impl(ostream& stream, const Array *type) = 0;
-    /**
-     * Implements printout of Abstract @p type
-     */
+    /// Implements printout of Abstract @p type
     virtual void print_impl(ostream& stream, const Abstract *type) = 0;
-    /**
-     * Implements printout of AdHocAbstract @p type
-     */
+    /// Implements printout of AdHocAbstract @p type
     virtual void print_impl(ostream& stream, const AdHocAbstract *type) = 0;
-    /**
-     * Implements printout of Selection @p type
-     */
+    /// Implements printout of Selection @p type
     virtual void print_impl(ostream& stream, const Selection *type) = 0;
-    /**
-     * Implements printout of Integer @p type
-     */
+    /// Implements printout of Integer @p type
 	virtual void print_impl(ostream& stream, const Integer *type) = 0;
-    /**
-     * Implements printout of Double @p type
-     */
+    /// Implements printout of Double @p type
 	virtual void print_impl(ostream& stream, const Double *type) = 0;
-    /**
-     * Implements printout of Bool @p type
-     */
+    /// Implements printout of Bool @p type
 	virtual void print_impl(ostream& stream, const Bool *type) = 0;
-    /**
-     * Implements printout of String @p type
-     */
+    /// Implements printout of String @p type
 	virtual void print_impl(ostream& stream, const String *type) = 0;
-    /**
-     * Implements printout of FileName @p type
-     */
+    /// Implements printout of FileName @p type
     virtual void print_impl(ostream& stream, const FileName *type) = 0;
-    /**
-     * Implements printout of FileName @p type
-     */
+    /// Implements printout of FileName @p type
     virtual void print_impl(ostream& stream, const Parameter *type) = 0;
 
     /**
-     * Write out a string with given padding of every new line.
+     * @brief Write out a string with given padding of every new line.
      *
      * @param stream Output stream
      * @param str Printed description
@@ -174,7 +151,7 @@ protected:
      */
     void write_description(std::ostream& stream, const string& str, unsigned int padding, unsigned int hash_count = 1);
     /**
-     * Write value stored in @p dft.
+     * @brief Write value stored in @p dft.
      *
      * Enclose value in quotes if it's needed or write info that value is optional or obligatory.
      */
@@ -183,7 +160,7 @@ protected:
 	void clear_processed_types();
 
     /**
-     * Returns true if the type was printed out
+     * @brief Returns true if the type was printed out
      *
      * Checks if the @p processed_types_hash_ contains hash of given type.
      */
@@ -222,7 +199,7 @@ protected:
 class OutputText : public OutputBase {
 public:
     /**
-     * Constructor
+     * @brief Constructor
      *
      * @param type Stores input sequence
      */
@@ -265,18 +242,21 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
+	/// Simple constructor.
     OutputJSONMachine(RevNumData rev_num_data);
+    /// Constructor allowing to set root_type_
 	OutputJSONMachine(const Record &root_type, RevNumData rev_num_data);
 
 	ostream& print(ostream& stream) override;
 
 
 protected:
-	std::string format_hash(TypeBase::TypeHash hash);
+	/// Replace slashes, quotes and special chars with escaped format of these chars.
 	std::string escape_description(std::string desc);
 
 	/**
-	 * Print header of a JSON object describing single TypeBase instance.
+	 * @brief Print header of a JSON object describing single TypeBase instance.
+	 *
 	 * @param type - type to print
 	 * @param input_type - name of TypeBase descendant.
 	 */
@@ -298,41 +278,52 @@ protected:
     /// Print all keys of Abstract type or AdHocAbstract type
     void print_abstract_record_keys(ostream& stream, const Abstract *type);
 
-    /**
-     * Print actual version of program.
-     */
+    /// Print actual version of program.
     void print_program_info(ostream& stream);
 
-    /**
-     * Print @p full_hash_ key.
-     */
+    /// Print @p full_hash_ key.
     void print_full_hash(ostream& stream);
 
 
-    /// Header of the format, printed before call of version print.
-    /// see @p print(stream) method
+    /**
+     * @brief Header of the format, printed before call of version print.
+     *
+     * See @p print(stream) method
+     */
     std::string format_head;
-    /// Inner part of the format, printed before first call of recursive print.
-    /// see @p print(stream) method
+    /**
+     * @brief Inner part of the format, printed before first call of recursive print.
+     *
+     * see @p print(stream) method
+     */
     std::string format_inner;
-    /// Tail of the format, printed after all recursive prints are finished and before full hash prints.
-    /// see @p print(stream) method
+    /**
+     * @brief Tail of the format, printed after all recursive prints are finished and before full hash prints.
+     *
+     * see @p print(stream) method
+     */
     std::string format_full_hash;
-    /// Tail of the format, printed after all recursive prints are finished.
-    /// see @p print(stream) method
+    /**
+     * @brief Tail of the format, printed after all recursive prints are finished.
+     *
+     * see @p print(stream) method
+     */
     std::string format_tail;
     /// Contains version of program and other base data
     RevNumData rev_num_data_;
     
-    /// Root type. Have to be printed as first, then we pass through the individual type lists to output everything.
+    /**
+     * @brief Root type for output.
+     *
+     * Have to be printed as first, then we pass through the individual type lists to output everything.
+     */
     Record root_type_; 
 };
 
 
-/**
- * Overrides output operator for simple output of the input type tree.
- */
+/// Redirect text output to @p stream.
 std::ostream& operator<<(std::ostream& stream, OutputText type_output);
+/// Redirect machine readable output to @p stream.
 std::ostream& operator<<(std::ostream& stream, OutputJSONMachine type_output);
 
 

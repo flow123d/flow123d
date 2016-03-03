@@ -34,7 +34,8 @@ using std::string;
  * @brief Template for classes storing finite set of named values.
  *
  * The primary purpose of this class is initialization of enum variables. Since C++ provides no reflection,
- * in particular no access to enum identifiers as strings, you has to construct the Selection object consistent with an enum you want to initialize.
+ * in particular no access to enum identifiers as strings, you has to construct the Selection object consistent
+ * with an enum you want to initialize.
  *
  * Similarly to Type::Record and Type::Abstract the Selection class is only proxy to the actual data.
  *
@@ -42,10 +43,12 @@ using std::string;
  @code
     enum Colors { blue, white };
 
-    Selection colors("Colors");
-    colors.add_value(blue, "blue");
-    colors.add_value(white,"white","White color"); // with optional item description
-    colors.finish();
+	const Selection & SomeClass::get_selection_input_type() {
+		return Selection("Colors", "Set of color.")
+			.add_value(blue, "blue")
+			.add_value(white,"white","White color") // with optional item description
+			.close();
+	}
  @endcode
  *
  *
@@ -71,9 +74,7 @@ public:
     DECLARE_EXCEPTION( ExcSelectionValueNotFound,
                 << "Value " << EI_Value::val <<" not found in Selection:\n" <<  EI_Selection::val );
 
-    /**
-     * Structure for description of one key in selection
-     */
+    /// Structure for description of one key in selection
     struct Key {
         unsigned int key_index;
         string key_;
@@ -81,41 +82,33 @@ public:
         int value;
     };
 
-    /**
-     * Public typedef of constant iterator into array of keys
-     */
+    /// Public typedef of constant iterator into array of keys
     typedef std::vector<struct Key>::const_iterator keys_const_iterator;
 
-    /**
-     * Default constructor. Empty selection.
-     */
+    /// Default constructor. Empty selection.
     Selection();
 
 
-    /**
-     * Copy constructor.
-     */
+    /// Copy constructor.
     Selection(const Selection& other);
 
-    /**
-     * Creates a handle pointing to the new SelectionData.
-     */
+    /// Creates a handle pointing to the new SelectionData.
     Selection(const string &name, const std::string &description = "");
 
     /**
-     * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
+     * @brief Adds one new @p value with name given by @p key to the Selection.
+     *
+     * The @p description of meaning of the value could be provided.
      */
     Selection &add_value(const int value, const std::string &key, const std::string &description = "");
 
 
-    /**
-     * Close the Selection, no more values can be added.
-     */
+    /// Close the Selection, no more values can be added.
     const Selection &close() const;
 
 
     /**
-     * Implements @p TypeBase::content_hash.
+     * @brief Implements @p TypeBase::content_hash.
      *
      * Hash is calculated by type name, description, hash of keys and attributes.
      */
@@ -125,56 +118,62 @@ public:
     /// Implements \p TypeBase::is_finished
     bool is_finished() const override;
 
-    /// Implements \p TypeBase::type_name
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Name corresponds to @p data->type_name_.
+     */
     string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "Selection"; }
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     bool operator==(const TypeBase &other) const override;
 
     /**
-     * Container-like access to the keys of the Record. Returns iterator to the first key.
+     * @brief Container-like access to the keys of the Selection.
+     *
+     * Returns iterator to the first key.
      */
     inline keys_const_iterator begin() const;
 
     /**
-     * Container-like access to the keys of the Record. Returns iterator to the last key.
+     * @brief Container-like access to the keys of the Selection.
+     *
+     * Returns iterator to the last key.
      */
     inline keys_const_iterator end() const;
 
-    /**
-     * Returns iterator to the key struct for given key string.
-     */
+    /// Returns iterator to the key struct for given key string.
     inline keys_const_iterator key_iterator(const string& key) const;
 
     /**
-     * Converts given value name \p key to the value. Throws exception if the value name does not exist.
+     * @brief Converts given value name \p key to the value.
+     *
+     * Throws exception if the value name does not exist.
      */
     int name_to_int(const string &key) const;
 
     /**
-     * Returns value name for the given \p value. Throws exception if the value does not exist.
+     * @brief Returns value name for the given \p value.
+     *
+     * Throws exception if the value does not exist.
      */
     string int_to_name(const int &value) const;
 
+    /// Copy all keys and values from @p sel
     Selection &copy_values(const Selection &sel);
 
-    /**
-     * Just check if there is a particular name in the Selection.
-     */
+    /// Just check if there is a particular name in the Selection.
     inline bool has_name(const string &key) const;
 
-    /**
-     *  Check if there is a particular value in the Selection.
-     */
+    ///  Check if there is a particular value in the Selection.
     inline bool has_value(const int &val) const;
 
-    /**
-     * Returns number of values in the Selection.
-     */
+    /// Returns number of values in the Selection.
     inline unsigned int size() const;
 
-
+    /// Finish declaration of the Selection type.
     bool finish(bool is_generic = false) override
         { ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
 
@@ -187,26 +186,30 @@ public:
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
-    /**
-     * Assertion for finished Selection (methods are called in correct order).
-     */
+    /// Assertion for finished Selection (methods are called in correct order).
     void finished_check() const;
 
     /**
+     * @brief Create string from values of keys.
+     *
      * Used in error messaged, where we can not use desc(), which can lead to infinite loop due to TYPE selection of Abstract.
      */
     string key_list() const;
 
     /**
-     * Actual Selection data.
+     * @brief Internal data class.
+     *
+     * Stores data of the Selection.
      */
     class SelectionData  {
     public:
 
+    	/// Constructor.
         SelectionData(const string &name)
         : type_name_(name), closed_(false)
         {}
 
+        /// Inster new value to the Selection
         void add_value(const int value, const std::string &key, const std::string &description);
 
 
@@ -215,10 +218,12 @@ private:
 
         /// Map : valid value name to index.
         std::map<KeyHash, unsigned int> key_to_index_;
+        /// Container-like access to the map of valid value name to index
         typedef std::map<KeyHash, unsigned int>::const_iterator key_to_index_const_iter;
 
         /// Map : valid value to index.
         std::map<int, unsigned int> value_to_index_;
+        /// Container-like access to the map of valid value to index
         typedef std::map<int, unsigned int>::const_iterator value_to_index_const_iter;
 
         /// Vector of values of the Selection

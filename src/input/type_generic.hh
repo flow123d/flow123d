@@ -43,19 +43,26 @@ DECLARE_INPUT_EXCEPTION(ExcGenericWithoutInstance,
 
 
 /**
- * Class for representing parametric types in IST.
+ * @brief Class for representing parametric types in IST.
  *
  * Instances of this class are used only in generic types and during generation
  * of Record are replaced by types of IST (Integer, String, Selection etc.)
  */
 class Parameter : public TypeBase {
 public:
+	/// Constructor.
 	Parameter(const string & parameter_name);
 
+	/// Copy constructor.
 	Parameter(const Parameter & other);
 
-    /// Parameter type name getter.
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Parameter type name getter.
+     */
     string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "Parameter"; }
 
     /// Implements @p TypeBase::content_hash.
@@ -75,14 +82,15 @@ protected:
 
 
 /**
- * Helper class that stores data of generic types.
+ * @brief Helper class that stores data of generic types.
  */
 class Instance : public TypeBase {
 public:
+	/// Constructor.
 	Instance(TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters);
 
 	/**
-	 * Implements @p TypeBase::content_hash.
+	 * @brief Implements @p TypeBase::content_hash.
 	 *
 	 * Hash is calculated by hash of generic type and hash of parameters.
 	 */
@@ -95,7 +103,7 @@ public:
     bool finish(bool is_generic = false) override;
 
     /**
-     * Implements @p TypeBase::make_instance.
+     * @brief Implements @p TypeBase::make_instance.
      *
      * In first call creates instance and stores its to @p created_instance_.
      *
@@ -111,7 +119,7 @@ protected:
 	std::vector<TypeBase::ParameterPair> parameters_;
 
 	/**
-	 * Stores returned type created in first call of @p make_instance method.
+	 * @brief Stores returned type created in first call of @p make_instance method.
 	 *
 	 * At each successive call of make_instance returns this stored type.
 	 */
