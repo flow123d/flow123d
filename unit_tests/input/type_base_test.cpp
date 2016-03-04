@@ -9,6 +9,8 @@
 #include <flow_gtest.hh>
 
 #include <input/input_type.hh>
+#include <input/attribute_lib.hh>
+#include <input/type_attribute_lib.hh>
 
 
 
@@ -330,6 +332,8 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	this->add_attribute("numeric", "\"10\"");
 	this->add_attribute("pair", "[\"0\", \"50\"]");
 	this->add_attribute("float_point", "\"0.5\"");
+	this->add_attribute(FlowAttributes::parameters(), "[\"a\", \"b\", \"c\"]");
+	this->add_attribute(Input::Type::Attributes::obsolete(), "\"true\"");
 
 	EXPECT_TRUE( (it=attributes_->find("attr_1")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"some attribute\"" );
@@ -339,6 +343,10 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	EXPECT_STREQ( it->second.c_str(), "[\"0\", \"50\"]" );
 	EXPECT_TRUE( (it=attributes_->find("float_point")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"0.5\"" );
+	EXPECT_TRUE( (it=attributes_->find("parameters")) != attributes_->end() );
+	EXPECT_STREQ( it->second.c_str(), "[\"a\", \"b\", \"c\"]" );
+	EXPECT_TRUE( (it=attributes_->find("obsolete")) != attributes_->end() );
+	EXPECT_STREQ( it->second.c_str(), "\"true\"" );
 
 	this->add_attribute("numeric", "\"5\"");
 	EXPECT_TRUE( (it=attributes_->find("numeric")) != attributes_->end() );

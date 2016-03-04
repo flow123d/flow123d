@@ -29,6 +29,7 @@ namespace Type {
  * These attributes can be used in any Input::Type object.
  */
 class Attributes {
+public:
 	/**
 	 * Indicates that formatter should make the type documentation part
 	 * of the documentation of the type that use it. E.g. documentation

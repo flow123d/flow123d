@@ -17,6 +17,7 @@
 
 #include <input/type_generic.hh>
 #include <input/type_repository.hh>
+#include <input/attribute_lib.hh>
 
 #include <boost/functional/hash.hpp>
 
@@ -130,10 +131,10 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
 	}
 
 	// add array of parameters to attributes of generic type
-	if (attributes_->find("parameters") == attributes_->end() ) {
+	if (attributes_->find( FlowAttributes::parameters() ) == attributes_->end() ) {
 		stringstream ss;
 		ss << "[ " << print_parameter_vec(parameters_) << " ]";
-		generic_type_.add_attribute( "parameters", ss.str() );
+		generic_type_.add_attribute( FlowAttributes::parameters(), ss.str() );
 	}
 
 #ifdef FLOW123D_DEBUG_ASSERTS

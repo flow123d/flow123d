@@ -27,6 +27,7 @@ using namespace std;
  * are stored in @p Input::Type::Attributes.
  */
 class FlowAttributes {
+public:
 	/**
 	 * Reference to generic type from which Input::Type object is derived.
 	 *

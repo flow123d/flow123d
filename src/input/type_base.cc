@@ -36,6 +36,7 @@
 #include "input_type.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
+#include "attribute_lib.hh"
 #include "json_spirit/json_spirit.h"
 
 
@@ -133,7 +134,7 @@ TypeBase::json_string TypeBase::print_parameter_map_to_json(ParameterMap paramet
 
 
 void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
-	this->add_attribute("parameters", this->print_parameter_map_to_json(parameter_map));
+	this->add_attribute(FlowAttributes::parameters(), this->print_parameter_map_to_json(parameter_map));
 }
 
 
@@ -209,9 +210,9 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	// Set parameters as attribute
 	json_string val = this->print_parameter_map_to_json(parameter_map);
 	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
-	(*arr.attributes_)["parameters"] = val;
+	(*arr.attributes_)[FlowAttributes::parameters()] = val;
 	arr.parameter_map_ = parameter_map;
-	(*arr.attributes_)["generic_type"] = TypeBase::hash_str();
+	(*arr.attributes_)[FlowAttributes::generic_type()] = TypeBase::hash_str();
 	arr.generic_type_hash_ = this->content_hash();
 
 	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );

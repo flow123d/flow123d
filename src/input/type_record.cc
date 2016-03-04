@@ -17,6 +17,7 @@
 
 #include "input_type.hh"
 #include "type_repository.hh"
+#include "attribute_lib.hh"
 
 #include "system/system.hh"
 #include "input/reader_to_storage.hh"
@@ -330,7 +331,7 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 	// Set attributes
 	rec.set_parameters_attribute(parameter_map);
 	rec.parameter_map_ = parameter_map;
-	rec.add_attribute("generic_type", this->hash_str());
+	rec.add_attribute(FlowAttributes::generic_type(), this->hash_str());
 	rec.generic_type_hash_ = this->content_hash();
 
 	return std::make_pair( boost::make_shared<Record>(rec.close()), parameter_map );

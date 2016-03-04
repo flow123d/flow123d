@@ -17,6 +17,7 @@
 
 #include "input_type.hh"
 #include "type_repository.hh"
+#include "attribute_lib.hh"
 
 #include "system/system.hh"
 
@@ -208,7 +209,7 @@ TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPa
 	// Set parameters and generic type as attributes
 	abstract.set_parameters_attribute(parameter_map);
 	abstract.parameter_map_ = parameter_map;
-	abstract.add_attribute("generic_type", this->hash_str() );
+	abstract.add_attribute(FlowAttributes::generic_type(), this->hash_str() );
 	abstract.generic_type_hash_ = this->content_hash();
 
 	return std::make_pair( boost::make_shared<Abstract>(abstract.close()), parameter_map );
