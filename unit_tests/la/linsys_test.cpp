@@ -32,6 +32,10 @@ public:
 		delete rows_ds_;
 	}
 
+	void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override {
+	}
+
+
 	void mat_set_values(int nrow, int *rows, int ncol, int *cols,double *vals) {
 		//cout << endl << "Matrix:" << endl;
 		for(int i =0; i<nrow; i++) {
