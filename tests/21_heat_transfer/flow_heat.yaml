@@ -15,6 +15,9 @@ problem: !SequentialCoupling
           - .fracture_top
           - .rock_top
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
     input_fields:
       - region: rock
         conductivity: 0.01
@@ -39,8 +42,6 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-    solver: !Petsc
-      a_tol: 1.0e-07
   secondary_equation: !HeatTransfer_DG
     balance:
       cumulative: true

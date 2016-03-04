@@ -8,6 +8,9 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ${INPUT}/test10.msh
   primary_equation: !UnsteadyDarcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
     input_fields:
       - region: plane
         anisotropy: 0.02
@@ -34,6 +37,4 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: false
-    solver: !Petsc
-      a_tol: 1.0e-07
     time: *anchor2

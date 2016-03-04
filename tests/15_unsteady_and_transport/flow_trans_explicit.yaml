@@ -4,6 +4,10 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/channel_unstructured.msh
   primary_equation: !UnsteadyDarcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     input_fields:
       - region: domain
         anisotropy: 1
@@ -13,7 +17,6 @@ problem: !SequentialCoupling
         water_source_density: !FieldFormula
           value: -x
         init_piezo_head: 0
-        storativity: 1.0
       - region: .left
         bc_type: dirichlet
         bc_pressure: 0
@@ -31,9 +34,6 @@ problem: !SequentialCoupling
         - velocity_p0
     balance:
       cumulative: true
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
     time:
       end_time: 2.0
       max_dt: 0.01

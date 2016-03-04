@@ -17,6 +17,10 @@ problem: !SequentialCoupling
           - .2d_fracture_2
           - .3d_cube
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
     n_schurs: 2
     input_fields:
       - region: 1d_channel
@@ -54,6 +58,3 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
       raw_flow_output: ./raw_output.txt
-    solver: !Petsc
-      r_tol: 1.0e-10
-      a_tol: 1.0e-10

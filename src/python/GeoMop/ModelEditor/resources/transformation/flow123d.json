@@ -386,6 +386,14 @@
     },
     {
       "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "key": "nonlinear_solver"
+      }
+    }, 
+    {
+      "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
       "action": "move-key",
       "parameters": {
         "source_path": "/problem/primary_equation/solver",

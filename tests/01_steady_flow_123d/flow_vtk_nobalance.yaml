@@ -4,6 +4,10 @@ problem: !SequentialCoupling
   # test auto conversion for the Mesh record
   mesh: ./input/test1_new.msh
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
     n_schurs: 2
     input_fields:
       - region: 1d_channel
@@ -45,6 +49,3 @@ problem: !SequentialCoupling
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    solver: !Petsc
-      r_tol: 1.0e-10
-      a_tol: 1.0e-10

@@ -16,6 +16,9 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: input/dual_por.msh
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
     input_fields:
       - region: ALL
         conductivity: 1.0e-15
@@ -33,8 +36,6 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-    solver: !Petsc
-      a_tol: 1.0e-07
   secondary_equation: !Transport_OS
     transport: !Convection_FV
       input_fields:

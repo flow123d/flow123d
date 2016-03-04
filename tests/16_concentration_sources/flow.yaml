@@ -4,6 +4,10 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/test16.msh
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     n_schurs: 2
     input_fields:
       - region: BOUNDARY
@@ -24,9 +28,6 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
     time:
       end_time: 5.7
       max_dt: 1.0

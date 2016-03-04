@@ -5,6 +5,10 @@ problem: !SequentialCoupling
     mesh_file: ./input/rectangle_with_bc_0.2.msh
   # steady velocity field, with velocity v:0.1
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     input_fields:
       - region: bulk
         conductivity: 1
@@ -24,9 +28,6 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
   secondary_equation: !Transport_OS
     transport: !Convection_FV
       input_fields:
