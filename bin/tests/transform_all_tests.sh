@@ -23,6 +23,6 @@ IMPORTER_PY="${0%/*}/${IMPORTER_PY}"
 
 for f in $TESTS_DIR/*/*.con; do
   echo "Processing $f";
-  `rm -f ${f%.con}.yaml`;
-  `python3 $IMPORTER_PY --transformation-name flow123d --con_file $f`;
+  rm -f ${f%.con}.yaml;
+  python3 $IMPORTER_PY --transformation-name flow123d --con_file $f;
 done

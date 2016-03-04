@@ -14,8 +14,9 @@ IMPORTER_PY="../../src/python/GeoMop/ModelEditor/importer.py"
 IMPORTER_PY="${0%/*}/${IMPORTER_PY}"
 
 
-for f in $@; do
-  echo "Processing $f";
-  `rm -f ${f%.con}.yaml`;
-  `python3 $IMPORTER_PY --transformation-name flow123d --con_file $f`;
+for f in $@ 
+do
+  echo "Processing $f"
+  rm -f ${f%.con}.yaml
+  python3 $IMPORTER_PY --transformation-name flow123d --con_file $f
 done
