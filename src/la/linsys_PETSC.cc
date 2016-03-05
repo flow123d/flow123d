@@ -344,11 +344,12 @@ int LinSys_PETSC::solve()
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
-    KSPCreate( comm_, &system );
-    KSPSetOperators(system, matrix_, matrix_);
+    chkerr(KSPCreate( comm_, &system ));
+    chkerr(KSPSetOperators(system, matrix_, matrix_));
+
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
-    KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
+    chkerr(KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT));
     KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero
     // unless KSP type is preonly.
@@ -364,7 +365,7 @@ int LinSys_PETSC::solve()
     {
 		START_TIMER("PETSC linear solver");
 		START_TIMER("PETSC linear iteration");
-		KSPSolve(system, rhs_, solution_ );
+		chkerr(KSPSolve(system, rhs_, solution_ ));
 		KSPGetConvergedReason(system,&reason);
 		KSPGetIterationNumber(system,&nits);
 		ADD_CALLS(nits);

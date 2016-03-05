@@ -125,8 +125,14 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
             "Linear solver for MH problem.")
-        .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"), "Residual tolerance.")
-        .declare_key("max_it", it::Integer(0), it::Default("100"), "Maximal number of iterations (linear solves) of the non-linear solver.")
+        .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"),
+            "Residual tolerance.")
+        .declare_key("max_it", it::Integer(0), it::Default("100"),
+            "Maximal number of iterations (linear solves) of the non-linear solver.")
+        .declare_key("converge_on_stagnation", it::Bool(), it::Default("false"),
+            "If a stagnation of the nonlinear solver is detected the solver stops. "
+            "A divergence is reported by default forcing the end of the simulation. Setting this flag to 'true', the solver"
+            "ends with convergence success on stagnation, but report warning about it.")
         .close();
 
     return it::Record("SteadyDarcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
@@ -444,9 +450,26 @@ void DarcyFlowMH_Steady::solve_nonlinear()
             this->tolerance_ = rec.val<double>("tolerance");
             this->max_n_it_  = rec.val<unsigned int>("max_it");
         }
+        schur0->set_tolerances(0.1, 0.1*this->tolerance_, 100);
     }
+    vector<double> convergence_history;
+
 
     while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
+        ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
+        convergence_history.push_back(residual_norm);
+        if (convergence_history.size() >= 5 &&
+            convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
+            convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 5] > 0.8) {
+            // stagnation
+            if (input_record_.val<bool>("converge_on_stagnation")) {
+                xprintf(Warn, "Accept solution on stagnation. Its: %d Residual: %g\n", nonlinear_iteration_, residual_norm);
+                break;
+            } else {
+                THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
+            }
+        }
+
 
         int convergedReason = schur0->solve();
         this -> postprocess();

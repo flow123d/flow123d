@@ -121,6 +121,10 @@ template<unsigned int dim> class QGauss;
 class DarcyFlowMH_Steady : public DarcyFlowInterface
 {
 public:
+    TYPEDEF_ERR_INFO( EI_Reason, string);
+    DECLARE_EXCEPTION(ExcSolverDiverge,
+            << "Diverged nonlinear solver. Reason: " << EI_Reason::val
+             );
 
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface

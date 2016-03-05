@@ -110,6 +110,9 @@ public:
         MPI_Allreduce ( &lsizeInt, &sizeInt, 1, MPI_INT, MPI_SUM, comm_ );
         size_ = static_cast<unsigned>( sizeInt );
 
+        r_tol_ = default_r_tol_;
+        a_tol_ = default_a_tol_;
+        max_it_ = default_max_it_;
     };
 
     /**
