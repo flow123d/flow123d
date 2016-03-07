@@ -115,8 +115,8 @@ void MultiField<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::is_constant(Region reg) {
-	bool const_all=false;
-	for(auto field : sub_fields_) const_all = const_all || field.is_constant(reg);
+	bool const_all=true;
+	for(auto &field : sub_fields_) const_all = const_all && field.is_constant(reg);
 	return const_all;
 }
 

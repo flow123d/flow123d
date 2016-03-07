@@ -88,6 +88,10 @@ Field<spacedim,Value>::Field(const Field &other)
 	// shared_is already same as other.shared_
 	if (shared_->mesh_) this->set_mesh( *(shared_->mesh_) );
 
+    // reset time status (set_time() has to be called in order
+    // to properly set region_fields_)
+    this->set_time_result_ = TimeStatus::unknown;
+
 	this->multifield_ = false;
 }
 
@@ -183,6 +187,7 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
+    ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
 	ASSERT_LESS(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
     return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
@@ -437,7 +442,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                 input_default().c_str(), input_name().c_str(), name().c_str(), region_list.c_str());
 
     }
-    shared_->is_fully_initialized_;
+    shared_->is_fully_initialized_ = true;
 }
 
 
