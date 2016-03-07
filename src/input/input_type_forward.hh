@@ -30,6 +30,7 @@ class Record;
 class Scalar;
 class Selection;
 class String;
+class Tuple;
 
 } // closing namespace Type
 } // closing namespace Input

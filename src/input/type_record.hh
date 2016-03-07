@@ -248,7 +248,7 @@ public:
      *
      * Hash is calculated by type name, description, auto conversion key, hash of keys and attributes.
      */
-    TypeHash content_hash() const  override;
+    virtual TypeHash content_hash() const  override;
 
 
     /**
@@ -278,7 +278,7 @@ public:
      * If the input reader come across the Record in declaration tree, but there is not 'record-like' input, it
      * save default values into storage tree and tries to match the input with the type of the \p from_key.
      */
-    Record &allow_auto_conversion(const string &from_key);
+    virtual Record &allow_auto_conversion(const string &from_key);
 
     /**
      * Declares a key of the Record with name given by parameter @p key, the type given by target of pointer @p type,
@@ -326,7 +326,7 @@ public:
 
     /// Record type name getter.
     string type_name() const override;
-    string class_name() const override { return "Record"; }
+    virtual string class_name() const override { return "Record"; }
 
     /// Class comparison and Record type name comparision.
     bool operator==(const TypeBase &other) const;
@@ -443,6 +443,9 @@ protected:
 
 
         Record::KeyIter auto_conversion_key_iter() const;
+
+        /// Count hash of RecordData.
+        void content_hash(TypeBase::TypeHash &seed) const;
 
         /// Database of valid keys
         std::map<KeyHash, unsigned int> key_to_index;

@@ -118,17 +118,7 @@ TypeBase::TypeHash Record::content_hash() const
 {
 	TypeHash seed=0;
     boost::hash_combine(seed, "Record");
-    boost::hash_combine(seed, type_name());
-    boost::hash_combine(seed, data_->description_);
-    boost::hash_combine(seed, data_->auto_conversion_key);
-    for( Key &key : data_->keys) {
-    	if (key.key_ != "TYPE") {
-    		boost::hash_combine(seed, key.key_);
-    		boost::hash_combine(seed, key.description_);
-    		boost::hash_combine(seed, key.type_->content_hash() );
-    		boost::hash_combine(seed, key.default_.content_hash() );
-    	}
-    }
+    data_->content_hash(seed);
     return seed;
 }
 
@@ -434,6 +424,21 @@ void Record::RecordData::declare_key(const string &key,
     }
 
 }
+
+void Record::RecordData::content_hash(TypeBase::TypeHash &seed) const {
+    boost::hash_combine(seed, type_name_);
+    boost::hash_combine(seed, description_);
+    boost::hash_combine(seed, auto_conversion_key);
+    for( const Key &key : keys) {
+    	if (key.key_ != "TYPE") {
+    		boost::hash_combine(seed, key.key_);
+    		boost::hash_combine(seed, key.description_);
+    		boost::hash_combine(seed, key.type_->content_hash() );
+    		boost::hash_combine(seed, key.default_.content_hash() );
+    	}
+    }
+}
+
 
 Record &Record::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
                         const Default &default_value, const string &description)
