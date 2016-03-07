@@ -36,6 +36,7 @@ define_test(type_output)
 define_test(type_record)
 define_test(type_abstract)
 define_test(type_generic)
+define_test(type_tuple)
 
 define_test(storage)
 define_test(comment_filter)
