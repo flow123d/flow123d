@@ -987,7 +987,7 @@ endif()
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
 if (CYGWIN)
-    install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin"
+    install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin.exe"
             DESTINATION bin/)
     install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d.bat"
             DESTINATION bin/)
