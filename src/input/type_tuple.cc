@@ -49,7 +49,7 @@ TypeBase::TypeHash Tuple::content_hash() const
 
 Tuple & Tuple::allow_auto_conversion(const string &from_key)
 {
-	xprintf(PrgErr, "Call of allow_auto_conversion method is forbidden for type Tuple.\n");
+	THROW( ExcForbiddenTupleMethod() << EI_Method("allow_auto_conversion") << EI_TupleName(this->type_name()) );
 	return *this;
 }
 
@@ -61,7 +61,8 @@ bool Tuple::operator==(const TypeBase &other) const
 
 
 const Tuple &Tuple::close() const {
-    return static_cast<const Tuple&>( Record::close() );
+    data_->closed_=true;
+    return static_cast<const Tuple&>( *( Input::TypeRepository<Record>::get_instance().add_type( *this ) ) );
 }
 
 
@@ -77,6 +78,7 @@ bool Tuple::finish(bool is_generic)
     bool obligatory_keys = true; // check order of keys (at first obligatory keys are defined, then other keys)
     bool allow_auto_conversion = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++) {
+    	// Performs check order of keys and check auto-conversion
     	Default dflt = it->default_;
 		if ( dflt.is_obligatory() ) {
 			if (it != data_->keys.begin()) {
@@ -89,11 +91,10 @@ bool Tuple::finish(bool is_generic)
 			obligatory_keys = false;
 		}
 
-    	if (it->key_ != "TYPE") {
-			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-			if (!is_generic && it->type_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
-           	data_->finished = data_->finished && it->type_->finish(is_generic);
-        }
+		// Performs finish of keys
+		if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
+		if (!is_generic && it->type_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
+       	data_->finished = data_->finished && it->type_->finish(is_generic);
     }
 
     // Add autoconvertibility
@@ -103,6 +104,13 @@ bool Tuple::finish(bool is_generic)
     }
 
     return (data_->finished);
+}
+
+
+Tuple &Tuple::derive_from(Abstract &parent)
+{
+	THROW( ExcForbiddenTupleMethod() << EI_Method("derive_from") << EI_TupleName(this->type_name()) );
+	return *this;
 }
 
 

@@ -263,7 +263,7 @@ public:
      *   parents in derived Record are erased
      * - in \p AbstractRecord::finish is re-registered parents to descendant (through \p add_parent method)
      */
-    Record &derive_from(Abstract &parent);
+    virtual Record &derive_from(Abstract &parent);
 
     /**
      * Copy keys from other record. If @p other record is not yet constructed, we postpone copy to the finish phase.

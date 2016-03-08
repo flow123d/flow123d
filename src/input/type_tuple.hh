@@ -35,6 +35,8 @@ namespace Type {
  * In declaration, obligatory keys must be given as first, optional and default at read time
  * keys follows. Correct order is checked in @p finish method. Auto conversion is allowed
  * for the first key.
+ *
+ * Tuple type can't be descendant of Abstract.
  */
 class Tuple : public Record {
 public:
@@ -42,7 +44,10 @@ public:
      * Exceptions specific to this class.
      */
     TYPEDEF_ERR_INFO( EI_TupleName, const string);
+    TYPEDEF_ERR_INFO( EI_Method, const string);
     DECLARE_EXCEPTION( ExcTupleWrongKeysOrder, << "Incorrect order of obligatory and non-obligatory keys in Tuple: " <<  EI_TupleName::qval );
+    DECLARE_EXCEPTION( ExcForbiddenTupleMethod, << "Call of " << EI_Method::qval << " method is forbidden for type Tuple: "
+    											<< EI_TupleName::qval );
 
 
     /// Default constructor. Empty handle.
@@ -96,6 +101,13 @@ public:
      * Completes Tuple (check auto convertible key, parameters of generic types etc).
      */
     bool finish(bool is_generic = false) override;
+
+    /**
+     * @brief Override Record::derive_from
+     *
+     * Deriving of Tuple type is forbidden. Type is determined for small simple data.
+     */
+    Tuple &derive_from(Abstract &parent);
 
     /// Overrides Record::declare_key(const string &, boost::shared_ptr<TypeBase>, const Default &, const string &)
     Tuple &declare_key(const string &key, boost::shared_ptr<TypeBase> type,
