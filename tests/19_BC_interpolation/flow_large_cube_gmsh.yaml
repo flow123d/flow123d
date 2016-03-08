@@ -5,12 +5,12 @@ problem: !SequentialCoupling
     mesh_file: input/large_mesh.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: IMPLICIT BOUNDARY
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x-z
-    - region: BULK
-      anisotropy: 1
+      - region: IMPLICIT BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: BULK
+        anisotropy: 1
     output:
       output_stream: 
         file: ./large_cube.msh
@@ -18,10 +18,10 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - piezo_head_p0
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07

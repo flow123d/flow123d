@@ -192,9 +192,8 @@ protected:
         inputs.push_back( in_rec.val<Input::Array>("data") );
 
         data.set_mesh(*mesh);
-        data.set_limit_side(LimitSide::right);
         data.set_input_list( inputs[input_last] );
-        data.set_time(tg.step());
+        data.set_time(tg.step(), LimitSide::right);
     }
 
     virtual void TearDown() {
@@ -240,7 +239,7 @@ TEST_F(SomeEquation, values) {
                 value=[1, 2, 3, 4]
               }
           },
-          { region="2D XY diagonal",
+          { region= ["2D XY diagonal", "3D back"],
             init_pressure=2.2,
             conc_mobile={REF="/data/0/conc_mobile"}
           },
@@ -315,6 +314,7 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ( 1.0, value.at(2,2) );
 
     EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_2d) );
+    EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_3d) );
     conc_mobile_val = data.conc_mobile.value(p, el_2d);
     for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
         EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );

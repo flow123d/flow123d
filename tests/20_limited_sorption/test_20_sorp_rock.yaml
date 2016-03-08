@@ -1,27 +1,27 @@
 flow123d_version: 1.8.9
 output_streams:
-- &anchor1
-  file: test_20.pvd
-  format: !vtk
-    variant: ascii
-  name: flow_output_stream
-- &anchor2
-  file: transport_test_20_sorp_rock.pvd
-  format: !vtk
-    variant: ascii
-  name: transport_output_stream
+  - &anchor1
+    file: test_20.pvd
+    format: !vtk
+      variant: ascii
+    name: flow_output_stream
+  - &anchor2
+    file: transport_test_20_sorp_rock.pvd
+    format: !vtk
+      variant: ascii
+    name: transport_output_stream
 problem: !SequentialCoupling
   description: TestXXX-pork
   mesh:
     mesh_file: ${INPUT}/test_20.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: rectangle
-      conductivity: 0.125
-    - region: BOUNDARY
-      bc_type: dirichlet
-      bc_pressure: !FieldFormula
-        value: x
+      - region: rectangle
+        conductivity: 0.125
+      - region: BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x
     output:
       output_stream: 
         file: test_20.pvd
@@ -37,20 +37,20 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !Convection_FV
       input_fields:
-      - region: ALL
-        init_conc: 0
-        porosity: !FieldFormula
-          value: '0.25'
-      - region: BOUNDARY
-        bc_conc: !FieldFormula
-          value: 0.05*t
+        - region: ALL
+          init_conc: 0
+          porosity: !FieldFormula
+            value: '0.25'
+        - region: BOUNDARY
+          bc_conc: !FieldFormula
+            value: 0.05*t
     substances:
-    - A
-    - As-lin
-    - B
-    - Bs-lang
-    - C
-    - Cs-freund
+      - A
+      - As-lin
+      - B
+      - Bs-lang
+      - C
+      - Cs-freund
     output:
       conc_mobile_p0: transport_output_stream
       output_stream: 
@@ -64,43 +64,43 @@ problem: !SequentialCoupling
     adsorptions:
       solvent_density: 1.0
       species:
-      - A
-      - As-lin
-      - B
-      - Bs-lang
-      - C
-      - Cs-freund
+        - A
+        - As-lin
+        - B
+        - Bs-lang
+        - C
+        - Cs-freund
       solubility:
-      - 1.0
-      - 1.0
-      - 1.0
-      - 1.0
-      - 1.0
-      - 1.0
+        - 1.0
+        - 1.0
+        - 1.0
+        - 1.0
+        - 1.0
+        - 1.0
       input_fields:
-      - region: rectangle
-        rock_density: !FieldFormula
-          value: '1.0'
-        sorption_type:
-        - none
-        - linear
-        - none
-        - langmuir
-        - none
-        - freundlich
-        isotherm_mult:
-        - 0
-        - 0.6
-        - 0
-        - 0.4
-        - 0
-        - 0.6
-        isotherm_other:
-        - 0
-        - 0
-        - 0
-        - 0.6
-        - 0
-        - 0.4
+        - region: rectangle
+          rock_density: !FieldFormula
+            value: '1.0'
+          sorption_type:
+            - none
+            - linear
+            - none
+            - langmuir
+            - none
+            - freundlich
+          isotherm_mult:
+            - 0
+            - 0.6
+            - 0
+            - 0.4
+            - 0
+            - 0.6
+          isotherm_other:
+            - 0
+            - 0
+            - 0
+            - 0.6
+            - 0
+            - 0.4
     balance:
       cumulative: true

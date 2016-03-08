@@ -239,12 +239,6 @@ TEST_F(SomeEquation, collective_interface) {
     EXPECT_EQ(mesh_,data["velocity"].mesh());
     EXPECT_EQ(mesh_,data["reaction_type"].mesh());
 
-    EXPECT_EQ(LimitSide::unknown,data["init_pressure"].limit_side());
-    data.set_limit_side(LimitSide::right);
-    EXPECT_EQ(LimitSide::right,data["init_pressure"].limit_side());
-    EXPECT_EQ(LimitSide::right,data["velocity"].limit_side());
-    EXPECT_EQ(LimitSide::right,data["reaction_type"].limit_side());
-
     // flags_add
     FieldFlag::Flags matrix(
         FieldSet::equation_input
@@ -279,29 +273,28 @@ TEST_F(SomeEquation, input_related) {
     Input::Array in=reader.get_root_interface<Input::Array>();
     data.set_input_list(in);
     data.set_mesh(*mesh_);
-    data.set_limit_side(LimitSide::right);
     TimeGovernor tg(0.0, 0.5);
 
-    data.mark_input_times(tg.equation_mark_type());
+    data.mark_input_times(tg);
     Region front_3d = mesh_->region_db().find_id(40);
     // time = 0.0
-    data.set_time(tg.step());
+    data.set_time(tg.step(), LimitSide::right);
     EXPECT_FALSE(data.is_constant(front_3d));
     EXPECT_TRUE(data.changed());
     EXPECT_TRUE(tg.is_current(tg.marks().type_input()));
-    data.set_time(tg.step());
+    data.set_time(tg.step(), LimitSide::right);
     EXPECT_TRUE(data.changed());
     tg.next_time();
 
     // time = 0.5
-    data.set_time(tg.step());
+    data.set_time(tg.step(), LimitSide::right);
     EXPECT_FALSE(data.changed());
     EXPECT_FALSE(data.is_constant(front_3d));
     EXPECT_FALSE(tg.is_current(tg.marks().type_input()));
     tg.next_time();
 
     // time = 1.0
-    data.set_time(tg.step());
+    data.set_time(tg.step(), LimitSide::right);
     EXPECT_TRUE(data.changed());
     EXPECT_TRUE(data.is_constant(front_3d));
     EXPECT_TRUE(tg.is_current(tg.marks().type_input()));

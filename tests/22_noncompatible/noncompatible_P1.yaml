@@ -7,17 +7,17 @@ problem: !SequentialCoupling
     n_schurs: 2
     mortar_method: P1
     input_fields:
-    - region: 1d
-      conductivity: 1
-      sigma: 100
-    - region: 2d
-      conductivity: 5
-    - region: .1d
-      bc_type: dirichlet
-      bc_pressure: 5
-    - region: .2d_bottom_top
-      bc_type: dirichlet
-      bc_pressure: 10
+      - region: 1d
+        conductivity: 1
+        sigma: 100
+      - region: 2d
+        conductivity: 5
+      - region: .1d
+        bc_type: dirichlet
+        bc_pressure: 5
+      - region: .2d_bottom_top
+        bc_type: dirichlet
+        bc_pressure: 10
     output:
       compute_errors: true
       balance_output: balance.out
@@ -27,13 +27,13 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - piezo_head_p0
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
-      - velocity_diff
-      - pressure_diff
-      - div_diff
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+        - velocity_diff
+        - pressure_diff
+        - div_diff
     balance: true
     solver: !Petsc
       r_tol: 1.0e-10

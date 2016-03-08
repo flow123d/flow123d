@@ -207,7 +207,6 @@ TEST(GenericType, record_with_record) {
 	{
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 		const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
-		in_rec->write_attributes(cout); cout << endl;
 		Record::KeyIter in_rec_it = in_rec->begin();
 		EXPECT_EQ( typeid( *(in_rec_it->type_.get()) ), typeid(Record) );
 		const Record *in_in_rec = static_cast<const Record *>(in_rec_it->type_.get());
@@ -217,7 +216,6 @@ TEST(GenericType, record_with_record) {
 	{
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 		const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
-		in_rec->write_attributes(cout); cout << endl;
 		Record::KeyIter in_rec_it = in_rec->begin();
 		EXPECT_EQ( typeid( *(in_rec_it->type_.get()) ), typeid(Record) );
 		const Record *in_in_rec = static_cast<const Record *>(in_rec_it->type_.get());

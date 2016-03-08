@@ -234,8 +234,7 @@ public:
 		field.input_selection(&get_test_selection());
 
 		field.set_mesh(*my_mesh);
-		field.set_limit_side(LimitSide::left);
-		field.set_time(TimeGovernor(0.0, 1.0).step());
+		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
 		{
 			this->compute_field_data(ELEM_DATA, field);
@@ -370,8 +369,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     scalar_field.name("pressure_p0");
     scalar_field.units("L");
     scalar_field.set_mesh(mesh);
-    scalar_field.set_limit_side(LimitSide::right);
-    scalar_field.set_time(tg.step());
+    scalar_field.set_time(tg.step(), LimitSide::right);
 
     /* Register scalar (double) data */
     OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
@@ -384,8 +382,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     integer_field.name("material_id");
     integer_field.units("");
     integer_field.set_mesh(mesh);
-    integer_field.set_limit_side(LimitSide::right);
-    integer_field.set_time(tg.step());
+    integer_field.set_time(tg.step(), LimitSide::right);
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
@@ -450,8 +447,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     scalar_field.name("pressure_p1");
     scalar_field.units("L");
     scalar_field.set_mesh(mesh);
-    scalar_field.set_limit_side(LimitSide::right);
-    scalar_field.set_time(tg.step());
+    scalar_field.set_time(tg.step(), LimitSide::right);
 
     /* Register scalar (double) data */
     OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
@@ -464,8 +460,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     integer_field.name("strangeness");
     integer_field.units("");
     integer_field.set_mesh(mesh);
-    integer_field.set_limit_side(LimitSide::right);
-    integer_field.set_time(tg.step());
+    integer_field.set_time(tg.step(), LimitSide::right);
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
@@ -561,8 +556,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     integer_field.name("computenode");
     integer_field.units("");
     integer_field.set_mesh(mesh);
-    integer_field.set_limit_side(LimitSide::right);
-    integer_field.set_time(tg.step());
+    integer_field.set_time(tg.step(),LimitSide::right);
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),

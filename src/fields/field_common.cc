@@ -24,7 +24,6 @@
 
 FieldCommon::FieldCommon()
 : shared_( std::make_shared<SharedData>() ),
-  limit_side_(LimitSide::unknown),
   set_time_result_(TimeStatus::unknown),
   component_index_(std::numeric_limits<unsigned int>::max())
 {
@@ -40,7 +39,6 @@ FieldCommon::FieldCommon()
 FieldCommon::FieldCommon(const FieldCommon & other)
 : name_(other.name_),
   shared_(other.shared_),
-  limit_side_(LimitSide::unknown),
   set_time_result_(TimeStatus::unknown),
   component_index_(other.component_index_)
 {
@@ -51,7 +49,7 @@ FieldCommon::FieldCommon(const FieldCommon & other)
 
 IT::Record FieldCommon::field_descriptor_record(const string& record_name) {
     return IT::Record(record_name, field_descriptor_record_description(record_name))
-                     .declare_key("region", IT::String(), "Label of the region where to set fields. ")
+                     .declare_key("region", IT::Array( IT::String(), 1 ), "Labels of the regions where to set fields. ")
                      .declare_key("rid", IT::Integer(0), "ID of the region where to set fields." )
                      .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
                              "Apply field setting in this record after this time.\n"
@@ -68,10 +66,11 @@ const std::string FieldCommon::field_descriptor_record_description(const string&
 
 
 
-void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
+void FieldCommon::mark_input_times(const TimeGovernor &tg) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
     // pass through field descriptors containing key matching field name.
+    TimeMark::Type mark_type = tg.equation_fixed_mark_type();
     double time;
     for( auto &item : shared_->input_list_) {
         time = item.val<double>("time"); // default time=0

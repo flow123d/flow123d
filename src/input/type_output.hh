@@ -108,6 +108,9 @@ protected:
     void get_adhoc_parent_name(const AdHocAbstract *a_rec, string &parent_name);
     /// Gets iterator to begin of ancestor_.child_data_ of the given AdHocAbstract type.
     Abstract::ChildDataIter get_adhoc_parent_data(const AdHocAbstract *a_rec);
+    /// Gets data of attributes and parameters of the given type.
+    void get_attr_and_param_data(const TypeBase *type, TypeBase::attribute_map &attr_map,
+    		TypeBase::TypeHash &generic_type_hash, TypeBase::json_string &parameter_map_to_json);
 
 
     /**
@@ -184,12 +187,7 @@ protected:
      *
      * Checks if the @p processed_types_hash_ contains hash of given type.
      */
-    bool was_written(std::size_t hash)
-    {
-        bool in_set = ( processed_types_hash_.find(hash) != processed_types_hash_.end() );
-        if (! in_set) processed_types_hash_.insert(hash);
-        return in_set;
-    }
+    bool was_written(std::size_t hash);
 
 
     /// Padding of new level of printout, used where we use indentation.
@@ -267,15 +265,8 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
-	OutputJSONMachine(RevNumData rev_num_data) : OutputBase()
-    {
-		rev_num_data_ = rev_num_data;
-
-	    format_head="{ \"version\" :";
-	    format_inner=",\n\"ist_nodes\" : [\n";
-	    format_full_hash="{}],\n";
-	    format_tail="}\n";
-    }
+    OutputJSONMachine(RevNumData rev_num_data);
+	OutputJSONMachine(const Record &root_type, RevNumData rev_num_data);
 
 	ostream& print(ostream& stream) override;
 
@@ -332,7 +323,9 @@ protected:
     std::string format_tail;
     /// Contains version of program and other base data
     RevNumData rev_num_data_;
-
+    
+    /// Root type. Have to be printed as first, then we pass through the individual type lists to output everything.
+    Record root_type_; 
 };
 
 
