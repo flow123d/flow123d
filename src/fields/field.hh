@@ -146,9 +146,9 @@ public:
      * @p meka_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    const IT::Instance &get_input_type() override;
+    IT::Instance get_input_type() override;
 
-    IT::Array &get_multifield_input_type() override;
+    IT::Array get_multifield_input_type() override;
 
 
     /**

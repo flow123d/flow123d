@@ -40,18 +40,18 @@ MultiField<spacedim, Value>::MultiField()
 
 
 template<int spacedim, class Value>
-const it::Instance &  MultiField<spacedim,Value>::get_input_type() {
+it::Instance MultiField<spacedim,Value>::get_input_type() {
 	ASSERT(false, "This method can't be used for MultiField");
 
-	static it::Abstract abstract = it::Abstract();
-	static it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
+	it::Abstract abstract = it::Abstract();
+	it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
 	return inst;
 }
 
 
 template<int spacedim, class Value>
-it::Array &  MultiField<spacedim,Value>::get_multifield_input_type() {
-	static it::Array type = it::Array( SubFieldBaseType::get_input_type_instance(shared_->input_element_selection_), 1);
+it::Array MultiField<spacedim,Value>::get_multifield_input_type() {
+	it::Array type = it::Array( SubFieldBaseType::get_input_type_instance(shared_->input_element_selection_), 1);
 	return type;
 }
 

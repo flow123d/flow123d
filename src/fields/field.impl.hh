@@ -129,17 +129,17 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-const it::Instance &Field<spacedim,Value>::get_input_type() {
+it::Instance Field<spacedim,Value>::get_input_type() {
 	return FieldBaseType::get_input_type_instance(shared_->input_element_selection_);
 }
 
 
 
 template<int spacedim, class Value>
-it::Array &Field<spacedim,Value>::get_multifield_input_type() {
+it::Array Field<spacedim,Value>::get_multifield_input_type() {
 	ASSERT(false, "This method can't be used for Field");
 
-	static it::Array arr = it::Array( it::Integer() );
+	it::Array arr = it::Array( it::Integer() );
 	return arr;
 }
 
