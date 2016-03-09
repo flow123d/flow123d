@@ -170,6 +170,7 @@ TUPLE_DECLARE_KEY(Abstract);
 TUPLE_DECLARE_KEY(AdHocAbstract);
 TUPLE_DECLARE_KEY(Parameter);
 TUPLE_DECLARE_KEY(Instance);
+TUPLE_DECLARE_KEY(Tuple);
 
 
 } // closing namespace Type
