@@ -25,6 +25,15 @@
 #endif
 
 
+// Function that catches all program signals.
+PetscErrorCode signal_handler(int signal, void *context)
+{
+  THROW( ExcSignal() << EI_Signal(signal) << EI_SignalName(strsignal(signal)) );
+  
+  return 0;
+}
+
+
 ApplicationBase::ApplicationBase(int argc,  char ** argv)
 : log_filename_("")
 { }
@@ -88,6 +97,7 @@ PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_
 }
 #endif
 
+
 void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 #ifdef FLOW123D_HAVE_PETSC
     if (petsc_redirect_file_ != "") {
@@ -97,6 +107,7 @@ void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 
 
     PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+    PetscPushSignalHandler(signal_handler, nullptr);
 
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
