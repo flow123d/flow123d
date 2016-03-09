@@ -109,6 +109,13 @@ public:
      */
     Tuple &derive_from(Abstract &parent);
 
+    /**
+     * @brief Return count of obligatory keys.
+     *
+     * Needs in exceptions.
+     */
+    unsigned int obligatory_keys_count() const;
+
     /// Overrides Record::declare_key(const string &, boost::shared_ptr<TypeBase>, const Default &, const string &)
     Tuple &declare_key(const string &key, boost::shared_ptr<TypeBase> type,
                             const Default &default_value, const string &description);

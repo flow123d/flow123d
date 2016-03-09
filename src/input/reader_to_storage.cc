@@ -145,6 +145,9 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         return new StorageNull();
 
     // dispatch types
+    if (typeid(*type) == typeid(Type::Tuple)) {
+        return make_storage(p, static_cast<const Type::Tuple *>(type) );
+    } else
     if (typeid(*type) == typeid(Type::Record)) {
         return make_storage(p, static_cast<const Type::Record *>(type) );
     } else
@@ -424,6 +427,47 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
     }
 
     return NULL;
+}
+
+
+
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tuple)
+{
+	int arr_size;
+	if ( (arr_size = p.get_array_size()) != -1 ) {
+
+		StorageArray *storage_array = new StorageArray(tuple->size());
+        // check individual keys
+		for ( Type::Record::KeyIter it= tuple->begin(); it != tuple->end(); ++it) {
+        	if ( p.down(it->key_index) ) {
+                // key on input => check & use it
+                storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
+                p.up();
+        	} else {
+                // key not on input
+                if (it->default_.is_obligatory() ) {
+                	stringstream ss;
+                	ss << tuple->obligatory_keys_count();
+                    THROW( ExcInputError()
+                    		<< EI_Specification("Too small size of '" + p.get_node_type(ValueTypes::array_type) + "' defining Tuple with "
+                    							+ ss.str() + " obligatory keys.")
+                            << EI_ErrorAddress(p.as_string())
+							<< EI_InputType(tuple->type_name()) );
+                } else if (it->default_.has_value_at_declaration() ) {
+                   storage_array->new_item(it->key_index,
+                           make_storage_from_default( it->default_.value(), it->type_ ) );
+                } else { // default - optional or default at read time
+                    // set null
+                    storage_array->new_item(it->key_index, new StorageNull() );
+                }
+        	}
+        }
+
+        return storage_array;
+
+	} else {
+		return make_storage(p, static_cast<const Type::Record *>(tuple) );
+	}
 }
 
 

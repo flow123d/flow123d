@@ -114,6 +114,15 @@ Tuple &Tuple::derive_from(Abstract &parent)
 }
 
 
+unsigned int Tuple::obligatory_keys_count() const {
+	unsigned int obligatory_keys_count=0;
+	for ( KeyIter it= this->begin(); it != this->end(); ++it) {
+		if ( it->default_.is_obligatory() ) ++obligatory_keys_count;
+	}
+	return obligatory_keys_count;
+}
+
+
 Tuple &Tuple::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
                         const Default &default_value, const string &description)
 {
