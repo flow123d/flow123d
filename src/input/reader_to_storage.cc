@@ -452,7 +452,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
                     		<< EI_Specification("Too small size of '" + p.get_node_type(ValueTypes::array_type) + "' defining Tuple with "
                     							+ ss.str() + " obligatory keys.")
                             << EI_ErrorAddress(p.as_string())
-							<< EI_InputType(tuple->type_name()) );
+							<< EI_InputType(tuple->desc()) );
                 } else if (it->default_.has_value_at_declaration() ) {
                    storage_array->new_item(it->key_index,
                            make_storage_from_default( it->default_.value(), it->type_ ) );
