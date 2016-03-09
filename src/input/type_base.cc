@@ -85,8 +85,10 @@ void TypeBase::lazy_finish() {
 	Input::TypeRepository<Instance>::get_instance().finish();
 	Input::TypeRepository<Abstract>::get_instance().finish(true);
 	Input::TypeRepository<Record>::get_instance().finish(true);
+	Input::TypeRepository<Tuple>::get_instance().finish(true);
 	Input::TypeRepository<Abstract>::get_instance().finish();
 	Input::TypeRepository<Record>::get_instance().finish();
+	Input::TypeRepository<Tuple>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
 }
 

@@ -62,7 +62,7 @@ bool Tuple::operator==(const TypeBase &other) const
 
 const Tuple &Tuple::close() const {
     data_->closed_=true;
-    return static_cast<const Tuple&>( *( Input::TypeRepository<Record>::get_instance().add_type( *this ) ) );
+    return *( Input::TypeRepository<Tuple>::get_instance().add_type( *this ) );
 }
 
 
