@@ -91,7 +91,7 @@ const IT::Selection & ConvectionTransport::get_output_selection() {
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
-    	bc_conc.set_bc(true).units( UnitSI().kg().m(-3) );
+    	bc_conc.units( UnitSI().kg().m(-3) );
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
     	init_conc.units( UnitSI().kg().m(-3) );
 

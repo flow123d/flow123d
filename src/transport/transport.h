@@ -31,6 +31,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/bc_field.hh"
+#include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
@@ -78,7 +79,7 @@ public:
 		 * Boundary conditions (Dirichlet) for concentrations.
 		 * They are applied only on water inflow part of the boundary.
 		 */
-		MultiField<3, FieldValue<3>::Scalar> bc_conc;
+		BCMultiField<3, FieldValue<3>::Scalar> bc_conc;
 
 		/// Initial concentrations.
 		MultiField<3, FieldValue<3>::Scalar> init_conc;

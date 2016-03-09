@@ -224,6 +224,7 @@ add_library(coupling_lib
     fields/field.cc
     fields/bc_field.cc
     fields/multi_field.cc
+    fields/bc_multi_field.cc
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc

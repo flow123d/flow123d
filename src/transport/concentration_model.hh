@@ -22,6 +22,7 @@
 #include "advection_diffusion_model.hh"
 
 #include "fields/bc_field.hh"
+#include "fields/bc_multi_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
 
@@ -42,13 +43,13 @@ public:
 		};
 
 		/// Type of boundary condition (see also BC_Type)
-        MultiField<3, FieldValue<3>::Enum > bc_type;
+        BCMultiField<3, FieldValue<3>::Enum > bc_type;
 		/// Prescribed concentration for Dirichlet/reference concentration for flux b.c.
-		MultiField<3, FieldValue<3>::Scalar> bc_dirichlet_value;
+		BCMultiField<3, FieldValue<3>::Scalar> bc_dirichlet_value;
 		/// Flux value in total/diffusive flux b.c.
-		MultiField<3, FieldValue<3>::Scalar > bc_flux;
+		BCMultiField<3, FieldValue<3>::Scalar > bc_flux;
 		/// Transition coefficient in total/diffusive flux b.c.
-		MultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial concentrations.
 		MultiField<3, FieldValue<3>::Scalar> init_conc;
 		/// Longitudal dispersivity (for each substance).

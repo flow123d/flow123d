@@ -30,11 +30,12 @@ namespace it = Input::Type;
  */
 
 template<int spacedim, class Value>
-MultiField<spacedim, Value>::MultiField()
+MultiField<spacedim, Value>::MultiField(bool bc)
 : FieldCommon()
 {
 	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
+    this->shared_->bc_ = bc;
 }
 
 

@@ -81,8 +81,9 @@ public:
 
     /**
      * Default constructor.
+     * bc indicates boundary multifield.
      */
-    MultiField();
+    MultiField(bool bc = false);
 
     /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
@@ -111,10 +112,6 @@ public:
      */
     void set_mesh(const Mesh &mesh) override;
     
-    
-    MultiField &set_bc(bool is_bc)
-    { shared_->bc_ = is_bc; return *this; }
-
     /**
      * Polymorphic copy. Check correct type, allows copy of MultiField or Field.
      */
