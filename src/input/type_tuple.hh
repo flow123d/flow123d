@@ -116,6 +116,15 @@ public:
      */
     unsigned int obligatory_keys_count() const;
 
+    /// Implements @p TypeBase::make_instance.
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+
+    /// Overrides Record::deep_copy
+    Tuple deep_copy() const;
+
+    /// Overrides Record::root_of_generic_subtree
+    Tuple &root_of_generic_subtree() override;
+
     /// Overrides Record::declare_key(const string &, boost::shared_ptr<TypeBase>, const Default &, const string &)
     Tuple &declare_key(const string &key, boost::shared_ptr<TypeBase> type,
                             const Default &default_value, const string &description);

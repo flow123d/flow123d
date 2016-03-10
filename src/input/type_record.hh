@@ -388,13 +388,13 @@ public:
     Record &has_obligatory_type_key();
 
     /// Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;
 
     /// Set flag @p root_of_generic_subtree_ to true
-    Record &root_of_generic_subtree();
+    virtual Record &root_of_generic_subtree();
 
 
 protected:
