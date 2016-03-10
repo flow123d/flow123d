@@ -804,6 +804,12 @@ str_key: some string
 dbl_key: 2.0
 )YAML";
 
+const string input_yaml_tuple_with_null = R"YAML(
+- 5
+- null
+- some string
+)YAML";
+
 TEST_F(InputReaderToStorageTest, Tuple) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     static Type::Tuple tuple_type = Type::Tuple( "SomeTuple","desc.")
@@ -843,6 +849,17 @@ TEST_F(InputReaderToStorageTest, Tuple) {
         EXPECT_EQ(4, storage_->get_array_size());
         EXPECT_EQ(5, storage_->get_item(0)->get_int() );
         EXPECT_FLOAT_EQ(1.0, storage_->get_item(1)->get_double() );
+    }
+
+    { // YAML format, Tuple contains null value
+        stringstream ss( input_yaml_tuple_with_null );
+        read_stream(ss, tuple_type, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(4, storage_->get_array_size());
+        EXPECT_EQ(5, storage_->get_item(0)->get_int() );
+        EXPECT_FLOAT_EQ(1.0, storage_->get_item(1)->get_double() );
+        EXPECT_STREQ("some string", storage_->get_item(2)->get_string().c_str() );
     }
 
     static Type::Tuple int_tuple_type = Type::Tuple( "NumericTuple","desc.")
