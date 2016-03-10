@@ -238,7 +238,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         }
 
         for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
-        	xprintf(Warn, "Unprocessed key '%s' in record '%s'.\n", (*set_it).c_str(), p.as_string().c_str() );
+        	xprintf(Warn, "Unprocessed key '%s' in %s '%s'.\n", (*set_it).c_str(), record->class_name().c_str(), p.as_string().c_str() );
         }
 
         return storage_array;
@@ -266,7 +266,8 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
 					 ASSERT( ! it->default_.is_obligatory() ,
-							 "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
+							 "Obligatory key: '%s' in auto-convertible %s, wrong check during finish().",
+							 it->key_.c_str(), record->class_name().c_str() );
 					 // set null
 					 storage_array->new_item(it->key_index, new StorageNull() );
 				 }
@@ -471,6 +472,11 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
                     storage_array->new_item(it->key_index, new StorageNull() );
                 }
         	}
+        }
+
+        if ( arr_size > (int)tuple->size() ) {
+            xprintf(Warn, "Unprocessed keys in tuple '%s', tuple has %d keys but the input is specified by %d values.\n",
+                    p.as_string().c_str(), tuple->size(), arr_size );
         }
 
         return storage_array;
