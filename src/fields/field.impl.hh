@@ -75,23 +75,6 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 
 
 template<int spacedim, class Value>
-Field<spacedim,Value>::Field(const Field &other)
-: FieldCommon(other),
-  data_(other.data_),
-  factories_(other.factories_)
-{
-	if (other.no_check_control_field_)
-		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
-
-	// initialize region_fields_ vector
-	// shared_is already same as other.shared_
-	if (shared_->mesh_) this->set_mesh( *(shared_->mesh_) );
-
-	this->multifield_ = false;
-}
-
-
-template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
 	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
