@@ -708,6 +708,7 @@ T ReaderToStorage::get_root_interface() const
 template ::Input::Record ReaderToStorage::get_root_interface<::Input::Record>() const;
 template ::Input::Array ReaderToStorage::get_root_interface<::Input::Array>() const;
 template ::Input::AbstractRecord ReaderToStorage::get_root_interface<::Input::AbstractRecord>() const;
+template ::Input::Tuple ReaderToStorage::get_root_interface<::Input::Tuple>() const;
 //template ReaderToStorage::get_root_interface<::Input::>()->::Input::AbstractRecord const;
 
 

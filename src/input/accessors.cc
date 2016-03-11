@@ -172,19 +172,19 @@ std::string Address::make_full_address() const {
 
 
 Record::Record()
-: record_type_(), address_( Address() )
+: address_( Address() ), record_type_()
 {}
 
 
 
 Record::Record(const Record &rec)
-: record_type_(rec.record_type_), address_(rec.address_)
+: address_(rec.address_), record_type_(rec.record_type_)
 {}
 
 
 
 Record::Record(const Address &address, const Type::Record type)
-: record_type_(type), address_(address)
+: address_(address), record_type_(type)
 {
     if (address.storage_head()->is_null())
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("Record") );
@@ -202,9 +202,56 @@ string Record::address_string() const
 	return address_.make_full_address();
 }
 
-string Record::record_type_name()
+string Record::input_type_name()
 {
 	return record_type_.type_name();
+}
+
+
+Type::Record::KeyIter Record::get_type_key_iterator(const string &key) const {
+	return record_type_.key_iterator(key);
+}
+
+
+
+/*****************************************************************************
+ * Implementation of the class Input::Tuple
+ */
+
+
+Tuple::Tuple()
+: tuple_type_()
+{
+	this->address_ = Address();
+}
+
+
+
+Tuple::Tuple(const Tuple &tpl)
+: tuple_type_(tpl.tuple_type_)
+{
+	this->address_ = tpl.address_;
+}
+
+
+
+Tuple::Tuple(const Address &address, const Type::Tuple type)
+: tuple_type_(type)
+{
+	this->address_ = address;
+    if (address.storage_head()->is_null())
+        THROW( ExcAccessorForNullStorage() << EI_AccessorName("Tuple") );
+}
+
+
+string Tuple::input_type_name()
+{
+	return tuple_type_.type_name();
+}
+
+
+Type::Record::KeyIter Tuple::get_type_key_iterator(const string &key) const {
+	return tuple_type_.key_iterator(key);
 }
 
 
@@ -214,19 +261,19 @@ string Record::record_type_name()
  */
 
 AbstractRecord::AbstractRecord()
-: record_type_(), address_( Address() )
+: abstract_type_(), address_( Address() )
 {}
 
 
 
 AbstractRecord::AbstractRecord(const AbstractRecord &rec)
-: record_type_(rec.record_type_), address_(rec.address_)
+: abstract_type_(rec.abstract_type_), address_(rec.address_)
 {}
 
 
 
 AbstractRecord::AbstractRecord(const Address &address, const Type::Abstract type)
-: record_type_(type), address_(address)
+: abstract_type_(type), address_(address)
 {
 	if (address.storage_head()->is_null())
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("AbstractRecord") );
@@ -242,7 +289,7 @@ AbstractRecord::operator Record() const
 Input::Type::Record AbstractRecord::type() const
 {
 	string type_name = address_.storage_head()->get_item(0)->get_string();
-    return record_type_.get_descendant(type_name);
+    return abstract_type_.get_descendant(type_name);
 }
 
 
@@ -266,7 +313,7 @@ void AbstractRecord::transpose_to(Input::Record &target_rec, string target_key, 
 	const Type::Array *in_arr = static_cast<const Type::Array *>(key_it->type_.get());
 	const Type::TypeBase *target_type = &(in_arr->get_sub_type());
 
-	StorageTranspose trans(target_type, &(this->record_type_), this->address_.storage_head(), vec_size);
+	StorageTranspose trans(target_type, &(this->abstract_type_), this->address_.storage_head(), vec_size);
     StorageArray* result_storage = new StorageArray(vec_size);
     for(unsigned int i=0; i<vec_size; i++) {
     	result_storage->new_item(i, trans.get_item(i));
