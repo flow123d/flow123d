@@ -198,6 +198,7 @@ add_library(intersections_lib
     intersection/intersectionpolygon.cpp
     intersection/computeintersection.cpp
     intersection/inspectelements.cpp
+    intersection/intersectionaux.cpp
 )
 target_link_libraries(intersections_lib
     mesh_lib system_lib armadillo ${Boost_LIBRARIES})
