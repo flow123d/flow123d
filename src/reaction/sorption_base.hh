@@ -65,16 +65,16 @@ public:
     /// Collect all fields
     EqData(const string &output_field_name);
 
-    Field<3, FieldValue<3>::EnumVector > sorption_type; ///< Discrete need Selection for initialization.
+    MultiField<3, FieldValue<3>::Enum > sorption_type; ///< Discrete need Selection for initialization.
     Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
     
     /// Multiplication coefficients (k, omega) for all types of isotherms. 
     /** Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a */
-    Field<3, FieldValue<3>::Vector > isotherm_mult;  
+    MultiField<3, FieldValue<3>::Scalar > isotherm_mult;  
     /// Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
-    Field<3, FieldValue<3>::Vector > isotherm_other; 
+    MultiField<3, FieldValue<3>::Scalar > isotherm_other; 
     
-    Field<3, FieldValue<3>::Vector> init_conc_solid;    ///< Initial sorbed concentrations. 
+    MultiField<3, FieldValue<3>::Scalar> init_conc_solid;    ///< Initial sorbed concentrations. 
     Field<3, FieldValue<3>::Scalar > porosity;          ///< Porosity field copied from transport.
     
     MultiField<3, FieldValue<3>::Scalar>  conc_solid;    ///< Calculated sorbed concentrations, for output only.
