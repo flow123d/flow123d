@@ -238,6 +238,7 @@ inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 
 template<class T>
 inline typename Iterator<T>::OutputType * Iterator<T>::operator ->() const {
+	// OutputType has to be an accessor to call its method, e.g. iter->val("xyz"). Variable iter has to be e.g. Iterator.
     BOOST_STATIC_ASSERT(
             (boost::is_same < Record, OutputType > ::value || boost::is_same < AbstractRecord, OutputType > ::value
                     || boost::is_same < Array, OutputType > ::value || boost::is_same < Tuple, OutputType > ::value));

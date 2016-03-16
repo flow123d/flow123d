@@ -44,10 +44,7 @@ public:
      * Exceptions specific to this class.
      */
     TYPEDEF_ERR_INFO( EI_TupleName, const string);
-    TYPEDEF_ERR_INFO( EI_Method, const string);
     DECLARE_EXCEPTION( ExcTupleWrongKeysOrder, << "Incorrect order of obligatory and non-obligatory keys in Tuple: " <<  EI_TupleName::qval );
-    DECLARE_EXCEPTION( ExcForbiddenTupleMethod, << "Call of " << EI_Method::qval << " method is forbidden for type Tuple: "
-    											<< EI_TupleName::qval );
 
 
     /// Default constructor. Empty handle.

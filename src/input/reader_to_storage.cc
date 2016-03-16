@@ -217,10 +217,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
                 // key on input => check & use it
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
-                	storage_array->new_item(it->key_index, make_storage_from_default( it->default_.value(), it->type_ ) );
-                } else {
-                	storage_array->new_item( it->key_index, storage );
+                	delete storage;
+                	storage = make_storage_from_default( it->default_.value(), it->type_ );
                 }
+                storage_array->new_item( it->key_index, storage );
                 p.up();
             } else {
                 // key not on input
@@ -449,10 +449,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
                 // key on input => check & use it
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
-                	storage_array->new_item(it->key_index, make_storage_from_default( it->default_.value(), it->type_ ) );
-                } else {
-                	storage_array->new_item( it->key_index, storage );
+                	delete storage;
+                	storage = make_storage_from_default( it->default_.value(), it->type_ );
                 }
+                storage_array->new_item( it->key_index, storage );
                 p.up();
         	} else {
                 // key not on input
