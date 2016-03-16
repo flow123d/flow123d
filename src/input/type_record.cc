@@ -308,6 +308,13 @@ Record &Record::has_obligatory_type_key() {
 TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) const {
 	Record rec = this->deep_copy();
 	ParameterMap parameter_map;
+	this->set_instance_data(rec, parameter_map, vec);
+
+	return std::make_pair( boost::make_shared<Record>(rec.close()), parameter_map );
+}
+
+
+void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) const {
 	// Replace keys of type Parameter
 	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
 		if ( key_it->key_ != "TYPE" ) { // TYPE key isn't substituted
@@ -322,8 +329,6 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 	rec.parameter_map_ = parameter_map;
 	rec.add_attribute("generic_type", this->hash_str());
 	rec.generic_type_hash_ = this->content_hash();
-
-	return std::make_pair( boost::make_shared<Record>(rec.close()), parameter_map );
 }
 
 

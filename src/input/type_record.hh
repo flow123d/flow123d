@@ -424,6 +424,13 @@ protected:
     const Record &add_parent(Abstract &parent) const;
 
     /**
+     * @brief Set data of Instance of generic type.
+     *
+     * Called from make_instance method and set data of Record or its descendants.
+     */
+    void set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) const;
+
+    /**
      * Internal data class.
      */
     class RecordData  {

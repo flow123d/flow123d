@@ -126,18 +126,7 @@ unsigned int Tuple::obligatory_keys_count() const {
 TypeBase::MakeInstanceReturnType Tuple::make_instance(std::vector<ParameterPair> vec) const {
 	Tuple tuple = this->deep_copy();
 	ParameterMap parameter_map;
-	// Replace keys of type Parameter
-	for (std::vector<Key>::iterator key_it=tuple.data_->keys.begin(); key_it!=tuple.data_->keys.end(); key_it++) {
-		MakeInstanceReturnType inst = key_it->type_->make_instance(vec);
-		key_it->type_ = inst.first;
-		ParameterMap other_map = inst.second;
-		parameter_map.insert(other_map.begin(), other_map.end());
-	}
-	// Set attributes
-	tuple.set_parameters_attribute(parameter_map);
-	tuple.parameter_map_ = parameter_map;
-	tuple.add_attribute("generic_type", this->hash_str());
-	tuple.generic_type_hash_ = this->content_hash();
+	this->set_instance_data(tuple, parameter_map, vec);
 
 	return std::make_pair( boost::make_shared<Tuple>(tuple.close()), parameter_map );
 }
