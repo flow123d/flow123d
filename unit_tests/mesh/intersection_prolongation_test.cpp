@@ -18,7 +18,7 @@
 
 #include "intersection/inspectelements.h"
 #include "intersection/intersectionpoint.h"
-#include "intersection/intersectionline.h"
+#include "intersection/intersectionaux.h"
 
 #include <dirent.h>
 
@@ -33,7 +33,7 @@ using namespace computeintersection;
 // ******************************************************************************************* TEST 1d-3d ****
 
 /// Create results for the meshes in directory 'site_13d'.
-void fill_13d_solution(std::vector<computeintersection::IntersectionLine> &ils)
+void fill_13d_solution(std::vector<computeintersection::IntersectionAux<1,3>> &ils)
 {
     ils.clear();
     ils.resize(1);
@@ -59,7 +59,7 @@ void fill_13d_solution(std::vector<computeintersection::IntersectionLine> &ils)
 //     return new_il;
 // }
 
-void compute_intersection_13d(Mesh *mesh, const computeintersection::IntersectionLine &il)
+void compute_intersection_13d(Mesh *mesh, const computeintersection::IntersectionAux<1,3> &il)
 {
     double length = 0;
 
@@ -67,7 +67,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     DBGMSG("Computing intersection length by NEW algorithm\n");
 //     InspectElements ie(mesh);
 //     ie.compute_intersections<1,3>();
-    InspectElementsAlgorithm13 ie(mesh);
+    InspectElementsAlgorithm<1> ie(mesh);
     ie.compute_intersections();
     
 //     //test solution
@@ -91,7 +91,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
 //         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[3], il[i].local_bcoords_B()[3]);
 //     }
     
-    length = ie.line_length();
+    length = ie.measure();
     ie.print_mesh_to_file("output_intersection_13");
     DBGMSG("Length of intersection line: (intersections) %.16e\n", length);
 //     EXPECT_NEAR(length1, length2, 1e-12);
@@ -139,7 +139,7 @@ TEST(intersection_prolongation_13d, all) {
                                         "prolongation_13d_04.msh"
     };
     
-    std::vector<IntersectionLine> solution;
+    std::vector<IntersectionAux<1,3>> solution;
     fill_13d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH
@@ -238,13 +238,13 @@ TEST(intersection_prolongation_13d, all) {
 // ******************************************************************************************* TEST 2d-3d ****
 
 /// Create results for the meshes in directory 'site_13d'.
-void fill_23d_solution(std::vector<computeintersection::IntersectionLine> &ils)
+void fill_23d_solution(std::vector<computeintersection::IntersectionAux<2,3>> &ils)
 {
     ils.clear();
     ils.resize(1);
     
-    ils[0].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<4>({1,1,1,1})/4));
-    ils[0].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,1})/2,arma::vec::fixed<4>({4,3,0,3})*0.1));
+    ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,0,0}),arma::vec::fixed<4>({1,1,1,1})/4));
+    ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,1,1})/3,arma::vec::fixed<4>({4,3,0,3})*0.1));
 }
 
 
@@ -264,7 +264,7 @@ void fill_23d_solution(std::vector<computeintersection::IntersectionLine> &ils)
 //     return new_il;
 // }
 
-void compute_intersection_23d(Mesh *mesh, const computeintersection::IntersectionLine &il)
+void compute_intersection_23d(Mesh *mesh, const computeintersection::IntersectionAux<2,3> &ip)
 {
     double area = 0;
 
@@ -272,7 +272,7 @@ void compute_intersection_23d(Mesh *mesh, const computeintersection::Intersectio
     DBGMSG("Computing intersection area by NEW algorithm\n");
 //     InspectElements ie(mesh);
 //     ie.compute_intersections<2,3>();
-    InspectElementsAlgorithm23 ie(mesh);
+    InspectElementsAlgorithm<2> ie(mesh);
     ie.compute_intersections();
 //     //test solution
 //     std::vector<computeintersection::IntersectionLine> pp = ie.list_intersection_lines(1);
@@ -295,7 +295,7 @@ void compute_intersection_23d(Mesh *mesh, const computeintersection::Intersectio
 //         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[3], il[i].local_bcoords_B()[3]);
 //     }
     
-    area = ie.polygon_area();
+    area = ie.measure();
     ie.print_mesh_to_file("output_intersection_23");
     DBGMSG("Area of intersection line: (intersections) %.16e\n", area);
 //     EXPECT_NEAR(length1, length2, 1e-12);
@@ -339,7 +339,7 @@ TEST(intersection_prolongation_23d, all) {
     
     std::vector<string> filenames = {"prolongation_23d_01.msh"};
     
-    std::vector<IntersectionLine> solution;
+    std::vector<IntersectionAux<2,3>> solution;
     fill_23d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH

@@ -8,7 +8,6 @@
 
 #include "plucker.h"
 #include "intersectionpoint.h"
-#include "intersectionpolygon.h"
 
 using namespace std;
 namespace computeintersection{
@@ -697,7 +696,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 
 };
 
-void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(computeintersection::IntersectionPolygon& local_polygon){
+void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(std::vector<IntersectionPoint<2,3>> &IP23s){
 
 	std::vector<IntersectionPoint<1,2>> IP12s;
 	std::vector<IntersectionPoint<1,3>> IP13s;
@@ -722,7 +721,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(computeintersection::I
                 IP23.set_topology_A(RefElement<2>::interact<0,1>(triangle_line)[IP.idx_A()], 0);
             }
             
-            local_polygon.add_ipoint(IP23);
+//             local_polygon.add_ipoint(IP23);
+            IP23s.push_back(IP23);
         }
     }
 
@@ -739,7 +739,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(computeintersection::I
                     IP23.set_topology_B(RefElement<3>::interact<0,1>(tetra_edge)[IP.idx_A()], 0);
                 
 				//IP23.print();
-				local_polygon.add_ipoint(IP23);
+// 				local_polygon.add_ipoint(IP23);
+                IP23s.push_back(IP23);
 			}
 		}
 	}

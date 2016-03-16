@@ -43,6 +43,10 @@ public:
     
     /// Computes the relative measure of intersection object.
     double compute_measure();
+    
+    /// Friend output operator.
+    template<unsigned int dimAA, unsigned int dimBB>
+    friend std::ostream& operator<<(std::ostream& os, const IntersectionAux<dimAA,dimBB>& intersection);
 };
 
 /********************************************* IMPLEMENTATION ***********************************************/

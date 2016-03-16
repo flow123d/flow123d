@@ -8,8 +8,8 @@
 #include "inspectelements.h"
 #include "prolongation.h"
 #include "intersectionpoint.h"
-#include "intersectionline.h"
-#include "intersectionpolygon.h"
+#include "trace_algorithm.h"
+#include "intersectionaux.h"
 #include "computeintersection.h"
 
 #include "system/sys_profiler.hh"
@@ -21,32 +21,20 @@
 namespace computeintersection {
 
 template<unsigned int dim>    
-InspectElementsAlgorithmBase<dim>::InspectElementsAlgorithmBase(Mesh* _mesh)
-: slave_element_idx_(-1), mesh(_mesh)
-{}
-    
-InspectElementsAlgorithm13::InspectElementsAlgorithm13(Mesh* _mesh)
-: InspectElementsAlgorithmBase< 1 >(_mesh)
+InspectElementsAlgorithm<dim>::InspectElementsAlgorithm(Mesh* _mesh)
+: component_element_idx_(-1), mesh(_mesh)
 {
-    intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionLine>());
+    intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionAux<dim,3>>());
 }
 
-InspectElementsAlgorithm13::~InspectElementsAlgorithm13()
+template<unsigned int dim>   
+InspectElementsAlgorithm<dim>::~InspectElementsAlgorithm()
 {}
 
-
-InspectElementsAlgorithm23::InspectElementsAlgorithm23(Mesh* _mesh)
-: InspectElementsAlgorithmBase< 2 >(_mesh)
-{
-    intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionPolygon>());
-}
-
-InspectElementsAlgorithm23::~InspectElementsAlgorithm23()
-{}
 
     
 template<unsigned int dim>
-void InspectElementsAlgorithmBase<dim>::init()
+void InspectElementsAlgorithm<dim>::init()
 {
     START_TIMER("Intersection initialization");
     last_slave_for_3D_elements.assign(mesh->n_elements(), -1);
@@ -75,7 +63,7 @@ void InspectElementsAlgorithmBase<dim>::init()
 
 template<unsigned int dim>
 template<unsigned int simplex_dim>
-void InspectElementsAlgorithmBase<dim>::update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
+void InspectElementsAlgorithm<dim>::update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
 {
     arma::vec3 *field_of_points[simplex_dim+1];
     for(unsigned int i=0; i < simplex_dim+1; i++)
@@ -84,8 +72,54 @@ void InspectElementsAlgorithmBase<dim>::update_simplex(const ElementFullIter& el
 }
 
 
+template<>
+void InspectElementsAlgorithm<1>::trace(IntersectionAux<1,3> &intersection)
+{}
+ 
+template<>
+void InspectElementsAlgorithm<2>::trace(IntersectionAux<2,3> &intersection)
+{
+    prolongation_table_.clear();
+    Tracing::trace_polygon(prolongation_table_, intersection);
+} 
+ 
+template<unsigned int dim> 
+bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+{
+    IntersectionAux<dim,3> is(elm->index(), ele_3D->index());
+    START_TIMER("Compute intersection");
+    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
+    CI.init();
+    CI.compute(is.points());
+    END_TIMER("Compute intersection");
+    
+    if(is.points().size() > 0) {
+        
+        trace(is);
+        intersection_list_[elm->index()].push_back(is);
+        return true;
+    }
+    else return false;
+}
+
 template<unsigned int dim>
-void InspectElementsAlgorithmBase<dim>::compute_intersections()
+bool InspectElementsAlgorithm<dim>::intersection_exists(unsigned int component_element_idx, unsigned int elm_3D_idx) 
+{
+    bool found = false;
+
+    for(unsigned int i = 0; i < intersection_list_[component_element_idx].size();i++){
+
+        if(intersection_list_[component_element_idx][i].bulk_ele_idx() == elm_3D_idx){
+            found = true;
+            break;
+        }
+    }
+    return found;
+}
+
+
+template<unsigned int dim>
+void InspectElementsAlgorithm<dim>::compute_intersections()
 {
     init();
     
@@ -98,7 +132,7 @@ void InspectElementsAlgorithmBase<dim>::compute_intersections()
             !closed_elements[elm.index()] &&                    // is not closed yet
             elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
         {    
-            update_simplex(elm, slave_simplex); // update slave simplex
+            update_simplex(elm, component_simplex); // update component simplex
             std::vector<unsigned int> searchedElements;
             bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
 
@@ -138,31 +172,31 @@ void InspectElementsAlgorithmBase<dim>::compute_intersections()
                         //          - repeat until 2D queue is empty
                         //      - emptying 2D queue could fill 3D queue again, so repeat
                         while(1){
-                            while(!prolongation_queue_3D_.empty()){
-                                Prolongation pr = prolongation_queue_3D_.front();
+                            while(!bulk_queue_.empty()){
+                                Prolongation pr = bulk_queue_.front();
                                 DBGMSG("Prolongation queue compute in 3d ele_idx %d.\n",pr.elm_3D_idx);
                                 prolongate(pr);
-                                prolongation_queue_3D_.pop();
+                                bulk_queue_.pop();
 
                             }
 
-                            if(slave_element_idx_ >= 0) closed_elements[slave_element_idx_] = true;
+                            if(component_element_idx_ >= 0) closed_elements[component_element_idx_] = true;
 
-                            slave_element_idx_ = -1;
+                            component_element_idx_ = -1;
                             
-                            if(!prolongation_queue_slave_.empty()){
-                                Prolongation pr = prolongation_queue_slave_.front();
-                                DBGMSG("Prolongation queue compute in 2d ele_idx %d.\n",pr.slave_elm_idx);
+                            if(!component_queue_.empty()){
+                                Prolongation pr = component_queue_.front();
+                                DBGMSG("Prolongation queue compute in 2d ele_idx %d.\n",pr.component_elm_idx);
                                 prolongate(pr);
-                                prolongation_queue_slave_.pop();
+                                component_queue_.pop();
 
                             }
 
                                 
-                            if(prolongation_queue_slave_.empty() && prolongation_queue_3D_.empty()){
-                                if(slave_element_idx_ >= 0) closed_elements[slave_element_idx_] = true;
+                            if(component_queue_.empty() && bulk_queue_.empty()){
+                                if(component_element_idx_ >= 0) closed_elements[component_element_idx_] = true;
                                     
-                                slave_element_idx_ = -1;
+                                component_element_idx_ = -1;
                                 break;
                             }
 
@@ -181,30 +215,18 @@ void InspectElementsAlgorithmBase<dim>::compute_intersections()
     END_TIMER("Element iteration");}
 }
   
- 
- 
- 
-bool InspectElementsAlgorithm13::compute_initial_CI(const ElementFullIter& elm, const ElementFullIter& ele_3D)
-{
-    IntersectionLine il(elm->index(), ele_3D->index());
-    START_TIMER("Compute intersection 13");
-    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(slave_simplex, tetrahedron);
-    CI_13.init();
-    CI_13.compute(il.points());
-    END_TIMER("Compute intersection 13");
-    
-    if(il.points().size() > 0) {
-        intersection_list_[elm->index()].push_back(il);
-        return true;
-    }
-    else return false;
-}
 
-void InspectElementsAlgorithm13::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+ 
+
+
+
+template<>
+void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
 {
-    IntersectionLine il = intersection_list_[elm.index()].back();
+    IntersectionAux<1,3> il = intersection_list_[elm.index()].back();
     for(const IntersectionPoint<1,3> &IP : il.points()) {
         if(IP.dim_A() == 0) { 
+            DBGMSG("1D end\n");
             // if IP is end of the 1D element
             // prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
             SideIter elm_side = elm->side(IP.idx_A());  // side of 1D element is vertex
@@ -220,11 +242,11 @@ void InspectElementsAlgorithm13::prolongation_decide(const ElementFullIter& elm,
                         DBGMSG("1d prolong %d in %d\n", sousedni_element, ele_3D->index());
                         
                         // Vytvoření průniku bez potřeby počítání
-                        IntersectionLine il_other(sousedni_element, ele_3D->index());
+                        IntersectionAux<1,3> il_other(sousedni_element, ele_3D->index());
                         intersection_list_[sousedni_element].push_back(il_other);
                         
                         Prolongation pr = {sousedni_element, ele_3D->index(), intersection_list_[sousedni_element].size() - 1};
-                        prolongation_queue_slave_.push(pr);
+                        component_queue_.push(pr);
                     }
                 }
             }
@@ -262,11 +284,11 @@ void InspectElementsAlgorithm13::prolongation_decide(const ElementFullIter& elm,
                         DBGMSG("3d prolong\n");
                         
                         // Vytvoření průniku bez potřeby počítání
-                        IntersectionLine il_other(elm.index(), sousedni_element);
+                        IntersectionAux<1,3> il_other(elm.index(), sousedni_element);
                         intersection_list_[elm.index()].push_back(il_other);
                         
                         Prolongation pr = {elm->index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
-                        prolongation_queue_3D_.push(pr);
+                        bulk_queue_.push(pr);
                     }
                 }   
             }
@@ -274,76 +296,9 @@ void InspectElementsAlgorithm13::prolongation_decide(const ElementFullIter& elm,
     }
 }
 
-void InspectElementsAlgorithm13::prolongate(const InspectElementsAlgorithmBase< 1 >::Prolongation& pr)
-{
-    ElementFullIter elm = mesh->element(pr.slave_elm_idx);
-    ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
-    
-    DBGMSG("Prolongate 1D: %d in %d.\n", pr.slave_elm_idx, pr.elm_3D_idx);
-    //closed_elements[pr.slave_elm_idx] = true;
-    
-    update_simplex(elm, slave_simplex);
-    update_simplex(ele_3D, tetrahedron);
-    
-    slave_element_idx_ = pr.slave_elm_idx;
 
-    //IntersectionLine il(pr.slave_elm_idx, pr.elm_3D_idx);
-    ComputeIntersection<Simplex<1>, Simplex<3>> CI_13(slave_simplex, tetrahedron);
-    CI_13.init();
-    CI_13.compute(intersection_list_[pr.slave_elm_idx][pr.dictionary_idx].points());
-
-    if(intersection_list_[pr.slave_elm_idx][pr.dictionary_idx].size() > 1){
-        //cout << il[0] << il[1];
-        //intersection_list_[pr.slave_elm_idx].push_back(il);
-        prolongation_decide(elm, ele_3D);
-    }
-}
-
-void InspectElementsAlgorithm23::prolongate(const InspectElementsAlgorithmBase< 2 >::Prolongation& pr)
-{
-    // Měli bychom být vždy ve stejném trojúhelníku, tudíž updateTriangle by měl být zbytečný
-    ElementFullIter elm = mesh->element(pr.slave_elm_idx);
-    ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
-
-    DBGMSG("Prolongate 2D: %d in %d.\n", pr.slave_elm_idx, pr.elm_3D_idx);
-    
-    update_simplex(elm, slave_simplex);
-    update_simplex(ele_3D, tetrahedron);
-
-    slave_element_idx_ = pr.slave_elm_idx;
-
-    ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(slave_simplex, tetrahedron);
-    CI_23.init();
-    CI_23.compute(intersection_list_[pr.slave_elm_idx][pr.dictionary_idx]);
-
-    if(intersection_list_[pr.slave_elm_idx][pr.dictionary_idx].size() > 2){
-        intersection_list_[pr.slave_elm_idx][pr.dictionary_idx].trace_polygon(prolongation_table_);
-        prolongation_decide(elm, ele_3D);
-    }
-}
-
-
-bool InspectElementsAlgorithm23::compute_initial_CI(const ElementFullIter& elm, const ElementFullIter& ele_3D)
-{
-    IntersectionPolygon ip(elm.index(), ele_3D->index());
-    START_TIMER("Compute intersection 23");
-    ComputeIntersection<Simplex<2>,Simplex<3> > CI(slave_simplex, tetrahedron);
-    CI.init();
-    CI.compute(ip);
-    END_TIMER("Compute intersection 23");
-    
-    if(ip.size() > 0) {
-        prolongation_table_.clear();
-        ip.trace_polygon(prolongation_table_);
-        //il.printTracingTable();
-
-        intersection_list_[elm.index()].push_back(ip);
-        return true;
-    }
-    else return false;
-} 
- 
-void InspectElementsAlgorithm23::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+template<>
+void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
 {
     for(unsigned int i = 0; i < prolongation_table_.size();i++){
 
@@ -380,11 +335,11 @@ void InspectElementsAlgorithm23::prolongation_decide(const ElementFullIter& elm,
                             //flag_for_3D_elements[ele->index()] = sousedni_element;
                             DBGMSG("2d prolong\n");
                             // Vytvoření průniku bez potřeby počítání
-                            IntersectionPolygon il_other(sousedni_element, ele_3D->index());
+                            IntersectionAux<2,3> il_other(sousedni_element, ele_3D->index());
                             intersection_list_[sousedni_element].push_back(il_other);
 
                             Prolongation pr = {sousedni_element, ele_3D->index(), intersection_list_[sousedni_element].size() - 1};
-                            prolongation_queue_slave_.push(pr);
+                            component_queue_.push(pr);
                         }
                 }
             }
@@ -421,11 +376,11 @@ void InspectElementsAlgorithm23::prolongation_decide(const ElementFullIter& elm,
                         DBGMSG("3d prolong\n");
                         
                         // Vytvoření průniku bez potřeby počítání
-                        IntersectionPolygon il_other(elm.index(), sousedni_element);
+                        IntersectionAux<2,3> il_other(elm.index(), sousedni_element);
                         intersection_list_[elm.index()].push_back(il_other);
 
                         Prolongation pr = {elm.index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
-                        prolongation_queue_3D_.push(pr);
+                        bulk_queue_.push(pr);
 
                     }
                 }
@@ -436,68 +391,71 @@ void InspectElementsAlgorithm23::prolongation_decide(const ElementFullIter& elm,
     }
 }
 
-
-bool InspectElementsAlgorithm13::intersection_exists(unsigned int elm_idx, unsigned int elm_3D_idx)
+template<unsigned int dim>
+void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< dim >::Prolongation& pr)
 {
-    bool found = false;
+    ElementFullIter elm = mesh->element(pr.component_elm_idx);
+    ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
+    
+    DBGMSG("Prolongate %dD: %d in %d.\n", dim, pr.component_elm_idx, pr.elm_3D_idx);
+    
+    update_simplex(elm, component_simplex);
+    update_simplex(ele_3D, tetrahedron);
+    
+    component_element_idx_ = pr.component_elm_idx;
 
-    for(unsigned int i = 0; i < intersection_list_[elm_idx].size();i++){
+    IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
+    
+    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
+    CI.init();
+    CI.compute(is.points());
 
-        if(intersection_list_[elm_idx][i].ele_3d_idx() == elm_3D_idx){
-            found = true;
-            break;
-        }
-
+    if(is.size() > dim){
+//         for(unsigned int j=1; j < is.size(); j++) 
+//             cout << is[j];
+        
+        trace(is);
+        prolongation_decide(elm, ele_3D);
     }
-    return found;
 }
 
-bool InspectElementsAlgorithm23::intersection_exists(unsigned int elm_idx, unsigned int elm_3D_idx)
-{
-    bool found = false;
 
-    for(unsigned int i = 0; i < intersection_list_[elm_idx].size();i++){
-
-        if(intersection_list_[elm_idx][i].ele_3d_idx() == elm_3D_idx){
-            found = true;
-            break;
-        }
-    }
-    return found;
-}
-
-double InspectElementsAlgorithm13::line_length()
+template<> double InspectElementsAlgorithm<1>::measure() 
 {
     double subtotal = 0.0;
 
     for(unsigned int i = 0; i < intersection_list_.size(); i++){
+        DBGMSG("intersection_list_[i].size() = %d\n",intersection_list_[i].size());
         for(unsigned int j = 0; j < intersection_list_[i].size();j++){
             //if(intersection_list_[i][j].size() < 2) continue;
-            ElementFullIter ele = mesh->element(intersection_list_[i][j].ele_1d_idx());            
-            double t1d_length = ele->measure();
-            double local_length = intersection_list_[i][j].compute_length();
             
+            ElementFullIter ele = mesh->element(intersection_list_[i][j].component_ele_idx());            
+            double t1d_length = ele->measure();
+            double local_length = intersection_list_[i][j].compute_measure();
+            
+            if(intersection_list_[i][j].size() == 2)
+            {
             arma::vec3 from = intersection_list_[i][j][0].coords(ele);
             arma::vec3 to = intersection_list_[i][j][1].coords(ele);
             DBGMSG("sublength from [%f %f %f] to [%f %f %f] = %f\n",
                    from[0], from[1], from[2], 
                    to[0], to[1], to[2],
                    local_length*t1d_length);
-            
+            }
             subtotal += local_length*t1d_length;
         }
     }
     return subtotal;
 }
 
-double InspectElementsAlgorithm23::polygon_area()
+template<> double InspectElementsAlgorithm<2>::measure() 
 {
     double subtotal = 0.0;
 
     for(unsigned int i = 0; i < intersection_list_.size(); i++){
         for(unsigned int j = 0; j < intersection_list_[i].size();j++){
-            double t2dArea = mesh->element(intersection_list_[i][j].ele_2d_idx())->measure();
-            double localArea = intersection_list_[i][j].get_area();
+            double t2dArea = mesh->element(intersection_list_[i][j].component_ele_idx())->measure();
+            double localArea = intersection_list_[i][j].compute_measure();
             subtotal += 2*localArea*t2dArea;
         }
     }
@@ -531,7 +489,7 @@ double InspectElementsAlgorithm23::polygon_area()
  
  
  
- 
+ /*
  
  
 InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
@@ -925,9 +883,9 @@ void InspectElements::compute_intersections<2,3>(){
 				}
 				// Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
 				closed_elements[elm.index()] = true;
-				/*if(nalezen){
-					break;
-				}*/
+// 				if(nalezen){
+// 					break;
+// 				}
 				END_TIMER("Bounding box element iteration");}
 
 			}
@@ -1389,10 +1347,10 @@ double InspectElements::line_length()
     return subtotal;
 }
 
+*/
 
-
-
-void InspectElementsAlgorithm13::print_mesh_to_file(string name)
+template<>
+void InspectElementsAlgorithm<1>::print_mesh_to_file(string name)
 {
     for(unsigned int i = 0; i < 2;i++){
         string t_name = name;
@@ -1428,11 +1386,11 @@ void InspectElementsAlgorithm13::print_mesh_to_file(string name)
         for(unsigned int j = 0; j < intersection_list_.size();j++){
             for(unsigned int k = 0; k < intersection_list_[j].size();k++){
                 //xprintf(Msg, "Zde3.1\n");
-                IntersectionLine il = intersection_list_[j][k];
+                IntersectionAux<1,3> il = intersection_list_[j][k];
                 //xprintf(Msg, "Zde3.2\n");
                 //xprintf(Msg, "el %d %d\n", il.get_elm1D_idx(), il.get_elm3D_idx());
-                ElementFullIter el1D = mesh->element(il.ele_1d_idx());
-                ElementFullIter el3D = mesh->element(il.ele_3d_idx());
+                ElementFullIter el1D = mesh->element(il.component_ele_idx());
+                ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
                 //xprintf(Msg, "Zde3.3\n");
 
                 for(unsigned int l = 0; l < il.size(); l++){
@@ -1494,7 +1452,7 @@ void InspectElementsAlgorithm13::print_mesh_to_file(string name)
         for(unsigned int j = 0; j < intersection_list_.size();j++){
                 for(unsigned int k = 0; k < intersection_list_[j].size();k++){
 
-                IntersectionLine il = intersection_list_[j][k];
+                IntersectionAux<1,3> il = intersection_list_[j][k];
 
 
                 if(il.size() == 1){
@@ -1518,8 +1476,8 @@ void InspectElementsAlgorithm13::print_mesh_to_file(string name)
     }
 }
 
-
-void InspectElementsAlgorithm23::print_mesh_to_file(string name)
+template<>
+void InspectElementsAlgorithm<2>::print_mesh_to_file(string name)
 {
     for(unsigned int i = 0; i < 2;i++){
         string t_name = name;
@@ -1555,10 +1513,10 @@ void InspectElementsAlgorithm23::print_mesh_to_file(string name)
         for(unsigned int j = 0; j < intersection_list_.size();j++){
             for(unsigned int k = 0; k < intersection_list_[j].size();k++){
 
-                IntersectionPolygon il = intersection_list_[j][k];
+                IntersectionAux<2,3> il = intersection_list_[j][k];
 
-                ElementFullIter el2D = mesh->element(il.ele_2d_idx());
-                ElementFullIter el3D = mesh->element(il.ele_3d_idx());
+                ElementFullIter el2D = mesh->element(il.component_ele_idx());
+                ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
 
 
                 for(unsigned int l = 0; l < il.size(); l++){
@@ -1617,7 +1575,7 @@ void InspectElementsAlgorithm23::print_mesh_to_file(string name)
         for(unsigned int j = 0; j < intersection_list_.size();j++){
                 for(unsigned int k = 0; k < intersection_list_[j].size();k++){
 
-                IntersectionPolygon il = intersection_list_[j][k];
+                IntersectionAux<2,3> il = intersection_list_[j][k];
 
                 for(unsigned int l = 0; l < il.size(); l++){
                     number_of_elements++;
@@ -1642,8 +1600,9 @@ void InspectElementsAlgorithm23::print_mesh_to_file(string name)
 }
 
 
+
 // Declaration of specializations implemented in cpp:
-template class InspectElementsAlgorithmBase<1>;
-template class InspectElementsAlgorithmBase<2>;
+template class InspectElementsAlgorithm<1>;
+template class InspectElementsAlgorithm<2>;
 
 } // END namespace

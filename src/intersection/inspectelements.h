@@ -20,109 +20,96 @@ class Mesh; // forward declare
 
 namespace computeintersection {
 
-// forward declare
-struct ProlongationLine;
-struct ProlongationPoint;
-
 template<unsigned int N, unsigned int M> class IntersectionPoint;
-class IntersectionLine;
-class IntersectionPolygon;
-    
+template<unsigned int N, unsigned int M> class IntersectionAux;
 
 template<unsigned int dim>
-class InspectElementsAlgorithmBase{
+class InspectElementsAlgorithm{
 public:
+    /** @brief Auxiliary structure for prolongation process.
+     * 
+     * Contains index of component element, index of bulk element 
+     * and its index in vector of bulk elements intersecting with the component element.
+     */
     struct Prolongation{
-        unsigned int slave_elm_idx;
+        unsigned int component_elm_idx;
         unsigned int elm_3D_idx;
-        unsigned int dictionary_idx; // index to dictionary with all intersections associated with index of 2D element
+        unsigned int dictionary_idx;
     };
     
     
-    InspectElementsAlgorithmBase(Mesh *_mesh);
-    virtual ~InspectElementsAlgorithmBase(){};
+    InspectElementsAlgorithm(Mesh *_mesh);
+    ~InspectElementsAlgorithm();
     
+    /// Runs the core algorithm for computing dimD-3D intersection.
     void compute_intersections();
+    
+    /// Computes the size of the intersection in @p dim dimenstions.
+    double measure();
+    
+    /// Generates a mesh file of the given name, including the intersection.
+    void print_mesh_to_file(std::string name);
 
 protected:
-    std::queue<Prolongation> prolongation_queue_slave_;
-    std::queue<Prolongation> prolongation_queue_3D_;
+    /// Prolongation queue in the component mesh.
+    std::queue<Prolongation> component_queue_;
+    /// Prolongation queue in the bulk mesh.
+    std::queue<Prolongation> bulk_queue_;
     
     // Array of flags, which elements are computed
     std::vector<bool> closed_elements;
     std::vector<int> last_slave_for_3D_elements;
-    int slave_element_idx_;   ///< last computed slave element
+    int component_element_idx_;   ///< last computed component element
     
     Mesh *mesh;
     std::vector<BoundingBox> elements_bb;
     BoundingBox mesh_3D_bb;
     
-    Simplex<dim> slave_simplex;
+    Simplex<dim> component_simplex;
     Simplex<3> tetrahedron;
     
+    /// Resulting vector of intersections.
+    std::vector<std::vector<IntersectionAux<dim,3>>> intersection_list_;
+    
+    /// Auxiliary vector that is filled in tracing algorithm of polygons (in 2D)
+    /// and then used in prolongation decision routines.
+    std::vector<unsigned int> prolongation_table_;
+    
+    /// Initialization.
+    /// Sets vector sizes and computes bulk bounding box.
     void init();
+    
+    /// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
     template<unsigned int simplex_dim>
     void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
     
-    virtual bool compute_initial_CI(const ElementFullIter &elm, const ElementFullIter &ele_3D) = 0;
-    virtual void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D) = 0;
-    virtual void prolongate(const Prolongation &pr) = 0;
+    bool intersection_exists(unsigned int component_element_idx, unsigned int elm_3D_idx);
+
+    /// Auxiliary function for calling tracing algorithm. Is empty if @p dim =0.
+    void trace(IntersectionAux<dim,3> &intersection);
+    
+    /// Computes the first intersection, from which we then prolongate.
+    bool compute_initial_CI(const ElementFullIter &elm, const ElementFullIter &ele_3D);
+    
+    /// Finds neighbouring elements that are new candidates for intersection and pushes
+    /// them into component queue or bulk queue.
+    void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D);
+    
+    /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
+    void prolongate(const Prolongation &pr);
     
 };
 
-class InspectElementsAlgorithm13 : public InspectElementsAlgorithmBase<1>
-{
-    bool compute_initial_CI(const ElementFullIter &elm, const ElementFullIter &ele_3D) override;
-    void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D) override;
-    void prolongate(const Prolongation &pr) override;
-    
-    bool intersection_exists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
-    
-    //List of intersection lines.
-    std::vector<std::vector<IntersectionLine>> intersection_list_;
-    
-public:
-    InspectElementsAlgorithm13(Mesh *_mesh);
-    ~InspectElementsAlgorithm13();
-    
-        /** @brief Computes the length of 1d-3d line intersection (sum over all lines).
-     * @return the line length
-     */
-    double line_length();
-    void print_mesh_to_file(std::string name);
-};
-
-class InspectElementsAlgorithm23 : public InspectElementsAlgorithmBase<2>
-{
-    bool compute_initial_CI(const ElementFullIter &elm, const ElementFullIter &ele_3D) override;
-    void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D) override;
-    void prolongate(const Prolongation &pr) override;
-    
-    bool intersection_exists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
-    
-    std::vector<unsigned int> prolongation_table_;
-    
-    /// List of intersection polygons.
-    std::vector<std::vector<IntersectionPolygon>> intersection_list_;
-
-public:
-    InspectElementsAlgorithm23(Mesh *_mesh);
-    ~InspectElementsAlgorithm23();
-    
-    /** @brief Computes the area of 2d-3d polygonal intersections (sum over all polygons).
-     * @return the area of intersection polygon
-     */
-    double polygon_area();
-    void print_mesh_to_file(std::string name);
-};
 
 
 
 
 
-
-
-
+// forward declare
+struct ProlongationLine;
+struct ProlongationPoint;
+class IntersectionLine;
+class IntersectionPolygon;
 /**
 * Main class, which takes mesh and you can call method for computing intersections for different dimensions of elements
 * It can compute whole polygon area.

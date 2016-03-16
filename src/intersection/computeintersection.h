@@ -15,7 +15,6 @@ namespace computeintersection {
 
 // forward declare
 template<class A, class B> class ComputeIntersection;
-class IntersectionPolygon;
 class Plucker;
 template<unsigned int, unsigned int> class IntersectionPoint;
 
@@ -264,7 +263,8 @@ public:
     ~ComputeIntersection();
 
 	void init();
-	void compute(IntersectionPolygon &local_polygon);
+// 	void compute(IntersectionPolygon &local_polygon);
+    void compute(std::vector<IntersectionPoint<2,3>> &IP23s);
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
 	void print_plucker_coordinates(std::ostream &os);

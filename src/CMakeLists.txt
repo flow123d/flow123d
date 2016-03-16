@@ -194,11 +194,10 @@ add_library(intersections_lib
     intersection/plucker.cpp
     intersection/simplex.cpp
     intersection/intersectionpoint.cpp
-    intersection/intersectionline.cpp
-    intersection/intersectionpolygon.cpp
+    intersection/intersectionaux.cpp
+    intersection/trace_algorithm.cpp
     intersection/computeintersection.cpp
     intersection/inspectelements.cpp
-    intersection/intersectionaux.cpp
 )
 target_link_libraries(intersections_lib
     mesh_lib system_lib armadillo ${Boost_LIBRARIES})
