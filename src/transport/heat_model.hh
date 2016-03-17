@@ -45,9 +45,9 @@ public:
 		/// Dirichlet boundary condition for temperature.
 		BCMultiField<3, FieldValue<3>::Scalar> bc_dirichlet_value;
 		/// Flux value in total/diffusive flux b.c.
-		BCMultiField<3, FieldValue<3>::Scalar > bc_flux;
+		BCField<3, FieldValue<3>::Scalar > bc_flux;
 		/// Transition coefficient in total/diffusive flux b.c.
-		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+		BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial temperature.
 		Field<3, FieldValue<3>::Scalar> init_temperature;
 		/// Porosity of solid.
