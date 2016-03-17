@@ -126,15 +126,17 @@ public:
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
 
-	void get_flux_bc_data(const std::vector<arma::vec3> &point_list,
+	void get_flux_bc_data(unsigned int index,
+            const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_flux,
-			std::vector< arma::vec > &bc_sigma,
-			std::vector< arma::vec > &bc_ref_value) override;
+			std::vector< double > &bc_flux,
+			std::vector< double > &bc_sigma,
+			std::vector< double > &bc_ref_value) override;
 
-	void get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+	void get_flux_bc_sigma(unsigned int index,
+            const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_sigma) override;
+			std::vector< double > &bc_sigma) override;
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,

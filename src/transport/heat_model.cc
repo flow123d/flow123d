@@ -356,25 +356,27 @@ void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 }
 
 
-void HeatTransferModel::get_flux_bc_data(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::get_flux_bc_data(unsigned int index,
+        const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_flux,
-		std::vector< arma::vec > &bc_sigma,
-		std::vector< arma::vec > &bc_ref_value)
+		std::vector< double > &bc_flux,
+		std::vector< double > &bc_sigma,
+		std::vector< double > &bc_ref_value)
 {
-	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
-	data().bc_dirichlet_value.value_list(point_list, ele_acc, bc_ref_value);
+	data().bc_flux[index].value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
+	data().bc_dirichlet_value[index].value_list(point_list, ele_acc, bc_ref_value);
 	
 	// Change sign in bc_flux since internally we work with outgoing fluxes.
 	for (auto f : bc_flux) f = -f;
 }
 
-void HeatTransferModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
+        const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &bc_sigma)
+		std::vector< double > &bc_sigma)
 {
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
 }
 
 
