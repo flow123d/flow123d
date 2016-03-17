@@ -33,9 +33,10 @@ problem: !SequentialCoupling
       - pressure_p1
       - velocity_p0
     balance: true
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
+  nonlinear-solver: 
+      linear_solver:  !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
   secondary_equation: !Transport_OS
     substances:
     - name: age
