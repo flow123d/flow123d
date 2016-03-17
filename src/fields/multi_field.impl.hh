@@ -31,7 +31,8 @@ namespace it = Input::Type;
 
 template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField(bool bc)
-: FieldCommon()
+: FieldCommon(),
+  no_check_control_field_(nullptr)
 {
 	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
@@ -54,6 +55,17 @@ template<int spacedim, class Value>
 it::Array MultiField<spacedim,Value>::get_multifield_input_type() {
 	it::Array type = it::Array( SubFieldBaseType::get_input_type_instance(shared_->input_element_selection_), 1);
 	return type;
+}
+
+
+template<int spacedim, class Value>
+auto MultiField<spacedim, Value>::disable_where(
+        const MultiField<spacedim, typename FieldValue<spacedim>::Enum > &control_field,
+        const vector<FieldEnum> &value_list) -> MultiField &
+{
+    no_check_control_field_=&control_field;
+    shared_->no_check_values_=value_list;
+    return *this;
 }
 
 
@@ -143,6 +155,8 @@ void MultiField<spacedim, Value>::setup_components() {
 
     	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name, is_bc()) );
     	sub_fields_[i_comp].units( units() );
+        if (no_check_control_field_ != nullptr)
+          sub_fields_[i_comp].disable_where((*no_check_control_field_)[i_comp], shared_->no_check_values_);
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
 //     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
         sub_fields_[i_comp].input_selection(shared_->input_element_selection_);
