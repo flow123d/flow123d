@@ -18,6 +18,7 @@
 #include "input/type_output.hh"
 #include "input/type_repository.hh"
 #include "input/type_generic.hh"
+#include "input/type_tuple.hh"
 #include "system/system.hh"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -129,7 +130,7 @@ Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstract *a
 
 void OutputBase::print_base(ostream& stream, const TypeBase *type) {
 
-	if (typeid(*type) == typeid(Type::Record)) {
+	if (typeid(*type) == typeid(Type::Record) || typeid(*type) == typeid(Type::Tuple)) {
 		print_impl(stream, static_cast<const Type::Record *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Array)) {
@@ -238,18 +239,18 @@ ostream& OutputText::print(ostream& stream) {
 
 void OutputText::print_impl(ostream& stream, const Record *type) {
 	if (! type->is_finished()) {
-		xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
+		xprintf(Warn, "Printing documentation of unfinished Input::Type::%s!\n", type->class_name().c_str());
 	}
 	switch (doc_type_) {
 	case key_record:
-		stream << "" << "Record '" << type->type_name() << "' (" << type->size() << " keys).";
+		stream << "" << type->class_name() << " '" << type->type_name() << "' (" << type->size() << " keys).";
 		break;
 	case full_record:
 		TypeBase::TypeHash hash=type->content_hash();
 		if (! was_written(hash)) {
 			// header
 			stream << endl;
-			stream << "" << "Record '" << type->type_name() << "'";
+			stream << "" << type->class_name() << " '" << type->type_name() << "'";
 			// parent record
 			/*boost::shared_ptr<Abstract> parent_ptr;
 			get_parent_ptr(*type, parent_ptr);
