@@ -66,9 +66,6 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
 
     // compute intersection
     DBGMSG("Computing intersection length by NEW algorithm\n");
-
-//     InspectElementsAlgorithm<1> ie(mesh);
-//     ie.compute_intersections();
     
     InspectElements ie(mesh);
     ie.compute_intersections();

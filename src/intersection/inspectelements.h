@@ -11,7 +11,6 @@
 
 #include "mesh/bounding_box.hh"
 #include "mesh/mesh_types.hh"
-#include "intersection/intersection_local.h"
 
 #include "simplex.h"
 
@@ -23,8 +22,33 @@ namespace computeintersection {
 
 template<unsigned int N, unsigned int M> class IntersectionPoint;
 template<unsigned int N, unsigned int M> class IntersectionAux;
-class InspectElements;
 
+class InspectElements;
+class IntersectionLocalBase;
+template<unsigned int N, unsigned int M> class IntersectionLocal;
+template<unsigned int N, unsigned int M> class IntersectionPointX;
+
+
+
+/** @brief Class implements algorithm for dim-dimensional intersections with 3D elements.
+ * 
+ * @p dim-D elements that are continuously neighbouring are called component elements.
+ * 3D elements are called bulk elements.
+ * 
+ * Implements the initialization routine, that finds the first candidate for intersection.
+ * It uses bounding boxes to fastly resolve intersection candidates. 
+ * The lookup is done using BIH tree algorithm.
+ * 
+ * Implements prolongation algorithm that recursively searches neighbouring elements for next intersection candidates.
+ * The candidates -- neighbouring component elements and bulk elements -- are pushed into separate queues.
+ * The bulk elements queue is emptied at first, then the component elements queue is popped.
+ * 
+ * The recuring prolongation algorithm is as follows:
+ * Function @p prolongation_decide fills the queues.
+ * A candidate pair of elements is popped out of a queue.
+ * Function @p prolongate computes intersection for a candidate pair and calls @p prolongation_decide again.
+ * This is done in an infinite cycle, until both queues are empty.
+ */
 template<unsigned int dim>
 class InspectElementsAlgorithm{
 public:
@@ -57,11 +81,16 @@ private:
     std::vector<int> last_slave_for_3D_elements;
     int component_element_idx_;   ///< last computed component element
     
+    /// Mesh pointer.
     Mesh *mesh;
+    /// Elements bounding boxes.
     std::vector<BoundingBox> elements_bb;
+    /// Bounding box of all 3D elements.
     BoundingBox mesh_3D_bb;
     
+    /// Object representing a single component element.
     Simplex<dim> component_simplex;
+    /// Object representing a single bulk element.
     Simplex<3> tetrahedron;
     
     /// Resulting vector of intersections.
@@ -79,6 +108,7 @@ private:
     template<unsigned int simplex_dim>
     void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
     
+    /// A hard way to find whether the intersection of two elements has already been computed, or not.
     bool intersection_exists(unsigned int component_element_idx, unsigned int elm_3D_idx);
 
     /// Auxiliary function for calling tracing algorithm. Is empty if @p dim =0.
@@ -100,21 +130,31 @@ private:
 
 
 
-
-
 class InspectElements
 {
+    /// Mesh pointer.
     Mesh * mesh;
-public:
-    typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
-    std::vector<std::vector<ILpair>> intersection_map_;
     
+public:
+    /// First = element index, Second = pointer to intersection object.
+    typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
+    
+    /// Stores 1D-3D intersections.
     std::vector<IntersectionLocal<1,3>> intersection_storage13_;
+    /// Stores 2D-3D intersections.
     std::vector<IntersectionLocal<2,3>> intersection_storage23_;
+    
+    /// Maps between elements and their intersections.
+    /// i.e.: 
+    /// intersection_map_[element index][i].first = other element index
+    /// intersection_map_[element index][i].second = pointer to the intersection object
+    std::vector<std::vector<ILpair>> intersection_map_;
     
     InspectElements(Mesh *mesh);
     ~InspectElements();
     
+    /// Calls @p InspectElementsAlgorithm<dim>, computes intersections, 
+    /// move them to storage, create the map and throw away the rest.
     void compute_intersections();
     
     //temporary functions:
@@ -127,125 +167,6 @@ public:
     void print_mesh_to_file_13(std::string name);
     void print_mesh_to_file_23(std::string name);
 };
-
-// // forward declare
-// struct ProlongationLine;
-// struct ProlongationPoint;
-// class IntersectionLine;
-// class IntersectionPolygon;
-// /**
-// * Main class, which takes mesh and you can call method for computing intersections for different dimensions of elements
-// * It can compute whole polygon area.
-// * It can create a mesh file with intersections
-// */
-// class InspectElements {
-// 
-//     // For case 1D-2D - list of intersection points
-//     std::vector<std::vector<IntersectionPoint<1,2>>> intersection_point_list;
-//     
-// 	// For case 2D-3D - list of intersectionpolygon
-// 	std::vector<std::vector<IntersectionPolygon>> intersection_list;
-// 	// For case 1D-3D - list of intersectionline
-// 	std::vector<std::vector<IntersectionLine>> intersection_line_list;
-// 	// Array of flags, which elements are computed
-// 	std::vector<bool> closed_elements;
-// 	std::vector<int> flag_for_3D_elements;
-// 
-//     // Used only for 2d-3d
-// 	std::queue<ProlongationLine> prolongation_line_queue_2D;
-// 	std::queue<ProlongationLine> prolongation_line_queue_3D;
-// 
-// 	std::queue<ProlongationPoint> prolongation_point_queue; // Used only for 1d-3d
-// 
-// 	int element_2D_index;   // Used only for 2d-3d
-// 
-// 	Simplex<1> abscissa;    // Used only for 1d-3d
-// 	Simplex<2> triangle;    // Used only for 2d-3d
-// 	Simplex<3> tetrahedron;
-// 
-// 	Mesh *mesh;
-// 	std::vector<BoundingBox> elements_bb;
-// 	BoundingBox mesh_3D_bb;
-// 
-// 	void update_abscissa(const ElementFullIter &el);
-// 	void update_triangle(const ElementFullIter &el);
-// 	void update_tetrahedron(const ElementFullIter &el);
-// 
-//     /** @brief Prolongates the intersection.
-//      * According to properties of IPs of intersection line it prolongates:
-//      * A] to neghboring 1D element, if the IP is the end point of 1D element,
-//      * B] to neghboring 3D element, if the IP is on the side of 3D element.
-//      */
-// 	void prolongate_1D_decide(const IntersectionLine &il, const ElementFullIter &ele_1d, const ElementFullIter &ele_3d);
-//     
-//     /** @brief Computes intersection of given 1d (\p ele_1d) and 3d (\p ele_3d) elements and prolongates.
-//      * Attention: abscissa and tetrahedron must be already updated!
-//      * Can be called recusively in prolongation process from prolongate_elements().
-//      */
-// 	void prolongate_1D_element(const ElementFullIter &ele_1d, const ElementFullIter &ele_3d);
-//     
-//     // Used only for 2d-3d
-//     void computeIntersections2d3d();
-//     void computeIntersections2d3dProlongation(const ProlongationLine &pl);
-//     void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, 
-//                                                       const ElementFullIter &ele_2d, 
-//                                                       const ElementFullIter &ele_3d);
-// 
-//     bool intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
-// 
-// public:
-// 
-// 	InspectElements(Mesh *_mesh);
-// 	~InspectElements();
-// 
-// 	/**
-// 	 * Every method needs to be implemented for different type of mesh intersection
-// 	 */
-// 	template<unsigned int subdim, unsigned int dim> 
-// 	void compute_intersections();
-// 
-// 	template<unsigned int subdim, unsigned int dim>
-// 	void compute_intersections_init();
-// 
-//     const std::vector<IntersectionPoint<1,2>> & list_intersection_points(unsigned int ele_idx);
-//     const std::vector<IntersectionLine> & list_intersection_lines(unsigned int idx_component_1D);
-//     
-// 	void print_mesh_to_file(std::string name);
-// 	void print_mesh_to_file_1D(std::string name);
-// 
-//     /** @brief Computes the area of 2d-3d polygonal intersections (sum over all polygons).
-//      * @return the area of intersection polygon
-//      */
-// 	double polygon_area();
-// 
-//     /** @brief Computes the length of 1d-3d line intersection (sum over all lines).
-//      * @return the line length
-//      */
-//     double line_length();
-// };
-// 
-// 
-// inline const std::vector< IntersectionLine >& InspectElements::list_intersection_lines(unsigned int ele_idx)
-// {
-//     ASSERT_LESS(ele_idx, intersection_line_list.size());
-//     return intersection_line_list[ele_idx];
-// }
-// 
-// inline const vector< IntersectionPoint< 1, 2 > >& InspectElements::list_intersection_points(unsigned int ele_idx)
-// {
-//     ASSERT_LESS(ele_idx, intersection_point_list.size());
-//     //cout << intersection_point_list.size();
-//     return intersection_point_list[ele_idx];
-// }
-// 
-// 
-// // Declaration of specializations implemented in cpp:
-// template<> void InspectElements::compute_intersections_init<1,2>();
-// template<> void InspectElements::compute_intersections_init<1,3>();
-// template<> void InspectElements::compute_intersections_init<2,3>();
-// template<> void InspectElements::compute_intersections<1,2>();
-// template<> void InspectElements::compute_intersections<1,3>();
-// template<> void InspectElements::compute_intersections<2,3>();
 
     
 } // END namespace

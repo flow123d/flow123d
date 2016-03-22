@@ -12,6 +12,17 @@
 
 namespace computeintersection{
 
+    
+//forwward declare
+template<unsigned int, unsigned int> class IntersectionPoint;
+template<unsigned int, unsigned int> class IntersectionAux;
+
+template<unsigned int, unsigned int> class IntersectionPointX;
+template<unsigned int, unsigned int> class IntersectionLocal;
+template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionLocal<dimA,dimB>& il);
+template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionPointX<dimA,dimB>& ip);
+
+
 
 class IntersectionLocalBase
 {
@@ -38,18 +49,18 @@ inline unsigned int IntersectionLocalBase::bulk_ele_idx() const
 
 
 
-//forwward declare
-template<unsigned int, unsigned int> class IntersectionPoint;
-template<unsigned int, unsigned int> class IntersectionAux;
 
-template<unsigned int, unsigned int> class IntersectionPointX;
-template<unsigned int, unsigned int> class IntersectionLocal;
-template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionLocal<dimA,dimB>& il);
-template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionPointX<dimA,dimB>& ip);
 
+/** @brief Class represents intersection of two elements.
+ * 
+ * It contains indices of intersecting elements (inherited from base class)
+ * and vector of intersection points which provides barycentric coordinates
+ * on both elements.
+ */
 template<unsigned int dimA, unsigned int dimB>
 class IntersectionLocal : public IntersectionLocalBase
 {
+    /// Vector of intersectio points.
     std::vector<IntersectionPointX<dimA,dimB>> i_points_;
     
 public:
@@ -136,7 +147,7 @@ public:
     const arma::vec::fixed<dimB+1> &bulk_bcoords() const;
     //@}
     
-    
+    /// Computes the real coordinates.
     arma::vec3 coords(ElementFullIter comp_ele) const;
     
     /// Friend output operator.
