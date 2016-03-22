@@ -453,6 +453,13 @@ protected:
     
     friend class Profiler;
     friend std::ostream & operator <<(std::ostream&, const Timer&);
+    
+    /**
+     * if under unit testing, specify friend so protected members can be tested
+     */
+    #ifdef __UNIT_TEST__
+        friend ProfilerTest;
+    #endif /* __UNIT_TEST__ */
 
 };
 
@@ -580,41 +587,6 @@ public:
     static double get_resolution ();
 
 
-    /**
-     * Returns tag of current timer.
-     */
-    inline const string actual_tag() const
-        { return timers_[actual_node].tag(); }
-    /**
-     * Returns total number of calls of current timer.
-     */
-    inline unsigned int actual_count() const
-        { return timers_[actual_node].call_count; }
-    /**
-     * Returns total time of current timer.
-     */
-    inline double actual_cumulative_time() const
-        { return timers_[actual_node].cumulative_time(); }
-    /**
-     * Returns total memory allocated in current timer.
-     */
-    inline double actual_memory_alloc() const
-        { return timers_[actual_node].total_allocated_; }
-    /**
-     * Returns total memory deallocated in current timer.
-     */
-    inline double actual_memory_dealloc() const
-        { return timers_[actual_node].total_deallocated_; }
-
-    /* see Timer docs */
-    inline PetscLogDouble actual_petsc_start_memory() const
-        { return timers_[actual_node].petsc_start_memory; }
-    inline PetscLogDouble actual_petsc_end_memory() const
-        { return timers_[actual_node].petsc_end_memory; }
-    inline PetscLogDouble actual_petsc_memory_difference() const
-        { return timers_[actual_node].petsc_memory_difference; }
-        
-
 #ifdef FLOW123D_HAVE_MPI
     /**
      * @brief Output current timing information into the given stream.
@@ -690,8 +662,15 @@ public:
      * @return memory monitoring status
      */
     bool static get_petsc_memory_monitoring();
+    
+    /**
+     * if under unit testing, specify friend so protected members can be tested
+     */
+    #ifdef __UNIT_TEST__
+        friend ProfilerTest;
+    #endif /* __UNIT_TEST__ */
 
-private:
+protected:
     
     /**
      * Whether to monitor operator 'new/delete'

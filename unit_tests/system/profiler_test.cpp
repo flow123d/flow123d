@@ -9,15 +9,29 @@
 #include <cstdlib>
 #include <sstream>
 
-
-#define private public
-
 #define TEST_USE_MPI
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
+/**
+ * Fixture class for testing Profiler protected members
+ */
+class ProfilerTest: public testing::Test {
+    public:
+        void test_str_hash();
+        void test_code_point();
+        void test_one_timer();
+        void test_absolute_time();
+        void test_structure();
+        void test_memory_profiler();
+        void test_petsc_memory();
+        void test_memory_propagation();
+        void test_petsc_memory_monitor();
+        void test_multiple_instances();
+        void test_propagate_values();
+};
 
-
+#define __UNIT_TEST__
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "petscvec.h"  
@@ -25,10 +39,22 @@
 
 #ifdef FLOW123D_DEBUG_PROFILER
 
-/*************************
- * We test collisions of hash function on strings with max length 13.
- */
 
+#define PI       Profiler::instance()
+#define AN       PI->timers_[PI->actual_node]
+#define ATN      string(AN.tag())
+#define ACT      AN.cumulative_time()
+#define ACC      AN.call_count
+#define MALLOC   AN.total_allocated_
+#define DEALOC   AN.total_deallocated_
+
+
+// ---------------- //
+// Helper functions //
+// ---------------- //
+
+
+// populate given str with random string and return its length <1,12>
 unsigned int random_string(char *str){
     unsigned int length = rand()%12+1;  // random string length from 1 up to 13 characters
     unsigned int i;
@@ -36,52 +62,16 @@ unsigned int random_string(char *str){
         str[i] = rand()%(128-32)+32; // random character from 32 (space) till the and of ASCII
     }
     str[i]=0;
-    //printf("str: '%s'\n", str);
     return length;
 }
 
+// simple function for allocating and deallocating array <T> of given length
 template <class T>
 int alloc_and_dealloc(int size){
     T* t = new T[size];
     delete [] t;
     return size * sizeof(T);
 }
-
-TEST(Profiler, str_hash) {
-    EXPECT_EQ(0, str_hash("", PROFILER_HASH_DEFAULT));
-    EXPECT_EQ(65, str_hash("A", PROFILER_HASH_DEFAULT));
-    EXPECT_EQ(6597, str_hash(" A", PROFILER_HASH_DEFAULT));
-
-    srand ( time(NULL) );
-    char a[16];
-    char b[16];
-
-// random test for hash collision
-    unsigned int n_pairs=100;
-    for(unsigned int i=0; i<n_pairs; i++) {
-        random_string(a);
-        random_string(b);
-        if (string(a) != string(b) )
-            EXPECT_NE( str_hash(a, PROFILER_HASH_DEFAULT) , str_hash(b, PROFILER_HASH_DEFAULT) );
-    }
-}
-
-
-
-TEST(Profiler, CodePoint) {
-    CodePoint cp = CODE_POINT("my_tag");    unsigned int line_save = __LINE__;
-    EXPECT_EQ("my_tag", cp.tag_);
-    EXPECT_EQ( str_hash("my_tag", PROFILER_HASH_DEFAULT), cp.hash_);
-    EXPECT_EQ( line_save, cp.line_ );
-    //EXPECT_EQ(string("(profiler_test.cpp, xxx(), 130)"), string(CODE_POINT) );
-}
-
-
-
-
-/**********************************************
- * Tests of Profiler.
- */
 
 // wait given amount of time (in ms) and return it in ms
 double wait( double time) {
@@ -123,32 +113,56 @@ double clock_resolution() {
 }
 
 
-#define AT    string(Profiler::instance()->actual_tag())
-#define ACT   Profiler::instance()->actual_cumulative_time()
-#define AC    Profiler::instance()->actual_count()
-#define AM    Profiler::instance()->actual_memory_alloc()
+// ----------------------------- //
+// Profiler test implementations //
+// ----------------------------- //
 
 
-TEST(Profiler, one_timer) {
+// We test collisions of hash function on strings with max length 13.
+TEST_F(ProfilerTest, test_str_hash) {test_str_hash();}
+void ProfilerTest::test_str_hash() {
+    EXPECT_EQ(0, str_hash("", PROFILER_HASH_DEFAULT));
+    EXPECT_EQ(65, str_hash("A", PROFILER_HASH_DEFAULT));
+    EXPECT_EQ(6597, str_hash(" A", PROFILER_HASH_DEFAULT));
 
-//	TimePoint t0 = TimePoint();
-//	wait(1000);
-//	TimePoint t1 = TimePoint();
-//
-//	cout << "CURRENT " << t1-t0 << endl;
+    srand ( time(NULL) );
+    char a[16];
+    char b[16];
 
+    // random test for hash collision
+    unsigned int n_pairs=100;
+    for(unsigned int i=0; i<n_pairs; i++) {
+        random_string(a);
+        random_string(b);
+        if (string(a) != string(b) )
+            EXPECT_NE( str_hash(a, PROFILER_HASH_DEFAULT) , str_hash(b, PROFILER_HASH_DEFAULT) );
+    }
+}
+
+// testing CodePoint contains correct value
+TEST_F(ProfilerTest, test_code_point) {test_code_point();}
+void ProfilerTest::test_code_point() {
+    CodePoint cp = CODE_POINT("my_tag");    unsigned int line_save = __LINE__;
+    EXPECT_EQ("my_tag", cp.tag_);
+    EXPECT_EQ( str_hash("my_tag", PROFILER_HASH_DEFAULT), cp.hash_);
+    EXPECT_EQ( line_save, cp.line_ );
+    //EXPECT_EQ(string("(profiler_test.cpp, xxx(), 130)"), string(CODE_POINT) );
+}
+
+// testing profiler precision up to 2 decimal places relative to TIMER_RESOLUTION
+TEST_F(ProfilerTest, test_one_timer) {test_one_timer();}
+ void ProfilerTest::test_one_timer() {
 	const double TIMER_RESOLUTION = Profiler::get_resolution();
 	const double DELTA = TIMER_RESOLUTION*100;
 	double total=0;
     Profiler::initialize();
-
 
     { // uninitialize can not be in the same block as the START_TIMER
 
 
     START_TIMER("test_tag");
     	// test that number of calls of current timer is
-	    EXPECT_EQ( 1, AC);
+	    EXPECT_EQ( 1, ACC);
 
 	    // wait a TIMER_RESOLUTION time
 		total += wait_sec(TIMER_RESOLUTION);
@@ -158,7 +172,7 @@ TEST(Profiler, one_timer) {
 
     START_TIMER("test_tag");
     	// test that number of calls of current timer is
-		EXPECT_EQ( 2, AC);
+		EXPECT_EQ( 2, ACC);
 
 		// test whether difference between measured time and total time is within TIMER_RESOLUTION
 		EXPECT_LE( abs(ACT-total), DELTA);
@@ -170,27 +184,17 @@ TEST(Profiler, one_timer) {
 
     END_TIMER("test_tag");
 
-//    for (int i = 0; i < 100; i++) {
-//        START_TIMER("test_tag");
-//            EXPECT_LE( abs(ACT-total), DELTA);
-//            cout << i+1 <<". difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
-//            total += wait_sec (TIMER_RESOLUTION);
-//    	END_TIMER("test_tag");
-//    }
-
     START_TIMER("test_tag");
-    	EXPECT_EQ( 3, AC);
+    	EXPECT_EQ( 3, ACC);
 		EXPECT_LE( abs(ACT-total), DELTA);
 		cout << "difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
     }
-
-
 
     // test add_call
     {
         START_TIMER("add_call");
         ADD_CALLS(1000);
-        EXPECT_EQ(1000, AC);
+        EXPECT_EQ(1000, ACC);
     }
 
     // test absolute time
@@ -199,17 +203,17 @@ TEST(Profiler, one_timer) {
         wait_sec(1);
     }
     std::stringstream sout;
-    Profiler::instance()->output(MPI_COMM_WORLD, sout);
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    PI->output(MPI_COMM_WORLD, sout);
+    PI->output(MPI_COMM_WORLD, cout);
 
     //EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
 
     Profiler::uninitialize();
 }
 
-
-
-TEST(Profiler, absolute_time) {
+// testing precision when waiting 1 sec up to 2 decimal places
+TEST_F(ProfilerTest, test_absolute_time) {test_absolute_time();}
+void ProfilerTest::test_absolute_time() {
     Profiler::initialize();
 
     // test absolute time
@@ -218,12 +222,12 @@ TEST(Profiler, absolute_time) {
         wait_sec(1);
     }
     std::stringstream sout;
-    Profiler::instance()->output(MPI_COMM_WORLD, sout);
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    PI->output(MPI_COMM_WORLD, sout);
+    PI->output(MPI_COMM_WORLD, cout);
     
     // try to transform profiler data using python
-    Profiler::instance()->output(MPI_COMM_WORLD);
-    Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
+    PI->output(MPI_COMM_WORLD);
+    PI->transform_profiler_data (".txt", "SimpleTableFormatter");
     
     int ierr, mpi_rank;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -244,73 +248,22 @@ TEST(Profiler, absolute_time) {
     Profiler::uninitialize();
 }
 
-
-
-/*
-  // This is efficiency test of START_TIMER macro.
-  // It will pass only with optimalized build (not debug).
-
-
-TEST(Profiler, efficiency) {
-    Profiler::initialize();
-    unsigned int cycles = 500000;
-
-    double min_time_period = clock_resolution();
-    cout << "Minimum timer resolution: " << min_time_period << " ms" << endl;
-    EXPECT_LT( min_time_period, 20 ); // resolution better then 20ms
-
-    double t_clock, t_timer;
-    // measure the clock() function
-    {
-        START_TIMER("clock");
-        for(int i=0;i<cycles;i++) {
-            clock(); clock();  // two measurements are necessary for one frame
-        }
-    }
-
-    // measure Timer overhead
-    {
-        START_TIMER("timer");
-        for(int i=0;i<cycles;i++) {
-            START_TIMER("tag");
-            END_TIMER("tag");
-        }
-
-    }
-
-    // get both cumulative times
-    { START_TIMER("clock");
-      t_clock = ACT;
-    }
-
-    { START_TIMER("timer");
-      t_timer = ACT;
-    }
-
-    cout << "ticks per 2*10^6 times clock(): " << t_clock << endl;
-    cout << "ticks per timer frame: " << t_timer << endl;
-    EXPECT_LT( t_timer , 2*t_clock); // we allow timer to run two times slower compared to clock() function itself.
-
-    Profiler::uninitialize();
-}
-
-*/
-
-
-TEST(Profiler, structure) {
+// testing correct report generation
+TEST_F(ProfilerTest, test_structure) {test_structure();}
+void ProfilerTest::test_structure() {
     Profiler::initialize();
 
     {
         START_TIMER("main");
-        EXPECT_EQ("main", AT );
+        EXPECT_EQ("main", ATN);
 
         START_TIMER("sub1");
-           EXPECT_EQ("sub1", AT);
+           EXPECT_EQ("sub1", ATN);
            START_TIMER("cross");
-           EXPECT_EQ("cross", AT);
+           EXPECT_EQ("cross", ATN);
 
         END_TIMER("sub1");
-        EXPECT_EQ("main", AT );
+        EXPECT_EQ("main", ATN );
 
 
         START_TIMER("sub2");
@@ -326,8 +279,8 @@ TEST(Profiler, structure) {
     }
 
     std::stringstream sout;
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
-    Profiler::instance()->output(MPI_COMM_WORLD, sout);
+    PI->output(MPI_COMM_WORLD, cout);
+    PI->output(MPI_COMM_WORLD, sout);
 
 
     int ierr, mpi_rank;
@@ -348,7 +301,9 @@ TEST(Profiler, structure) {
 
 }
 
-TEST(Profiler, memory_profiler) {
+// testing memory alloc and dealloc in separated time-frames
+TEST_F(ProfilerTest, test_memory_profiler) {test_memory_profiler();}
+void ProfilerTest::test_memory_profiler() {
     const int ARR_SIZE = 1000;
     const int LOOP_CNT = 1000;
     Profiler::initialize();
@@ -358,9 +313,9 @@ TEST(Profiler, memory_profiler) {
         // alloc and dealloc array of int
         for (int i = 0; i < LOOP_CNT; i++) alloc_and_dealloc<int>(ARR_SIZE);
         // test that we deallocated all allocated space
-        EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
+        EXPECT_EQ(MALLOC, DEALOC);
         // test that allocated space is correct size
-        EXPECT_EQ(AM, ARR_SIZE * LOOP_CNT * sizeof(int));
+        EXPECT_EQ(MALLOC, ARR_SIZE * LOOP_CNT * sizeof(int));
         END_TIMER("memory-profiler-int");
 
 
@@ -368,9 +323,9 @@ TEST(Profiler, memory_profiler) {
         // alloc and dealloc array of float
         for (int i = 0; i < LOOP_CNT; i++) alloc_and_dealloc<double>(ARR_SIZE);
         // test that we deallocated all allocated space
-        EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
+        EXPECT_EQ(MALLOC, DEALOC);
         // test that allocated space is correct size
-        EXPECT_EQ(AM, ARR_SIZE * LOOP_CNT * sizeof(double));
+        EXPECT_EQ(MALLOC, ARR_SIZE * LOOP_CNT * sizeof(double));
         END_TIMER("memory-profiler-double");
 
 
@@ -381,17 +336,19 @@ TEST(Profiler, memory_profiler) {
             delete j;
         }
         // test that we deallocated all allocated space
-        EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
+        EXPECT_EQ(MALLOC, DEALOC);
         // test that allocated space is correct size
-        EXPECT_EQ(AM, LOOP_CNT * sizeof(int));
+        EXPECT_EQ(MALLOC, LOOP_CNT * sizeof(int));
         END_TIMER("memory-profiler-simple");
     }
 
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 }
 
-TEST(Profiler, Petsc_memory) {
+//testing simple petsc memory difference when manipulating with large data
+TEST_F(ProfilerTest, test_petsc_memory) {test_petsc_memory();}
+void ProfilerTest::test_petsc_memory() {
     Profiler::initialize();
     PetscLogDouble mem;
     {
@@ -405,14 +362,14 @@ TEST(Profiler, Petsc_memory) {
         END_TIMER("A");
         
         START_TIMER("A");
-            //allocated memory MUST be greater or equal to size * size of double
-            EXPECT_GE(Profiler::instance()->actual_petsc_memory_difference(), size*sizeof(double));
+            // allocated memory MUST be greater or equal to size * size of double
+            EXPECT_GE(AN.petsc_memory_difference, size*sizeof(double));
         END_TIMER("A");
         
-        // START_TIMER("B");
-        //     PetscScalar sum;
-        //     VecSum(tmp_vector, &sum);
-        // END_TIMER("B");
+        START_TIMER("B");
+            PetscScalar sum;
+            VecSum(tmp_vector, &sum);
+        END_TIMER("B");
         
         START_TIMER("C");
             VecDestroy(&tmp_vector);
@@ -420,14 +377,16 @@ TEST(Profiler, Petsc_memory) {
         
         START_TIMER("C");
             // since we are destroying vector, we expect to see negative memory difference
-            EXPECT_LE(Profiler::instance()->actual_petsc_memory_difference(), 0);
+            EXPECT_LE(AN.petsc_memory_difference, 0);
         END_TIMER("C");
     }
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 }
 
-TEST(Profiler, memory_propagation){
+//testing memory alloc and dealloc propagation in nested time-frames
+TEST_F(ProfilerTest, test_memory_propagation) {test_memory_propagation();}
+void ProfilerTest::test_memory_propagation(){
     const int SIZE = 25;
     int allocated_whole = 0;
     int allocated_A = 0;
@@ -437,19 +396,19 @@ TEST(Profiler, memory_propagation){
     
     Profiler::initialize();
     {
-        allocated_whole = AM;
+        allocated_whole = MALLOC;
         allocated_whole += alloc_and_dealloc<int>(SIZE);
-        EXPECT_EQ(AM, allocated_whole);
+        EXPECT_EQ(MALLOC, allocated_whole);
         
         START_TIMER("A");
             allocated_A += alloc_and_dealloc<int>(10 * SIZE);
-            EXPECT_EQ(AM, allocated_A);
+            EXPECT_EQ(MALLOC, allocated_A);
             
             START_TIMER("B");
                 allocated_B += alloc_and_dealloc<int>(100 * SIZE);
                 
                 START_TIMER("C");
-                    EXPECT_EQ(AM, allocated_C);
+                    EXPECT_EQ(MALLOC, allocated_C);
                 END_TIMER("C");
                 allocated_B += allocated_C;
                 
@@ -472,14 +431,15 @@ TEST(Profiler, memory_propagation){
         END_TIMER("A");
         allocated_whole += allocated_A;
     }
-    Profiler::instance()->propagate_timers();
-    EXPECT_EQ(AM, allocated_whole);
-    EXPECT_EQ(AM, Profiler::instance()->actual_memory_dealloc());
+    PI->propagate_timers();
+    EXPECT_EQ(MALLOC, allocated_whole);
+    EXPECT_EQ(MALLOC, DEALOC);
     Profiler::uninitialize();
 }
 
-
-TEST(Profiler, petsc_memory_monitor) {
+// testing petsc memory working properly
+TEST_F(ProfilerTest, test_petsc_memory_monitor) {test_petsc_memory_monitor();}
+void ProfilerTest::test_petsc_memory_monitor() {
     PetscInt size = 10000;
     Profiler::initialize();
     {
@@ -500,11 +460,13 @@ TEST(Profiler, petsc_memory_monitor) {
             VecDestroy(&tmp_vector2);
         END_TIMER("B");
     }
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 }
 
-TEST(Profiler, multiple_instances) {
+// testing multiple initialization and uninitialization of Profiler
+TEST_F(ProfilerTest, test_multiple_instances) {test_multiple_instances();}
+void ProfilerTest::test_multiple_instances() {
     int allocated = 0;
     for (int i = 0; i < 5; i++) {
         allocated = 0;
@@ -512,12 +474,14 @@ TEST(Profiler, multiple_instances) {
         {
             allocated += alloc_and_dealloc<int>(25);
         }
-        EXPECT_EQ(AM, allocated);
+        EXPECT_EQ(MALLOC, allocated);
         Profiler::uninitialize();
     }
 }
 
-TEST(Profiler, propagate_values) {
+// testing memory propagation with manual propagate_values call 
+TEST_F(ProfilerTest, test_propagate_values) {test_propagate_values();}
+void ProfilerTest::test_propagate_values() {
     int allocated = 0;
     Profiler::initialize(); {
             START_TIMER("A");
@@ -530,22 +494,24 @@ TEST(Profiler, propagate_values) {
                 START_TIMER("D");
                 END_TIMER("D");
                 
-                Profiler::instance()->propagate_timers();
-                EXPECT_EQ(AM, allocated);
+                PI->propagate_timers();
+                EXPECT_EQ(MALLOC, allocated);
             END_TIMER("A");
     }
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 }
 
+
+
 #else // FLOW123D_DEBUG_PROFILER
 
-
+// testing non-fatal functioning of Profiler when debug is off
 TEST(Profiler, test_calls_only) {
     Profiler::initialize();
     START_TIMER("sub1");
     END_TIMER("sub1");
-    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 
 }
