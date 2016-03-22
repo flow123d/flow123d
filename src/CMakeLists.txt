@@ -195,6 +195,7 @@ add_library(intersections_lib
     intersection/simplex.cpp
     intersection/intersectionpoint.cpp
     intersection/intersectionaux.cpp
+    intersection/intersection_local.cpp
     intersection/trace_algorithm.cpp
     intersection/computeintersection.cpp
     intersection/inspectelements.cpp
