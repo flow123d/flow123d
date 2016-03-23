@@ -88,9 +88,9 @@ Field<spacedim,Value>::Field(const Field &other)
 	// shared_is already same as other.shared_
 	if (shared_->mesh_) this->set_mesh( *(shared_->mesh_) );
 
-    // reset time status (set_time() has to be called in order
+    // copy time status (set_time() has to be called in order
     // to properly set region_fields_)
-    this->set_time_result_ = TimeStatus::unknown;
+    this->set_time_result_ = other.set_time_result_;
 
 	this->multifield_ = false;
 }

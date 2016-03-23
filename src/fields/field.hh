@@ -124,6 +124,11 @@ public:
     Field(unsigned int component_index, string input_name, string name = "", bool bc = false);
 
     /**
+     * Copy constructor. Keeps shared history, declaration data, mesh.
+     */
+    Field(const Field &other);
+
+    /**
      * Assignment operator. Same properties as copy constructor, but class member name_ is not copied.
      *
      * Question: do we really need this, isn't copy constructor enough?
