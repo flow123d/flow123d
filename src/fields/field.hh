@@ -121,7 +121,7 @@ public:
      * Set parameters @p component_index_, @p shared_->input_name_ and @p name_.
      * Parameter name_ of Field is consisted of component name and MultiField name.
      */
-    Field(unsigned int component_index, string input_name, string name = "");
+    Field(unsigned int component_index, string input_name, string name = "", bool bc = false);
 
     /**
      * Assignment operator. Same properties as copy constructor, but class member name_ is not copied.
@@ -141,9 +141,9 @@ public:
      * @p meka_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    const IT::Instance &get_input_type() override;
+    IT::Instance get_input_type() override;
 
-    IT::Array &get_multifield_input_type() override;
+    IT::Array get_multifield_input_type() override;
 
 
     /**

@@ -60,7 +60,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 
 template<int spacedim, class Value>
-Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name)
+Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
 : data_(std::make_shared<SharedData>())
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -69,6 +69,28 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	this->set_component_index(component_index);
 	this->name_ = (name=="") ? input_name : name;
 	this->shared_->input_name_ = input_name;
+    shared_->bc_ = bc;
+
+	this->multifield_ = false;
+}
+
+
+template<int spacedim, class Value>
+Field<spacedim,Value>::Field(const Field &other)
+: FieldCommon(other),
+  data_(other.data_),
+  factories_(other.factories_)
+{
+	if (other.no_check_control_field_)
+		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
+
+	// initialize region_fields_ vector
+	// shared_is already same as other.shared_
+	if (shared_->mesh_) this->set_mesh( *(shared_->mesh_) );
+
+    // reset time status (set_time() has to be called in order
+    // to properly set region_fields_)
+    this->set_time_result_ = TimeStatus::unknown;
 
 	this->multifield_ = false;
 }
@@ -107,17 +129,17 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-const it::Instance &Field<spacedim,Value>::get_input_type() {
+it::Instance Field<spacedim,Value>::get_input_type() {
 	return FieldBaseType::get_input_type_instance(shared_->input_element_selection_);
 }
 
 
 
 template<int spacedim, class Value>
-it::Array &Field<spacedim,Value>::get_multifield_input_type() {
+it::Array Field<spacedim,Value>::get_multifield_input_type() {
 	ASSERT(false, "This method can't be used for Field");
 
-	static it::Array arr = it::Array( it::Integer() );
+	it::Array arr = it::Array( it::Integer() );
 	return arr;
 }
 
@@ -165,6 +187,7 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
+    ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
 	ASSERT_LESS(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
     return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
@@ -432,7 +455,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                 input_default().c_str(), input_name().c_str(), name().c_str(), region_list.c_str());
 
     }
-    shared_->is_fully_initialized_;
+    shared_->is_fully_initialized_ = true;
 }
 
 

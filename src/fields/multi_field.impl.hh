@@ -30,28 +30,29 @@ namespace it = Input::Type;
  */
 
 template<int spacedim, class Value>
-MultiField<spacedim, Value>::MultiField()
+MultiField<spacedim, Value>::MultiField(bool bc)
 : FieldCommon()
 {
 	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
+    this->shared_->bc_ = bc;
 }
 
 
 
 template<int spacedim, class Value>
-const it::Instance &  MultiField<spacedim,Value>::get_input_type() {
+it::Instance MultiField<spacedim,Value>::get_input_type() {
 	ASSERT(false, "This method can't be used for MultiField");
 
-	static it::Abstract abstract = it::Abstract();
-	static it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
+	it::Abstract abstract = it::Abstract();
+	it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
 	return inst;
 }
 
 
 template<int spacedim, class Value>
-it::Array &  MultiField<spacedim,Value>::get_multifield_input_type() {
-	static it::Array type = it::Array( SubFieldBaseType::get_input_type_instance(shared_->input_element_selection_), 1);
+it::Array MultiField<spacedim,Value>::get_multifield_input_type() {
+	it::Array type = it::Array( SubFieldBaseType::get_input_type_instance(shared_->input_element_selection_), 1);
 	return type;
 }
 
@@ -66,13 +67,14 @@ bool MultiField<spacedim, Value>::set_time(
 	}
 
 	// set time for sub fields
-	bool any=false;
+	set_time_result_ = TimeStatus::constant;
 	is_jump_time_=false;
 	for( SubFieldType &field : sub_fields_) {
-		if (field.set_time(time, limit_side)) any = true;
-		is_jump_time_ = is_jump_time_ ||  field.is_jump_time();
+            if (field.set_time(time, limit_side))
+                set_time_result_ = TimeStatus::changed;
+            is_jump_time_ = is_jump_time_ ||  field.is_jump_time();
 	}
-    return any;
+    return (set_time_result_ == TimeStatus::changed);
 }
 
 
@@ -116,8 +118,8 @@ void MultiField<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::is_constant(Region reg) {
-	bool const_all=false;
-	for(auto field : sub_fields_) const_all = const_all || field.is_constant(reg);
+	bool const_all=true;
+	for(auto &field : sub_fields_) const_all = const_all && field.is_constant(reg);
 	return const_all;
 }
 
@@ -139,9 +141,11 @@ void MultiField<spacedim, Value>::setup_components() {
     		full_name = this->shared_->comp_names_[i_comp] + "_" + name();
     	}
 
-    	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name) );
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name, is_bc()) );
     	sub_fields_[i_comp].units( units() );
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
+//     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
+        sub_fields_[i_comp].input_selection(shared_->input_element_selection_);
     	sub_fields_[i_comp].add_factory( std::make_shared<MultiFieldFactory>(i_comp) );
 
     	if (this->shared_->input_default_!="") {
@@ -171,8 +175,11 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     					<< EI_Size(mf_array.size()) << EI_ExpectedSize(comp_size) << list.ei_address() );
     	}
     }
-
+    
     this->full_input_list_ = list;
+    
+    // Save the full array for future use in FieldCommon::mark_input_times().
+    list.copy_to(shared_->input_list_);
 }
 
 
