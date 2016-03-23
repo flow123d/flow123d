@@ -126,7 +126,7 @@ TEST(intersection_prolongation_13d, all) {
     Profiler::initialize();
     
 //     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/meshes_prolongation/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_13d/";
 //     std::vector<string> filenames;
 //     
 //     // read mesh file names
@@ -330,7 +330,7 @@ TEST(intersection_prolongation_23d, all) {
     Profiler::initialize();
     
 //     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/meshes_prolongation/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_23d/";
 //     std::vector<string> filenames;
 //     
 //     // read mesh file names

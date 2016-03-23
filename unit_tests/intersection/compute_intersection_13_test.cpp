@@ -303,7 +303,7 @@ TEST(intersections_13d, all) {
     Profiler::initialize();
     
     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/site_13d/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_13d/";
     std::vector<string> filenames;
     
     // read mesh file names
@@ -464,7 +464,7 @@ TEST(area_intersections, all) {
     Profiler::initialize();
     
     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/mesh/site/";//notfunctional/
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d/";
     std::vector<string> filenames;
     
     // read mesh file names
