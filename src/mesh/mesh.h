@@ -31,6 +31,7 @@
 #include "mesh/boundaries.h"
 #include "mesh/intersection.hh"
 #include "mesh/partitioning.hh"
+#include "mesh/region_set.hh"
 
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
@@ -191,7 +192,9 @@ public:
     unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
     /**
+     * Reads mesh from stream.
      *
+     * Method is especially used in unit tests.
      */
     void read_gmsh_from_stream(istream &in);
     /**
@@ -213,6 +216,14 @@ public:
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
+
+    /**
+     * Reads elements and their affiliation to regions and region sets defined by user in input file
+     * Format of input record is defined in method RegionSetBase::get_input_type()
+     *
+     * @param region_list Array input AbstractRecords which define regions, region sets and elements
+     */
+    void read_regions_from_input(Input::Array region_list);
 
     /// Vector of nodes of the mesh.
     NodeVector node_vector;
@@ -268,6 +279,10 @@ public:
     // index into element node array
     vector< vector< vector<unsigned int> > > side_nodes;
 
+    /**
+     * Check usage of regions, set regions to elements defined by user, close RegionDB
+     */
+    void check_and_finish();
     
 
 
@@ -367,6 +382,7 @@ protected:
     MPI_Comm comm_;
 
     friend class GmshMeshReader;
+    friend class RegionSetBase;
 
 
 private:

@@ -313,10 +313,16 @@ void SorptionBase::initialize_fields()
 {
   ASSERT(n_substances_ > 0, "Number of substances is wrong, they might have not been set yet.\n");
 
+  // create vector of substances that are involved in sorption
+  // and initialize data_ with their names
+  std::vector<std::string> substances_sorption;
+  for (unsigned int i : substance_global_idx_)
+    substances_sorption.push_back(substances_[i].name());
+  data_->set_components(substances_sorption);
+  
   // read fields from input file
   data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
-
-  data_->set_components( std::vector<std::string>(n_substances_, "") );
+  
   data_->set_mesh(*mesh_);
 
   //initialization of output

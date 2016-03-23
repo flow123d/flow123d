@@ -153,6 +153,7 @@ protected:
     StorageBase * make_storage(PathBase &p, const Type::Record *record);
     StorageBase * make_storage(PathBase &p, const Type::Abstract *abstr_rec);
     StorageBase * make_storage(PathBase &p, const Type::Array *array);
+    StorageBase * make_storage(PathBase &p, const Type::Tuple *tuple);
 
     StorageBase * make_selection_storage_without_catch(PathBase &p, const Type::Selection *selection);
     StorageBase * make_storage(PathBase &p, const Type::Selection *selection);

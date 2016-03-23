@@ -60,7 +60,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 
 template<int spacedim, class Value>
-Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name)
+Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
 : data_(std::make_shared<SharedData>())
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -69,6 +69,7 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	this->set_component_index(component_index);
 	this->name_ = (name=="") ? input_name : name;
 	this->shared_->input_name_ = input_name;
+    shared_->bc_ = bc;
 
 	this->multifield_ = false;
 }
@@ -86,6 +87,10 @@ Field<spacedim,Value>::Field(const Field &other)
 	// initialize region_fields_ vector
 	// shared_is already same as other.shared_
 	if (shared_->mesh_) this->set_mesh( *(shared_->mesh_) );
+
+    // reset time status (set_time() has to be called in order
+    // to properly set region_fields_)
+    this->set_time_result_ = TimeStatus::unknown;
 
 	this->multifield_ = false;
 }
@@ -124,17 +129,17 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-const it::Instance &Field<spacedim,Value>::get_input_type() {
+it::Instance Field<spacedim,Value>::get_input_type() {
 	return FieldBaseType::get_input_type_instance(shared_->input_element_selection_);
 }
 
 
 
 template<int spacedim, class Value>
-it::Array &Field<spacedim,Value>::get_multifield_input_type() {
+it::Array Field<spacedim,Value>::get_multifield_input_type() {
 	ASSERT(false, "This method can't be used for Field");
 
-	static it::Array arr = it::Array( it::Integer() );
+	it::Array arr = it::Array( it::Integer() );
 	return arr;
 }
 
@@ -182,6 +187,7 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
+    ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
 	ASSERT_LESS(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
     return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
@@ -351,32 +357,28 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
         	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
         	// get domain specification
         	RegionSet domain;
-        	std::string domain_name;
+        	Input::Array domain_name_array;
         	unsigned int id;
-			if (actual_list_item.opt_val("region", domain_name)) {
-				domain = mesh()->region_db().get_region_set(domain_name);
-				if (domain.size() == 0) {
-					THROW( RegionDB::ExcUnknownSetOperand()
-							<< RegionDB::EI_Label(domain_name) << actual_list_item.ei_address() );
-				}
+			if (actual_list_item.opt_val("region", domain_name_array)) {
+				std::vector<string> domain_names = mesh()->region_db().get_and_check_operands(domain_name_array);
+				domain = mesh()->region_db().union_set(domain_names);
 
 			} else if (actual_list_item.opt_val("rid", id)) {
+				Region region;
 				try {
-					Region region = mesh()->region_db().find_id(id);
-					if(region.is_valid())
-					    domain.push_back(region);
-					else
-					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
+					region = mesh()->region_db().find_id(id);
 				} catch (RegionDB::ExcUniqueRegionId &e) {
 					e << actual_list_item.ei_address();
 					throw;
 				}
+				if (region.is_valid())
+				    domain.push_back(region);
+				else
+				    THROW(RegionDB::ExcUnknownRegion() << RegionDB::EI_ID(id) );
 			} else {
 				THROW(ExcMissingDomain()
 						<< actual_list_item.ei_address() );
 			}
-		    
-			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
 
 			// get field instance   
 			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
@@ -453,7 +455,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                 input_default().c_str(), input_name().c_str(), name().c_str(), region_list.c_str());
 
     }
-    shared_->is_fully_initialized_;
+    shared_->is_fully_initialized_ = true;
 }
 
 

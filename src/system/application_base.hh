@@ -33,6 +33,10 @@
 
 using namespace std;
 
+// Exception that prints the signal number and name.
+TYPEDEF_ERR_INFO( EI_Signal, int);
+TYPEDEF_ERR_INFO( EI_SignalName, string);
+DECLARE_EXCEPTION( ExcSignal, << "[ Signal " << EI_Signal::val << " (" << EI_SignalName::val << ") received! ]" );
 
 
 /**

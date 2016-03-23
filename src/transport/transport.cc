@@ -124,8 +124,8 @@ void ConvectionTransport::initialize()
     cfl_max_step = time_->end_time();
 
     data_.set_components(substances_.names());
-    data_.set_mesh(*mesh_);
     data_.set_input_list( input_rec.val<Input::Array>("input_fields") );
+    data_.set_mesh(*mesh_);
 
     make_transport_partitioning();
     alloc_transport_vectors();
@@ -477,7 +477,7 @@ void ConvectionTransport::zero_time_step()
 {
 	ASSERT_EQUAL(time_->tlevel(), 0);
 
-	data_.mark_input_times(target_mark_type);
+	data_.mark_input_times(*time_);
 	data_.set_time(time_->step(), LimitSide::right);
 
     set_initial_condition();

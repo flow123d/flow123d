@@ -54,6 +54,12 @@ if (GIT_FOUND)
     OUTPUT_VARIABLE GIT_FULL_URL_INFO
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
+  execute_process(
+    COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY ${FLOW123D_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_SHORT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
   STRING(REGEX REPLACE "\"" "\\\\\"" GIT_FULL_URL_ESC_QUOTES "${GIT_FULL_URL_INFO}")
   STRING(REGEX MATCH "Fetch URL:[^\n]*" GIT_URL_TMP "${GIT_FULL_URL_ESC_QUOTES}")
   STRING(REGEX REPLACE "Fetch URL:([^\n]*)" "\\1" GIT_URL "${GIT_URL_TMP}")
@@ -66,23 +72,26 @@ if (GIT_FOUND)
   #message(STATUS "GIT_FULL_URL: ${GIT_FULL_URL_INFO}")
   #message(STATUS "GIT_URL: ${GIT_URL}")
   
-  # try to get version components from GIT_DESCRIBE
-  STRING(REGEX REPLACE "([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)"
-         "\\1;\\2;\\3" BRANCH_VERSION_LIST ${GIT_BRANCH})
-  message("VERSION_LIST: ${BRANCH_VERSION_LIST}")
-  if( "${GIT_BRANCH}" STREQUAL "${BRANCH_VERSION_LIST}")
-    # try to get last version from describe
-    STRING(REGEX REPLACE "release_([0-9]*)\\.([0-9]*)\\.([A-Z-a-z0-9_]*)-.*"
-           "\\1;\\2;\\3" DESCRIBE_VERSION_LIST ${GIT_DESCRIBE})
-    message("VERSION_LIST: ${DESCRIBE_VERSION_LIST}")
-    if( "${GIT_DESCRIBE}" STREQUAL "${DESCRIBE_VERSION_LIST}")
-      set(BRANCH_VERSION_LIST  0;0;${GIT_BRANCH})
-    else()
-      list(GET DESCRIBE_VERSION_LIST 0 DESCRIBE_MAJOR)
-      list(GET DESCRIBE_VERSION_LIST 1 DESCRIBE_MINOR)
-      set(BRANCH_VERSION_LIST  ${DESCRIBE_MAJOR};${DESCRIBE_MINOR};${GIT_BRANCH})
-    endif()
+  # first try to read version from file
+  FILE(READ ${FLOW123D_SOURCE_DIR}/version FLOW_MANUAL_VERSION)
+  
+
+  if(${FLOW_MANUAL_VERSION} MATCHES ".*([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*).*")
+    # version stored in file is in correct format 
+    # so we extract version components into list
+    STRING(REGEX REPLACE "([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)"
+           "\\1;\\2;\\3" BRANCH_VERSION_LIST ${FLOW_MANUAL_VERSION})
+  elseif(${GIT_BRANCH} MATCHES ".*([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*).*")
+    # git branch is in correct format 
+    # so we extract version components into list
+    STRING(REGEX REPLACE "([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)"
+           "\\1;\\2;\\3" BRANCH_VERSION_LIST ${FLOW_MANUAL_VERSION})
+  else()
+    # no valid release version was found
+    # version will be set to 0.0.x where x is branch and commit of current version
+    SET(BRANCH_VERSION_LIST "0;0;${GIT_BRANCH}-${GIT_SHORT_HASH}")
   endif()
+  
   list(GET BRANCH_VERSION_LIST 0 GIT_VERSION_MAJOR)
   list(GET BRANCH_VERSION_LIST 1 GIT_VERSION_MINOR)
   list(GET BRANCH_VERSION_LIST 2 GIT_VERSION_PATCH)

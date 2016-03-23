@@ -275,7 +275,7 @@ TEST_F(SomeEquation, input_related) {
     data.set_mesh(*mesh_);
     TimeGovernor tg(0.0, 0.5);
 
-    data.mark_input_times(tg.equation_mark_type());
+    data.mark_input_times(tg);
     Region front_3d = mesh_->region_db().find_id(40);
     // time = 0.0
     data.set_time(tg.step(), LimitSide::right);

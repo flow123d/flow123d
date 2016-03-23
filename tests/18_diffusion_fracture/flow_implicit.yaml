@@ -4,19 +4,20 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/test18.msh
     regions:
-    - name: center
-      id: 30
-      element_list:
-      - 45
+      - !From_Elements
+        name: center
+        id: 30
+        element_list:
+          - 45
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: BOUNDARY
-      bc_type: dirichlet
-      bc_pressure: 0
-    - rid: 20
-      cross_section: 0.01
-    - rid: 24
-      cross_section: 1
+      - region: BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
+      - rid: 20
+        cross_section: 0.01
+      - rid: 24
+        cross_section: 1
     output:
       output_stream: 
         file: ./test18.pvd
@@ -24,9 +25,9 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     balance: true
     solver: !Petsc
       a_tol: 1.0e-12
@@ -34,17 +35,17 @@ problem: !SequentialCoupling
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
-      - region: BOUNDARY
-        bc_conc: 0
-      - rid: 20
-        init_conc: 0
-        diff_m: 0.1
-      - rid: 24
-        init_conc: 0
-        diff_m: 0.1
-        dg_penalty: 100
-      - rid: 30
-        init_conc: 1
+        - region: BOUNDARY
+          bc_conc: 0
+        - rid: 20
+          init_conc: 0
+          diff_m: 0.1
+        - rid: 24
+          init_conc: 0
+          diff_m: 0.1
+          dg_penalty: 100
+        - rid: 30
+          init_conc: 1
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
@@ -55,7 +56,7 @@ problem: !SequentialCoupling
       time_step: 0.001
       name: transport_output_stream
     substances:
-    - A
+      - A
     time:
       end_time: 0.01
       max_dt: 0.001
