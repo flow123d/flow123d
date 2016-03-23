@@ -23,7 +23,15 @@ template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ost
 template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionPointX<dimA,dimB>& ip);
 
 
-
+/** @brief Common base for intersection object.
+ * 
+ * This base class provides unification of all intersection objects.
+ * The common part is a pair of component element index and bulk element index.
+ * 
+ * The derived class @p IntersectionLocal<dimA,dimB> differs in coordinates length
+ * according to @p dimA and @p dimB.
+ * 
+ */
 class IntersectionLocalBase
 {
 protected:
@@ -127,8 +135,8 @@ template<unsigned int dimA, unsigned int dimB> class IntersectionPointX {
     
 public:
 
-    IntersectionPointX(){};  ///< Default constructor.
-    ~IntersectionPointX(){}; ///< Destructor.
+    IntersectionPointX();  ///< Default constructor.
+    ~IntersectionPointX(); ///< Destructor.
     
     IntersectionPointX(const IntersectionPoint<dimA,dimB> &p);
     /**

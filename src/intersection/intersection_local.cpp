@@ -76,9 +76,24 @@ double IntersectionLocal<2,3>::compute_measure()
 
 
 template<unsigned int dimA, unsigned int dimB>
+IntersectionPointX<dimA,dimB>::IntersectionPointX()
+{}
+
+template<unsigned int dimA, unsigned int dimB>
+IntersectionPointX<dimA,dimB>::~IntersectionPointX()
+{}
+
+template<unsigned int dimA, unsigned int dimB>
 IntersectionPointX<dimA,dimB>::IntersectionPointX(const IntersectionPoint<dimA,dimB>& p)
 : comp_bcoords_(p.local_bcoords_A()), bulk_bcoords_(p.local_bcoords_B())
 {}
+
+template<unsigned int dimA, unsigned int dimB>
+IntersectionPointX<dimA,dimB>::IntersectionPointX(const arma::vec::fixed< dimA + 1  >& comp_bcoords, 
+                                       const arma::vec::fixed< dimB + 1  >& bulk_bcoords)
+: comp_bcoords_(comp_bcoords), bulk_bcoords_(bulk_bcoords)
+{}
+
 
 
 template<unsigned int dimA, unsigned int dimB>
