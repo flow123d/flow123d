@@ -541,9 +541,13 @@ void InspectElements::compute_intersections()
                                                     bulk_idx, 
                                                     &(intersection_storage13_.back())
                                                 );
+//                  // write down intersections
 //                     IntersectionLocal<1,3>* il13 = 
 //                         static_cast<IntersectionLocal<1,3>*> (intersection_map_[idx][j].second);
 //                     cout << &(intersection_storage13_.back()) << "  " << il13 << *il13;
+//                     for(IntersectionPointX<1,3> &ip : il13->points())
+//                         ip.coords(mesh->element(idx)).print(cout);
+
                     // create map for bulk element
                     intersection_map_[bulk_idx].push_back(
                                                 std::make_pair(
@@ -663,22 +667,17 @@ void InspectElements::print_mesh_to_file_13(string name)
 
         for(unsigned int j = 0; j < intersection_storage13_.size();j++){
             IntersectionLocal<1,3> il = intersection_storage13_[j];
-            for(unsigned int k = 0; k < il.size();k++){
+            //for(unsigned int k = 0; k < il.size();k++){
 
-                if(il.size() == 1){
-                    number_of_elements++;
-                    nodes++;
-                    fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes);
-
-                }else if(il.size() == 2){
-                    number_of_elements++;
-                    nodes++;
-                    fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
-                    nodes++;
-                }
-
-
+            number_of_elements++;
+            nodes++;
+            if(il.size() == 1){
+                fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes);
+            }else if(il.size() == 2){
+                fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
+                nodes++;
             }
+            //}
         }
 
         fprintf(file,"$EndElements\n");
