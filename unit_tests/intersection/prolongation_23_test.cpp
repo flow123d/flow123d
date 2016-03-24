@@ -7,8 +7,6 @@
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
-#include <armadillo>
-
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
@@ -25,8 +23,6 @@
 
 #include <dirent.h>
 
-
-
 using namespace std;
 using namespace computeintersection;
 
@@ -35,66 +31,16 @@ using namespace computeintersection;
 
 //*
 
-// ******************************************************************************************* TEST 1d-3d ****
+// ******************************************************************************************* TEST 2d-3d ****
 
 /// Create results for the meshes in directory 'site_13d'.
-void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, std::vector<double> &lengths)
+void fill_23d_solution(std::vector<computeintersection::IntersectionAux<2,3>> &ils)
 {
-    unsigned int n_files=4;
     ils.clear();
-    lengths.clear();
-    ils.resize(n_files);
-    lengths.resize(n_files);
+    ils.resize(1);
     
-    lengths[0] = 1.5*sqrt(0.27)+0.35+0.2 + sqrt(0.065) + 0.1*sqrt(18) + sqrt(0.105);
-    lengths[1] = sqrt(0.24*0.24 + 0.0016 + 0.04) + sqrt( 2* 0.0225 + 0.75*0.75) + 
-                 sqrt(0.0625 + 2*0.04) + sqrt(0.0225 + 0.09 + 0.01);
-    lengths[2] = sqrt(0.24*0.24 + 0.0016 + 0.04) + sqrt( 2* 0.0225 + 0.75*0.75) + 
-                 sqrt(0.0625 + 2*0.04) + sqrt(0.0225 + 0.09 + 0.01) +
-                 0.1*sqrt(4+9+16) + 0.1*sqrt(4+9+1) + sqrt(1./9 + 0.25 + 1./36);
-    lengths[3] = 4*0.25;
-    
-    ils[0].resize(9);
-    ils[0][0] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
-    ils[0][1] = {arma::vec3({1,1,1})/4,arma::vec3({1,0,1})*0.3};
-    ils[0][2] = {arma::vec3({1,1,1})/4,arma::vec3({0.2,0.5,0.2})};
-    ils[0][3] = {arma::vec3({35,-25,35})*0.01,arma::vec3({0,-25,35})*0.01};
-    ils[0][4] = {arma::vec3({0.2,0.5,0.2}),arma::vec3({0,5,2})*0.1};
-    ils[0][5] = {arma::vec3({1,1,0})/4,arma::vec3({0,1,1})*0.05};
-    ils[0][6] = {arma::vec3({0,1,1})*0.05,arma::vec3({2,0,1})*0.1};
-    ils[0][7] = {arma::vec3({2,0,1})*0.1,arma::vec3({40,-5,15})*0.01};
-    ils[0][8] = {arma::vec3({40,-5,15})*0.01,arma::vec3({1,-1,1})*0.2};
-
-    
-    ils[1].resize(7);
-    ils[1][0] = {arma::vec3({0.44,0.46,0}),arma::vec3({0.2,0.5,0.2})};
-    ils[1][1] = {arma::vec3({0.2,0.5,0.2}),arma::vec3({1,1,1})/4};
-    ils[1][2] = {arma::vec3({1,1,1})/4,arma::vec3({0,1,1})*0.05};
-    ils[1][3] = {arma::vec3({1,1,1})/4,arma::vec3({0.375,0,1./6})};
-    ils[1][4] = {arma::vec3({0.375,0,1./6}),arma::vec3({0.4,-0.05,0.15})};
-    ils[1][5] = {arma::vec3({1,1,1})/4,arma::vec3({1,0,1})*0.3};
-    ils[1][6] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
-    
-    ils[2].resize(12);
-    ils[2][0] = {arma::vec3({0.44,0.46,0}),arma::vec3({0.2,0.5,0.2})};
-    ils[2][1] = {arma::vec3({0.2,0.5,0.2}),arma::vec3({1,1,1})/4};
-    ils[2][2] = {arma::vec3({1,1,1})/4,arma::vec3({0,1,1})*0.05};
-    ils[2][3] = {arma::vec3({1,1,1})/4,arma::vec3({0.375,0,1./6})};
-    ils[2][4] = {arma::vec3({0.375,0,1./6}),arma::vec3({0.4,-0.05,0.15})};
-    ils[2][5] = {arma::vec3({1,1,1})/4,arma::vec3({1,0,1})*0.3};
-    ils[2][6] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
-    
-    ils[2][7] = {arma::vec3({1,-1,1})*0.2,arma::vec3({0,-5,3})*0.1};
-    ils[2][8] = {arma::vec3({1,0,3.5})*0.1,arma::vec3({1,-1,1})*0.2};
-    ils[2][9] = {arma::vec3({0,2,5})*0.1,arma::vec3({1,0,3.5})*0.1};
-    ils[2][10] = {arma::vec3({1./3,0,2./3})};
-    ils[2][11] = {arma::vec3({0,-5,5})*0.1,arma::vec3({1./3,0,2./3})};
-    
-    ils[3].resize(3);
-    ils[3][0] = {arma::vec3({0.25,0.25,0.25}),arma::vec3({0.25,0.25,0})};
-    //ils[3][1] = {arma::vec3({0.25,0.25,-1}),arma::vec3({0.25,0.25,-1.25})};
-    ils[3][1] = {arma::vec3({0.25,0.5,0.25}),arma::vec3({0.25,0.5,0})};
-    ils[3][2] = {arma::vec3({0.25,0.5,-1}),arma::vec3({0.25,0.5,-1.25})};
+    ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,0,0}),arma::vec::fixed<4>({1,1,1,1})/4));
+    ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,1,1})/3,arma::vec::fixed<4>({4,3,0,3})*0.1));
 }
 
 
@@ -114,74 +60,51 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
 //     return new_il;
 // }
 
-void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il, const double &length)
+void compute_intersection_23d(Mesh *mesh, const computeintersection::IntersectionAux<2,3> &ip)
 {
-    double computed_length = 0;
+    double area = 0;
 
     // compute intersection
-    DBGMSG("Computing intersection length by NEW algorithm\n");
-    
+    DBGMSG("Computing intersection area by NEW algorithm\n");
+//     InspectElements ie(mesh);
+//     ie.compute_intersections<2,3>();
     InspectElements ie(mesh);
     ie.compute_intersections();
-    
-    DBGMSG("N intersections %d\n",ie.intersection_storage13_.size());
-    
-//     for(unsigned int i = 0; i < ie.intersection_storage13_.size(); i++)
+//     //test solution
+//     std::vector<computeintersection::IntersectionLine> pp = ie.list_intersection_lines(1);
+//     computeintersection::IntersectionLine ilc;
+//     // component = element index == 1
+//     if(pp.size() > 0)
 //     {
-//         cout << &ie.intersection_storage13_[i] << ie.intersection_storage13_[i];
+//         ilc = pp[0];
+//         EXPECT_EQ(ilc.size(), il.size());
+//     }
+//     
+//     for(unsigned int i=0; i < ilc.size(); i++)
+//     {
+//         DBGMSG("---------- check IP[%d] ----------\n",i);
+//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_A()[0], il[i].local_bcoords_A()[0]);
+//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_A()[1], il[i].local_bcoords_A()[1]);
+//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[0], il[i].local_bcoords_B()[0]);
+//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[1], il[i].local_bcoords_B()[1]);
+//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[2], il[i].local_bcoords_B()[2]);
+//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[3], il[i].local_bcoords_B()[3]);
 //     }
     
-//     //write the first intersection
-//     FOR_ELEMENTS(mesh, elm){
-//         
-//         if( (elm->dim() == 1) && (ie.intersection_map_[elm->index()].size() > 0) )
-//         {
-//             computeintersection::IntersectionLocal<1,3>* il13 = 
-//                 static_cast<computeintersection::IntersectionLocal<1,3>*> (ie.intersection_map_[elm->index()][0].second);
-//             if(il13 != nullptr)
-//             {
-// //                 DBGMSG("comp idx %d, bulk idx %d, \n",elm->index(),ie.intersection_map_[elm->index()][0].first);
-//                 cout << *il13;
-//                 break;
-//             }
-//         }
-//     }
-    
-    //test solution
-    std::vector<computeintersection::IntersectionLocal<1,3>> ilc = ie.intersection_storage13_;
-    EXPECT_EQ(ilc.size(), il.size());
-    
-    for(unsigned int i=0; i < ilc.size(); i++)
-        for(unsigned int j=0; j < ilc[i].size(); j++)
-    {
-        DBGMSG("---------- check IP[%d] ----------\n",i);
-        arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
-        EXPECT_NEAR(ip[0], il[i][j][0], 1e-14);
-        EXPECT_NEAR(ip[1], il[i][j][1], 1e-14);
-        EXPECT_NEAR(ip[2], il[i][j][2], 1e-14);
-    }
-    
-    computed_length = ie.measure_13();
-    ie.print_mesh_to_file_13("output_intersection_13");
-    DBGMSG("Length of intersection line: (intersections) %.16e\n", computed_length);
-    EXPECT_NEAR(computed_length, length, 1e-14);
-    
-    // 1:
+    area = ie.measure_23();
+    ie.print_mesh_to_file_23("output_intersection_23");
+    DBGMSG("Area of intersection line: (intersections) %.16e\n", area);
+//     EXPECT_NEAR(length1, length2, 1e-12);
 //     EXPECT_DOUBLE_EQ(length,1.5*std::sqrt(0.27)+0.35+0.2
 //                             + std::sqrt(0.065) + 0.1*std::sqrt(18) + std::sqrt(0.105));
-    // 2: 
-    // 3: 
-//     EXPECT_DOUBLE_EQ(length,std::sqrt(0.24*0.24 + 0.0016 + 0.04) + std::sqrt( 2* 0.0225 + 0.75*0.75) + 
-//         std::sqrt(0.0625 + 2*0.04) + std::sqrt(0.0225 + 0.09 + 0.01));
-    // 4: 1.0
 }
 
 
-TEST(intersection_prolongation_13d, all) {
+TEST(intersection_prolongation_23d, all) {
     Profiler::initialize();
     
 //     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_13d/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_23d/";
     std::vector<string> filenames;
     
     // read mesh file names
@@ -210,9 +133,8 @@ TEST(intersection_prolongation_13d, all) {
     
     std::sort(filenames.begin(), filenames.end(), less<string>());
         
-    std::vector<std::vector<std::vector<arma::vec3>>> solution;
-    std::vector<double> lengths;
-    fill_13d_solution(solution, lengths);
+    std::vector<IntersectionAux<2,3>> solution;
+    fill_23d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
@@ -276,7 +198,7 @@ TEST(intersection_prolongation_13d, all) {
             
             xprintf(Msg, "==============\n");
 //             for(unsigned int loop = 0; loop < profiler_loop; loop++)
-                compute_intersection_13d(&mesh, solution[s], lengths[s]); //permute_coords(solution[s], permutations[p]));
+                compute_intersection_23d(&mesh, solution[s]); //permute_coords(solution[s], permutations[p]));
             xprintf(Msg, "==============\n");
 //         }
     }
