@@ -19,7 +19,8 @@ const string json_input = R"JSON(
 	int_val = 1,
 	big_val = 256,
 	str_val = "some_string",
-	color = "blue"
+	color = "blue",
+	time = [0.0, 10.0]
 }
 )JSON";
 
@@ -45,6 +46,15 @@ protected:
     	    sel->close();
     	}
 
+    	tpl = new Tuple("TimeTuple", "Definition of time.");
+    	{
+    		tpl->declare_key("start_time", Double(0.0), Default::obligatory(),
+    				"Start of simulation");
+    		tpl->declare_key("end_time", Double(1.0), Default::obligatory(),
+    				"End of simulation");
+    		tpl->close();
+    	}
+
         root_record = new Record("RootRecord", "Root record of JSON input");
         {
         	root_record->declare_key("int_val", Integer(0), Default::obligatory(),
@@ -55,6 +65,8 @@ protected:
                  "Some string value.");
         	root_record->declare_key("color", *sel, Default::obligatory(),
                  "Some enum value.");
+        	root_record->declare_key("time", *tpl, Default::obligatory(),
+                 "Some tuple value.");
         	root_record->close();
         }
     }
@@ -70,6 +82,7 @@ protected:
 
     Input::Type::Record * root_record;
     Input::Type::Selection * sel;
+    Input::Type::Tuple * tpl;
 };
 
 
@@ -80,6 +93,9 @@ TEST_F(InputTypeDispatchTest, all) {
     EXPECT_EQ(1, *(rec.find<int>("int_val")) );
     EXPECT_EQ("some_string", *(rec.find<std::string>("str_val")) );
     EXPECT_EQ(blue, *(rec.find<Colors>("color")) );
+    Input::Iterator<Input::Tuple> it = rec.find<Input::Tuple>("time");
+    EXPECT_FLOAT_EQ(0.0, *(it->find<double>("start_time")) );
+    EXPECT_FLOAT_EQ(10.0, *(it->find<double>("end_time")) );
 
     EXPECT_THROW_WHAT({ rec.val<char>("big_val"); }, Input::ExcInputMessage, "Value out of bounds.");
 }

@@ -80,10 +80,23 @@ public:
 	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
 	TYPEDEF_ERR_INFO(EI_GMSHFile, std::string);
 	TYPEDEF_ERR_INFO(EI_Time, double);
+	TYPEDEF_ERR_INFO(EI_Type, std::string);
+	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
+	TYPEDEF_ERR_INFO(EI_Section, std::string);
+	TYPEDEF_ERR_INFO(EI_ElementId, int);
+	TYPEDEF_ERR_INFO(EI_ElementType, int);
 	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
 			<< "No data for field: "<< EI_FieldName::qval
 			<< " and time: "<< EI_Time::val
 			<< " in the input file: "<< EI_GMSHFile::qval);
+	DECLARE_EXCEPTION(ExcWrongFormat,
+			<< "Wrong format of " << EI_Type::val << ", " << EI_TokenizerMsg::val << "\n"
+			<< "in the input file: " << EI_GMSHFile::qval);
+	DECLARE_EXCEPTION(ExcMissingSection,
+			<< "Missing section " << EI_Section::qval << " in the GMSH input file: " << EI_GMSHFile::qval);
+	DECLARE_EXCEPTION(ExcUnsupportedType,
+			<< "Element " << EI_ElementId::val << "in the GMSH input file " << EI_GMSHFile::qval
+			<< " is of the unsupported type " << EI_ElementType::val );
 
 	/**
 	 * Map of ElementData sections in GMSH file.
@@ -117,6 +130,14 @@ public:
     void read_mesh(Mesh* mesh);
 
     /**
+     * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
+     *
+     * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
+     * assign regions to the boundary and are not used in actual FEM computations.
+     */
+    void read_physical_names(Mesh * mesh);
+
+    /**
      *  Reads ElementData sections of opened GMSH file. The file is serached for the \\$ElementData section with header
      *  that match the given @p search_header (same field_name, time of the next section is the first greater then
      *  that given in the @p search_header). If such section has not been yet read, we read the data section into
@@ -135,27 +156,18 @@ public:
 
 private:
     /**
-     * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
-     *
-     * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
-     * assign regions to the boundary and are not used in actual FEM computations.
-     */
-    void read_physical_names(Tokenizer &in, Mesh * mesh);
-
-    /**
      * private method for reading of nodes
      */
-    void read_nodes(Tokenizer &in, Mesh*);
+    void read_nodes(Mesh*);
     /**
      *  Method for reading of elements.
      *  Input of the mesh allows changing regions within the input CON file.
-     *
      */
-    void read_elements(Tokenizer &in, Mesh*);
+    void read_elements(Mesh*);
     /**
      * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */
-    void read_data_header(Tokenizer &tok, GMSH_DataHeader &head);
+    void read_data_header(GMSH_DataHeader &head);
     /**
      * Reads table of ElementData headers from the tokenizer file.
      */

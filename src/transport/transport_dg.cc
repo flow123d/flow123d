@@ -252,7 +252,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.region_id = GenericField<3>::region_id(*Model::mesh_);
 
 
@@ -270,7 +269,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 template<class Model>
 void TransportDG<Model>::initialize()
 {
-	data_.set_components(Model::substances_.names());
+    data_.set_components(Model::substances_.names());
+    data_.set_input_list( input_rec.val<Input::Array>("input_fields") );
 
     // DG stabilization parameters on boundary edges
     gamma.resize(Model::n_substances());
@@ -415,7 +415,7 @@ template<class Model>
 void TransportDG<Model>::zero_time_step()
 {
 	START_TIMER(Model::ModelEqData::name());
-	data_.mark_input_times(Model::time_->equation_fixed_mark_type());
+	data_.mark_input_times( *(Model::time_) );
 	data_.set_time(Model::time_->step(), LimitSide::left);
 
 
@@ -539,7 +539,7 @@ void TransportDG<Model>::update_solution()
     	{
     		ls[i]->finish_assembly();
 
-    		VecDuplicate(*( ls[i]->get_rhs() ), &rhs[i]);
+    		if (rhs[i] == nullptr) VecDuplicate(*( ls[i]->get_rhs() ), &rhs[i]);
     		VecCopy(*( ls[i]->get_rhs() ), rhs[i]);
     	}
     }

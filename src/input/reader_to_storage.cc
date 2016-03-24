@@ -145,6 +145,9 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         return new StorageNull();
 
     // dispatch types
+    if (typeid(*type) == typeid(Type::Tuple)) {
+        return make_storage(p, static_cast<const Type::Tuple *>(type) );
+    } else
     if (typeid(*type) == typeid(Type::Record)) {
         return make_storage(p, static_cast<const Type::Record *>(type) );
     } else
@@ -212,7 +215,12 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
 
             if ( p.down(it->key_) ) {
                 // key on input => check & use it
-                storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
+                StorageBase *storage = make_storage(p, it->type_.get());
+                if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
+                	delete storage;
+                	storage = make_storage_from_default( it->default_.value(), it->type_ );
+                }
+                storage_array->new_item( it->key_index, storage );
                 p.up();
             } else {
                 // key not on input
@@ -230,7 +238,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         }
 
         for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
-        	xprintf(Warn, "Unprocessed key '%s' in record '%s'.\n", (*set_it).c_str(), p.as_string().c_str() );
+        	xprintf(Warn, "Unprocessed key '%s' in %s '%s'.\n", (*set_it).c_str(), record->class_name().c_str(), p.as_string().c_str() );
         }
 
         return storage_array;
@@ -258,7 +266,8 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
 					 ASSERT( ! it->default_.is_obligatory() ,
-							 "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
+							 "Obligatory key: '%s' in auto-convertible %s, wrong check during finish().",
+							 it->key_.c_str(), record->class_name().c_str() );
 					 // set null
 					 storage_array->new_item(it->key_index, new StorageNull() );
 				 }
@@ -424,6 +433,57 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
     }
 
     return NULL;
+}
+
+
+
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tuple)
+{
+	int arr_size;
+	if ( (arr_size = p.get_array_size()) != -1 ) {
+
+		StorageArray *storage_array = new StorageArray(tuple->size());
+        // check individual keys
+		for ( Type::Record::KeyIter it= tuple->begin(); it != tuple->end(); ++it) {
+        	if ( p.down(it->key_index) ) {
+                // key on input => check & use it
+                StorageBase *storage = make_storage(p, it->type_.get());
+                if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
+                	delete storage;
+                	storage = make_storage_from_default( it->default_.value(), it->type_ );
+                }
+                storage_array->new_item( it->key_index, storage );
+                p.up();
+        	} else {
+                // key not on input
+                if (it->default_.is_obligatory() ) {
+                	stringstream ss;
+                	ss << tuple->obligatory_keys_count();
+                    THROW( ExcInputError()
+                    		<< EI_Specification("Too small size of '" + p.get_node_type(ValueTypes::array_type) + "' defining Tuple with "
+                    							+ ss.str() + " obligatory keys.")
+                            << EI_ErrorAddress(p.as_string())
+							<< EI_InputType(tuple->desc()) );
+                } else if (it->default_.has_value_at_declaration() ) {
+                   storage_array->new_item(it->key_index,
+                           make_storage_from_default( it->default_.value(), it->type_ ) );
+                } else { // default - optional or default at read time
+                    // set null
+                    storage_array->new_item(it->key_index, new StorageNull() );
+                }
+        	}
+        }
+
+        if ( arr_size > (int)tuple->size() ) {
+            xprintf(Warn, "Unprocessed keys in tuple '%s', tuple has %d keys but the input is specified by %d values.\n",
+                    p.as_string().c_str(), tuple->size(), arr_size );
+        }
+
+        return storage_array;
+
+	} else {
+		return make_storage(p, static_cast<const Type::Record *>(tuple) );
+	}
 }
 
 
@@ -648,6 +708,7 @@ T ReaderToStorage::get_root_interface() const
 template ::Input::Record ReaderToStorage::get_root_interface<::Input::Record>() const;
 template ::Input::Array ReaderToStorage::get_root_interface<::Input::Array>() const;
 template ::Input::AbstractRecord ReaderToStorage::get_root_interface<::Input::AbstractRecord>() const;
+template ::Input::Tuple ReaderToStorage::get_root_interface<::Input::Tuple>() const;
 //template ReaderToStorage::get_root_interface<::Input::>()->::Input::AbstractRecord const;
 
 

@@ -5,13 +5,13 @@ problem: !SequentialCoupling
     mesh_file: ${INPUT}/test08.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: plane
-      anisotropy: 1
-      water_source_density: !FieldFormula
-        value: 2*(1-x^2)+2*(1-y^2)
-    - region: .plane_boundary
-      bc_type: dirichlet
-      bc_pressure: 0
+      - region: plane
+        anisotropy: 1
+        water_source_density: !FieldFormula
+          value: 2*(1-x^2)+2*(1-y^2)
+      - region: .plane_boundary
+        bc_type: dirichlet
+        bc_pressure: 0
     balance: true
     output:
       output_stream: 
@@ -20,9 +20,9 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     solver: !Petsc
       r_tol: 1.0e-10
       a_tol: 1.0e-10

@@ -7,29 +7,29 @@ problem: !SequentialCoupling
   primary_equation: !SteadyDarcy_MH
     n_schurs: 2
     input_fields:
-    - region: 2d_fraction
-      conductivity: 16
-      # K_2d
-      sigma: 0.3125
-      # sigma
-      cross_section: 10
-      # delta_2d
-      # f_2d
-      water_source_density: !FieldFormula
-        value: -2/10
-        # f_2d:- q / delta_2d
-    - region: 3d_cube
-      conductivity: 2
-      # K_3d
-    - region: .2d_fraction
-      bc_type: total_flux
-      bc_flux: !FieldFormula
-        value: '-(0)'
-    - region: .3d_cube
-      bc_type: dirichlet
-      bc_piezo_head: !FieldFormula
-        value: z
-        # p_3d
+      - region: 2d_fraction
+        conductivity: 16
+        # K_2d
+        sigma: 0.3125
+        # sigma
+        cross_section: 10
+        # delta_2d
+        # f_2d
+        water_source_density: !FieldFormula
+          value: -2/10
+          # f_2d:- q / delta_2d
+      - region: 3d_cube
+        conductivity: 2
+        # K_3d
+      - region: .2d_fraction
+        bc_type: total_flux
+        bc_flux: !FieldFormula
+          value: '-(0)'
+      - region: .3d_cube
+        bc_type: dirichlet
+        bc_piezo_head: !FieldFormula
+          value: z
+          # p_3d
     output:
       output_stream:
         file: test6_32d.pvd
@@ -37,10 +37,10 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - piezo_head_p0
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07

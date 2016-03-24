@@ -81,17 +81,18 @@ public:
 
     /**
      * Default constructor.
+     * bc indicates boundary multifield.
      */
-    MultiField();
+    MultiField(bool bc = false);
 
     /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    const IT::Instance &get_input_type() override;
+    IT::Instance get_input_type() override;
 
-    IT::Array &get_multifield_input_type() override;
+    IT::Array get_multifield_input_type() override;
 
     /**
      * Abstract method to update field to the new time level.
@@ -110,8 +111,7 @@ public:
      * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
      */
     void set_mesh(const Mesh &mesh) override;
-
-
+    
     /**
      * Polymorphic copy. Check correct type, allows copy of MultiField or Field.
      */

@@ -22,6 +22,7 @@
 #include "transport_operator_splitting.hh"
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
+#include "fields/multi_field.hh"
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
 
@@ -134,8 +135,8 @@ public:
 
 		EqData();
 
-		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
-		Field<3, FieldValue<3>::Vector> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
+		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
+		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
         Field<3, FieldValue<3>::Integer> region_id;
 
 	};

@@ -274,13 +274,13 @@ public:
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
      * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */
-    virtual const IT::Instance &get_input_type() =0;
+    virtual IT::Instance get_input_type() =0;
 
     /**
      * Returns input type for MultiField instance.
      * TODO: temporary solution, see @p multifield_
      */
-    virtual IT::Array &get_multifield_input_type() =0;
+    virtual IT::Array get_multifield_input_type() =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
@@ -290,7 +290,7 @@ public:
      * Further development:
      * - we have to distinguish "jump" times and "smooth" times
      */
-    void mark_input_times(TimeMark::Type mark_type);
+    void mark_input_times(const TimeGovernor &tg);
 
     /**
      * Abstract method to update field to the new time level.

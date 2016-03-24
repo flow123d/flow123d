@@ -186,9 +186,6 @@ public:
     /// Add attribute to map
     void add_attribute(std::string name, json_string val);
 
-    /// Print JSON output of attributes to @p stream.
-    void write_attributes(ostream& stream) const;
-
     /// Create instance of generic type, replace parameters in input tree by type stored in @p vec.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
 
@@ -233,13 +230,6 @@ protected:
     /// Check if JSON string is valid
     bool validate_json(json_string str) const;
 
-    /**
-     * Add attributes to hash of the type specification.
-     *
-     * Method must be called in content_hash() method of TypeBase descendants.
-     */
-    void attribute_content_hash(std::size_t &seed) const;
-
     /// Create JSON output from @p parameter_map formatted as attribute.
     json_string print_parameter_map_to_json(ParameterMap parameter_map) const;
 
@@ -252,8 +242,15 @@ protected:
     /// flag is true if type should be root of generic subtree
     bool root_of_generic_subtree_;
 
+    /// hash string of generic type if type is derived, or empty string
+    TypeHash generic_type_hash_;
+
+    /// map of parameters if type is part of generic subtree
+    ParameterMap parameter_map_;
+
     friend class Array;
     friend class Record;
+    friend class OutputBase;
 };
 
 /**

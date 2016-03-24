@@ -181,6 +181,12 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,
     int *old_4_new;
     int i_loc;
 
+    int mesh_size = old_ds.size();
+    int num_of_procs = old_ds.np();
+    if (mesh_size < num_of_procs) { // check if decomposing is possible
+        THROW( ExcDecomposeMesh() << EI_NElems( mesh_size ) << EI_NProcs( num_of_procs ) );
+    }
+
     // make distribution and numbering
     ISCreateGeneral(PETSC_COMM_WORLD, old_ds.lsize(), loc_part, PETSC_COPY_VALUES, &part); // global IS part.
     ISPartitioningCount(part, old_ds.np(), new_counts); // new size of each proc

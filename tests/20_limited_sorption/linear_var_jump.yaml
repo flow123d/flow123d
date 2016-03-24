@@ -1,27 +1,27 @@
 flow123d_version: 1.8.9
 output_streams:
-- &anchor1
-  file: test_20.pvd
-  format: !vtk
-    variant: ascii
-  name: flow_output_stream
-- &anchor2
-  file: transport_test_20.pvd
-  format: !vtk
-    variant: ascii
-  time_step: 0.5
-  name: transport_output_stream
+  - &anchor1
+    file: test_20.pvd
+    format: !vtk
+      variant: ascii
+    name: flow_output_stream
+  - &anchor2
+    file: transport_test_20.pvd
+    format: !vtk
+      variant: ascii
+    time_step: 0.5
+    name: transport_output_stream
 problem: !SequentialCoupling
   description: Adsorption all
   mesh:
     mesh_file: input/test_20.msh
   primary_equation: !SteadyDarcy_MH
     input_fields:
-    - region: rectangle
-      conductivity: 1
-    - region: BOUNDARY
-      bc_type: dirichlet
-      bc_pressure: 0
+      - region: rectangle
+        conductivity: 1
+      - region: BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
     output:
       output_stream: 
         file: test_20.pvd
@@ -29,21 +29,21 @@ problem: !SequentialCoupling
           variant: ascii
         name: flow_output_stream
       output_fields:
-      - pressure_p0
-      - velocity_p0
+        - pressure_p0
+        - velocity_p0
     balance: true
     solver: !Petsc
       a_tol: 1.0e-07
   secondary_equation: !Transport_OS
     transport: !Convection_FV
       input_fields:
-      - region: ALL
-        init_conc: 1
-        porosity: 0.25
-      - region: BOUNDARY
-        bc_conc: 1
+        - region: ALL
+          init_conc: 1
+          porosity: 0.25
+        - region: BOUNDARY
+          bc_conc: 1
     substances:
-    - A
+      - A
     output_stream: 
       file: transport_test_20.pvd
       format: !vtk
@@ -54,21 +54,21 @@ problem: !SequentialCoupling
       end_time: 5.0
     reaction_term: !Sorption
       substances:
-      - A
+        - A
       solvent_density: 1.0
       solubility:
-      - 10.0
+        - 10.0
       input_fields:
-      - time: 0.0
-        region: ALL
-        rock_density: 1.0
-        sorption_type: linear
-        isotherm_mult: 0.0
-      - time: 2.0
-        region: ALL
-        rock_density: 1.0
-        sorption_type: linear
-        isotherm_mult: 100.0
+        - time: 0.0
+          region: ALL
+          rock_density: 1.0
+          sorption_type: linear
+          isotherm_mult: 0.0
+        - time: 2.0
+          region: ALL
+          rock_density: 1.0
+          sorption_type: linear
+          isotherm_mult: 100.0
       output_fields: []
     balance:
       cumulative: true

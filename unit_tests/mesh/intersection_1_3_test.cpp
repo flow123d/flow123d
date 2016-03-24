@@ -32,6 +32,7 @@ TEST(intersections, 1d_3d){
 	BoundingBox bb;
 	std::vector<unsigned int> searchedElements;
 
+	reader.read_physical_names(&mesh_krychle);
 	reader.read_mesh(&mesh_krychle);
 
 	BIHTree bt(&mesh_krychle, elementLimit);

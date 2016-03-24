@@ -53,12 +53,14 @@ using namespace std;
 
 
 TypeBase::TypeBase()
-: attributes_( boost::make_shared<attribute_map>() ), root_of_generic_subtree_(false) {}
+: attributes_( boost::make_shared<attribute_map>() ), root_of_generic_subtree_(false),
+  generic_type_hash_(0) {}
 
 
 
 TypeBase::TypeBase(const TypeBase& other)
-: attributes_(other.attributes_), root_of_generic_subtree_(other.root_of_generic_subtree_) {}
+: attributes_(other.attributes_), root_of_generic_subtree_(other.root_of_generic_subtree_),
+  generic_type_hash_(other.generic_type_hash_), parameter_map_(other.parameter_map_) {}
 
 
 
@@ -83,8 +85,10 @@ void TypeBase::lazy_finish() {
 	Input::TypeRepository<Instance>::get_instance().finish();
 	Input::TypeRepository<Abstract>::get_instance().finish(true);
 	Input::TypeRepository<Record>::get_instance().finish(true);
+	Input::TypeRepository<Tuple>::get_instance().finish(true);
 	Input::TypeRepository<Abstract>::get_instance().finish();
 	Input::TypeRepository<Record>::get_instance().finish();
+	Input::TypeRepository<Tuple>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
 }
 
@@ -99,24 +103,11 @@ void TypeBase::lazy_finish() {
 
 
 void TypeBase::add_attribute(std::string name, json_string val) {
-	ASSERT( !this->is_closed(), "Attribute can be add only to non-closed type: '%s'.\n", this->type_name().c_str());
 	if (validate_json(val)) {
 		(*attributes_)[name] = val;
 	} else {
 		xprintf(PrgErr, "Invalid JSON format of attribute '%s'.\n", name.c_str());
 	}
-}
-
-
-void TypeBase::write_attributes(ostream& stream) const {
-	stream << "\"attributes\" : {" << endl;
-	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
-        if (it != attributes_->begin()) {
-        	stream << "," << endl;
-        }
-		stream << "\"" << it->first << "\" : " << it->second;
-	}
-	stream << endl << "}";
 }
 
 
@@ -128,15 +119,6 @@ bool TypeBase::validate_json(json_string str) const {
     } catch (json_spirit::Error_position &e ) {
         return false;
     }
-}
-
-
-void TypeBase::attribute_content_hash(std::size_t &seed) const {
-	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
-		boost::hash_combine(seed, (*it).first );
-		boost::hash_combine(seed, (*it).second );
-	}
-
 }
 
 
@@ -182,7 +164,6 @@ TypeBase::TypeHash Array::content_hash() const
     boost::hash_combine(seed, data_->lower_bound_);
     boost::hash_combine(seed, data_->upper_bound_);
     boost::hash_combine(seed, data_->type_of_values_->content_hash() );
-    attribute_content_hash(seed);
     return seed;
 }
 
@@ -231,9 +212,9 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	json_string val = this->print_parameter_map_to_json(parameter_map);
 	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
 	(*arr.attributes_)["parameters"] = val;
-	std::stringstream type_stream;
-	type_stream << "\"" << this->content_hash() << "\"";
+	arr.parameter_map_ = parameter_map;
 	(*arr.attributes_)["generic_type"] = TypeBase::hash_str();
+	arr.generic_type_hash_ = this->content_hash();
 
 	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );
 }

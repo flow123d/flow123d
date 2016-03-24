@@ -107,7 +107,7 @@ std::string print_parameter_vec(std::vector<TypeBase::ParameterPair> vec) {
 	stringstream ss;
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = vec.begin(); vec_it!=vec.end(); vec_it++) {
 		if (vec_it != vec.begin()) ss << ", ";
-		ss << "'" << vec_it->first << "'" << endl;
+		ss << "\"" << vec_it->first << "\"";
 	}
 
 	return ss.str();
@@ -127,6 +127,14 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
         e << EI_ParameterList( print_parameter_vec(parameters_) );
         throw;
 	}
+
+	// add array of parameters to attributes of generic type
+	if (attributes_->find("parameters") == attributes_->end() ) {
+		stringstream ss;
+		ss << "[ " << print_parameter_vec(parameters_) << " ]";
+		generic_type_.add_attribute( "parameters", ss.str() );
+	}
+
 #ifdef FLOW123D_DEBUG_ASSERTS
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = parameters_.begin(); vec_it!=parameters_.end(); vec_it++) {
 		ParameterMap::iterator map_it = created_instance_.second.find( vec_it->first );
