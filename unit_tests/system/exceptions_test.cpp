@@ -187,3 +187,14 @@ TEST(Exceptions, assert_msg) {
 #endif
 
 }
+
+
+#include "system/asserts.hh"
+// Test of new asserts.
+TEST(FealAssert, assert) {
+
+    std::string s1 = "feal";
+    std::string s2 = "assert";
+    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+
+}
