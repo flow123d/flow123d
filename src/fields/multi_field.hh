@@ -86,6 +86,11 @@ public:
     MultiField(bool bc = false);
 
     /**
+     * Copy constructor.
+     */
+    MultiField(const MultiField &other);
+
+    /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
@@ -169,11 +174,9 @@ public:
     void set_input_list(const Input::Array &list) override;
 
 private:
+    /// Subfields (items) of MultiField
     std::vector< SubFieldType > sub_fields_;
 
-    /// Helper class members, used only for input record
-    SubFieldType sub_field_type_;
-    TransposedField transposed_field_;
     /// Full list of input field descriptors from which the subfields of MultiField are set.
     Input::Array full_input_list_;
 };
