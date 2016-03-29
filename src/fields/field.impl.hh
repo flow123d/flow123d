@@ -79,18 +79,11 @@ template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
+  region_fields_(other.region_fields_),
   factories_(other.factories_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
-
-	// initialize region_fields_ vector
-	// shared_is already same as other.shared_
-	if (shared_->mesh_) this->set_mesh( *(shared_->mesh_) );
-
-    // copy time status (set_time() has to be called in order
-    // to properly set region_fields_)
-    this->set_time_result_ = other.set_time_result_;
 
 	this->multifield_ = false;
 }

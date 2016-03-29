@@ -39,7 +39,10 @@ FieldCommon::FieldCommon()
 FieldCommon::FieldCommon(const FieldCommon & other)
 : name_(other.name_),
   shared_(other.shared_),
-  set_time_result_(TimeStatus::unknown),
+  set_time_result_(other.set_time_result_),
+  last_time_(other.last_time_),
+  last_limit_side_(other.last_limit_side_),
+  is_jump_time_(other.is_jump_time_),
   component_index_(other.component_index_)
 {
      flags_.add( FieldFlag::input_copy );
