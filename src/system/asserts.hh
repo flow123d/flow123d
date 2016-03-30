@@ -34,12 +34,18 @@ class Assert {
 public:
 	/// Constructor.
 	Assert(const std::string& expression)
-	: FEAL_ASSERT_A (*this),
-	  FEAL_ASSERT_B (*this),
-	  expression_(expression) {}
+	: _FEAL_ASSERT_A (*this),
+	  _FEAL_ASSERT_B (*this),
+	  expression_(expression),
+	  thrown_(false) {}
 
-	Assert& FEAL_ASSERT_A; ///< clever macro A
-	Assert& FEAL_ASSERT_B; ///< clever macro B
+	/// Destructor.
+	~Assert() {
+		if (!thrown_) this->error();
+	}
+
+	Assert& _FEAL_ASSERT_A; ///< clever macro A
+	Assert& _FEAL_ASSERT_B; ///< clever macro B
 
 	/// Adds name and value of variable
 	template <typename T>
@@ -63,6 +69,7 @@ public:
 
 	/// Generate error
 	void error() {
+		thrown_ = true;
 		std::cout << "Program Error: Violated Assert! " << std::endl;
 		print();
 		//abort();
@@ -70,6 +77,7 @@ public:
 
 	/// Generate warning
 	void warning() {
+		thrown_ = true;
 		std::cout << "Warning: " << std::endl;
 		print();
 	}
@@ -93,31 +101,27 @@ protected:
 	const char* function_;                    ///< Actual function.
 	int line_;                                ///< Actual line.
 	std::vector< std::string > current_val_;  ///< Formated strings of names and values of given variables.
+	bool thrown_;                             ///< Flag marked if Assert thrown error, warning, ...
 
 };
-
-/// Make an assertion
-static Assert make_assert(const std::string& expression) {
-	return Assert(expression);
-}
 
 } // namespace feal
 
 // Must define the macros afterwards
-/// Clever macro A
-#define FEAL_ASSERT_A(x) FEAL_ASSERT_OP(x, B)
-/// Clever macro B
-#define FEAL_ASSERT_B(x) FEAL_ASSERT_OP(x, A)
-/// Clever macro recursion
-#define FEAL_ASSERT_OP(x, next) \
-    FEAL_ASSERT_A.add_value((x), #x).FEAL_ASSERT_ ## next
+/// Internal clever macro A
+#define _FEAL_ASSERT_A(x) _FEAL_ASSERT_OP(x, B)
+/// Internal clever macro B
+#define _FEAL_ASSERT_B(x) _FEAL_ASSERT_OP(x, A)
+/// Internal clever macro recursion
+#define _FEAL_ASSERT_OP(x, next) \
+    _FEAL_ASSERT_A.add_value((x), #x)._FEAL_ASSERT_ ## next
 
 
 #ifdef FLOW123D_DEBUG_ASSERTS
 /// High-level macro
 #define FEAL_ASSERT( expr) \
-if ( (expr) ) ; \
-else feal::make_assert( #expr).set_context( __FILE__, __func__, __LINE__).FEAL_ASSERT_A
+if ( !(expr) ) \
+  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
 #else
 #define FEAL_ASSERT( expr)
 #endif
