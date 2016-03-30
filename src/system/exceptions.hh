@@ -22,6 +22,7 @@
 #include <boost/exception/all.hpp>
 #include <iostream>
 #include <string>
+#include "system/stack_trace.hh"
 
 
 
@@ -47,6 +48,7 @@ namespace internal {
     class ExcStream;
 }
 
+
 /**
  * @brief Base of exceptions used in Flow123d.
  *
@@ -68,8 +70,6 @@ public:
     ExceptionBase();
     /// Copy constructor, performs deep copy of stacktrace.
     ExceptionBase(const ExceptionBase &other);
-    /// Call GNU backtrace if available, save call stack information into @p stacktrace member.
-    void fill_stacktrace();
     /// Prints formated stacktrace into given stream @p out.
     void print_stacktrace(std::ostream &out) const;
     /**
@@ -86,13 +86,9 @@ public:
     /// Destructor, possibly free stacktrace.
     virtual ~ExceptionBase() throw ();
 
-private:
-
-    /// Array of backtrace frames returned by glibc backtrace_symbols.
-    char ** stacktrace;
-
-    /// Size of stacktrace table - number of frames.
-    int n_stacktrace_frames;
+protected:
+    /// Stacktrace of exception.
+    StackTrace stack_trace_;
 };
 
 

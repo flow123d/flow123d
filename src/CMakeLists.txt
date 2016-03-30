@@ -83,6 +83,7 @@ add_library(system_lib
     system/system.cc
     system/xio.cc
     system/exceptions.cc
+    system/stack_trace.cc
     io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
