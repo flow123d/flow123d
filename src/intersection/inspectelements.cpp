@@ -248,8 +248,12 @@ template<>
 void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
 {
     IntersectionAux<1,3> il = intersection_list_[elm.index()].back();
+    // number of IPs that are at vertice of component element
+    unsigned int n_ip_vertices = 0;
+    
     for(const IntersectionPoint<1,3> &IP : il.points()) {
-        if(IP.dim_A() == 0) { 
+        if(IP.dim_A() == 0) {
+            n_ip_vertices++;
             DBGMSG("1D end\n");
             // if IP is end of the 1D element
             // prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
@@ -262,7 +266,6 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
 
                     unsigned int sousedni_element = other_side->element()->index();
                     if(!intersection_exists(sousedni_element,ele_3D->index())){
-                    //if(!closed_elements[sousedni_element]){
                         DBGMSG("1d prolong %d in %d\n", sousedni_element, ele_3D->index());
                         
                         // Vytvoření průniku bez potřeby počítání
@@ -339,6 +342,8 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
             }
         }  
     }
+    
+    if(n_ip_vertices == il.size()) closed_elements[elm->index()] = true;
 }
 
 
