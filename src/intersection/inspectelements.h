@@ -113,13 +113,13 @@ private:
     void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
     
     /// A hard way to find whether the intersection of two elements has already been computed, or not.
-    bool intersection_exists(unsigned int component_element_idx, unsigned int elm_3D_idx);
+    bool intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
 
     /// Auxiliary function for calling tracing algorithm. Is empty if @p dim =0.
     void trace(IntersectionAux<dim,3> &intersection);
     
     /// Computes the first intersection, from which we then prolongate.
-    bool compute_initial_CI(const ElementFullIter &elm, const ElementFullIter &ele_3D);
+    bool compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.

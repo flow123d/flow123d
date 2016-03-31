@@ -85,9 +85,9 @@ void InspectElementsAlgorithm<2>::trace(IntersectionAux<2,3> &intersection)
 } 
  
 template<unsigned int dim> 
-bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx)
 {
-    IntersectionAux<dim,3> is(elm->index(), ele_3D->index());
+    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
@@ -97,7 +97,7 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementFullIter& el
     if(is.points().size() > 0) {
         
         trace(is);
-        intersection_list_[elm->index()].push_back(is);
+        intersection_list_[component_ele_idx].push_back(is);
         n_intersections_++;
         return true;
     }
@@ -105,13 +105,13 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementFullIter& el
 }
 
 template<unsigned int dim>
-bool InspectElementsAlgorithm<dim>::intersection_exists(unsigned int component_element_idx, unsigned int elm_3D_idx) 
+bool InspectElementsAlgorithm<dim>::intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx) 
 {
     bool found = false;
 
-    for(unsigned int i = 0; i < intersection_list_[component_element_idx].size();i++){
+    for(unsigned int i = 0; i < intersection_list_[component_ele_idx].size();i++){
 
-        if(intersection_list_[component_element_idx][i].bulk_ele_idx() == elm_3D_idx){
+        if(intersection_list_[component_ele_idx][i].bulk_ele_idx() == bulk_ele_idx){
             found = true;
             break;
         }
@@ -130,29 +130,31 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
     {START_TIMER("Element iteration");
     
     FOR_ELEMENTS(mesh, elm) {
+        unsigned int component_ele_idx = elm->index();
+        
         if (elm->dim() == dim &&                                // is component element
-            !closed_elements[elm.index()] &&                    // is not closed yet
-            elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
+            !closed_elements[component_ele_idx] &&                    // is not closed yet
+            elements_bb[component_ele_idx].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
         {    
             update_simplex(elm, component_simplex); // update component simplex
             std::vector<unsigned int> searchedElements;
-            bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
+            bt.find_bounding_box(elements_bb[component_ele_idx], searchedElements);
 
             {START_TIMER("Bounding box element iteration");
             
             // Go through all element which bounding box intersects the component element bounding box
             for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
             {
-                int idx = *it;
-                ElementFullIter ele_3D = mesh->element(idx);
+                unsigned int bulk_ele_idx = *it;
+                ElementFullIter ele_3D = mesh->element(bulk_ele_idx);
 
                 // if:
                 // check 3D only
                 // check with the last component element computed for the current 3D element
                 // intersection has not been computed already
                 if (ele_3D->dim() == 3 &&
-                    (last_slave_for_3D_elements[ele_3D->index()] != (int)(elm->index()) &&
-                     !intersection_exists(elm->index(),ele_3D->index()) )
+                    (last_slave_for_3D_elements[bulk_ele_idx] != (int)(component_ele_idx) &&
+                     !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
                         // - find first intersection
                         // - if found, prolongate and possibly fill both prolongation queues
@@ -174,16 +176,16 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                         //
                         // - repeat until both queues are empty
                     
-                    DBGMSG("elements %d %d\n",elm->index(), ele_3D->index());
+                    DBGMSG("elements %d %d\n",component_ele_idx, bulk_ele_idx);
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
-                    bool found = compute_initial_CI(elm, ele_3D);
+                    bool found = compute_initial_CI(component_ele_idx, bulk_ele_idx);
 
                     // keep the index of the current component element that is being investigated
-                    unsigned int current_component_element_idx = elm->index();
+                    unsigned int current_component_element_idx = component_ele_idx;
                     
                     if(found){
                         
-                        last_slave_for_3D_elements[ele_3D->index()] = elm.index();
+                        last_slave_for_3D_elements[bulk_ele_idx] = component_ele_idx;
                         prolongation_decide(elm, ele_3D);
                         
                         do{
@@ -223,7 +225,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                         while( !(component_queue_.empty() && bulk_queue_.empty()) );
                         
                         // if component element is closed, do not check other bounding boxes
-                        if(closed_elements[elm->index()])
+                        if(closed_elements[component_ele_idx])
                             break;
                     }
 
