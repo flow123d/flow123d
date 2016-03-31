@@ -22,7 +22,7 @@ namespace computeintersection {
 
 template<unsigned int dim>    
 InspectElementsAlgorithm<dim>::InspectElementsAlgorithm(Mesh* _mesh)
-: component_element_idx_(-1), mesh(_mesh)
+: mesh(_mesh)
 {
     intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionAux<dim,3>>());
 }
@@ -151,7 +151,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 
                     // TODO
                     // make component_element_idx_ local variable
-                    //unsigned int current_component_element_idx = elm->index();
+                    unsigned int current_component_element_idx = elm->index();
                     
                     if(found){
                         
@@ -202,16 +202,15 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                             //TODO
                             //closed_elements[current_component_element_idx] = closed;
                             
-                            if(component_element_idx_ >= 0) closed_elements[component_element_idx_] = true;
-
-                            component_element_idx_ = -1;
+                            closed_elements[current_component_element_idx] = true;
                             
                             if(!component_queue_.empty()){
                                 Prolongation pr = component_queue_.front();
-                                //TODO
+
                                 // note the component element index
-                                // current_component_element_idx = pr.component_ele_idx
-                                DBGMSG("Prolongation queue compute in 2d ele_idx %d.\n",pr.component_elm_idx);
+                                current_component_element_idx = pr.component_elm_idx;
+                                DBGMSG("Prolongation queue compute in 2d ele_idx %d.\n",current_component_element_idx);
+                                
                                 prolongate(pr);
                                 component_queue_.pop();
 
@@ -220,9 +219,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 
                             //TODO remove this
                             if(component_queue_.empty() && bulk_queue_.empty()){
-                                if(component_element_idx_ >= 0) closed_elements[component_element_idx_] = true;
-                                    
-                                component_element_idx_ = -1;
+                                closed_elements[current_component_element_idx] = true;
                                 break;
                             }
 
@@ -428,8 +425,6 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     
     update_simplex(elm, component_simplex);
     update_simplex(ele_3D, tetrahedron);
-    
-    component_element_idx_ = pr.component_elm_idx;
 
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
     

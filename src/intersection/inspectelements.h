@@ -79,7 +79,6 @@ private:
     // Array of flags, which elements are computed
     std::vector<bool> closed_elements;
     std::vector<int> last_slave_for_3D_elements;
-    int component_element_idx_;   ///< last computed component element
     
     /// Mesh pointer.
     Mesh *mesh;
