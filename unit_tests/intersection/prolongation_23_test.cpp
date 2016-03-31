@@ -34,14 +34,14 @@ using namespace computeintersection;
 // ******************************************************************************************* TEST 2d-3d ****
 
 /// Create results for the meshes in directory 'site_13d'.
-void fill_23d_solution(std::vector<computeintersection::IntersectionAux<2,3>> &ils)
-{
-    ils.clear();
-    ils.resize(1);
-    
-    ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,0,0}),arma::vec::fixed<4>({1,1,1,1})/4));
-    ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,1,1})/3,arma::vec::fixed<4>({4,3,0,3})*0.1));
-}
+// void fill_23d_solution(std::vector<computeintersection::IntersectionAux<2,3>> &ils)
+// {
+//     ils.clear();
+//     ils.resize(1);
+//     
+//     ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,0,0}),arma::vec::fixed<4>({1,1,1,1})/4));
+//     ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,1,1})/3,arma::vec::fixed<4>({4,3,0,3})*0.1));
+// }
 
 
 //Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
@@ -134,7 +134,7 @@ TEST(intersection_prolongation_23d, all) {
     std::sort(filenames.begin(), filenames.end(), less<string>());
         
     std::vector<IntersectionAux<2,3>> solution;
-    fill_23d_solution(solution);
+//     fill_23d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
