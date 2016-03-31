@@ -251,7 +251,7 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
     // number of IPs that are at vertice of component element
     unsigned int n_ip_vertices = 0;
     
-    for(const IntersectionPoint<1,3> &IP : il.points()) {
+    for(const IntersectionPointAux<1,3> &IP : il.points()) {
         if(IP.dim_A() == 0) {
             n_ip_vertices++;
             DBGMSG("1D end\n");
@@ -590,7 +590,7 @@ void InspectElements::compute_intersections(std::vector<IntersectionLocal<dim,3>
 //                     IntersectionLocal<1,3>* il13 = 
 //                         static_cast<IntersectionLocal<1,3>*> (intersection_map_[idx][j].second);
 //                     cout << &(intersection_storage13_.back()) << "  " << il13 << *il13;
-//                     for(IntersectionPointX<1,3> &ip : il13->points())
+//                     for(IntersectionPoint<1,3> &ip : il13->points())
 //                         ip.coords(mesh->element(idx)).print(cout);
 
                     // create map for bulk element
@@ -646,7 +646,7 @@ void InspectElements::print_mesh_to_file_13(string name)
             
             for(unsigned int k = 0; k < il.size();k++){
                 number_of_nodes++;
-                IntersectionPointX<1,3> IP13 = il[k];
+                IntersectionPoint<1,3> IP13 = il[k];
                 arma::vec3 global = IP13.coords(el1D);
                 
 //                 if(i == 0){
@@ -749,7 +749,7 @@ void InspectElements::print_mesh_to_file_23(string name)
             for(unsigned int k = 0; k < intersection_storage23_[j].size();k++){
 
                     number_of_nodes++;
-                    IntersectionPointX<2,3> IP23 = il[k];
+                    IntersectionPoint<2,3> IP23 = il[k];
                     arma::vec3 global = IP23.coords(el2D);
 //                     if(i == 0){
 //                         _global = (IP23.local_bcoords_A())[0] * el2D->node[0]->point()

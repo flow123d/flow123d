@@ -14,7 +14,7 @@ using namespace std;
 namespace computeintersection{
 
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::clear()
+void IntersectionPointAux<N,M>::clear()
 {   local_bcoords_A_.zeros();
     local_bcoords_B_.zeros();
     idx_A_ = 0;
@@ -25,13 +25,13 @@ void IntersectionPoint<N,M>::clear()
 }
 
 template<unsigned int N, unsigned int M>
-IntersectionPoint<N,M>::IntersectionPoint()
+IntersectionPointAux<N,M>::IntersectionPointAux()
 {
     clear();
 };
 
 template<unsigned int N, unsigned int M>    
-IntersectionPoint<N,M>::IntersectionPoint(const arma::vec::fixed<N+1> &lcA,
+IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA,
                                           const arma::vec::fixed<M+1> &lcB,
                                           unsigned int dim_A, 
                                           unsigned int dim_B)
@@ -40,7 +40,7 @@ IntersectionPoint<N,M>::IntersectionPoint(const arma::vec::fixed<N+1> &lcA,
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
+IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<M, N> &IP){
         local_bcoords_A_ = IP.local_bcoords_B();
         local_bcoords_B_ = IP.local_bcoords_A();
         idx_A_ = IP.idx_B();
@@ -52,8 +52,8 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<M, N> &IP){
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned int idx_B){
-    ASSERT(M>1 && M<4,"Wrong the second dimension in an IntersectionPoint (allowed 2 and 3 only)");
+IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-1> &IP, unsigned int idx_B){
+    ASSERT(M>1 && M<4,"Wrong the second dimension in an IntersectionPointAux (allowed 2 and 3 only)");
     
     local_bcoords_A_ = IP.local_bcoords_A();
     local_bcoords_B_ = RefElement<M>::template interpolate<M-1>(IP.local_bcoords_B(), idx_B);
@@ -66,8 +66,8 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned int idx_B){
-    ASSERT(M == 3,"Wrong the second dimension in an IntersectionPoint (allowed 3 only)");
+IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-2> &IP, unsigned int idx_B){
+    ASSERT(M == 3,"Wrong the second dimension in an IntersectionPointAux (allowed 3 only)");
 
     local_bcoords_A_ = IP.local_bcoords_A();
     local_bcoords_B_ = RefElement<3>::interpolate<1>(IP.local_bcoords_B(), idx_B);
@@ -79,7 +79,7 @@ IntersectionPoint<N,M>::IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned
 };
 
 template<unsigned int N, unsigned int M>
-arma::vec::fixed< 3  > IntersectionPoint<N,M>::coords(ElementFullIter ele) const
+arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementFullIter ele) const
 {
     ASSERT(N == ele->dim(), "Element vs intersection point dimension mismatch.");
     
@@ -92,13 +92,13 @@ arma::vec::fixed< 3  > IntersectionPoint<N,M>::coords(ElementFullIter ele) const
 }
  
 
-template<> bool IntersectionPoint<2,3>::operator<(const IntersectionPoint<2,3> &ip) const{
+template<> bool IntersectionPointAux<2,3>::operator<(const IntersectionPointAux<2,3> &ip) const{
 	return local_bcoords_A_[1] < ip.local_bcoords_A()[1] ||     // compare by x coordinate
            (local_bcoords_A_[1] == ip.local_bcoords_A()[1] &&   // in case of tie
            local_bcoords_A_[2] < ip.local_bcoords_A()[2]);      // compare by y coordinate
 };
 
-template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPoint< N,M >& s)
+template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPointAux< N,M >& s)
 {
     os << "Local coords on element A(id=" << s.idx_A_ << ", dim=" << s.dim_A_ << ")" << endl;
     s.local_bcoords_A_.print(os);
@@ -108,19 +108,19 @@ template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const 
     return os;
 }
 
-template class IntersectionPoint<1,2>;
-template class IntersectionPoint<1,3>;
-template class IntersectionPoint<2,1>;
-template class IntersectionPoint<2,3>;
-template class IntersectionPoint<3,1>;
-template class IntersectionPoint<3,2>;
+template class IntersectionPointAux<1,2>;
+template class IntersectionPointAux<1,3>;
+template class IntersectionPointAux<2,1>;
+template class IntersectionPointAux<2,3>;
+template class IntersectionPointAux<3,1>;
+template class IntersectionPointAux<3,2>;
 
-template ostream& operator<< <1,2>(ostream &os, const IntersectionPoint<1,2>& s); 
-template ostream& operator<< <1,3>(ostream &os, const IntersectionPoint<1,3>& s); 
-template ostream& operator<< <2,1>(ostream &os, const IntersectionPoint<2,1>& s); 
-template ostream& operator<< <2,3>(ostream &os, const IntersectionPoint<2,3>& s); 
-template ostream& operator<< <3,1>(ostream &os, const IntersectionPoint<3,1>& s); 
-template ostream& operator<< <3,2>(ostream &os, const IntersectionPoint<3,2>& s); 
+template ostream& operator<< <1,2>(ostream &os, const IntersectionPointAux<1,2>& s); 
+template ostream& operator<< <1,3>(ostream &os, const IntersectionPointAux<1,3>& s); 
+template ostream& operator<< <2,1>(ostream &os, const IntersectionPointAux<2,1>& s); 
+template ostream& operator<< <2,3>(ostream &os, const IntersectionPointAux<2,3>& s); 
+template ostream& operator<< <3,1>(ostream &os, const IntersectionPointAux<3,1>& s); 
+template ostream& operator<< <3,2>(ostream &os, const IntersectionPointAux<3,2>& s); 
 
 } // END namespace
 

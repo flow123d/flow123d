@@ -14,13 +14,13 @@ namespace computeintersection{
 
     
 //forwward declare
-template<unsigned int, unsigned int> class IntersectionPoint;
+template<unsigned int, unsigned int> class IntersectionPointAux;
 template<unsigned int, unsigned int> class IntersectionAux;
 
-template<unsigned int, unsigned int> class IntersectionPointX;
+template<unsigned int, unsigned int> class IntersectionPoint;
 template<unsigned int, unsigned int> class IntersectionLocal;
 template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionLocal<dimA,dimB>& il);
-template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionPointX<dimA,dimB>& ip);
+template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionPoint<dimA,dimB>& ip);
 
 
 /** @brief Common base for intersection object.
@@ -69,7 +69,7 @@ template<unsigned int dimA, unsigned int dimB>
 class IntersectionLocal : public IntersectionLocalBase
 {
     /// Vector of intersectio points.
-    std::vector<IntersectionPointX<dimA,dimB>> i_points_;
+    std::vector<IntersectionPoint<dimA,dimB>> i_points_;
     
 public:
 
@@ -84,13 +84,13 @@ public:
     ///@name Getters.
     //@{
     /// Returns intersection points by a reference.
-    std::vector<IntersectionPointX<dimA,dimB>> &points();
+    std::vector<IntersectionPoint<dimA,dimB>> &points();
 
     /// Returns intersection points by a constant reference.
-    const std::vector<IntersectionPointX<dimA,dimB>> &points() const;
+    const std::vector<IntersectionPoint<dimA,dimB>> &points() const;
 
     /// Returns intersection point of given @p index.
-    const IntersectionPointX<dimA,dimB> &operator[](unsigned int index) const;
+    const IntersectionPoint<dimA,dimB> &operator[](unsigned int index) const;
     
     unsigned int size() const;              ///< Returns number of intersection points.
     //@}
@@ -105,15 +105,15 @@ public:
 /********************************************* IMPLEMENTATION ***********************************************/
 
 template<unsigned int dimA, unsigned int dimB>
-inline std::vector< IntersectionPointX< dimA, dimB > >& IntersectionLocal<dimA,dimB>::points()
+inline std::vector< IntersectionPoint< dimA, dimB > >& IntersectionLocal<dimA,dimB>::points()
 {   return i_points_; }
 
 template<unsigned int dimA, unsigned int dimB>
-inline const std::vector< IntersectionPointX< dimA, dimB > >& IntersectionLocal<dimA,dimB>::points() const
+inline const std::vector< IntersectionPoint< dimA, dimB > >& IntersectionLocal<dimA,dimB>::points() const
 {   return i_points_; }
 
 template<unsigned int dimA, unsigned int dimB>
-inline const IntersectionPointX< dimA, dimB >& IntersectionLocal<dimA,dimB>::operator[](unsigned int index) const
+inline const IntersectionPoint< dimA, dimB >& IntersectionLocal<dimA,dimB>::operator[](unsigned int index) const
 {   ASSERT(index < i_points_.size(), "Index out of bounds.");
     return i_points_[index]; }
 
@@ -128,23 +128,23 @@ inline unsigned int IntersectionLocal<dimA,dimB>::size() const
  * Class represents an intersection point of simplex<N> and simplex<M>.
  * It contains barycentric coordinates of the point on both simplices.
  */
-template<unsigned int dimA, unsigned int dimB> class IntersectionPointX {
+template<unsigned int dimA, unsigned int dimB> class IntersectionPoint {
     
     arma::vec::fixed<dimA+1> comp_bcoords_; ///< Barycentric coordinates of an IP on simplex<N>.
     arma::vec::fixed<dimB+1> bulk_bcoords_; ///< Barycentric coordinates of an IP on simplex<M>.
     
 public:
 
-    IntersectionPointX();  ///< Default constructor.
-    ~IntersectionPointX(); ///< Destructor.
+    IntersectionPoint();  ///< Default constructor.
+    ~IntersectionPoint(); ///< Destructor.
     
-    IntersectionPointX(const IntersectionPoint<dimA,dimB> &p);
+    IntersectionPoint(const IntersectionPointAux<dimA,dimB> &p);
     /**
      * Constructor taking barycentric coordinates on simplices as input parameters.
      * @param comp_bcoords barycentric coordinates of IP in Simplex<dimA>
      * @param bulk_bcoords barycentric coordinates of IP in Simplex<dimB>
      */
-    IntersectionPointX(const arma::vec::fixed<dimA+1> &comp_bcoords, const arma::vec::fixed<dimB+1> &bulk_bcoords);
+    IntersectionPoint(const arma::vec::fixed<dimA+1> &comp_bcoords, const arma::vec::fixed<dimB+1> &bulk_bcoords);
     
     ///@name Getters.
     //@{
@@ -159,18 +159,18 @@ public:
     arma::vec3 coords(ElementFullIter comp_ele) const;
     
     /// Friend output operator.
-    friend std::ostream& operator<< <>(std::ostream& os, const IntersectionPointX<dimA,dimB>& IP);
+    friend std::ostream& operator<< <>(std::ostream& os, const IntersectionPoint<dimA,dimB>& IP);
 };
 
 
 /********************************************* IMPLEMENTATION ***********************************************/
 
 template<unsigned int dimA, unsigned int dimB>
-const arma::vec::fixed< dimA + 1  >& IntersectionPointX<dimA,dimB>::comp_bcoords() const
+const arma::vec::fixed< dimA + 1  >& IntersectionPoint<dimA,dimB>::comp_bcoords() const
 {   return comp_bcoords_; }
 
 template<unsigned int dimA, unsigned int dimB>
-const arma::vec::fixed< dimB + 1  >& IntersectionPointX<dimA,dimB>::bulk_bcoords() const
+const arma::vec::fixed< dimB + 1  >& IntersectionPoint<dimA,dimB>::bulk_bcoords() const
 {   return bulk_bcoords_; }
 
 } // END NAMESPACE

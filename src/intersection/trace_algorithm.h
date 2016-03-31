@@ -13,7 +13,7 @@
 namespace computeintersection{
 
 //forwward declare
-template<unsigned int, unsigned int> class IntersectionPoint;
+template<unsigned int, unsigned int> class IntersectionPointAux;
 template<unsigned int, unsigned int> class IntersectionAux;
 
 class Tracing
@@ -36,9 +36,9 @@ private:
      */
     static void trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &polygon);
     
-    static double convex_hull_cross(const IntersectionPoint<2,3> &O,
-                                    const IntersectionPoint<2,3> &A,
-                                    const IntersectionPoint<2,3> &B);
+    static double convex_hull_cross(const IntersectionPointAux<2,3> &O,
+                                    const IntersectionPointAux<2,3> &A,
+                                    const IntersectionPointAux<2,3> &B);
                              
     /**
      * @return index of side of tetrahedron - if tetrahedron has polygon on it

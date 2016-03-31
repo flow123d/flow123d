@@ -46,7 +46,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     
     // go through all intersection points (vertices of polygon)
     for(unsigned int i = 0; i < p.points().size();i++){
-        IntersectionPoint<2,3> ip = p.points()[i];
+        IntersectionPointAux<2,3> ip = p.points()[i];
         
         unsigned int row, object_index;
         
@@ -145,7 +145,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     
     
     // traced IPs (reordered)
-    std::vector<IntersectionPoint<2,3>> new_points;
+    std::vector<IntersectionPointAux<2,3>> new_points;
     new_points.reserve(p.points().size());
     
     // start polygon with the IP at the first row set
@@ -199,7 +199,7 @@ void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_
 
 
     int n = p.points().size(), k = 0;
-    std::vector<IntersectionPoint<2,3>> H(2*n);
+    std::vector<IntersectionPointAux<2,3>> H(2*n);
 
     for(int i = 0; i < n; ++i){
         while(k >= 2 && convex_hull_cross(H[k-2], H[k-1], p.points()[i]) <= 0) k--;
@@ -241,9 +241,9 @@ void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_
 
 };
 
-double Tracing::convex_hull_cross(const IntersectionPoint<2,3> &O,
-        const IntersectionPoint<2,3> &A,
-        const IntersectionPoint<2,3> &B){
+double Tracing::convex_hull_cross(const IntersectionPointAux<2,3> &O,
+        const IntersectionPointAux<2,3> &A,
+        const IntersectionPointAux<2,3> &B){
     return ((A.local_bcoords_A()[1]-O.local_bcoords_A()[1])*(B.local_bcoords_A()[2]-O.local_bcoords_A()[2])
             -(A.local_bcoords_A()[2]-O.local_bcoords_A()[2])*(B.local_bcoords_A()[1]-O.local_bcoords_A()[1]));
 }

@@ -30,7 +30,7 @@ IntersectionLocal<dimA,dimB>::IntersectionLocal(const IntersectionAux< dimA, dim
     i_points_.resize(iaux.size());
     for(unsigned int i = 0; i < iaux.size(); i++)
     {
-        i_points_[i] = IntersectionPointX<dimA,dimB>(iaux[i]);
+        i_points_[i] = IntersectionPoint<dimA,dimB>(iaux[i]);
     }
 }
 
@@ -76,20 +76,20 @@ double IntersectionLocal<2,3>::compute_measure()
 
 
 template<unsigned int dimA, unsigned int dimB>
-IntersectionPointX<dimA,dimB>::IntersectionPointX()
+IntersectionPoint<dimA,dimB>::IntersectionPoint()
 {}
 
 template<unsigned int dimA, unsigned int dimB>
-IntersectionPointX<dimA,dimB>::~IntersectionPointX()
+IntersectionPoint<dimA,dimB>::~IntersectionPoint()
 {}
 
 template<unsigned int dimA, unsigned int dimB>
-IntersectionPointX<dimA,dimB>::IntersectionPointX(const IntersectionPoint<dimA,dimB>& p)
+IntersectionPoint<dimA,dimB>::IntersectionPoint(const IntersectionPointAux<dimA,dimB>& p)
 : comp_bcoords_(p.local_bcoords_A()), bulk_bcoords_(p.local_bcoords_B())
 {}
 
 template<unsigned int dimA, unsigned int dimB>
-IntersectionPointX<dimA,dimB>::IntersectionPointX(const arma::vec::fixed< dimA + 1  >& comp_bcoords, 
+IntersectionPoint<dimA,dimB>::IntersectionPoint(const arma::vec::fixed< dimA + 1  >& comp_bcoords, 
                                        const arma::vec::fixed< dimB + 1  >& bulk_bcoords)
 : comp_bcoords_(comp_bcoords), bulk_bcoords_(bulk_bcoords)
 {}
@@ -97,7 +97,7 @@ IntersectionPointX<dimA,dimB>::IntersectionPointX(const arma::vec::fixed< dimA +
 
 
 template<unsigned int dimA, unsigned int dimB>
-arma::vec3 IntersectionPointX<dimA,dimB>::coords(ElementFullIter comp_ele) const
+arma::vec3 IntersectionPoint<dimA,dimB>::coords(ElementFullIter comp_ele) const
 {
     ASSERT(dimA == comp_ele->dim(), "Element vs intersection point dimension mismatch.");
     
@@ -122,7 +122,7 @@ template<unsigned int dimA, unsigned int dimB> ostream& operator<<(ostream& os, 
     return os;
 }
 
-template<unsigned int dimA, unsigned int dimB> ostream& operator<<(ostream& os, const IntersectionPointX<dimA,dimB>& ip)
+template<unsigned int dimA, unsigned int dimB> ostream& operator<<(ostream& os, const IntersectionPoint<dimA,dimB>& ip)
 {
     os << "[";
     for(unsigned j= 0; j < dimA; j++)
@@ -139,13 +139,13 @@ template<unsigned int dimA, unsigned int dimB> ostream& operator<<(ostream& os, 
 
 
 
-template class IntersectionPointX<1,3>;
-template class IntersectionPointX<2,3>;
+template class IntersectionPoint<1,3>;
+template class IntersectionPoint<2,3>;
 template class IntersectionLocal<1,3>;
 template class IntersectionLocal<2,3>;
 
-template ostream& operator<< <1,3>(ostream &os, const IntersectionPointX<1,3>& s); 
-template ostream& operator<< <2,3>(ostream &os, const IntersectionPointX<2,3>& s); 
+template ostream& operator<< <1,3>(ostream &os, const IntersectionPoint<1,3>& s); 
+template ostream& operator<< <2,3>(ostream &os, const IntersectionPoint<2,3>& s); 
 template ostream& operator<< <1,3>(ostream &os, const IntersectionLocal<1,3>& s); 
 template ostream& operator<< <2,3>(ostream &os, const IntersectionLocal<2,3>& s); 
 }

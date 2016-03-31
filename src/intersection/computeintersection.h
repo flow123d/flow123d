@@ -16,7 +16,7 @@ namespace computeintersection {
 // forward declare
 template<class A, class B> class ComputeIntersection;
 class Plucker;
-template<unsigned int, unsigned int> class IntersectionPoint;
+template<unsigned int, unsigned int> class IntersectionPointAux;
 
 static const double plucker_empty = std::numeric_limits<double>::infinity();
 
@@ -65,13 +65,13 @@ public:
      * (these would be found before in triangle line X tetrahedron intersection).
      * @return true, if intersection is found; false otherwise
      */
-	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
+	bool compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
     
     /** Computes final 1d-2d intersection. (Use when this is not the resulting dimension object).
      * @param IP12s - input/output vector of IPs. If IP found, it is pushed back.
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_final(std::vector<IntersectionPoint<1,2>> &IP12s);
+    bool compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
     
     /// @name Setters and Getters
     //@{ 
@@ -138,14 +138,14 @@ private:
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_plucker(IntersectionPoint<1,2> &IP);
+    bool compute_plucker(IntersectionPointAux<1,2> &IP);
     
     /** Computes intersection of abscissa and triangle side for zero Plucker product - pathologic case.
      * @param side is the local index of the triangle side
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_pathologic(unsigned int side, IntersectionPoint<1,2> &IP);
+    bool compute_pathologic(unsigned int side, IntersectionPointAux<1,2> &IP);
     
     /// Flag 'computed'; is true is intersection has been computed already.
     bool computed_;
@@ -186,7 +186,7 @@ public:
 	void init();
     
     //TODO comment cases in implementation
-    unsigned int compute(std::vector<IntersectionPoint<1,3>> &IP13s);
+    unsigned int compute(std::vector<IntersectionPointAux<1,3>> &IP13s);
     
      /// @name Setters and Getters
     //@{ 
@@ -264,7 +264,7 @@ public:
 
 	void init();
 // 	void compute(IntersectionPolygon &local_polygon);
-    void compute(std::vector<IntersectionPoint<2,3>> &IP23s);
+    void compute(std::vector<IntersectionPointAux<2,3>> &IP23s);
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
 	void print_plucker_coordinates(std::ostream &os);

@@ -100,7 +100,7 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::set_data(computeintersection::
 	clear_all();
 };
 
-bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(IntersectionPoint< 1, 2 > &IP)
+bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(IntersectionPointAux< 1, 2 > &IP)
 {
     // compute local barycentric coordinates of IP: see formula (3) on pg. 12 in BP VF
     // local alfa = w2/sum; local beta = w1/sum; => local barycentric coordinates in the triangle
@@ -150,7 +150,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(Inters
     return true;
 }
 
-bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_pathologic(unsigned int side, IntersectionPoint< 1, 2 > &IP)
+bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_pathologic(unsigned int side, IntersectionPointAux< 1, 2 > &IP)
 {
 //      DBGMSG("PluckerProduct[%d]: %f\n",side, *plucker_products_[side]);
         if( std::abs(*plucker_products_[side]) <= rounding_epsilon ){// fabs(*plucker_products_[side]) <= rounding_epsilon){
@@ -261,7 +261,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_pathologic(uns
 }
 
 
-bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPoint<1,2>> &IP12s, 
+bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPointAux<1,2>> &IP12s, 
                                                           bool compute_zeros_plucker_products){
 
     compute_plucker_products();
@@ -271,7 +271,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
     if(((signed_plucker_product(0) > rounding_epsilon) && (signed_plucker_product(1) > rounding_epsilon) && (signed_plucker_product(2) > rounding_epsilon)) ||
        ((signed_plucker_product(0) < -rounding_epsilon) && (signed_plucker_product(1) < -rounding_epsilon) && (signed_plucker_product(2) < -rounding_epsilon))){
         
-        IntersectionPoint<1,2> IP;
+        IntersectionPointAux<1,2> IP;
         
         if(compute_plucker(IP))
         {
@@ -286,7 +286,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
         // 3 zero products: 
         //      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
         //      -> triangle side is part of the line (and otherwise)
-        IntersectionPoint<1,2> IP;
+        IntersectionPointAux<1,2> IP;
         for(unsigned int i = 0; i < 3;i++){
             if(compute_pathologic(i,IP))
             {
@@ -299,7 +299,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
     return false;   // if IP not found before
 };
 
-bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< IntersectionPoint< 1, 2 > >& IP12s)
+bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< IntersectionPointAux< 1, 2 > >& IP12s)
 {
     //compute_plucker_products();
     computed_ = true;
@@ -308,7 +308,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< 
     if(((signed_plucker_product(0) > rounding_epsilon) && (signed_plucker_product(1) > rounding_epsilon) && (signed_plucker_product(2) > rounding_epsilon)) ||
        ((signed_plucker_product(0) < -rounding_epsilon) && (signed_plucker_product(1) < -rounding_epsilon) && (signed_plucker_product(2) < -rounding_epsilon)))
     {
-        IntersectionPoint<1,2> IP;
+        IntersectionPointAux<1,2> IP;
         compute_plucker(IP);
         
         // if computing 1d-2d intersection as final product, cut the line
@@ -334,7 +334,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< 
         unsigned int n_found = 0;
         
         for(unsigned int i = 0; i < 3;i++){
-            IntersectionPoint<1,2> IP;
+            IntersectionPointAux<1,2> IP;
             if (compute_pathologic(i,IP))
             {
                 double t = IP.local_bcoords_A()[1];
@@ -460,9 +460,9 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(computeintersection::
 	}
 };
 
-unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPoint<1,3>> &IP13s){
+unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPointAux<1,3>> &IP13s){
 
-	std::vector<IntersectionPoint<1,2>> IP12s;
+	std::vector<IntersectionPointAux<1,2>> IP12s;
 	unsigned int pocet_pruniku = 0;
 
     // loop over sides of tetrahedron 
@@ -470,8 +470,8 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 		if(!CI12[side].is_computed() // if not computed yet
             && CI12[side].compute(IP12s, true)){    // compute; if intersection exists then continue
 
-            IntersectionPoint<1,2> IP = IP12s.back();   // shortcut
-            IntersectionPoint<1,3> IP13(IP, side);
+            IntersectionPointAux<1,2> IP = IP12s.back();   // shortcut
+            IntersectionPointAux<1,3> IP13(IP, side);
         
 			if(IP.is_pathologic()){   // resolve pathologic cases
                 
@@ -513,7 +513,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 	}else if(pocet_pruniku == 2){
         
         // create shortcuts
-        IntersectionPoint<1,3> 
+        IntersectionPointAux<1,3> 
             &a1 = IP13s[IP13s.size()-2],   // start point
             &a2 = IP13s[IP13s.size()-1];   // end point
         
@@ -696,10 +696,10 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 
 };
 
-void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(std::vector<IntersectionPoint<2,3>> &IP23s){
+void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(std::vector<IntersectionPointAux<2,3>> &IP23s){
 
-	std::vector<IntersectionPoint<1,2>> IP12s;
-	std::vector<IntersectionPoint<1,3>> IP13s;
+	std::vector<IntersectionPointAux<1,2>> IP12s;
+	std::vector<IntersectionPointAux<1,3>> IP13s;
 	unsigned int pocet_13_pruniku;
 
 	for(unsigned int triangle_line = 0; triangle_line < RefElement<2>::n_lines; triangle_line++){    // go through triangle lines
@@ -708,11 +708,11 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(std::vector<Intersecti
 //         DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
         
         for(unsigned int n=1; n <= pocet_13_pruniku; n++){
-            IntersectionPoint<1,3> IP (IP13s[IP13s.size()-n]);
+            IntersectionPointAux<1,3> IP (IP13s[IP13s.size()-n]);
             
-            IntersectionPoint<3,1> IP31(IP);             // switch idx_A and idx_B and coords
-            IntersectionPoint<3,2> IP32(IP31, triangle_line);  // interpolation uses local_bcoords_B and given idx_B
-            IntersectionPoint<2,3> IP23(IP32);           // switch idx_A and idx_B and coords back
+            IntersectionPointAux<3,1> IP31(IP);             // switch idx_A and idx_B and coords
+            IntersectionPointAux<3,2> IP32(IP31, triangle_line);  // interpolation uses local_bcoords_B and given idx_B
+            IntersectionPointAux<2,3> IP23(IP32);           // switch idx_A and idx_B and coords back
             
             if( IP.dim_A() == 0 ) // if IP is vertex of triangle
             {
@@ -728,12 +728,12 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(std::vector<Intersecti
 
 	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++){
 		if(CI12[tetra_edge].compute(IP12s, false)){
-            IntersectionPoint<1,2> IP = IP12s.back();
+            IntersectionPointAux<1,2> IP = IP12s.back();
             // Check whether the IP is on the abscissa (side of triangle)
 			if((IP.local_bcoords_A())[0] <= 1 && (IP.local_bcoords_A())[0] >= 0){
 // 				DBGMSG("CI23: number of 1-2 intersections = %d\n",pocet_pruniku);
-				IntersectionPoint<2,1> IP21(IP);
-				IntersectionPoint<2,3> IP23(IP21,tetra_edge);
+				IntersectionPointAux<2,1> IP21(IP);
+				IntersectionPointAux<2,3> IP23(IP21,tetra_edge);
                 
                 if(IP.dim_A() == 0) // IP is vertex of line (i.e. line of tetrahedron)
                     IP23.set_topology_B(RefElement<3>::interact<0,1>(tetra_edge)[IP.idx_A()], 0);

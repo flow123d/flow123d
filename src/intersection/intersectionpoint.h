@@ -13,18 +13,18 @@ static const double rounding_epsilon = 8*std::numeric_limits<double>::epsilon();
 static const double geometry_epsilon = 1e-9;
 
 //forward declare
-template<unsigned int N, unsigned int M> class IntersectionPoint;
-template<unsigned int N, unsigned int M> std::ostream& operator<<(std::ostream& os, const IntersectionPoint<N,M>& IP);
+template<unsigned int N, unsigned int M> class IntersectionPointAux;
+template<unsigned int N, unsigned int M> std::ostream& operator<<(std::ostream& os, const IntersectionPointAux<N,M>& IP);
     
 /**
- * Class represents an intersection point of simplex<N> and simplex<M>.
+ * Internal auxiliary class represents an intersection point of simplex<N> and simplex<M>.
  * It contains barycentric coordinates of the point on both simplices.
  * Further, it contains topology information of the intersection point.
  * Namely its orientation (according to Plucker coordinates product),
  * pathologic flag, local indices and dimension of element objects (node/line/triangle).
  * Refered as 'IP' in further documentation.
  */
-template<unsigned int N, unsigned int M> class IntersectionPoint {
+template<unsigned int N, unsigned int M> class IntersectionPointAux {
     
 	arma::vec::fixed<N+1> local_bcoords_A_; ///< Barycentric coordinates of an IP on simplex<N>.
 	arma::vec::fixed<M+1> local_bcoords_B_; ///< Barycentric coordinates of an IP on simplex<M>.
@@ -58,8 +58,8 @@ template<unsigned int N, unsigned int M> class IntersectionPoint {
     
 public:
 
-    IntersectionPoint();    ///< Default constructor.
-    ~IntersectionPoint(){}; ///< Destructor.
+    IntersectionPointAux();    ///< Default constructor.
+    ~IntersectionPointAux(){}; ///< Destructor.
     
     /**
      * Constructor taking barycentric coordinates on simplices as input parameters.
@@ -68,28 +68,28 @@ public:
      * @param dim_A dimension of object A
      * @param dim_B dimension of object B
      */
-	IntersectionPoint(const arma::vec::fixed<N+1> &lcA, const arma::vec::fixed<M+1> &lcB,
+	IntersectionPointAux(const arma::vec::fixed<N+1> &lcA, const arma::vec::fixed<M+1> &lcB,
                       unsigned int dim_A = N, unsigned int dim_B = M);
 	
 
 	/** Constructor - flipping dimension of an intersection point.
      * @param IP is intersection point with flipped dimension (N->M, M->N)
      */
-	IntersectionPoint(IntersectionPoint<M, N> &IP);
+	IntersectionPointAux(IntersectionPointAux<M, N> &IP);
 
-	/** Constructor interpolates the second bary coords of IntersectionPoint<N,M-1> to IntersectionPoint<N,M>
+	/** Constructor interpolates the second bary coords of IntersectionPointAux<N,M-1> to IntersectionPointAux<N,M>
      * Allowed only from dimension \p M 1 to 2 and from 2 to 3.
      * @param IP intersection point of lower dimension of object B
-     * @param  idx_B is the index of object B of IntersectionPoint<N,M-1> in object B of IntersectionPoint<N,M>
+     * @param  idx_B is the index of object B of IntersectionPointAux<N,M-1> in object B of IntersectionPointAux<N,M>
      * */
-	IntersectionPoint(IntersectionPoint<N,M-1> &IP, unsigned int idx_B);
+	IntersectionPointAux(IntersectionPointAux<N,M-1> &IP, unsigned int idx_B);
 
-	/** Constructor interpolates the second bary coords of IntersectionPoint<N,M-2> to IntersectionPoint<N,M>
+	/** Constructor interpolates the second bary coords of IntersectionPointAux<N,M-2> to IntersectionPointAux<N,M>
 	 * Allowed only from dimension \p M 1 to 3.
      * @param IP intersection point of lower dimension of object B
-     * @param idx_B is the index of object B of IntersectionPoint<N,M-2> in object B of IntersectionPoint<N,M>
+     * @param idx_B is the index of object B of IntersectionPointAux<N,M-2> in object B of IntersectionPointAux<N,M>
 	 * */
-	IntersectionPoint(IntersectionPoint<N,M-2> &IP, unsigned int idx_B);
+	IntersectionPointAux(IntersectionPointAux<N,M-2> &IP, unsigned int idx_B);
 
     /// Resets the object to default values.
     void clear();
@@ -144,22 +144,22 @@ public:
 	 * Comparison operator for sorting the IPs in convex hull tracing algorithm.
      * Compares the points by x-coordinate (in case of a tie, compares by y-coordinate).
 	 */
-	bool operator<(const IntersectionPoint<N,M> &ip) const;
+	bool operator<(const IntersectionPointAux<N,M> &ip) const;
     
     /// Friend output operator.
-    friend std::ostream& operator<< <>(std::ostream& os, const IntersectionPoint<N,M>& IP);
+    friend std::ostream& operator<< <>(std::ostream& os, const IntersectionPointAux<N,M>& IP);
 };
 
 
 /********************************************* IMPLEMENTATION ***********************************************/
 
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_coordinates(const arma::vec::fixed< N + 1  >& lcA, const arma::vec::fixed< M + 1  >& lcB)
+void IntersectionPointAux<N,M>::set_coordinates(const arma::vec::fixed< N + 1  >& lcA, const arma::vec::fixed< M + 1  >& lcB)
 {   local_bcoords_A_ = lcA;
     local_bcoords_B_ = lcB; }
 
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_topology(unsigned int idx_A,unsigned int dim_A, unsigned int idx_B, unsigned int dim_B)
+void IntersectionPointAux<N,M>::set_topology(unsigned int idx_A,unsigned int dim_A, unsigned int idx_B, unsigned int dim_B)
 {   idx_A_ = idx_A;
     idx_B_ = idx_B;
     dim_A_ = dim_A;
@@ -167,11 +167,11 @@ void IntersectionPoint<N,M>::set_topology(unsigned int idx_A,unsigned int dim_A,
 }
     
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_orientation(unsigned int orientation)
+void IntersectionPointAux<N,M>::set_orientation(unsigned int orientation)
 {   orientation_ = orientation; }
 
 // template<unsigned int N, unsigned int M>  
-// void IntersectionPoint<N,M>::set_topology_SS(unsigned int edge_idx, unsigned int ori, bool pathologic)
+// void IntersectionPointAux<N,M>::set_topology_SS(unsigned int edge_idx, unsigned int ori, bool pathologic)
 // {
 //     side_idx1 = unset_loc_idx;
 //     side_idx2 = edge_idx;
@@ -180,7 +180,7 @@ void IntersectionPoint<N,M>::set_orientation(unsigned int orientation)
 // }
 // 
 // template<unsigned int N, unsigned int M>
-// void IntersectionPoint<N,M>::set_topology_ES(unsigned int edge_idx, unsigned int side_idx, unsigned int ori, bool pathologic)
+// void IntersectionPointAux<N,M>::set_topology_ES(unsigned int edge_idx, unsigned int side_idx, unsigned int ori, bool pathologic)
 // {
 //     side_idx1 = edge_idx;
 //     side_idx2 = side_idx;
@@ -189,7 +189,7 @@ void IntersectionPoint<N,M>::set_orientation(unsigned int orientation)
 // }
 // 
 // template<unsigned int N, unsigned int M>
-// void IntersectionPoint<N,M>::set_topology_EE(unsigned int vertex_idx, bool pathologic)
+// void IntersectionPointAux<N,M>::set_topology_EE(unsigned int vertex_idx, bool pathologic)
 // {
 //     side_idx1 = vertex_idx;
 //     side_idx2 = unset_loc_idx;
@@ -198,45 +198,45 @@ void IntersectionPoint<N,M>::set_orientation(unsigned int orientation)
 // }
 
 template<unsigned int N, unsigned int M>
-unsigned int IntersectionPoint<N,M>::dim_A() const
+unsigned int IntersectionPointAux<N,M>::dim_A() const
 {   return dim_A_; }
 
 template<unsigned int N, unsigned int M>
-unsigned int IntersectionPoint<N,M>::dim_B() const
+unsigned int IntersectionPointAux<N,M>::dim_B() const
 {   return dim_B_; }
 
 template<unsigned int N, unsigned int M>
-const arma::vec::fixed< N + 1  >& IntersectionPoint<N,M>::local_bcoords_A() const
+const arma::vec::fixed< N + 1  >& IntersectionPointAux<N,M>::local_bcoords_A() const
 {   return local_bcoords_A_; }
 
 template<unsigned int N, unsigned int M>
-const arma::vec::fixed< M + 1  >& IntersectionPoint<N,M>::local_bcoords_B() const
+const arma::vec::fixed< M + 1  >& IntersectionPointAux<N,M>::local_bcoords_B() const
 {   return local_bcoords_B_; }
 
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_topology_A(unsigned int idx_A, unsigned int dim_A)
+void IntersectionPointAux<N,M>::set_topology_A(unsigned int idx_A, unsigned int dim_A)
 {   idx_A_ = idx_A;
     dim_A_ = dim_A; }
 
 template<unsigned int N, unsigned int M>
-void IntersectionPoint<N,M>::set_topology_B(unsigned int idx_B, unsigned int dim_B)
+void IntersectionPointAux<N,M>::set_topology_B(unsigned int idx_B, unsigned int dim_B)
 {   idx_B_ = idx_B;
     dim_B_ = dim_B; }
 
 template<unsigned int N, unsigned int M>
-unsigned int IntersectionPoint<N,M>::idx_A() const
+unsigned int IntersectionPointAux<N,M>::idx_A() const
 {   return idx_A_; }
 
 template<unsigned int N, unsigned int M>
-unsigned int IntersectionPoint<N,M>::idx_B() const
+unsigned int IntersectionPointAux<N,M>::idx_B() const
 {   return idx_B_; }
 
 template<unsigned int N, unsigned int M>
-unsigned int IntersectionPoint<N,M>::orientation() const
+unsigned int IntersectionPointAux<N,M>::orientation() const
 {   return orientation_; }
 
 template<unsigned int N, unsigned int M>
-bool IntersectionPoint<N,M>::is_pathologic() const
+bool IntersectionPointAux<N,M>::is_pathologic() const
 {   return (orientation_ > 1); }
 
 

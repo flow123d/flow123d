@@ -20,13 +20,13 @@ class Mesh; // forward declare
 
 namespace computeintersection {
 
-template<unsigned int N, unsigned int M> class IntersectionPoint;
+template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> class IntersectionAux;
 
 class InspectElements;
 class IntersectionLocalBase;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
-template<unsigned int N, unsigned int M> class IntersectionPointX;
+template<unsigned int N, unsigned int M> class IntersectionPoint;
 
 
 
