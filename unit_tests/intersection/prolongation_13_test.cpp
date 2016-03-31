@@ -40,7 +40,7 @@ using namespace computeintersection;
 /// Create results for the meshes in directory 'site_13d'.
 void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, std::vector<double> &lengths)
 {
-    unsigned int n_files=4;
+    unsigned int n_files=5;
     ils.clear();
     lengths.clear();
     ils.resize(n_files);
@@ -53,6 +53,7 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
                  sqrt(0.0625 + 2*0.04) + sqrt(0.0225 + 0.09 + 0.01) +
                  0.1*sqrt(4+9+16) + 0.1*sqrt(4+9+1) + sqrt(1./9 + 0.25 + 1./36);
     lengths[3] = 4*0.25;
+    lengths[4] = 0.5 + 0.5 + 2*0.5*sqrt(2);
     
     ils[0].resize(9);
     ils[0][0] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
@@ -60,6 +61,7 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     ils[0][2] = {arma::vec3({1,1,1})/4,arma::vec3({0.2,0.5,0.2})};
     ils[0][3] = {arma::vec3({35,-25,35})*0.01,arma::vec3({0,-25,35})*0.01};
     ils[0][4] = {arma::vec3({0.2,0.5,0.2}),arma::vec3({0,5,2})*0.1};
+    
     ils[0][5] = {arma::vec3({1,1,0})/4,arma::vec3({0,1,1})*0.05};
     ils[0][6] = {arma::vec3({0,1,1})*0.05,arma::vec3({2,0,1})*0.1};
     ils[0][7] = {arma::vec3({2,0,1})*0.1,arma::vec3({40,-5,15})*0.01};
@@ -90,29 +92,22 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     ils[2][10] = {arma::vec3({1./3,0,2./3})};
     ils[2][11] = {arma::vec3({0,-5,5})*0.1,arma::vec3({1./3,0,2./3})};
     
-    ils[3].resize(3);
+    ils[3].resize(4);
     ils[3][0] = {arma::vec3({0.25,0.25,0.25}),arma::vec3({0.25,0.25,0})};
-    //ils[3][1] = {arma::vec3({0.25,0.25,-1}),arma::vec3({0.25,0.25,-1.25})};
-    ils[3][1] = {arma::vec3({0.25,0.5,0.25}),arma::vec3({0.25,0.5,0})};
-    ils[3][2] = {arma::vec3({0.25,0.5,-1}),arma::vec3({0.25,0.5,-1.25})};
+    ils[3][1] = {arma::vec3({0.25,0.25,-1}),arma::vec3({0.25,0.25,-1.25})};
+    ils[3][2] = {arma::vec3({0.25,0.5,0.25}),arma::vec3({0.25,0.5,0})};
+    ils[3][3] = {arma::vec3({0.25,0.5,-1}),arma::vec3({0.25,0.5,-1.25})};
+    
+    ils[4].resize(6);
+    ils[4][1] = {arma::vec3({0.4,-0.25,0.25}),arma::vec3({0.4,0,0.25})};
+    ils[4][0] = {arma::vec3({0.4,0,0.25}),arma::vec3({0.4,0.25,0.25})};
+    
+    ils[4][3] = {arma::vec3({0,-0.25,0.25}),arma::vec3({0,0,0.25})};
+    ils[4][2] = {arma::vec3({0,0,0.25}),arma::vec3({0,0.25,0.25})};
+        
+    ils[4][5] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};
+    ils[4][4] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};
 }
-
-
-//Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
-// computeintersection::IntersectionLine permute_coords(computeintersection::IntersectionLine il, unsigned int permute[4])
-// {
-//     computeintersection::IntersectionLine new_il = il;
-//     std::vector<computeintersection::IntersectionPoint<1,3>> & points = il.points();
-//     for(unsigned int i = 0; i < points.size(); i++)
-//     {
-//         arma::vec::fixed<4> new_coords;
-//         for(unsigned int j = 0; j < 4; j++)
-//             new_coords[j] = points[i].local_bcoords_B()[permute[j]];
-//         
-//         new_il.points()[i].set_coordinates(points[i].local_bcoords_A(), new_coords);
-//     }
-//     return new_il;
-// }
 
 void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il, const double &length)
 {
@@ -123,9 +118,11 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     
     InspectElements ie(mesh);
     ie.compute_intersections();
+    ie.print_mesh_to_file_13("output_intersection_13");
     
     DBGMSG("N intersections %d\n",ie.intersection_storage13_.size());
     
+//    // write computed intersections
 //     for(unsigned int i = 0; i < ie.intersection_storage13_.size(); i++)
 //     {
 //         cout << &ie.intersection_storage13_[i] << ie.intersection_storage13_[i];
@@ -162,18 +159,9 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     }
     
     computed_length = ie.measure_13();
-    ie.print_mesh_to_file_13("output_intersection_13");
+    
     DBGMSG("Length of intersection line: (intersections) %.16e\n", computed_length);
     EXPECT_NEAR(computed_length, length, 1e-14);
-    
-    // 1:
-//     EXPECT_DOUBLE_EQ(length,1.5*std::sqrt(0.27)+0.35+0.2
-//                             + std::sqrt(0.065) + 0.1*std::sqrt(18) + std::sqrt(0.105));
-    // 2: 
-    // 3: 
-//     EXPECT_DOUBLE_EQ(length,std::sqrt(0.24*0.24 + 0.0016 + 0.04) + std::sqrt( 2* 0.0225 + 0.75*0.75) + 
-//         std::sqrt(0.0625 + 2*0.04) + std::sqrt(0.0225 + 0.09 + 0.01));
-    // 4: 1.0
 }
 
 

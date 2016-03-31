@@ -128,7 +128,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
     {START_TIMER("Element iteration");
     
     FOR_ELEMENTS(mesh, elm) {
-        if (elm->dim() == dim &&                                // is 2D element
+        if (elm->dim() == dim &&                                // is component element
             !closed_elements[elm.index()] &&                    // is not closed yet
             elements_bb[elm->index()].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
         {    
@@ -138,105 +138,105 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 
             {START_TIMER("Bounding box element iteration");
             
+            // Go through all element which bounding box intersects the component element bounding box
             for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
             {
                 int idx = *it;
                 ElementFullIter ele_3D = mesh->element(idx);
 
-                if (ele_3D->dim() == 3 && last_slave_for_3D_elements[ele_3D->index()] != (int)(elm->index())) {
+                // if:
+                // check 3D only
+                // check with the last component element computed for the current 3D element
+                // intersection has not been computed already
+                if (ele_3D->dim() == 3 &&
+                    (last_slave_for_3D_elements[ele_3D->index()] != (int)(elm->index()) &&
+                     !intersection_exists(elm->index(),ele_3D->index()) )
+                ) {
+                        // - find first intersection
+                        // - if found, prolongate and possibly fill both prolongation queues
+                        // do-while loop:
+                        // - empty prolongation queues:
+                        //      - empty bulk queue:
+                        //          - get a candidate from queue and compute CI
+                        //          - prolongate and possibly push new candidates into queues
+                        //          - repeat until bulk queue is empty
+                        //          - the component element is still the same whole time in here
+                        //
+                        //      - the component element might get fully covered by bulk elements
+                        //        and only then it can be closed
+                        //
+                        //      - pop next candidate from component queue:
+                        //          - the component element is now changed
+                        //          - compute CI
+                        //          - prolongate and possibly push new candidates into queues
+                        //
+                        // - repeat until both queues are empty
                     
                     DBGMSG("elements %d %d\n",elm->index(), ele_3D->index());
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     bool found = compute_initial_CI(elm, ele_3D);
 
-                    // TODO
-                    // make component_element_idx_ local variable
+                    // keep the index of the current component element that is being investigated
                     unsigned int current_component_element_idx = elm->index();
                     
                     if(found){
                         
                         last_slave_for_3D_elements[ele_3D->index()] = elm.index();
-
-                        // prolongation:
-                        
                         prolongation_decide(elm, ele_3D);
-
-                        // - find first intersection polygon
-                        // - fill both prolongation queue in 2D and 3D
-                        // - clear prolongation queue:
-                        //      - clear 3D prolongation queue:
-                        //          - compute CI
-                        //          - fill both prolongation queue 2D and 3D
-                        //          - repeat until 3D queue is empty
-                        //      - we can close the 2D element which we started with
-                        //      - clear 2D prolongation queue:
-                        //          - compute CI
-                        //          - fill both prolongation queue 2D and 3D
-                        //          - repeat until 2D queue is empty
-                        //      - emptying 2D queue could fill 3D queue again, so repeat
                         
-                        //TODO:
-                        // defined unset element index -1
-                        // Prolongation - set bulk element index -1 if there is no neighbour
-                        //
-                        // then later after while check if(closed_elements[elm->index()] == true)
-                        // and only then break cycle over bounding boxes
-                        // 
-                        
-                        while(1){
-                            //TODO
-                            // bool closed = true;
+                        do{
+                            // flag is set false if the component element is not fully covered with tetrahedrons
+                            bool element_covered = true;
+                            
                             while(!bulk_queue_.empty()){
                                 Prolongation pr = bulk_queue_.front();
-                                DBGMSG("Prolongation queue compute in 3d ele_idx %d.\n",pr.elm_3D_idx);
-                                prolongate(pr);
-                                //TODO
-                                // if component element is not fully covered with tetrahedrons
-                                //if( == -1)
-                                //    closed = false;
+                                DBGMSG("Bulk queue: ele_idx %d.\n",pr.elm_3D_idx);
+                                
+                                if( pr.elm_3D_idx == undefined_elm_idx_)
+                                {
+                                    DBGMSG("Open intersection component element: %d\n",current_component_element_idx);
+                                    element_covered = false;
+                                }
+                                else prolongate(pr);
                                 
                                 bulk_queue_.pop();
-
                             }
                             
-                            //TODO
-                            //closed_elements[current_component_element_idx] = closed;
+                            closed_elements[current_component_element_idx] = element_covered;
                             
-                            closed_elements[current_component_element_idx] = true;
                             
                             if(!component_queue_.empty()){
                                 Prolongation pr = component_queue_.front();
 
                                 // note the component element index
                                 current_component_element_idx = pr.component_elm_idx;
-                                DBGMSG("Prolongation queue compute in 2d ele_idx %d.\n",current_component_element_idx);
+                                DBGMSG("Component queue: ele_idx %d.\n",current_component_element_idx);
                                 
                                 prolongate(pr);
                                 component_queue_.pop();
 
                                 //TODO not sure if component element at the end of component will be closed
                             }
-
-                            //TODO remove this
-                            if(component_queue_.empty() && bulk_queue_.empty()){
-                                closed_elements[current_component_element_idx] = true;
-                                break;
-                            }
-
                         }
-                        break; // ukončí procházení dalších bounding boxů
+                        while( !(component_queue_.empty() && bulk_queue_.empty()) );
+                        
+                        // if component element is closed, do not check other bounding boxes
+                        if(closed_elements[elm->index()])
+                            break;
                     }
 
                 }
             }
-            //TODO leave open if not closed already
-            // Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
-            closed_elements[elm.index()] = true;
             END_TIMER("Bounding box element iteration");}
         }
     }
 
     END_TIMER("Element iteration");}
+    
+    
+    FOR_ELEMENTS(mesh, ele) {
+        DBGMSG("Element[%3d] closed: %d\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
+    }
 }
   
 
@@ -282,19 +282,30 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
                 // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
                 case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
                             edges.push_back(&(mesh->edges[ele_3D->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
+                        DBGMSG("3d prolong (node)\n");
                         break;
                 
                 // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
                 case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
                             edges.push_back(&(mesh->edges[ele_3D->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
+                        DBGMSG("3d prolong (edge)\n");
                         break;
                         
                 // IP is on a side of tetrahedron; only possible edge is from the given side
                 case 2: edges.push_back(&(mesh->edges[ele_3D->edge_idx_[IP.idx_B()]]));
+                        // if edge has only one side, it means it is on the boundary and we cannot prolongate
+                        if(edges.back()->n_sides == 1)
+                        {
+                            Prolongation pr = {elm->index(), undefined_elm_idx_, undefined_elm_idx_};
+                            bulk_queue_.push(pr);
+                            continue;
+                        }
+                        DBGMSG("3d prolong (side)\n");
                         break;
                 default: ASSERT_LESS(IP.dim_B(),3);
             }
             
+            unsigned int n_prolongations = 0;
             for(Edge* edg : edges)
             for(int j=0; j < edg->n_sides;j++) {
                 if (edg->side(j)->element() != ele_3D) {
@@ -305,7 +316,7 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
                     {
                         last_slave_for_3D_elements[sousedni_element] = elm->index();
                      
-                        DBGMSG("3d prolong\n");
+                        DBGMSG("3d prolong %d in %d\n",elm->index(),sousedni_element);
                         
                         // Vytvoření průniku bez potřeby počítání
                         IntersectionAux<1,3> il_other(elm.index(), sousedni_element);
@@ -313,8 +324,18 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
                         
                         Prolongation pr = {elm->index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
                         bulk_queue_.push(pr);
+                        n_prolongations++;
                     }
                 }   
+            }
+            
+            DBGMSG("cover: %d %d\n", il.size(), n_prolongations);
+            // if there are no sides of any edge that we can continue to prolongate over,
+            // it means we are at the boundary and cannot prolongate further
+            if(IP.is_pathologic() && n_prolongations == 0)
+            {
+                Prolongation pr = {elm->index(), undefined_elm_idx_, undefined_elm_idx_};
+                bulk_queue_.push(pr);
             }
         }  
     }

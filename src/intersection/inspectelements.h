@@ -71,6 +71,8 @@ public:
     void compute_intersections();
 
 private:
+    const unsigned int undefined_elm_idx_ = -1;
+    
     /// Prolongation queue in the component mesh.
     std::queue<Prolongation> component_queue_;
     /// Prolongation queue in the bulk mesh.
