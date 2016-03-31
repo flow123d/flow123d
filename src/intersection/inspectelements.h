@@ -131,10 +131,7 @@ private:
 
 
 class InspectElements
-{
-    /// Mesh pointer.
-    Mesh * mesh;
-    
+{   
 public:
     /// First = element index, Second = pointer to intersection object.
     typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
@@ -166,6 +163,12 @@ public:
     /// Generates a mesh file of the given name, including the intersection.
     void print_mesh_to_file_13(std::string name);
     void print_mesh_to_file_23(std::string name);
+    
+private:
+    /// Mesh pointer.
+    Mesh * mesh;
+    
+    template<unsigned int dim> void compute_intersections(std::vector<IntersectionLocal<dim,3>> &storage);
 };
 
     

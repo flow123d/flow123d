@@ -149,7 +149,10 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     bool found = compute_initial_CI(elm, ele_3D);
 
-                    //TODO: how does prolongation work when there are 1 or 2 IPs?
+                    // TODO
+                    // make component_element_idx_ local variable
+                    //unsigned int current_component_element_idx = elm->index();
+                    
                     if(found){
                         
                         last_slave_for_3D_elements[ele_3D->index()] = elm.index();
@@ -171,28 +174,51 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                         //          - fill both prolongation queue 2D and 3D
                         //          - repeat until 2D queue is empty
                         //      - emptying 2D queue could fill 3D queue again, so repeat
+                        
+                        //TODO:
+                        // defined unset element index -1
+                        // Prolongation - set bulk element index -1 if there is no neighbour
+                        //
+                        // then later after while check if(closed_elements[elm->index()] == true)
+                        // and only then break cycle over bounding boxes
+                        // 
+                        
                         while(1){
+                            //TODO
+                            // bool closed = true;
                             while(!bulk_queue_.empty()){
                                 Prolongation pr = bulk_queue_.front();
                                 DBGMSG("Prolongation queue compute in 3d ele_idx %d.\n",pr.elm_3D_idx);
                                 prolongate(pr);
+                                //TODO
+                                // if component element is not fully covered with tetrahedrons
+                                //if( == -1)
+                                //    closed = false;
+                                
                                 bulk_queue_.pop();
 
                             }
-
+                            
+                            //TODO
+                            //closed_elements[current_component_element_idx] = closed;
+                            
                             if(component_element_idx_ >= 0) closed_elements[component_element_idx_] = true;
 
                             component_element_idx_ = -1;
                             
                             if(!component_queue_.empty()){
                                 Prolongation pr = component_queue_.front();
+                                //TODO
+                                // note the component element index
+                                // current_component_element_idx = pr.component_ele_idx
                                 DBGMSG("Prolongation queue compute in 2d ele_idx %d.\n",pr.component_elm_idx);
                                 prolongate(pr);
                                 component_queue_.pop();
 
+                                //TODO not sure if component element at the end of component will be closed
                             }
 
-                                
+                            //TODO remove this
                             if(component_queue_.empty() && bulk_queue_.empty()){
                                 if(component_element_idx_ >= 0) closed_elements[component_element_idx_] = true;
                                     
@@ -206,6 +232,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 
                 }
             }
+            //TODO leave open if not closed already
             // Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
             closed_elements[elm.index()] = true;
             END_TIMER("Bounding box element iteration");}
@@ -512,34 +539,31 @@ double InspectElements::measure_23()
     return subtotal;
 } 
  
-void InspectElements::compute_intersections()
+
+template<unsigned int dim>
+void InspectElements::compute_intersections(std::vector<IntersectionLocal<dim,3>> &storage)
 {
-    InspectElementsAlgorithm<1> iea_13(mesh);
-    InspectElementsAlgorithm<2> iea_23(mesh);
-    
-    iea_13.compute_intersections();
-    iea_23.compute_intersections();
-    
-    intersection_map_.resize(mesh->n_elements());
-    intersection_storage13_.reserve(100);
-    intersection_storage23_.reserve(100);
+    InspectElementsAlgorithm<dim> iea(mesh);  
+    iea.compute_intersections();
+  
+    storage.reserve(100);
     
     FOR_ELEMENTS(mesh, elm) {
         unsigned int idx = elm->index(); 
         unsigned int bulk_idx;
         
-        switch (elm->dim()) {   
-            case 1: {
-                intersection_map_[idx].resize(iea_13.intersection_list_[idx].size());
-                for(unsigned int j = 0; j < iea_13.intersection_list_[idx].size(); j++){
-                    bulk_idx = iea_13.intersection_list_[idx][j].bulk_ele_idx();
+        if(elm->dim() == dim)
+        {
+                intersection_map_[idx].resize(iea.intersection_list_[idx].size());
+                for(unsigned int j = 0; j < iea.intersection_list_[idx].size(); j++){
+                    bulk_idx = iea.intersection_list_[idx][j].bulk_ele_idx();
 //                     DBGMSG("cidx %d bidx %d: n=%d\n",idx, bulk_idx, iea_13.intersection_list_[idx][j].size());
-                    intersection_storage13_.push_back(IntersectionLocal<1,3>(iea_13.intersection_list_[idx][j]));
+                    storage.push_back(IntersectionLocal<dim,3>(iea.intersection_list_[idx][j]));
                     
                     // create map for component element
                     intersection_map_[idx][j] = std::make_pair(
                                                     bulk_idx, 
-                                                    &(intersection_storage13_.back())
+                                                    &(storage.back())
                                                 );
 //                  // write down intersections
 //                     IntersectionLocal<1,3>* il13 = 
@@ -555,32 +579,17 @@ void InspectElements::compute_intersections()
                                                     &(intersection_storage13_.back())
                                                 ));
                 }
-                break;
-            }
-            case 2: {
-                intersection_map_[idx].resize(iea_23.intersection_list_[idx].size());
-                for(unsigned int j = 0; j < iea_23.intersection_list_[idx].size(); j++){
-                    bulk_idx = iea_23.intersection_list_[idx][j].bulk_ele_idx();
-                    intersection_storage23_.push_back(IntersectionLocal<2,3>(iea_23.intersection_list_[idx][j]));
-                    
-                    // create map for component element
-                    intersection_map_[idx][j] = std::make_pair(
-                                                    bulk_idx, 
-                                                    (IntersectionLocalBase*) &(intersection_storage23_.back())
-                                                );
-                    // create map for bulk element
-                    intersection_map_[bulk_idx].push_back(
-                                                std::make_pair(
-                                                    idx, 
-                                                    (IntersectionLocalBase*) &(intersection_storage23_.back())
-                                                ));
-                }
-                break;
-            }
-            default: break;
-            
         }
     }
+    
+}
+ 
+void InspectElements::compute_intersections()
+{
+    intersection_map_.resize(mesh->n_elements());
+    
+    compute_intersections<1>(intersection_storage13_);
+    compute_intersections<2>(intersection_storage23_);
 }
 
  
