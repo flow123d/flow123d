@@ -2,7 +2,7 @@
  * inspectelements.cpp
  *
  *  Created on: 13.4.2014
- *      Author: viktor
+ *      Author: viktor, pe, jb
  */
 
 #include "inspectelements.h"
@@ -124,7 +124,6 @@ template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::compute_intersections()
 {
     init();
-    
     BIHTree bt(mesh, 20);
 
     {START_TIMER("Element iteration");
@@ -136,7 +135,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
             !closed_elements[component_ele_idx] &&                    // is not closed yet
             elements_bb[component_ele_idx].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
         {    
-            update_simplex(elm, component_simplex); // update component simplex
             std::vector<unsigned int> searchedElements;
             bt.find_bounding_box(elements_bb[component_ele_idx], searchedElements);
 
@@ -177,6 +175,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                         // - repeat until both queues are empty
                     
                     DBGMSG("elements %d %d\n",component_ele_idx, bulk_ele_idx);
+                    update_simplex(elm, component_simplex); // update component simplex
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     bool found = compute_initial_CI(component_ele_idx, bulk_ele_idx);
 
@@ -235,7 +234,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 
     END_TIMER("Element iteration");}
     
-    
+    // DBG write which elements are closed
     FOR_ELEMENTS(mesh, ele) {
         DBGMSG("Element[%3d] closed: %d\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
     }
@@ -370,8 +369,6 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
             // prolongation through the triangle side
 
             SideIter elm_side = elm->side(side);
-
-
             Edge *edg = elm_side->edge();
 
             for(int j=0; j < edg->n_sides;j++) {
@@ -380,11 +377,9 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
                     unsigned int sousedni_element = other_side->element()->index(); // 2D element
 
                     DBGMSG("2d sousedni_element %d\n", sousedni_element);
-                            //xprintf(Msg, "Naleznut sousedni element elementu(3030) s ctyrstenem(%d)\n", ele->index());
-                            //xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)\n",elm->index(),side,other_side->element()->index(),other_side->el_idx());
 
                         if(!intersection_exists(sousedni_element,ele_3D->index())){
-                            //flag_for_3D_elements[ele->index()] = sousedni_element;
+
                             DBGMSG("2d prolong\n");
                             // Vytvoření průniku bez potřeby počítání
                             IntersectionAux<2,3> il_other(sousedni_element, ele_3D->index());
@@ -423,7 +418,6 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
                         (last_slave_for_3D_elements[sousedni_element] != elm->index() && !intersection_exists(elm->index(),sousedni_element))){
                         
                         last_slave_for_3D_elements[sousedni_element] = elm->index();
-                        // Jedná se o vnitřní čtyřstěny v trojúhelníku
 
                         DBGMSG("3d prolong\n");
                         
@@ -450,7 +444,9 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
     
     DBGMSG("Prolongate %dD: %d in %d.\n", dim, pr.component_elm_idx, pr.elm_3D_idx);
-    
+
+    //TODO: optimization: this might be called before and not every time 
+    //(component element is not changing when emptying bulk queue)
     update_simplex(elm, component_simplex);
     update_simplex(ele_3D, tetrahedron);
 
@@ -471,52 +467,6 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
 }
 
 
-// template<> double InspectElementsAlgorithm<1>::measure() 
-// {
-//     double subtotal = 0.0;
-// 
-//     for(unsigned int i = 0; i < intersection_list_.size(); i++){
-//         DBGMSG("intersection_list_[i].size() = %d\n",intersection_list_[i].size());
-//         for(unsigned int j = 0; j < intersection_list_[i].size();j++){
-//             //if(intersection_list_[i][j].size() < 2) continue;
-//             
-//             ElementFullIter ele = mesh->element(intersection_list_[i][j].component_ele_idx());            
-//             double t1d_length = ele->measure();
-//             double local_length = intersection_list_[i][j].compute_measure();
-//             
-//             if(intersection_list_[i][j].size() == 2)
-//             {
-//             arma::vec3 from = intersection_list_[i][j][0].coords(ele);
-//             arma::vec3 to = intersection_list_[i][j][1].coords(ele);
-//             DBGMSG("sublength from [%f %f %f] to [%f %f %f] = %f\n",
-//                    from[0], from[1], from[2], 
-//                    to[0], to[1], to[2],
-//                    local_length*t1d_length);
-//             }
-//             subtotal += local_length*t1d_length;
-//         }
-//     }
-//     return subtotal;
-// }
-// 
-// template<> double InspectElementsAlgorithm<2>::measure() 
-// {
-//     double subtotal = 0.0;
-// 
-//     for(unsigned int i = 0; i < intersection_list_.size(); i++){
-//         for(unsigned int j = 0; j < intersection_list_[i].size();j++){
-//             double t2dArea = mesh->element(intersection_list_[i][j].component_ele_idx())->measure();
-//             double localArea = intersection_list_[i][j].compute_measure();
-//             subtotal += 2*localArea*t2dArea;
-//         }
-//     }
-//     return subtotal;
-// } 
- 
- 
- 
- 
- 
  
  
 InspectElements::InspectElements(Mesh* mesh)
@@ -690,18 +640,14 @@ void InspectElements::print_mesh_to_file_13(string name)
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 fprintf(file,"%d 1 2 14 16 %d %d\n",elee.id(), id1, id2);
-                //xprintf(Msg, "Missing implementation of printing 1D element to a file\n");
             }
         }
 
         unsigned int number_of_elements = mesh->n_elements();
-        //unsigned int last = 0;
         unsigned int nodes = mesh->n_nodes();
 
         for(unsigned int j = 0; j < intersection_storage13_.size();j++){
             IntersectionLocal<1,3> il = intersection_storage13_[j];
-            //for(unsigned int k = 0; k < il.size();k++){
-
             number_of_elements++;
             nodes++;
             if(il.size() == 1){
@@ -710,7 +656,6 @@ void InspectElements::print_mesh_to_file_13(string name)
                 fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
                 nodes++;
             }
-            //}
         }
 
         fprintf(file,"$EndElements\n");
@@ -792,10 +737,8 @@ void InspectElements::print_mesh_to_file_23(string name)
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 fprintf(file,"%d 1 2 14 16 %d %d\n",elee.id(), id1, id2);
-                //xprintf(Msg, "Missing implementation of printing 1D element to a file\n");
             }
         }
-
 
         unsigned int number_of_elements = mesh->n_elements();
         unsigned int last = 0;

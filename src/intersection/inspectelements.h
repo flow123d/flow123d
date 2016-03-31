@@ -2,7 +2,7 @@
  * inspectelements.h
  *
  *  Created on: 13.4.2014
- *      Author: viktor
+ *      Author: viktor, pe, jb
  */
 #ifndef INSPECT_ELEMENTS_H_
 #define INSPECT_ELEMENTS_H_
@@ -172,6 +172,7 @@ private:
     /// Mesh pointer.
     Mesh * mesh;
     
+    /// Auxiliary function that calls InspectElementsAlgorithm<dim>.
     template<unsigned int dim> void compute_intersections(std::vector<IntersectionLocal<dim,3>> &storage);
 };
 
