@@ -73,6 +73,9 @@ public:
 private:
     const unsigned int undefined_elm_idx_ = -1;
     
+    /// Counter for intersection among elements.
+    unsigned int n_intersections_;
+    
     /// Prolongation queue in the component mesh.
     std::queue<Prolongation> component_queue_;
     /// Prolongation queue in the bulk mesh.

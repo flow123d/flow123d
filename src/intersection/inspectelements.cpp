@@ -39,6 +39,7 @@ void InspectElementsAlgorithm<dim>::init()
     START_TIMER("Intersection initialization");
     last_slave_for_3D_elements.assign(mesh->n_elements(), -1);
     closed_elements.assign(mesh->n_elements(), false);
+    n_intersections_ = 0;
 
     if(elements_bb.size() == 0){
         elements_bb.resize(mesh->n_elements());
@@ -97,6 +98,7 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementFullIter& el
         
         trace(is);
         intersection_list_[elm->index()].push_back(is);
+        n_intersections_++;
         return true;
     }
     else return false;
@@ -464,6 +466,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
         
         trace(is);
         prolongation_decide(elm, ele_3D);
+        n_intersections_++;
     }
 }
 
@@ -567,7 +570,7 @@ void InspectElements::compute_intersections(std::vector<IntersectionLocal<dim,3>
     InspectElementsAlgorithm<dim> iea(mesh);  
     iea.compute_intersections();
   
-    storage.reserve(100);
+    storage.reserve(iea.n_intersections_);
     
     FOR_ELEMENTS(mesh, elm) {
         unsigned int idx = elm->index(); 
