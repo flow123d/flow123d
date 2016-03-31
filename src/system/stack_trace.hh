@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <vector>
 
 
 class StackTrace
@@ -35,7 +36,7 @@ public:
 	~StackTrace();
 
     /// Prints formated stacktrace into given stream @p out.
-    void print(std::ostream &out) const;
+    void print(std::ostream &out, std::vector<std::string> frames_to_cut = std::vector<std::string>()) const;
 
 private:
 
