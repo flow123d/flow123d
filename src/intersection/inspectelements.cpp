@@ -37,7 +37,7 @@ template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::init()
 {
     START_TIMER("Intersection initialization");
-    last_slave_for_3D_elements.assign(mesh->n_elements(), -1);
+    last_slave_for_3D_elements.assign(mesh->n_elements(), undefined_elm_idx_);
     closed_elements.assign(mesh->n_elements(), false);
     n_intersections_ = 0;
 
@@ -218,8 +218,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                                 
                                 prolongate(pr);
                                 component_queue_.pop();
-
-                                //TODO not sure if component element at the end of component will be closed
                             }
                         }
                         while( !(component_queue_.empty() && bulk_queue_.empty()) );
@@ -251,7 +249,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 template<>
 void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
 {
-    IntersectionAux<1,3> il = intersection_list_[elm.index()].back();
+    IntersectionAux<1,3> il = intersection_list_[elm->index()].back();
     // number of IPs that are at vertice of component element
     unsigned int n_ip_vertices = 0;
     
@@ -276,7 +274,7 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
                         IntersectionAux<1,3> il_other(sousedni_element, ele_3D->index());
                         intersection_list_[sousedni_element].push_back(il_other);
                         
-                        Prolongation pr = {sousedni_element, ele_3D->index(), intersection_list_[sousedni_element].size() - 1};
+                        Prolongation pr = {sousedni_element, ele_3D->index(), (unsigned int)intersection_list_[sousedni_element].size() - 1};
                         component_queue_.push(pr);
                     }
                 }
@@ -318,18 +316,18 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
                 if (edg->side(j)->element() != ele_3D) {
                     unsigned int sousedni_element = edg->side(j)->element()->index();
 
-                    if(last_slave_for_3D_elements[sousedni_element] == -1 || 
-                        (last_slave_for_3D_elements[sousedni_element] != (int)elm->index() && !intersection_exists(elm->index(),sousedni_element)))
+                    if(last_slave_for_3D_elements[sousedni_element] == undefined_elm_idx_ || 
+                        (last_slave_for_3D_elements[sousedni_element] != elm->index() && !intersection_exists(elm->index(),sousedni_element)))
                     {
                         last_slave_for_3D_elements[sousedni_element] = elm->index();
                      
                         DBGMSG("3d prolong %d in %d\n",elm->index(),sousedni_element);
                         
                         // Vytvoření průniku bez potřeby počítání
-                        IntersectionAux<1,3> il_other(elm.index(), sousedni_element);
-                        intersection_list_[elm.index()].push_back(il_other);
+                        IntersectionAux<1,3> il_other(elm->index(), sousedni_element);
+                        intersection_list_[elm->index()].push_back(il_other);
                         
-                        Prolongation pr = {elm->index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
+                        Prolongation pr = {elm->index(), sousedni_element, (unsigned int)intersection_list_[elm->index()].size() - 1};
                         bulk_queue_.push(pr);
                         n_prolongations++;
                     }
@@ -392,7 +390,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
                             IntersectionAux<2,3> il_other(sousedni_element, ele_3D->index());
                             intersection_list_[sousedni_element].push_back(il_other);
 
-                            Prolongation pr = {sousedni_element, ele_3D->index(), intersection_list_[sousedni_element].size() - 1};
+                            Prolongation pr = {sousedni_element, ele_3D->index(), (unsigned int)intersection_list_[sousedni_element].size() - 1};
                             component_queue_.push(pr);
                         }
                 }
@@ -413,16 +411,16 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
 
                     DBGMSG("3d sousedni_element %d\n", sousedni_element);
 
-                    // TODO: flag_for_3D_elements seems to be optimalisation:
+                    // TODO:
                     // - rename it, describe it and test that it is really useful !!
                     // how it probably works: 
-                    // - if "-1" then no intersection has been computed for the 3D element
-                    // - if not "-1" check the index of actual 2D element 
+                    // - if index undefined then no intersection has been computed for the 3D element
+                    // - if not undefined check the index of actual 2D element 
                     //   (most probable case, that we are looking along 2D element back to 3D element, which we have just computed)
                     // - if it is another 2D element, then go through all found intersections of the 3D element and test it..
                     
-                    if(last_slave_for_3D_elements[sousedni_element] == -1 || 
-                        (last_slave_for_3D_elements[sousedni_element] != (int)elm->index() && !intersection_exists(elm->index(),sousedni_element))){
+                    if(last_slave_for_3D_elements[sousedni_element] == undefined_elm_idx_ || 
+                        (last_slave_for_3D_elements[sousedni_element] != elm->index() && !intersection_exists(elm->index(),sousedni_element))){
                         
                         last_slave_for_3D_elements[sousedni_element] = elm->index();
                         // Jedná se o vnitřní čtyřstěny v trojúhelníku
@@ -430,10 +428,10 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
                         DBGMSG("3d prolong\n");
                         
                         // Vytvoření průniku bez potřeby počítání
-                        IntersectionAux<2,3> il_other(elm.index(), sousedni_element);
-                        intersection_list_[elm.index()].push_back(il_other);
+                        IntersectionAux<2,3> il_other(elm->index(), sousedni_element);
+                        intersection_list_[elm->index()].push_back(il_other);
 
-                        Prolongation pr = {elm.index(), sousedni_element, intersection_list_[elm.index()].size() - 1};
+                        Prolongation pr = {elm->index(), sousedni_element, (unsigned int)intersection_list_[elm->index()].size() - 1};
                         bulk_queue_.push(pr);
 
                     }
@@ -647,7 +645,7 @@ void InspectElements::print_mesh_to_file_13(string name)
         for(unsigned int j = 0; j < intersection_storage13_.size();j++){
             IntersectionLocal<1,3> il = intersection_storage13_[j];
             ElementFullIter el1D = mesh->element(il.component_ele_idx());
-            ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
+//             ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
             
             for(unsigned int k = 0; k < il.size();k++){
                 number_of_nodes++;
@@ -670,7 +668,7 @@ void InspectElements::print_mesh_to_file_13(string name)
 
         fprintf(file,"$EndNodes\n");
         fprintf(file,"$Elements\n");
-        fprintf(file,"%d\n", (intersection_storage13_.size() + mesh->n_elements()) );
+        fprintf(file,"%d\n", ((unsigned int)intersection_storage13_.size() + mesh->n_elements()) );
 
         FOR_ELEMENTS(mesh, elee){
             // 1 4 2 30 26 1 2 3 4
@@ -749,7 +747,7 @@ void InspectElements::print_mesh_to_file_23(string name)
             
             IntersectionLocal<2,3> il = intersection_storage23_[j];
             ElementFullIter el2D = mesh->element(il.component_ele_idx());
-            ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
+//             ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
             
             for(unsigned int k = 0; k < intersection_storage23_[j].size();k++){
 

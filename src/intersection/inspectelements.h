@@ -83,7 +83,7 @@ private:
     
     // Array of flags, which elements are computed
     std::vector<bool> closed_elements;
-    std::vector<int> last_slave_for_3D_elements;
+    std::vector<unsigned int> last_slave_for_3D_elements;
     
     /// Mesh pointer.
     Mesh *mesh;
