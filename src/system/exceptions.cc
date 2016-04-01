@@ -60,7 +60,7 @@ const char * ExceptionBase::what() const throw () {
 
         converter << std::endl << std::endl;
         converter << "--------------------------------------------------------" << std::endl;
-        converter << "Program Error: ";
+        converter << this->what_type_msg();
         print_info(converter);
 
         converter << "\n** Diagnosting info **\n" ;
@@ -83,6 +83,11 @@ const char * ExceptionBase::what() const throw () {
         std::abort();
     }
     return 0;
+}
+
+
+std::string ExceptionBase::what_type_msg() const {
+	return "Program Error: ";
 }
 
 

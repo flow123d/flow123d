@@ -22,6 +22,7 @@
 #include <string>
 #include <sstream>
 #include <cstdlib>
+#include "system/exceptions.hh"
 
 namespace feal {
 
@@ -30,14 +31,15 @@ namespace feal {
  *
  * Allows define assert, warning etc.
  */
-class Assert {
+class Assert : public ExceptionBase {
 public:
 	/// Constructor.
 	Assert(const std::string& expression)
 	: _FEAL_ASSERT_A (*this),
 	  _FEAL_ASSERT_B (*this),
 	  expression_(expression),
-	  thrown_(false) {}
+	  thrown_(false),
+	  what_type_msg_("Program Error: Violated assert") {}
 
 	/// Destructor.
 	~Assert() {
@@ -68,40 +70,47 @@ public:
 	}
 
 	/// Generate error
-	void error() {
+	void error()
+	{
 		thrown_ = true;
-		std::cout << "Program Error: Violated Assert! " << std::endl;
-		print();
-		//abort();
+		THROW( *this );
 	}
 
 	/// Generate warning
-	void warning() {
+	void warning()
+	{
 		thrown_ = true;
-		std::cout << "Warning: " << std::endl;
-		print();
+		what_type_msg_ = "Warning:";
+		std::cerr << this->what();
+	}
+
+	/// Print formatted assert message.
+	void print_info(std::ostringstream &out) const override
+	{
+		out << std::endl << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << std::endl;
+		out << "> Expression: \'" << expression_ << "\'" << std::endl;
+		if (current_val_.size()) {
+			out << "> Values:" << std::endl;
+			for (auto val : current_val_) {
+				out << "  " << val << std::endl;
+			}
+		}
+
 	}
 
 protected:
-	/// Print formatted assert message.
-	void print()
-	{
-		std::cout << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << std::endl;
-		std::cout << "> Expression: \'" << expression_ << "\'" << std::endl;
-		if (current_val_.size()) {
-			std::cout << "> Values:" << std::endl;
-			for (auto val : current_val_) {
-				std::cout << "  " << val << std::endl;
-			}
-		}
-	}
+    /// Override @p ExceptionBase::what_type_msg()
+    std::string what_type_msg() const override {
+    	return what_type_msg_;
+    }
 
-	std::string expression_;                  ///< Assertion expression
+    std::string expression_;                  ///< Assertion expression
 	const char* file_name_;                   ///< Actual file.
 	const char* function_;                    ///< Actual function.
 	int line_;                                ///< Actual line.
 	std::vector< std::string > current_val_;  ///< Formated strings of names and values of given variables.
 	bool thrown_;                             ///< Flag marked if Assert thrown error, warning, ...
+	std::string what_type_msg_;               ///< String representation of message type (Program error, Warning, ...)
 
 };
 

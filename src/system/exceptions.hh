@@ -87,6 +87,8 @@ public:
     virtual ~ExceptionBase() throw ();
 
 protected:
+    /// Return type of message ("Program error" for this class). Can be override in descendants.
+    virtual std::string what_type_msg() const;
     /// Stacktrace of exception.
     StackTrace stack_trace_;
 };
