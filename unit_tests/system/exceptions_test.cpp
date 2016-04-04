@@ -194,14 +194,21 @@ TEST(Exceptions, assert_msg) {
 TEST(FealAssert, assert) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
+    std::string s1 = "feal";
+    std::string s2 = "assert";
+
     try {
-        std::string s1 = "feal";
-        std::string s2 = "assert";
         FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
     } catch (feal::Assert &e) {
         std::cout << e.what();
     }
 
+    // only in debug mode
+    try {
+        DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+    } catch (feal::Assert &e) {
+        std::cout << e.what();
+    }
 }
 
 TEST(FealAssert, warning) {
