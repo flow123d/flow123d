@@ -41,6 +41,18 @@ public:
 	  thrown_(false),
 	  what_type_msg_("Program Error: Violated assert") {}
 
+	/// Copy constructor.
+	Assert(const Assert& other)
+	: _FEAL_ASSERT_A (*this),
+	  _FEAL_ASSERT_B (*this),
+	  expression_(other.expression_),
+	  file_name_(other.file_name_),
+	  function_(other.function_),
+	  line_(other.line_),
+	  current_val_(other.current_val_),
+	  thrown_(other.thrown_),
+	  what_type_msg_(other.what_type_msg_) {}
+
 	/// Destructor.
 	~Assert() {
 		if (!thrown_) this->error();
@@ -62,8 +74,8 @@ public:
 	/// Stores values for printing out line number, function, etc
 	Assert& set_context(const char* file_name, const char* function, const int line)
 	{
-		file_name_ = file_name;
-		function_ = function;
+		file_name_ = std::string(file_name);
+		function_ = std::string(function);
 		line_ = line;
 
 		return *this;
@@ -105,8 +117,8 @@ protected:
     }
 
     std::string expression_;                  ///< Assertion expression
-	const char* file_name_;                   ///< Actual file.
-	const char* function_;                    ///< Actual function.
+	std::string file_name_;                   ///< Actual file.
+	std::string function_;                    ///< Actual function.
 	int line_;                                ///< Actual line.
 	std::vector< std::string > current_val_;  ///< Formated strings of names and values of given variables.
 	bool thrown_;                             ///< Flag marked if Assert thrown error, warning, ...
