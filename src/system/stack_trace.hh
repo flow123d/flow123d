@@ -23,6 +23,14 @@
 #include <vector>
 
 
+/**
+ * @brief Class representing stacktrace of exceptions.
+ *
+ * Store array of backtrace frames and size of this array, method @p print allows to print
+ * formated stacktrace into given stream.
+ *
+ * @ingroup exceptions
+ */
 class StackTrace
 {
 public:

@@ -29,7 +29,41 @@ namespace feal {
 /**
  * @brief Class defining debugging messages.
  *
- * Allows define assert, warning etc.
+ * Allows define assert, warning etc. either only for debug mode or for release mode also.
+ *
+ * Definition of asserts is designed using macros FEAL_ASSERT and DEBUG_ASSERT. First macro
+ * is used for both modes, second is only for debug. Definition allows to printout given
+ * variables too.
+ *
+ * Examples of usage:
+ *
+ * 1) We expect empty stings 's1' and 's2', if condition is not satisfied exception will be
+ *    thrown. Condition is indicated in first parentheses, variables designed for printout
+ *    follow as (s1)(s2). Each variable must be defined in separate parentheses. The last
+ *    step is calling of the appropriate assert type, in this case error(). This assert is
+ *    performed for debug and release mode.
+ @code
+    std::string s1, s2;
+    ...
+    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+ @endcode
+ *
+ * 2) This example is same as previous, but assert is performed only for debug mode.
+ @code
+    DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+ @endcode
+ *
+ * 3) Example is same as case 1). Assert type error is called automatically if any other is
+ *    not listed.
+ @code
+    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2);
+ @endcode
+ *
+ * 4) Example with same condition as all previous but with other type - warning. Any exception
+ *    is not thrown, only warning is printed.
+ @code
+    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning();
+ @endcode
  */
 class Assert : public ExceptionBase {
 public:
@@ -138,12 +172,12 @@ protected:
     _FEAL_ASSERT_A.add_value((x), #x)._FEAL_ASSERT_ ## next
 
 
-/// High-level macro
+/// Definition of assert for debug and release mode
 #define FEAL_ASSERT( expr) \
 if ( !(expr) ) \
   feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
 
-/// High-level macro
+/// Definition of assert for debug mode only
 #ifdef FLOW123D_DEBUG_ASSERTS
 #define DEBUG_ASSERT( expr) \
 if ( !(expr) ) \
