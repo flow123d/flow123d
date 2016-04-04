@@ -7,7 +7,6 @@
 
 #include "inspectelements.h"
 #include "intersectionpoint.h"
-#include "trace_algorithm.h"
 #include "intersectionaux.h"
 #include "intersection_local.h"
 #include "computeintersection.h"
@@ -72,37 +71,29 @@ void InspectElementsAlgorithm<dim>::update_simplex(const ElementFullIter& elemen
     simplex.set_simplices(field_of_points);
 }
 
-
-template<>
-void InspectElementsAlgorithm<1>::trace(IntersectionAux<1,3> &intersection)
-{}
- 
-template<>
-void InspectElementsAlgorithm<2>::trace(IntersectionAux<2,3> &intersection)
-{
-    prolongation_table_.clear();
-    Tracing::trace_polygon(prolongation_table_, intersection);
-} 
  
 template<unsigned int dim> 
-bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx)
+bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx,
+                                                       std::vector<unsigned int> &prolongation_table)
 {
     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
-    CI.compute(is.points());
+    CI.compute(is, prolongation_table);
     END_TIMER("Compute intersection");
     
     if(is.points().size() > 0) {
         
-        trace(is);
         intersection_list_[component_ele_idx].push_back(is);
         n_intersections_++;
         return true;
     }
     else return false;
 }
+
+
+
 
 template<unsigned int dim>
 bool InspectElementsAlgorithm<dim>::intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx) 
@@ -177,7 +168,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                     DBGMSG("elements %d %d\n",component_ele_idx, bulk_ele_idx);
                     update_simplex(elm, component_simplex); // update component simplex
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
-                    bool found = compute_initial_CI(component_ele_idx, bulk_ele_idx);
+                    std::vector<unsigned int> prolongation_table;
+                    bool found = compute_initial_CI(component_ele_idx, bulk_ele_idx, prolongation_table);
 
                     // keep the index of the current component element that is being investigated
                     unsigned int current_component_element_idx = component_ele_idx;
@@ -185,7 +177,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                     if(found){
                         
                         last_slave_for_3D_elements[bulk_ele_idx] = component_ele_idx;
-                        prolongation_decide(elm, ele_3D);
+                        prolongation_decide(elm, ele_3D, prolongation_table);
                         
                         do{
                             // flag is set false if the component element is not fully covered with tetrahedrons
@@ -246,10 +238,12 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 
 
 template<>
-void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm, 
+                                                      const ElementFullIter& ele_3D,
+                                                      std::vector<unsigned int> &prolongation_table)
 {
     IntersectionAux<1,3> il = intersection_list_[elm->index()].back();
-    // number of IPs that are at vertice of component element
+    // number of IPs that are at vertices of component element
     unsigned int n_ip_vertices = 0;
     
     for(const IntersectionPointAux<1,3> &IP : il.points()) {
@@ -349,17 +343,20 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm
 
 
 template<>
-void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm, const ElementFullIter& ele_3D)
+void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm, 
+                                                      const ElementFullIter& ele_3D,
+                                                      std::vector<unsigned int> &prolongation_table
+                                                     )
 {
-    for(unsigned int i = 0; i < prolongation_table_.size();i++){
+    for(unsigned int i = 0; i < prolongation_table.size();i++){
 
         unsigned int side;
         bool is_triangle_side = true;
 
-        if(prolongation_table_[i] >= 4){
-            side = prolongation_table_[i] - 4;
+        if(prolongation_table[i] >= 4){
+            side = prolongation_table[i] - 4;
         }else{
-            side = prolongation_table_[i];
+            side = prolongation_table[i];
             is_triangle_side = false;
         }
 
@@ -451,17 +448,17 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     update_simplex(ele_3D, tetrahedron);
 
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
+    std::vector<unsigned int> prolongation_table;
     
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
-    CI.compute(is.points());
+    CI.compute(is, prolongation_table);
 
     if(is.size() > dim){
 //         for(unsigned int j=1; j < is.size(); j++) 
 //             cout << is[j];
         
-        trace(is);
-        prolongation_decide(elm, ele_3D);
+        prolongation_decide(elm, ele_3D, prolongation_table);
         n_intersections_++;
     }
 }

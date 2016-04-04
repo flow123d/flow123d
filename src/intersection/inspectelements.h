@@ -100,10 +100,6 @@ private:
     /// Resulting vector of intersections.
     std::vector<std::vector<IntersectionAux<dim,3>>> intersection_list_;
     
-    /// Auxiliary vector that is filled in tracing algorithm of polygons (in 2D)
-    /// and then used in prolongation decision routines.
-    std::vector<unsigned int> prolongation_table_;
-    
     /// Initialization.
     /// Sets vector sizes and computes bulk bounding box.
     void init();
@@ -114,16 +110,15 @@ private:
     
     /// A hard way to find whether the intersection of two elements has already been computed, or not.
     bool intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
-
-    /// Auxiliary function for calling tracing algorithm. Is empty if @p dim =0.
-    void trace(IntersectionAux<dim,3> &intersection);
     
     /// Computes the first intersection, from which we then prolongate.
-    bool compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
+    bool compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx, 
+                            std::vector<unsigned int> &prolongation_table);
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
-    void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D);
+    void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D, 
+                             std::vector<unsigned int> &prolongation_table);
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);

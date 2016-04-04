@@ -24,6 +24,8 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
 
     ASSERT(!p.is_pathologic(), "Cannot call this polygonal tracing in pathologic case.");
     
+    prolongation_table.clear();
+    
     //TODO: this is checked outside in inspect_elements; assert??
     // avoid tracing (none is needed) if the intersection is just single point
     if(p.points().size() < 2) return;

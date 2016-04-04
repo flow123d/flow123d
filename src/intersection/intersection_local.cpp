@@ -90,7 +90,7 @@ IntersectionPoint<dimA,dimB>::IntersectionPoint(const IntersectionPointAux<dimA,
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionPoint<dimA,dimB>::IntersectionPoint(const arma::vec::fixed< dimA + 1  >& comp_bcoords, 
-                                       const arma::vec::fixed< dimB + 1  >& bulk_bcoords)
+                                                const arma::vec::fixed< dimB + 1  >& bulk_bcoords)
 : comp_bcoords_(comp_bcoords), bulk_bcoords_(bulk_bcoords)
 {}
 

@@ -8,6 +8,8 @@
 
 #include "plucker.h"
 #include "intersectionpoint.h"
+#include "intersectionaux.h"
+#include "trace_algorithm.h"
 
 using namespace std;
 namespace computeintersection{
@@ -460,6 +462,12 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(computeintersection::
 	}
 };
 
+unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAux< 1, 3 >& intersection,
+                                                                  std::vector<unsigned int> &prolongation_table)
+{
+    return compute(intersection.points());
+}
+
 unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPointAux<1,3>> &IP13s){
 
 	std::vector<IntersectionPointAux<1,2>> IP12s;
@@ -696,7 +704,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 
 };
 
-void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(std::vector<IntersectionPointAux<2,3>> &IP23s){
+void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3  >& intersection, 
+                                                          std::vector<unsigned int> &prolongation_table){
 
 	std::vector<IntersectionPointAux<1,2>> IP12s;
 	std::vector<IntersectionPointAux<1,3>> IP13s;
@@ -721,8 +730,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(std::vector<Intersecti
                 IP23.set_topology_A(RefElement<2>::interact<0,1>(triangle_line)[IP.idx_A()], 0);
             }
             
-//             local_polygon.add_ipoint(IP23);
-            IP23s.push_back(IP23);
+            intersection.points().push_back(IP23);
         }
     }
 
@@ -739,11 +747,14 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(std::vector<Intersecti
                     IP23.set_topology_B(RefElement<3>::interact<0,1>(tetra_edge)[IP.idx_A()], 0);
                 
 				//IP23.print();
-// 				local_polygon.add_ipoint(IP23);
-                IP23s.push_back(IP23);
+                intersection.points().push_back(IP23);
 			}
 		}
 	}
+    
+    // trace intersection polygon
+    if(intersection.size() > 2)
+        Tracing::trace_polygon(prolongation_table, intersection);
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::print_plucker_coordinates(std::ostream &os){

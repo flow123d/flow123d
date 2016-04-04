@@ -16,6 +16,7 @@ namespace computeintersection {
 // forward declare
 template<class A, class B> class ComputeIntersection;
 class Plucker;
+template<unsigned int, unsigned int> class IntersectionAux;
 template<unsigned int, unsigned int> class IntersectionPointAux;
 
 static const double plucker_empty = std::numeric_limits<double>::infinity();
@@ -187,6 +188,7 @@ public:
     
     //TODO comment cases in implementation
     unsigned int compute(std::vector<IntersectionPointAux<1,3>> &IP13s);
+    unsigned int compute(IntersectionAux<1,3> &intersection, std::vector<unsigned int> &prolongation_table);
     
      /// @name Setters and Getters
     //@{ 
@@ -264,7 +266,13 @@ public:
 
 	void init();
 // 	void compute(IntersectionPolygon &local_polygon);
-    void compute(std::vector<IntersectionPointAux<2,3>> &IP23s);
+//    void compute(std::vector<IntersectionPointAux<2,3>> &IP23s);
+    /// @brief 
+    /** 
+     * @param prolongation_table is an auxiliary vector that is filled in tracing algorithm of polygon.
+     * It is then used further in prolongation decision routines.
+     */
+    void compute(IntersectionAux<2,3> &intersection, std::vector<unsigned int> &prolongation_table);
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
 	void print_plucker_coordinates(std::ostream &os);
