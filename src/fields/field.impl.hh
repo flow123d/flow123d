@@ -100,21 +100,24 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	// check for self assignement
 	if (&other == this) return *this;
 
+	// class members derived from FieldCommon
 	shared_ = other.shared_;
     shared_->is_fully_initialized_ = false;
-	set_time_result_ = TimeStatus::unknown;
+	set_time_result_ = other.set_time_result_;
+	last_time_ = other.last_time_;
+	last_limit_side_ = other.last_limit_side_;
+	is_jump_time_ = other.is_jump_time_;
+	component_index_ = other.component_index_;
+	this->multifield_ = false;
 
-	factories_ = other.factories_;
+	// class members of Field class
 	data_ = other.data_;
+	factories_ = other.factories_;
+	region_fields_ = other.region_fields_;
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
 	}
-
-	// initialize region_fields_ vector
-	// shared_is already same as other.shared_
-	this->set_mesh( *(shared_->mesh_) );
-
 
 	return *this;
 }
