@@ -50,7 +50,7 @@ double IntersectionLocal<1,3>::compute_measure()
     if(i_points_.size() > 1)
     for(unsigned int i=0; i < i_points_.size()-1; i++)
     {
-        length += abs(i_points_[i].comp_bcoords()[1] - i_points_[i+1].comp_bcoords()[1]);
+        length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
     }
     return length;
 }
@@ -66,9 +66,9 @@ double IntersectionLocal<2,3>::compute_measure()
     if(i_points_.size() > 2)
     for(unsigned int j = 2; j < i_points_.size();j++){
         //xprintf(Msg, "volani %d %d\n",j, i_points_.size());
-        subtotal += fabs(i_points_[0].comp_bcoords()(1)*(i_points_[j-1].comp_bcoords()(2) - i_points_[j].comp_bcoords()(2)) +
-                 i_points_[j-1].comp_bcoords()(1)*(i_points_[j].comp_bcoords()(2) - i_points_[0].comp_bcoords()(2)) +
-                 i_points_[j].comp_bcoords()(1)*(i_points_[0].comp_bcoords()(2) - i_points_[j-1].comp_bcoords()(2)));
+        subtotal += fabs(i_points_[0].comp_coords()(0)*(i_points_[j-1].comp_coords()(1) - i_points_[j].comp_coords()(1)) +
+                 i_points_[j-1].comp_coords()(0)*(i_points_[j].comp_coords()(1) - i_points_[0].comp_coords()(1)) +
+                 i_points_[j].comp_coords()(0)*(i_points_[0].comp_coords()(1) - i_points_[j-1].comp_coords()(1)));
     }
     return fabs(subtotal/2);
 }
@@ -85,13 +85,13 @@ IntersectionPoint<dimA,dimB>::~IntersectionPoint()
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionPoint<dimA,dimB>::IntersectionPoint(const IntersectionPointAux<dimA,dimB>& p)
-: comp_bcoords_(p.local_bcoords_A()), bulk_bcoords_(p.local_bcoords_B())
+: comp_coords_(p.local_bcoords_A().subvec(1,dimA)), bulk_coords_(p.local_bcoords_B().subvec(1,dimB))
 {}
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionPoint<dimA,dimB>::IntersectionPoint(const arma::vec::fixed< dimA + 1  >& comp_bcoords, 
                                                 const arma::vec::fixed< dimB + 1  >& bulk_bcoords)
-: comp_bcoords_(comp_bcoords), bulk_bcoords_(bulk_bcoords)
+: comp_coords_(comp_bcoords.subvec(1,dimA)), bulk_coords_(bulk_bcoords.subvec(1,dimB))
 {}
 
 
@@ -103,8 +103,13 @@ arma::vec3 IntersectionPoint<dimA,dimB>::coords(ElementFullIter comp_ele) const
     
     arma::vec3 c;
     c.zeros();
-    for(unsigned int i=0; i<dimA+1; i++)
-        c += comp_bcoords_[i]*comp_ele->node[i]->point();
+    double complement = 1.0;
+    for(unsigned int i=0; i<dimA; i++)
+    {
+        c += comp_coords_[i]*comp_ele->node[i+1]->point();
+        complement -= comp_coords_[i];
+    }
+    c += complement * comp_ele->node[0]->point();
         
     return c;
 }
@@ -125,13 +130,13 @@ template<unsigned int dimA, unsigned int dimB> ostream& operator<<(ostream& os, 
 template<unsigned int dimA, unsigned int dimB> ostream& operator<<(ostream& os, const IntersectionPoint<dimA,dimB>& ip)
 {
     os << "[";
-    for(unsigned j= 0; j < dimA; j++)
-        os << ip.comp_bcoords_[j] << " ";
-    os << ip.comp_bcoords_[dimA] << "]\t[";
+    for(unsigned j= 0; j < dimA-1; j++)
+        os << ip.comp_coords_[j] << " ";
+    os << ip.comp_coords_[dimA-1] << "]\t[";
     
-    for(unsigned j= 0; j < dimB; j++)
-        os << ip.bulk_bcoords_[j] << " ";
-    os << ip.bulk_bcoords_[dimB] << "]";
+    for(unsigned j= 0; j < dimB-1; j++)
+        os << ip.bulk_coords_[j] << " ";
+    os << ip.bulk_coords_[dimB-1] << "]";
     os << endl;
     
     return os;

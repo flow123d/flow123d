@@ -130,8 +130,8 @@ inline unsigned int IntersectionLocal<dimA,dimB>::size() const
  */
 template<unsigned int dimA, unsigned int dimB> class IntersectionPoint {
     
-    arma::vec::fixed<dimA+1> comp_bcoords_; ///< Barycentric coordinates of an IP on simplex<N>.
-    arma::vec::fixed<dimB+1> bulk_bcoords_; ///< Barycentric coordinates of an IP on simplex<M>.
+    arma::vec::fixed<dimA> comp_coords_; ///< Local coordinates of an IP on simplex<dimA>.
+    arma::vec::fixed<dimB> bulk_coords_; ///< Local coordinates of an IP on simplex<dimB>.
     
 public:
 
@@ -148,11 +148,11 @@ public:
     
     ///@name Getters.
     //@{
-    /// Returns barycentric coordinates in the Simplex<N>.
-    const arma::vec::fixed<dimA+1> &comp_bcoords() const;
+    /// Returns local coordinates in the Simplex<N>.
+    const arma::vec::fixed<dimA> &comp_coords() const;
     
-    /// Returns barycentric coordinates in the Simplex<M>.
-    const arma::vec::fixed<dimB+1> &bulk_bcoords() const;
+    /// Returns local coordinates in the Simplex<M>.
+    const arma::vec::fixed<dimB> &bulk_coords() const;
     //@}
     
     /// Computes the real coordinates.
@@ -166,12 +166,12 @@ public:
 /********************************************* IMPLEMENTATION ***********************************************/
 
 template<unsigned int dimA, unsigned int dimB>
-const arma::vec::fixed< dimA + 1  >& IntersectionPoint<dimA,dimB>::comp_bcoords() const
-{   return comp_bcoords_; }
+const arma::vec::fixed< dimA  >& IntersectionPoint<dimA,dimB>::comp_coords() const
+{   return comp_coords_; }
 
 template<unsigned int dimA, unsigned int dimB>
-const arma::vec::fixed< dimB + 1  >& IntersectionPoint<dimA,dimB>::bulk_bcoords() const
-{   return bulk_bcoords_; }
+const arma::vec::fixed< dimB  >& IntersectionPoint<dimA,dimB>::bulk_coords() const
+{   return bulk_coords_; }
 
 } // END NAMESPACE
 #endif /* INTERSECTION_LOCAL_H_ */

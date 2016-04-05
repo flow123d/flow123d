@@ -384,7 +384,7 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& com
 
 
 template<>
-void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& comp_ele, 
+void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& comp_ele,
                                                       const ElementFullIter& bulk_ele,
                                                       std::vector<unsigned int> &prolongation_table
                                                      )
