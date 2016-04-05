@@ -23,7 +23,6 @@ template<unsigned int dim>
 InspectElementsAlgorithm<dim>::InspectElementsAlgorithm(Mesh* _mesh)
 : mesh(_mesh)
 {
-    intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionAux<dim,3>>());
 }
 
 template<unsigned int dim>   
@@ -38,6 +37,7 @@ void InspectElementsAlgorithm<dim>::init()
     START_TIMER("Intersection initialization");
     last_slave_for_3D_elements.assign(mesh->n_elements(), undefined_elm_idx_);
     closed_elements.assign(mesh->n_elements(), false);
+    intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionAux<dim,3>>());
     n_intersections_ = 0;
 
     if(elements_bb.size() == 0){
@@ -115,9 +115,11 @@ template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::compute_intersections()
 {
     init();
+    START_TIMER("BIHTree");
     BIHTree bt(mesh, 20);
-
-    {START_TIMER("Element iteration");
+    END_TIMER("BIHTree");
+    
+    START_TIMER("Element iteration");
     
     FOR_ELEMENTS(mesh, elm) {
         unsigned int component_ele_idx = elm->index();
@@ -129,7 +131,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
             std::vector<unsigned int> searchedElements;
             bt.find_bounding_box(elements_bb[component_ele_idx], searchedElements);
 
-            {START_TIMER("Bounding box element iteration");
+            START_TIMER("Bounding box element iteration");
             
             // Go through all element which bounding box intersects the component element bounding box
             for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
@@ -179,6 +181,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                         last_slave_for_3D_elements[bulk_ele_idx] = component_ele_idx;
                         prolongation_decide(elm, ele_3D, prolongation_table);
                         
+                        START_TIMER("Prolongation algorithm");
                         do{
                             // flag is set false if the component element is not fully covered with tetrahedrons
                             bool element_covered = true;
@@ -212,6 +215,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                             }
                         }
                         while( !(component_queue_.empty() && bulk_queue_.empty()) );
+                        END_TIMER("Prolongation algorithm");
                         
                         // if component element is closed, do not check other bounding boxes
                         if(closed_elements[component_ele_idx])
@@ -220,11 +224,11 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 
                 }
             }
-            END_TIMER("Bounding box element iteration");}
+            END_TIMER("Bounding box element iteration");
         }
     }
 
-    END_TIMER("Element iteration");}
+    END_TIMER("Element iteration");
     
     // DBG write which elements are closed
     FOR_ELEMENTS(mesh, ele) {
@@ -491,10 +495,12 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
     std::vector<unsigned int> prolongation_table;
     
+    START_TIMER("Compute intersection");
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
     CI.compute(is, prolongation_table);
-
+    END_TIMER("Compute intersection");
+    
     if(is.size() > 0){
 //         for(unsigned int j=1; j < is.size(); j++) 
 //             cout << is[j];
@@ -555,9 +561,12 @@ double InspectElements::measure_23()
 template<unsigned int dim>
 void InspectElements::compute_intersections(std::vector<IntersectionLocal<dim,3>> &storage)
 {
+    START_TIMER("Intersection algorithm");
     InspectElementsAlgorithm<dim> iea(mesh);  
     iea.compute_intersections();
-  
+    END_TIMER("Intersection algorithm");
+    
+    START_TIMER("Intersection into storage");
     storage.reserve(iea.n_intersections_);
     
     FOR_ELEMENTS(mesh, elm) {
@@ -593,15 +602,24 @@ void InspectElements::compute_intersections(std::vector<IntersectionLocal<dim,3>
                 }
         }
     }
-    
+    END_TIMER("Intersection into storage");
 }
  
-void InspectElements::compute_intersections()
+void InspectElements::compute_intersections(computeintersection::IntersectionType d)
 {
     intersection_map_.resize(mesh->n_elements());
     
-    compute_intersections<1>(intersection_storage13_);
-    compute_intersections<2>(intersection_storage23_);
+    if(d & IntersectionType::d13){
+        START_TIMER("Intersections 1D-3D");
+        compute_intersections<1>(intersection_storage13_);
+        END_TIMER("Intersections 1D-3D");
+    }
+    
+    if(d & IntersectionType::d23){
+        START_TIMER("Intersections 2D-3D");
+        compute_intersections<2>(intersection_storage23_);
+        END_TIMER("Intersections 2D-3D");
+    }
 }
 
  

@@ -133,10 +133,19 @@ private:
 
 
 
-
+enum IntersectionType
+{
+    none = 0,
+    d12 = 0x0001,
+    d13 = 0x0002,
+    d23 = 0x0004,
+    all = 0xFFFF
+};
+    
 class InspectElements
 {   
 public:
+    
     /// First = element index, Second = pointer to intersection object.
     typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
     
@@ -156,7 +165,7 @@ public:
     
     /// Calls @p InspectElementsAlgorithm<dim>, computes intersections, 
     /// move them to storage, create the map and throw away the rest.
-    void compute_intersections();
+    void compute_intersections(IntersectionType d = IntersectionType::all);
     
     //temporary functions:
     
