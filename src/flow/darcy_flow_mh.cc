@@ -160,7 +160,7 @@ const int DarcyFlowMH_Steady::registrar =
 		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("SteadyDarcy_MH") +
 		DarcyFlowMH_Steady::get_input_type().size();
 
-
+/*
 const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
 	return it::Record("UnsteadyDarcy_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
@@ -172,7 +172,7 @@ const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
 const int DarcyFlowMH_Unsteady::registrar =
 		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("UnsteadyDarcy_MH") +
 		DarcyFlowMH_Unsteady::get_input_type().size();
-
+*/
 
 
 DarcyFlowMH_Steady::EqData::EqData()
@@ -1735,7 +1735,7 @@ void DarcyFlowMH_Steady::prepare_parallel_bddc() {
 #endif // FLOW123D_HAVE_BDDCML
 }
 
-
+/*
 void mat_count_off_proc_values(Mat m, Vec v) {
     int n, first, last;
     const PetscInt *cols;
@@ -1758,7 +1758,7 @@ void mat_count_off_proc_values(Mat m, Vec v) {
         MatRestoreRow(m, row, &n, &cols, PETSC_NULL);
     }
 }
-
+*/
 
 
 
@@ -1772,12 +1772,11 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 
 // ========================
 // unsteady
-
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
+/*
+DarcyFlowMH_Steady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
     : DarcyFlowMH_Steady(mesh_in, in_rec)
 {
 
-    /*
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	data_.mark_input_times(this->mark_type());
 	data_.set_time(time_->step(), LimitSide::right);
@@ -1794,11 +1793,10 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
 	read_init_condition();
 
     output_data();
-    */
 }
+*/
 
-
-void DarcyFlowMH_Unsteady::read_initial_condition()
+void DarcyFlowMH_Steady::read_initial_condition()
 {
 
     VecDuplicate(schur0->get_solution(), &previous_solution);
@@ -1828,7 +1826,7 @@ void DarcyFlowMH_Unsteady::read_initial_condition()
 
 }
 
-void DarcyFlowMH_Unsteady::setup_time_term() {
+void DarcyFlowMH_Steady::setup_time_term() {
     // save diagonal of steady matrix
     MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
@@ -1867,7 +1865,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     	balance_->finish_mass_assembly(water_balance_idx_);
 }
 
-void DarcyFlowMH_Unsteady::modify_system() {
+void DarcyFlowMH_Steady::modify_system() {
 	START_TIMER("modify system");
 	if (time_->is_changed_dt() && time_->step().index()>0) {
         double scale_factor=time_->step(-2).length()/time_->step().length();

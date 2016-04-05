@@ -304,10 +304,8 @@ protected:
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
     void make_serial_scatter();
-    virtual void modify_system()
-    {  };
-    virtual void setup_time_term()
-    {  };
+    virtual void modify_system();
+    virtual void setup_time_term();
 
 
     void prepare_parallel();
@@ -325,8 +323,7 @@ protected:
      * Must be called after create_linear_system.
      *
      */
-    virtual void read_initial_condition()
-    {  };
+    virtual void read_initial_condition();
 
     /**
      * Abstract assembly method used for both assembly and preallocation.
@@ -409,7 +406,12 @@ protected:
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
-        
+
+	Vec steady_diagonal;
+    Vec steady_rhs;
+    Vec new_diagonal;
+    Vec previous_solution;
+
 	EqData data_;
 
     friend class DarcyFlowMHOutput;
@@ -503,7 +505,7 @@ void mat_count_off_proc_values(Mat m, Vec v);
  * on the element. This leads to violation of the discrete maximum principle for
  * non-acute meshes or to too small timesteps. For simplicial meshes this can be solved by lumping to the edges. See DarcyFlowLMH_Unsteady.
  */
-
+/*
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
@@ -521,13 +523,9 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    Vec steady_diagonal;
-    Vec steady_rhs;
-    Vec new_diagonal;
-    Vec previous_solution;
 
 };
-
+*/
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------

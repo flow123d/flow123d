@@ -400,6 +400,23 @@
         "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
         "create_path":true  
       }
-    }
+    },
+    {
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/primary_equation/solver",
+        "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
+        "create_path":true  
+      }
+    },
+    {
+      "NAME": "Use time aware DarcyFlowMH_Steady instead of Unsteady.",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "UnsteadyDarcy_MH",
+        "new_name": "SteadyDarcy_MH"
+      }
+    }      
   ]
 }
