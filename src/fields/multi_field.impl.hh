@@ -41,6 +41,17 @@ MultiField<spacedim, Value>::MultiField(bool bc)
 
 
 template<int spacedim, class Value>
+MultiField<spacedim, Value>::MultiField(const MultiField &other)
+: FieldCommon(other),
+  sub_fields_(other.sub_fields_),
+  full_input_list_(other.full_input_list_)
+{
+	this->multifield_ = true;
+}
+
+
+
+template<int spacedim, class Value>
 it::Instance MultiField<spacedim,Value>::get_input_type() {
 	ASSERT(false, "This method can't be used for MultiField");
 
