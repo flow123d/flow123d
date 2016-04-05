@@ -188,37 +188,39 @@ TEST(intersections_12d, all) {
 /// Create results for the meshes in directory 'simple_meshes_13d'.
 void fill_13d_solution(std::vector<computeintersection::IntersectionLocal<1,3>> &ils)
 {
+    DBGMSG("fill solution\n");
     ils.clear();
     ils.resize(12);
     // ils[0] is empty
-    ils[1].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<4>({1,0,0,0})));
-    ils[1].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1-1.0/3,1.0/3}),arma::vec::fixed<4>({0,1,1,1})/3));
+    ils[1].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
+    ils[1].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({1./3}),arma::vec3({1,1,1})/3));
     // only one IP
-    ils[2].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<4>({1,0,0,0})));
+    ils[2].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
     
-    ils[3].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<4>({1,0,0,0})));
-    ils[3].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,2})/3,arma::vec::fixed<4>({0,0,1,0})));
+    ils[3].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
+    ils[3].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({2./3}),arma::vec3({0,1,0})));
     
-    ils[4].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({3,1})/4,arma::vec::fixed<4>({0.5,0,0.5,0})));
-    ils[4].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,1})/2,arma::vec::fixed<4>({0,0.5,0.5,0})));
+    ils[4].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.25}),arma::vec3({0,0.5,0})));
+    ils[4].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({0.5,0.5,0})));
     
-    ils[5].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({2,1})/3,arma::vec::fixed<4>({0.5,0,0.5,0})));
-    ils[5].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,2})/3,arma::vec::fixed<4>({0.5,0.5,0,0})));
+    ils[5].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({1./3}),arma::vec3({0,0.5,0})));
+    ils[5].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({2./3}),arma::vec3({0.5,0,0})));
     // only one IP
-    ils[6].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<4>({0.5,0.25,0,0.25})));
+    ils[6].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0.25,0,0.25})));
     
-    ils[7].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<4>({1,1,1,1})/4));
-    ils[7].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,1})/2,arma::vec::fixed<4>({4,3,0,3})*0.1));
+    ils[7].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({1,1,1})/4));
+    ils[7].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({3,0,3})*0.1));
     
-    ils[8].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,0}),arma::vec::fixed<4>({2,1,1,1})*0.2));
-    ils[8].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({0,1}),arma::vec::fixed<4>({1./3,1,1,1})*0.3));
+    ils[8].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({1,1,1})*0.2));
+    ils[8].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({1}),arma::vec3({1,1,1})*0.3));
     
     // ils[9] is empty
     // only one IP
-    ils[10].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,1})/2,arma::vec::fixed<4>({1,1,0,0})/2));
+    ils[10].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({1,0,0})/2));
     
-    ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({3,1})/4,arma::vec::fixed<4>({1,2,1,0})/4));
-    ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<2>({1,1})/2,arma::vec::fixed<4>({1,2,0,1})/4));
+    ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.25}),arma::vec3({2,1,0})/4));
+    ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({2,0,1})/4));
+    DBGMSG("fill solution\n");
 }
 
 
@@ -229,11 +231,18 @@ computeintersection::IntersectionLocal<1,3> permute_coords(computeintersection::
     std::vector<computeintersection::IntersectionPoint<1,3>> & points = il.points();
     for(unsigned int i = 0; i < points.size(); i++)
     {
-        arma::vec::fixed<4> new_coords;
-        for(unsigned int j = 0; j < 4; j++)
-            new_coords[j] = points[i].bulk_bcoords()[permute[j]];
+        arma::vec4 new_coords;
+        arma::vec4 old_coords = {1,1,1,1};
+        for(unsigned int j = 0; j < 3; j++){
+            old_coords[j+1] = points[i].bulk_coords()[j];
+            old_coords[0] = old_coords[0] - points[i].bulk_coords()[j];
+        }
+        if(old_coords[0] < 1e-15) old_coords[0] = 0;
         
-        new_il.points()[i] = computeintersection::IntersectionPoint<1,3>(points[i].comp_bcoords(), new_coords);
+        for(unsigned int j = 0; j < 4; j++)
+            new_coords[j] = old_coords[permute[j]];
+        
+        new_il.points()[i] = computeintersection::IntersectionPoint<1,3>(points[i].comp_coords(), new_coords.subvec(1,3));
     }
     return new_il;
 }
@@ -260,12 +269,10 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     for(unsigned int i=0; i < ilc.size(); i++)
     {
         DBGMSG("---------- check IP[%d] ----------\n",i);
-        EXPECT_DOUBLE_EQ(ilc[i].comp_bcoords()[0], il[i].comp_bcoords()[0]);
-        EXPECT_DOUBLE_EQ(ilc[i].comp_bcoords()[1], il[i].comp_bcoords()[1]);
-        EXPECT_DOUBLE_EQ(ilc[i].bulk_bcoords()[0], il[i].bulk_bcoords()[0]);
-        EXPECT_DOUBLE_EQ(ilc[i].bulk_bcoords()[1], il[i].bulk_bcoords()[1]);
-        EXPECT_DOUBLE_EQ(ilc[i].bulk_bcoords()[2], il[i].bulk_bcoords()[2]);
-        EXPECT_DOUBLE_EQ(ilc[i].bulk_bcoords()[3], il[i].bulk_bcoords()[3]);
+        EXPECT_DOUBLE_EQ(ilc[i].comp_coords()[0], il[i].comp_coords()[0]);
+        EXPECT_DOUBLE_EQ(ilc[i].bulk_coords()[0], il[i].bulk_coords()[0]);
+        EXPECT_DOUBLE_EQ(ilc[i].bulk_coords()[1], il[i].bulk_coords()[1]);
+        EXPECT_DOUBLE_EQ(ilc[i].bulk_coords()[2], il[i].bulk_coords()[2]);
     }
     
     length1 = ie.measure_13();

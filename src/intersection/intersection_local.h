@@ -140,11 +140,11 @@ public:
     
     IntersectionPoint(const IntersectionPointAux<dimA,dimB> &p);
     /**
-     * Constructor taking barycentric coordinates on simplices as input parameters.
-     * @param comp_bcoords barycentric coordinates of IP in Simplex<dimA>
-     * @param bulk_bcoords barycentric coordinates of IP in Simplex<dimB>
+     * Constructor taking local coordinates on simplices as input parameters.
+     * @param comp_coords local coordinates of IP in Simplex<dimA>
+     * @param bulk_coords local coordinates of IP in Simplex<dimB>
      */
-    IntersectionPoint(const arma::vec::fixed<dimA+1> &comp_bcoords, const arma::vec::fixed<dimB+1> &bulk_bcoords);
+    IntersectionPoint(const arma::vec::fixed<dimA> &comp_coords, const arma::vec::fixed<dimB> &bulk_coords);
     
     ///@name Getters.
     //@{
