@@ -165,7 +165,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                         //
                         // - repeat until both queues are empty
                     
-                    DBGMSG("elements %d %d\n",component_ele_idx, bulk_ele_idx);
                     update_simplex(elm, component_simplex); // update component simplex
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     std::vector<unsigned int> prolongation_table;
@@ -175,6 +174,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                     unsigned int current_component_element_idx = component_ele_idx;
                     
                     if(found){
+                        DBGMSG("start component with elements %d %d\n",component_ele_idx, bulk_ele_idx);
                         
                         last_slave_for_3D_elements[bulk_ele_idx] = component_ele_idx;
                         prolongation_decide(elm, ele_3D, prolongation_table);
@@ -233,118 +233,159 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 }
   
 
- 
+template<unsigned int dim>
+std::vector< Edge* > InspectElementsAlgorithm<dim>::get_bulk_element_edges(const ElementFullIter& bulk_ele,
+                                                                           const IntersectionPointAux< dim, 3  >& IP)
+{
+    std::vector<Edge*> edges;
+
+    switch (IP.dim_B())
+    {
+        // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
+        case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
+                    edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
+                DBGMSG("3d prolong (node)\n");
+                break;
+        
+        // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
+        case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
+                    edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
+                DBGMSG("3d prolong (edge)\n");
+                break;
+                
+        // IP is on a side of tetrahedron; only possible edge is from the given side
+        case 2: edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[IP.idx_B()]]));
+                DBGMSG("3d prolong (side)\n");
+                break;
+        default: ASSERT_LESS(IP.dim_B(),3);
+    }
+    return edges;
+}
+
+template<unsigned int dim>
+unsigned int InspectElementsAlgorithm<dim>::create_prolongations_over_bulk_element_edges(const std::vector< Edge* >& edges,
+                                                                                         const ElementFullIter& bulk_ele,
+                                                                                         unsigned int component_ele_idx)
+{
+    unsigned int n_prolongations = 0;
+    for(Edge* edg : edges)
+    for(int j=0; j < edg->n_sides;j++) {
+        if (edg->side(j)->element() != bulk_ele) {
+            unsigned int bulk_neighbor_idx = edg->side(j)->element()->index();
+
+            if(last_slave_for_3D_elements[bulk_neighbor_idx] == undefined_elm_idx_ ||
+                (last_slave_for_3D_elements[bulk_neighbor_idx] != component_ele_idx && !intersection_exists(component_ele_idx,bulk_neighbor_idx)))
+            {
+                last_slave_for_3D_elements[bulk_neighbor_idx] = component_ele_idx;
+            
+                DBGMSG("3d prolong %d in %d\n",component_ele_idx,bulk_neighbor_idx);
+                
+                // Vytvoření průniku bez potřeby počítání
+                IntersectionAux<dim,3> il_other(component_ele_idx, bulk_neighbor_idx);
+                intersection_list_[component_ele_idx].push_back(il_other);
+                
+                Prolongation pr = {component_ele_idx, bulk_neighbor_idx, (unsigned int)intersection_list_[component_ele_idx].size() - 1};
+                bulk_queue_.push(pr);
+                n_prolongations++;
+            }
+        }
+    }
+    return n_prolongations;
+}
 
 
 
 template<>
-void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& elm, 
-                                                      const ElementFullIter& ele_3D,
+void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& comp_ele,
+                                                      const ElementFullIter& bulk_ele,
                                                       std::vector<unsigned int> &prolongation_table)
 {
-    IntersectionAux<1,3> il = intersection_list_[elm->index()].back();
-    // number of IPs that are at vertices of component element
+    IntersectionAux<1,3> il = intersection_list_[comp_ele->index()].back();
+    // number of IPs that are at vertices of component element (counter used for closing element)
     unsigned int n_ip_vertices = 0;
     
     for(const IntersectionPointAux<1,3> &IP : il.points()) {
-        if(IP.dim_A() == 0) {
+        if(IP.dim_A() == 0) { // if IP is the end of the 1D element
             n_ip_vertices++;
             DBGMSG("1D end\n");
-            // if IP is end of the 1D element
-            // prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
-            SideIter elm_side = elm->side(IP.idx_A());  // side of 1D element is vertex
+            
+            // there are two possibilities:
+            // 1] IP is inside the bulk element
+            //    => prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
+            // 2] IP lies on the boundary of tetrahedron (vertex, edge or side)
+            //    => search all connected edges of tetrahedron for neghboring sides
+            //       and create candidates: neighboring 1D element + neighboring tetrahedron
+            
+            // possibly search for neighboring tetrahedron edges
+            std::vector<Edge*> edges;
+            if(IP.dim_B() < 3)
+            {
+                edges = get_bulk_element_edges(bulk_ele,IP);
+            }
+            
+            // iterate over sides of 1D element
+            SideIter elm_side = comp_ele->side(IP.idx_A());  // side of 1D element is vertex
             Edge *edg = elm_side->edge();
             for(int j=0; j < edg->n_sides;j++) {
                 
                 SideIter other_side=edg->side(j);
-                if (other_side != elm_side) {
+                if (other_side != elm_side) {   // we do not want to look at the current 1D element
 
-                    unsigned int sousedni_element = other_side->element()->index();
-                    if(!intersection_exists(sousedni_element,ele_3D->index())){
-                        DBGMSG("1d prolong %d in %d\n", sousedni_element, ele_3D->index());
-                        
-                        // Vytvoření průniku bez potřeby počítání
-                        IntersectionAux<1,3> il_other(sousedni_element, ele_3D->index());
-                        intersection_list_[sousedni_element].push_back(il_other);
-                        
-                        Prolongation pr = {sousedni_element, ele_3D->index(), (unsigned int)intersection_list_[sousedni_element].size() - 1};
-                        component_queue_.push(pr);
+                    unsigned int component_neighbor_idx = other_side->element()->index();
+                    if(!intersection_exists(component_neighbor_idx,bulk_ele->index())){
+                        DBGMSG("1d prolong %d in %d\n", component_neighbor_idx, bulk_ele->index());
+
+                        // if case [2], then look at neighboring tetrahedrons
+                        if(IP.dim_B() < 3)
+                        {
+                            create_prolongations_over_bulk_element_edges(edges,bulk_ele,component_neighbor_idx);
+                        }
+                        else{ // else pprolongate neighboring 1D element + the current tetrahedron
+                            
+                            // Vytvoření průniku bez potřeby počítání
+                            IntersectionAux<1,3> il_other(component_neighbor_idx, bulk_ele->index());
+                            intersection_list_[component_neighbor_idx].push_back(il_other);
+                            
+                            Prolongation pr = {component_neighbor_idx, bulk_ele->index(), 
+                                               (unsigned int)intersection_list_[component_neighbor_idx].size() - 1};
+                            component_queue_.push(pr);
+                        }
                     }
                 }
             }
+
         }else{
-            std::vector<Edge*> edges;
-
-            switch (IP.dim_B())
-            {
-                // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
-                case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
-                            edges.push_back(&(mesh->edges[ele_3D->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
-                        DBGMSG("3d prolong (node)\n");
-                        break;
-                
-                // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
-                case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
-                            edges.push_back(&(mesh->edges[ele_3D->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
-                        DBGMSG("3d prolong (edge)\n");
-                        break;
-                        
-                // IP is on a side of tetrahedron; only possible edge is from the given side
-                case 2: edges.push_back(&(mesh->edges[ele_3D->edge_idx_[IP.idx_B()]]));
-                        // if edge has only one side, it means it is on the boundary and we cannot prolongate
-                        if(edges.back()->n_sides == 1)
-                        {
-                            Prolongation pr = {elm->index(), undefined_elm_idx_, undefined_elm_idx_};
-                            bulk_queue_.push(pr);
-                            continue;
-                        }
-                        DBGMSG("3d prolong (side)\n");
-                        break;
-                default: ASSERT_LESS(IP.dim_B(),3);
-            }
+            std::vector<Edge*> edges = get_bulk_element_edges(bulk_ele,IP);
             
-            unsigned int n_prolongations = 0;
-            for(Edge* edg : edges)
-            for(int j=0; j < edg->n_sides;j++) {
-                if (edg->side(j)->element() != ele_3D) {
-                    unsigned int sousedni_element = edg->side(j)->element()->index();
-
-                    if(last_slave_for_3D_elements[sousedni_element] == undefined_elm_idx_ || 
-                        (last_slave_for_3D_elements[sousedni_element] != elm->index() && !intersection_exists(elm->index(),sousedni_element)))
-                    {
-                        last_slave_for_3D_elements[sousedni_element] = elm->index();
-                     
-                        DBGMSG("3d prolong %d in %d\n",elm->index(),sousedni_element);
-                        
-                        // Vytvoření průniku bez potřeby počítání
-                        IntersectionAux<1,3> il_other(elm->index(), sousedni_element);
-                        intersection_list_[elm->index()].push_back(il_other);
-                        
-                        Prolongation pr = {elm->index(), sousedni_element, (unsigned int)intersection_list_[elm->index()].size() - 1};
-                        bulk_queue_.push(pr);
-                        n_prolongations++;
-                    }
-                }   
+            // if edge has only one side, it means it is on the boundary and we cannot prolongate
+            if(IP.dim_B()==2 && edges.back()->n_sides == 1)
+            {
+                Prolongation pr = {comp_ele->index(), undefined_elm_idx_, undefined_elm_idx_};
+                bulk_queue_.push(pr);
+                continue;
             }
+
+            unsigned int n_prolongations = create_prolongations_over_bulk_element_edges(edges,bulk_ele,comp_ele->index());
             
             DBGMSG("cover: %d %d\n", il.size(), n_prolongations);
             // if there are no sides of any edge that we can continue to prolongate over,
             // it means we are at the boundary and cannot prolongate further
             if(IP.is_pathologic() && n_prolongations == 0)
             {
-                Prolongation pr = {elm->index(), undefined_elm_idx_, undefined_elm_idx_};
+                Prolongation pr = {comp_ele->index(), undefined_elm_idx_, undefined_elm_idx_};
                 bulk_queue_.push(pr);
             }
         }  
     }
     
-    if(n_ip_vertices == il.size()) closed_elements[elm->index()] = true;
+    // close component element if it has all vertices inside bulk element
+    if(n_ip_vertices == il.size()) closed_elements[comp_ele->index()] = true;
 }
 
 
 template<>
-void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm, 
-                                                      const ElementFullIter& ele_3D,
+void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& comp_ele, 
+                                                      const ElementFullIter& bulk_ele,
                                                       std::vector<unsigned int> &prolongation_table
                                                      )
 {
@@ -365,7 +406,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
         if(is_triangle_side){
             // prolongation through the triangle side
 
-            SideIter elm_side = elm->side(side);
+            SideIter elm_side = comp_ele->side(side);
             Edge *edg = elm_side->edge();
 
             for(int j=0; j < edg->n_sides;j++) {
@@ -375,14 +416,14 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
 
                     DBGMSG("2d sousedni_element %d\n", sousedni_element);
 
-                        if(!intersection_exists(sousedni_element,ele_3D->index())){
+                        if(!intersection_exists(sousedni_element,bulk_ele->index())){
 
                             DBGMSG("2d prolong\n");
                             // Vytvoření průniku bez potřeby počítání
-                            IntersectionAux<2,3> il_other(sousedni_element, ele_3D->index());
+                            IntersectionAux<2,3> il_other(sousedni_element, bulk_ele->index());
                             intersection_list_[sousedni_element].push_back(il_other);
 
-                            Prolongation pr = {sousedni_element, ele_3D->index(), (unsigned int)intersection_list_[sousedni_element].size() - 1};
+                            Prolongation pr = {sousedni_element, bulk_ele->index(), (unsigned int)intersection_list_[sousedni_element].size() - 1};
                             component_queue_.push(pr);
                         }
                 }
@@ -391,7 +432,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
         }else{
             // prolongation through the tetrahedron side
             
-            SideIter elm_side = ele_3D->side(side);
+            SideIter elm_side = bulk_ele->side(side);
             Edge *edg = elm_side->edge();
 
             for(int j=0; j < edg->n_sides;j++) {
@@ -412,17 +453,17 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& elm
                     // - if it is another 2D element, then go through all found intersections of the 3D element and test it..
                     
                     if(last_slave_for_3D_elements[sousedni_element] == undefined_elm_idx_ || 
-                        (last_slave_for_3D_elements[sousedni_element] != elm->index() && !intersection_exists(elm->index(),sousedni_element))){
+                        (last_slave_for_3D_elements[sousedni_element] != comp_ele->index() && !intersection_exists(comp_ele->index(),sousedni_element))){
                         
-                        last_slave_for_3D_elements[sousedni_element] = elm->index();
+                        last_slave_for_3D_elements[sousedni_element] = comp_ele->index();
 
                         DBGMSG("3d prolong\n");
                         
                         // Vytvoření průniku bez potřeby počítání
-                        IntersectionAux<2,3> il_other(elm->index(), sousedni_element);
-                        intersection_list_[elm->index()].push_back(il_other);
+                        IntersectionAux<2,3> il_other(comp_ele->index(), sousedni_element);
+                        intersection_list_[comp_ele->index()].push_back(il_other);
 
-                        Prolongation pr = {elm->index(), sousedni_element, (unsigned int)intersection_list_[elm->index()].size() - 1};
+                        Prolongation pr = {comp_ele->index(), sousedni_element, (unsigned int)intersection_list_[comp_ele->index()].size() - 1};
                         bulk_queue_.push(pr);
 
                     }
@@ -454,7 +495,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     CI.init();
     CI.compute(is, prolongation_table);
 
-    if(is.size() > dim){
+    if(is.size() > 0){
 //         for(unsigned int j=1; j < is.size(); j++) 
 //             cout << is[j];
         

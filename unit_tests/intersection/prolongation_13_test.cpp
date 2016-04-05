@@ -40,7 +40,7 @@ using namespace computeintersection;
 /// Create results for the meshes in directory 'site_13d'.
 void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, std::vector<double> &lengths)
 {
-    unsigned int n_files=5;
+    unsigned int n_files=7;
     ils.clear();
     lengths.clear();
     ils.resize(n_files);
@@ -54,6 +54,8 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
                  0.1*sqrt(4+9+16) + 0.1*sqrt(4+9+1) + sqrt(1./9 + 0.25 + 1./36);
     lengths[3] = 4*0.25;
     lengths[4] = 0.5 + 0.5 + 2*0.5*sqrt(2);
+    lengths[5] = 2*0.25*sqrt(3);
+    lengths[6] = 2*0.25*sqrt(3) + 2*0.1*sqrt(9+1+1);
     
     ils[0].resize(9);
     ils[0][0] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
@@ -99,14 +101,30 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     ils[3][3] = {arma::vec3({0.25,0.5,-1}),arma::vec3({0.25,0.5,-1.25})};
     
     ils[4].resize(6);
-    ils[4][1] = {arma::vec3({0.4,-0.25,0.25}),arma::vec3({0.4,0,0.25})};
     ils[4][0] = {arma::vec3({0.4,0,0.25}),arma::vec3({0.4,0.25,0.25})};
+    ils[4][1] = {arma::vec3({0.4,-0.25,0.25}),arma::vec3({0.4,0,0.25})};
     
     ils[4][3] = {arma::vec3({0,-0.25,0.25}),arma::vec3({0,0,0.25})};
     ils[4][2] = {arma::vec3({0,0,0.25}),arma::vec3({0,0.25,0.25})};
         
     ils[4][5] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};
     ils[4][4] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};
+    
+    ils[5].resize(2);
+    ils[5][0] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
+    ils[5][1] = {arma::vec3({-0.25,-0.25,-0.25}),arma::vec3({0,0,0})};
+    
+    ils[6].resize(7);
+    ils[6][0] = {arma::vec3({0,0,0})};
+    ils[6][1] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
+    ils[6][2] = {arma::vec3({-0.25,-0.25,-0.25}),arma::vec3({0,0,0})};
+    
+    ils[6][3] = {arma::vec3({0,0,0})};
+    ils[6][4] = {arma::vec3({-0.1,-0.3,-0.1}),arma::vec3({0,0,0})};
+    ils[6][5] = {arma::vec3({0,0,0}),arma::vec3({0.3,0.1,0.1})};
+    ils[6][6] = {arma::vec3({0,0,0})};
+    
+
 }
 
 void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il, const double &length)

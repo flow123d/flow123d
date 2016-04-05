@@ -117,11 +117,16 @@ private:
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
-    void prolongation_decide(const ElementFullIter &elm, const ElementFullIter &ele_3D, 
+    void prolongation_decide(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele, 
                              std::vector<unsigned int> &prolongation_table);
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);
+    
+    std::vector<Edge*> get_bulk_element_edges(const ElementFullIter& bulk_ele, const IntersectionPointAux<dim,3> &IP);
+    unsigned int create_prolongations_over_bulk_element_edges(const std::vector<Edge*>& edges, 
+                                                              const ElementFullIter& bulk_ele, 
+                                                              unsigned int component_ele_idx);
     
     friend class InspectElements;
 };
