@@ -41,7 +41,7 @@ problem: !SequentialCoupling
       - pressure_p1
       - velocity_p0
     balance: true
-    nonlinear-solver: 
+    nonlinear_solver: 
       linear_solver:  !Petsc
         a_tol: 1.0e-7
         r_tol: 1.0e-6
