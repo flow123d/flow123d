@@ -39,7 +39,7 @@ problem: !SequentialCoupling
       - pressure_p1
       - velocity_p0
       - region_id
-    nonlinear-solver: 
+    nonlinear_solver: 
       linear_solver:  !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
