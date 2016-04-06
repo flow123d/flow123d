@@ -9,6 +9,8 @@ problem: !SequentialCoupling
         a_tol: 1.0e-07
         r_tol: 1.0e-07
     input_fields:
+      - region: ALL
+        storativity: 1.0
       - region: domain
         anisotropy: 1
         # default

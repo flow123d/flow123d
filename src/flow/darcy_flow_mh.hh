@@ -322,6 +322,8 @@ protected:
      * Read initial condition into solution vector.
      * Must be called after create_linear_system.
      *
+     * For the LMH scheme we have to be able to save edge pressures in order to
+     * restart simulation or use results of one simulation as initial condition for other one.
      */
     virtual void read_initial_condition();
 

@@ -1260,6 +1260,7 @@ void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
                     // make schur2
                     schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
                     schur2->set_positive_definite();
+                    schur2->set_from_input(in_rec);
                     ls1->set_complement( schur2 );
                     schur1 = ls1;
                 }
