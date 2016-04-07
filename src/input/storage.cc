@@ -16,6 +16,7 @@
  */
 
 #include "system/global_defs.h"
+#include "system/asserts.hh"
 #include "system/system.hh"
 #include "input/storage.hh"
 
@@ -99,14 +100,14 @@ StorageArray::StorageArray(unsigned int size)
 }
 
  void StorageArray::new_item(unsigned int index, StorageBase* item) {
-	 OLD_ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
+	 FEAL_DEBUG_ASSERT(index < array_.size())(index)(array_.size()).error();
      if (array_[index] == NULL) array_[index] = item;
      else xprintf(PrgErr, "Can not replace non NULL pointer.");
  }
 
 
  void StorageArray::set_item(unsigned int index, StorageBase* item) {
-	 OLD_ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
+	 FEAL_DEBUG_ASSERT(index < array_.size())(index)(array_.size()).error();
      if (array_[index] == NULL) array_[index] = item;
      else if ( typeid(*array_[index]) == typeid(StorageNull) ) {
     	 delete array_[index];
@@ -120,7 +121,7 @@ StorageArray::StorageArray(unsigned int size)
 StorageBase * StorageArray::get_item(const unsigned int index) const {
     if ( index >= array_.size() )
         xprintf(Err, "Index %d out of array of size: %d", index, array_.size());
-    OLD_ASSERT( array_[index] != NULL, "Null pointer in storage.");
+    FEAL_DEBUG_ASSERT(array_[index] != NULL)(index).error();
     return array_[index];
 }
 
