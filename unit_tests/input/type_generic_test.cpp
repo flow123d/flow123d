@@ -50,6 +50,22 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 			.close();
 }
 
+static const Instance & get_generic_tuple(const boost::shared_ptr<TypeBase> type, int max_limit) {
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param1", type ) );
+	param_vec.push_back( std::make_pair("param2", boost::make_shared<Integer>(0, max_limit)) );
+
+	static Tuple tuple = Tuple("generic_tuple", "desc.")
+							.root_of_generic_subtree()
+							.declare_key("param1", Parameter("param1"), Default::obligatory(), "desc.")
+							.declare_key("param2", Parameter("param2"), Default::obligatory(), "desc.")
+							.declare_key("time", Double(), Default::optional(), "desc.")
+							.close();
+
+	return Instance(tuple, param_vec)
+			.close();
+}
+
 static const Instance & get_generic_array(const Selection *sel) {
 	static Array arr = Array(Parameter("param"), 0, 100);
 
@@ -79,6 +95,14 @@ static const Record & get_inner_record() {
 			.close();
 }
 
+static const Tuple & get_inner_tuple() {
+	return Tuple("tuple", "desc.")
+			.declare_key("int_key1", Integer(), Default::obligatory(), "desc.")
+			.declare_key("int_key2", Integer(), Default("1"), "desc.")
+			.declare_key("int_key3", Integer(), Default::optional(), "desc.")
+			.close();
+}
+
 /**
  * Returned part of IST in format:
  *
@@ -87,7 +111,8 @@ static const Record & get_inner_record() {
  *     - Parameter
  *     - String
  *  - Parameter
- *  - Integer
+ *  - Tuple
+ *  - Double
  */
 static const Instance & get_record_with_record(const Selection *sel, const boost::shared_ptr<TypeBase> type) {
 	std::vector<TypeBase::ParameterPair> param_vec;
@@ -98,6 +123,7 @@ static const Instance & get_record_with_record(const Selection *sel, const boost
 					.root_of_generic_subtree()
 					.declare_key("inner_record", get_inner_record(), "desc.")
 					.declare_key("param1", Parameter("param1"), "desc.")
+					.declare_key("inner_tuple", get_inner_tuple(), "desc.")
 					.declare_key("start_time", Double(), "desc.")
 					.close();
 
@@ -123,6 +149,42 @@ TEST(GenericType, generic_record) {
 
 	++key_it;
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
+}
+
+
+TEST(GenericType, generic_tuple) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	static Record tpl_problem = Record("problem_with_tuple", "desc.")
+			.declare_key("primary", get_generic_tuple(boost::make_shared<Double>(0.0, 1.0), 10), "Primary problem.")
+			.declare_key("secondary", get_generic_tuple(boost::make_shared<Double>(1.0), 1000), "Secondary problem.")
+			.declare_key("description", String(), "desc.")
+			.close();
+
+	TypeBase::lazy_finish();
+
+	Record::KeyIter key_it = tpl_problem.begin();
+	{
+		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Tuple) );
+		const Tuple *in_tpl = static_cast<const Tuple *>(key_it->type_.get());
+		Record::KeyIter in_it = in_tpl->begin();
+		EXPECT_EQ( typeid( *(in_it->type_.get()) ), typeid(Double) );
+		++in_it;
+		EXPECT_EQ( typeid( *(in_it->type_.get()) ), typeid(Integer) );
+		++in_it;
+		EXPECT_EQ( typeid( *(in_it->type_.get()) ), typeid(Double) );
+	}
+
+	++key_it;
+	{
+		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Tuple) );
+		const Tuple *in_tpl = static_cast<const Tuple *>(key_it->type_.get());
+		Record::KeyIter in_it = in_tpl->begin();
+		EXPECT_EQ( typeid( *(in_it->type_.get()) ), typeid(Double) );
+		++in_it;
+		EXPECT_EQ( typeid( *(in_it->type_.get()) ), typeid(Integer) );
+		++in_it;
+		EXPECT_EQ( typeid( *(in_it->type_.get()) ), typeid(Double) );
+	}
 }
 
 

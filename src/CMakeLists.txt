@@ -104,6 +104,7 @@ add_library(input_lib
     input/type_abstract.cc
     input/type_selection.cc
     input/type_generic.cc
+    input/type_tuple.cc
     input/storage.cc
     input/reader_to_storage.cc
     input/path_base.cc

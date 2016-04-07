@@ -7,6 +7,7 @@
 #include "input/type_base.hh"
 #include "input/type_output.hh"
 #include "input/type_generic.hh"
+#include "input/type_tuple.hh"
 
 // Set version of program and other base data. Simulate data got from rev_num.h.
 Input::Type::RevNumData get_rev_num_data() {
@@ -50,6 +51,15 @@ TEST(OutputTypeTypeBase, record_output_test) {
         output_record.declare_key("data_description", String(), Default::optional(),
                 "");
         output_record.close();
+    } // delete local variables
+
+    Tuple tuple("TimeStepping",
+            "Basic time information.");
+    {
+    	tuple.declare_key("start_time", Double(0), Default::obligatory(), "Start time.");
+    	tuple.declare_key("end_time", Double(0), Default::obligatory(), "End time.");
+    	tuple.declare_key("time_step", Double(0), Default("0.1"), "Time step.");
+        tuple.close();
     } // delete local variables
 
     Record array_record("RecordOfArrays",
@@ -101,6 +111,7 @@ TEST(OutputTypeTypeBase, record_output_test) {
     main.declare_key("color", sel, "My favourite color.");
     main.declare_key("color1", sel, "My second favourite color.");
     main.declare_key("array_record", array_record, "no commment on array_record");
+    main.declare_key("time", tuple, "Time stepping management");
     main.close();
 
     cout << "## " << "OutputText printout" << endl;

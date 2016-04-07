@@ -248,7 +248,7 @@ public:
      *
      * Hash is calculated by type name, description, auto conversion key, hash of keys and attributes.
      */
-    TypeHash content_hash() const  override;
+    virtual TypeHash content_hash() const  override;
 
 
     /**
@@ -263,7 +263,7 @@ public:
      *   parents in derived Record are erased
      * - in \p AbstractRecord::finish is re-registered parents to descendant (through \p add_parent method)
      */
-    Record &derive_from(Abstract &parent);
+    virtual Record &derive_from(Abstract &parent);
 
     /**
      * Copy keys from other record. If @p other record is not yet constructed, we postpone copy to the finish phase.
@@ -278,7 +278,7 @@ public:
      * If the input reader come across the Record in declaration tree, but there is not 'record-like' input, it
      * save default values into storage tree and tries to match the input with the type of the \p from_key.
      */
-    Record &allow_auto_conversion(const string &from_key);
+    virtual Record &allow_auto_conversion(const string &from_key);
 
     /**
      * Declares a key of the Record with name given by parameter @p key, the type given by target of pointer @p type,
@@ -326,7 +326,7 @@ public:
 
     /// Record type name getter.
     string type_name() const override;
-    string class_name() const override { return "Record"; }
+    virtual string class_name() const override { return "Record"; }
 
     /// Class comparison and Record type name comparision.
     bool operator==(const TypeBase &other) const;
@@ -388,13 +388,13 @@ public:
     Record &has_obligatory_type_key();
 
     /// Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;
 
     /// Set flag @p root_of_generic_subtree_ to true
-    Record &root_of_generic_subtree();
+    virtual Record &root_of_generic_subtree();
 
 
 protected:
@@ -424,6 +424,13 @@ protected:
     const Record &add_parent(Abstract &parent) const;
 
     /**
+     * @brief Set data of Instance of generic type.
+     *
+     * Called from make_instance method and set data of Record or its descendants.
+     */
+    void set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) const;
+
+    /**
      * Internal data class.
      */
     class RecordData  {
@@ -443,6 +450,9 @@ protected:
 
 
         Record::KeyIter auto_conversion_key_iter() const;
+
+        /// Count hash of RecordData.
+        void content_hash(TypeBase::TypeHash &seed) const;
 
         /// Database of valid keys
         std::map<KeyHash, unsigned int> key_to_index;
