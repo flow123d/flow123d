@@ -35,30 +35,17 @@ class AssertException : public ExceptionBase {
 	friend class Assert;
 public:
 	// Default constructor
-	AssertException()
-	: what_type_msg_("Program Error: Violated assert") {}
+	AssertException();
 
 	/// Destructor.
 	~AssertException() {}
 
 	/// Print formatted assert message.
-	void print_info(std::ostringstream &out) const override
-	{
-		out << std::endl << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << std::endl;
-		out << "> Expression: \'" << expression_ << "\'" << std::endl;
-		if (current_val_.size()) {
-			out << "> Values:" << std::endl;
-			for (auto val : current_val_) {
-				out << "  " << val << std::endl;
-			}
-		}
-	}
+	void print_info(std::ostringstream &out) const override;
 
 protected:
     /// Override @p ExceptionBase::what_type_msg()
-    std::string what_type_msg() const override {
-    	return what_type_msg_;
-    }
+    std::string what_type_msg() const override;
 
     std::string expression_;                  ///< Assertion expression
 	std::string file_name_;                   ///< Actual file.
@@ -73,7 +60,7 @@ protected:
  *
  * Allows define assert, warning etc. either only for debug mode or for release mode also.
  *
- * Definition of asserts is designed using macros FEAL_ASSERT and DEBUG_ASSERT. First macro
+ * Definition of asserts is designed using macros FEAL_ASSERT and FEAL_DEBUG_ASSERT. First macro
  * is used for both modes, second is only for debug. Definition allows to printout given
  * variables too.
  *
@@ -92,7 +79,7 @@ protected:
  *
  * 2) This example is same as previous, but assert is performed only for debug mode.
  @code
-    DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+    FEAL_DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
  @endcode
  *
  * 3) Example is same as case 1). Assert type error is called automatically if any other is
@@ -126,9 +113,7 @@ public:
 	  thrown_(other.thrown_) {}
 
 	/// Destructor.
-	~Assert() {
-		if (!thrown_) this->error();
-	}
+	~Assert();
 
 	Assert& _FEAL_ASSERT_A; ///< clever macro A
 	Assert& _FEAL_ASSERT_B; ///< clever macro B
@@ -137,36 +122,21 @@ public:
 	template <typename T>
 	Assert& add_value(T var_current_val, const char* var_name) {
 		std::stringstream ss;
-		ss << var_name << " : '" << var_current_val << "'";
+		ss << var_name << " : ";
+		ss << "'" << var_current_val << "'"; // Can throw exception if type T hasn't overloading << operator
 		exception_.current_val_.push_back(ss.str());
 
 		return *this;
 	}
 
 	/// Stores values for printing out line number, function, etc
-	Assert& set_context(const char* file_name, const char* function, const int line)
-	{
-		exception_.file_name_ = std::string(file_name);
-		exception_.function_ = std::string(function);
-		exception_.line_ = line;
-
-		return *this;
-	}
+	Assert& set_context(const char* file_name, const char* function, const int line);
 
 	/// Generate error
-	void error()
-	{
-		thrown_ = true;
-		THROW( exception_ );
-	}
+	void error();
 
 	/// Generate warning
-	void warning()
-	{
-		thrown_ = true;
-		exception_.what_type_msg_ = "Warning:";
-		std::cerr << exception_.what();
-	}
+	void warning();
 
 protected:
     AssertException exception_;               ///< Exception object
@@ -193,11 +163,11 @@ if ( !(expr) ) \
 
 /// Definition of assert for debug mode only
 #ifdef FLOW123D_DEBUG_ASSERTS
-#define DEBUG_ASSERT( expr) \
+#define FEAL_DEBUG_ASSERT( expr) \
 if ( !(expr) ) \
   feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
 #else
-#define DEBUG_ASSERT( expr)
+#define FEAL_DEBUG_ASSERT( expr)
 #endif
 
 /**

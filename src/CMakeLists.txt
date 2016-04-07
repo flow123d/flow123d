@@ -84,6 +84,7 @@ add_library(system_lib
     system/xio.cc
     system/exceptions.cc
     system/stack_trace.cc
+    system/asserts.cc
     io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc

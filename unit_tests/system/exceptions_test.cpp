@@ -213,7 +213,7 @@ TEST(FealAssert, assert) {
 
     // only in debug mode
     try {
-        DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+        FEAL_DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
     } catch (feal::AssertException &e) {
         std::cout << e.what();
     }
