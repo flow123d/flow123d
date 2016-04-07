@@ -163,7 +163,7 @@ void SorptionBase::initialize()
   OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   OLD_ASSERT(output_stream_,"Null output stream.");
-  ASSERT_LESS(0, substances_.size());
+  OLD_ASSERT_LESS(0, substances_.size());
   
   initialize_substance_ids(); //computes present substances and sets indices
   initialize_from_input();          //reads non-field data from input
@@ -346,7 +346,7 @@ void SorptionBase::zero_time_step()
   OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   OLD_ASSERT(output_stream_,"Null output stream.");
-  ASSERT_LESS(0, substances_.size());
+  OLD_ASSERT_LESS(0, substances_.size());
   
   data_->set_time(time_->step(), LimitSide::right);
   set_initial_condition();

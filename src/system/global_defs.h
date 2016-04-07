@@ -43,7 +43,7 @@
  *  The macro DBGMSG should be used for debugging messages,
  *  so they can be removed in production version.
  *
- *  WARN_ASSERT - can be used for consistency tests in debugging version.
+ *  OLD_WARN_ASSERT - can be used for consistency tests in debugging version.
  *
  *  @{
  */
@@ -101,13 +101,13 @@
         THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
     }} while (0)
 
-#define WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
+#define OLD_WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
 
 
 #else
 
 #define OLD_ASSERT(...)
-#define WARN_ASSERT(...)
+#define OLD_WARN_ASSERT(...)
 
 #endif
 
@@ -115,13 +115,13 @@
 
 #ifdef FLOW123D_DEBUG_ASSERTS
 
-#define ASSERT_EQUAL( a, b)  do {\
+#define OLD_ASSERT_EQUAL( a, b)  do {\
     stringstream ss; ss << (a) << " != " << (b); \
     OLD_ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
     } while (0)
 #else
 
-#define ASSERT_EQUAL( a, b)
+#define OLD_ASSERT_EQUAL( a, b)
 
 #endif
 
@@ -129,7 +129,7 @@
 
 #ifdef FLOW123D_DEBUG_ASSERTS
 
-#define ASSERT_LESS( a, b) do {\
+#define OLD_ASSERT_LESS( a, b) do {\
     stringstream ss; ss << (a) << " >= " << (b); \
     OLD_ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
@@ -137,20 +137,20 @@
 
 
 
-#if defined(ASSERT_LE) && defined(FLOW123D_INCLUDES_GTEST)
-#undef ASSERT_LE
+#if defined(OLD_ASSERT_LE) && defined(FLOW123D_INCLUDES_GTEST)
+#undef OLD_ASSERT_LE
 #endif
 
 
-#define ASSERT_LE( a, b) do {\
+#define OLD_ASSERT_LE( a, b) do {\
     stringstream ss; ss << (a) << " > " << (b); \
     OLD_ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
 #else
 
-#define ASSERT_LESS( a, b)
-#define ASSERT_LE( a, b)
+#define OLD_ASSERT_LESS( a, b)
+#define OLD_ASSERT_LE( a, b)
 
 #endif
 

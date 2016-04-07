@@ -172,7 +172,7 @@ template<int spacedim, class Value>
 boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
-    ASSERT_LESS(reg.idx(), this->region_fields_.size());
+    OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
     return this->region_fields_[reg.idx()];
 }
 */
@@ -181,7 +181,7 @@ Field<spacedim,Value>::operator[] (Region reg)
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
 	OLD_ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
-	ASSERT_LESS(reg.idx(), this->region_fields_.size());
+	OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
     return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
 }
@@ -198,7 +198,7 @@ void Field<spacedim, Value>::set_field(
 	OLD_ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
-    ASSERT_EQUAL( field->n_comp() , n_comp());
+    OLD_ASSERT_EQUAL( field->n_comp() , n_comp());
     field->set_mesh( mesh() , is_bc() );
 
     HistoryPoint hp = HistoryPoint(time, field);
@@ -379,7 +379,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
-					ASSERT_EQUAL( field_instance->n_comp() , n_comp());
+					OLD_ASSERT_EQUAL( field_instance->n_comp() , n_comp());
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
 						data_->region_history_[reg.idx()].push_front(

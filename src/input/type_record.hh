@@ -563,7 +563,7 @@ inline bool Record::has_key(const string& key) const
 
 inline unsigned int Record::size() const {
 	OLD_ASSERT( is_closed(), "Asking for information of unclosed Record type: %s\n", type_name().c_str());
-	ASSERT_EQUAL( data_->keys.size(), data_->key_to_index.size());
+	OLD_ASSERT_EQUAL( data_->keys.size(), data_->key_to_index.size());
     return data_->keys.size();
 }
 

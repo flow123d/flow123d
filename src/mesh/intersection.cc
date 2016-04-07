@@ -67,11 +67,11 @@ unsigned int Intersection::slave_dim()
 void Intersection::intersection_point_to_vectors(const IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2)
 {
 	const vector<double> &coord_el1 = point->el1_coord();
-	ASSERT_EQUAL(coord_el1.size() , vec1.n_elem);
+	OLD_ASSERT_EQUAL(coord_el1.size() , vec1.n_elem);
 	vec1=arma::vec(coord_el1);
 
 	const vector<double> &coord_el2 = point->el2_coord();
-	ASSERT_EQUAL(coord_el2.size() , vec2.n_elem);
+	OLD_ASSERT_EQUAL(coord_el2.size() , vec2.n_elem);
 	vec2=arma::vec(coord_el2);
 }
 

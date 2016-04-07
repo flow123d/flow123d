@@ -177,7 +177,7 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
 {
 	OLD_ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
 	OLD_ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
-	ASSERT_EQUAL( point_list.size(), value_list.size() );
+	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
     if (boost::is_floating_point< typename Value::element_type>::value) {
         unsigned int idx = n_components_*elm.idx();
         std::vector<typename Value::element_type> &vec = *( data_.get() );

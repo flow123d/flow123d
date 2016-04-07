@@ -475,7 +475,7 @@ void ConvectionTransport::compute_concentration_sources() {
 
 void ConvectionTransport::zero_time_step()
 {
-	ASSERT_EQUAL(time_->tlevel(), 0);
+	OLD_ASSERT_EQUAL(time_->tlevel(), 0);
 
 	data_.mark_input_times(*time_);
 	data_.set_time(time_->step(), LimitSide::right);

@@ -241,7 +241,7 @@ int Profiler::find_child(const CodePoint &cp) {
         if (timer.child_timers[idx] == timer_no_child) break; // tag is not there
 
         child_idx=timer.child_timers[idx];
-        ASSERT_LESS( child_idx, timers_.size());
+        OLD_ASSERT_LESS( child_idx, timers_.size());
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
         idx = ( (unsigned int)(idx)==Timer::max_n_childs ? 0 : idx+1 );
     } while ( (unsigned int)(idx) != cp.hash_idx_ ); // passed through whole array
@@ -288,7 +288,7 @@ void Profiler::stop_timer(int timer_index) {
     if (timer_index <0) timer_idx=actual_node;
     else timer_idx = timer_index;
 
-    ASSERT_LESS( timer_idx, timers_.size() );
+    OLD_ASSERT_LESS( timer_idx, timers_.size() );
 
     if (! timers_[timer_idx].running() ) return;
 

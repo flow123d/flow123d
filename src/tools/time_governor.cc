@@ -386,7 +386,7 @@ double TimeGovernor::estimate_dt() const {
 
 void TimeGovernor::next_time()
 {
-    ASSERT_LE(0.0, t());
+    OLD_ASSERT_LE(0.0, t());
     if (is_end()) return;
     
 

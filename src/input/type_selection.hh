@@ -263,7 +263,7 @@ inline unsigned int Selection::size() const {
     finished_check();
     OLD_ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
             "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
-    ASSERT_EQUAL( data_->keys_.size(), data_->key_to_index_.size());
+    OLD_ASSERT_EQUAL( data_->keys_.size(), data_->key_to_index_.size());
     return data_->keys_.size();
 }
 

@@ -95,7 +95,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 
 	OLD_ASSERT( typeid(*target_type) == typeid(Type::Record), "Incompatible type of target type. Must be Record!\n");
 	OLD_ASSERT( typeid(*source_storage) == typeid(StorageArray), "Incompatible type of storage. Must be Array!\n");
-	ASSERT_EQUAL(source_type->size(), (static_cast<const Type::Record *>(target_type))->size());
+	OLD_ASSERT_EQUAL(source_type->size(), (static_cast<const Type::Record *>(target_type))->size());
 
 	Type::Record::KeyIter target_it= (static_cast<const Type::Record *>(target_type))->begin();
 	StorageArray *storage_array = new StorageArray(source_type->size());
@@ -152,7 +152,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 
 	if ( *target_type == source_type->get_sub_type()) { // get member at index position
 		OLD_ASSERT(index < vec_size_, "Index of storage descendant is out of range.\n");
-		ASSERT_EQUAL(source_storage->get_array_size(), vec_size_);
+		OLD_ASSERT_EQUAL(source_storage->get_array_size(), vec_size_);
 
 		return source_storage->get_item(index)->deep_copy();
 	}

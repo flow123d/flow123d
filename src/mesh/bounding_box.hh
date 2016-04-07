@@ -92,8 +92,8 @@ public:
 	 * Set maximum in given axis.
 	 */
 	void set_max(unsigned int axis, double max) {
-		ASSERT_LESS(axis , dimension);
-		ASSERT_LE( min(axis) , max);
+		OLD_ASSERT_LESS(axis , dimension);
+		OLD_ASSERT_LE( min(axis) , max);
 		max_vertex_[axis] = max;
 	}
 
@@ -101,8 +101,8 @@ public:
 	 * Set minimum on given axis.
 	 */
 	void set_min(unsigned int axis, double min) {
-		ASSERT_LESS(axis, dimension);
-		ASSERT_LE(min , max(axis));
+		OLD_ASSERT_LESS(axis, dimension);
+		OLD_ASSERT_LE(min , max(axis));
 		min_vertex_[axis] = min;
 	}
 
@@ -155,7 +155,7 @@ public:
      * Axis coding is: 0 - axis x, 1 - axis y, 2 - axis z.
      */
     double projection_center(unsigned int axis) const {
-    	ASSERT_LESS(axis, dimension);
+    	OLD_ASSERT_LESS(axis, dimension);
     	return (max_vertex_[axis] + min_vertex_[axis])/2;
     }
 
@@ -217,7 +217,7 @@ public:
     void split(unsigned int axis, double splitting_point,
     		BoundingBox &left, BoundingBox &right ) const
     {
-    	ASSERT_LESS(axis , dimension);
+    	OLD_ASSERT_LESS(axis , dimension);
     	if (min_vertex_[axis] <= splitting_point && splitting_point <= max_vertex_[axis] ) {
     	   	left = *this;
     	   	right = *this;

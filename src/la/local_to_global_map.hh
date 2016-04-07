@@ -107,7 +107,7 @@ public:
     */
    inline unsigned int operator[] (const unsigned int local_idx) const
        {
-           ASSERT_LESS( local_idx, global_indices_.size() );
+           OLD_ASSERT_LESS( local_idx, global_indices_.size() );
            return global_indices_[local_idx];
        }
 

@@ -1203,7 +1203,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    ASSERT_EQUAL( (unsigned int)numNodeSub, global_row_4_sub_row->size() );
+    OLD_ASSERT_EQUAL( (unsigned int)numNodeSub, global_row_4_sub_row->size() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)

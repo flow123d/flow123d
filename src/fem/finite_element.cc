@@ -79,7 +79,7 @@ const unsigned int FiniteElement<dim,spacedim>::n_object_dofs(
 template<unsigned int dim, unsigned int spacedim> inline
 void FiniteElement<dim,spacedim>::compute_node_matrix()
 {
-    ASSERT_EQUAL(get_generalized_support_points().size(), number_of_dofs);
+	OLD_ASSERT_EQUAL(get_generalized_support_points().size(), number_of_dofs);
 
     arma::mat M(number_of_dofs, number_of_dofs);
 

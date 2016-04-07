@@ -193,7 +193,7 @@ const BoundingBox &BIHTree::tree_box() {
 void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list)
 {
 	std::stack<unsigned int, std::vector<unsigned int> > node_stack;
-	ASSERT_EQUAL(result_list.size() , 0);
+	OLD_ASSERT_EQUAL(result_list.size() , 0);
 
 	node_stack.push(0);
 	while (! node_stack.empty()) {
@@ -231,7 +231,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 	// check uniqueness of element indexes
 	sort(result_list.begin(), result_list.end());
 	it = unique(result_list.begin(), result_list.end());
-	ASSERT_EQUAL(searsearchedElements.size() , it - result_list.begin());
+	OLD_ASSERT_EQUAL(searsearchedElements.size() , it - result_list.begin());
 #endif
 }
 

@@ -103,7 +103,7 @@ public:
     unsigned int child(unsigned int i_child)  const
     {
     	OLD_ASSERT(!is_leaf(), "Not in branch node.\n");
-    	ASSERT_LESS( i_child, child_count );
+    	OLD_ASSERT_LESS( i_child, child_count );
     	return child_[i_child];
 
     }

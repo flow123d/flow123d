@@ -57,7 +57,7 @@ template <int spacedim, class Value>
 void FieldAddPotential<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-    ASSERT_EQUAL( point_list.size(), value_list.size() );
+	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
     inner_field_->value_list(point_list, elm, value_list);
     for(unsigned int i=0; i< point_list.size(); i++) {
         double potential= arma::dot(grad_ , point_list[i]) + zero_level_;
