@@ -199,14 +199,22 @@ TEST(FealAssert, assert) {
 
     try {
         FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
-    } catch (feal::Assert &e) {
+    } catch (feal::AssertException &e) {
+    	std::cout << "--- test catch block" << std::endl;
         std::cout << e.what();
     }
+
+    /*try {
+        FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2);
+    } catch (feal::AssertException &e) {
+    	std::cout << "--- test catch block" << std::endl;
+    	std::cout << e.what();
+    }*/
 
     // only in debug mode
     try {
         DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
-    } catch (feal::Assert &e) {
+    } catch (feal::AssertException &e) {
         std::cout << e.what();
     }
 }
