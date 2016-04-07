@@ -114,6 +114,27 @@ template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_sid
 };
 
 
+template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
+   {(unsigned int)~(1 << 3) - ~(15),  //vertex 0
+    (unsigned int)~(1 << 2) - ~(15),  //vertex 1
+    (unsigned int)~(1 << 1) - ~(15),  //vertex 2
+    (unsigned int)~(1 << 0) - ~(15),  //vertex 3
+    0,
+    0},
+   {(1 << 0) | (1 << 1),    //edge 0
+    (1 << 0) | (1 << 2),    //edge 1
+    (1 << 0) | (1 << 3),    //edge 2
+    (1 << 1) | (1 << 2),    //edge 3
+    (1 << 1) | (1 << 3),    //edge 4
+    (1 << 2) | (1 << 3)},   //edge 5
+   {1 << 0,    //side 0
+    1 << 1,    //side 1
+    1 << 2,    //side 2
+    1 << 3,    //side 3
+    0,
+    0}
+};
+
 // template<> const unsigned int RefElement<1>::side_nodes[][1] = {
 // 		{ 0 },
 // 		{ 1 }
@@ -334,7 +355,6 @@ unsigned int RefElement<3>::line_between_faces(unsigned int f1, unsigned int f2)
         else j++;
     return side_lines_[f1][i];
 }
-
 
 
 template<unsigned int dim>

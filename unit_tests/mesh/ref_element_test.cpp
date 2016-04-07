@@ -114,6 +114,23 @@ void test_topology(){
                 cout << RefElement<dim>::template interact<1,2>(i)[j] << " ";
             cout << endl;
         }
+        
+        cout << "topology_idx: dim=3 subdim=2 " << RefElement<3>::topology_idx<2>(1) << endl;
+        cout << "topology_idx: dim=3 subdim=2 " << RefElement<3>::topology_idx<2>(2) << endl;
+        cout << "topology_idx: dim=3 subdim=2 " << RefElement<3>::topology_idx<2>(4) << endl;
+        cout << "topology_idx: dim=3 subdim=2 " << RefElement<3>::topology_idx<2>(8) << endl;
+        
+        cout << "topology_idx: dim=3 subdim=1 " << RefElement<3>::topology_idx<1>(3) << endl;
+        cout << "topology_idx: dim=3 subdim=1 " << RefElement<3>::topology_idx<1>(5) << endl;
+        cout << "topology_idx: dim=3 subdim=1 " << RefElement<3>::topology_idx<1>(9) << endl;
+        cout << "topology_idx: dim=3 subdim=1 " << RefElement<3>::topology_idx<1>(6) << endl;
+        cout << "topology_idx: dim=3 subdim=1 " << RefElement<3>::topology_idx<1>(10) << endl;
+        cout << "topology_idx: dim=3 subdim=1 " << RefElement<3>::topology_idx<1>(12) << endl;
+        
+        cout << "topology_idx: dim=3 subdim=0 " << RefElement<3>::topology_idx<0>(7) << endl;
+        cout << "topology_idx: dim=3 subdim=0 " << RefElement<3>::topology_idx<0>(11) << endl;
+        cout << "topology_idx: dim=3 subdim=0 " << RefElement<3>::topology_idx<0>(13) << endl;
+        cout << "topology_idx: dim=3 subdim=0 " << RefElement<3>::topology_idx<0>(14) << endl;
     }
 }
 

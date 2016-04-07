@@ -243,6 +243,23 @@ public:
 	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
     
     /**
+     * According to positions of zeros in barycentric coordinates, it gives the index of subdim-simplex
+     * in the reference element. Number of zeros must be equal to (3-subdim).
+     * e.g.:
+     * if 1 zeros, return index of side (subdim 2)
+     * if 2 zeros, return index of edge (subdim 1)
+     * if 3 zeros, return index of vertex (subdim 0)
+     */
+    template<unsigned int subdim> static unsigned int topology_idx(unsigned int zeros_positions);
+    
+    /** Function returns number of subdim-simplices inside dim-simplex.
+     * The aim is covering all the n_**** members with a single function.
+     * TODO: think of generalization for n_****_per_**** members, like function @p interact:
+     * template<unsigned int subdimA, unsigned int subdimB> static unsigned int count();
+     */
+    template<unsigned int subdim> static unsigned int count();
+    
+    /**
      * @param sid - index of a sub-simplex in a simplex
      * return an array of barycentric coordinates on <dim> simplex from <subdim> simplex
      * for example: simplex<3> - ABCD and its subsubsimplex<1> AD (line index: 3)
@@ -294,6 +311,9 @@ private:
     static const IdxVector<n_sides_per_node> node_sides_[n_nodes]; ///< For given node, returns sides indices. For @p dim == 3.
     static const IdxVector<n_sides_per_line> line_sides_[n_lines]; ///< For given line, returns sides indices. For @p dim == 3.
     static const IdxVector<n_lines_per_side> side_lines_[n_sides]; ///< For given side, returns lines indices. For @p dim == 3.
+
+    //TODO: implement for 1d and 2d
+    static const IdxVector<n_lines> topology_zeros_[dim];   ///< Maps the zero mask of the barycentric coordinates to topology indices.
 };
 
 
@@ -322,8 +342,6 @@ arma::vec::fixed<dim+1> RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> 
     for(int i=0; i<subdim+1; i++) sum += coord[i]*simplex_M_vertices[i];
     return sum;
 };
-    
-
 
 template <unsigned int Size>
 IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)
@@ -342,6 +360,30 @@ inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
     return data_[idx]; }
     
 
+
+template<> template<> inline unsigned int RefElement<3>::count<0>()
+{ return n_nodes; }
+template<> template<> inline unsigned int RefElement<3>::count<1>()
+{ return n_lines; }
+template<> template<> inline unsigned int RefElement<3>::count<2>()
+{ return n_sides; }
+template<> template<> inline unsigned int RefElement<2>::count<0>()
+{ return n_nodes; }
+template<> template<> inline unsigned int RefElement<2>::count<1>()
+{ return n_lines; }
+template<> template<> inline unsigned int RefElement<1>::count<0>()
+{ return n_nodes; }
+
+template<unsigned int dim>
+template<unsigned int subdim>
+unsigned int RefElement<dim>::topology_idx(unsigned int zeros_positions)
+{
+    for(unsigned int i=0; i < RefElement<dim>::count<subdim>(); i++){
+        if(zeros_positions == topology_zeros_[subdim][i]) return i;
+    }
+    ASSERT(0, "Undefined zero pattern.");
+    return -1;
+}
 
 
 /// This function is for "side_nodes" - for given side, give me nodes (0->0, 1->1).
