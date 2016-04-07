@@ -697,16 +697,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     double flux, flux2, edg_flux;
 
-
-    vector<double> edge_flow(mesh_->n_edges(),0.0);
-    for(unsigned int i=0; i < mesh_->n_edges() ; i++) { // calculate edge Qv
-        Edge &edg = mesh_->edges[i];
-        for( int s=0; s < edg.n_sides; s++) {
-            flux = mh_dh->side_flux( *(edg.side(s)) );
-            if ( flux > 0)  edge_flow[i]+= flux;
-        }
-    }
-
     if (balance_ != nullptr)
     	balance_->start_mass_assembly(subst_idx);
 
@@ -732,7 +722,11 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             flux = mh_dh->side_flux( *(elm->side(si)) );
             if (elm->side(si)->cond() == NULL) {
                  edg = elm->side(si)->edge();
-                 edg_flux = edge_flow[ elm->side(si)->edge_idx() ];
+                 edg_flux = 0;
+                 for( int s=0; s < edg->n_sides; s++) {
+                   flux2 = mh_dh->side_flux( *(edg->side(s)) );
+                   if ( flux2 > 0)  edg_flux+= flux2;
+                 }
                  FOR_EDGE_SIDES(edg,s)
                     // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
                     // These edges on these sides should have just one side
