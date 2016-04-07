@@ -96,17 +96,19 @@ public:
 	 *
 	 *   cross_section*(flux + sigma*(solution - ref_value))
 	 *
+     * @param index        Component index.
 	 * @param point_list   Points at which to evaluate.
 	 * @param ele_acc      Element accessor.
 	 * @param bc_flux      Neumann flux (output).
 	 * @param bc_sigma     Transition parameter (output).
 	 * @param bc_ref_value Reference value (output).
 	 */
-	virtual void get_flux_bc_data(const std::vector<arma::vec3> &point_list,
+	virtual void get_flux_bc_data(unsigned int index,
+            const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_flux,
-			std::vector< arma::vec > &bc_sigma,
-			std::vector< arma::vec > &bc_ref_value) = 0;
+			std::vector< double > &bc_flux,
+			std::vector< double > &bc_sigma,
+			std::vector< double > &bc_ref_value) = 0;
 
 	/**
 	 * \brief Return transition coefficient for flux b.c.
@@ -114,13 +116,15 @@ public:
 	 * In assembly of system matrix one does not teed all data for total/diffusive flux b.c.
 	 * This method therefore returns only the sigma coefficient.
 	 *
+     * @param index        Component index.
 	 * @param point_list   Points at which to evaluate.
 	 * @param ele_acc      Element accessor.
 	 * @param bc_sigma     Transition parameter (output).
 	 */
-	virtual void get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+	virtual void get_flux_bc_sigma(unsigned int index,
+            const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_sigma) = 0;
+			std::vector< double > &bc_sigma) = 0;
 
 	/**
 	 * Compute coefficients of volume sources.
