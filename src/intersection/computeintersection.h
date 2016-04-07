@@ -69,6 +69,7 @@ public:
 	bool compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
     
     /** Computes final 1d-2d intersection. (Use when this is not the resulting dimension object).
+     * TODO: as in 1d-3d check the topology after interpolation
      * @param IP12s - input/output vector of IPs. If IP found, it is pushed back.
      * @return true, if intersection is found; false otherwise
      */
@@ -245,6 +246,9 @@ private:
     /// Pointers to Plucker products of abscissa and tetrahedron edges.
     std::vector<double *> plucker_products_;
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[4];
+    
+    // After interpolation, the topology information in tetrahedron must be updated.
+    void correct_tetrahedron_ip_topology(IntersectionPointAux<1,3> &ip);
 };
 
 /******************************************************************

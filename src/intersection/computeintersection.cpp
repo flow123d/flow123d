@@ -494,7 +494,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
                     // set topology data for object B (tetrahedron) - node
                     IP13.set_topology_B(node, IP.dim_B());
                 }
-                if(IP.dim_B() == 1) // IP is on edge of triangle
+                else if(IP.dim_B() == 1) // IP is on edge of triangle
                 {
                     for(unsigned int s=0; s < RefElement<3>::n_sides_per_line; s++)
                         CI12[RefElement<3>::interact<2,1>(IP.idx_B())[s]].set_computed();
@@ -524,7 +524,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
         IntersectionPointAux<1,3> 
             &a1 = IP13s[IP13s.size()-2],   // start point
             &a2 = IP13s[IP13s.size()-1];   // end point
-        
+
         // swap the ips in the line coordinate direction (0->1 : a1->a2)        
         if(a1.local_bcoords_A()[1] > a2.local_bcoords_A()[1])
         {
@@ -538,8 +538,9 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
         t2 = a2.local_bcoords_A()[1];
         
         // cut off the line by the abscissa points
-        if(t1 < 0) t1 = 0;
-        if(t2 > 1) t2 = 1;
+        bool cut1 = false, cut2 = false;    //flags to avoid unnecessary interpolation
+        if(t1 < 0) { t1 = 0; cut1 = true;}
+        if(t2 > 1) { t2 = 1; cut2 = true;}
         
         if(t2 < t1) { // then the intersection is outside the abscissa => NO intersection
             pocet_pruniku = 0;
@@ -550,6 +551,9 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 
         if(t1 == 0) // interpolate IP a1
         {
+            //if cut (non-compatible case), then interpolate
+            if(cut1)
+            {
             arma::vec4 local_tetra = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
                                                                                    a2.local_bcoords_B(), 
                                                                                    a1.local_bcoords_A()[1],
@@ -557,9 +561,13 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
                                                                                    t1);
             arma::vec2 local_abscissa({1 - t1, t1});    // abscissa local barycentric coords
             a1.set_coordinates(local_abscissa,local_tetra);
+            // correct topology of ip in tetrahedron after interpolation
+            correct_tetrahedron_ip_topology(a1);
+            }
+            
 //             DBGMSG("E-E 0\n");
             // set topology: node 0 of the line, tetrahedron
-            a1.set_topology(0, 0, 0,3);
+            a1.set_topology_A(0, 0);
         }
         
         if(t1 == t2)    // if IPs are the same, then throw the second one away
@@ -569,6 +577,9 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
         }
         else if(t2 == 1) // interpolate IP a2
         {
+            //if cut (non-compatible case), then interpolate
+            if(cut2)
+            {
             arma::vec4 local_tetra = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
                                                                                    a2.local_bcoords_B(), 
                                                                                    a1.local_bcoords_A()[1],
@@ -576,13 +587,44 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
                                                                                    t2);
             arma::vec2 local_abscissa({1 - t2, t2});    // abscissa local barycentric coords
             a2.set_coordinates(local_abscissa,local_tetra);
+            correct_tetrahedron_ip_topology(a2);
+            }
 //             DBGMSG("E-E 1\n");
             // set topology: node 1 of the line, tetrahedron
-            a2.set_topology(1, 0, 0,3);
+            a2.set_topology_A(1, 0);
         }
     }
     return pocet_pruniku;
 };
+
+void ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::correct_tetrahedron_ip_topology(IntersectionPointAux< 1, 3 >& ip)
+{
+    // create mask for zeros in barycentric coordinates
+    // coords (*,*,*,*) -> byte bitwise xxxx
+    // only least significant one byte used from the integer
+    unsigned int zeros = 0;
+    unsigned int n_zeros = 0;
+    for(char i=0; i < 4; i++){
+        if(std::fabs(ip.local_bcoords_B()[i]) < geometry_epsilon) 
+        {
+            zeros = zeros | (1 << i);
+            n_zeros++;
+        }
+    }
+
+    switch(n_zeros)
+    {
+        default: ip.set_topology_B(0,3);  //inside tetrahedon
+                 break;
+        case 1: ip.set_topology_B(RefElement<3>::topology_idx<2>(zeros),2);
+                break;
+        case 2: ip.set_topology_B(RefElement<3>::topology_idx<1>(zeros),1);
+                break;
+        case 3: ip.set_topology_B(RefElement<3>::topology_idx<0>(zeros),0);
+                break;
+    }
+};
+
 
 void ComputeIntersection<Simplex<1>, Simplex<3>>::print_plucker_coordinates(std::ostream &os){
 		os << "\tPluckerCoordinates Abscissa[0]";
