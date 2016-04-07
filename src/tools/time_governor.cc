@@ -28,8 +28,6 @@ TimeMarks TimeGovernor::time_marks_ = TimeMarks();
 //const double TimeGovernor::time_step_lower_bound = numeric_limits<double>::epsilon();
 const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
 const double TimeGovernor::time_step_precision = 16*numeric_limits<double>::epsilon();
-const std::string TimeGovernor::min_constraint_message_ = "Permanent minimal constraint.";
-const std::string TimeGovernor::max_constraint_message_ = "Permanent maximal constraint.";
 
 
 using namespace Input::Type;
@@ -212,13 +210,13 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
     	end_of_fixed_dt_interval_ = init_time_;
 
     	min_time_step_=lower_constraint_=time_step_precision;
-        lower_constraint_message_ = min_constraint_message_;
+        lower_constraint_message_ = "Permanent minimal constraing, default, time_step_precision.";
     	if (end_time_ == inf_time) {
         	max_time_step_=upper_constraint_=inf_time;
     	} else {
     		max_time_step_=upper_constraint_= end_time - init_time_;
     	}
-    	upper_constraint_message_ = max_constraint_message_;
+    	upper_constraint_message_ = "Permanent maximal constraint, default, total simulation time.";
     	// choose maximum possible time step
     	//time_step_=max_time_step_;
     /*} else {
@@ -259,9 +257,9 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
     }
 
     lower_constraint_ = min_time_step_ = max(min_dt, time_step_precision);
-    lower_constraint_message_ = min_constraint_message_;
+    lower_constraint_message_ = "Permanent minimal constraint, custom.";
     upper_constraint_ = max_time_step_ = min(max_dt, end_time_-t());
-    upper_constraint_message_ = max_constraint_message_;
+    upper_constraint_message_ = "Permanent maximal constraint, custom.";
     
 }
 
@@ -435,8 +433,8 @@ void TimeGovernor::next_time()
     // refreshing the upper_constraint_
     upper_constraint_ = min(end_time_ - t(), max_time_step_);
     lower_constraint_ = min_time_step_;
-    lower_constraint_message_ = min_constraint_message_;
-    upper_constraint_message_ = max_constraint_message_;
+    lower_constraint_message_ = "Permanent minimal constraint, in next time.";
+    upper_constraint_message_ = "Permanent maximal constraint, in next time.";
 }
 
 

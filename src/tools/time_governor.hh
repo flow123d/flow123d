@@ -510,11 +510,6 @@ private:
     /// Permanent lower limit for the time step.
     double min_time_step_;
 
-    /// Description of the upper constraint.
-    static const std::string max_constraint_message_;
-    /// Description of the upper constraint.
-    static const std::string min_constraint_message_;
-    
     /**
      * When the next time is chosen we need only the lowest fix time. Therefore we use
      * minimum priority queue of doubles based on the vector container.
