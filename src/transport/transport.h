@@ -273,6 +273,7 @@ private:
 
     VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
+    Vec mass_diag;  // diagonal entries in pass matrix (cross_section * porosity)
     Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
     double **tm_diag;
 
