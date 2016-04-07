@@ -54,9 +54,9 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
 #        - subdomain
-    balance: true
-    solver: !Petsc
-      a_tol: 1.0e-07
+    balance: true          
     nonlinear_solver:  
       tolerance: 1e-5
       max_it: 4
+      linear_solver: !Petsc {}
+        
