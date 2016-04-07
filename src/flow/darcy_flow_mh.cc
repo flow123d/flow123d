@@ -288,8 +288,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
         data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
         data_.mark_input_times(*time_);
-        //data_.set_limit_side(LimitSide::right);
-        //data_.set_time(time_->step());
     }
     output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
@@ -310,22 +308,11 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     assembly_.push_back(new Assembly<2>(assembly_data));
     assembly_.push_back(new Assembly<3>(assembly_data));
 
-    // TODO: After simplification of Balance constructor move next line into create_linear_system.
-    prepare_parallel();
     //side_ds->view( std::cout );
     //el_ds->view( std::cout );
     //edge_ds->view( std::cout );
     //rows_ds->view( std::cout );
     
-    // initialization of balance object
-    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
-    if (it->val<bool>("balance_on"))
-    {
-        balance_ = boost::make_shared<Balance>("water", mesh_, *it);
-        water_balance_idx_ = balance_->add_quantity("water_volume");
-        balance_->allocate(rows_ds->lsize(), 1);
-        balance_->units(UnitSI().m(3));
-    }
 }
 
 
@@ -341,7 +328,19 @@ void DarcyFlowMH_Steady::zero_time_step()
     Input::AbstractRecord rec = this->input_record_
             .val<Input::Record>("nonlinear_solver")
             .val<Input::AbstractRecord>("linear_solver");
+
+    prepare_parallel();
     create_linear_system(rec);
+    // initialization of balance object
+    Input::Iterator<Input::Record> it = input_record_.find<Input::Record>("balance");
+    if (it->val<bool>("balance_on"))
+    {
+        balance_ = boost::make_shared<Balance>("water", mesh_, *it);
+        water_balance_idx_ = balance_->add_quantity("water_volume");
+        balance_->allocate(rows_ds->lsize(), 1);
+        balance_->units(UnitSI().m(3));
+    }
+
     /* TODO:
      * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
      * - Steady solution as an intitial condition may be forced by setting inti_time =-1, and set data for the steady solver in that time.
