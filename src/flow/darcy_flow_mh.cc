@@ -160,19 +160,6 @@ const int DarcyFlowMH_Steady::registrar =
 		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("SteadyDarcy_MH") +
 		DarcyFlowMH_Steady::get_input_type().size();
 
-/*
-const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
-	return it::Record("UnsteadyDarcy_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
-		.derive_from(DarcyFlowInterface::get_input_type())
-		.copy_keys(DarcyFlowMH_Steady::get_input_type())
-		.close();
-}
-
-
-const int DarcyFlowMH_Unsteady::registrar =
-		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("UnsteadyDarcy_MH") +
-		DarcyFlowMH_Unsteady::get_input_type().size();
-*/
 
 
 DarcyFlowMH_Steady::EqData::EqData()
@@ -199,20 +186,20 @@ DarcyFlowMH_Steady::EqData::EqData()
 
     ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' save the bc_type='none'."
 		"See documentation of 'bc_type' for exact meaning of 'bc_pressure' in individual boundary condition types.", "0.0");
-    	bc_pressure.disable_where(bc_type, {none/*, neumann*/} );
+    	bc_pressure.disable_where(bc_type, {none} );
         bc_pressure.units( UnitSI().m() );
 
     ADD_FIELD(bc_flux,"Incoming water boundary flux. Used for bc_types : 'none', 'total_flux', 'seepage', 'river'.", "0.0");
-    	bc_flux.disable_where(bc_type, {none, dirichlet/*, robin*/} );
+    	bc_flux.disable_where(bc_type, {none, dirichlet} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in the 'total_flux' or the 'river' boundary condition type.", "0.0");
-    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, seepage,/*, neumann*/} );
+    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, seepage} );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     ADD_FIELD(bc_switch_pressure,
-            "Critical pressure when switching seepage face and river boundary conditions.", "0.0");
-    bc_switch_pressure.disable_where(bc_type, {none, dirichlet} );
+            "Critical switch pressure for 'seepage' and 'river' boundary conditions.", "0.0");
+    bc_switch_pressure.disable_where(bc_type, {none, dirichlet, total_flux} );
     bc_switch_pressure.units( UnitSI().m() );
 
     //these are for unsteady
@@ -275,8 +262,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 {
 
     is_linear_=true;
-    tolerance_=0.01;
-    max_n_it_=100;
 
     START_TIMER("Darcy constructor");
     {
@@ -443,14 +428,13 @@ void DarcyFlowMH_Steady::solve_nonlinear()
     int is_linear_common;
     MPI_Allreduce(&is_linear_, &is_linear_common,1, MPI_INT ,MPI_MIN,PETSC_COMM_WORLD);
 
+    Input::Record nl_solver_rec = input_record_.val<Input::Record>("nonlinear_solver");
+    this->tolerance_ = nl_solver_rec.val<double>("tolerance");
+    this->max_n_it_  = nl_solver_rec.val<unsigned int>("max_it");
+
     if (! is_linear_common) {
-        this->tolerance_ = 1E-6;
-        Input::Record rec;
-        if (input_record_.opt_val<Input::Record>("nonlinear_solver", rec)) {
-            this->tolerance_ = rec.val<double>("tolerance");
-            this->max_n_it_  = rec.val<unsigned int>("max_it");
-        }
-        schur0->set_tolerances(0.1, 0.1*this->tolerance_, 100);
+        // set tolerances of the linear solver unless they are set by user.
+        schur0->set_tolerances(0.1, 0.1*this->tolerance_, 10);
     }
     vector<double> convergence_history;
 
