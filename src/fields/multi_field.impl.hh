@@ -155,7 +155,7 @@ void MultiField<spacedim, Value>::setup_components() {
 
     	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name, is_bc()) );
     	sub_fields_[i_comp].units( units() );
-        if (no_check_control_field_ != nullptr)
+        if (no_check_control_field_ != nullptr && no_check_control_field_->size() == sub_fields_.size())
           sub_fields_[i_comp].disable_where((*no_check_control_field_)[i_comp], shared_->no_check_values_);
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
 //     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
