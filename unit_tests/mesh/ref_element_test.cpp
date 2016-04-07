@@ -82,6 +82,16 @@ void test_topology(){
         cout << endl;
     }
     
+    if(dim == 2)
+    {
+        cout << "topology_idx: dim=2 subdim=0 " << RefElement<2>::topology_idx<0>(3) << endl;
+        cout << "topology_idx: dim=2 subdim=0 " << RefElement<2>::topology_idx<0>(5) << endl;
+        cout << "topology_idx: dim=2 subdim=0 " << RefElement<2>::topology_idx<0>(6) << endl;
+        cout << "topology_idx: dim=2 subdim=1 " << RefElement<2>::topology_idx<1>(1) << endl;
+        cout << "topology_idx: dim=2 subdim=1 " << RefElement<2>::topology_idx<1>(2) << endl;
+        cout << "topology_idx: dim=2 subdim=1 " << RefElement<2>::topology_idx<1>(4) << endl;
+    }
+    
     if(dim == 3)
     {
         cout << "side nodes:\n";
