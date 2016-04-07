@@ -79,7 +79,7 @@ template<> const unsigned int RefElement<3>::line_nodes[][2] = {
 template<unsigned int dim>
 vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
 {
-	ASSERT(nid < n_nodes, "Vertex number is out of range!");
+	OLD_ASSERT(nid < n_nodes, "Vertex number is out of range!");
 
 	vec::fixed<dim> p;
 	p.zeros();
@@ -94,7 +94,7 @@ vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
 template<unsigned int dim>
 vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
 {
-	ASSERT(nid < n_nodes, "Vertex number is out of range!");
+	OLD_ASSERT(nid < n_nodes, "Vertex number is out of range!");
 
 	vec::fixed<dim+1> p;
 	p.zeros();
@@ -111,7 +111,7 @@ vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
 template<>
 vec::fixed<1> RefElement<1>::normal_vector(unsigned int sid)
 {
-	ASSERT(sid < n_sides, "Side number is out of range!");
+	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
 
 	return node_coords(sid) - node_coords(1-sid);
 }
@@ -119,7 +119,7 @@ vec::fixed<1> RefElement<1>::normal_vector(unsigned int sid)
 template<>
 vec::fixed<2> RefElement<2>::normal_vector(unsigned int sid)
 {
-	ASSERT(sid < n_sides, "Side number is out of range!");
+	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
 	vec::fixed<2> barycenter, bar_side, n, t;
 
 	// tangent vector along line
@@ -141,7 +141,7 @@ vec::fixed<2> RefElement<2>::normal_vector(unsigned int sid)
 template<>
 vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
 {
-	ASSERT(sid < n_sides, "Side number is out of range!");
+	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
 	vec::fixed<3> barycenter, bar_side, n, t1, t2;
 
 	// tangent vectors of side
@@ -164,7 +164,7 @@ vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
 template<>
 double RefElement<1>::side_measure(unsigned int sid)
 {
-	ASSERT(sid < n_sides, "Side number is out of range!");
+	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
 
 	return 1;
 }
@@ -173,7 +173,7 @@ double RefElement<1>::side_measure(unsigned int sid)
 template<>
 double RefElement<2>::side_measure(unsigned int sid)
 {
-	ASSERT(sid < n_sides, "Side number is out of range!");
+	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
 
 	return norm(node_coords(side_nodes[sid][1]) - node_coords(side_nodes[sid][0]),2);
 }
@@ -182,7 +182,7 @@ double RefElement<2>::side_measure(unsigned int sid)
 template<>
 double RefElement<3>::side_measure(unsigned int sid)
 {
-	ASSERT(sid < n_sides, "Side number is out of range!");
+	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
 
 	return 0.5*norm(cross(node_coords(side_nodes[sid][1]) - node_coords(side_nodes[sid][0]),
 			node_coords(side_nodes[sid][2]) - node_coords(side_nodes[sid][0])),2);

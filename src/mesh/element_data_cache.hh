@@ -66,7 +66,7 @@ public:
 
 	/// Return vector of element data for get component.
 	ComponentDataPtr get_component_data(unsigned int component_idx) {
-		ASSERT(component_idx < data_.size(), "Index of component is out of range.\n");
+		OLD_ASSERT(component_idx < data_.size(), "Index of component is out of range.\n");
 		return data_[component_idx];
 	}
 

@@ -72,7 +72,7 @@ void FieldAddPotential<spacedim, Value>::value_list (const std::vector< Point > 
 template <int spacedim, class Value>
 bool FieldAddPotential<spacedim,Value>::set_time (const TimeStep &time)
 {
-    ASSERT(inner_field_, "Null data pointer.\n");
+	OLD_ASSERT(inner_field_, "Null data pointer.\n");
     return inner_field_->set_time(time);
 }
 

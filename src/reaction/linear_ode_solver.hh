@@ -92,7 +92,7 @@ private:
 template<class Method>
 void LinearODESolver<Method>::update_solution(arma::mat& init_vecs, arma::mat& output_vecs, const std::vector< unsigned int > &mask)
 {  
-    ASSERT(0,"Not implemented yet.");
+	OLD_ASSERT(0,"Not implemented yet.");
     ASSERT_EQUAL(init_vecs.n_cols, output_vecs.n_cols);
     ASSERT_EQUAL(init_vecs.n_rows, output_vecs.n_rows);
     

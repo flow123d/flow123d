@@ -64,7 +64,7 @@ void TimeMarks::reinit()
 }
 
 TimeMark::Type TimeMarks::new_mark_type() {
-    ASSERT(next_mark_type_ != 0, "Can not allocate new mark type. The limit is 32 mark types.\n");
+	OLD_ASSERT(next_mark_type_ != 0, "Can not allocate new mark type. The limit is 32 mark types.\n");
     TimeMark::Type current_type = next_mark_type_;
 
     next_mark_type_ <<= 1;
@@ -95,8 +95,8 @@ void TimeMarks::add(const TimeMark &mark) {
 }
 
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
-	ASSERT(end_time != TimeGovernor::inf_time, "Can not add time marks on infinite interval.\n");
-	ASSERT(dt > numeric_limits<double>::epsilon(), "TimeMark's step less then machine precision.\n");
+	OLD_ASSERT(end_time != TimeGovernor::inf_time, "Can not add time marks on infinite interval.\n");
+	OLD_ASSERT(dt > numeric_limits<double>::epsilon(), "TimeMark's step less then machine precision.\n");
 
 	unsigned int n_steps=((end_time-time)/dt + TimeGovernor::time_step_precision);
 	for (unsigned int i = 0; i<=n_steps;i++) {

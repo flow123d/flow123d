@@ -85,7 +85,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
             break;
         default:
             matrixType = la::BddcmlWrapper::GENERAL;
-            ASSERT( true, "Unknown matrix type %d", matrixTypeInt );
+            OLD_ASSERT( true, "Unknown matrix type %d", matrixTypeInt );
     }
 
     bddcml_ = new Bddcml_( size_,
@@ -123,7 +123,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     // simply pass the data to BDDCML solver
     isngn_.resize(isngn.size());
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
-    ASSERT( numDofs == size_, "Global problem size mismatch!" );
+    OLD_ASSERT( numDofs == size_, "Global problem size mismatch!" );
 
     bddcml_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, element_permeability, meshDim );
 

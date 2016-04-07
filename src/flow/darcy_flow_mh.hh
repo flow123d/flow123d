@@ -316,9 +316,9 @@ protected:
     
     void make_serial_scatter();
     virtual void modify_system()
-    { ASSERT(0, "Modify system called for Steady darcy.\n"); };
+    { OLD_ASSERT(0, "Modify system called for Steady darcy.\n"); };
     virtual void setup_time_term()
-    { ASSERT(0, "Setup time term called for Steady darcy.\n"); };
+    { OLD_ASSERT(0, "Setup time term called for Steady darcy.\n"); };
 
 
     void prepare_parallel( const Input::AbstractRecord in_rec);

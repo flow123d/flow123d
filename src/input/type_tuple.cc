@@ -49,7 +49,7 @@ TypeBase::TypeHash Tuple::content_hash() const
 
 Tuple & Tuple::allow_auto_conversion(const string &from_key)
 {
-	ASSERT(false, "Call of allow_auto_conversion method is forbidden for type Tuple: '%s'", this->type_name().c_str());
+	OLD_ASSERT(false, "Call of allow_auto_conversion method is forbidden for type Tuple: '%s'", this->type_name().c_str());
 	return *this;
 }
 
@@ -70,7 +70,7 @@ bool Tuple::finish(bool is_generic)
 {
 	if (data_->finished) return true;
 
-	ASSERT(data_->closed_, "Finished Tuple '%s' must be closed!", this->type_name().c_str());
+	OLD_ASSERT(data_->closed_, "Finished Tuple '%s' must be closed!", this->type_name().c_str());
 
     data_->finished = true;
 
@@ -109,7 +109,7 @@ bool Tuple::finish(bool is_generic)
 
 Tuple &Tuple::derive_from(Abstract &parent)
 {
-	ASSERT(false, "Call of derive_from method is forbidden for type Tuple: '%s'", this->type_name().c_str());
+	OLD_ASSERT(false, "Call of derive_from method is forbidden for type Tuple: '%s'", this->type_name().c_str());
 	return *this;
 }
 

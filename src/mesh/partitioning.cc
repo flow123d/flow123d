@@ -72,14 +72,14 @@ Partitioning::~Partitioning() {
 }
 
 const Distribution * Partitioning::get_init_distr() const {
-    ASSERT(init_el_ds_, "NULL initial distribution.");
+	OLD_ASSERT(init_el_ds_, "NULL initial distribution.");
     return init_el_ds_;
 }
 
 
 
 const int * Partitioning::get_loc_part() const {
-    ASSERT(loc_part_, "NULL local partitioning.");
+	OLD_ASSERT(loc_part_, "NULL local partitioning.");
     return loc_part_;
 }
 
@@ -107,7 +107,7 @@ void Partitioning::make_element_connection_graph() {
             edg = ele->side(si)->edge();
 
             FOR_EDGE_SIDES( edg, li ) {
-                ASSERT(edg->side(li)->valid(),"NULL side of edge.");
+            	OLD_ASSERT(edg->side(li)->valid(),"NULL side of edge.");
                 e_idx = ELEMENT_FULL_ITER(mesh_, edg->side(li)->element()).index();
 
                 // for elements of connected elements, excluding element itself
@@ -227,7 +227,7 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,  Distribution * &new_ds, in
 
 
 shared_ptr< vector<int> > Partitioning::subdomain_id_field_data() {
-    ASSERT(loc_part_, "Partition is not yet computed.\n");
+	OLD_ASSERT(loc_part_, "Partition is not yet computed.\n");
     if (!seq_part_) {
     	unsigned int seq_size=(init_el_ds_->myp() == 0) ? init_el_ds_->size() : 1;
     	//seq_part_.resize(seq_size);

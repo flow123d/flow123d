@@ -304,7 +304,7 @@ void Application::run() {
             ver_fields[1]=match[2];
             ver_fields[2]=match[3];
         } else {
-            ASSERT(1, "Bad Flow123d version format: %s\n", version.c_str() );
+        	OLD_ASSERT(1, "Bad Flow123d version format: %s\n", version.c_str() );
         }
 
         std::string input_version = i_rec.val<string>("flow123d_version");

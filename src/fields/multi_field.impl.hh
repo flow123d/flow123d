@@ -53,7 +53,7 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
 
 template<int spacedim, class Value>
 it::Instance MultiField<spacedim,Value>::get_input_type() {
-	ASSERT(false, "This method can't be used for MultiField");
+	OLD_ASSERT(false, "This method can't be used for MultiField");
 
 	it::Abstract abstract = it::Abstract();
 	it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
@@ -140,8 +140,8 @@ template<int spacedim, class Value>
 void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
 	string full_name;
-	ASSERT(comp_size, "Vector of component names is empty!\n");
-	ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
+	OLD_ASSERT(comp_size, "Vector of component names is empty!\n");
+	OLD_ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
 
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
@@ -222,7 +222,7 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 	Input::Array multifield_arr;
 	if (descriptor_rec.opt_val(field.input_name(), multifield_arr))
 	{
-		//ASSERT(multifield_arr.size() == 1 || multifield_arr.size() == field.n_comp(),
+		//OLD_ASSERT(multifield_arr.size() == 1 || multifield_arr.size() == field.n_comp(),
 		//		"Invalid size of Array defined for MultiField '%s'!\n", field.input_name().c_str());
 		unsigned int position = 0;
 		auto it = multifield_arr.begin<Input::AbstractRecord>();

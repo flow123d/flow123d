@@ -63,7 +63,7 @@ GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
 void GmshMeshReader::read_mesh(Mesh* mesh) {
     START_TIMER("GMSHReader - read mesh");
     
-    ASSERT( mesh , "Argument mesh is NULL.\n");
+    OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
     read_nodes(mesh);
     read_elements(mesh);
 }
@@ -204,7 +204,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
 
 
 void GmshMeshReader::read_physical_names(Mesh * mesh) {
-	ASSERT( mesh , "Argument mesh is NULL.\n");
+	OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
     using namespace boost;
 
     if (! tok_.skip_to("$PhysicalNames", "$Nodes") ) return;

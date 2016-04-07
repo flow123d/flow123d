@@ -99,7 +99,7 @@ OutputVTK::~OutputVTK()
 
 int OutputVTK::write_data(void)
 {
-    ASSERT(_mesh != nullptr, "Null mesh.\n");
+	OLD_ASSERT(_mesh != nullptr, "Null mesh.\n");
 
     /* It's possible now to do output to the file only in the first process */
     if(this->rank != 0) {
@@ -159,7 +159,7 @@ int OutputVTK::write_data(void)
 void OutputVTK::make_subdirectory()
 {
     string main_file="./" + this->_base_filename; // guarantee that find_last_of succeeds
-    ASSERT( main_file.substr( main_file.size() - 4) == ".pvd" , "none");
+    OLD_ASSERT( main_file.substr( main_file.size() - 4) == ".pvd" , "none");
     unsigned int last_sep_pos=main_file.find_last_of(DIR_DELIMITER);
     main_output_dir_=main_file.substr(2, last_sep_pos-2);
     main_output_basename_=main_file.substr(last_sep_pos+1);

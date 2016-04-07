@@ -963,7 +963,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 			{
 				for (int s2=s1+1; s2<edg->n_sides; s2++)
 				{
-					ASSERT(edg->side(s1)->valid(), "Invalid side of edge.");
+					OLD_ASSERT(edg->side(s1)->valid(), "Invalid side of edge.");
 					if (!feo->dh()->el_is_local(edg->side(s1)->element().index())
 							&& !feo->dh()->el_is_local(edg->side(s2)->element().index())) continue;
 
@@ -1442,7 +1442,7 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv)
 {
-	ASSERT(cell->dim() == dim, "Element dimension mismatch!");
+	OLD_ASSERT(cell->dim() == dim, "Element dimension mismatch!");
 
     velocity.resize(fv.n_points());
 
@@ -1477,7 +1477,7 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
     double h = 0;
     double local_alpha = 0;
 
-    ASSERT(edg.side(s1)->valid(), "Invalid side of an edge.");
+    OLD_ASSERT(edg.side(s1)->valid(), "Invalid side of an edge.");
     SideIter s = edg.side(s1);
 
     // calculate the side diameter

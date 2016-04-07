@@ -23,7 +23,7 @@
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
     if (found_field) {
-        ASSERT(&add_field==found_field, "Another field of the same name exists when adding field: %s\n",
+    	OLD_ASSERT(&add_field==found_field, "Another field of the same name exists when adding field: %s\n",
                 add_field.name().c_str());
     } else {
         field_list.push_back(&add_field);

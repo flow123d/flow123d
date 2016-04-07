@@ -59,7 +59,7 @@ template<unsigned int dim, unsigned int spacedim> inline
 const unsigned int FiniteElement<dim,spacedim>::n_object_dofs(
         unsigned int object_dim, DofMultiplicity multiplicity)
 {
-    ASSERT(object_dim >= 0 && object_dim <= dim,
+	OLD_ASSERT(object_dim >= 0 && object_dim <= dim,
             "Object type number is out of range.");
     switch (multiplicity)
     {

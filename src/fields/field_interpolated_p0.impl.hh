@@ -86,7 +86,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 
 template <int spacedim, class Value>
 bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
-    ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
+	OLD_ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
     if ( reader_file_ == FilePath() ) return false;
     
     //walkaround for the steady time governor - there is no data to be read in time==infinity
@@ -115,7 +115,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
-    ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
+	OLD_ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
 	if (elm.idx() != computed_elm_idx_ || elm.is_boundary() != computed_elm_boundary_) {
 		computed_elm_idx_ = elm.idx();
 		computed_elm_boundary_ = elm.is_boundary();
@@ -224,7 +224,7 @@ template <int spacedim, class Value>
 void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list)
 {
-    ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
+	OLD_ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
     FieldAlgorithmBase<spacedim, Value>::value_list(point_list, elm, value_list);
 }
 

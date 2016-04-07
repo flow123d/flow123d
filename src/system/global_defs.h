@@ -29,12 +29,12 @@
 
 /*! @brief Debugging macros.
  *
- *  The macro ASSERT has to be used for assertion tests. An error occures if
+ *  The macro OLD_ASSERT has to be used for assertion tests. An error occures if
  *  given condition is violated.  Macro accepts additional variables to print.
  *
  *  Example:
  *  @verbatim
- *  ASSERT( i<size , "Array X overflow: index %d >= alocated size %d.\n",i,size);
+ *  OLD_ASSERT( i<size , "Array X overflow: index %d >= alocated size %d.\n",i,size);
  *  @endverbatim
  *
  *  The macro INPUT_CHECK should be used for assertions about user input. So
@@ -93,7 +93,7 @@
 //#define MPI_Comm_rank(A, B)
 //#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 
-#define ASSERT(i,...)   do {\
+#define OLD_ASSERT(i,...)   do {\
     if (!(i))  {\
         char msg[1024];\
         sprintf( msg, __VA_ARGS__);\
@@ -106,7 +106,7 @@
 
 #else
 
-#define ASSERT(...)
+#define OLD_ASSERT(...)
 #define WARN_ASSERT(...)
 
 #endif
@@ -117,7 +117,7 @@
 
 #define ASSERT_EQUAL( a, b)  do {\
     stringstream ss; ss << (a) << " != " << (b); \
-    ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
+    OLD_ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
     } while (0)
 #else
 
@@ -131,7 +131,7 @@
 
 #define ASSERT_LESS( a, b) do {\
     stringstream ss; ss << (a) << " >= " << (b); \
-    ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
+    OLD_ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
 
@@ -144,7 +144,7 @@
 
 #define ASSERT_LE( a, b) do {\
     stringstream ss; ss << (a) << " > " << (b); \
-    ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
+    OLD_ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
 #else

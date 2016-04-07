@@ -145,7 +145,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    // ----------- ALOKACE POLE PRO KONCENTRACE Z FLOWA ----------------
    //==================================================================
 
-   ASSERT(P_lat != NULL,"\nP_lat NENI ALOKOVANE\n");
+   OLD_ASSERT(P_lat != NULL,"\nP_lat NENI ALOKOVANE\n");
 
   //==================================================================
    // ----------------- NEJPRVE PRO MOBILNI PORY ----------------------

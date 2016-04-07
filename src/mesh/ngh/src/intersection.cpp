@@ -232,7 +232,7 @@ void GetIntersection(const TAbscissa &A1, const TAbscissa &A2, IntersectionLocal
     		Y1 = 1;
     		Y2 = loc_end_A1;
     	}
-    	ASSERT(X1==0 && X2==0 && Y1==0 && Y2==0,"Uncovered situation.");
+    	OLD_ASSERT(X1==0 && X2==0 && Y1==0 && Y2==0,"Uncovered situation.");
 
     //set local coords:
     	insec=new IntersectionLocal(IntersectionLocal::line);

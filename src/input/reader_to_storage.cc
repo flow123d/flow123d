@@ -88,7 +88,7 @@ ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_
 
 void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
-    ASSERT(storage_==nullptr," ");
+	OLD_ASSERT(storage_==nullptr," ");
 
     PathBase * root_path;
 	if (format == FileFormat::format_JSON) {
@@ -112,7 +112,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 		throw;
 	}
 
-    ASSERT(  storage_ != nullptr, "Internal error in Input reader, the storage pointer is NULL after reading the stream.\n");
+	OLD_ASSERT(  storage_ != nullptr, "Internal error in Input reader, the storage pointer is NULL after reading the stream.\n");
 }
 
 
@@ -127,7 +127,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *type)
 {
-    ASSERT(type != NULL, "Can not dispatch, NULL pointer to TypeBase.\n");
+	OLD_ASSERT(type != NULL, "Can not dispatch, NULL pointer to TypeBase.\n");
 
     // find reference node, if doesn't exist return NULL
     PathBase * ref_path = p.find_ref_node();
@@ -173,7 +173,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         if (string_type != NULL ) return make_storage(p, string_type );
 
         // default -> error
-        ASSERT(false, "Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
+        OLD_ASSERT(false, "Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
     }
 
     return new StorageNull();
@@ -265,7 +265,7 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 					storage_array->new_item(it->key_index,
 							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
-					 ASSERT( ! it->default_.is_obligatory() ,
+					 OLD_ASSERT( ! it->default_.is_obligatory() ,
 							 "Obligatory key: '%s' in auto-convertible %s, wrong check during finish().",
 							 it->key_.c_str(), record->class_name().c_str() );
 					 // set null
@@ -649,8 +649,8 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
 
 
 StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::TypeBase *type) {
-	ASSERT(try_transpose_read_, "Unset flag try_transpose_read_!\n");
-	ASSERT(p.is_array_type(), "Head node of path must be of type array!\n");
+	OLD_ASSERT(try_transpose_read_, "Unset flag try_transpose_read_!\n");
+	OLD_ASSERT(p.is_array_type(), "Head node of path must be of type array!\n");
 
 	int arr_size = p.get_array_size();
 	if ( arr_size == 0 ) {
@@ -694,7 +694,7 @@ StorageBase * ReaderToStorage::make_autoconversion_array_storage(PathBase &p, co
 template <class T>
 T ReaderToStorage::get_root_interface() const
 {
-    ASSERT(storage_, "NULL pointer to storage !!! \n");
+	OLD_ASSERT(storage_, "NULL pointer to storage !!! \n");
 
     Address addr(storage_, root_type_);
     // try to create an iterator just to check type

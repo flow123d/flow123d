@@ -78,7 +78,7 @@ public:
 	BoundingBox(const Point &min, const Point &max)
 	: min_vertex_(min), max_vertex_(max)
 	{
-		ASSERT( arma::min( min <= max ) , "Wrong coordinates in constructor.");
+		OLD_ASSERT( arma::min( min <= max ) , "Wrong coordinates in constructor.");
 	};
 
 	/**

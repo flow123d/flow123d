@@ -45,8 +45,8 @@ public:
      * Set non-leaf node.
      */
     void set_non_leaf(unsigned int left, unsigned int right, unsigned int axis) {
-    	ASSERT(axis < dimension," ");
-    	ASSERT(is_leaf(), " "); // first must be leaf node (must set bound_)
+    	OLD_ASSERT(axis < dimension," ");
+    	OLD_ASSERT(is_leaf(), " "); // first must be leaf node (must set bound_)
     	axis_=axis;
     	child_[0]=left;
     	child_[1]=right;
@@ -60,19 +60,19 @@ public:
 
     inline unsigned char depth() const
     {
-    	ASSERT( is_leaf(), "Not leaf node.");
+    	OLD_ASSERT( is_leaf(), "Not leaf node.");
     	return axis_ - dimension;
     }
 
     unsigned int leaf_begin() const
     {
-    	ASSERT( is_leaf(), "Not leaf node.");
+    	OLD_ASSERT( is_leaf(), "Not leaf node.");
     	return child_[0];
     }
 
     unsigned int leaf_end() const
     {
-    	ASSERT( is_leaf(), "Not leaf node.");
+    	OLD_ASSERT( is_leaf(), "Not leaf node.");
     	return child_[1];
     }
 
@@ -83,14 +83,14 @@ public:
 	 */
     unsigned int leaf_size() const
     {
-    	ASSERT( is_leaf(), "Not leaf node.");
+    	OLD_ASSERT( is_leaf(), "Not leaf node.");
     	return child_[1] - child_[0];
     }
 
     /// return axes (coordination of splitting) of inner node
     unsigned int axis() const
     {
-    	ASSERT(!is_leaf(), "Not in branch node.\n");
+    	OLD_ASSERT(!is_leaf(), "Not in branch node.\n");
     	return axis_;
     }
 
@@ -102,7 +102,7 @@ public:
     /// Return index of child node.
     unsigned int child(unsigned int i_child)  const
     {
-    	ASSERT(!is_leaf(), "Not in branch node.\n");
+    	OLD_ASSERT(!is_leaf(), "Not in branch node.\n");
     	ASSERT_LESS( i_child, child_count );
     	return child_[i_child];
 

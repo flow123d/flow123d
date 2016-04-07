@@ -163,7 +163,7 @@ void FieldPython<spacedim, Value>::value_list (const std::vector< Point >  &poin
     ASSERT_EQUAL( point_list.size(), value_list.size() );
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
-        ASSERT( envelope.n_rows()==this->value_.n_rows(),
+        OLD_ASSERT( envelope.n_rows()==this->value_.n_rows(),
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, envelope.n_rows(),this->value_.n_rows());
         set_value(point_list[i], elm, envelope );

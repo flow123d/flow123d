@@ -48,5 +48,5 @@ ReactionTerm::~ReactionTerm()
 
 void ReactionTerm::choose_next_time(void)
 {
-  ASSERT(0,"ReactionTerm does not change TimeGovernor.\n");
+  OLD_ASSERT(0,"ReactionTerm does not change TimeGovernor.\n");
 }

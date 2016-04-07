@@ -57,9 +57,9 @@ FirstOrderReactionBase::~FirstOrderReactionBase()
 
 void FirstOrderReactionBase::initialize()
 {
-    ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-    ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-    ASSERT_LESS(0, substances_.size());
+	OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+	OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+	ASSERT_LESS(0, substances_.size());
     
     n_substances_ = substances_.size();
     initialize_from_input();
@@ -83,9 +83,9 @@ void FirstOrderReactionBase::initialize()
 
 void FirstOrderReactionBase::zero_time_step()
 {
-    ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-    ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-    ASSERT_LESS(0, substances_.size());
+	OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+	OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+	ASSERT_LESS(0, substances_.size());
 
     assemble_ode_matrix();
     // make scaling that takes into account different molar masses of substances

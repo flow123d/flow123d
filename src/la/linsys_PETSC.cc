@@ -94,7 +94,7 @@ void LinSys_PETSC::start_add_assembly()
         case DONE:
             break;
         default:
-            ASSERT( false, "Can not set values. Matrix is not preallocated.\n");
+        	OLD_ASSERT( false, "Can not set values. Matrix is not preallocated.\n");
     }
     status_ = ADD;
 }
@@ -112,7 +112,7 @@ void LinSys_PETSC::start_insert_assembly()
         case DONE:
             break;
         default:
-            ASSERT( false, "Can not set values. Matrix is not preallocated.\n");
+        	OLD_ASSERT( false, "Can not set values. Matrix is not preallocated.\n");
     }
     status_ = INSERT;
 }
@@ -147,7 +147,7 @@ void LinSys_PETSC::rhs_set_values( int nrow, int *rows, double *vals )
             break;
         case ALLOCATE: 
             break;
-        default: ASSERT(false, "LinSys's status disallow set values.\n");
+        default: OLD_ASSERT(false, "LinSys's status disallow set values.\n");
     }
 
     rhs_changed_ = true;
@@ -173,7 +173,7 @@ void LinSys_PETSC::preallocate_values(int nrow,int *rows,int ncol,int *cols)
 
 void LinSys_PETSC::preallocate_matrix()
 {
-    ASSERT(status_ == ALLOCATE, "Linear system has to be in ALLOCATE status.");
+	OLD_ASSERT(status_ == ALLOCATE, "Linear system has to be in ALLOCATE status.");
 
     PetscErrorCode ierr;
     PetscInt *on_nz, *off_nz;
@@ -247,7 +247,7 @@ void LinSys_PETSC::apply_constrains( double scalar )
     PetscErrorCode ierr;
 
     // check that system matrix is assembled
-    ASSERT ( status_ == DONE, "System matrix and right-hand side are not assembled when applying constraints." );
+    OLD_ASSERT ( status_ == DONE, "System matrix and right-hand side are not assembled when applying constraints." );
 
     // number of constraints
     PetscInt numConstraints = static_cast<PetscInt>( constraints_.size() );

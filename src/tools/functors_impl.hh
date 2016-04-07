@@ -59,7 +59,7 @@ void FunctorCommon<Type>::set_param_from_func(FunctorCommon<TType>* func)
 template<class Type>
 double FunctorCommon<Type>::param(unsigned int param_name)
 {
-  ASSERT(param_name < param_.size(),"Parameter of the functor was not set.");
+  OLD_ASSERT(param_name < param_.size(),"Parameter of the functor was not set.");
   
   return param_[param_name];
 }

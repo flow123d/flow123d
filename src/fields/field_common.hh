@@ -254,7 +254,7 @@ public:
      */
     bool changed() const
     {
-        ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
+    	OLD_ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
         return ( (set_time_result_ == TimeStatus::changed) );
     }
 

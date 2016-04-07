@@ -83,12 +83,12 @@ public:
 
     /// Returns index of the region in the boundary set.
     inline unsigned int boundary_idx() const {
-        ASSERT( is_boundary(), "Try to get boundary index of a bulk region with internal idx: %d\n", idx_ );
+    	OLD_ASSERT( is_boundary(), "Try to get boundary index of a bulk region with internal idx: %d\n", idx_ );
         return idx_ >> 1; }
 
     /// Returns index of the region in the bulk set.
     inline unsigned int bulk_idx() const {
-        ASSERT( ! is_boundary(), "Try to get bulk index of boundary region with internal idx: %d\n", idx_ );
+    	OLD_ASSERT( ! is_boundary(), "Try to get bulk index of boundary region with internal idx: %d\n", idx_ );
         return idx_ >> 1; }
 
     /// Equality comparison operators for regions.

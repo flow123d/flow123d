@@ -62,7 +62,7 @@ void Tokenizer::set_comment_pattern( const std::string &pattern) {
 
 bool Tokenizer::skip_to(const std::string& pattern, const std::string &end_search_pattern)
 {
-    ASSERT( in_->good(), "Tokenizer stream (for file: %s) is not ready for i/o operations. Perhaps missing check about correct open.\n", f_name_.c_str());
+	OLD_ASSERT( in_->good(), "Tokenizer stream (for file: %s) is not ready for i/o operations. Perhaps missing check about correct open.\n", f_name_.c_str());
     bool end_search= (end_search_pattern.size() > 0);
 
     while (! eof()) {

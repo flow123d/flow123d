@@ -206,7 +206,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
 
         size_t pos = full_program_name.rfind( to_py_string("flow123d") );
         DBGMSG("pos: %d\n", pos);
-        ASSERT(pos != PY_STRING::npos, "non flow123d binary");
+        OLD_ASSERT(pos != PY_STRING::npos, "non flow123d binary");
         PY_STRING full_flow_prefix=full_program_name.substr(0,pos-string("/bin/").size() );
         // cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
         PY_STRING default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));

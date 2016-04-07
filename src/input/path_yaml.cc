@@ -50,7 +50,7 @@ PathYAML::~PathYAML()
 
 bool PathYAML::down(unsigned int index) {
 
-    ASSERT(head().IsSequence(), "Head node must be of type Array.\n");
+	OLD_ASSERT(head().IsSequence(), "Head node must be of type Array.\n");
 
     if ( index >= head().size() ) return false;
     path_.push_back( make_pair( index, string("") ) );
@@ -61,7 +61,7 @@ bool PathYAML::down(unsigned int index) {
 
 
 bool PathYAML::down(const string& key) {
-    ASSERT(head().IsMap(), "Head node must be of type Record.\n");
+	OLD_ASSERT(head().IsMap(), "Head node must be of type Record.\n");
 
     if ( head()[key] ) {
     	path_.push_back( make_pair( (int)(-1), key) );

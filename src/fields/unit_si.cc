@@ -129,7 +129,7 @@ std::string UnitSI::format_text() const {
 
 
 std::string UnitSI::format(OutputFormat form) const {
-	ASSERT(is_def(), "UnitSI object must be defined!");
+	OLD_ASSERT(is_def(), "UnitSI object must be defined!");
 
     // Symbols for base SI units.
     std::vector<std::string> unit_symbols={"m","d","kg","s","A","K","mol","cd" };

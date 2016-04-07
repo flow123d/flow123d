@@ -337,10 +337,10 @@ template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const
 {
 
-    ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
-    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
+	OLD_ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
+	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
-    ASSERT( region_fields_[elm.region_idx().idx()] ,
+	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
     		"Null field ptr on region id: %d, idx: %d, field: %s\n", elm.region().id(), elm.region_idx().idx(), name().c_str());
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }
@@ -351,10 +351,10 @@ template<int spacedim, class Value>
 inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list) const
 {
-    ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
-    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
+	OLD_ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
+	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
-    ASSERT( region_fields_[elm.region_idx().idx()] ,
+	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
     		"Null field ptr on region id: %d, field: %s\n", elm.region().id(), name().c_str());
 
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);

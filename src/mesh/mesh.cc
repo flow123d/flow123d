@@ -428,7 +428,7 @@ void Mesh::make_neighbours_and_edges()
                     SideIter si = elem->side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (elem->edge_idx_[ecs] != Mesh::undef_idx) {
-                            ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
+                        	OLD_ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=bc_ele.index();
                             THROW( ExcDuplicateBoundary()
@@ -541,7 +541,7 @@ void Mesh::make_neighbours_and_edges()
                     }
                 } // search for side of other connected element
             } // connected elements
-            ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
+            OLD_ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
 		} // for element sides
 	}   // for elements
 

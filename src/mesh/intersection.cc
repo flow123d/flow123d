@@ -79,7 +79,7 @@ void Intersection::intersection_point_to_vectors(const IntersectionPoint *point,
 arma::vec Intersection::map_to_master(const arma::vec &point) const
 {
 	//dim = dimenze intersec elementu
-    ASSERT(( point.n_elem == dim ),"Map to slave: point.n_elem(%d) != dim(%d) \n", point.n_elem, dim);
+	OLD_ASSERT(( point.n_elem == dim ),"Map to slave: point.n_elem(%d) != dim(%d) \n", point.n_elem, dim);
     int result_dim = master->dim();
     arma::vec result(result_dim+1);
 	result(0)=1.0;
@@ -89,7 +89,7 @@ arma::vec Intersection::map_to_master(const arma::vec &point) const
 
 arma::vec Intersection::map_to_slave(const arma::vec &point) const
 {
-	ASSERT(( point.n_elem == dim ),"Map to slave: point.n_elem(%d) != dim(%d) \n", point.n_elem, dim);
+	OLD_ASSERT(( point.n_elem == dim ),"Map to slave: point.n_elem(%d) != dim(%d) \n", point.n_elem, dim);
 	int result_dim = slave->dim();
 	arma::vec result(result_dim+1);
 	result(0)=1.0;

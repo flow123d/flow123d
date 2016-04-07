@@ -157,7 +157,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
 template<unsigned int dim, unsigned int spacedim>
 double FE_RT0<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-    ASSERT(false, "basis_value() may not be called for vectorial finite element.");
+	OLD_ASSERT(false, "basis_value() may not be called for vectorial finite element.");
 
     return 0.0;
 }
@@ -165,14 +165,14 @@ double FE_RT0<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-    ASSERT(false, "basis_grad() may not be called for vectorial finite element.");
+	OLD_ASSERT(false, "basis_grad() may not be called for vectorial finite element.");
     return arma::vec::fixed<dim>();
 }
 
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-    ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
+	OLD_ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
 
     arma::vec::fixed<dim> v(p);
     
@@ -185,7 +185,7 @@ arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_vector(const unsigned int i, c
 template<unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<dim,dim> FE_RT0<dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-    ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
+    OLD_ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
 
     return arma::eye(dim,dim);
 }

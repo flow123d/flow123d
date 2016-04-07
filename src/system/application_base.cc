@@ -55,7 +55,7 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
 
     ierr=MPI_Comm_rank(comm, &(sys_info.my_proc));
     ierr+=MPI_Comm_size(comm, &(sys_info.n_proc));
-    ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
+    OLD_ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
 
     // determine logfile name or switch it off
     stringstream log_name;

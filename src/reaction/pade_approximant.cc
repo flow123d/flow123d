@@ -78,7 +78,7 @@ void PadeApproximant::approximate_matrix(arma::mat &matrix)
 {
     START_TIMER("ODEAnalytic::compute_matrix");
 
-    ASSERT(matrix.n_rows == matrix.n_cols, "Matrix is not square.");
+    OLD_ASSERT(matrix.n_rows == matrix.n_cols, "Matrix is not square.");
     
     unsigned int size = matrix.n_rows;
     

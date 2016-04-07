@@ -435,7 +435,7 @@ void OutputText::print_impl(ostream& stream, const FileName *type) {
 
 
 void OutputText::print_impl(ostream& stream, const Parameter *type) {
-	ASSERT(false, "Parameter appears in the IST. Check where Instance is missing.\n");
+	OLD_ASSERT(false, "Parameter appears in the IST. Check where Instance is missing.\n");
 }
 
 

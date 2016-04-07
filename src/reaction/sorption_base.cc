@@ -160,9 +160,9 @@ void SorptionBase::make_reactions()
 
 void SorptionBase::initialize()
 {
-  ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  ASSERT(output_stream_,"Null output stream.");
+  OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+  OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  OLD_ASSERT(output_stream_,"Null output stream.");
   ASSERT_LESS(0, substances_.size());
   
   initialize_substance_ids(); //computes present substances and sets indices
@@ -311,7 +311,7 @@ void SorptionBase::initialize_from_input()
 
 void SorptionBase::initialize_fields()
 {
-  ASSERT(n_substances_ > 0, "Number of substances is wrong, they might have not been set yet.\n");
+  OLD_ASSERT(n_substances_ > 0, "Number of substances is wrong, they might have not been set yet.\n");
 
   // create vector of substances that are involved in sorption
   // and initialize data_ with their names
@@ -343,9 +343,9 @@ void SorptionBase::initialize_fields()
 
 void SorptionBase::zero_time_step()
 {
-  ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  ASSERT(output_stream_,"Null output stream.");
+  OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+  OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  OLD_ASSERT(output_stream_,"Null output stream.");
   ASSERT_LESS(0, substances_.size());
   
   data_->set_time(time_->step(), LimitSide::right);

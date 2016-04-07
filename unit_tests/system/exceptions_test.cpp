@@ -183,7 +183,7 @@ TEST(Exceptions, assert_msg) {
 
     int zero=1;
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
+    EXPECT_THROW_WHAT( {OLD_ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
 #endif
 
 }

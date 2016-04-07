@@ -65,7 +65,7 @@ Xio::Xio()
 
 Xio * Xio::get_instance()
 {
-	ASSERT( instance , "XIO library not initialized yet.\n");
+	OLD_ASSERT( instance , "XIO library not initialized yet.\n");
 	return instance;
 }
 
@@ -243,7 +243,7 @@ FILE *xfopen( const char *fname, const char *mode )
     XFILE * xf;
     FILE *rc;
 
-    ASSERT(!( (fname == NULL) || (mode == NULL) ),"NULL pointer as argument of function xfopen()\n");
+    OLD_ASSERT(!( (fname == NULL) || (mode == NULL) ),"NULL pointer as argument of function xfopen()\n");
     xprintf(MsgLog,"Opening file: '%s'\n", fname);
     rc = fopen( fname, mode );
     INPUT_CHECK( rc != NULL ,"Cannot open file '%s' with permissions %s\n", fname, mode );
@@ -271,7 +271,7 @@ int xfflush( FILE * f )
 {
     XFILE * xf;
 
-    ASSERT(!(f == NULL),"NULL as input argument\n");
+    OLD_ASSERT(!(f == NULL),"NULL as input argument\n");
 
     XIO_DEBUG( f );
 
@@ -294,7 +294,7 @@ int xfclose( FILE *stream )
     XFILE * xf;
     int rc;
 
-    ASSERT(!( stream == NULL ),"NULL pointer as argument of function xfclose()\n");
+    OLD_ASSERT(!( stream == NULL ),"NULL pointer as argument of function xfclose()\n");
 
     XIO_DEBUG( stream );
 
@@ -333,7 +333,7 @@ FILE * xfreopen( const char * filename, const char * mode, FILE * stream )
     XFILE * xf;
     FILE *rc;
 
-    ASSERT(!( (mode == NULL) || (stream == NULL)),"Wrong arguments\n");
+    OLD_ASSERT(!( (mode == NULL) || (stream == NULL)),"Wrong arguments\n");
 
     rc = freopen( filename, mode, stream );
 
@@ -380,7 +380,7 @@ int xfprintf( FILE *out, const char *fmt, ... )
     va_list argptr;
     int rc;
 
-    ASSERT(!( (out == NULL) || (fmt == NULL) ),"NULL pointer as argument of function xfprintf()\n");
+    OLD_ASSERT(!( (out == NULL) || (fmt == NULL) ),"NULL pointer as argument of function xfprintf()\n");
     va_start( argptr, fmt );
     rc = vfprintf( out, fmt, argptr );
     va_end( argptr );
@@ -397,7 +397,7 @@ int xfscanf( FILE *in, const char *fmt, ... )
     va_list  argptr;
     int rc;
 
-    ASSERT(!( (in == NULL) || (fmt == NULL) ),"NULL pointer as argument of function xfscanf()\n");
+    OLD_ASSERT(!( (in == NULL) || (fmt == NULL) ),"NULL pointer as argument of function xfscanf()\n");
     va_start( argptr , fmt );
     rc = vfscanf( in, fmt, argptr );
     va_end( argptr );
@@ -415,7 +415,7 @@ int xgetc( FILE * f )
 {
     int rc;
 
-    ASSERT(!(f == NULL), "NULL file\n");
+    OLD_ASSERT(!(f == NULL), "NULL file\n");
 
     rc = xfgetc( f );
     XIO_DEBUG( f );
@@ -433,7 +433,7 @@ int xfgetc( FILE * f )
     int rc;
     XFILE * xf;
 
-    ASSERT(!(f == NULL), "NULL file\n");
+    OLD_ASSERT(!(f == NULL), "NULL file\n");
 
     rc = fgetc( f );
 
@@ -467,7 +467,7 @@ int xungetc( int c, FILE * f )
     int rc;
     XFILE * xf;
 
-    ASSERT(!(f == NULL), "NULL file\n");
+    OLD_ASSERT(!(f == NULL), "NULL file\n");
 
     rc = ungetc( c, f );
 
@@ -499,7 +499,7 @@ int xrename ( const char * oldname, const char * newname )
 {
     int rc;
 
-    ASSERT(!(( oldname == NULL) || (newname == NULL)), "NULL file name\n");
+    OLD_ASSERT(!(( oldname == NULL) || (newname == NULL)), "NULL file name\n");
 
     rc = rename( oldname, newname );
 
@@ -519,7 +519,7 @@ size_t xfread( void * ptr, size_t size, size_t count, FILE * stream )
 {
     size_t rc;
 
-    ASSERT(!( (ptr == NULL) || ( stream == NULL) ),"Incorrect arguments\n");
+    OLD_ASSERT(!( (ptr == NULL) || ( stream == NULL) ),"Incorrect arguments\n");
 
     rc = fread( ptr, size, count, stream );
 
@@ -542,7 +542,7 @@ size_t xfwrite( const void * ptr, size_t size, size_t count, FILE * stream )
 {
     size_t rc;
 
-    ASSERT(!( (ptr == NULL) || (stream == NULL) ),"Incorrect arguments\n");
+    OLD_ASSERT(!( (ptr == NULL) || (stream == NULL) ),"Incorrect arguments\n");
 
     rc = fwrite( ptr, size, count, stream );
 
@@ -565,7 +565,7 @@ char *xfgets( char *s, int n, FILE *in )
     XFILE * xf;
     char *rc = NULL;
 
-    ASSERT(!( (s == NULL) || (in == NULL) ),"Incorrect arguments of function xfgets()\n");
+    OLD_ASSERT(!( (s == NULL) || (in == NULL) ),"Incorrect arguments of function xfgets()\n");
     rc = fgets( s, n, in );
 
     //update line count
@@ -603,7 +603,7 @@ void xrewind( FILE * f )
 {
     XFILE * xf;
 
-    ASSERT(!(f == NULL),"NULL file argument in xrewind()\n");
+    OLD_ASSERT(!(f == NULL),"NULL file argument in xrewind()\n");
 
     xf = xio_getfptr(f);
     if ( xf )

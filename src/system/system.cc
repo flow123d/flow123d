@@ -302,7 +302,7 @@ char *xstrcpy( const char *src )
 	char *rc;
 	size_t length;
 
-	ASSERT(!( src == NULL ),"NULL pointer as argument of function xstrcpy()\n");
+	OLD_ASSERT(!( src == NULL ),"NULL pointer as argument of function xstrcpy()\n");
 	length = strlen( src ) + 1;
 	rc = (char*) xmalloc(length * sizeof(char));
 	strcpy( rc, src );
@@ -339,7 +339,7 @@ char *xstrtok( char *s1, const char *delim, int position )
 	static char * full_string = NULL;
 	static int token_count;
 
-	ASSERT(!( delim == NULL ),"NULL pointer as delimiter in xstrtok()\n");
+	OLD_ASSERT(!( delim == NULL ),"NULL pointer as delimiter in xstrtok()\n");
 
 	if ( s1 )
 	{
@@ -372,7 +372,7 @@ int xchomp( char * s )
     int no_erased = 0;
     char * p;
 
-    ASSERT( s, "Can not chomp NULL string.");
+    OLD_ASSERT( s, "Can not chomp NULL string.");
 
     if ( *s ) //string not empty
     {
@@ -398,7 +398,7 @@ int xmkdir( const char *s )
 {
     int rc;
 
-    ASSERT(!( s == NULL ),"NULL pointer as argument of function xmkdir()\n");
+    OLD_ASSERT(!( s == NULL ),"NULL pointer as argument of function xmkdir()\n");
     rc = mkdir(s, S_IRWXU); // create dir with rwx perm. for user
     if (errno == EEXIST)
         rc = 0;
@@ -414,7 +414,7 @@ int xrmdir( const char *s )
 {
     int rc;
 
-    ASSERT(!( s == NULL ),"NULL pointer as argument of function xrmdir()\n");
+    OLD_ASSERT(!( s == NULL ),"NULL pointer as argument of function xrmdir()\n");
     rc = rmdir( s );
     INPUT_CHECK(!( rc != 0 ),"Cannot delete directory %s\n", s );
     return(rc);
@@ -427,7 +427,7 @@ int xchdir( const char *s )
 {
     int rc;
 
-    ASSERT(!( s == NULL ),"NULL pointer as argument of function xchdir()\n");
+    OLD_ASSERT(!( s == NULL ),"NULL pointer as argument of function xchdir()\n");
     rc = chdir( s );
     INPUT_CHECK(!( rc != 0 ),"Cannot change directory to %s\n", s );
     return(rc);
@@ -440,7 +440,7 @@ int xremove( const char *fname )
 {
     int rc;
 
-    ASSERT(!( fname == NULL ),"NULL pointer as argument of function xremove()\n");
+    OLD_ASSERT(!( fname == NULL ),"NULL pointer as argument of function xremove()\n");
     if( access( fname , F_OK ) == 0 )
     {
         rc = remove( fname );
@@ -461,7 +461,7 @@ char *xgetcwd( void )
     char * rc;
 
     rc = getcwd( tmp, PATH_MAX );
-    ASSERT( rc,"Cannot get name of current working directory\n");
+    OLD_ASSERT( rc,"Cannot get name of current working directory\n");
 
     return(xstrcpy( tmp ));
 }

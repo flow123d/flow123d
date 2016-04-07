@@ -83,7 +83,7 @@ public:
      */
     inline double &operator[](unsigned int idx)
     {
-    	ASSERT(idx < data_ptr_->size(), "Index is out of range.\n");
+    	OLD_ASSERT(idx < data_ptr_->size(), "Index is out of range.\n");
     	return (*data_ptr_)[idx];
     }
 

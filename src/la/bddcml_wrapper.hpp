@@ -48,7 +48,7 @@ namespace la{
             unsigned globalIndex = np -> giveId( );
 
             typename MAPTYPE::iterator pos = map.find( globalIndex );
-            ASSERT( pos != map.end(),
+            OLD_ASSERT( pos != map.end(),
                                     "Cannot remap node index %d to local indices. \n ", globalIndex );
             int localIndexInt = pos -> second;
 

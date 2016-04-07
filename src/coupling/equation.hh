@@ -131,7 +131,7 @@ public:
      */
     inline TimeGovernor &time()
     {
-        ASSERT( time_,"Time governor was not created.\n");
+    	OLD_ASSERT( time_,"Time governor was not created.\n");
         return *time_;
     }
 
@@ -176,7 +176,7 @@ public:
      */
     FieldSet &data()
     {
-    	ASSERT(eq_data_, "The equation %s did not set eq_data_ pointer.\n", input_record_.address_string().c_str());
+    	OLD_ASSERT(eq_data_, "The equation %s did not set eq_data_ pointer.\n", input_record_.address_string().c_str());
     	return *eq_data_;
     }
 
@@ -185,14 +185,14 @@ public:
      * DEPRECATED
      */
     virtual void get_solution_vector(double * &vector, unsigned int &size)
-    { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
+    { OLD_ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
      * Child class have to implement getter for parallel solution vector.
      * DEPRECATED
      */
     virtual void get_parallel_solution_vector(Vec &vector)
-    { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
+    { OLD_ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
      * @brief Write computed fields.

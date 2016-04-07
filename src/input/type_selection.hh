@@ -176,7 +176,7 @@ public:
 
 
     bool finish(bool is_generic = false) override
-        { ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
+        { OLD_ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
 
 
     /// Implements \p TypeBase::is_closed
@@ -261,7 +261,7 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
+    OLD_ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
             "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
     ASSERT_EQUAL( data_->keys_.size(), data_->key_to_index_.size());
     return data_->keys_.size();
@@ -271,7 +271,7 @@ inline unsigned int Selection::size() const {
 
 
 inline void Selection::finished_check() const {
-    ASSERT(data_->closed_, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
+	OLD_ASSERT(data_->closed_, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
 }
 
 

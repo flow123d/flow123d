@@ -445,7 +445,7 @@ public:
      * Returns unique Profiler object.
      */
     inline static Profiler* instance() {
-        ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
+    	OLD_ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
         return _instance;
     }
     /**
@@ -698,7 +698,7 @@ class Profiler {
 public:
     static void initialize();
     inline static Profiler* instance() {
-        ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
+    	OLD_ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
         return _instance;
     }
 

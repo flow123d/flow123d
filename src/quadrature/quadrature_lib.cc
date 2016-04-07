@@ -87,7 +87,7 @@ QGauss<dim>::QGauss(const unsigned int order)
         break;
     }
 
-    ASSERT(order < nquads, "Quadrature of given order is not implemented.");
+    OLD_ASSERT(order < nquads, "Quadrature of given order is not implemented.");
 
     for (int i=0; i<q[order]->npoints; i++)
     {

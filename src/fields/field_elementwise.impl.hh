@@ -79,8 +79,8 @@ internal_raw_data(false), mesh_(NULL)
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec) {
 	cout << string(reader_file_) << endl;
-    ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
-    ASSERT( reader_file_ == FilePath(), "Multiple call of init_from_input.\n");
+	OLD_ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
+	OLD_ASSERT( reader_file_ == FilePath(), "Multiple call of init_from_input.\n");
     reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
     ReaderInstances::instance()->get_reader(reader_file_);
 
@@ -92,9 +92,9 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, typename Value::return_type &value) {
     Value ref(value);
-    ASSERT( this->value_.n_cols() == ref.n_cols(), "Size of variable vectors do not match.\n" );
-    ASSERT( mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
-    ASSERT( boundary_domain_ , "Method set_data_row can be used only for boundary fields.");
+    OLD_ASSERT( this->value_.n_cols() == ref.n_cols(), "Size of variable vectors do not match.\n" );
+    OLD_ASSERT( mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
+    OLD_ASSERT( boundary_domain_ , "Method set_data_row can be used only for boundary fields.");
     unsigned int vec_pos = boundary_idx * n_components_;
     std::vector<typename Value::element_type> &vec = *( data_.get() );
     for(unsigned int row=0; row < ref.n_rows(); row++)
@@ -106,7 +106,7 @@ void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, 
 
 template <int spacedim, class Value>
 bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
-    ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
+	OLD_ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
     if ( reader_file_ == FilePath() ) return false;
 
     //walkaround for the steady time governor - there is no data to be read in time==infinity
@@ -131,7 +131,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
     // set mesh only once or to same value
-    ASSERT(mesh_ == nullptr || mesh_ == mesh, "Trying to change mesh of the FieldElementwise.");
+	OLD_ASSERT(mesh_ == nullptr || mesh_ == mesh, "Trying to change mesh of the FieldElementwise.");
     boundary_domain_ = boundary_domain;
 
     mesh_=mesh;
@@ -157,8 +157,8 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
 template <int spacedim, class Value>
 typename Value::return_type const & FieldElementwise<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
-        ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
-        ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
+        OLD_ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
+        OLD_ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
 
         unsigned int idx = n_components_*elm.idx();
         std::vector<typename Value::element_type> &vec = *( data_.get() );
@@ -175,16 +175,16 @@ template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-    ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
-    ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
-    ASSERT_EQUAL( point_list.size(), value_list.size() );
+	OLD_ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
+	OLD_ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
+	ASSERT_EQUAL( point_list.size(), value_list.size() );
     if (boost::is_floating_point< typename Value::element_type>::value) {
         unsigned int idx = n_components_*elm.idx();
         std::vector<typename Value::element_type> &vec = *( data_.get() );
 
         typename Value::return_type const &ref = Value::from_raw(this->r_value_, (typename Value::element_type *)(&vec[idx]));
         for(unsigned int i=0; i< value_list.size(); i++) {
-            ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
+        	OLD_ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
                     "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                     i, Value(value_list[i]).n_rows(),this->value_.n_rows());
 

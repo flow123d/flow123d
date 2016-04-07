@@ -145,7 +145,7 @@ void Timer::add_child(int child_index, const Timer &child)
         do {
             i=( i < max_n_childs ? i+1 : 0);
         } while (i!=idx && child_timers[i] != timer_no_child);
-        ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag().c_str());
+        OLD_ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag().c_str());
         idx=i;
     }
     //DBGMSG("Adding child %d at index: %d\n", child_index, idx);
@@ -256,7 +256,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] != timer_no_child)
-            ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
+        	OLD_ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
 #endif
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
         // timer to close is not actual - we search for it above actual
@@ -366,8 +366,8 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 
     // get timer and check preconditions
     Timer &timer = timers_[timer_idx];
-    ASSERT( timer_idx >=0, "Wrong timer index %d.\n", timer_idx);
-    ASSERT( timer.parent_timer >=0 , "Inconsistent tree.\n");
+    OLD_ASSERT( timer_idx >=0, "Wrong timer index %d.\n", timer_idx);
+    OLD_ASSERT( timer.parent_timer >=0 , "Inconsistent tree.\n");
 
     // fix path
     string filepath = timer.code_point_->file_;
@@ -432,7 +432,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     stop_timer(0);
 
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    OLD_ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
     // output header
@@ -627,7 +627,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 void Profiler::uninitialize() {
     if (_instance) {
-        ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
+    	OLD_ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
                 _instance->timers_[_instance->actual_node].tag().c_str());
         _instance->stop_timer(0);
         delete _instance;
