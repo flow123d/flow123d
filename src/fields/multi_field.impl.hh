@@ -47,6 +47,7 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
   sub_fields_(other.sub_fields_),
   full_input_list_(other.full_input_list_)
 {
+	if (other.no_check_control_field_) no_check_control_field_ = other.no_check_control_field_;
 	this->multifield_ = true;
 }
 
@@ -74,8 +75,11 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	this->multifield_ = true;
 
 	// class members of Field class
-	sub_fields_ = other.sub_fields_;
+	sub_fields_.reserve( other.shared_->comp_names_.size() );
+	for(auto &field : other.sub_fields_)
+		sub_fields_.push_back( field );
 	full_input_list_ = other.full_input_list_;
+	if (other.no_check_control_field_) no_check_control_field_ = other.no_check_control_field_;
 
 	return *this;
 }
