@@ -115,7 +115,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     transport_matrix_time = -1.0; // or -infty
     transport_bc_time = -1.0;
     is_convection_matrix_scaled = false;
-    is_src_term_scaled=false;
+    is_src_term_scaled = false;
+    is_bc_term_scaled = false;
 }
 
 void ConvectionTransport::initialize()
@@ -502,7 +503,7 @@ void ConvectionTransport::zero_time_step()
 }
 
 
-bool ConvectionTransport::assess_time_constraint(double& time_constraint)
+bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
     ASSERT(mh_dh, "Null MH object.\n" );
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
@@ -537,7 +538,7 @@ bool ConvectionTransport::assess_time_constraint(double& time_constraint)
         DBGMSG("CFL changed - source.\n");
     }
     
-    //now resolve the CFL condition
+    // now resolve the CFL condition
     if(cfl_changed)
     {
         // find maximum of sum of contribution from flow and sources: MAX(vcfl_flow_ + vcfl_source_)
@@ -549,6 +550,15 @@ bool ConvectionTransport::assess_time_constraint(double& time_constraint)
         cfl_max_step = 1 / cfl_max_step;
     }
     
+    // although it does not influence CFL, compute BC so the full system is assembled
+    if ( (mh_dh->time_changed() > transport_bc_time)
+        || data_.porosity.changed()
+        || data_.bc_conc.changed() )
+    {
+        set_boundary_conditions();
+        is_bc_term_scaled = false;
+    }
+
     END_TIMER("data reinit");
     
     // return time constraint
@@ -565,68 +575,46 @@ void ConvectionTransport::update_solution() {
     // (data time set previously in assess_time_constraint())
     time_->next_time();
     
-    if(time_->is_changed_dt()) time_->view("Convection");    //show time governor
-    
     double dt_new = time_->dt(),                    // current time step we are about to compute
            dt_scaled = dt_new / time_->last_dt();   // scaling ratio to previous time step
     
     START_TIMER("time step rescaling");
-    bool scaled = false; //flag to avoid rescaling newly created bc term
-    // if FLOW or DATA or BC changed ---------------------> recompute boundary condition
-    if ( (mh_dh->time_changed() > transport_bc_time)
-        || data_.bc_conc.changed() )
-    {
-        set_boundary_conditions();  //TODO move to asses...
-        // rescale by time step
-        DBGMSG("BC - rescale NEW dt.\n");
-        for (unsigned int  sbi=0; sbi<n_substances(); sbi++)
-            VecScale(bcvcorr[sbi], dt_new);
-        scaled = true;
-    }
     
-    if( !scaled && time_->is_changed_dt() ) // if time step changed, only rescale
+    // if FLOW or DATA or BC or DT changed ---------------------> rescale boundary condition
+    if( ! is_bc_term_scaled || time_->is_changed_dt() )
     {
-        DBGMSG("BC - rescale SCALE dt.\n");
+        DBGMSG("BC - rescale dt.\n");
+        //choose between fresh scaling with new dt or rescaling to a new dt
+        double dt = (!is_bc_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int  sbi=0; sbi<n_substances(); sbi++)
-            VecScale(bcvcorr[sbi], dt_scaled);
+            VecScale(bcvcorr[sbi], dt);
+        is_bc_term_scaled = true;
     }
     
 
     // if DATA or TIME STEP changed -----------------------> rescale source term
-    scaled = false; //reset; flag to avoid rescaling newly created src term
-    if( !is_src_term_scaled ) { //if it is not scaled (freshly computed)
-        DBGMSG("SRC - rescale NEW dt.\n");
+    if( !is_src_term_scaled || time_->is_changed_dt()) {
+        DBGMSG("SRC - rescale dt.\n");
+        //choose between fresh scaling with new dt or rescaling to a new dt
+        double dt = (!is_src_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         {
-            VecScale(v_sources_corr[sbi], dt_new);
-            VecScale(v_tm_diag[sbi], dt_new);
+            VecScale(v_sources_corr[sbi], dt);
+            VecScale(v_tm_diag[sbi], dt);
         }
         is_src_term_scaled = true;
-        scaled = true;
-    }
-    if( !scaled && time_->is_changed_dt() ) { // if time step changed, only rescale
-        DBGMSG("SRC - rescale SCALE dt.\n");
-        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-        {
-            VecScale(v_sources_corr[sbi], dt_scaled);
-            VecScale(v_tm_diag[sbi], dt_scaled);
-        }
     }
     
     // if DATA or TIME STEP changed -----------------------> rescale transport matrix
-    scaled = false; //reset; flag to avoid rescaling newly created tm term
-    if ( !is_convection_matrix_scaled ) { // scale fresh convection term matrix
-        DBGMSG("TM - rescale NEW dt.\n");
-        MatScale(tm, dt_new);
+    if ( !is_convection_matrix_scaled || time_->is_changed_dt()) {
+        DBGMSG("TM - rescale dt.\n");
+        //choose between fresh scaling with new dt or rescaling to a new dt
+        double dt = (!is_convection_matrix_scaled) ? dt_new : dt_scaled;
+        
+        MatScale(tm, dt);
         is_convection_matrix_scaled = true;
-        scaled = true;
     }
-    if ( !scaled && time_->is_changed_dt()) {
-        DBGMSG("TM - rescale SCALE dt.\n");
-        // rescale matrix
-        MatScale(tm, dt_scaled );
-    }
-
+    
     END_TIMER("time step rescaling");
     
     
@@ -690,7 +678,7 @@ void ConvectionTransport::set_target_time(double target_time)
     // If CFL condition is changed, time fixation will change later from TOS.
     
     // Set the same constraint as was set last time.
-    time_->set_upper_constraint(cfl_max_step);
+    time_->set_upper_constraint(cfl_max_step, "CFL condition used from previous step.");
     
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes

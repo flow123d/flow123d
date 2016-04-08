@@ -115,9 +115,12 @@ public:
 	 */
     void zero_time_step() override;
     /**
-     * 
-     */
-    bool assess_time_constraint(double &time_constraint) override;
+      * Evaluates CFL condition.
+      * Assembles the transport matrix and vector (including sources, bc terms).
+      * @param time_constraint is the value CFL constraint (return parameter)
+      * @return true if CFL is changed since previous step, false otherwise
+      */
+    bool evaluate_time_constraint(double &time_constraint) override;
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
@@ -129,7 +132,7 @@ public:
 
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
-     * In particular the velocity field dosn't change over this interval.
+     * In particular the velocity field doesn't change over this interval.
      *
      * Dependencies:
      *
@@ -222,10 +225,9 @@ private:
 	void read_concentration_sources();
 	void set_boundary_conditions();
   
-  //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-// 	void compute_concentration_sources(unsigned int sbi);
-
-    //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+    /** @brief Assembles concentration sources for each substance.
+     * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+     */
     void compute_concentration_sources();
     
 	/**
@@ -253,11 +255,11 @@ private:
 
     //@{
     /**
-     * Flag indicates the state of object (transport matrix or source term).
+     * Flag indicates the state of object (transport matrix or source or boundary term).
      * If false, the object is freshly assembled and not rescaled.
      * If true, the object is scaled (not necessarily with the current time step).
      */
-	bool is_convection_matrix_scaled, is_src_term_scaled;
+	bool is_convection_matrix_scaled, is_src_term_scaled, is_bc_term_scaled;
 	
 	/// Flag indicates that porosity or cross_section changed during last time.
 	bool is_mass_diag_changed;
