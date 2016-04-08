@@ -255,7 +255,6 @@ void TransportOperatorSplitting::update_solution() {
     time_->view("TOS");    //show time governor
 
     convection->set_target_time(time_->t());
-    convection->time().view("Convection");
     
     START_TIMER("TOS-one step");
     int steps=0;
@@ -264,18 +263,21 @@ void TransportOperatorSplitting::update_solution() {
         steps++;
 	    // one internal step
         double cfl_convection, cfl_reaction;
-        if (convection->assess_time_constraint(cfl_convection)
+        bool cfl_changed =  convection->evaluate_time_constraint(cfl_convection);
+                         //|| reaction->evaluate_time_constraint(cfl_reaction);
+        if (cfl_changed)
             //|| reaction->assess_time_constraint(cfl_reaction)
-        )
         {
             DBGMSG("CFL changed.\n");
-            convection->time().set_upper_constraint(cfl_convection);
+            convection->time().set_upper_constraint(cfl_convection, "Time step constrained due to CFL condition (including both flow and sources).");
 //             convection->time_->set_upper_constraint(std::min(cfl_convection, cfl_reaction));
             
             // fix step with new constraint
             convection->time().fix_dt_until_mark();
         }
-            
+        
+        if (steps == 1 || cfl_changed) convection->time().view("Convection");   // write TG only once on change
+        
 	    convection->update_solution();
         
 
