@@ -607,11 +607,11 @@ void ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::correct_tetrahedron_ip
     for(char i=0; i < 4; i++){
         if(std::fabs(ip.local_bcoords_B()[i]) < geometry_epsilon) 
         {
-            zeros = zeros | (1 << i);
+            zeros = zeros | (1 << (3-i));
             n_zeros++;
         }
     }
-
+    
     switch(n_zeros)
     {
         default: ip.set_topology_B(0,3);  //inside tetrahedon
