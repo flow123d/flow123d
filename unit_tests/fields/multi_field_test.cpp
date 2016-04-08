@@ -9,10 +9,14 @@
 #include <flow_gtest.hh>
 
 #include <fields/multi_field.hh>
+#include <fields/field_set.hh>
+#include <fields/unit_si.hh>
+#include <mesh/msh_gmshreader.h>
 #include <input/type_base.hh>
 #include <input/reader_to_storage.hh>
-
 #include <input/type_output.hh>
+
+#include "system/sys_profiler.hh"
 
 #include <iostream>
 using namespace std;
@@ -53,5 +57,70 @@ TEST(TransposeTo, field_constant) {
 		Input::Record rec_t = (*it_t);
 		Input::Record rec_c = (*it_c);
 		EXPECT_DOUBLE_EQ( rec_t.val<double>("value"), rec_c.val<double>("value") );
+	}
+}
+
+
+
+string eq_data_input = R"JSON(
+[
+  { id=37,
+    a=1,
+    b=0
+  }
+] 
+}
+)JSON";
+
+TEST(Operators, assignment) {
+    Profiler::initialize();
+
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    GmshMeshReader msh_reader(mesh_file);
+    Mesh * mesh = new Mesh;
+    msh_reader.read_physical_names(mesh);
+	msh_reader.read_mesh(mesh);
+	mesh->check_and_finish();
+
+	std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
+
+	MultiField<3, FieldValue<3>::Scalar> mf_base;
+	mf_base.name("a");
+	mf_base.set_components(component_names);
+	mf_base.units( UnitSI::dimensionless() );
+
+	FieldSet set_of_field;
+	set_of_field += mf_base;
+    Input::Type::Array list_type = Input::Type::Array(set_of_field.make_field_descriptor_type("MultiFieldTest"));
+    Input::ReaderToStorage reader( eq_data_input, list_type, Input::FileFormat::format_JSON);
+    Input::Array in_list=reader.get_root_interface<Input::Array>();
+    set_of_field.set_input_list(in_list);
+
+    MultiField<3, FieldValue<3>::Scalar> mf_assignment;
+	EXPECT_EQ("", mf_assignment.name());
+	EXPECT_FALSE(mf_assignment.is_bc());
+
+	// copies
+	mf_assignment
+	    .name("b")
+	    .flags(FieldFlag::input_copy);
+	mf_base.set_mesh( *mesh );
+	mf_assignment.set_mesh( *mesh );
+	mf_base.setup_components();
+
+	MultiField<3, FieldValue<3>::Scalar> mf_copy(mf_base);	// copy constructor
+	mf_assignment = mf_base; // assignment
+
+	EXPECT_STREQ("a", mf_base.name().c_str());
+	EXPECT_STREQ("b", mf_assignment.name().c_str());
+	EXPECT_STREQ("a", mf_copy.name().c_str());
+	EXPECT_EQ(3, mf_base.size());
+	EXPECT_EQ(mf_assignment.size(), mf_base.size());
+	EXPECT_EQ(mf_copy.size(), mf_base.size());
+	for (unsigned int i=0; i<mf_base.size(); ++i) {
+		EXPECT_EQ( component_names[i] + "_a", mf_base[i].name() );
+		EXPECT_EQ( mf_base[i].name(), mf_assignment[i].name() );
+		EXPECT_EQ( mf_base[i].name(), mf_copy[i].name() );
 	}
 }
