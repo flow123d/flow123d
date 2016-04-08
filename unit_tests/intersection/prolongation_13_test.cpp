@@ -30,8 +30,8 @@
 using namespace std;
 using namespace computeintersection;
 
-//static const std::string profiler_file = "intersection_profiler.log";
-//static const unsigned int profiler_loop = 10000;
+static const std::string profiler_file = "prolongation_13d_profiler.log";
+static const unsigned int profiler_loop = 1;
 
 //*
 
@@ -114,15 +114,17 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     ils[5][0] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
     ils[5][1] = {arma::vec3({-0.25,-0.25,-0.25}),arma::vec3({0,0,0})};
     
-    ils[6].resize(7);
+    ils[6].resize(9);
     ils[6][0] = {arma::vec3({0,0,0})};
     ils[6][1] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
     ils[6][2] = {arma::vec3({-0.25,-0.25,-0.25}),arma::vec3({0,0,0})};
     
     ils[6][3] = {arma::vec3({0,0,0})};
-    ils[6][4] = {arma::vec3({-0.1,-0.3,-0.1}),arma::vec3({0,0,0})};
-    ils[6][5] = {arma::vec3({0,0,0}),arma::vec3({0.3,0.1,0.1})};
-    ils[6][6] = {arma::vec3({0,0,0})};
+    ils[6][4] = {arma::vec3({0,0,0})};
+    ils[6][5] = {arma::vec3({-0.1,-0.3,-0.1}),arma::vec3({0,0,0})};
+    ils[6][6] = {arma::vec3({0,0,0}),arma::vec3({0.3,0.1,0.1})};
+    ils[6][7] = {arma::vec3({0,0,0})};
+    ils[6][8] = {arma::vec3({0,0,0})};
     
 
 }
@@ -135,7 +137,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     DBGMSG("Computing intersection length by NEW algorithm\n");
     
     InspectElements ie(mesh);
-    ie.compute_intersections();
+    ie.compute_intersections(computeintersection::IntersectionType::d13);
     ie.print_mesh_to_file_13("output_intersection_13");
     
     DBGMSG("N intersections %d\n",ie.intersection_storage13_.size());
@@ -281,14 +283,14 @@ TEST(intersection_prolongation_13d, all) {
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
-//             for(unsigned int loop = 0; loop < profiler_loop; loop++)
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
                 compute_intersection_13d(&mesh, solution[s], lengths[s]); //permute_coords(solution[s], permutations[p]));
             xprintf(Msg, "==============\n");
 //         }
     }
-//     std::fstream fs;
-//     fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
-//     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
+    std::fstream fs;
+    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }
 

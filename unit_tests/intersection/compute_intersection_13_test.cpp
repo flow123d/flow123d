@@ -25,8 +25,8 @@
 using namespace std;
 using namespace computeintersection;
 
-static const std::string profiler_file = "intersection_profiler.log";
-static const unsigned int profiler_loop = 1;//10000;
+static const std::string profiler_file = "compute_intersection_13d_profiler.log";
+static const unsigned int profiler_loop = 1;
 
 // ******************************************************************************************* TEST 1d-2d ****
 /*
@@ -220,6 +220,7 @@ void fill_13d_solution(std::vector<computeintersection::IntersectionLocal<1,3>> 
     
     ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.25}),arma::vec3({2,1,0})/4));
     ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({2,0,1})/4));
+
     DBGMSG("fill solution\n");
 }
 
@@ -254,7 +255,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     // compute intersection
     DBGMSG("Computing intersection length by NEW algorithm\n");
     InspectElements ie(mesh);
-    ie.compute_intersections();
+    ie.compute_intersections(computeintersection::IntersectionType::d13);
     
     //test solution
     std::vector<computeintersection::IntersectionLocal<1,3>> pp = ie.intersection_storage13_;
@@ -276,11 +277,12 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     }
     
     length1 = ie.measure_13();
-    //     ie.print_mesh_to_file_13("output_intersection_13");
+        ie.print_mesh_to_file_13("output_intersection_13");
     
     //TODO: delete comparison with NGH
     // compute intersection by NGH
     DBGMSG("Computing intersection length by NGH algorithm\n");
+    START_TIMER("OLD intersections 1D-3D");
     TAbscissa tabs;
     TTetrahedron tte;
     TIntersectionType it = line;
@@ -299,6 +301,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     }
     GetIntersection(tabs, tte, it, length2); // get only relative length of the intersection to the abscissa
     length2 *= tabs.Length(); 
+    END_TIMER("OLD intersections 1D-3D");
     
     DBGMSG("Length of intersection line: (intersections) %.16e,\t(NGH) %.16e\n", length1, length2);
 //     EXPECT_NEAR(length1, length2, 1e-12);
