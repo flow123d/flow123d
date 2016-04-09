@@ -29,7 +29,7 @@ using std::string;
 template <class Ret>
 inline const Ret Record::val(const string &key) const {
     try {
-        Type::Record::KeyIter key_it = record_type_.key_iterator(key);
+        Type::Record::KeyIter key_it = get_type_key_iterator(key);
 
         ASSERT( key_it->default_.is_obligatory() || key_it->default_.has_value_at_declaration(),
                 "The key '%s' is declared as optional or with default value at read time,"
@@ -59,7 +59,7 @@ inline const Ret Record::val(const string &key) const {
 template <class Ret>
 inline const Ret Record::val(const string &key, const Ret default_val ) const {
     try {
-        Type::Record::KeyIter key_it = record_type_.key_iterator(key);
+        Type::Record::KeyIter key_it = get_type_key_iterator(key);
 
         ASSERT( key_it->default_.has_value_at_read_time(),
                 "The key %s is not declared with default value at read time,"
@@ -92,7 +92,7 @@ inline const Ret Record::val(const string &key, const Ret default_val ) const {
 template <class Ret>
 inline Iterator<Ret> Record::find(const string &key) const {
     try {
-        Type::Record::KeyIter key_it = record_type_.key_iterator(key);
+        Type::Record::KeyIter key_it = get_type_key_iterator(key);
         return Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
     }
     // we catch all possible exceptions
@@ -108,7 +108,7 @@ inline Iterator<Ret> Record::find(const string &key) const {
 template <class Ret>
 inline bool Record::opt_val(const string &key, Ret &value) const {
     try {
-        Type::Record::KeyIter key_it = record_type_.key_iterator(key);
+        Type::Record::KeyIter key_it = get_type_key_iterator(key);
         Iterator<Ret> it=Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
         if (it) {
             value = *it;
@@ -238,9 +238,10 @@ inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 
 template<class T>
 inline typename Iterator<T>::OutputType * Iterator<T>::operator ->() const {
+	// OutputType has to be an accessor to call its method, e.g. iter->val("xyz"). Variable iter has to be e.g. Iterator.
     BOOST_STATIC_ASSERT(
             (boost::is_same < Record, OutputType > ::value || boost::is_same < AbstractRecord, OutputType > ::value
-                    || boost::is_same < Array, OutputType > ::value));
+                    || boost::is_same < Array, OutputType > ::value || boost::is_same < Tuple, OutputType > ::value));
 
     // we have to make save temporary
     temporary_value_ = this->operator*();

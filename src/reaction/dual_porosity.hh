@@ -53,10 +53,10 @@ public:
     /// Collect all fields
     EqData();
 
-    Field<3, FieldValue<3>::Vector > diffusion_rate_immobile;   ///< Mass transfer coefficients between mobile and immobile pores.
+    MultiField<3, FieldValue<3>::Scalar > diffusion_rate_immobile;   ///< Mass transfer coefficients between mobile and immobile pores.
     Field<3, FieldValue<3>::Scalar > porosity_immobile;    ///< Immobile porosity field.
     
-    Field<3, FieldValue<3>::Vector> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
+    MultiField<3, FieldValue<3>::Scalar> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
 
     Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
     

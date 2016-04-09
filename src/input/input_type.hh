@@ -61,5 +61,6 @@
 #include "type_record.hh"
 #include "type_abstract.hh"
 #include "type_generic.hh"
+#include "type_tuple.hh"
 
 #endif /* INPUTTYPE_HH_ */

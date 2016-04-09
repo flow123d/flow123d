@@ -170,7 +170,7 @@ void HC_ExplicitSequential::run_simulation()
 
         if (! water->time().is_end()) {
             double water_dt=water->time().estimate_dt();
-            secondary_eq->set_time_upper_constraint(water_dt);
+            secondary_eq->set_time_upper_constraint(water_dt, "Time discretisation of flow.");
         }
 
         // in future here could be re-estimation of transport planed time according to

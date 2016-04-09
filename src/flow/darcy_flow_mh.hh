@@ -373,12 +373,15 @@ protected:
 	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 	int is_linear_;             // Hack fo BDDC solver.
-	bool use_steady_assembly_;   // Propagate test for the time term to the assembly.
+
+	// Propagate test for the time term to the assembly.
+	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
+	bool use_steady_assembly_;
+
+	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
 	double tolerance_;
 	unsigned int max_n_it_;
-
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
-
 
 
 	LinSys *schur0;  		//< whole MH Linear System

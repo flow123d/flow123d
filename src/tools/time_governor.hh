@@ -272,12 +272,13 @@ public:
      * 
      * This function can only make the constraint stricter. Upper constraint is reset to @p max_dt after the next_time() call.
      * The return value mimics result of the comparison: current constraint  compared to  @param upper.
+     * @param message describes the origin of the constraint
      * In particular the return values is:
      * - -1: Current upper constraint is less then the @param upper. No change happen.
      * -  0: Current constraint interval contains the @param upper. The upper constraint is set.
      * - +1: Current lower constraint is greater then the @param upper. No change happen.
      */
-    int set_upper_constraint(double upper);
+    int set_upper_constraint(double upper, std::string message);
     
     /**
      * @brief Sets lower constraint for the next time step estimating.
@@ -291,10 +292,12 @@ public:
      */
     /**
      * @brief Sets lower constraint for the next time step estimating. 
+     * @param lower is the lower constraint for time step
+     * @param message describes the origin of the constraint
      * @return -1, 0 or 1 according to the success.
      * @see set_upper_constrain().
      */
-    int set_lower_constraint(double lower);
+    int set_lower_constraint(double lower, std::string message);
     
     /**
      * @brief Fixing time step until fixed time mark.
@@ -520,6 +523,10 @@ private:
     /// Flag is set if the time step has been changed (lasts only one time step).
     bool time_step_changed_;
     
+    /// Description of the upper constraint.
+    std::string upper_constraint_message_;
+    /// Description of the upper constraint.
+    std::string lower_constraint_message_;
     /// Upper constraint for the choice of the next time step.
     double upper_constraint_;
     /// Lower constraint for the choice of the next time step.

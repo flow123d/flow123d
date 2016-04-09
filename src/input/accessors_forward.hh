@@ -17,6 +17,7 @@ class AbstractRecord;
 class Address;
 class Array;
 class Record;
+class Tuple;
 
 } // closing namespace Input
 

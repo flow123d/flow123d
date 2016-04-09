@@ -28,6 +28,7 @@
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
+#include "fields/multi_field.hh"
 #include "transport/substance.hh"
 #include "transport/advection_process_base.hh"
 
@@ -85,7 +86,8 @@ public:
      */
     virtual void set_balance_object(boost::shared_ptr<Balance> balance) = 0;
     
-    virtual bool assess_time_constraint(double &time_constraint) = 0;
+    /// Computes a constraint for time step.
+    virtual bool evaluate_time_constraint(double &time_constraint) = 0;
 
     /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
@@ -157,10 +159,10 @@ public:
 	Field<3, FieldValue<3>::Scalar > cross_section;
 
 	/// Concentration sources - density of substance source, only positive part is used.
-	Field<3, FieldValue<3>::Vector> sources_density;
+	MultiField<3, FieldValue<3>::Scalar> sources_density;
 	/// Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc)
-	Field<3, FieldValue<3>::Vector> sources_sigma;
-	Field<3, FieldValue<3>::Vector> sources_conc;
+	MultiField<3, FieldValue<3>::Scalar> sources_sigma;
+	MultiField<3, FieldValue<3>::Scalar> sources_conc;
 
 };
 
