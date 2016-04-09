@@ -15,9 +15,9 @@ namespace computeintersection {
 
 // forward declare
 template<class A, class B> class ComputeIntersection;
-class IntersectionPolygon;
 class Plucker;
-template<unsigned int, unsigned int> class IntersectionPoint;
+template<unsigned int, unsigned int> class IntersectionAux;
+template<unsigned int, unsigned int> class IntersectionPointAux;
 
 static const double plucker_empty = std::numeric_limits<double>::infinity();
 
@@ -66,13 +66,14 @@ public:
      * (these would be found before in triangle line X tetrahedron intersection).
      * @return true, if intersection is found; false otherwise
      */
-	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
+	bool compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
     
     /** Computes final 1d-2d intersection. (Use when this is not the resulting dimension object).
+     * TODO: as in 1d-3d check the topology after interpolation
      * @param IP12s - input/output vector of IPs. If IP found, it is pushed back.
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_final(std::vector<IntersectionPoint<1,2>> &IP12s);
+    bool compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
     
     /// @name Setters and Getters
     //@{ 
@@ -139,14 +140,14 @@ private:
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_plucker(IntersectionPoint<1,2> &IP);
+    bool compute_plucker(IntersectionPointAux<1,2> &IP);
     
     /** Computes intersection of abscissa and triangle side for zero Plucker product - pathologic case.
      * @param side is the local index of the triangle side
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_pathologic(unsigned int side, IntersectionPoint<1,2> &IP);
+    bool compute_pathologic(unsigned int side, IntersectionPointAux<1,2> &IP);
     
     /// Flag 'computed'; is true is intersection has been computed already.
     bool computed_;
@@ -187,7 +188,8 @@ public:
 	void init();
     
     //TODO comment cases in implementation
-    unsigned int compute(std::vector<IntersectionPoint<1,3>> &IP13s);
+    unsigned int compute(std::vector<IntersectionPointAux<1,3>> &IP13s);
+    unsigned int compute(IntersectionAux<1,3> &intersection, std::vector<unsigned int> &prolongation_table);
     
      /// @name Setters and Getters
     //@{ 
@@ -244,6 +246,9 @@ private:
     /// Pointers to Plucker products of abscissa and tetrahedron edges.
     std::vector<double *> plucker_products_;
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[4];
+    
+    // After interpolation, the topology information in tetrahedron must be updated.
+    void correct_tetrahedron_ip_topology(IntersectionPointAux<1,3> &ip);
 };
 
 /******************************************************************
@@ -264,7 +269,14 @@ public:
     ~ComputeIntersection();
 
 	void init();
-	void compute(IntersectionPolygon &local_polygon);
+// 	void compute(IntersectionPolygon &local_polygon);
+//    void compute(std::vector<IntersectionPointAux<2,3>> &IP23s);
+    /// @brief 
+    /** 
+     * @param prolongation_table is an auxiliary vector that is filled in tracing algorithm of polygon.
+     * It is then used further in prolongation decision routines.
+     */
+    void compute(IntersectionAux<2,3> &intersection, std::vector<unsigned int> &prolongation_table);
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
 	void print_plucker_coordinates(std::ostream &os);

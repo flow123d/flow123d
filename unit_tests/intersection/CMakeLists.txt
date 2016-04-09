@@ -26,24 +26,21 @@
 set(libs mesh_lib system_lib intersections_lib)
 add_test_directory("${libs}")
     
-    define_test(gmsh_reader)
-    define_test(intersection)
-    define_mpi_test(bih_tree 1)
-    define_test(bounding_box)
     #define_test(intersection_1_3)
     #define_test(fast_intersection_1_3)
-    define_mpi_test(intersection_2_3 1)
-    define_mpi_test(ngh_intersection_2_3 1)
-    define_test(ref_element)
+    #define_mpi_test(intersection_2_3 1)
+    #define_mpi_test(ngh_intersection_2_3 1)
     
-    define_mpi_test(partitioning 1)
-    define_mpi_test(partitioning 2)
+    define_mpi_test(compute_intersection_13 1)
+    define_mpi_test(compute_intersection_23 1)
+    
+    define_mpi_test(prolongation_13 1)
+    define_mpi_test(prolongation_23 1)
+    
+    define_mpi_test(speed 1)
+    
+    define_mpi_test(simplex_class 1)
 
-    define_test(region)
-    define_mpi_test(mesh 2)
-    
-    #define_test(generic_node)
-    
 
 
 
