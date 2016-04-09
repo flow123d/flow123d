@@ -37,6 +37,8 @@ add_test_directory("${libs}")
     define_mpi_test(prolongation_13 1)
     define_mpi_test(prolongation_23 1)
     
+    define_mpi_test(speed 1)
+    
     define_mpi_test(simplex_class 1)
 
 
