@@ -125,7 +125,7 @@ TypeBase::TypeHash Record::content_hash() const
 
 
 Record &Record::allow_auto_conversion(const string &from_key) {
-	OLD_ASSERT(data_->auto_conversion_key_idx == -1, "Can not use key %s for auto conversion, the key is already set.", from_key.c_str());
+	FEAL_DEBUG_ASSERT(data_->auto_conversion_key_idx == -1)(from_key).error(); // auto conversion key is already set
     data_->auto_conversion_key_idx = 0;
     data_->auto_conversion_key=from_key;
 
@@ -136,7 +136,7 @@ Record &Record::allow_auto_conversion(const string &from_key) {
 
 void Record::make_copy_keys(Record &origin) {
 
-	OLD_ASSERT(origin.is_closed(), "Origin record is not closed!\n");
+	FEAL_DEBUG_ASSERT( origin.is_closed() ).error();
 
 	std::vector<Key>::iterator it = data_->keys.begin();
 	if (data_->keys.size() && it->key_ == "TYPE") it++; // skip TYPE key if exists
@@ -188,9 +188,9 @@ void Record::make_copy_keys(Record &origin) {
 
 
 Record &Record::derive_from(Abstract &parent) {
-	OLD_ASSERT( parent.is_closed(), "Parent Abstract '%s' must be closed!\n", parent.type_name().c_str());
-	OLD_ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE"),
-			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
+	FEAL_DEBUG_ASSERT( parent.is_closed() )(parent.type_name()).error();
+	FEAL_DEBUG_ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE") )(this->type_name()).error();
+			// Derived record can have defined only TYPE key!
 
 	// add Abstract to vector of parents
 	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
@@ -205,7 +205,7 @@ Record &Record::derive_from(Abstract &parent) {
 
 
 Record &Record::copy_keys(const Record &other) {
-	OLD_ASSERT( other.is_closed(), "Record '%s' must be closed!\n", other.type_name().c_str());
+	FEAL_DEBUG_ASSERT( other.is_closed() )(other.type_name()).error();
 
    	Record tmp(other);
    	make_copy_keys(tmp);
@@ -231,7 +231,7 @@ bool Record::finish(bool is_generic)
 
 	if (data_->finished) return true;
 
-	OLD_ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
+	FEAL_DEBUG_ASSERT(data_->closed_)(this->type_name()).error();
 
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
@@ -292,14 +292,14 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 
 
 Record &Record::declare_type_key() {
-	OLD_ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
+	FEAL_DEBUG_ASSERT(data_->keys.size() == 0).error(); // Declaration of TYPE key must be carried as the first
 	data_->declare_key("TYPE", boost::make_shared<String>(), Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
 
 Record &Record::has_obligatory_type_key() {
-	OLD_ASSERT( ! data_->parent_vec_.size(), "Record with obligatory TYPE key can't be derived.\n");
+	FEAL_DEBUG_ASSERT(! data_->parent_vec_.size()).error(); // Record with obligatory TYPE key can't be derived
 	declare_type_key();
 	return *this;
 }
@@ -345,7 +345,7 @@ Record Record::deep_copy() const {
 
 
 const Record &Record::add_parent(Abstract &parent) const {
-	OLD_ASSERT( parent.is_closed(), "Parent Abstract '%s' must be closed!\n", parent.type_name().c_str());
+	FEAL_DEBUG_ASSERT( parent.is_closed() )(parent.type_name()).error();
 
 	// check if parent exists in parent_vec_ vector
 	TypeHash hash = parent.content_hash();
@@ -358,8 +358,8 @@ const Record &Record::add_parent(Abstract &parent) const {
 	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
 
 	// finish inheritance
-	OLD_ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
-				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
+	FEAL_DEBUG_ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name()).error();
+				// Derived record must have defined TYPE key!
 	data_->keys[0].default_ = Default( "\""+type_name()+"\"" );
 
 	return *this;
@@ -400,7 +400,7 @@ void Record::RecordData::declare_key(const string &key,
                          boost::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description)
 {
-	OLD_ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
+	FEAL_DEBUG_ASSERT(!closed_)(key)(this->type_name_).error();
     // validity test of default value
     try {
     	default_value.check_validity(type);

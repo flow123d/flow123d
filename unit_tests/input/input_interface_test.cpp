@@ -249,8 +249,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, ExcAssertMsg,
-            "The key 'optional_int' is declared as optional .*you have to use Record::find instead.");
+    EXPECT_THROW( {record.val<int>("optional_int");}, feal::AssertException );
 #endif
 
 }

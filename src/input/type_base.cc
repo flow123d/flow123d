@@ -210,7 +210,7 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	// Set parameters as attribute
 	json_string val = this->print_parameter_map_to_json(parameter_map);
-	OLD_ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
+	FEAL_DEBUG_ASSERT(this->validate_json(val))(val).error(); // Invalid JSON format of attribute 'parameters'.
 	(*arr.attributes_)["parameters"] = val;
 	arr.parameter_map_ = parameter_map;
 	(*arr.attributes_)["generic_type"] = TypeBase::hash_str();
@@ -231,8 +231,8 @@ Array Array::deep_copy() const {
 Array::Array(boost::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
 : data_(boost::make_shared<ArrayData>(min_size, max_size))
 {
-	OLD_ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
-	OLD_ASSERT( type->is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type->type_name().c_str());
+	FEAL_DEBUG_ASSERT(min_size <= max_size)(min_size)(max_size).error(); // Wrong limits for size of Input::Type::Array
+	FEAL_DEBUG_ASSERT(type->is_closed()).error();
 
 	data_->type_of_values_ = type;
 }

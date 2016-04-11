@@ -84,7 +84,7 @@ Abstract & Abstract::allow_auto_conversion(const string &type_default) {
 
 const Record  & Abstract::get_descendant(const string& name) const
 {
-	OLD_ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
+	FEAL_DEBUG_ASSERT(child_data_->selection_of_childs->is_finished()).error();
     return child_data_->list_of_childs[ child_data_->selection_of_childs->name_to_int(name) ];
 }
 
@@ -113,7 +113,7 @@ unsigned int Abstract::child_size() const {
 
 int Abstract::add_child(const Record &subrec)
 {
-	OLD_ASSERT( child_data_->closed_, "Can not add descendant to Abstract that is not closed.\n");
+	FEAL_DEBUG_ASSERT(child_data_->closed_).error();
 
     if (std::find(child_data_->list_of_childs.begin(), child_data_->list_of_childs.end(), subrec) == child_data_->list_of_childs.end()) {
         child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
@@ -127,7 +127,7 @@ int Abstract::add_child(const Record &subrec)
 bool Abstract::finish(bool is_generic) {
 	if (child_data_->finished_) return true;
 
-	OLD_ASSERT(child_data_->closed_, "Finished Abstract '%s' must be closed!", this->type_name().c_str());
+	FEAL_DEBUG_ASSERT(child_data_->closed_).error();
 
 	child_data_->selection_of_childs->close();
 

@@ -208,7 +208,7 @@ public:
      * Getter. Returns actual storage node.
      */
     inline const StorageBase * storage_head() const {
-    	OLD_ASSERT(data_->actual_storage_, "NULL pointer to storage in address object!!! \n");
+    	FEAL_DEBUG_ASSERT(data_->actual_storage_!=nullptr).error();
 
     	return data_->actual_storage_;
     }

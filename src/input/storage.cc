@@ -16,7 +16,6 @@
  */
 
 #include "system/global_defs.h"
-#include "system/asserts.hh"
 #include "system/system.hh"
 #include "input/storage.hh"
 

@@ -138,8 +138,8 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
 #ifdef FLOW123D_DEBUG_ASSERTS
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = parameters_.begin(); vec_it!=parameters_.end(); vec_it++) {
 		ParameterMap::iterator map_it = created_instance_.second.find( vec_it->first );
-		OLD_ASSERT(map_it != created_instance_.second.end(), "Unused parameter '%s' in input type instance with parameters: %s.\n",
-				vec_it->first.c_str(), print_parameter_vec(parameters_).c_str());
+		FEAL_DEBUG_ASSERT(map_it != created_instance_.second.end())(vec_it->first)(print_parameter_vec(parameters_)).error();
+		    // Unused parameter in input type instance
 	}
 #endif
 	return created_instance_;

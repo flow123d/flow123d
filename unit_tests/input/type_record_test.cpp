@@ -49,10 +49,10 @@ using namespace Input::Type;
    // errors during declaration
 #ifdef FLOW123D_DEBUG_ASSERTS
    Record rec_empty;
-   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcAssertMsg, ".*into closed record 'EmptyRecord'.");
+   EXPECT_THROW( {rec_empty.declare_key("xx", Integer(), "");}, feal::AssertException);
 
    Record rec_fin = Record("xx","").close();
-   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcAssertMsg, "Can not add .* into closed record");
+   EXPECT_THROW( {rec_fin.declare_key("xx", String(),"");}, feal::AssertException);
 #endif
 
 
