@@ -146,30 +146,6 @@ protected:
 
 } // namespace feal
 
-// Must define the macros afterwards
-/// Internal clever macro A
-#define _FEAL_ASSERT_A(x) _FEAL_ASSERT_OP(x, B)
-/// Internal clever macro B
-#define _FEAL_ASSERT_B(x) _FEAL_ASSERT_OP(x, A)
-/// Internal clever macro recursion
-#define _FEAL_ASSERT_OP(x, next) \
-    _FEAL_ASSERT_A.add_value((x), #x)._FEAL_ASSERT_ ## next
-
-
-/// Definition of assert for debug and release mode
-#define FEAL_ASSERT( expr) \
-if ( !(expr) ) \
-  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
-
-/// Definition of assert for debug mode only
-#ifdef FLOW123D_DEBUG_ASSERTS
-#define FEAL_DEBUG_ASSERT( expr) \
-if ( !(expr) ) \
-  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
-#else
-#define FEAL_DEBUG_ASSERT( expr)
-#endif
-
 /**
  * Sources:
  * http://www.drdobbs.com/cpp/enhancing-assertions/184403745
