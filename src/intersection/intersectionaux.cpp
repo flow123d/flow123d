@@ -60,11 +60,6 @@ double IntersectionAux<2,3>::compute_measure()
 }
 
 
-template class IntersectionAux<1,2>;
-template class IntersectionAux<1,3>;
-template class IntersectionAux<2,3>;
-
-
 template<unsigned int dimA, unsigned int dimB>
 ostream& operator<<(ostream& os, const IntersectionAux<dimA,dimB>& intersection)
 {
@@ -73,4 +68,16 @@ ostream& operator<<(ostream& os, const IntersectionAux<dimA,dimB>& intersection)
     
     return os;
 }
+
+
+template class IntersectionAux<1,2>;
+template class IntersectionAux<2,2>;
+template class IntersectionAux<1,3>;
+template class IntersectionAux<2,3>;
+
+template ostream& operator<< <1,2>(ostream &os, const IntersectionAux<1,2>& s);
+template ostream& operator<< <2,2>(ostream &os, const IntersectionAux<2,2>& s);
+template ostream& operator<< <1,3>(ostream &os, const IntersectionAux<1,3>& s);
+template ostream& operator<< <2,3>(ostream &os, const IntersectionAux<2,3>& s);
+
 }

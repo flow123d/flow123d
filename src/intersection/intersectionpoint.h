@@ -75,7 +75,7 @@ public:
 	/** Constructor - flipping dimension of an intersection point.
      * @param IP is intersection point with flipped dimension (N->M, M->N)
      */
-	IntersectionPointAux(IntersectionPointAux<M, N> &IP);
+// 	IntersectionPointAux(IntersectionPointAux<M, N> &IP);
 
 	/** Constructor interpolates the second bary coords of IntersectionPointAux<N,M-1> to IntersectionPointAux<N,M>
      * Allowed only from dimension \p M 1 to 2 and from 2 to 3.
@@ -93,6 +93,9 @@ public:
 
     /// Resets the object to default values.
     void clear();
+    
+    /// Switches the object A and B.
+    IntersectionPointAux<M, N> switch_objects();
     
     ///@name Setters.
     //@{

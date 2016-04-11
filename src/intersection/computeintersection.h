@@ -71,9 +71,9 @@ public:
     /** Computes final 1d-2d intersection. (Use when this is not the resulting dimension object).
      * TODO: as in 1d-3d check the topology after interpolation
      * @param IP12s - input/output vector of IPs. If IP found, it is pushed back.
-     * @return true, if intersection is found; false otherwise
+     * @return number of intersection points found
      */
-    bool compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
+    unsigned int compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
     
     /// @name Setters and Getters
     //@{ 
@@ -161,6 +161,93 @@ private:
 	std::vector<double *> plucker_products_;
 };
 
+/******************************************************************
+ *  TŘÍDA PRO VÝPOČET SIMPLEX 2 - SIMPLEX 2
+ * ****************************************************************/
+
+/**
+ * @brief Computes the intersection of triangle A and triangle B.
+ * 
+ * Uses 6 ComputeIntersection<Simplex<1>,Simplex<2>>:
+ *  - 3x side of triangle A X triangle B
+ *  - 3x side of triangle B X triangle A
+ */
+template<> class ComputeIntersection<Simplex<2>, Simplex<2>> {
+
+public:
+
+    /// Default constructor. Use when this is NOT final intersection object.
+    ComputeIntersection();
+    /** @brief Constructor, sets both triangle objects.
+     * Use when this is final intersection object.
+     * It allocates memory, computes plucker coordinates and products.
+     */
+    ComputeIntersection(Simplex<2> &triaA,Simplex<2> &triaB);
+    ~ComputeIntersection();
+    
+    void init();
+    
+    unsigned int compute(IntersectionAux<2,2> &intersection, std::vector<unsigned int> &prolongation_table);
+    
+     /// @name Setters and Getters
+    //@{
+    /**
+     * @brief Sets the abscissa and tetrahedron.
+     * Use mainly when this is not final intersection computation.
+     */
+    void set_data(Simplex<2> &triaA, Simplex<2> &triaB);
+    
+    /// Sets the pointer to Plucker coordinates of the triangle A side of given @p side_idx.
+    void set_pc_triaA(Plucker *p, unsigned int side_idx){
+        plucker_coordinates_[side_idx] = p;
+    }
+    
+    /// Sets the pointer to Plucker coordinates of the triangle B side of given @p side_idx.
+    void set_pc_triaB(Plucker *p, unsigned int side_idx){
+        plucker_coordinates_[3 + side_idx] = p;
+    }
+
+    /// Gets the pointer to Plucker coordinates of the triangle  side of given @p side_idx.
+    Plucker *get_pc_triaA(unsigned int side_idx){
+        return plucker_coordinates_[side_idx];
+    }
+    
+    /// Gets the pointer to Plucker coordinates of the triangle B side of given @p side_idx.
+    Plucker *get_pc_triaB(unsigned int side_idx){
+        return plucker_coordinates_[3 + side_idx];
+    }
+    
+    /// Sets the pointer to Plucker product of triangle A side @p sideA_idx and triangle B side @p sideB_idx.
+    void set_plucker_product(double * number, unsigned sideA_idx, unsigned int sideB_idx){
+        plucker_products_[sideA_idx*3 + sideB_idx] = number;
+    }
+    /// Gets the pointer to Plucker product of triangle A side @p sideA_idx and triangle B side @p sideB_idx.
+    double* get_plucker_product(unsigned sideA_idx, unsigned int sideB_idx){
+        return plucker_products_[sideA_idx*3 + sideB_idx];
+    }
+    //@}
+    
+    /// Prints out the Plucker coordinates of abscissa and tetrahedron edges.
+    void print_plucker_coordinates(std::ostream &os);
+    /// Prints out the Plucker coordinates of tetrahedron edges in a tree of tetrahedron sides (triangles).
+    void print_plucker_coordinates_tree(std::ostream &os);
+
+    /// Resets Plucker products to 'nullptr'.
+    /// Use this CAREFULLY as it does not destroy the objects.
+    /// It is intended to be used only from higher dimensions when before destroying.
+    void clear_all();
+    
+private:
+    /// Pointers to plucker coordinates of sides of both triangles [triaA[3], triaB[3]], size 6.
+    std::vector<Plucker *> plucker_coordinates_;
+    /// Pointers to Plucker products of triangles sides [3x[sideA x triaB]]], size 9.
+    std::vector<double *> plucker_products_;
+    /// Compute intersection for side x triangle [3x[sideA x tria B],3x[sideB x triaA]].
+    ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];
+    
+    // After interpolation, the topology information in triangle must be updated.
+//     void correct_triangle_ip_topology(IntersectionPointAux<2,2> &ip);
+};
 
 
 /******************************************************************

@@ -39,16 +39,16 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA
     {};
 
 
-template<unsigned int N, unsigned int M>
-IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<M, N> &IP){
-        local_bcoords_A_ = IP.local_bcoords_B();
-        local_bcoords_B_ = IP.local_bcoords_A();
-        idx_A_ = IP.idx_B();
-        idx_B_ = IP.idx_A();
-        orientation_ = IP.orientation();
-        dim_A_ = IP.dim_B();
-        dim_B_ = IP.dim_A();
-    };
+// template<unsigned int N, unsigned int M>
+// IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<M, N> &IP){
+//         local_bcoords_A_ = IP.local_bcoords_B();
+//         local_bcoords_B_ = IP.local_bcoords_A();
+//         idx_A_ = IP.idx_B();
+//         idx_B_ = IP.idx_A();
+//         orientation_ = IP.orientation();
+//         dim_A_ = IP.dim_B();
+//         dim_B_ = IP.dim_A();
+//     };
 
 
 template<unsigned int N, unsigned int M>
@@ -77,6 +77,17 @@ IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-2> &IP,
     dim_A_ = IP.dim_A();
     dim_B_ = M-2;
 };
+
+template<unsigned int N, unsigned int M>
+IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects()
+{
+    IntersectionPointAux<M,N> IP;
+    IP.set_coordinates(local_bcoords_B_,local_bcoords_A_);
+    IP.set_topology(idx_B_,dim_B_,idx_A_, dim_A_);
+    IP.set_orientation(orientation_);
+    return IP;
+};
+
 
 template<unsigned int N, unsigned int M>
 arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementFullIter ele) const
@@ -109,18 +120,20 @@ template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const 
 }
 
 template class IntersectionPointAux<1,2>;
-template class IntersectionPointAux<1,3>;
 template class IntersectionPointAux<2,1>;
-template class IntersectionPointAux<2,3>;
+template class IntersectionPointAux<2,2>;
+template class IntersectionPointAux<1,3>;
 template class IntersectionPointAux<3,1>;
+template class IntersectionPointAux<2,3>;
 template class IntersectionPointAux<3,2>;
 
-template ostream& operator<< <1,2>(ostream &os, const IntersectionPointAux<1,2>& s); 
-template ostream& operator<< <1,3>(ostream &os, const IntersectionPointAux<1,3>& s); 
-template ostream& operator<< <2,1>(ostream &os, const IntersectionPointAux<2,1>& s); 
-template ostream& operator<< <2,3>(ostream &os, const IntersectionPointAux<2,3>& s); 
-template ostream& operator<< <3,1>(ostream &os, const IntersectionPointAux<3,1>& s); 
-template ostream& operator<< <3,2>(ostream &os, const IntersectionPointAux<3,2>& s); 
+template ostream& operator<< <1,2>(ostream &os, const IntersectionPointAux<1,2>& s);
+template ostream& operator<< <2,1>(ostream &os, const IntersectionPointAux<2,1>& s);
+template ostream& operator<< <2,2>(ostream &os, const IntersectionPointAux<2,2>& s);
+template ostream& operator<< <1,3>(ostream &os, const IntersectionPointAux<1,3>& s);
+template ostream& operator<< <3,1>(ostream &os, const IntersectionPointAux<3,1>& s);
+template ostream& operator<< <2,3>(ostream &os, const IntersectionPointAux<2,3>& s);
+template ostream& operator<< <3,2>(ostream &os, const IntersectionPointAux<3,2>& s);
 
 } // END namespace
 

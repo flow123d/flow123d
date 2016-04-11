@@ -143,9 +143,11 @@ template<unsigned int dimA, unsigned int dimB> ostream& operator<<(ostream& os, 
 }
 
 
-
+template class IntersectionPoint<2,2>;
 template class IntersectionPoint<1,3>;
 template class IntersectionPoint<2,3>;
+
+template class IntersectionLocal<2,2>;
 template class IntersectionLocal<1,3>;
 template class IntersectionLocal<2,3>;
 
