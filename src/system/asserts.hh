@@ -133,10 +133,10 @@ public:
 	Assert& set_context(const char* file_name, const char* function, const int line);
 
 	/// Generate error
-	void error();
+	void error(std::string error_msg = "");
 
 	/// Generate warning
-	void warning();
+	void warning(std::string warning_msg = "");
 
 protected:
     AssertException exception_;               ///< Exception object

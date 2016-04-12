@@ -26,7 +26,7 @@ namespace feal {
  */
 
 AssertException::AssertException()
-: what_type_msg_("Program Error: Violated assert") {}
+: what_type_msg_("Program Error: Violated assert! ") {}
 
 
 void AssertException::print_info(std::ostringstream &out) const
@@ -70,17 +70,18 @@ Assert& Assert::set_context(const char* file_name, const char* function, const i
 }
 
 
-void Assert::error()
+void Assert::error(std::string error_msg)
 {
+	exception_.what_type_msg_ += error_msg;
 	thrown_ = true;
 	THROW( exception_ );
 }
 
 
-void Assert::warning()
+void Assert::warning(std::string warning_msg)
 {
 	thrown_ = true;
-	exception_.what_type_msg_ = "Warning:";
+	exception_.what_type_msg_ = "Warning: " + warning_msg;
 	std::cerr << exception_.what();
 }
 
