@@ -52,7 +52,11 @@ std::string AssertException::what_type_msg() const {
  */
 
 Assert::~Assert() {
-	if (!thrown_) this->error();
+	if (!thrown_) {
+		// We can't throw exception in destructor, we need use this construction
+		std::cerr << exception_.what();
+		abort();
+	}
 }
 
 

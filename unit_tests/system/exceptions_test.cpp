@@ -189,7 +189,6 @@ TEST(Exceptions, assert_msg) {
 }
 
 
-#include "system/asserts.hh"
 // Test of new asserts.
 TEST(FealAssert, assert) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -200,16 +199,10 @@ TEST(FealAssert, assert) {
     try {
         FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
     } catch (feal::AssertException &e) {
-    	std::cout << "--- test catch block" << std::endl;
         std::cout << e.what();
     }
 
-    /*try {
-        FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2);
-    } catch (feal::AssertException &e) {
-    	std::cout << "--- test catch block" << std::endl;
-    	std::cout << e.what();
-    }*/
+    EXPECT_DEATH( {FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2);}, ".*");
 
     // only in debug mode
     try {
