@@ -135,9 +135,9 @@ class TypeRange(Parsable):
     __fields__ = []
 
     replacements = {
-        '2147483647': 'INT32 MAX',
-        '4294967295': 'UINT32 MAX',
-        '-2147483647': 'INT32 MIN',
+        '2147483647': 'INT',
+        '4294967295': 'UINT',
+        '-2147483647': '-INT',
         '1.79769e+308': '+inf',
         '-1.79769e+308': '-inf',
         '': 'unknown range'

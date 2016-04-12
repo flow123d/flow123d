@@ -127,6 +127,7 @@ def main():
                 for imp in getattr(item, 'implementations', []):
                     imp.get_reference().add_ref(item)
 
+    # sort items by type and name
     items = sorted(items, key=lambda x: '{}{}'.format(x.input_type.value, x.name))
 
     # convert to tex format

@@ -13,7 +13,9 @@ class LatexRecordDefault(object):
         :type tex: TexList
         :type default: ist.extras.TypeRecordKeyDefault
         """
-        tex.add(default.value, tex.TYPE_NAME)
+        tex.append('"')
+        tex.add(default.value, tex.TYPE_PLAIN)
+        tex.append('"')
 
     @staticmethod
     def textlangle_format(tex, default):
@@ -117,12 +119,7 @@ class LatexRecord(TexList):
         self._tab(3)
         with self:
             ref = record_key.type.get_reference()
-            if ref.input_type == InputType.MAIN_TYPE:
-                self.add(str(ref.input_type).capitalize())
-                self.add(': ')
-                self.macro_alink(record_key.type.get_reference())
-            else:
-                self.add(str(ref.input_type).capitalize())
+            self.get_key_type(ref)
         # default
         self._newline()
         self._tab(3)
@@ -142,6 +139,19 @@ class LatexRecord(TexList):
             d = self.description(record_key.description)
             self.append(d)
 
+    def get_key_type(self, ref):
+        if ref.input_type == InputType.MAIN_TYPE:
+            self.add(str(ref.input_type).capitalize())
+            self.add(': ')
+            self.macro_alink(ref)
+        elif ref.input_type == InputType.ARRAY:
+            name = "Array {range} of ".format(range=ref.range)
+            self.add(name)
+            self.get_key_type(ref.subtype.target)
+        else:
+            ref_range = (' ' + str(ref.get('range') or '')).rstrip()
+            name = str(ref.input_type).capitalize()
+            self.add(name + ref_range)
 
 class LatexSelection(TexList):
     def format(self, selection):
