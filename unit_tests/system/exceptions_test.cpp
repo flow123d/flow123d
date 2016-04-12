@@ -217,6 +217,6 @@ TEST(FealAssert, warning) {
 
     std::string s1 = "feal";
     std::string s2 = "assert";
-    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning();
+    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Strings must be empty.");
 
 }
