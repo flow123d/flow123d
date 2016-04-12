@@ -21,13 +21,6 @@
 #include <cstring>
 #include <boost/exception/diagnostic_information.hpp>
 
-#ifdef FLOW123D_HAVE_EXEC_INFO
-#include <execinfo.h>
-#endif
-
-#ifdef FLOW123D_HAVE_DEMAGLER
-#include <cxxabi.h>
-#endif
 
 ExceptionBase::ExceptionBase() {}
 

@@ -23,6 +23,11 @@
 #endif
 
 
+#ifdef FLOW123D_HAVE_DEMAGLER
+#include <cxxabi.h>
+#endif
+
+
 StackTrace::StackTrace()
 : frames_(NULL),n_frames_(0)
 {
