@@ -47,8 +47,7 @@ Selection::Selection(const string &name, const string &desc)
 
 
 Selection &Selection::add_value(const int value, const std::string &key, const std::string &description) {
-    if (is_finished())
-        xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
+    FEAL_ASSERT(!is_finished())(key)(type_name()).error("Declaration of new key in finished Selection.");
 
     data_->add_value(value, key, description);
     return *this;
@@ -151,16 +150,11 @@ TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterP
 
 void Selection::SelectionData::add_value(const int value, const std::string &key, const std::string &description) {
     KeyHash key_h = TypeBase::key_hash(key);
-    if (key_to_index_.find(key_h) != key_to_index_.end()) {
-        xprintf(PrgErr, "Name '%s' already exists in Selection: %s\n", key.c_str(), type_name_.c_str());
-        return;
-    }
+    FEAL_ASSERT(key_to_index_.find(key_h) == key_to_index_.end())(key)(type_name_).error("Key already exists in Selection.");
     value_to_index_const_iter it = value_to_index_.find(value);
-    if (it != value_to_index_.end()) {
-        xprintf(
-                PrgErr, "Value %d of new name '%s' conflicts with value %d of previous name '%s' in Selection: '%s'.\n", value, key.c_str(), keys_[it->second].value, keys_[it->second].key_.c_str(), type_name_.c_str());
-        return;
-    }
+    const std::string &existing_key = keys_[it->second].key_;
+    FEAL_ASSERT(it == value_to_index_.end())(value)(key)(existing_key)(type_name_)
+    		.error("Value of new key conflicts with value of existing key in Selection");
 
     unsigned int new_idx = key_to_index_.size();
     key_to_index_.insert(std::make_pair(key_h, new_idx));

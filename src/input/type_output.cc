@@ -238,9 +238,7 @@ ostream& OutputText::print(ostream& stream) {
 }
 
 void OutputText::print_impl(ostream& stream, const Record *type) {
-	if (! type->is_finished()) {
-		xprintf(Warn, "Printing documentation of unfinished Input::Type::%s!\n", type->class_name().c_str());
-	}
+	FEAL_ASSERT(type->is_finished())(type->type_name())(type->class_name()).warning("Printing documentation of unfinished type.");
 	switch (doc_type_) {
 	case key_record:
 		stream << "" << type->class_name() << " '" << type->type_name() << "' (" << type->size() << " keys).";
@@ -363,9 +361,7 @@ void OutputText::print_impl(ostream& stream, const AdHocAbstract *type) {
 	}
 }
 void OutputText::print_impl(ostream& stream, const Selection *type) {
-	if (! type->is_finished()) {
-		xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
-	}
+	FEAL_ASSERT(type->is_finished())(type->type_name()).warning("Printing documentation of unfinished Input::Type::Selection.");
 	switch (doc_type_) {
 	case key_record:
 		stream << "Selection '" << type->type_name() << "' of " << type->size() << " values.";

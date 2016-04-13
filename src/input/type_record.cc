@@ -249,9 +249,10 @@ bool Record::finish(bool is_generic)
 
         // check that all other obligatory keys have default values
         for(KeyIter it=data_->keys.begin(); it != data_->keys.end(); ++it) {
-            if (it->default_.is_obligatory() && (int)(it->key_index) != data_->auto_conversion_key_idx)
-                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other obligatory key: '%s' has no default value.\n",
-                        data_->auto_conversion_key_iter()->key_.c_str(), it->key_.c_str());
+        	const string &other_key = it->key_;
+        	FEAL_ASSERT(!it->default_.is_obligatory() || (int)(it->key_index) == data_->auto_conversion_key_idx)
+        			   (data_->auto_conversion_key_iter()->key_)(other_key)
+					   .error("Finishing auto convertible Record from given key, but other obligatory key has no default value.");
         }
     }
 
@@ -408,10 +409,9 @@ void Record::RecordData::declare_key(const string &key,
         e << EI_KeyName(key);
         throw;
     }
-    if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
 
-    if (key!="TYPE" && ! TypeBase::is_valid_identifier(key))
-        xprintf(PrgErr, "Invalid key identifier %s in declaration of Record type: %s\n", key.c_str(), type_name_.c_str());
+    FEAL_ASSERT( !finished )(key)(type_name_).error("Declaration of key in finished Record");
+    FEAL_ASSERT( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
 
     KeyHash key_h = key_hash(key);
     key_to_index_const_iter it = key_to_index.find(key_h);
@@ -420,12 +420,9 @@ void Record::RecordData::declare_key(const string &key,
        Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false};
        keys.push_back(tmp_key);
     } else {
-       if (keys[it->second].derived) {
+    	FEAL_ASSERT( keys[it->second].derived )(key)(type_name_).error("Re-declaration of the key in Record");
         Key tmp_key = { it->second, key, description, type, default_value, false};
         keys[ it->second ] = tmp_key;
-       } else {
-           xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
-       }
     }
 
 }

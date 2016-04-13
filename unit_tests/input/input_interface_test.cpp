@@ -343,9 +343,9 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ++it;
     EXPECT_EQ(2, *it);
     ++it;
-    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, feal::AssertException, "out of array");
     ++it;
-    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, feal::AssertException, "out of array");
 
 
 

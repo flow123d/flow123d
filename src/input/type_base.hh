@@ -184,7 +184,7 @@ public:
     }
 
     /// Add attribute to map
-    void add_attribute(std::string name, json_string val);
+    void add_attribute(std::string attr_name, json_string attr_val);
 
     /// Create instance of generic type, replace parameters in input tree by type stored in @p vec.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;

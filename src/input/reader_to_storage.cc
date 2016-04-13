@@ -173,7 +173,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         if (string_type != NULL ) return make_storage(p, string_type );
 
         // default -> error
-        FEAL_DEBUG_ASSERT(false)(typeid(type).name()).error("Unknown descendant of TypeBase class");
+        xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
     }
 
     return new StorageNull();
@@ -191,9 +191,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
             PathBase *type_path = p->clone();
             if ( type_path.down( "TYPE" ) ) {
                 try {
-                	if ( type_path.get_string_value() != record->type_name() ) {
-                		xprintf(UsrErr, "Invalid value of TYPE key of record %s.", record->type_name().c_str());
-                	}
+                	FEAL_ASSERT( type_path.get_string_value() == record->type_name() )(type_path.get_string_value())(record->type_name())
+                		.error("Invalid value of TYPE key of record");
                     make_storage(type_path, key_it->type_.get() )->get_int();
                 } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
                 	return record_automatic_conversion(p, record);
@@ -472,10 +471,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
         	}
         }
 
-        if ( arr_size > (int)tuple->size() ) {
-            xprintf(Warn, "Unprocessed keys in tuple '%s', tuple has %d keys but the input is specified by %d values.\n",
-                    p.as_string().c_str(), tuple->size(), arr_size );
-        }
+		FEAL_ASSERT( arr_size <= (int)tuple->size() )(arr_size)(tuple->size())(tuple->type_name()).warning("Unprocessed keys in tuple");
 
         return storage_array;
 

@@ -112,9 +112,7 @@ void TypeRepository<T>::finish(bool is_root_of_generic_subtree) {
 	for (typename TypeRepositoryMap::reverse_iterator it = type_repository_map_.rbegin(); it != type_repository_map_.rend(); ++it) {
 		if (is_root_of_generic_subtree == it->second->is_root_of_generic_subtree()) {
 			if (is_root_of_generic_subtree) {
-#ifdef FLOW123D_DEBUG
-           		if ( !it->second->is_finished() ) xprintf(Warn, "Unused root of generic subtree: '%s'.\n", it->second->type_name().c_str());
-#endif
+				FEAL_DEBUG_ASSERT(it->second->is_finished())(it->second->type_name()).warning("Unused root of generic subtree.");
 				it->second->finish(true);
 			} else {
 				it->second->finish();

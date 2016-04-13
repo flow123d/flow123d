@@ -99,27 +99,25 @@ StorageArray::StorageArray(unsigned int size)
 }
 
  void StorageArray::new_item(unsigned int index, StorageBase* item) {
-	 FEAL_DEBUG_ASSERT(index < array_.size())(index)(array_.size()).error();
-     if (array_[index] == NULL) array_[index] = item;
-     else xprintf(PrgErr, "Can not replace non NULL pointer.");
+	 FEAL_DEBUG_ASSERT(index < array_.size())(index)(array_.size()).error("Index is out of array.");
+	 FEAL_ASSERT( array_[index] == NULL )(index).error("Can not replace non NULL pointer.");
+     array_[index] = item;
  }
 
 
  void StorageArray::set_item(unsigned int index, StorageBase* item) {
-	 FEAL_DEBUG_ASSERT(index < array_.size())(index)(array_.size()).error();
-     if (array_[index] == NULL) array_[index] = item;
-     else if ( typeid(*array_[index]) == typeid(StorageNull) ) {
-    	 delete array_[index];
-    	 array_[index] = item;
-     } else xprintf(PrgErr, "Can not replace non NULL pointer.");
+	FEAL_DEBUG_ASSERT(index < array_.size())(index)(array_.size()).error("Index is out of array.");
+	FEAL_ASSERT( array_[index] == NULL || typeid(*array_[index]) == typeid(StorageNull) )(index)
+			.error("Can not replace non NULL pointer.");
 
+    if ( typeid(*array_[index]) == typeid(StorageNull) ) delete array_[index];
+    array_[index] = item;
  }
 
 
 
 StorageBase * StorageArray::get_item(const unsigned int index) const {
-    if ( index >= array_.size() )
-        xprintf(Err, "Index %d out of array of size: %d", index, array_.size());
+	FEAL_DEBUG_ASSERT( index < array_.size() )(index)(array_.size()).error("Index is out of array.");
     FEAL_DEBUG_ASSERT(array_[index] != NULL)(index).error();
     return array_[index];
 }

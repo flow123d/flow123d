@@ -64,7 +64,7 @@ using namespace Input::Type;
 							.declare_key("data_description", String(), Default::optional(),"")
 							.declare_key("data_description", String(),"")
 							.close();
-   	   	   	   	   	  }, ExcXprintfMsg, "Re-declaration of the key:");
+   	   	   	   	   	  }, feal::AssertException, "Re-declaration of the key");
 
    EXPECT_THROW_WHAT( { Record("yy","")
    	   	   	   				.declare_key("wrong_double", Double(), Default("1.23 4"),"")
@@ -159,8 +159,8 @@ using namespace Input::Type;
     	.declare_key("int_key", Integer(),  "")
     	.allow_auto_conversion("int_key")
 		.close();
-    EXPECT_THROW_WHAT( {sub_rec.finish();}, ExcXprintfMsg,
-    		"Finishing Record auto convertible from the key 'int_key', but other obligatory key: 'obligatory_int' has no default value.");
+    EXPECT_THROW_WHAT( {sub_rec.finish();}, feal::AssertException,
+    		"other_key : 'obligatory_int'");
     }
 
     {
@@ -259,13 +259,13 @@ using namespace Input::Type;
     Record output_record("OutputRecord",
             "Information about one file for field data.");
     EXPECT_THROW_WHAT( {output_record.declare_key("a b",Bool(),"desc."); },
-    		ExcXprintfMsg, "Invalid key identifier"
+    		feal::AssertException, "Invalid key identifier"
             );
     EXPECT_THROW_WHAT( {output_record.declare_key("AB",Bool(),"desc."); },
-    		ExcXprintfMsg, "Invalid key identifier"
+    		feal::AssertException, "Invalid key identifier"
             );
     EXPECT_THROW_WHAT( {output_record.declare_key("%$a",Bool(),"desc."); },
-    		ExcXprintfMsg, "Invalid key identifier"
+    		feal::AssertException, "Invalid key identifier"
             );
 
 }

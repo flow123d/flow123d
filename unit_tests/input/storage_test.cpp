@@ -45,7 +45,7 @@ using namespace Input;
     EXPECT_EQ(321, array.get_item(6)->get_item(0)->get_int());
     EXPECT_EQ(231, array.get_item(6)->get_item(1)->get_int());
 
-    EXPECT_THROW_WHAT( {array.get_item(7);} , ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {array.get_item(7);} , feal::AssertException, "Index is out of array");
 
     // StorageArray
     EXPECT_THROW( {array.get_int();}, ExcStorageTypeMismatch);

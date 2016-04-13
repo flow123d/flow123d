@@ -51,7 +51,8 @@ using namespace Input::Type;
     // auto conversion - default value for TYPE
     EXPECT_EQ("\"EqDarcy\"", a_rec.get_selection_default().value() );
     // no more allow_auto_conversion for a_rec
-    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the Abstract 'EqBase' is closed.");
+    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, feal::AssertException,
+    		"Can not specify default value for TYPE key as the Abstract is closed.");
 
     a_rec.finish();
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
