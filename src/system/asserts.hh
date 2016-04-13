@@ -74,24 +74,29 @@ protected:
  @code
     std::string s1, s2;
     ...
+    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error("Both strings must be empty!");
+ @endcode
+ *
+ * 2) Parameter of error method is optional.
+ @code
     FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
  @endcode
  *
- * 2) This example is same as previous, but assert is performed only for debug mode.
+ * 3) This example is same as previous, but assert is performed only for debug mode.
  @code
-    FEAL_DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+    FEAL_DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error("Both strings must be empty!");
  @endcode
  *
- * 3) Example is same as case 1). Assert type error is called automatically if any other is
- *    not listed.
+ * 4) Example is same as case 1). Assert type error is called automatically if any other is
+ *    not listed. This case is not recommended, rather use explicitly calling of error() method.
  @code
     FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2);
  @endcode
  *
- * 4) Example with same condition as all previous but with other type - warning. Any exception
- *    is not thrown, only warning is printed.
+ * 5) Example with same condition as all previous but with other type - warning. Any exception
+ *    is not thrown, only warning is printed. Parameter of warning method is optional.
  @code
-    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning();
+    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Both strings should be empty!");
  @endcode
  */
 class Assert {
@@ -132,10 +137,10 @@ public:
 	/// Stores values for printing out line number, function, etc
 	Assert& set_context(const char* file_name, const char* function, const int line);
 
-	/// Generate error
+	/// Generate error with given message
 	void error(std::string error_msg = "");
 
-	/// Generate warning
+	/// Generate warning with given message
 	void warning(std::string warning_msg = "");
 
 protected:
