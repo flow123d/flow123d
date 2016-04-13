@@ -106,31 +106,6 @@ long MPI_Functions::max(long* val, MPI_Comm comm) {
 
 const int timer_no_child=-1;
 
-#ifdef FLOW123D_HAVE_PETSC
-Timer::Timer(const CodePoint &cp, int parent)
-: start_time(TimePoint()),
-  cumul_time(0.0),
-  call_count(0),
-  start_count(0),
-  code_point_(&cp),
-  full_hash_(cp.hash_),
-  hash_idx_(cp.hash_idx_),
-  parent_timer(parent),
-  total_allocated_(0),
-  total_deallocated_(0),
-  max_allocated_(0),
-  current_allocated_(0),
-  alloc_called(0),
-  dealloc_called(0),
-  petsc_start_memory(0),
-  petsc_end_memory (0),
-  petsc_memory_difference(0),
-  petsc_peak_memory(0),
-  petsc_local_peak_memory(0)
-{
-    for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
-}
-#else
 Timer::Timer(const CodePoint &cp, int parent)
 : start_time(TimePoint()),
   cumul_time(0.0),
@@ -146,10 +121,17 @@ Timer::Timer(const CodePoint &cp, int parent)
   current_allocated_(0),
   alloc_called(0),
   dealloc_called(0)
+#ifdef FLOW123D_HAVE_PETSC
+, petsc_start_memory(0),
+  petsc_end_memory (0),
+  petsc_memory_difference(0),
+  petsc_peak_memory(0),
+  petsc_local_peak_memory(0)
+#endif // FLOW123D_HAVE_PETSC
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
 }
-#endif // FLOW123D_HAVE_PETSC
+
 
 /**
  * Debug information of the timer
