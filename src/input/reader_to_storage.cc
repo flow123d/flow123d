@@ -127,7 +127,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *type)
 {
-	FEAL_DEBUG_ASSERT(type != NULL).error(); // Can not dispatch, NULL pointer to TypeBase.
+	FEAL_DEBUG_ASSERT(type != NULL).error("Can not dispatch, NULL pointer to TypeBase.");
 
     // find reference node, if doesn't exist return NULL
     PathBase * ref_path = p.find_ref_node();
@@ -173,7 +173,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         if (string_type != NULL ) return make_storage(p, string_type );
 
         // default -> error
-        FEAL_DEBUG_ASSERT(false)(typeid(type).name()).error(); // Unknown descendant of TypeBase class
+        FEAL_DEBUG_ASSERT(false)(typeid(type).name()).error("Unknown descendant of TypeBase class");
     }
 
     return new StorageNull();
@@ -265,7 +265,7 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 					storage_array->new_item(it->key_index,
 							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
-					 FEAL_DEBUG_ASSERT(! it->default_.is_obligatory())(it->key_).error(); // Obligatory key in auto-convertible Record
+					 FEAL_DEBUG_ASSERT(! it->default_.is_obligatory())(it->key_).error("Obligatory key in auto-convertible Record.");
 					 // set null
 					 storage_array->new_item(it->key_index, new StorageNull() );
 				 }

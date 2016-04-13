@@ -125,7 +125,7 @@ TypeBase::TypeHash Record::content_hash() const
 
 
 Record &Record::allow_auto_conversion(const string &from_key) {
-	FEAL_DEBUG_ASSERT(data_->auto_conversion_key_idx == -1)(from_key).error(); // auto conversion key is already set
+	FEAL_DEBUG_ASSERT(data_->auto_conversion_key_idx == -1)(from_key).error("auto conversion key is already set");
     data_->auto_conversion_key_idx = 0;
     data_->auto_conversion_key=from_key;
 
@@ -189,8 +189,8 @@ void Record::make_copy_keys(Record &origin) {
 
 Record &Record::derive_from(Abstract &parent) {
 	FEAL_DEBUG_ASSERT( parent.is_closed() )(parent.type_name()).error();
-	FEAL_DEBUG_ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE") )(this->type_name()).error();
-			// Derived record can have defined only TYPE key!
+	FEAL_DEBUG_ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE") )(this->type_name())
+			.error("Derived record can have defined only TYPE key!");
 
 	// add Abstract to vector of parents
 	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
@@ -292,14 +292,14 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 
 
 Record &Record::declare_type_key() {
-	FEAL_DEBUG_ASSERT(data_->keys.size() == 0).error(); // Declaration of TYPE key must be carried as the first
+	FEAL_DEBUG_ASSERT(data_->keys.size() == 0).error("Declaration of TYPE key must be carried as the first.");
 	data_->declare_key("TYPE", boost::make_shared<String>(), Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
 
 Record &Record::has_obligatory_type_key() {
-	FEAL_DEBUG_ASSERT(! data_->parent_vec_.size()).error(); // Record with obligatory TYPE key can't be derived
+	FEAL_DEBUG_ASSERT(! data_->parent_vec_.size()).error("Record with obligatory TYPE key can't be derived");
 	declare_type_key();
 	return *this;
 }
@@ -358,8 +358,8 @@ const Record &Record::add_parent(Abstract &parent) const {
 	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
 
 	// finish inheritance
-	FEAL_DEBUG_ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name()).error();
-				// Derived record must have defined TYPE key!
+	FEAL_DEBUG_ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name())
+			.error("Derived record must have defined TYPE key!");
 	data_->keys[0].default_ = Default( "\""+type_name()+"\"" );
 
 	return *this;

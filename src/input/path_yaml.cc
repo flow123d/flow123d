@@ -49,7 +49,7 @@ PathYAML::~PathYAML()
 
 
 bool PathYAML::down(unsigned int index) {
-	FEAL_DEBUG_ASSERT(head().IsSequence()).error(); // Head node must be of type Array.
+	FEAL_DEBUG_ASSERT(head().IsSequence()).error("Head node must be of type Array.");
 
     if ( index >= head().size() ) return false;
     path_.push_back( make_pair( index, string("") ) );
@@ -60,7 +60,7 @@ bool PathYAML::down(unsigned int index) {
 
 
 bool PathYAML::down(const string& key) {
-	FEAL_DEBUG_ASSERT(head().IsMap()).error(); // Head node must be of type Record.
+	FEAL_DEBUG_ASSERT(head().IsMap()).error("Head node must be of type Record.");
 
     if ( head()[key] ) {
     	path_.push_back( make_pair( (int)(-1), key) );

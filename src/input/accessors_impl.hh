@@ -31,9 +31,8 @@ inline const Ret Record::val(const string &key) const {
     try {
         Type::Record::KeyIter key_it = get_type_key_iterator(key);
 
-        FEAL_DEBUG_ASSERT(key_it->default_.is_obligatory() || key_it->default_.has_value_at_declaration())(key).error();
-                //"The key '%s' is declared as optional or with default value at read time,"
-                //" you have to use Record::find instead.\n", key.c_str()
+        FEAL_DEBUG_ASSERT(key_it->default_.is_obligatory() || key_it->default_.has_value_at_declaration())(key)
+        		.error("You have to use Record::find instead.");
 
         Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
         return *it;
@@ -61,9 +60,7 @@ inline const Ret Record::val(const string &key, const Ret default_val ) const {
     try {
         Type::Record::KeyIter key_it = get_type_key_iterator(key);
 
-        FEAL_DEBUG_ASSERT(key_it->default_.has_value_at_read_time())(key).error();
-                //"The key %s is not declared with default value at read time,"
-                //" you have to use Record::val or Record::find instead.\n", key.c_str()
+        FEAL_DEBUG_ASSERT(key_it->default_.has_value_at_read_time())(key).error("You have to use Record::val or Record::find instead.");
 
         Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
         if (it)

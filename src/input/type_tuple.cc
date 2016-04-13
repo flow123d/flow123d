@@ -49,7 +49,7 @@ TypeBase::TypeHash Tuple::content_hash() const
 
 Tuple & Tuple::allow_auto_conversion(const string &from_key)
 {
-	FEAL_DEBUG_ASSERT(false)(this->type_name()).error(); // Call of allow_auto_conversion method is forbidden for type Tuple
+	FEAL_DEBUG_ASSERT(false)(this->type_name()).error("Call of allow_auto_conversion method is forbidden for type Tuple");
 	return *this;
 }
 
@@ -109,7 +109,7 @@ bool Tuple::finish(bool is_generic)
 
 Tuple &Tuple::derive_from(Abstract &parent)
 {
-	FEAL_DEBUG_ASSERT(false)(this->type_name()).error(); // Call of derive_from method is forbidden for type Tuple
+	FEAL_DEBUG_ASSERT(false)(this->type_name()).error("Call of derive_from method is forbidden for type Tuple");
 	return *this;
 }
 
