@@ -12,6 +12,7 @@ namespace computeintersection{
 
 //forward declare
 template<unsigned int, unsigned int> class IntersectionPointAux;
+template<typename U, typename V> class ComputeIntersection;
 
 /** @brief Internal auxiliary class representing intersecion object of of simplex<dimA> and simplex<dimB>.
  * 
@@ -36,7 +37,7 @@ public:
 
     /// Returns intersection points by a constant reference.
     const std::vector<IntersectionPointAux<dimA,dimB>> &points() const;
-
+    
     /// Returns intersection point of given @p index.
     const IntersectionPointAux<dimA,dimB> &operator[](unsigned int index) const;
     
@@ -51,6 +52,9 @@ public:
     /// Friend output operator.
     template<unsigned int dimAA, unsigned int dimBB>
     friend std::ostream& operator<<(std::ostream& os, const IntersectionAux<dimAA,dimBB>& intersection);
+    
+    template<typename U, typename V>
+    friend class ComputeIntersection;
 };
 
 /********************************************* IMPLEMENTATION ***********************************************/

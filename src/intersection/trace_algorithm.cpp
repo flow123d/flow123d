@@ -177,6 +177,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
 
 void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
 
+    DBGMSG("convex hull tracing\n");
     //TODO: this is checked outside in inspect_elements; assert??
     // skip tracing if not enough IPs
     if(p.points().size() <= 1) return;

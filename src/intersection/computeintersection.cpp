@@ -696,7 +696,17 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(computeintersection::
 unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAux< 1, 3 >& intersection,
                                                                   std::vector<unsigned int> &prolongation_table)
 {
-    return compute(intersection.points());
+    
+    unsigned int count = compute(intersection.i_points_);
+    
+    // set if pathologic!!
+    for(IntersectionPointAux<1,3> &p : intersection.i_points_){
+        if(p.is_pathologic()) intersection.pathologic_ = true;
+        break;
+    }
+    
+    return count;
+    
 }
 
 unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPointAux<1,3>> &IP13s){
@@ -1003,7 +1013,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                 IP23.set_topology_A(RefElement<2>::interact<0,1>(triangle_line)[IP.idx_A()], 0);
             }
             
-            intersection.points().push_back(IP23);
+            if (IP23.is_pathologic()) intersection.pathologic_ = true;
+            intersection.i_points_.push_back(IP23);
         }
     }
 
@@ -1020,7 +1031,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                     IP23.set_topology_B(RefElement<3>::interact<0,1>(tetra_edge)[IP.idx_A()], 0);
                 
 				//IP23.print();
-                intersection.points().push_back(IP23);
+                if (IP23.is_pathologic()) intersection.pathologic_ = true;
+                intersection.i_points_.push_back(IP23);
 			}
 		}
 	}
