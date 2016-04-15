@@ -24,10 +24,23 @@ template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> class IntersectionAux;
 
 class InspectElements;
+class InspectElementsAlgorithm22;
 class IntersectionLocalBase;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
 template<unsigned int N, unsigned int M> class IntersectionPoint;
 
+/// First = element index, Second = pointer to intersection object.
+typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
+
+enum IntersectionType
+{
+    none = 0,
+    d12 = 0x0001,
+    d13 = 0x0002,
+    d23 = 0x0004,
+    d22 = 0x0008,
+    all = 0xFFFF
+};
 
 
 /** @brief Class implements algorithm for dim-dimensional intersections with 3D elements.
@@ -132,30 +145,46 @@ private:
                                                               const unsigned int &component_ele_idx);
     
     friend class InspectElements;
+    friend class InspectElementsAlgorithm22;
 };
 
 
-
-enum IntersectionType
+class InspectElementsAlgorithm22
 {
-    none = 0,
-    d12 = 0x0001,
-    d13 = 0x0002,
-    d23 = 0x0004,
-    all = 0xFFFF
+public:
+    InspectElementsAlgorithm22(Mesh *input_mesh);
+    
+    /// Runs the core algorithm for computing 2D-2D intersection in 3D.
+    void compute_intersections(const std::vector<std::vector<ILpair>> &intersection_map_);
+private:
+    Mesh *mesh;
+    
+    /// Stores temporarily 2D-2D intersections.
+    std::vector<IntersectionAux<2,2>> intersectionaux_storage22_;
+    
+    /// Object representing a triangle element A.
+    Simplex<2> triaA_;
+    /// Object representing a triangle element B.
+    Simplex<2> triaB_;
+    
+    void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB);
+    
+    /// Auxiliary function that translates @p ElementFullIter to @p Simplex<2>.
+    void update_simplex(const ElementFullIter &element, Simplex<2> & simplex);
+    
+    friend InspectElements;
 };
+
     
 class InspectElements
 {   
 public:
-    
-    /// First = element index, Second = pointer to intersection object.
-    typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
-    
     /// Stores 1D-3D intersections.
     std::vector<IntersectionLocal<1,3>> intersection_storage13_;
     /// Stores 2D-3D intersections.
     std::vector<IntersectionLocal<2,3>> intersection_storage23_;
+    /// Stores 2D-2D intersections.
+    std::vector<IntersectionLocal<2,2>> intersection_storage22_;
     
     /// Maps between elements and their intersections.
     /// i.e.: 
@@ -184,8 +213,14 @@ private:
     /// Mesh pointer.
     Mesh * mesh;
     
+    InspectElementsAlgorithm<1> algorithm13_;
+    InspectElementsAlgorithm<2> algorithm23_;
+    InspectElementsAlgorithm22 algorithm22_;
+    
     /// Auxiliary function that calls InspectElementsAlgorithm<dim>.
-    template<unsigned int dim> void compute_intersections(std::vector<IntersectionLocal<dim,3>> &storage);
+    template<unsigned int dim> void compute_intersections(InspectElementsAlgorithm<dim> &iea,
+                                                          std::vector<IntersectionLocal<dim,3>> &storage);
+    void compute_intersections_22(std::vector<IntersectionLocal<2,2>> &storage);
 };
 
     

@@ -41,16 +41,29 @@ void compute_intersection_13d(Mesh *mesh)
     // compute intersection
     
     InspectElements ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d13);
-    ie.print_mesh_to_file_13("output_intersection_13");
+    ie.compute_intersections(computeintersection::IntersectionType::all);
+    ie.print_mesh_to_file_13("output_intersection_speed_13");
+    ie.print_mesh_to_file_23("output_intersection_speed_23");
     
-    DBGMSG("N intersections %d\n",ie.intersection_storage13_.size());
+    DBGMSG("N intersections 13(%d), 23(%d), 22(%d)\n",ie.intersection_storage13_.size(),
+                                                      ie.intersection_storage23_.size(),
+                                                      ie.intersection_storage22_.size());
     
     // write computed intersections
-    for(unsigned int i = 0; i < ie.intersection_storage13_.size(); i++)
-    {
-        cout << ie.intersection_storage13_[i];
-    }
+//     for(unsigned int i = 0; i < ie.intersection_storage13_.size(); i++)
+//     {
+//         cout << ie.intersection_storage13_[i];
+//     }
+//     cout << "----------------------------------------------------------------" << endl;
+//     for(unsigned int i = 0; i < ie.intersection_storage23_.size(); i++)
+//     {
+//         cout << ie.intersection_storage23_[i];
+//     }
+//     cout << "----------------------------------------------------------------" << endl;
+//     for(unsigned int i = 0; i < ie.intersection_storage22_.size(); i++)
+//     {
+//         cout << ie.intersection_storage22_[i];
+//     }
 }
 
 

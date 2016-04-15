@@ -546,7 +546,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
  
  
 InspectElements::InspectElements(Mesh* mesh)
-: mesh(mesh)
+: mesh(mesh), algorithm13_(mesh), algorithm23_(mesh), algorithm22_(mesh)
 {}
 
 InspectElements::~InspectElements()
@@ -591,10 +591,10 @@ double InspectElements::measure_23()
  
 
 template<unsigned int dim>
-void InspectElements::compute_intersections(std::vector<IntersectionLocal<dim,3>> &storage)
+void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea,
+                                            std::vector< IntersectionLocal<dim,3>>& storage)
 {
     START_TIMER("Intersection algorithm");
-    InspectElementsAlgorithm<dim> iea(mesh);  
     iea.compute_intersections();
     END_TIMER("Intersection algorithm");
     
@@ -636,21 +636,53 @@ void InspectElements::compute_intersections(std::vector<IntersectionLocal<dim,3>
     }
     END_TIMER("Intersection into storage");
 }
- 
+
+void InspectElements::compute_intersections_22(vector< IntersectionLocal< 2, 2 > >& storage)
+{
+    START_TIMER("Intersection algorithm");
+    algorithm22_.compute_intersections(intersection_map_);
+    END_TIMER("Intersection algorithm");
+    
+    START_TIMER("Intersection into storage");
+    storage.reserve(algorithm22_.intersectionaux_storage22_.size());
+    
+    for(IntersectionAux<2,2> &is : algorithm22_.intersectionaux_storage22_) {
+        unsigned int triaA_idx = is.component_ele_idx();
+        unsigned int triaB_idx = is.bulk_ele_idx();
+
+        storage.push_back(IntersectionLocal<2,2>(is));
+        intersection_map_[triaA_idx].push_back(std::make_pair(
+                                                    triaB_idx,
+                                                    &(storage.back())
+                                                ));
+        intersection_map_[triaB_idx].push_back(std::make_pair(
+                                                    triaA_idx,
+                                                    &(storage.back())
+                                                ));
+    }
+    END_TIMER("Intersection into storage");
+}
+
 void InspectElements::compute_intersections(computeintersection::IntersectionType d)
 {
     intersection_map_.resize(mesh->n_elements());
     
     if(d & IntersectionType::d13){
         START_TIMER("Intersections 1D-3D");
-        compute_intersections<1>(intersection_storage13_);
+        compute_intersections<1>(algorithm13_,intersection_storage13_);
         END_TIMER("Intersections 1D-3D");
     }
     
-    if(d & IntersectionType::d23){
+    if(d & IntersectionType::d23 | IntersectionType::d22){
         START_TIMER("Intersections 2D-3D");
-        compute_intersections<2>(intersection_storage23_);
+        compute_intersections<2>(algorithm23_,intersection_storage23_);
         END_TIMER("Intersections 2D-3D");
+    }
+    
+     if(d & IntersectionType::d22){
+        START_TIMER("Intersections 2D-2D");
+        compute_intersections_22(intersection_storage22_);
+        END_TIMER("Intersections 2D-2D");
     }
 }
 
@@ -709,25 +741,23 @@ void InspectElements::print_mesh_to_file_13(string name)
         fprintf(file,"%d\n", ((unsigned int)intersection_storage13_.size() + mesh->n_elements()) );
 
         FOR_ELEMENTS(mesh, elee){
-            // 1 4 2 30 26 1 2 3 4
-            // 2 2 2 2 36 5 6 7
             if(elee->dim() == 3){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
                 int id4 = mesh->node_vector.index(elee->node[3]) + 1;
 
-                fprintf(file,"%d 4 2 30 26 %d %d %d %d\n", elee.id(), id1, id2, id3, id4);
+                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.id(), elee->region().id(), elee->pid, id1, id2, id3, id4);
             }else if(elee->dim() == 2){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-                fprintf(file,"%d 2 2 2 36 %d %d %d\n", elee.id(), id1, id2, id3);
+                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.id(), elee->region().id(), elee->pid, id1, id2, id3);
 
             }else if(elee->dim() == 1){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                fprintf(file,"%d 1 2 14 16 %d %d\n",elee.id(), id1, id2);
+                fprintf(file,"%d 1 2 %d %d %d %d\n",elee.id(), elee->region().id(), elee->pid, id1, id2);
             }
         }
 
@@ -739,9 +769,9 @@ void InspectElements::print_mesh_to_file_13(string name)
             number_of_elements++;
             nodes++;
             if(il.size() == 1){
-                fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes);
+                fprintf(file,"%d 1 2 1001 0 %d %d\n", number_of_elements, nodes, nodes);
             }else if(il.size() == 2){
-                fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
+                fprintf(file,"%d 1 2 1001 0 %d %d\n", number_of_elements, nodes, nodes+1);
                 nodes++;
             }
         }
@@ -752,7 +782,7 @@ void InspectElements::print_mesh_to_file_13(string name)
 
 void InspectElements::print_mesh_to_file_23(string name)
 {
-    for(unsigned int i = 0; i < 2;i++){
+    //for(unsigned int i = 0; i < 2;i++){
         string t_name = name;
 
         unsigned int number_of_intersection_points = 0;
@@ -806,25 +836,23 @@ void InspectElements::print_mesh_to_file_23(string name)
         fprintf(file,"%d\n", (number_of_intersection_points + mesh->n_elements()) );
 
         FOR_ELEMENTS(mesh, elee){
-            // 1 4 2 30 26 1 2 3 4
-            // 2 2 2 2 36 5 6 7
             if(elee->dim() == 3){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
                 int id4 = mesh->node_vector.index(elee->node[3]) + 1;
 
-                fprintf(file,"%d 4 2 30 26 %d %d %d %d\n", elee.id(), id1, id2, id3, id4);
+                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.id(), elee->region().id(), elee->pid, id1, id2, id3, id4);
             }else if(elee->dim() == 2){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-                fprintf(file,"%d 2 2 2 36 %d %d %d\n", elee.id(), id1, id2, id3);
+                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.id(), elee->region().id(), elee->pid, id1, id2, id3);
 
             }else{
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                fprintf(file,"%d 1 2 14 16 %d %d\n",elee.id(), id1, id2);
+                fprintf(file,"%d 1 2 %d %d %d %d\n",elee.id(), elee->region().id(), elee->pid, id1, id2);
             }
         }
 
@@ -844,18 +872,87 @@ void InspectElements::print_mesh_to_file_23(string name)
                     }
 
                     if((k+1) == il.size()){
-                        fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, last);
+                        fprintf(file,"%d 1 2 1002 0 %d %d\n", number_of_elements, nodes, last);
                     }else{
-                        fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
+                        fprintf(file,"%d 1 2 1002 0 %d %d\n", number_of_elements, nodes, nodes+1);
                     }
             }
         }
 
         fprintf(file,"$EndElements\n");
         fclose(file);
+    //}
+}
+
+
+InspectElementsAlgorithm22::InspectElementsAlgorithm22(Mesh* input_mesh)
+: mesh(input_mesh)
+{}
+
+
+void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::vector<ILpair>>& intersection_map_)
+{
+    DBGMSG("Intersections 2d-2d\n");
+    
+    FOR_ELEMENTS(mesh, ele) {
+    if (ele->dim() == 3)
+    {
+        unsigned int ele_idx = ele->index();
+        // if there are not at least 2 2D elements intersecting 3D element; continue
+        if(intersection_map_[ele_idx].size() < 2) continue;
+        
+        const std::vector<ILpair> &local_map = intersection_map_[ele_idx];
+        
+        DBGMSG("more than 2 intersections in tetrahedron found\n");
+        for(unsigned int i=0; i < local_map.size(); i++)
+        {
+            //TODO: 1] compute all plucker coords at once
+            //TODO: 2] pass plucker coords from 2d-3d
+            
+            ElementFullIter eleA = mesh->element(local_map[i].first);
+            if(eleA->dim() !=2 ) continue;  //skip other dimension intersection
+            
+            for(unsigned int j=i+1; j < local_map.size(); j++)
+            {
+                ElementFullIter eleB = mesh->element(local_map[j].first);
+                if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
+                
+                compute_single_intersection(eleA,
+                                            eleB);
+            }
+        }
+    }
     }
 }
 
+void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIter& eleA,
+                                                             const ElementFullIter& eleB)
+{
+    ASSERT(eleA->dim() == 2, "Wrong element dimension.");
+    ASSERT(eleB->dim() == 2, "Wrong element dimension.");
+    ASSERT(eleA->index() != eleB->index(), "Cannot compute intersection of the same elements.");
+    
+    update_simplex(eleA, triaA_);
+    update_simplex(eleB, triaB_);
+    
+    IntersectionAux<2,2> is(eleA->index(), eleB->index());
+    std::vector<unsigned int> prolongation_table;
+    
+    ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA_, triaB_);
+    CI.init();
+    unsigned int n_local_intersection = CI.compute(is, prolongation_table);
+    
+    if(n_local_intersection > 0)
+        intersectionaux_storage22_.push_back(is);
+}
+
+void InspectElementsAlgorithm22::update_simplex(const ElementFullIter& element, Simplex< 2 >& simplex)
+{
+    arma::vec3 *field_of_points[3];
+    for(unsigned int i=0; i < 3; i++)
+        field_of_points[i]= &(element->node[i]->point());
+    simplex.set_simplices(field_of_points);
+}
 
 
 // Declaration of specializations implemented in cpp:
