@@ -45,9 +45,9 @@ template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField(const MultiField &other)
 : FieldCommon(other),
   sub_fields_(other.sub_fields_),
-  full_input_list_(other.full_input_list_)
+  full_input_list_(other.full_input_list_),
+  no_check_control_field_(other.no_check_control_field_)
 {
-	if (other.no_check_control_field_) no_check_control_field_ = other.no_check_control_field_;
 	this->multifield_ = true;
 }
 
@@ -60,6 +60,8 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
 	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between fields with different meshes.\n");
+	ASSERT( !shared_->comp_names_.size() || (shared_->comp_names_==other.shared_->comp_names_),
+	        "Assignment between fields with different vectors of components.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
@@ -75,11 +77,24 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	this->multifield_ = true;
 
 	// class members of Field class
-	sub_fields_.reserve( other.shared_->comp_names_.size() );
-	for(auto &field : other.sub_fields_)
-		sub_fields_.push_back( field );
+	if ( size() && size() == other.size() ) {
+		// assign subfields of other, keep names of subfields
+		for (unsigned int i=0; i<size(); ++i) sub_fields_[i] = other.sub_fields_[i];
+	} else if ( other.size() ) {
+		// move subfields from other, set correct names
+		sub_fields_.clear();
+		sub_fields_.reserve( other.size() );
+		for (unsigned int i=0; i<other.size(); ++i) {
+			sub_fields_.push_back( other.sub_fields_[i] );
+	    	if (this->shared_->comp_names_[i].length() == 0)
+	    		sub_fields_[i].name_ = name();
+	    	else {
+	    		sub_fields_[i].name_ = this->shared_->comp_names_[i] + "_" + name();
+	    	}
+		}
+	}
 	full_input_list_ = other.full_input_list_;
-	if (other.no_check_control_field_) no_check_control_field_ = other.no_check_control_field_;
+	no_check_control_field_ = other.no_check_control_field_;
 
 	return *this;
 }
