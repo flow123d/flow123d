@@ -54,12 +54,16 @@ public:
      */
     virtual void update_solution(arma::mat &init_vecs, arma::mat &output_vecs, 
                                  const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) = 0;
+    
+    /// Estimate upper bound for time step. Return true if constraint was set.
+    virtual bool evaluate_time_constraint(double &time_constraint) = 0;
                                  
 protected:
     arma::mat system_matrix_;     ///< the square matrix of ODE system
     arma::vec rhs_;               ///< the column vector of RHS values (not used currently)
     double step_;           ///< the step of the numerical method
     bool step_changed_;     ///< flag is true if the step has been changed
+    bool system_matrix_changed_; ///< Indicates that the system_matrix_ was recently updated.
 };
 
 

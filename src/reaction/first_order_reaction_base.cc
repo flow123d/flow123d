@@ -138,3 +138,13 @@ unsigned int FirstOrderReactionBase::find_subst_name(const string &name)
 
         return k;
 }
+
+
+bool FirstOrderReactionBase::evaluate_time_constraint(double &time_constraint)
+{
+    if (!linear_ode_solver_->evaluate_time_constraint(time_constraint)) return false;
+    
+    DBGMSG("CFL constraint(first order reaction): %g.\n", time_constraint);
+    
+    return true;
+}

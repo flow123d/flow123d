@@ -63,6 +63,8 @@ public:
      */
     void update_solution(void) override;
     
+    bool evaluate_time_constraint(double &time_constraint) override;
+    
 protected:
     /// Assembles the matrix of the ODEs.
     /**
