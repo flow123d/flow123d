@@ -76,15 +76,15 @@ if (GIT_FOUND)
   FILE(READ ${FLOW123D_SOURCE_DIR}/version FLOW_MANUAL_VERSION)
   
 
-  if(${FLOW_MANUAL_VERSION} MATCHES ".*([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*).*")
+  if(${FLOW_MANUAL_VERSION} MATCHES ".*([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*).*")
     # version stored in file is in correct format 
     # so we extract version components into list
-    STRING(REGEX REPLACE "([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)"
+    STRING(REGEX REPLACE "([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)"
            "\\1;\\2;\\3" BRANCH_VERSION_LIST ${FLOW_MANUAL_VERSION})
-  elseif(${GIT_BRANCH} MATCHES ".*([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*).*")
+  elseif(${GIT_BRANCH} MATCHES "([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)")
     # git branch is in correct format 
     # so we extract version components into list
-    STRING(REGEX REPLACE "([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)\\.([A-Z-a-z0-9_]*)"
+    STRING(REGEX REPLACE "([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)"
            "\\1;\\2;\\3" BRANCH_VERSION_LIST ${FLOW_MANUAL_VERSION})
   else()
     # no valid release version was found
@@ -92,6 +92,7 @@ if (GIT_FOUND)
     SET(BRANCH_VERSION_LIST "0;0;${GIT_BRANCH}-${GIT_SHORT_HASH}")
   endif()
   
+  string(STRIP "${BRANCH_VERSION_LIST}" BRANCH_VERSION_LIST)
   list(GET BRANCH_VERSION_LIST 0 GIT_VERSION_MAJOR)
   list(GET BRANCH_VERSION_LIST 1 GIT_VERSION_MINOR)
   list(GET BRANCH_VERSION_LIST 2 GIT_VERSION_PATCH)

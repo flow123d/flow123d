@@ -1,11 +1,12 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 """
 Simple module which provides method for testing running python version
 """
 
-import sys, os
+import sys
 
 
 def require_version_2 ():

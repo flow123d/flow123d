@@ -1,11 +1,12 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
+
+from __future__ import absolute_import
 import re
-import traceback
+from ist.base import Unicode
 from ist.formatters.html2latex import Html2Latex
 from ist.formatters.markdown2html import markdown2html
-from ist.utils.htmltree import htmltree
-
 
 class texlist(list):
     """
@@ -53,21 +54,21 @@ class texlist(list):
         :param value:
         :return:
         """
-        self.append("{" + value + "}")
+        self.append("{" + str(value) + "}")
         return self
 
     def add_s(self, value=''):
         '''
         Add field with value escaped
         '''
-        self.append("{" + self.escape(value) + "}")
+        self.append("{" + self.name_mode(value) + "}")
         return self
 
     def add_d(self, value=''):
         '''
         Add field with value underscores replaced by dashed
         '''
-        self.append("{" + self.secure(value) + "}")
+        self.append("{" + self.name_mode(value) + "}")
         return self
 
     def open(self):
@@ -92,11 +93,11 @@ class texlist(list):
         :return: self
         """
         if __debug__:
-            self.tag('hyperB', self.secure((ns if ns.endswith('::') else ns + '::') + value))
-            self.add(self.escape((ns if ns.endswith('::') else ns + '::') + value))
+            self.tag('hyperB', self.name_mode((ns if ns.endswith('::') else ns + '::') + value))
+            self.add(self.plain_mode((ns if ns.endswith('::') else ns + '::') + value))
         else:
-            self.tag('hyperB', self.secure((ns if ns.endswith('::') else ns + '::') + value))
-            self.add(self.escape(value))
+            self.tag('hyperB', self.name_mode((ns if ns.endswith('::') else ns + '::') + value))
+            self.add(self.plain_mode(value))
         return self
 
     def slash(self, value=''):
@@ -119,25 +120,27 @@ class texlist(list):
         :param text: optional text (otherwise url is used)
         :return: self
         """
+        ns = str(ns)
+        url = str(url)
         ns = ns if ns.endswith('::') else ns + '::'
         ns = ns if url.find('::') == -1 else ''
 
         if __debug__:
-            self.tag('Alink', self.secure(ns + url))
-            self.add(self.escape(ns + (url if text is None else text)))
+            self.tag('Alink', self.name_mode(ns + url))
+            self.add(self.plain_mode(ns + (url if text is None else text)))
         else:
-            self.tag('Alink', self.secure(ns + url))
-            self.add(self.escape(url if text is None else text))
+            self.tag('Alink', self.name_mode(ns + url))
+            self.add(self.plain_mode(url if text is None else text))
 
         return self
 
     def AddDoc(self, value):
         """
-        Add \AddDoc{value}
+        Adds \AddDoc{value}
         :return: self
         """
         self.slash('AddDoc')
-        self.add(self.escape(value))
+        self.add(self.plain_mode(value))
 
     def textlangle(self, value, namespace='\\it '):
         """
@@ -147,7 +150,7 @@ class texlist(list):
         :return:
         """
         self.slash('textlangle')
-        self.add(self.escape(namespace + value + ' ').lower())
+        self.add(self.plain_mode(namespace + str(value) + ' ').lower())
         self.slash('textrangle')
 
         return self
@@ -210,10 +213,7 @@ class texlist(list):
         """
         # add debug info
         if exception_type:
-            print exception_type, exception_value, tb
-            traceback.print_exception(exception_type, exception_value, tb)
-            traceback.print_stack()
-            raise exception_value
+            return False
 
         self.counter -= 1
         if self.counter == 0:
@@ -237,34 +237,54 @@ class texlist(list):
         :return: self
         """
         # return self.escape (value.strip ().replace ('\n', '\\\\'))
-        html = self.m2h.parse(''+value+'', True)
+        html = self.m2h.parse(str(value), True)
         latex = Html2Latex(html)
         result = latex.to_latex()
-        result = self.escape(''.join(result))
-        return result
-        return self
+        desc_result = list()
+        for r in result:
+            if r.startswith('{$') and r.endswith('$}'):
+                desc_result.append(self.equation_mode(r))
+            else:
+                desc_result.append(self.plain_mode(r))
+        return ''.join(desc_result)
 
-    def secure(self, value):
-        """
-        Method secures given value
-        :param value: value to be secured
-        :return: secured value
-        """
-        return value \
-            .replace('_', '-') \
-            .replace('>', '') \
-            .replace('<', '')
 
-    def escape(self, value):
+    @staticmethod
+    def equation_mode(value):
         """
-        Method escapes given value
-        :param value: value to be escaped
-        :return: escaped value
+        Method will ensure that value will be valid equation in latex
+        :type value: str or list
+        :param value: value tu be secured
+        :return:
         """
-        value = re.sub(r'\$ElementData', r'\$ElementData', value)
+        return value if type(value) is str else ''.join(value)
+
+    @staticmethod
+    def plain_mode(value):
+        """
+        Method will ensure that value will be valid text in latex
+        no equation
+        :type value: str or list
+        :param value: value tu be secured
+        :return:
+        """
+        value = value if type(value) is str else ''.join(value)
         value = value \
             .replace('_', '\\_') \
+            .replace("'", "'") \
             .replace('->', '$\\rightarrow$') \
             .replace('<-', '$\\leftarrow$') \
             .replace('\n\n', '\n')
-        return value
+        return str(value)
+
+    @staticmethod
+    def name_mode(value):
+        """
+        Method will ensure that value will be valid name in latex
+        This method will replace all characters except a-z A-Z 0-9 and -
+        :type value: str or list
+        :param value: value tu be secured
+        :return:
+        """
+        value = value if type(value) is str else ''.join(value)
+        return re.sub('[^a-zA-Z0-9-]', '', value)
