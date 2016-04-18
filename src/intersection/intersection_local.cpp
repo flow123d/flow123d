@@ -10,8 +10,10 @@
 using namespace std;
 namespace computeintersection{
 
-IntersectionLocalBase::IntersectionLocalBase(unsigned int component_element_idx, unsigned int bulk_element_idx)
-: component_element_idx_(component_element_idx), bulk_element_idx_(bulk_element_idx)
+IntersectionLocalBase::IntersectionLocalBase(unsigned int component_element_idx, 
+                                             unsigned int bulk_element_idx,
+                                             unsigned int comp_idx)
+: component_element_idx_(component_element_idx), bulk_element_idx_(bulk_element_idx), component_idx_(comp_idx)
 {}
 
 template<unsigned int dimA, unsigned int dimB>
@@ -20,12 +22,12 @@ IntersectionLocal<dimA,dimB>::IntersectionLocal()
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionLocal<dimA,dimB>::IntersectionLocal(unsigned int component_element_idx, unsigned int bulk_element_idx)
-: IntersectionLocalBase(component_element_idx, bulk_element_idx)
+: IntersectionLocalBase(component_element_idx, bulk_element_idx, 0)
 {}
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionLocal<dimA,dimB>::IntersectionLocal(const IntersectionAux< dimA, dimB >& iaux)
-: IntersectionLocalBase(iaux.component_ele_idx(), iaux.bulk_ele_idx())
+: IntersectionLocalBase(iaux.component_ele_idx(), iaux.bulk_ele_idx(), iaux.component_idx())
 {
     i_points_.resize(iaux.size());
     for(unsigned int i = 0; i < iaux.size(); i++)

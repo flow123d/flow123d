@@ -39,6 +39,7 @@ void InspectElementsAlgorithm<dim>::init()
     closed_elements.assign(mesh->n_elements(), false);
     intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionAux<dim,3>>());
     n_intersections_ = 0;
+    component_counter_ = 0;
 
     if(elements_bb.size() == 0){
         elements_bb.resize(mesh->n_elements());
@@ -73,10 +74,12 @@ void InspectElementsAlgorithm<dim>::update_simplex(const ElementFullIter& elemen
 
  
 template<unsigned int dim> 
-bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx,
-                                                       std::vector<unsigned int> &prolongation_table)
+bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_ele_idx,
+                                                       unsigned int bulk_ele_idx,
+                                                       unsigned int component_idx,
+                                                       std::vector< unsigned int >& prolongation_table)
 {
-    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
+    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx, component_idx);
     START_TIMER("Compute intersection");
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
@@ -133,6 +136,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
             std::vector<unsigned int> searchedElements;
             bt.find_bounding_box(elements_bb[component_ele_idx], searchedElements);
 
+            component_counter_++;
+            
             START_TIMER("Bounding box element iteration");
             
             // Go through all element which bounding box intersects the component element bounding box
@@ -172,7 +177,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                     update_simplex(elm, component_simplex); // update component simplex
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     std::vector<unsigned int> prolongation_table;
-                    bool found = compute_initial_CI(component_ele_idx, bulk_ele_idx, prolongation_table);
+                    bool found = compute_initial_CI(component_ele_idx, bulk_ele_idx,
+                                                    component_counter_, prolongation_table);
 
                     // keep the index of the current component element that is being investigated
                     unsigned int current_component_element_idx = component_ele_idx;
@@ -452,9 +458,16 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
 
                         if(!intersection_exists(sousedni_element,bulk_ele->index())){
 
+                            unsigned int component_idx = is.component_idx();
+                            if(edg->n_sides > 2)
+                            {
+                                component_counter_++;
+                                component_idx = component_counter_;
+                            }
+                            
                             DBGMSG("2d prolong\n");
                             // Vytvoření průniku bez potřeby počítání
-                            IntersectionAux<2,3> il_other(sousedni_element, bulk_ele->index());
+                            IntersectionAux<2,3> il_other(sousedni_element, bulk_ele->index(), component_idx);
                             intersection_list_[sousedni_element].push_back(il_other);
 
                             Prolongation pr = {sousedni_element, bulk_ele->index(), (unsigned int)intersection_list_[sousedni_element].size() - 1};
@@ -494,7 +507,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                         DBGMSG("3d prolong\n");
                         
                         // Vytvoření průniku bez potřeby počítání
-                        IntersectionAux<2,3> il_other(comp_ele->index(), sousedni_element);
+                        IntersectionAux<2,3> il_other(comp_ele->index(), sousedni_element, is.component_idx());
                         intersection_list_[comp_ele->index()].push_back(il_other);
 
                         Prolongation pr = {comp_ele->index(), sousedni_element, (unsigned int)intersection_list_[comp_ele->index()].size() - 1};
@@ -673,7 +686,7 @@ void InspectElements::compute_intersections(computeintersection::IntersectionTyp
         END_TIMER("Intersections 1D-3D");
     }
     
-    if(d & IntersectionType::d23 | IntersectionType::d22){
+    if(d & (IntersectionType::d23 | IntersectionType::d22)){
         START_TIMER("Intersections 2D-3D");
         compute_intersections<2>(algorithm23_,intersection_storage23_);
         END_TIMER("Intersections 2D-3D");
@@ -911,11 +924,15 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
             
             ElementFullIter eleA = mesh->element(local_map[i].first);
             if(eleA->dim() !=2 ) continue;  //skip other dimension intersection
+            unsigned int componentA_idx = local_map[i].second->component_idx();
             
             for(unsigned int j=i+1; j < local_map.size(); j++)
             {
                 ElementFullIter eleB = mesh->element(local_map[j].first);
                 if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
+                
+                unsigned int componentB_idx = local_map[j].second->component_idx();
+                if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
                 
                 compute_single_intersection(eleA,
                                             eleB);

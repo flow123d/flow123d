@@ -37,15 +37,19 @@ class IntersectionLocalBase
 protected:
     unsigned int component_element_idx_;
     unsigned int bulk_element_idx_;
+    unsigned int component_idx_;
 
 public:
     IntersectionLocalBase(){}
     /// Constructor taking in element indices.
-    IntersectionLocalBase(unsigned int component_element_idx, unsigned int bulk_element_idx);
+    IntersectionLocalBase(unsigned int component_element_idx,
+                          unsigned int bulk_element_idx,
+                          unsigned int component_idx);
     ~IntersectionLocalBase(){}
     
     unsigned int component_ele_idx() const; ///< Returns index of component element.
     unsigned int bulk_ele_idx() const;      ///< Returns index of bulk element.
+    unsigned int component_idx() const;     ///< Returns index of component.
 };
 
 
@@ -55,7 +59,8 @@ inline unsigned int IntersectionLocalBase::component_ele_idx() const
 inline unsigned int IntersectionLocalBase::bulk_ele_idx() const
 {   return bulk_element_idx_; }
 
-
+inline unsigned int IntersectionLocalBase::component_idx() const
+{   return component_idx_; }
 
 
 

@@ -10,8 +10,12 @@
 namespace computeintersection{
 
 template<unsigned int dimA, unsigned int dimB>
-IntersectionAux<dimA,dimB>::IntersectionAux(unsigned int component_element_idx, unsigned int bulk_element_idx)
-: component_element_idx_(component_element_idx), bulk_element_idx_(bulk_element_idx), pathologic_(false)
+IntersectionAux<dimA,dimB>::IntersectionAux(unsigned int component_element_idx,
+                                            unsigned int bulk_element_idx,
+                                            unsigned int comp_idx)
+: component_element_idx_(component_element_idx), 
+  bulk_element_idx_(bulk_element_idx),
+  component_idx_(comp_idx)
 {}
 
 template<unsigned int dimA, unsigned int dimB>

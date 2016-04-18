@@ -88,6 +88,7 @@ private:
     
     /// Counter for intersection among elements.
     unsigned int n_intersections_;
+    unsigned int component_counter_;
     
     /// Prolongation queue in the component mesh.
     std::queue<Prolongation> component_queue_;
@@ -125,7 +126,7 @@ private:
     bool intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
     
     /// Computes the first intersection, from which we then prolongate.
-    bool compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx, 
+    bool compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx, unsigned int component_idx,
                             std::vector<unsigned int> &prolongation_table);
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes

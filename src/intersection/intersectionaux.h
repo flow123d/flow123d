@@ -24,13 +24,19 @@ class IntersectionAux{
     std::vector<IntersectionPointAux<dimA,dimB>> i_points_;
     unsigned int component_element_idx_;
     unsigned int bulk_element_idx_;
+    unsigned int component_idx_;
     bool pathologic_;
     
 public:
 
-    IntersectionAux();                                       ///< Default constructor.
-    IntersectionAux(unsigned int component_element_idx, unsigned int bulk_element_idx);  ///< Constructor taking in element indices.
-    virtual ~IntersectionAux();                                      ///< Destructor.
+    /// Default constructor.
+    IntersectionAux();
+    /// Constructor taking in element indices.
+    IntersectionAux(unsigned int component_element_idx,
+                    unsigned int bulk_element_idx,
+                    unsigned int component_idx = 0);
+    /// Destructor.
+    virtual ~IntersectionAux();
 
     /// Returns intersection points by a reference.
     std::vector<IntersectionPointAux<dimA,dimB>> &points();
@@ -44,6 +50,7 @@ public:
     unsigned int size() const;              ///< Returns number of intersection points.
     unsigned int component_ele_idx() const; ///< Returns index of component element.
     unsigned int bulk_ele_idx() const;      ///< Returns index of bulk element.
+    unsigned int component_idx() const;     ///< Returns index of component.
     unsigned int is_pathologic() const;      ///< Returns index of bulk element.
     
     /// Computes the relative measure of intersection object.
@@ -83,6 +90,10 @@ inline unsigned int IntersectionAux<dimA,dimB>::component_ele_idx() const
 template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::bulk_ele_idx() const
 {   return bulk_element_idx_; }
+
+template<unsigned int dimA, unsigned int dimB>
+inline unsigned int IntersectionAux<dimA,dimB>::component_idx() const
+{   return component_idx_; }
 
 template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::is_pathologic() const
