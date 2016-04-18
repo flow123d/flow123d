@@ -62,6 +62,9 @@ public:
   ReactionTerm &output_stream(std::shared_ptr<OutputTime> ostream)
   {output_stream_=ostream; return *this;}
 
+  /// Computes a constraint for time step.
+  virtual bool evaluate_time_constraint(double &time_constraint) = 0;
+  
   /**
    * Sets the pointer to concentration matrix for the mobile zone, 
    * all substances and on all elements (given by transport).

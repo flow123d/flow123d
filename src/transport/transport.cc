@@ -548,6 +548,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         VecMaxPointwiseDivide(cfl,mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
         cfl_max_step = 1 / cfl_max_step;
+        DBGMSG("CFL constraint (transport): %g\n", cfl_max_step);
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled
