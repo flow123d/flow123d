@@ -78,13 +78,6 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 
 void DarcyFlowLMH_Unsteady::read_initial_condition()
 {
-    VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
-
-    VecZeroEntries(schur0->get_solution());
-
     // apply initial condition
     // cycle over local element rows
 

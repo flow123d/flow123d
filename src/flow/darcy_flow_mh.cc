@@ -341,12 +341,20 @@ void DarcyFlowMH_Steady::zero_time_step()
         balance_->units(UnitSI().m(3));
     }
 
+    // allocate time term vectors
+    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecDuplicate(steady_diagonal,& new_diagonal);
+    VecZeroEntries(new_diagonal);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
+    VecZeroEntries(schur0->get_solution());
+
+
     /* TODO:
      * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
      * - Steady solution as an intitial condition may be forced by setting inti_time =-1, and set data for the steady solver in that time.
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
-
 
     if (zero_time_term_from_right) {
         // steady case
@@ -354,6 +362,7 @@ void DarcyFlowMH_Steady::zero_time_step()
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
+
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
         // TODO: reconstruction of solution in zero time.
@@ -1784,16 +1793,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_r
 
 void DarcyFlowMH_Steady::read_initial_condition()
 {
-
-    VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecZeroEntries(new_diagonal);
-    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
-
-	// read inital condition
-	VecZeroEntries(schur0->get_solution());
-
 	double *local_sol = schur0->get_solution_array();
 
 	// cycle over local element rows
