@@ -1,8 +1,11 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-import re, os, sys
+from __future__ import absolute_import
+import re, os
 from utils.dotdict import DotDict
+from utils.logger import Logger
 
 
 class SimpleTableFormatter (object):
@@ -180,13 +183,18 @@ class SimpleTableFormatter (object):
                 ("^", "{line:5d}".format (line=json["file-line"]))
             ))
 
-        #try:
-        if "children" in json:
-          for child in json["children"]:
-              self.process_body (child, level + 1)
-        #except Exception as e:
-        #    pass
+        if 'children' in json:
+            for child in json["children"]:
+                try:
+                    self.process_body (child, level + 1)
+                except Exception as e:
+                    import json as j
+                    if 'children' in child:
+                        del child['children']
+                    child_repr = j.dumps(child, indent=4)
+                    Logger.instance().warning('Caught exception while processing profiler data: {e}'.format(e=e.message))
+                    Logger.instance().warning('Exception', exc_info=e)
+                    Logger.instance().warning('problem node (without children) is:\n{child}'.format(child=child_repr))
 
     def timedelta_milliseconds (self, td):
         return td.days * 86400000 + td.seconds * 1000 + td.microseconds / 1000
-

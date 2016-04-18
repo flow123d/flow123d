@@ -1,11 +1,15 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
-from ist.utils.utils import TypedList
+
+from __future__ import absolute_import
+from utils.logger import Logger
 
 
 class Globals(object):
     """
     Global class object which stores references and all objects on memory for later use
+    :type items             : dict[ist.base.Parsable]
     """
     items = { }
     names = {
@@ -20,67 +24,62 @@ class Globals(object):
     }
 
     @staticmethod
-    def search_in_element(element, value):
+    def iterate(type=''):
+        from ist.base import InputType
         """
-        Method search in given element for specific value
-        used on markdown links e.g. [[record_root#keys#pause_after_run]]
-        :param element: element, typed list
-        :param value: string fields name
-        :return:
+        :rtype : list[ist.base.Parsable]
         """
-        from ist.nodes import Record
-
-        if type(element) is Record:
-            return getattr(element, value, None)
-
-        if type(element) is TypedList:
-            for item in element:
-                try:
-                    if item.get('key', 'name').lower() == value.lower():
-                        return item
-                except:
-                    pass
-            return None
-
-        # last resort
-        return getattr(element, value, None)
-
+        if not type:
+            return Globals.items.values()
+        elif type.lower() in ('r', 'record'):
+            return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.RECORD]
+        elif type.lower() in ('s', 'selection'):
+            return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.SELECTION]
+        elif type.lower() in ('a', 'ar', 'abstract'):
+            return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.ABSTRACT_RECORD]
 
     @staticmethod
-    def get_url_by_name(label, type=''):
+    def get_url_by_name(label, item_type=''):
         """
         constructs and returns tuple (name, type, link) from given name and label
         :param label: name#field where field is optional
-        :param type:
-        :return: triplet of (name. type, #link) or triplet of None
+        :param item_type:
+        :rtype : list[ist.base.Parsable]
         """
-        from ist.utils.htmltree import htmltree
         parts = label.split("#")
         name = parts[0]
-        fields = parts[1:]
+        field = parts[1] if len(parts) > 1 else None
 
-        for (id, item) in Globals.items.iteritems():
-            try:
-                if item.get('type_name', 'name', 'id').lower() == name.lower():
+        for item in Globals.iterate(item_type):
+            possibilities = item.gets('name', 'id')
+            if getattr(item, 'attributes', None):
+                possibilities.extend(item.attributes.gets('link_name'))
+            possibilities = [str(p).lower() for p in possibilities if p]
 
-                    # only link to item?
-                    if not fields:
-                        return item.get_name(), item.get_type(), '#' + htmltree.chain_values(item.get_name())
+            if name.lower() in possibilities:
+                # only link to item?
+                if not field:
+                    return item, None
+                else:
+                    return item, item.get_fields(field)
 
-                    # link to item's field
-                    if fields:
-                        curr = item
-                        for field in fields:
-                            find = Globals.search_in_element(curr, field)
-                            if not find:
-                                print 'cannot find {} on {}'.format(field, curr)
-                                return None
-                            # next level
-                            curr = find
+        return None, None, None
 
-                        return curr.get_name(), curr.get_type(), '#' + htmltree.chain_values(curr.get_name(), item.get_name())
-            except:
-                # no such attribute
-                pass
+    @staticmethod
+    def save(key, item):
+        if key in Globals.items:
+            Logger.instance().info('duplicate key %s' % key)
+            for i in range(2, 100):
+                new_key = '{}-{}'.format(key, i)
+                if new_key not in Globals.items:
+                    Logger.instance().info('For key %s assigned %s' % (key, new_key))
+                    Globals.items[new_key] = item
+                    return new_key
+        Globals.items[key] = item
+        return key
 
-        return (None, None, None)
+
+class FormatMode(object):
+    LATEX_MODE = 1
+    HTML_MODE = 2
+    format_mode = 0

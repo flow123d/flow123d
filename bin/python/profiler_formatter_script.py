@@ -1,4 +1,5 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 """
@@ -26,13 +27,13 @@ Options:
 
 """
 
-import pathfix
+from __future__ import absolute_import
 
-pathfix.append_to_path ()
+import pathfix
+pathfix.append_to_path()
 
 import system.versions
-
-system.versions.require_version_2 ()
+system.versions.require_version_2()
 
 import sys
 from optparse import OptionParser

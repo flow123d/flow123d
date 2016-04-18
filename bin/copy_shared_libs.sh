@@ -32,7 +32,7 @@ else
   then
     # detect shared libs
     loader=`ldd flow123d | grep "/ld" | sed 's/^\t*\(\/.*\) (.*)$/\1/'`
-    libs=`ldd flow123d | grep -n "^/" | sed 's/^.* => \(\/.*\) (.*)$/\1/'`
+    libs=`ldd flow123d | grep "=> /" | sed 's/^.* => \(\/.*\) (.*)$/\1/'`
     
     # copy shared libs
     echo "Copy flow123d shared libraries ..."

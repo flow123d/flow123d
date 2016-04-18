@@ -4,7 +4,7 @@
 # get absolute dir in which is this script stored
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # populated by configure_file in cmake call
-PYTHONPATH="@PY_WRAPPER_PATHS@"
+PYTHON_PATHS="@PY_WRAPPER_PATHS@"
 
 # temporatily set for separator to colon (;)
 export IFS=";"

@@ -53,7 +53,10 @@
 #include <mpi.h>
 #include <ostream>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/unordered_map.hpp>
 #include "time_point.hh"
+#include "petscsys.h" 
+#include "simple_allocator.hh"
 
 
 // namespace alias
@@ -65,15 +68,19 @@ class MPI_Functions {
 public:
     static int sum(int* val, MPI_Comm comm);
     static double sum(double* val, MPI_Comm comm);
+    static long sum(long* val, MPI_Comm comm);
+    
     static int min(int* val, MPI_Comm comm);
     static double min(double* val, MPI_Comm comm);
+    static long min(long* val, MPI_Comm comm);
+    
     static int max(int* val, MPI_Comm comm);
     static double max(double* val, MPI_Comm comm);
+    static long max(long* val, MPI_Comm comm);
 };
 
 // Assuming all compilers support constexpr
 #define CONSTEXPR_ constexpr
-
 
 using namespace std;
 
@@ -295,7 +302,6 @@ public:
      */
     void start();
 
-
     /**
      * If number of starts (recursions) drop back to zero, we stop the timer and add the period to the cumulative time.
      * This method do not take care of its childs (it has no access to the other timers).
@@ -331,6 +337,21 @@ public:
 
 
 protected:
+    
+    /**
+     * Pauses current timer, save measured petsc memory information util resume.
+     * We get Petsc maximum memory usage via PetscMemoryGetMaximumUsage call
+     * and save this value into temp value. (we override local maximum if temp
+     * value is greater)
+     */
+    void pause();
+    /**
+     * Resume current timer. e tell Petsc to monitor the maximum memory 
+     * usage once again. We call PetscMemorySetGetMaximumUsage so later in 
+     * resume() method will PetscMemoryGetMaximumUsage method work.
+     */
+    void resume();
+    
     /**
      *   Start time when frame opens.
      */
@@ -369,16 +390,76 @@ protected:
     int child_timers[max_n_childs];
 
     /**
-     * Total number of bytes allocated directly in this frame (not include subframes).
+     * Total number of bytes allocated in this frame. After 
+     * Profiler::propagate_timers call will also contain values from children.
      */
     size_t total_allocated_;
     /**
-     * Total number of bytes deallocated directly in this frame (not include subframes).
+     * Total number of bytes deallocated in this frame. After 
+     * Profiler::propagate_timers call, will also contain values from children.
      */
     size_t total_deallocated_;
-
-
+    /**
+     * Maximum number of bytes allocated at one time in this frame. After 
+     * Profiler::propagate_timers call, maximum value will be taken from this
+     * Timer and also from all children Timers.
+     */
+    size_t max_allocated_;
+    /**
+     * Current number of bytes allocated in this frame at the same time. 
+     * This value is used to monitor maximum bytes allocated. When notify_free
+     * and notify_malloc is called this values is changed and new maximum 
+     * is tested.
+     */
+    size_t current_allocated_;
+    
+    /**
+     * Number of times new/new[] operator was used in this scope
+     */
+    int alloc_called;
+    /**
+     * Number of times delete/delete[] operator was used in this scope
+     */
+    int dealloc_called;
+    
+    #ifdef FLOW123D_HAVE_PETSC
+    /**
+     * Number of bytes used by Petsc at the start of time-frame
+     */
+    PetscLogDouble petsc_start_memory;
+    /**
+     * Number of bytes used by Petsc at the end of time-frame
+     */
+    PetscLogDouble petsc_end_memory;
+    /**
+     * Difference between start and end of a petsc memory usage 
+     */
+    PetscLogDouble petsc_memory_difference;
+    /**
+     * Maximum amount of memory used that was PetscMalloc()ed at any time 
+     * during this run.
+     *
+     * The memory usage reported here includes all Fortran arrays (that may be
+     * used in application-defined sections of code).
+     */
+    PetscLogDouble petsc_peak_memory;
+    /**
+     * Local maximum amount of memory used that was PetscMalloc()ed 
+     * used during time-frame pause/resume. Auxilary variable for storing 
+     * local memory used when pause is called.
+     */
+    PetscLogDouble petsc_local_peak_memory;
+    #endif // FLOW123D_HAVE_PETSC
+    
     friend class Profiler;
+    friend std::ostream & operator <<(std::ostream&, const Timer&);
+    
+    /**
+     * if under unit testing, specify friend so protected members can be tested
+     */
+    #ifdef __UNIT_TEST__
+        friend ProfilerTest;
+    #endif /* __UNIT_TEST__ */
 
 };
 
@@ -444,10 +525,7 @@ public:
     /**
      * Returns unique Profiler object.
      */
-    inline static Profiler* instance() {
-        ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
-        return _instance;
-    }
+    static Profiler* instance();
     /**
      * Sets task specific information. The string @p description with textual description of the task and the
      * number of elements of the mesh (parameter @p size). This is used for weak scaling graphs so it should
@@ -495,12 +573,12 @@ public:
      * Notification about allocation of given size.
      * Increase total allocated memory in current profiler frame.
      */
-    void notify_malloc(const size_t size );
+    void notify_malloc(const size_t size, const long p);
     /**
      * Notification about freeing memory of given size.
      * Increase total deallocated memory in current profiler frame.
      */
-    void notify_free(const size_t size );
+    void notify_free(const long p);
 
     /**
      * Return average profiler timer resolution in seconds
@@ -508,22 +586,6 @@ public:
      */
     static double get_resolution ();
 
-
-    /**
-     * Returns tag of current timer.
-     */
-    inline const string actual_tag() const
-        { return timers_[actual_node].tag(); }
-    /**
-     * Returns total number of calls of current timer.
-     */
-    inline unsigned int actual_count() const
-        { return timers_[actual_node].call_count; }
-    /**
-     * Returns total time of current timer.
-     */
-    inline double actual_cumulative_time() const
-        { return timers_[actual_node].cumulative_time(); }
 
 #ifdef FLOW123D_HAVE_MPI
     /**
@@ -571,12 +633,73 @@ public:
     static void uninitialize();
 
     /**
-     * Check if the instance was created.
+     * Class-specific allocation function new. Called by the usual
+     * single-object new-expressions if allocating an object of type Profiler.
      */
-    static bool is_initialized() { return (_instance != NULL); }
+    static void* operator new (size_t sz);
+    /**
+     * Class-specific allocation function delete. Deallocates storage 
+     * previously allocated by a matching operator new. These deallocation
+     * functions are called by delete-expressions.
+     */
+    static void operator delete (void* p);
+    
+    /**
+     * Public setter to turn on/off memory monitoring
+     * @param global_monitor whether to turn global monitoring on or off
+     * @param petsc_monitor petsc monitoring
+     */
+    void static set_memory_monitoring(const bool global_monitor, const bool petsc_monitor);
+    
+    /**
+     * Public getter to memory monitoring
+     * @return memory monitoring status
+     */
+    bool static get_global_memory_monitoring();
+    
+    /**
+     * Public getter to petsc memory monitoring
+     * @return memory monitoring status
+     */
+    bool static get_petsc_memory_monitoring();
+    
+    /**
+     * if under unit testing, specify friend so protected members can be tested
+     */
+    #ifdef __UNIT_TEST__
+        friend ProfilerTest;
+    #endif /* __UNIT_TEST__ */
 
-
-private:
+protected:
+    
+    /**
+     * Whether to monitor operator 'new/delete'
+     */
+    static bool global_monitor_memory;
+    
+    /**
+     * Whether to monitor petsc memory usage
+     */
+    static bool petsc_monitor_memory;
+    
+    /**
+     * When creating Profiler also reserve some bytes in malloc_map so overhead 
+     * of creating single items is lowered. This value is passed as parameter in
+     * map.reserve() method so it indicates how many objects (pointers) are 
+     * allocated at first.
+     */
+    static const long malloc_map_reserve;
+    
+    /**
+     * Method will propagate values from children timers to its parents
+     */
+    void propagate_timers ();
+    
+    /**
+     * Method for exchanging metrics from child timer to its parent timer
+     */
+    void accept_from_child (Timer &parent, Timer &child);
+    
     /**
      * Try to find timer with tag (in fact only its 32-bit hash) from given code point @p cp.
      * Returns -1 if it is not found otherwise it returns its index.
@@ -604,7 +727,7 @@ private:
     static Profiler* _instance;
 
     /// Vector of all timers. Whole tree is stored in this array.
-    vector<Timer> timers_;
+    vector<Timer, internal::SimpleAllocator<Timer>> timers_;
 
     /// Index of the actual timer node. Negative value means 'unset'.
     unsigned int actual_node;
@@ -690,6 +813,27 @@ public:
     }
 };
 
+
+/**
+ * Simple class providing static map variable storing address and alloc size
+ */
+// gcc version 4.9 and lower has following bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=59751
+// fix in version 4.9: https://gcc.gnu.org/gcc-4.9/changes.html#cxx
+// typedef unordered_map<long, int, hash<long>, equal_to<long>, internal::SimpleAllocator<pair<const long, int>>> unordered_map_with_alloc;
+typedef boost::unordered_map<long, int, boost::hash<long>, equal_to<long>, internal::SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
+class MemoryAlloc {
+public:
+    /**
+     * Create static map containing <allocation address, allocation size> pairs
+     *   map is used for storing allocations and deallocations of all object not 
+     *   related to profiler after profiler initialization phase
+     */
+	static unordered_map_with_alloc & malloc_map();
+};
+
+
+
+
 #else // FLOW123D_DEBUG_PROFILER
 
 
@@ -697,10 +841,7 @@ public:
 class Profiler {
 public:
     static void initialize();
-    inline static Profiler* instance() {
-        ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
-        return _instance;
-    }
+    static Profiler* instance();
 
     void set_task_info(string description, int size)
     {}
@@ -725,9 +866,6 @@ public:
     inline double actual_cumulative_time() const
     { return 0.0; }
     static void uninitialize();
-
-    static bool is_initialized() { return (_instance != NULL); }
-
 private:
     static Profiler* _instance;
     Profiler() {}
