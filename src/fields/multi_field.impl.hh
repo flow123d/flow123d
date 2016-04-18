@@ -59,9 +59,9 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
 	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
-	        "Assignment between fields with different meshes.\n");
+	        "Assignment between multi fields with different meshes.\n");
 	ASSERT( !shared_->comp_names_.size() || (shared_->comp_names_==other.shared_->comp_names_),
-	        "Assignment between fields with different vectors of components.\n");
+	        "Assignment between multi fields with different vectors of components.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
@@ -77,10 +77,10 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	this->multifield_ = true;
 
 	// class members of Field class
-	if ( size() && size() == other.size() ) {
+	if ( size() == other.size() ) {
 		// assign subfields of other, keep names of subfields
 		for (unsigned int i=0; i<size(); ++i) sub_fields_[i] = other.sub_fields_[i];
-	} else if ( other.size() ) {
+	} else if ( size() == 0 ) {
 		// move subfields from other, set correct names
 		sub_fields_.clear();
 		sub_fields_.reserve( other.size() );
@@ -92,6 +92,8 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	    		sub_fields_[i].name_ = this->shared_->comp_names_[i] + "_" + name();
 	    	}
 		}
+	} else {
+		THROW( ExcMessage() << EI_Message("Internal error. Different sizes of subfield vectors.") );
 	}
 	full_input_list_ = other.full_input_list_;
 	no_check_control_field_ = other.no_check_control_field_;
