@@ -371,7 +371,6 @@ void DarcyFlowMH_Steady::update_solution()
 
 
     time_->next_time();
-    //if (time_->t() == TimeGovernor::inf_time) return; // end time of steady TimeGovernor
 
     data_.set_time(time_->step(), LimitSide::left);
     bool zero_time_term_from_left
@@ -380,6 +379,8 @@ void DarcyFlowMH_Steady::update_solution()
     if (! zero_time_term_from_left) {
         // time term not treated as zero
         // Unsteady solution up to the T.
+
+        // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = false;
         solve_nonlinear(); // with left limit data
         if (jump_time) {
@@ -400,6 +401,7 @@ void DarcyFlowMH_Steady::update_solution()
     bool zero_time_term_from_right
         = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     if (zero_time_term_from_right) {
+        // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
 
