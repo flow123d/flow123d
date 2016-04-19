@@ -97,7 +97,7 @@ TEST(Operators, assignment) {
     Input::Array in_list=reader.get_root_interface<Input::Array>();
     set_of_field.set_input_list(in_list);
 
-    MultiField<3, FieldValue<3>::Scalar> mf_assignment, mf_assignment2;
+    MultiField<3, FieldValue<3>::Scalar> mf_assignment;
 	EXPECT_EQ("", mf_assignment.name());
 	EXPECT_FALSE(mf_assignment.is_bc());
 
@@ -105,34 +105,37 @@ TEST(Operators, assignment) {
 	mf_assignment
 	    .name("b")
 	    .flags(FieldFlag::input_copy);
+	mf_assignment.set_components(component_names);
 	mf_base.set_mesh( *mesh );
 	mf_assignment.set_mesh( *mesh );
 	mf_base.setup_components();
-
-	mf_assignment2
-	    .name("c")
-	    .flags(FieldFlag::input_copy);
-	mf_assignment2.set_components(component_names);
-	mf_assignment2.set_mesh( *mesh );
-	mf_assignment2.setup_components();
+	mf_assignment.setup_components();
 
 	MultiField<3, FieldValue<3>::Scalar> mf_copy(mf_base);	// copy constructor
 	mf_assignment = mf_base; // assignment
-	mf_assignment2 = mf_base; // assignment
 
 	EXPECT_STREQ("a", mf_base.name().c_str());
 	EXPECT_STREQ("b", mf_assignment.name().c_str());
-	EXPECT_STREQ("c", mf_assignment2.name().c_str());
 	EXPECT_STREQ("a", mf_copy.name().c_str());
 	EXPECT_EQ(3, mf_base.size());
 	EXPECT_EQ(mf_assignment.size(), mf_base.size());
-	EXPECT_EQ(mf_assignment2.size(), mf_base.size());
 	EXPECT_EQ(mf_copy.size(), mf_base.size());
 	for (unsigned int i=0; i<mf_base.size(); ++i) {
 		EXPECT_EQ( component_names[i] + "_a", mf_base[i].name() );
 		EXPECT_EQ( component_names[i] + "_b", mf_assignment[i].name() );
-		EXPECT_EQ( component_names[i] + "_c", mf_assignment2[i].name() );
 		EXPECT_EQ( mf_base[i].name(), mf_copy[i].name() );
+	}
+
+	{
+		// throw assert, empty vector of component names
+		MultiField<3, FieldValue<3>::Scalar> mf_assignment_error;
+		mf_assignment_error
+		    .name("c")
+		    .flags(FieldFlag::input_copy);
+		mf_assignment_error.set_mesh( *mesh );
+
+		EXPECT_ASSERT_DEATH( { mf_assignment_error = mf_base; },
+				"Vector of component names can't be empty!");
 	}
 
 	{

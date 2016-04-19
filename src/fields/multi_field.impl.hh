@@ -60,7 +60,8 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
 	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between multi fields with different meshes.\n");
-	ASSERT( !shared_->comp_names_.size() || (shared_->comp_names_==other.shared_->comp_names_),
+	ASSERT( shared_->comp_names_.size(), "Vector of component names can't be empty!\n");
+	ASSERT( shared_->comp_names_==other.shared_->comp_names_,
 	        "Assignment between multi fields with different vectors of components.\n");
 
 	// check for self assignement
@@ -80,18 +81,6 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	if ( size() == other.size() ) {
 		// assign subfields of other, keep names of subfields
 		for (unsigned int i=0; i<size(); ++i) sub_fields_[i] = other.sub_fields_[i];
-	} else if ( size() == 0 ) {
-		// move subfields from other, set correct names
-		sub_fields_.clear();
-		sub_fields_.reserve( other.size() );
-		for (unsigned int i=0; i<other.size(); ++i) {
-			sub_fields_.push_back( other.sub_fields_[i] );
-	    	if (this->shared_->comp_names_[i].length() == 0)
-	    		sub_fields_[i].name_ = name();
-	    	else {
-	    		sub_fields_[i].name_ = this->shared_->comp_names_[i] + "_" + name();
-	    	}
-		}
 	} else {
 		THROW( ExcMessage() << EI_Message("Internal error. Different sizes of subfield vectors.") );
 	}
