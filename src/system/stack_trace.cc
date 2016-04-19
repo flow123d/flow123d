@@ -83,22 +83,12 @@ void StackTrace::print(std::ostream &out, std::vector<std::string> frames_to_cut
             if ( frame.find(to_cut) != string::npos ) is_to_cut = true;
         }
         if (is_to_cut) break;
-        /*if (   frame.find("boost") != string::npos
-            && frame.find("exception_detail") != string::npos
-            && frame.find("throw_exception") != string::npos
-            ) break;*/
     }
-    i_frame++;
+    i_frame=0; //i_frame++;
 
     unsigned int out_i_frame=0;
     for(;i_frame< n_frames_; i_frame++, out_i_frame++) {
         string frame(frames_[i_frame]);
-
-        /*bool is_to_cut = false; // check if frame is intended to cut
-        for (auto to_cut : frames_to_cut) {
-        	if ( frame.find(to_cut) != string::npos ) is_to_cut = true;
-        }
-        if (is_to_cut) continue;*/
 
         unsigned int start_pos = frame.find("(")+1,
                      end_pos = frame.find("+");
