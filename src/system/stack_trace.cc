@@ -16,6 +16,7 @@
  */
 
 #include "system/stack_trace.hh"
+#include "config.h"
 #include <boost/exception/diagnostic_information.hpp>
 
 #ifdef FLOW123D_HAVE_EXEC_INFO
@@ -77,10 +78,15 @@ void StackTrace::print(std::ostream &out, std::vector<std::string> frames_to_cut
     int i_frame;
     for(i_frame=0; i_frame < n_frames_; i_frame++) {
         string frame(frames_[i_frame]);
-        if (   frame.find("boost") != string::npos
+        bool is_to_cut = false; // check if frame is intended to cut
+        for (auto to_cut : frames_to_cut) {
+            if ( frame.find(to_cut) != string::npos ) is_to_cut = true;
+        }
+        if (is_to_cut) break;
+        /*if (   frame.find("boost") != string::npos
             && frame.find("exception_detail") != string::npos
             && frame.find("throw_exception") != string::npos
-            ) break;
+            ) break;*/
     }
     i_frame++;
 
@@ -88,11 +94,11 @@ void StackTrace::print(std::ostream &out, std::vector<std::string> frames_to_cut
     for(;i_frame< n_frames_; i_frame++, out_i_frame++) {
         string frame(frames_[i_frame]);
 
-        bool is_to_cut = false; // check if frame is intended to cut
+        /*bool is_to_cut = false; // check if frame is intended to cut
         for (auto to_cut : frames_to_cut) {
         	if ( frame.find(to_cut) != string::npos ) is_to_cut = true;
         }
-        if (is_to_cut) continue;
+        if (is_to_cut) continue;*/
 
         unsigned int start_pos = frame.find("(")+1,
                      end_pos = frame.find("+");
