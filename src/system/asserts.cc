@@ -17,6 +17,7 @@
 
 
 #include "system/asserts.hh"
+#include "config.h"
 
 
 namespace feal {
