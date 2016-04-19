@@ -22,14 +22,14 @@
 #include <boost/exception/diagnostic_information.hpp>
 
 
-ExceptionBase::ExceptionBase() {}
+ExceptionBase::ExceptionBase() {
+	this->frames_to_cut_ = { "boost", "exception_detail", "throw_exception"};
+}
 
 
 
 ExceptionBase::ExceptionBase(const ExceptionBase &other)
-: stack_trace_(other.stack_trace_) {
-	this->frames_to_cut_ = { "boost", "exception_detail", "throw_exception"};
-}
+: stack_trace_(other.stack_trace_), frames_to_cut_(other.frames_to_cut_) {}
 
 
 
