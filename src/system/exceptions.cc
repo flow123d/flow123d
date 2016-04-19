@@ -27,7 +27,9 @@ ExceptionBase::ExceptionBase() {}
 
 
 ExceptionBase::ExceptionBase(const ExceptionBase &other)
-: stack_trace_(other.stack_trace_) {}
+: stack_trace_(other.stack_trace_) {
+	this->frames_to_cut_ = { "boost", "exception_detail", "throw_exception"};
+}
 
 
 
@@ -38,8 +40,7 @@ ExceptionBase::~ExceptionBase() throw () {}
 
 
 void ExceptionBase::print_stacktrace(std::ostream &out) const {
-	std::vector<std::string> frames_to_cut = { "boost", "exception_detail", "throw_exception"};
-	stack_trace_.print(out, frames_to_cut);
+	stack_trace_.print(out, frames_to_cut_);
 }
 
 

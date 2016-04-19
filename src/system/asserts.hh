@@ -108,6 +108,7 @@ public:
 	  thrown_(false)
 	{
 		exception_.expression_ = expression;
+		exception_.frames_to_cut_ = { "feal", "Assert"};
 	}
 
 	/// Copy constructor.

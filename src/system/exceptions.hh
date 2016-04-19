@@ -91,6 +91,8 @@ protected:
     virtual std::string what_type_msg() const;
     /// Stacktrace of exception.
     StackTrace stack_trace_;
+    /// Stacktrace frames, which will be cut, see @p StackTrace::print method.
+    std::vector<std::string> frames_to_cut_;
 };
 
 

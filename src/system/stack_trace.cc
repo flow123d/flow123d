@@ -78,13 +78,13 @@ void StackTrace::print(std::ostream &out, std::vector<std::string> frames_to_cut
     int i_frame;
     for(i_frame=0; i_frame < n_frames_; i_frame++) {
         string frame(frames_[i_frame]);
-        bool is_to_cut = false; // check if frame is intended to cut
+        bool is_to_cut = true; // check if frame is intended to cut
         for (auto to_cut : frames_to_cut) {
-            if ( frame.find(to_cut) != string::npos ) is_to_cut = true;
+            if ( frame.find(to_cut) == string::npos ) is_to_cut = false;
         }
         if (is_to_cut) break;
     }
-    i_frame=0; //i_frame++;
+    i_frame++;
 
     unsigned int out_i_frame=0;
     for(;i_frame< n_frames_; i_frame++, out_i_frame++) {
