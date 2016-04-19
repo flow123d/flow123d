@@ -34,6 +34,7 @@
 #define DARCY_FLOW_MH_HH
 
 #include <memory>
+#include <unordered_map>
 #include "input/input_type_forward.hh"
 
 #include <petscmat.h>
@@ -215,8 +216,10 @@ public:
        return mh_dh;
     }
 
-    void update_solution() override;
+    void initialize() override;
+    virtual void initialize_specific();
     void zero_time_step() override;
+    void update_solution() override;
 
     void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     void get_parallel_solution_vector(Vec &vector) override;
@@ -401,6 +404,10 @@ protected:
 	int	*side_row_4_id;		//< side id to matrix row
 	int *edge_4_loc;		//< array of indexes of local edges
 	int	*row_4_edge;		//< edge index to matrix row
+
+	/// Maps mesh index of the edge to the edge index in the mesh portion local to the processor.
+	/// Temporary solution until we have parallel mesh which should provide such information.
+	std::unordered_map<unsigned int, unsigned int> edge_new_local_4_mesh_idx_;
 
 	/// Idicator of dirichlet or neumann type of switch boundary conditions.
 	std::vector<char> bc_switch_dirichlet;

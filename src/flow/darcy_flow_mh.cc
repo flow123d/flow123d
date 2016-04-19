@@ -315,22 +315,26 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
 }
 
-
-
-void DarcyFlowMH_Steady::zero_time_step()
-{
-    data_.set_time(time_->step(), LimitSide::right);
-    // zero_time_term means steady case
-    bool zero_time_term_from_right
-        = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+void DarcyFlowMH_Steady::initialize() {
+    prepare_parallel();
 
     nonlinear_iteration_=0;
     Input::AbstractRecord rec = this->input_record_
             .val<Input::Record>("nonlinear_solver")
             .val<Input::AbstractRecord>("linear_solver");
 
-    prepare_parallel();
+    // auxiliary set_time call  since allocation assembly evaluates fields as well
+    data_.set_time(time_->step(), LimitSide::right);
     create_linear_system(rec);
+
+    // allocate time term vectors
+    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecDuplicate(steady_diagonal,& new_diagonal);
+    VecZeroEntries(new_diagonal);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
+    VecZeroEntries(schur0->get_solution());
+
     // initialization of balance object
     Input::Iterator<Input::Record> it = input_record_.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
@@ -341,20 +345,25 @@ void DarcyFlowMH_Steady::zero_time_step()
         balance_->units(UnitSI().m(3));
     }
 
-    // allocate time term vectors
-    VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecZeroEntries(new_diagonal);
-    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
-    VecZeroEntries(schur0->get_solution());
+    initialize_specific();
+}
 
+void DarcyFlowMH_Steady::initialize_specific()
+{}
+
+void DarcyFlowMH_Steady::zero_time_step()
+{
 
     /* TODO:
      * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
      * - Steady solution as an intitial condition may be forced by setting inti_time =-1, and set data for the steady solver in that time.
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
+
+    data_.set_time(time_->step(), LimitSide::right);
+    // zero_time_term means steady case
+    bool zero_time_term_from_right
+        = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
     if (zero_time_term_from_right) {
         // steady case
@@ -452,6 +461,8 @@ void DarcyFlowMH_Steady::solve_nonlinear()
     while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
         ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
+
+        // stagnation test
         if (convergence_history.size() >= 5 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 5] > 0.8) {
@@ -1656,10 +1667,21 @@ void DarcyFlowMH_Steady::prepare_parallel() {
             id_4_old[i_edg] = i_edg;
         }
     }
-
     Partitioning::id_maps(mesh_->n_edges(), id_4_old, init_edge_ds, loc_part, edge_ds, edge_4_loc, row_4_edge);
     delete[] loc_part;
     delete[] id_4_old;
+
+    // create map from mesh global edge id to new local edge id
+    unsigned int loc_edge_idx=0;
+    for (unsigned int i_el_loc = 0; i_el_loc < el_ds->lsize(); i_el_loc++) {
+        auto ele = mesh_->element(el_4_loc[i_el_loc]);
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            unsigned int mesh_edge_idx= ele->side(i)->edge_idx();
+            if ( edge_new_local_4_mesh_idx_.count(mesh_edge_idx) == 0 )
+                // new local edge
+                edge_new_local_4_mesh_idx_[mesh_edge_idx] = loc_edge_idx++;
+        }
+    }
 
     //optimal side part; loc. sides; id-> new side numbering
     Distribution init_side_ds(DistributionBlock(), mesh_->n_sides(), PETSC_COMM_WORLD);

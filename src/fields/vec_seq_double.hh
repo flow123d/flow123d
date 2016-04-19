@@ -41,7 +41,7 @@
  */
 class VectorSeqDouble {
 public:
-	typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
+    typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
 
 	/// Create shared pointer and PETSC vector with given size.
 	void resize(unsigned int size)
@@ -56,6 +56,8 @@ public:
 	{
 		return data_ptr_;
 	}
+
+
 
 	/// Getter for PETSC vector of output data (e.g. can be used by scatters).
 	Vec &get_data_petsc()
@@ -93,6 +95,88 @@ private:
 	/// stored vector of data in PETSC format
 	Vec data_petsc_;
 };
+
+/**
+ * Like VectorSeqDouble but for MPI PETSC vectors. Have acces to local part.
+ */
+class VectorMPI {
+public:
+    typedef typename std::vector<double> VectorData;
+    typedef typename std::shared_ptr< VectorData > VectorDataPtr;
+
+    VectorMPI() {
+    }
+
+    /// Create shared pointer and PETSC vector with given size. COLLECTIVE.
+    VectorMPI(unsigned int local_size) {
+        resize(local_size);
+    }
+
+    void resize(unsigned int local_size) {
+        if (data_ptr_) {
+            VecDestroy(&data_petsc_);
+            data_ptr_->resize(local_size);
+        } else {
+            data_ptr_ = std::make_shared< std::vector<double> >(local_size);
+        }
+        VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, local_size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_);
+        VecZeroEntries( data_petsc_ );
+    }
+
+    /// Return new vector with same parallel structure.
+    VectorMPI duplicate() {
+        return VectorMPI(data_ptr_->size());
+    }
+
+    /// Getter for shared pointer of output data.
+    VectorDataPtr data_ptr()
+    {
+        return data_ptr_;
+    }
+
+    /// Getter for PETSC vector of output data (e.g. can be used by scatters).
+    Vec &petsc_vec()
+    {
+        return data_petsc_;
+    }
+
+    VectorData &data()
+    {
+        return *data_ptr_;
+    }
+
+    /*
+    /// Create and return shared pointer to FieldElementwise object
+    template <int spacedim, class Value>
+    std::shared_ptr<FieldElementwise<spacedim, Value> > create_field(unsigned int n_comp)
+    {
+        std::shared_ptr<FieldElementwise<spacedim, Value> > field_ptr(
+                  new FieldElementwise<spacedim, Value>( data_ptr_, n_comp ));
+        return field_ptr;
+    }*/
+
+    /// Destructor.
+    ~VectorMPI()
+    {
+        if (data_ptr_) VecDestroy(&data_petsc_);
+    }
+
+    /**
+     * Access to the vector element on index @p idx.
+     */
+    inline double &operator[](unsigned int idx)
+    {
+        ASSERT(idx < data_ptr_->size(), "Index is out of range.\n");
+        return (*data_ptr_)[idx];
+    }
+
+private:
+    /// shared pointer to vector of data
+    VectorDataPtr data_ptr_;
+    /// stored vector of data in PETSC format
+    Vec data_petsc_;
+};
+
 
 
 #endif /* VECTOR_SEQ_DOUBLE_HH_ */

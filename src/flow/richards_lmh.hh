@@ -9,6 +9,7 @@
 #define SRC_FLOW_RICHARDS_LMH_HH_
 
 #include "flow/darcy_flow_mh.hh"
+#include "fields/vec_seq_double.hh"
 
 /**
  * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.
@@ -52,6 +53,7 @@ protected:
     /// Registrar of class to factory
     static const int registrar;
 
+    virtual void initialize_specific();
     void read_initial_condition() override;
     void modify_system() override;
     void assembly_source_term() override;
@@ -59,10 +61,19 @@ protected:
     virtual void postprocess();
 private:
 
+    /// PETSC scatter from the solution vector to the parallel edge vector with ghost values.
+    VecScatter solution_2_edge_scatter_;
+
+
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
+
+    VectorMPI phead_edge_;
+    VectorMPI capacity_edge_;
+    VectorMPI conductivity_edge_;
+    VectorMPI saturation_edge_;
     //Vec time_term;
 };
 

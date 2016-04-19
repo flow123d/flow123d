@@ -46,33 +46,45 @@ const int DarcyFlowLMH_Unsteady::registrar =
 
 DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record in_rec)
     : DarcyFlowMH_Steady(mesh_in, in_rec)
-{
-    /*
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-    data_.mark_input_times(this->mark_type());
-    data_.set_time(time_->step(), LimitSide::right);
+{}
 
-    output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
-    //balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
+void DarcyFlowLMH_Unsteady::initialize_specific() {
+    DBGMSG("initialize_specific");
 
-    //time_->fix_dt_until_mark();
-    create_linear_system();
-    if ( typeid(SchurComplement) != typeid(*(this->schur0)) ) {
-        DBGMSG( "%s != %s\n", typeid(LinSys_PETSC).name(),typeid(*(this->schur0)).name() );
-        THROW( ExcMessage() << EI_Message("Only SchurComplement linear solver currently allowed for DarcyFlowLMH.") );
+    // create edge vectors
+    unsigned int n_local_edges = edge_new_local_4_mesh_idx_.size();
+    phead_edge_.resize( n_local_edges);
+    capacity_edge_ = phead_edge_.duplicate();
+    conductivity_edge_ = phead_edge_.duplicate();
+    saturation_edge_ = phead_edge_.duplicate();
+
+    Distribution ds_split_edges(n_local_edges, PETSC_COMM_WORLD);
+    vector<int> local_edge_rows(n_local_edges);
+
+    IS is_loc;
+    for(auto  item : edge_new_local_4_mesh_idx_) {
+        local_edge_rows[item.second]=row_4_edge[item.first];
     }
+    ISCreateGeneral(PETSC_COMM_SELF, local_edge_rows.size(),
+            &(local_edge_rows[0]), PETSC_COPY_VALUES, &(is_loc));
 
-    VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
+    VecScatterCreate(schur0->get_solution(), is_loc,
+            phead_edge_.petsc_vec(), PETSC_NULL, &solution_2_edge_scatter_);
+    ISDestroy(&is_loc);
 
-    assembly_linear_system();
-    read_init_condition();
-    output_data();
-    */
+    // make a sequence vector
+    vector<unsigned int> loc_to_glob(n_local_edges);
+    for(auto item : edge_new_local_4_mesh_idx_)
+        loc_to_glob[item.second] = item.first + mesh_->n_elements()+mesh_->n_sides();
+
+    VectorMPI tmp_solution(rows_ds->lsize());
+    for(unsigned int i=0; i< rows_ds->lsize(); i++) tmp_solution[i] = i + rows_ds->begin();
+    VecScatterBegin(solution_2_edge_scatter_, tmp_solution.petsc_vec(), phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    for(unsigned int i=0; i< phead_edge_.data().size(); i++)
+        cout << "p: " << el_ds->myp() << "i: " << i
+             << "phead: " << phead_edge_[i] << "check: " << loc_to_glob[i] << endl;
+
 }
-
 
 
 
@@ -99,6 +111,8 @@ void DarcyFlowLMH_Unsteady::read_initial_condition()
 
     solution_changed_for_scatter=true;
 }
+
+
 
 
 
