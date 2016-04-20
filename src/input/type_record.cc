@@ -65,6 +65,8 @@ bool Default::check_validity(boost::shared_ptr<TypeBase> type) const
 {
 	if ( storage_ ) return true;
 	if ( !has_value_at_declaration() ) return false;
+    
+    type->finish();
 
 	try {
 		istringstream is("[\n" + value_ + "\n]");
