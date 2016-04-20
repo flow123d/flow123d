@@ -354,9 +354,13 @@ void ProfilerTest::test_memory_profiler() {
 //testing simple petsc memory difference when manipulating with large data
 TEST_F(ProfilerTest, test_petsc_memory) {test_petsc_memory();}
 void ProfilerTest::test_petsc_memory() {
+    int ierr, mpi_rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    EXPECT_EQ( ierr, 0 );
+    
     Profiler::initialize();
-    PetscLogDouble mem;
-    {
+    if (mpi_rank == 0) {
+        PetscLogDouble mem;
         START_TIMER("A");
             PetscInt size = 100*1000;
             PetscScalar value = 0.1;
@@ -384,6 +388,18 @@ void ProfilerTest::test_petsc_memory() {
             // since we are destroying vector, we expect to see negative memory difference
             EXPECT_LE(AN.petsc_memory_difference, 0);
         END_TIMER("C");
+    } else {
+      START_TIMER("A");
+      END_TIMER("A");
+      START_TIMER("B");
+      END_TIMER("B");
+      START_TIMER("C");
+      END_TIMER("C");
+      START_TIMER("C");
+      END_TIMER("C");
+      // extra time frame which is not present in processor 0
+      START_TIMER("D");
+      END_TIMER("D");
     }
     PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
@@ -445,12 +461,16 @@ void ProfilerTest::test_memory_propagation(){
 // testing petsc memory working properly
 TEST_F(ProfilerTest, test_petsc_memory_monitor) {test_petsc_memory_monitor();}
 void ProfilerTest::test_petsc_memory_monitor() {
-    PetscInt size = 10000;
+    int ierr, mpi_rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    EXPECT_EQ( ierr, 0 );
+
     Profiler::initialize();
-    {
+    PetscInt size = 10000;
+    if (mpi_rank == 0) {
         START_TIMER("A");
             Vec tmp_vector;
-            VecCreateSeq(MPI_COMM_WORLD, size, &tmp_vector);
+            VecCreateSeq(PETSC_COMM_SELF, size, &tmp_vector);
             VecDestroy(&tmp_vector);
             
             START_TIMER("C");
@@ -464,6 +484,9 @@ void ProfilerTest::test_petsc_memory_monitor() {
             VecDestroy(&tmp_vector1);
             VecDestroy(&tmp_vector2);
         END_TIMER("B");
+    } else {
+        START_TIMER("A");
+        END_TIMER("A");
     }
     PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
