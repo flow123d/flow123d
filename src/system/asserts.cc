@@ -22,14 +22,14 @@
 namespace feal {
 
 /*******************************************************************
- * implementation of ExcAssert
+ * implementation of Exc_assert
  */
 
-ExcAssert::ExcAssert()
+Exc_assert::Exc_assert()
 : what_type_msg_("Program Error: Violated assert! ") {}
 
 
-void ExcAssert::print_info(std::ostringstream &out) const
+void Exc_assert::print_info(std::ostringstream &out) const
 {
 	out << std::endl << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << std::endl;
 	out << "> Expression: \'" << expression_ << "\'" << std::endl;
@@ -42,7 +42,7 @@ void ExcAssert::print_info(std::ostringstream &out) const
 }
 
 
-std::string ExcAssert::what_type_msg() const {
+std::string Exc_assert::what_type_msg() const {
 	return what_type_msg_;
 }
 
