@@ -47,8 +47,8 @@ public:
 	void resize(unsigned int size)
 	{
 		data_ptr_ = std::make_shared< std::vector<double> >(size);
-		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, size, &((*data_ptr_)[0]), &data_petsc_);
-		VecZeroEntries( data_petsc_ );
+		chkerr(VecCreateSeqWithArray(PETSC_COMM_SELF, 1, size, &((*data_ptr_)[0]), &data_petsc_));
+		chkerr(VecZeroEntries( data_petsc_ ));
 	}
 
 	/// Getter for shared pointer of output data.
@@ -77,7 +77,7 @@ public:
 	/// Destructor.
 	~VectorSeqDouble()
 	{
-		if (data_ptr_) VecDestroy(&data_petsc_);
+		if (data_ptr_) chkerr(VecDestroy(&data_petsc_));
 	}
 
     /**
@@ -112,20 +112,25 @@ public:
         resize(local_size);
     }
 
+    /**
+     * Resize the vector to given local size. Operation is allowed only if this object is
+     * a unique vector object pointing to the actual data.
+     */
     void resize(unsigned int local_size) {
-        if (data_ptr_) {
-            VecDestroy(&data_petsc_);
-            data_ptr_->resize(local_size);
-        } else {
+        if (data_ptr_.use_count() ==0) {
             data_ptr_ = std::make_shared< std::vector<double> >(local_size);
+        } else {
+            ASSERT_EQUAL( data_ptr_.use_count(),  1 );
+            chkerr(VecDestroy(&data_petsc_));
+            data_ptr_->resize(local_size);
         }
-        VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, local_size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_);
-        VecZeroEntries( data_petsc_ );
+        chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, local_size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
+        chkerr(VecZeroEntries( data_petsc_ ));
     }
 
     /// Return new vector with same parallel structure.
-    VectorMPI duplicate() {
-        return VectorMPI(data_ptr_->size());
+    void duplicate(VectorMPI other) {
+        this->resize(other.data().size());
     }
 
     /// Getter for shared pointer of output data.
@@ -158,7 +163,7 @@ public:
     /// Destructor.
     ~VectorMPI()
     {
-        if (data_ptr_) VecDestroy(&data_petsc_);
+        if (data_ptr_.use_count() == 1) chkerr(VecDestroy(&data_petsc_));
     }
 
     /**

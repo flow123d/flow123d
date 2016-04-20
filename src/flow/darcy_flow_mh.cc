@@ -1515,7 +1515,7 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 	xfree(row_4_edge);
 
 	if (solution != NULL) {
-		VecDestroy(&sol_vec);
+	    chkerr(VecDestroy(&sol_vec));
 		xfree(solution);
 	}
 

@@ -98,12 +98,12 @@ Balance::~Balance()
 	if (rank_ == 0) output_.close();
 	for (unsigned int c=0; c<quantities_.size(); ++c)
 	{
-		MatDestroy(&(region_mass_matrix_[c]));
-		MatDestroy(&(be_flux_matrix_[c]));
-		MatDestroy(&(region_source_matrix_[c]));
-		MatDestroy(&(region_source_rhs_[c]));
-		VecDestroy(&(be_flux_vec_[c]));
-		VecDestroy(&(region_source_vec_[c]));
+		chkerr(MatDestroy(&(region_mass_matrix_[c])));
+		chkerr(MatDestroy(&(be_flux_matrix_[c])));
+		chkerr(MatDestroy(&(region_source_matrix_[c])));
+		chkerr(MatDestroy(&(region_source_rhs_[c])));
+		chkerr(VecDestroy(&(be_flux_vec_[c])));
+		chkerr(VecDestroy(&(region_source_vec_[c])));
 	}
 	delete[] region_mass_matrix_;
 	delete[] be_flux_matrix_;
@@ -112,9 +112,9 @@ Balance::~Balance()
 	delete[] region_source_rhs_;
 	delete[] region_source_vec_;
 
-	MatDestroy(&region_be_matrix_);
-	VecDestroy(&ones_);
-	VecDestroy(&ones_be_);
+	chkerr(MatDestroy(&region_be_matrix_));
+	chkerr(VecDestroy(&ones_));
+	chkerr(VecDestroy(&ones_be_));
 }
 
 

@@ -54,9 +54,9 @@ void DarcyFlowLMH_Unsteady::initialize_specific() {
     // create edge vectors
     unsigned int n_local_edges = edge_new_local_4_mesh_idx_.size();
     phead_edge_.resize( n_local_edges);
-    capacity_edge_ = phead_edge_.duplicate();
-    conductivity_edge_ = phead_edge_.duplicate();
-    saturation_edge_ = phead_edge_.duplicate();
+    capacity_edge_.duplicate(phead_edge_);
+    conductivity_edge_.duplicate(phead_edge_);
+    saturation_edge_.duplicate(phead_edge_);
 
     Distribution ds_split_edges(n_local_edges, PETSC_COMM_WORLD);
     vector<int> local_edge_rows(n_local_edges);
