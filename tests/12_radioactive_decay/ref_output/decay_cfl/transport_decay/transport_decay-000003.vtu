@@ -20,10 +20,10 @@
 </Cells>
 <CellData Scalars="A_conc,B_conc," Vectors="" Tensors="">
 <DataArray type="Float64" Name="A_conc" format="ascii">
-8.693791805081691e-01 8.693791805081691e-01 8.693791805081691e-01 
+9.090909090808790e-01 9.090909090808693e-01 9.090909090808812e-01 
 </DataArray>
 <DataArray type="Float64" Name="B_conc" format="ascii">
-1.306208194918311e-01 1.306208194918311e-01 1.306208194918311e-01 
+9.090909091711336e-02 9.090909091711240e-02 9.090909091711359e-02 
 </DataArray>
 </CellData>
 </Piece>

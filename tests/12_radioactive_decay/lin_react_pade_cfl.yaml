@@ -46,9 +46,9 @@ problem: !SequentialCoupling
     time:
       end_time: 10.0
     reaction_term: !FirstOrderReaction
-      ode_solver: !PadeApproximant
-        nominator_degree: 1
-        denominator_degree: 2
+      ode_solver:
+        pade_nominator_degree: 1
+        pade_denominator_degree: 2
       reactions:
         - reactants: A
           reaction_rate: 5
