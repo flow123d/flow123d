@@ -16,6 +16,16 @@
 /**
  * Fixture class for testing Profiler protected members
  */
+class ProfilerTest;
+
+#define __UNIT_TEST__
+#include "system/system.hh"
+#include "system/sys_profiler.hh"
+#include "petscvec.h"
+#include "petscsys.h"
+
+
+
 class ProfilerTest: public testing::Test {
     public:
         void test_str_hash();
@@ -31,11 +41,6 @@ class ProfilerTest: public testing::Test {
         void test_propagate_values();
 };
 
-#define __UNIT_TEST__
-#include "system/system.hh"
-#include "system/sys_profiler.hh"
-#include "petscvec.h"  
-#include "petscsys.h"  
 
 #ifdef FLOW123D_DEBUG_PROFILER
 
@@ -89,15 +94,15 @@ double wait( double time) {
 
 // wait given amount of time (in sec) and return it in sec
 double wait_sec( double time) {
-	TimePoint t1, t2;
+    TimePoint t1, t2;
 
-	t2 = t1 = TimePoint();
-	while ((t2-t1) < time)  {
-		t2 = TimePoint();
-//		cout << "difference: " << (t2-t1) << endl;
-	}
+    t2 = t1 = TimePoint();
+    while ((t2-t1) < time)  {
+        t2 = TimePoint();
+//      cout << "difference: " << (t2-t1) << endl;
+    }
 
-	return (t2-t1);
+    return (t2-t1);
 }
 
 // return smallest amount of time resoluted by clock() function
@@ -152,42 +157,42 @@ void ProfilerTest::test_code_point() {
 // testing profiler precision up to 2 decimal places relative to TIMER_RESOLUTION
 TEST_F(ProfilerTest, test_one_timer) {test_one_timer();}
  void ProfilerTest::test_one_timer() {
-	const double TIMER_RESOLUTION = Profiler::get_resolution();
-	const double DELTA = TIMER_RESOLUTION*100;
-	double total=0;
+    const double TIMER_RESOLUTION = Profiler::get_resolution();
+    const double DELTA = TIMER_RESOLUTION*100;
+    double total=0;
     Profiler::initialize();
 
     { // uninitialize can not be in the same block as the START_TIMER
 
 
     START_TIMER("test_tag");
-    	// test that number of calls of current timer is
-	    EXPECT_EQ( 1, ACC);
+        // test that number of calls of current timer is
+        EXPECT_EQ( 1, ACC);
 
-	    // wait a TIMER_RESOLUTION time
-		total += wait_sec(TIMER_RESOLUTION);
+        // wait a TIMER_RESOLUTION time
+        total += wait_sec(TIMER_RESOLUTION);
     END_TIMER("test_tag");
 
 
 
     START_TIMER("test_tag");
-    	// test that number of calls of current timer is
-		EXPECT_EQ( 2, ACC);
+        // test that number of calls of current timer is
+        EXPECT_EQ( 2, ACC);
 
-		// test whether difference between measured time and total time is within TIMER_RESOLUTION
-		EXPECT_LE( abs(ACT-total), DELTA);
-		cout << "difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
+        // test whether difference between measured time and total time is within TIMER_RESOLUTION
+        EXPECT_LE( abs(ACT-total), DELTA);
+        cout << "difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
 
-		// wait a TIMER_RESOLUTION time
-		total += wait_sec (TIMER_RESOLUTION);
-		total += wait_sec (TIMER_RESOLUTION);
+        // wait a TIMER_RESOLUTION time
+        total += wait_sec (TIMER_RESOLUTION);
+        total += wait_sec (TIMER_RESOLUTION);
 
     END_TIMER("test_tag");
 
     START_TIMER("test_tag");
-    	EXPECT_EQ( 3, ACC);
-		EXPECT_LE( abs(ACT-total), DELTA);
-		cout << "difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
+        EXPECT_EQ( 3, ACC);
+        EXPECT_LE( abs(ACT-total), DELTA);
+        cout << "difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
     }
 
     // test add_call
