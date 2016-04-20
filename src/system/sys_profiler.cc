@@ -347,7 +347,7 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 
 int  Profiler::start_timer(const CodePoint &cp) {
-    Timer &parent_timer = timers_[actual_node];
+    unsigned int parent_node = actual_node;
     //DBGMSG("Start timer: %s\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
@@ -360,7 +360,7 @@ int  Profiler::start_timer(const CodePoint &cp) {
     actual_node=child_idx;
     
     // pause current timer
-    parent_timer.pause();
+    timers_[parent_node].pause();
     
     timers_[actual_node].start();
     
