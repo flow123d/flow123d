@@ -64,12 +64,12 @@ private:
     /// PETSC scatter from the solution vector to the parallel edge vector with ghost values.
     VecScatter solution_2_edge_scatter_;
 
-
+    /*
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
-
+*/
     VectorMPI phead_edge_;
     VectorMPI capacity_edge_;
     VectorMPI conductivity_edge_;
