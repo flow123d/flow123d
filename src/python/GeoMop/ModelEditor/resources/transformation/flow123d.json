@@ -410,6 +410,51 @@
       }
     },
     {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation/input_fields_prefix/0",        
+        "key": "region",
+        "value": "ALL",
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true  
+            
+      }
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation/input_fields_prefix/0",        
+        "key": "storativity",
+        "value": 1.0,
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true  
+            
+      }
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path":"/problem/primary_equation/input_fields_prefix",
+        "addition_path":"/problem/primary_equation/input_fields",
+        "destination_path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },            
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/primary_equation/input_fields_prefix",
+        "deep": true
+      }
+    },
+    {
       "NAME": "Use time aware DarcyFlowMH_Steady instead of Unsteady.",
       "action": "rename-type",
       "parameters": {
