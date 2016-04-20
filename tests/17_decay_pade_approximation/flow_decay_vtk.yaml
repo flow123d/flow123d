@@ -57,8 +57,8 @@ problem: !SequentialCoupling
       end_time: 10.0
     reaction_term: !RadioactiveDecay
       ode_solver: !PadeApproximant
-        nominator_degree: 3
-        denominator_degree: 3
+        pade_nominator_degree: 3
+        pade_denominator_degree: 3
       decays:
         - radionuclide: A
           half_life: 1.3863

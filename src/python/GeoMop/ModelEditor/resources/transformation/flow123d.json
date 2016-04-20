@@ -16,6 +16,23 @@
       }  
     },
     {
+        "NAME": "Rename key denominator_degree in linear ODE solver",
+        "action": "move-key",
+        "parameters": {
+          "source_path": "/problem/secondary_equation/**/ode_solver/denominator_degree",
+          "destination_path": "/problem/secondary_equation/$1/ode_solver/pade_denominator_degree",
+          "parent-type-filter": "PadeApproximant"
+        }
+    },
+    {
+      "NAME": "Rename key nominator_degree in ODE solver",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/**/ode_solver/nominator_degree",
+        "destination_path": "/problem/secondary_equation/$1/ode_solver/pade_nominator_degree"
+      }
+    },
+    {
         "NAME": "Change sign in bc_flux in transport and heat (constant value)",
         "action": "scale-value",
         "parameters":{
