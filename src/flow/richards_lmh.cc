@@ -72,18 +72,21 @@ void DarcyFlowLMH_Unsteady::initialize_specific() {
             phead_edge_.petsc_vec(), PETSC_NULL, &solution_2_edge_scatter_);
     ISDestroy(&is_loc);
 
-    // make a sequence vector
+
+    // test the scatter
+    /*
     vector<unsigned int> loc_to_glob(n_local_edges);
     for(auto item : edge_new_local_4_mesh_idx_)
-        loc_to_glob[item.second] = item.first + mesh_->n_elements()+mesh_->n_sides();
+        loc_to_glob[item.second] = row_4_edge[item.first];
 
     VectorMPI tmp_solution(rows_ds->lsize());
     for(unsigned int i=0; i< rows_ds->lsize(); i++) tmp_solution[i] = i + rows_ds->begin();
     VecScatterBegin(solution_2_edge_scatter_, tmp_solution.petsc_vec(), phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(solution_2_edge_scatter_, tmp_solution.petsc_vec(), phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
     for(unsigned int i=0; i< phead_edge_.data().size(); i++)
         cout << "p: " << el_ds->myp() << "i: " << i
              << "phead: " << phead_edge_[i] << "check: " << loc_to_glob[i] << endl;
-
+    */
 }
 
 
