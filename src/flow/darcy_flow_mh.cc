@@ -328,12 +328,13 @@ void DarcyFlowMH_Steady::initialize() {
     create_linear_system(rec);
 
     // allocate time term vectors
+    VecZeroEntries(schur0->get_solution());
     VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
-    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
-    VecZeroEntries(schur0->get_solution());
+    VecDuplicate(steady_diagonal, &steady_rhs);
+
 
     // initialization of balance object
     Input::Iterator<Input::Record> it = input_record_.find<Input::Record>("balance");
