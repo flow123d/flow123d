@@ -837,17 +837,6 @@ void Profiler::uninitialize() {
 bool Profiler::global_monitor_memory = false;
 bool Profiler::petsc_monitor_memory = true;
 void Profiler::set_memory_monitoring(const bool global_monitor, const bool petsc_monitor) {
-    #ifdef FLOW123D_DEBUG
-        if (global_monitor && !global_monitor_memory)
-            cout << "Memory monitoring is ON" << endl;
-        if (!global_monitor && global_monitor_memory)
-            cout << "Memory monitoring is OFF" << endl;
-        
-        if (petsc_monitor && !petsc_monitor_memory)
-            cout << "Petsc monitoring is ON" << endl;
-        if (!petsc_monitor && petsc_monitor_memory)
-            cout << "Petsc monitoring is OFF" << endl;
-    #endif // FLOW123D_DEBUG
     global_monitor_memory = global_monitor;
     petsc_monitor_memory = petsc_monitor;
 }
