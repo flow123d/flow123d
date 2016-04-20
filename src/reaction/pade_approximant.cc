@@ -25,19 +25,24 @@
 #include "reaction/pade_approximant.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(padeApproximant)
+// FLOW123D_FORCE_LINK_IN_CHILD(padeApproximant)
 
 
 using namespace Input::Type;
     
     
 const Record & PadeApproximant::get_input_type() {
-    return Record("PadeApproximant", "Record with an information about pade approximant parameters.")
-    	.derive_from(LinearODESolverBase::get_input_type())
-		.declare_key("nominator_degree", Integer(1), Default("1"),
+    return Record("PadeApproximant", 
+                  "Record with an information about pade approximant parameters."
+                  "Note that stable method is guaranteed only if d-n=1 or d-n=2, "
+                  "where d=degree of denominator and n=degree of nominator. "
+                  "In those cases the Pade approximant corresponds to an implicit "
+                  "Runge-Kutta method which is both A- and L-stable.")
+//     	.derive_from(LinearODESolverBase::get_input_type())
+		.declare_key("pade_nominator_degree", Integer(1), Default("1"),
                 "Polynomial degree of the nominator of Pade approximant.")
-		.declare_key("denominator_degree", Integer(1), Default("2"),
-                "Polynomial degree of the nominator of Pade approximant")
+		.declare_key("pade_denominator_degree", Integer(1), Default("3"),
+                "Polynomial degree of the denominator of Pade approximant")
 		.close();
 }
 
@@ -48,8 +53,8 @@ const int PadeApproximant::registrar =
 PadeApproximant::PadeApproximant(Input::Record in_rec)
 {
     //DBGMSG("PadeApproximant constructor.\n");
-    nominator_degree_ = in_rec.val<int>("nominator_degree");
-    denominator_degree_ = in_rec.val<int>("denominator_degree");
+    nominator_degree_ = in_rec.val<int>("pade_nominator_degree");
+    denominator_degree_ = in_rec.val<int>("pade_denominator_degree");
     if (nominator_degree_+1 != denominator_degree_ &&
         nominator_degree_+2 != denominator_degree_)
       xprintf(Warn, "Pade approximation can be unstable since (denominator_degree-nominator_degree) is not 1 or 2.\n");

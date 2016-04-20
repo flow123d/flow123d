@@ -30,7 +30,7 @@
 #include "la/distribution.hh"
 #include "input/accessors.hh"
 
-FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
+// FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
 FLOW123D_FORCE_LINK_IN_PARENT(linearODEAnalytic);
 
 
@@ -40,15 +40,8 @@ using namespace Input::Type;
 FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
-	Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
-    if ( num_it )
-    {
-    	linear_ode_solver_ = (*num_it).factory< LinearODESolverBase, Input::Record >(*num_it);
-    }
-    else    //default linear ode solver
-    {
-        linear_ode_solver_ = Input::Factory< LinearODESolverBase, Input::Record >::instance()->create("LinearODEAnalytic", Input::Record());
-    }
+    Input::Iterator<Input::Record> num_it = input_record_.find<Input::Record>("ode_solver");
+    linear_ode_solver_ = std::make_shared<PadeApproximant>(*num_it);
 }
 
 FirstOrderReactionBase::~FirstOrderReactionBase()
@@ -90,6 +83,7 @@ void FirstOrderReactionBase::zero_time_step()
     assemble_ode_matrix();
     // make scaling that takes into account different molar masses of substances
     reaction_matrix_ = molar_matrix_ * reaction_matrix_ * molar_mat_inverse_;
+    
     linear_ode_solver_->set_system_matrix(reaction_matrix_);
 }
 
