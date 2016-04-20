@@ -544,12 +544,44 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
     node.put<double> ("percent", 	percent);
 
-    // write times children timers
+    // when collecting timer info, we need to make sure each processor contains 
+    // the same time-frames, for now we simply reduce info to current timer
+    // using operation MPI_MIN, so if some processor does not contain some 
+    // time-frame other processors will forget this time-frame (information lost)
+    int child_timers[ Timer::max_n_childs];
+    MPI_Allreduce(&timer.child_timers, &child_timers, Timer::max_n_childs, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+    #ifdef FLOW123D_DEBUG
+    int mpi_rank = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    for (int j = 0; j < Timer::max_n_childs; j++) {
+        if (child_timers[j] != timer.child_timers[j]) {
+            // this is severe error, timers indicies are different
+            if (child_timers[j] != timer_no_child) {
+                printf("Severe error: timers indicies are different\n");
+            } else {
+                printf("Inconsistent tree: ");
+                if (timer.child_timers[j] == timer_no_child) {
+                    // this processor does not have child timer
+                    printf("this processor[%d] does not have child-timer[%d]\n", mpi_rank, child_timers[j]);
+                    printf("Child timer belongs to parent: \n");
+                    cout << timer << endl;
+                } else {
+                    // other processors do not have child timer
+                    printf("this processor[%d] contains child-timer[%d] which others do not\n", mpi_rank, timer.child_timers[j]);
+                    printf("Child timer belongs to parent timer: \n");
+                    cout << timer << endl;
+                }
+            }
+        }
+    }
+    cout << endl;
+    #endif // FLOW123D_DEBUG
+
+    // write times children timers using secured child_timers array
     property_tree::ptree children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-		if (timer.child_timers[i] != timer_no_child) {
-			add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
+		if (child_timers[i] != timer_no_child) {
+			add_timer_info (reduce, &children, child_timers[i], cumul_time_sum);
 			has_children = true;
 		}
     }
