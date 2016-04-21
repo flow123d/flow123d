@@ -25,6 +25,7 @@
 #include <system/global_defs.h>
 
 #include "flow/darcy_flow_mh.hh"
+#include "flow/darcy_flow_assembly.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
 #include "io/output_time.hh"
@@ -242,10 +243,12 @@ void DarcyFlowMHOutput::make_element_vector() {
     // need to call this to create mh solution vector
     darcy_flow->get_mh_dofhandler();
 
+    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(
+            *mesh_, darcy_flow->data_, darcy_flow->mh_dh );
     unsigned int i=0;
     arma::vec3 flux_in_center;
     FOR_ELEMENTS(mesh_, ele) {
-        flux_in_center = darcy_flow->assembly_[ele->dim() -1]->make_element_vector(ele);
+        flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
 
         // place it in the sequential vector
         for(unsigned int j=0; j<3; j++) ele_flux[3*i+j]=flux_in_center[j];

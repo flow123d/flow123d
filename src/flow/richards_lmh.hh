@@ -53,12 +53,15 @@ protected:
     /// Registrar of class to factory
     static const int registrar;
 
-    virtual void initialize_specific();
-    void read_initial_condition() override;
-    void modify_system() override;
+    void initialize_specific() override;
+    //void local_assembly_specific(LocalAssemblyData &local_data) override;
     void assembly_source_term() override;
+
+    void read_initial_condition() override;
+    void assembly_linear_system() override;
+    void modify_system() override;
     void setup_time_term();
-    virtual void postprocess();
+    void postprocess() override;
 private:
 
     /// PETSC scatter from the solution vector to the parallel edge vector with ghost values.

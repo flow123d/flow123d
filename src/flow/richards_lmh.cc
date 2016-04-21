@@ -24,6 +24,8 @@
 
 #include "fields/vec_seq_double.hh"
 
+#include "flow/darcy_flow_assembly.hh"
+
 FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
 
 
@@ -46,7 +48,8 @@ const int DarcyFlowLMH_Unsteady::registrar =
 
 DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record in_rec)
     : DarcyFlowMH_Steady(mesh_in, in_rec)
-{}
+{
+}
 
 void DarcyFlowLMH_Unsteady::initialize_specific() {
     DBGMSG("initialize_specific");
@@ -89,7 +92,12 @@ void DarcyFlowLMH_Unsteady::initialize_specific() {
     */
 }
 
+/*
+void DarcyFlowLMH_Unsteady::local_assembly_specific(LocalAssemblyData &local_data)
+{
 
+}
+*/
 
 void DarcyFlowLMH_Unsteady::read_initial_condition()
 {
@@ -116,7 +124,63 @@ void DarcyFlowLMH_Unsteady::read_initial_condition()
 }
 
 
+void DarcyFlowLMH_Unsteady::assembly_linear_system()
+{
+    START_TIMER("RicharsLMH::assembly_linear_system");
 
+    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(
+            *mesh_, data_, mh_dh );
+    assembly_mh_matrix( multidim_assembler ); // fill matrix
+
+    bool is_steady = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    //DBGMSG("Assembly linear system\n");
+    if (data_.changed()) {
+        //DBGMSG("  Data changed\n");
+        // currently we have no optimization for cases when just time term data or RHS data are changed
+        START_TIMER("full assembly");
+        if (typeid(*schur0) != typeid(LinSys_BDDC)) {
+            schur0->start_add_assembly(); // finish allocation and create matrix
+        }
+        schur0->mat_zero_entries();
+        schur0->rhs_zero_entries();
+
+        schur0->finish_assembly();
+        schur0->set_matrix_changed();
+            //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
+            //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
+
+
+        if (! is_steady) {
+            START_TIMER("fix time term");
+            //DBGMSG("    setup time term\n");
+            // assembly time term and rhs
+            setup_time_term();
+            modify_system();
+        }
+        else if (balance_ != nullptr)
+        {
+            balance_->start_mass_assembly(water_balance_idx_);
+            balance_->finish_mass_assembly(water_balance_idx_);
+        }
+        END_TIMER("full assembly");
+    } else {
+        START_TIMER("modify system");
+        if (! is_steady) {
+            modify_system();
+        } else {
+            //xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
+        }
+        END_TIMER("modify system");
+    }
+
+
+}
+
+/*
+void DarcyFlowLMH_Unsteady::compute_per_element_nonlinearities() {
+
+}
+*/
 
 
 void DarcyFlowLMH_Unsteady::setup_time_term()

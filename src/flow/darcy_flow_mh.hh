@@ -60,6 +60,7 @@ class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
 class VectorSeqDouble;
+class AssemblyBase;
 
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
 template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
@@ -126,6 +127,8 @@ public:
     DECLARE_EXCEPTION(ExcSolverDiverge,
             << "Diverged nonlinear solver. Reason: " << EI_Reason::val
              );
+
+    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembler;
 
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
@@ -232,76 +235,8 @@ public:
 
 
 protected:
-    //class AssemblyBase;
-    //template<unsigned int dim> class Assembly;
+
     
-    struct AssemblyData
-    {
-        Mesh *mesh;
-        EqData* data;
-        MH_DofHandler *mh_dh;
-    };
-    
-    class AssemblyBase
-    {
-    public:
-        // assembly just A block of local matrix
-        virtual void assembly_local_matrix(arma::mat &local_matrix, 
-                                           ElementFullIter ele) = 0;
-
-        // assembly compatible neighbourings
-        virtual void assembly_local_vb(double *local_vb, 
-                                       ElementFullIter ele,
-                                       Neighbour *ngh) = 0;
-
-        // compute velocity value in the barycenter
-        // TOTO: implement and use general interpolations between discrete spaces
-        virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
-    };
-    
-    template<unsigned int dim>
-    class Assembly : public AssemblyBase
-    {
-    public:
-        Assembly<dim>(AssemblyData ad);
-        ~Assembly<dim>();
-        void assembly_local_matrix(arma::mat &local_matrix, 
-                                   ElementFullIter ele) override;
-        void assembly_local_vb(double *local_vb, 
-                               ElementFullIter ele,
-                               Neighbour *ngh
-                              ) override;
-        arma::vec3 make_element_vector(ElementFullIter ele) override;
-
-        // assembly volume integrals
-        FE_RT0<dim,3> fe_rt_;
-        MappingP1<dim,3> map_;
-        QGauss<dim> quad_;
-        FEValues<dim,3> fe_values_;
-        
-        // assembly face integrals (BC)
-        QGauss<dim-1> side_quad_;
-        FE_P_disc<0,dim,3> fe_p_disc_;
-        FESideValues<dim,3> fe_side_values_;
-
-        // Interpolation of velocity into barycenters
-        QGauss<dim> velocity_interpolation_quad_;
-        FEValues<dim,3> velocity_interpolation_fv_;
-
-        // data shared by assemblers of different dimension
-        AssemblyData ad_;
-
-    };
-    
-    /*
-    void setup_velocity_vector() {
-        double *velocity_array;
-        unsigned int size;
-
-        get_solution_vector(velocity_array, size);
-        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
-
-    }*/
 
 
     /// Solve method common to zero_time_step and update solution.
@@ -331,16 +266,25 @@ protected:
     virtual void read_initial_condition();
 
     /**
+     * Part of per element assembly that is specific for MH and LMH respectively.
+     *
+     * This implemnets MH case:
+     * - compute conductivity scaling
+     * - assembly source term
+     * - no time term, managed by diagonal extraction etc.
+     */
+    //virtual void local_assembly_specific(AssemblyData &local_data);
+
+    /**
      * Abstract assembly method used for both assembly and preallocation.
      * Assembly only steady part of the equation.
      * TODO:
      * - use general preallocation methods in DofHandler
-     * - include alos time term
+     * - include time term
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
-     *
      */
-    void assembly_steady_mh_matrix();
+    void assembly_mh_matrix( MultidimAssembler ma);
     
 
     /// Source term is implemented differently in LMH version.
@@ -349,7 +293,7 @@ protected:
     /**
      * Assembly or update whole linear system.
      */
-    void assembly_linear_system();
+    virtual void assembly_linear_system();
 
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     /**
@@ -389,8 +333,7 @@ protected:
 
 	LinSys *schur0;  		//< whole MH Linear System
 
-	//AssemblyData *assembly_data_;
-	std::vector<AssemblyBase *> assembly_;
+
 	
 	// parallel
 	Distribution *edge_ds;          //< optimal distribution of edges
