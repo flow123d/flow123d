@@ -43,8 +43,8 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     // index of the first set row
     unsigned int first_row_index = tt_size;
 
-//     for(unsigned int i = 0; i < i_points_.size();i++)
-//         i_points_[i].print();    
+//     for(IntersectionPointAux<2,3> &ip : p.points())
+//         cout << ip;
     
     // go through all intersection points (vertices of polygon)
     for(unsigned int i = 0; i < p.points().size();i++){
@@ -88,14 +88,16 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                  * 
                  * -> this can be expressed as sum(S,P,E)%2
                  * 
-                 * if RES == 1 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
-                 * if RES == 0 -> intersection direction is E-S
+                 * if RES == 1 -> intersection direction is E-S
+                 * if RES == 0 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
                  */
-                unsigned int j = (RefElement<3>::normal_orientation(ip.idx_B()) + 
+//                 DBGMSG("S=%d P=%d, E=%d.\n",RefElement<3>::normal_orientation(ip.idx_B()), 
+//                        RefElement<2>::normal_orientation(ip.idx_A()), ip.orientation());
+                unsigned int j = (RefElement<3>::normal_orientation(ip.idx_B()) +
                                   RefElement<2>::normal_orientation(ip.idx_A()) +
                                   ip.orientation()
                                  ) % 2;
-                if(j == 1){
+                if(j == 0){
                     // direction: Side -> IP -> Edge
                     row = ip.idx_B();
                     object_index = 4 + ip.idx_A();
@@ -118,8 +120,9 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                  *  - this is determined by IP orientation
                  */
                 unsigned int tetrahedron_line = ip.idx_B();
-                row = RefElement<3>::interact<2,1>(tetrahedron_line)[1-ip.orientation()];
-                object_index = RefElement<3>::interact<2,1>(tetrahedron_line)[ip.orientation()];
+                unsigned int first_side = ip.orientation();
+                row = RefElement<3>::interact<2,1>(tetrahedron_line)[1-first_side];
+                object_index = RefElement<3>::interact<2,1>(tetrahedron_line)[first_side];
 
                 DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",row, object_index, i);
             } break;
@@ -163,7 +166,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     // jump from row to row until we get back to the first row 
     // (i.e. go through polygonal vertices until we get back to starting point)
     while(next_row != first_row_index){
-        DBGMSG("next_row = %d\n",next_row);
+//         DBGMSG("next_row = %d\n",next_row);
         unsigned int i_ip_orig = (unsigned int)trace_table_x[next_row][1];
         ASSERT_LESS(i_ip_orig, p.points().size());
         new_points.push_back(p.points()[i_ip_orig]);
