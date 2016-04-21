@@ -347,7 +347,7 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 
 int  Profiler::start_timer(const CodePoint &cp) {
-    Timer &parent_timer = timers_[actual_node];
+    unsigned int parent_node = actual_node;
     //DBGMSG("Start timer: %s\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
@@ -360,7 +360,7 @@ int  Profiler::start_timer(const CodePoint &cp) {
     actual_node=child_idx;
     
     // pause current timer
-    parent_timer.pause();
+    timers_[parent_node].pause();
     
     timers_[actual_node].start();
     
@@ -544,12 +544,41 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
     node.put<double> ("percent", 	percent);
 
-    // write times children timers
+    // when collecting timer info, we need to make sure each processor contains 
+    // the same time-frames, for now we simply reduce info to current timer
+    // using operation MPI_MIN, so if some processor does not contain some 
+    // time-frame other processors will forget this time-frame (information lost)
+    int child_timers[ Timer::max_n_childs];
+    MPI_Allreduce(&timer.child_timers, &child_timers, Timer::max_n_childs, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+    #ifdef FLOW123D_DEBUG
+    int mpi_rank = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    for (int j = 0; j < Timer::max_n_childs; j++) {
+        if (child_timers[j] != timer.child_timers[j]) {
+            // this is severe error, timers indicies are different
+            ASSERT(child_timers[j] == timer_no_child, "Severe error: timers indicies are different");
+            
+            // explore the difference in more depth
+            if (timer.child_timers[j] == timer_no_child) {
+                // this processor does not have child timer
+                xprintf(Warn,
+                    "Inconsistent tree in '%s': this processor[%d] does not have child-timer[%d]\n",
+                    timer.tag().c_str(), mpi_rank, child_timers[j]);
+            } else {
+                // other processors do not have child timer
+                xprintf(Warn,
+                    "Inconsistent tree in '%s': this processor[%d] contains child-timer[%d] which others do not\n",
+                    timer.tag().c_str(), mpi_rank, timer.child_timers[j]);
+            }
+        }
+    }
+    #endif // FLOW123D_DEBUG
+
+    // write times children timers using secured child_timers array
     property_tree::ptree children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-		if (timer.child_timers[i] != timer_no_child) {
-			add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
+		if (child_timers[i] != timer_no_child) {
+			add_timer_info (reduce, &children, child_timers[i], cumul_time_sum);
 			has_children = true;
 		}
     }
@@ -837,17 +866,6 @@ void Profiler::uninitialize() {
 bool Profiler::global_monitor_memory = false;
 bool Profiler::petsc_monitor_memory = true;
 void Profiler::set_memory_monitoring(const bool global_monitor, const bool petsc_monitor) {
-    #ifdef FLOW123D_DEBUG
-        if (global_monitor && !global_monitor_memory)
-            cout << "Memory monitoring is ON" << endl;
-        if (!global_monitor && global_monitor_memory)
-            cout << "Memory monitoring is OFF" << endl;
-        
-        if (petsc_monitor && !petsc_monitor_memory)
-            cout << "Petsc monitoring is ON" << endl;
-        if (!petsc_monitor && petsc_monitor_memory)
-            cout << "Petsc monitoring is OFF" << endl;
-    #endif // FLOW123D_DEBUG
     global_monitor_memory = global_monitor;
     petsc_monitor_memory = petsc_monitor;
 }
