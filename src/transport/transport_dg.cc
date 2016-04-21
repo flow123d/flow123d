@@ -393,9 +393,9 @@ TransportDG<Model>::~TransportDG()
 template<class Model>
 void TransportDG<Model>::output_vector_gather()
 {
-    IS is;
+    //IS is;
     VecScatter output_scatter;
-    int idx[] = { 0 };
+    //int idx[] = { 0 };
 	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 	{
 		// gather solution to output_vec[sbi]
