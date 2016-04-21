@@ -357,8 +357,12 @@ void Application::after_run() {
 
 Application::~Application() {
     if (use_profiler) {
-        // log profiler data to this stream
-        Profiler::instance()->output (PETSC_COMM_WORLD);
+        if (petsc_initialized) {
+            // log profiler data to this stream
+            Profiler::instance()->output (PETSC_COMM_WORLD);
+        } else {
+            Profiler::instance()->output();
+        }
 
         // call python script which transforms json file at given location
         // Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");

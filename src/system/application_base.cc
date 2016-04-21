@@ -44,7 +44,6 @@ bool ApplicationBase::petsc_initialized = false;
 void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     int ierr;
 
-    petsc_initialized = true;
     sys_info.comm=comm;
 
 
@@ -143,6 +142,7 @@ void ApplicationBase::init(int argc, char ** argv) {
     Profiler::initialize();
 
 	this->petsc_initialize(argc, argv);
+	petsc_initialized = true;
 
     this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
