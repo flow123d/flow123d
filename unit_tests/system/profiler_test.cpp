@@ -39,6 +39,7 @@ class ProfilerTest: public testing::Test {
         void test_petsc_memory_monitor();
         void test_multiple_instances();
         void test_propagate_values();
+        void test_inconsistent_tree();
 };
 
 
@@ -358,8 +359,7 @@ void ProfilerTest::test_petsc_memory() {
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
     
-    Profiler::initialize();
-    if (mpi_rank == 0) {
+    Profiler::initialize(); {
         PetscLogDouble mem;
         START_TIMER("A");
             PetscInt size = 100*1000;
@@ -388,18 +388,6 @@ void ProfilerTest::test_petsc_memory() {
             // since we are destroying vector, we expect to see negative memory difference
             EXPECT_LE(AN.petsc_memory_difference, 0);
         END_TIMER("C");
-    } else {
-      START_TIMER("A");
-      END_TIMER("A");
-      START_TIMER("B");
-      END_TIMER("B");
-      START_TIMER("C");
-      END_TIMER("C");
-      START_TIMER("C");
-      END_TIMER("C");
-      // extra time frame which is not present in processor 0
-      START_TIMER("D");
-      END_TIMER("D");
     }
     PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
@@ -465,9 +453,8 @@ void ProfilerTest::test_petsc_memory_monitor() {
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
 
-    Profiler::initialize();
-    PetscInt size = 10000;
-    if (mpi_rank == 0) {
+    Profiler::initialize(); {
+        PetscInt size = 10000;
         START_TIMER("A");
             Vec tmp_vector;
             VecCreateSeq(PETSC_COMM_SELF, size, &tmp_vector);
@@ -484,9 +471,6 @@ void ProfilerTest::test_petsc_memory_monitor() {
             VecDestroy(&tmp_vector1);
             VecDestroy(&tmp_vector2);
         END_TIMER("B");
-    } else {
-        START_TIMER("A");
-        END_TIMER("A");
     }
     PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
@@ -527,6 +511,51 @@ void ProfilerTest::test_propagate_values() {
             END_TIMER("A");
     }
     PI->output(MPI_COMM_WORLD, cout);
+    Profiler::uninitialize();
+}
+
+TEST_F(ProfilerTest, test_inconsistent_tree) {test_inconsistent_tree();}
+void ProfilerTest::test_inconsistent_tree() {
+    // in order to fully test this case MPI consists of 2 processors at minimum
+    int mpi_rank;
+    std::stringstream sout;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    
+    Profiler::initialize();
+    if(mpi_rank == 0) {
+        START_TIMER("A");
+            START_TIMER("AA");
+            END_TIMER("AA");
+            
+            START_TIMER("BB");
+            END_TIMER("BB");
+        END_TIMER("A");
+    } else {
+        START_TIMER("A");
+            START_TIMER("AA");
+            END_TIMER("AA");
+        END_TIMER("A");
+        
+        START_TIMER("B");
+        END_TIMER("B");
+        
+        START_TIMER("C");
+        END_TIMER("C");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    PI->output(MPI_COMM_WORLD, sout);
+    
+    if (mpi_rank == 0) {
+        // tags BB B and C should not be part of report since they do not appear
+        // in all processors
+        EXPECT_EQ( sout.str().find("BB"), string::npos );
+        EXPECT_EQ( sout.str().find("B"),  string::npos );
+        EXPECT_EQ( sout.str().find("C"),  string::npos );
+        // tags A and AA are in all processors and must be in report
+        EXPECT_NE( sout.str().find("A"),  string::npos );
+        EXPECT_NE( sout.str().find("AA"), string::npos );
+    }
+    
     Profiler::uninitialize();
 }
 
