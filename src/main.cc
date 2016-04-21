@@ -356,7 +356,7 @@ void Application::after_run() {
 
 
 Application::~Application() {
-    if (use_profiler && Profiler::is_initialized()) {
+    if (use_profiler) {
         // log profiler data to this stream
         Profiler::instance()->output (PETSC_COMM_WORLD);
 

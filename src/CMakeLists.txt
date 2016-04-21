@@ -103,6 +103,7 @@ add_library(input_lib
     input/type_abstract.cc
     input/type_selection.cc
     input/type_generic.cc
+    input/type_tuple.cc
     input/storage.cc
     input/reader_to_storage.cc
     input/path_base.cc
@@ -224,6 +225,7 @@ add_library(coupling_lib
     fields/field.cc
     fields/bc_field.cc
     fields/multi_field.cc
+    fields/bc_multi_field.cc
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc

@@ -31,6 +31,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/bc_field.hh"
+#include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
@@ -78,7 +79,7 @@ public:
 		 * Boundary conditions (Dirichlet) for concentrations.
 		 * They are applied only on water inflow part of the boundary.
 		 */
-		BCField<3, FieldValue<3>::Vector> bc_conc;
+		BCMultiField<3, FieldValue<3>::Scalar> bc_conc;
 
 		/// Initial concentrations.
 		MultiField<3, FieldValue<3>::Scalar> init_conc;
@@ -114,9 +115,12 @@ public:
 	 */
     void zero_time_step() override;
     /**
-     * 
-     */
-    bool assess_time_constraint(double &time_constraint) override;
+      * Evaluates CFL condition.
+      * Assembles the transport matrix and vector (including sources, bc terms).
+      * @param time_constraint is the value CFL constraint (return parameter)
+      * @return true if CFL is changed since previous step, false otherwise
+      */
+    bool evaluate_time_constraint(double &time_constraint) override;
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
@@ -128,7 +132,7 @@ public:
 
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
-     * In particular the velocity field dosn't change over this interval.
+     * In particular the velocity field doesn't change over this interval.
      *
      * Dependencies:
      *
@@ -214,16 +218,16 @@ private:
      * Updates CFL time step constrain.
      */
     void create_transport_matrix_mpi();
+    void create_mass_matrix();
 
     void make_transport_partitioning(); //
 	void set_initial_condition();
 	void read_concentration_sources();
 	void set_boundary_conditions();
   
-  //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-// 	void compute_concentration_sources(unsigned int sbi);
-
-    //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+    /** @brief Assembles concentration sources for each substance.
+     * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+     */
     void compute_concentration_sources();
     
 	/**
@@ -251,11 +255,14 @@ private:
 
     //@{
     /**
-     * Flag indicates the state of object (transport matrix or source term).
+     * Flag indicates the state of object (transport matrix or source or boundary term).
      * If false, the object is freshly assembled and not rescaled.
      * If true, the object is scaled (not necessarily with the current time step).
      */
-	bool is_convection_matrix_scaled, is_src_term_scaled;
+	bool is_convection_matrix_scaled, is_src_term_scaled, is_bc_term_scaled;
+	
+	/// Flag indicates that porosity or cross_section changed during last time.
+	bool is_mass_diag_changed;
     //@}
     
     double **sources_corr;
@@ -272,6 +279,8 @@ private:
 
     VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
+    Vec mass_diag;  // diagonal entries in pass matrix (cross_section * porosity)
+    Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)
     Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
     double **tm_diag;
 

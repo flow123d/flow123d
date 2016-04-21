@@ -364,7 +364,7 @@ public:
     /**
      * Get name of record_type_
      */
-    string record_type_name();
+    virtual string input_type_name();
 
 
 
@@ -375,14 +375,60 @@ protected:
     void set_address(const Address &address);
     friend class ReaderToStorage;
 
-    /// Corresponding Type::Record object.
-    Input::Type::Record record_type_ ;
-    friend class AbstractRecord;
+    /// Return iterator to Type::Record key of given name
+    virtual Type::Record::KeyIter get_type_key_iterator(const string &key) const;
 
     /// Contains address and relationships with record ancestor
     Address address_;
+
+private:
+    /// Corresponding Type::Record object.
+    Input::Type::Record record_type_ ;
+    friend class AbstractRecord;
 };
 
+
+
+/**
+ * @brief Accessor to the data with type \p Type::Tuple.
+ *
+ * @ingroup input_accessors
+ */
+class Tuple : public Record {
+public:
+	typedef ::Input::Type::Tuple InputType;
+    /**
+     * Default constructor.
+     *
+     * Constructor uses empty Address which causes error in program, Address has to be filled.
+     */
+	Tuple();
+
+    /**
+     * Copy constructor.
+     */
+	Tuple(const Tuple &tpl);
+
+    /**
+     * Constructs the accessor providing pointer \p store to storage node with list of data of the tuple and
+     * type specification of the tuple given by parameter \p type.
+     */
+	Tuple(const Address &address, const Type::Tuple type);
+
+    /**
+     * Get name of tuple_type_
+     */
+    string input_type_name() override;
+
+protected:
+    /// Return iterator to Type::Tuple key of given name
+    Type::Record::KeyIter get_type_key_iterator(const string &key) const override;
+
+private:
+    /// Corresponding Type::Tuple object.
+    Input::Type::Tuple tuple_type_ ;
+
+};
 
 
 /**
@@ -473,7 +519,7 @@ public:
 
 private:
     /// Corresponding Type::Abstract object.
-    Input::Type::Abstract record_type_ ;
+    Input::Type::Abstract abstract_type_;
 
     /// Contains address and relationships with abstract record ancestor
     Address address_;
@@ -850,6 +896,15 @@ struct TypeDispatch<Record> {
     typedef Record ReadType;
     typedef Record TmpType;
     static inline ReadType value(const Address &a, const InputType& t) { return Record(a,t); }
+};
+
+
+template<>
+struct TypeDispatch<Tuple> {
+    typedef Input::Type::Tuple InputType;
+    typedef Tuple ReadType;
+    typedef Tuple TmpType;
+    static inline ReadType value(const Address &a, const InputType& t) { return Tuple(a,t); }
 };
 
 

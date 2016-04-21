@@ -31,6 +31,7 @@
 #include "system/system.hh"
 #include "system/xio.h"
 #include "system/file_path.hh"
+#include "system/sys_profiler.hh"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -258,27 +259,6 @@ void operator delete[]( void *p,  const my_new_t &) throw ()
 }
 */
 
-void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-    return xmalloc(size);
-}
-
-void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
-    return xmalloc(size);
-}
-
-void *operator new[] (std::size_t size, const std::nothrow_t&  ) throw() {
-	return xmalloc(size);
-}
-
-void operator delete( void *p) throw()
-{
-    xfree(p);
-}
-
-void operator delete[]( void *p) throw()
-{
-    xfree(p);
-}
 
 
 

@@ -60,8 +60,12 @@ TypeBase::TypeHash Abstract::content_hash() const
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, child_data_->description_);
+	for (auto &param : parameter_map_) {
+		boost::hash_combine(seed, param.first );
+		boost::hash_combine(seed, param.second );
+	}
+	boost::hash_combine(seed, this->generic_type_hash_);
     //boost::hash_combine(seed, child_data_->generic_content_hash_);
-    attribute_content_hash(seed);
     //for( Record &key : child_data_->list_of_childs) {
     //    boost::hash_combine(seed, key.content_hash() );
     //}
@@ -203,9 +207,9 @@ TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPa
 
 	// Set parameters and generic type as attributes
 	abstract.set_parameters_attribute(parameter_map);
-	std::stringstream type_stream;
-	type_stream << "\"" << this->content_hash() << "\"";
+	abstract.parameter_map_ = parameter_map;
 	abstract.add_attribute("generic_type", this->hash_str() );
+	abstract.generic_type_hash_ = this->content_hash();
 
 	return std::make_pair( boost::make_shared<Abstract>(abstract.close()), parameter_map );
 }
@@ -219,6 +223,8 @@ Abstract Abstract::deep_copy() const {
 	abstract.child_data_->list_of_childs.clear();
 	abstract.child_data_->selection_of_childs = boost::make_shared<Selection>(this->type_name() + "_TYPE_selection");
 	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	abstract.generic_type_hash_ = this->generic_type_hash_;
+	abstract.parameter_map_ = this->parameter_map_;
 	return abstract;
 }
 
@@ -299,7 +305,6 @@ TypeBase::TypeHash AdHocAbstract::content_hash() const {
     boost::hash_combine(seed, child_data_->description_);
     boost::hash_combine(seed, ancestor_.type_name());
 
-    attribute_content_hash(seed);
     return seed;
 }
 

@@ -362,14 +362,14 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
 #define STEPS (10*1000*1000)
 
 // RegionDB add_item(id, dim) overhead.
-TEST(RegionDB, speed_add_region_id) {
+TEST(RegionDB, speed_get_region_id) {
         RegionDB region_db;
         init_db(region_db,50,50);
         int ii=0;
 
         for(int step=0;step < STEPS; step++) {
-            ii+= region_db.add_region(3, region_db.create_label_from_id(3), 1).idx();
-            ii+= region_db.add_region(9, region_db.create_label_from_id(9), 1).idx();
+            ii+= region_db.get_region(3, 1).idx();
+            ii+= region_db.get_region(9, 1).idx();
         }
    cout << ii << endl;
 }

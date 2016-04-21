@@ -27,10 +27,11 @@
 #include "sys_profiler.hh"
 #include "system/system.hh"
 #include "system/python_loader.hh"
-#include <boost/format.hpp>
 #include <iostream>
+#include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/unordered_map.hpp>
 
 #include "system/file_path.hh"
 #include "system/python_loader.hh"
@@ -54,6 +55,12 @@ double MPI_Functions::sum(double* val, MPI_Comm comm) {
         MPI_Reduce(val, &total, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
         return total;
     }
+    
+long MPI_Functions::sum(long* val, MPI_Comm comm) {
+        long total = 0;
+        MPI_Reduce(val, &total, 1, MPI_LONG, MPI_SUM, 0, comm);
+        return total;
+    }
 
 int MPI_Functions::min(int* val, MPI_Comm comm) {
         int min = 0;
@@ -66,6 +73,12 @@ double MPI_Functions::min(double* val, MPI_Comm comm) {
         MPI_Reduce(val, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
         return min;
     }
+    
+long MPI_Functions::min(long* val, MPI_Comm comm) {
+        long min = 0;
+        MPI_Reduce(val, &min, 1, MPI_LONG, MPI_MIN, 0, comm);
+        return min;
+    }
 
 int MPI_Functions::max(int* val, MPI_Comm comm) {
         int max = 0;
@@ -76,6 +89,12 @@ int MPI_Functions::max(int* val, MPI_Comm comm) {
 double MPI_Functions::max(double* val, MPI_Comm comm) {
         double max = 0;
         MPI_Reduce(val, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+        return max;
+    }
+    
+long MPI_Functions::max(long* val, MPI_Comm comm) {
+        long max = 0;
+        MPI_Reduce(val, &max, 1, MPI_LONG, MPI_MAX, 0, comm);
         return max;
     }
 
@@ -97,20 +116,107 @@ Timer::Timer(const CodePoint &cp, int parent)
   hash_idx_(cp.hash_idx_),
   parent_timer(parent),
   total_allocated_(0),
-  total_deallocated_(0)
+  total_deallocated_(0),
+  max_allocated_(0),
+  current_allocated_(0),
+  alloc_called(0),
+  dealloc_called(0)
+#ifdef FLOW123D_HAVE_PETSC
+, petsc_start_memory(0),
+  petsc_end_memory (0),
+  petsc_memory_difference(0),
+  petsc_peak_memory(0),
+  petsc_local_peak_memory(0)
+#endif // FLOW123D_HAVE_PETSC
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=timer_no_child;
 }
 
+
+/**
+ * Debug information of the timer
+ */
+ostream & operator <<(ostream& os, const Timer& timer) {
+    os << "  Timer: " << timer.tag() << endl;
+    os << "          malloc: " << timer.total_allocated_ << endl;
+    os << "          dalloc: " << timer.total_deallocated_ << endl;
+    #ifdef FLOW123D_HAVE_PETSC
+    os << "          start: " << timer.petsc_start_memory << endl;
+    os << "          stop : " << timer.petsc_end_memory << endl;
+    os << "          diff : " << timer.petsc_memory_difference << " (" << timer.petsc_end_memory - timer.petsc_start_memory << ")" << endl;
+    os << "          peak : " << timer.petsc_peak_memory << " (" << timer.petsc_local_peak_memory << ")" << endl;
+    #endif // FLOW123D_HAVE_PETSC
+    os << endl;
+    return os;
+}
 
 
 double Timer::cumulative_time() const {
     return cumul_time;
 }
 
+void Profiler::accept_from_child(Timer &parent, Timer &child) {
+    int child_timer = 0;
+    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
+        child_timer = child.child_timers[i];
+        if (child_timer != timer_no_child) {
+            // propagate metrics from child to parent
+            accept_from_child(child, timers_[child_timer]);
+        }
+    }
+    // compute totals by adding values from child
+    parent.total_allocated_ += child.total_allocated_;
+    parent.total_deallocated_ += child.total_deallocated_;
+    parent.alloc_called += child.alloc_called;
+    parent.dealloc_called += child.dealloc_called;
+    
+#ifdef FLOW123D_HAVE_PETSC
+    if (petsc_monitor_memory) {
+        // add differences from child
+        parent.petsc_memory_difference += child.petsc_memory_difference;
+        parent.current_allocated_ += child.current_allocated_;
+        
+        // when computing maximum, we take greater value from parent and child
+        // PetscMemoryGetCurrentUsage always return absolute (not relative) value
+        parent.petsc_peak_memory = max(parent.petsc_peak_memory, child.petsc_peak_memory);
+    }
+#endif // FLOW123D_HAVE_PETSC
+    
+    parent.max_allocated_ = max(parent.max_allocated_, child.max_allocated_);
+}
 
+
+void Timer::pause() {
+#ifdef FLOW123D_HAVE_PETSC
+    if (Profiler::get_petsc_memory_monitoring()) {
+        // get the maximum resident set size (memory used) for the program.
+        PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
+        if (petsc_peak_memory < petsc_local_peak_memory)
+            petsc_peak_memory = petsc_local_peak_memory;
+    }
+#endif // FLOW123D_HAVE_PETSC
+}
+
+void Timer::resume() {
+#ifdef FLOW123D_HAVE_PETSC
+    if (Profiler::get_petsc_memory_monitoring()) {
+        // tell PETSc to monitor the maximum memory usage so
+        //   that PetscMemoryGetMaximumUsage() will work.
+        PetscMemorySetGetMaximumUsage();
+    }
+#endif // FLOW123D_HAVE_PETSC
+}
 
 void Timer::start() {
+#ifdef FLOW123D_HAVE_PETSC
+    if (Profiler::get_petsc_memory_monitoring()) {
+        // Tell PETSc to monitor the maximum memory usage so
+        //   that PetscMemoryGetMaximumUsage() will work.
+        PetscMemorySetGetMaximumUsage();
+        PetscMemoryGetCurrentUsage (&petsc_start_memory);
+    }
+#endif // FLOW123D_HAVE_PETSC
+    
     if (start_count == 0) {
         start_time = TimePoint();
     }
@@ -121,7 +227,19 @@ void Timer::start() {
 
 
 bool Timer::stop(bool forced) {
-
+#ifdef FLOW123D_HAVE_PETSC
+    if (Profiler::get_petsc_memory_monitoring()) {
+        // get current memory usage
+        PetscMemoryGetCurrentUsage (&petsc_end_memory);
+        petsc_memory_difference += petsc_end_memory - petsc_start_memory;
+        
+        // get the maximum resident set size (memory used) for the program.
+        PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
+        if (petsc_peak_memory < petsc_local_peak_memory)
+            petsc_peak_memory = petsc_local_peak_memory;
+    }
+#endif // FLOW123D_HAVE_PETSC
+    
     if (forced) start_count=1;
 
     if (start_count == 1) {
@@ -164,19 +282,23 @@ string Timer::code_point_str() const {
  */
 
 
+Profiler * Profiler::instance() { 
+    if (_instance == NULL) {
+        MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
+        _instance = new Profiler();
+    }
+    return _instance;
+ } 
 
 
-
-
+static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
 Profiler* Profiler::_instance = NULL;
+const long Profiler::malloc_map_reserve = 100 * 1000;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
-void Profiler::initialize()
-{
-
-    if (!_instance)
-        _instance = new Profiler();
-
+void Profiler::initialize() {
+    instance();
+    set_memory_monitoring(true, true);
 }
 
 
@@ -188,12 +310,22 @@ Profiler::Profiler()
 
 {
 #ifdef FLOW123D_DEBUG_PROFILER
-    static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
     timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
 #endif
 }
 
+
+
+void Profiler::propagate_timers() {
+    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
+        unsigned int child_timer = timers_[0].child_timers[i];
+        if ((signed int)child_timer != timer_no_child) {
+            // propagate metrics from child to Whole-Program time-frame
+            accept_from_child(timers_[0], timers_[child_timer]);
+        }
+    }
+}
 
 
 
@@ -215,6 +347,7 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 
 int  Profiler::start_timer(const CodePoint &cp) {
+    Timer &parent_timer = timers_[actual_node];
     //DBGMSG("Start timer: %s\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
@@ -224,10 +357,13 @@ int  Profiler::start_timer(const CodePoint &cp) {
         timers_.push_back( Timer(cp, actual_node) );
         timers_[actual_node].add_child(child_idx , timers_.back() );
     }
-
-    timers_[child_idx].start();
     actual_node=child_idx;
-
+    
+    // pause current timer
+    parent_timer.pause();
+    
+    timers_[actual_node].start();
+    
     return actual_node;
 }
 
@@ -241,9 +377,9 @@ int Profiler::find_child(const CodePoint &cp) {
         if (timer.child_timers[idx] == timer_no_child) break; // tag is not there
 
         child_idx=timer.child_timers[idx];
-        ASSERT_LESS( child_idx, timers_.size());
+        ASSERT(child_idx < timers_.size(), "Assert error: child_idx >= timers_.size(): %d != %d", child_idx, timers_.size());
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
-        idx = ( (unsigned int)(idx)==Timer::max_n_childs ? 0 : idx+1 );
+        idx = ( (unsigned int)(idx)==(Timer::max_n_childs - 1) ? 0 : idx+1 );
     } while ( (unsigned int)(idx) != cp.hash_idx_ ); // passed through whole array
     return -1;
 }
@@ -258,6 +394,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
         if (timer.child_timers[i] != timer_no_child)
             ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
 #endif
+    unsigned int child_timer = actual_node;
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer) {
@@ -269,7 +406,14 @@ void Profiler::stop_timer(const CodePoint &cp) {
                 }
                 // close 'node' itself
                 timers_[actual_node].stop(false);
-                actual_node=timers_[actual_node].parent_timer;
+                actual_node = timers_[actual_node].parent_timer;
+                
+                // actual_node == child_timer indicates this is root
+                if (actual_node == child_timer)
+                    return;
+                
+                // resume current timer
+                timers_[actual_node].resume();
                 return;
             }
         }
@@ -278,41 +422,27 @@ void Profiler::stop_timer(const CodePoint &cp) {
     }
     // node to close match the actual
     timers_[actual_node].stop(false);
-    actual_node=timers_[actual_node].parent_timer;
+    actual_node = timers_[actual_node].parent_timer;
+    
+    // actual_node == child_timer indicates this is root
+    if (actual_node == child_timer)
+        return;
+    
+    // resume current timer
+    timers_[actual_node].resume();
 }
 
 
 
 void Profiler::stop_timer(int timer_index) {
-    unsigned int timer_idx;
-    if (timer_index <0) timer_idx=actual_node;
-    else timer_idx = timer_index;
-
-    ASSERT_LESS( timer_idx, timers_.size() );
-
-    if (! timers_[timer_idx].running() ) return;
-
-    if ( timer_idx != actual_node ) {
-        // timer to close is not actual - we search for it above actual
-        for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer)
-            if ( (unsigned int)(timer_idx) == node) {
-                // found above - close all nodes between
-                for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_idx].tag().c_str(), timers_[actual_node].tag().c_str());
-                    timers_[actual_node].stop(true);
-                }
-                // close 'node' itself
-                timers_[actual_node].stop(false);
-                actual_node=timers_[actual_node].parent_timer;
-                return;
-            }
-        // node not found - do nothing
-        return;
+    // stop_timer with CodePoint type
+    // timer which is still running MUST be the same as actual_node index
+    // if timer is not running index will differ
+    if (timers_[timer_index].running()) {
+        ASSERT(timer_index == actual_node, "Assert error: timer_index != actual_node: %d != %d", timer_index, actual_node);
+        stop_timer(*timers_[timer_index].code_point_);
     }
-
-    // node to close match the actual
-    timers_[actual_node].stop(false);
-    actual_node=timers_[actual_node].parent_timer;
+    
 }
 
 
@@ -323,14 +453,33 @@ void Profiler::add_calls(unsigned int n_calls) {
 
 
 
-void Profiler::notify_malloc(const size_t size) {
+void Profiler::notify_malloc(const size_t size, const long p) {
+    if (!global_monitor_memory)
+        return;
+
+    MemoryAlloc::malloc_map()[p] = static_cast<int>(size);
     timers_[actual_node].total_allocated_ += size;
+    timers_[actual_node].current_allocated_ += size;
+    timers_[actual_node].alloc_called++;
+        
+    if (timers_[actual_node].current_allocated_ > timers_[actual_node].max_allocated_)
+        timers_[actual_node].max_allocated_ = timers_[actual_node].current_allocated_;
 }
 
 
 
-void Profiler::notify_free(const size_t size) {
+void Profiler::notify_free(const long p) {
+    if (!global_monitor_memory)
+        return;
+    
+    int size = sizeof(p);
+    if (MemoryAlloc::malloc_map()[(long)p] > 0) {
+        size = MemoryAlloc::malloc_map()[(long)p];
+        MemoryAlloc::malloc_map().erase((long)p);
+    }
     timers_[actual_node].total_deallocated_ += size;
+    timers_[actual_node].current_allocated_ -= size;
+    timers_[actual_node].dealloc_called++;
 }
 
 
@@ -414,6 +563,13 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 }
 
 
+template <class T>
+void save_nonmpi_metric (property_tree::ptree &node,  T * ptr, string name) {
+    node.put (name+"-min", *ptr);
+    node.put (name+"-max", *ptr);
+    node.put (name+"-sum", *ptr);
+}
+
 std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
     char filename[PATH_MAX];
     strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
@@ -425,11 +581,23 @@ std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
 
 
 #ifdef FLOW123D_HAVE_MPI
+template <class T>
+void save_mpi_metric (property_tree::ptree &node, MPI_Comm comm, T * ptr, string name) {
+    node.put (name+"-min", MPI_Functions::min(ptr, comm));
+    node.put (name+"-max", MPI_Functions::max(ptr, comm));
+    node.put (name+"-sum", MPI_Functions::sum(ptr, comm));
+}
+
 void Profiler::output(MPI_Comm comm, ostream &os) {
     int ierr, mpi_rank, mpi_size;
     //wait until profiling on all processors is finished
     MPI_Barrier(comm);
     stop_timer(0);
+    propagate_timers();
+    
+    // stop monitoring memory
+    bool temp_memory_monitoring = global_monitor_memory;
+    set_memory_monitoring(false, petsc_monitor_memory);
 
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
@@ -445,20 +613,33 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
         double cumul_time = timer.cumulative_time ();
-        double cumul_time_sum;
-
-        //node.put ("call-count", call_count);
-        node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
-        node.put ("call-count-max", MPI_Functions::max(&call_count, comm));
-        node.put ("call-count-sum", MPI_Functions::sum(&call_count, comm));
-
-        cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
-
-        //node.put ("cumul-time", boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-min", boost::format("%1.9f") % MPI_Functions::min(&cumul_time, comm));
-        node.put ("cumul-time-max", boost::format("%1.9f") % MPI_Functions::max(&cumul_time, comm));
-        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time_sum);
-        return cumul_time_sum;
+        
+        long memory_allocated = (long)timer.total_allocated_;
+        long memory_deallocated = (long)timer.total_deallocated_;
+        long memory_peak = (long)timer.max_allocated_;
+        
+        int alloc_called = timer.alloc_called;
+        int dealloc_called = timer.dealloc_called;
+        
+        
+        save_mpi_metric<double>(node, comm, &cumul_time, "cumul-time");
+        save_mpi_metric<int>(node, comm, &call_count, "call-count");
+        
+        save_mpi_metric<long>(node, comm, &memory_allocated, "memory-alloc");
+        save_mpi_metric<long>(node, comm, &memory_deallocated, "memory-dealloc");
+        save_mpi_metric<long>(node, comm, &memory_peak, "memory-peak");
+        // 
+        save_mpi_metric<int>(node, comm, &alloc_called, "memory-alloc-called");
+        save_mpi_metric<int>(node, comm, &dealloc_called, "memory-dealloc-called");
+        
+#ifdef FLOW123D_HAVE_PETSC
+        long petsc_memory_difference = (long)timer.petsc_memory_difference;
+        long petsc_peak_memory = (long)timer.petsc_peak_memory;
+        save_mpi_metric<long>(node, comm, &petsc_memory_difference, "memory-petsc-diff");
+        save_mpi_metric<long>(node, comm, &petsc_peak_memory, "memory-petsc-peak");
+#endif // FLOW123D_HAVE_PETSC
+        
+        return MPI_Functions::sum(&cumul_time, comm);
     };
 
     add_timer_info (reduce, &children, 0, 0.0);
@@ -476,12 +657,15 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         // write result to stream
         property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
     }
+    // restore memory monitoring
+    set_memory_monitoring(temp_memory_monitoring, petsc_monitor_memory);
 }
 
 
 void Profiler::output(MPI_Comm comm) {
     int mpi_rank, ierr;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
     if (mpi_rank == 0) {
         output(comm, *get_default_output_stream());
     } else {
@@ -495,6 +679,7 @@ void Profiler::output(MPI_Comm comm) {
 void Profiler::output(ostream &os) {
     // last update
     stop_timer(0);
+    propagate_timers();
 
     // output header
     property_tree::ptree root, children;
@@ -512,16 +697,31 @@ void Profiler::output(ostream &os) {
     auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
         double cumul_time = timer.cumulative_time ();
-
-        //node.put ("call-count",     call_count);
-        node.put ("call-count-min", call_count);
-        node.put ("call-count-max", call_count);
-        node.put ("call-count-sum", call_count);
-
-        //node.put ("cumul-time",     boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-min", boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-max", boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time);
+        
+        long memory_allocated = (long)timer.total_allocated_;
+        long memory_deallocated = (long)timer.total_deallocated_;
+        long memory_peak = (long)timer.max_allocated_;
+        
+        int alloc_called = timer.alloc_called;
+        int dealloc_called = timer.dealloc_called;
+        
+        save_nonmpi_metric<double>(node, &cumul_time, "cumul-time");
+        save_nonmpi_metric<int>(node, &call_count, "call-count");
+        
+        save_nonmpi_metric<long>(node, &memory_allocated, "memory-alloc");
+        save_nonmpi_metric<long>(node, &memory_deallocated, "memory-dealloc");
+        save_nonmpi_metric<long>(node, &memory_peak, "memory-peak");
+        
+        save_nonmpi_metric<int>(node, &alloc_called, "memory-alloc-called");
+        save_nonmpi_metric<int>(node, &dealloc_called, "memory-dealloc-called");
+        
+#ifdef FLOW123D_HAVE_PETSC
+        long petsc_memory_difference = (long)timer.petsc_memory_difference;
+        long petsc_peak_memory = (long)timer.petsc_peak_memory;
+        save_nonmpi_metric<long>(node, &petsc_memory_difference, "memory-petsc-diff");
+        save_nonmpi_metric<long>(node, &petsc_peak_memory, "memory-petsc-peak");
+#endif // FLOW123D_HAVE_PETSC
+        
         return cumul_time;
     };
 
@@ -613,8 +813,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // execute method with arguments
-    PyObject * return_value = PyObject_CallObject (convert_method, arguments);
-    //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
+    PyObject_CallObject (convert_method, arguments);
 
     PythonLoader::check_error();
 }
@@ -630,21 +829,100 @@ void Profiler::uninitialize() {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
                 _instance->timers_[_instance->actual_node].tag().c_str());
         _instance->stop_timer(0);
+        set_memory_monitoring(false, false);
         delete _instance;
         _instance = NULL;
     }
 }
+bool Profiler::global_monitor_memory = false;
+bool Profiler::petsc_monitor_memory = true;
+void Profiler::set_memory_monitoring(const bool global_monitor, const bool petsc_monitor) {
+    #ifdef FLOW123D_DEBUG
+        if (global_monitor && !global_monitor_memory)
+            cout << "Memory monitoring is ON" << endl;
+        if (!global_monitor && global_monitor_memory)
+            cout << "Memory monitoring is OFF" << endl;
+        
+        if (petsc_monitor && !petsc_monitor_memory)
+            cout << "Petsc monitoring is ON" << endl;
+        if (!petsc_monitor && petsc_monitor_memory)
+            cout << "Petsc monitoring is OFF" << endl;
+    #endif // FLOW123D_DEBUG
+    global_monitor_memory = global_monitor;
+    petsc_monitor_memory = petsc_monitor;
+}
+
+bool Profiler::get_global_memory_monitoring() {
+    return global_monitor_memory;
+}
+
+bool Profiler::get_petsc_memory_monitoring() {
+    return petsc_monitor_memory;
+}
+
+unordered_map_with_alloc & MemoryAlloc::malloc_map() {
+    static unordered_map_with_alloc static_malloc_map;
+    return static_malloc_map;
+}
+
+void * Profiler::operator new (size_t size) {
+    return malloc (size);
+}
+
+void Profiler::operator delete (void* p) {
+    free(p);
+}
+
+void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
+	void * p = malloc(size);
+    Profiler::instance()->notify_malloc(size, (long)p);
+	return p;
+}
+
+void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
+    void * p = malloc(size);
+    Profiler::instance()->notify_malloc(size, (long)p);
+	return p;
+}
+
+void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
+    void * p = malloc(size);
+    Profiler::instance()->notify_malloc(size, (long)p);
+	return p;
+}
+
+void operator delete( void *p) throw() {
+    Profiler::instance()->notify_free((long)p);
+	free(p);
+}
+
+void operator delete[]( void *p) throw() {
+    Profiler::instance()->notify_free((long)p);
+	free(p);
+}
 
 #else // def FLOW123D_DEBUG_PROFILER
+
+Profiler * Profiler::instance() { 
+     initialize();
+     return _instance;
+ } 
 
 Profiler* Profiler::_instance = NULL;
 
 void Profiler::initialize() {
-    if (!_instance) _instance = new Profiler();
+    if (_instance == NULL) {
+        _instance = new Profiler();
+        set_memory_monitoring(true, true);
+    }
 }
 
 void Profiler::uninitialize() {
-    if (_instance)  {
+    if (_instance) {
+        ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
+                _instance->timers_[_instance->actual_node].tag().c_str());
+        set_memory_monitoring(false, false);
+        _instance->stop_timer(0);
         delete _instance;
         _instance = NULL;
     }

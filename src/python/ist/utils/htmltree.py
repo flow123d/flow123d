@@ -1,9 +1,10 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
-import cgi
 
+from __future__ import absolute_import
+import re, cgi
 import xml.etree.ElementTree as ET
-import re
 from ist.formatters.markdown2html import markdown2html
 
 
@@ -29,7 +30,7 @@ class htmltree(object):
         :param no_escape: whether to escape value
         :return: element
         """
-        attrib_copy = {}
+        attrib_copy = { }
         if 'cls' in kwargs:
             attrib_copy['class'] = kwargs.pop('cls')
 
@@ -53,7 +54,7 @@ class htmltree(object):
         """
         return self.current().append(element)
 
-    def h(self, title, subtitle='', level='h3', hide_subtitle=True):
+    def item_list_title(self, item_field, add_link=False, add_id=True):
         """
         Method creates and appends header with level
         If subtitle is given href to title will consist of subtitle
@@ -64,34 +65,48 @@ class htmltree(object):
         :param hide_subtitle: hide subtitle section
         :return:
         """
-        if subtitle:
-            with self.open(level, '', self.generate_id(title, subtitle)):
-                if not hide_subtitle:
-                    with self.open('small'):
-                        self.tag('a', subtitle + '', self.generate_href(subtitle))
-                        self.span('::')
-                self.span(title)
-            return self
-        with self.open(level, ''):
-            with self.open('a', '', self.generate_href(title)):
-                self.span(title)
+        if add_link:
+            with self.open('a', attrib={'href': '#'+item_field.href_id}):
+                self.item_list_title(item_field, add_link=False, add_id=add_id)
+        else:
+            attrib = {'id': item_field.href_id} if add_id else {}
+            with self.open('h3', attrib=attrib):
+                self.span(item_field.get('name', 'key', 'href_name'))
         return self
 
-
-    def h2(self, value='', attrib={ }, **kwargs):
+    def main_section_title(self, item, attrib={ }, **kwargs):
         """
         Method creates level 2 header also with "on the side" href with icon
           to this href
+        :type item: ist.nodes.TypeSelection or ist.nodes.TypeRecord or ist.nodes.TypeAbstract
+        """
+        # with self.open('span', '', { 'class': 'pull-right side-anchor' }):
+        #     href_attrib = { 'href': '#' + item.href_id }
+        #     href_attrib.update({ 'title': 'Permalink to this section' })
+        #     with self.open('a', '', href_attrib):
+        #         self.span(' ', { 'class': 'glyphicon glyphicon-link', 'aria-hidden': 'true' })
+        with self.open('h2'):
+            self.tag('a', item.href_name, attrib={ 'href': '#' + item.href_id })
+        # self.tag('h2', item.href_name, attrib, **kwargs)
+
+    def mark_as_obsolete(self, element):
+        """
+        :type item: ist.nodes.TypeSelection or ist.nodes.TypeRecord or ist.nodes.TypeAbstract
+        """
+        with self.open('div', cls='obsolete'):
+            self.tag('p', 'Obsolete', cls='obsolete-title')
+            self.description(element.attributes.obsolete)
+
+    def add_clear(self):
+        self.div('', cls='clear')
+
+    def h2(self, value='', attrib={ }, **kwargs):
+        """
+        Method creates level 3 header
         :param value: header title
         :param attrib: optional attribute
         :return: element
         """
-        with self.open('span', '', { 'class': 'pull-right side-anchor' }):
-            href_attrib = self.generate_href(value)
-            href_attrib.update({ 'title': 'Permalink to this section' })
-            with self.open('a', '', href_attrib):
-                self.span(' ', { 'class': 'glyphicon glyphicon-link', 'aria-hidden': 'true' })
-
         # attrib.update(self.generate_id(value))
         self.tag('h2', value, attrib, **kwargs)
 
@@ -158,7 +173,7 @@ class htmltree(object):
         """
         return self.tag('span', value, attrib, **kwargs)
 
-    def info(self, value='', attrib={"class": 'leading-text'}, **kwargs):
+    def info(self, value='', attrib={ "class": 'leading-text' }, **kwargs):
         """
         Method creates info element
         :param value: span optional text
@@ -212,6 +227,13 @@ class htmltree(object):
         """
         return self.tag('a', text if text else target, attrib=self.generate_href(target, ns))
 
+    def link_to_main(self, item, text=None):
+        """
+        :type item: ist.nodes.TypeSelection or ist.nodes.TypeRecord or ist.nodes.TypeAbstract
+        """
+        # return self.tag('a', item.name + '(' + item.id + ')', self.generate_href(item.id))
+        return self.tag('a', text or item.href_name, {'href': '#'+item.href_id})
+
     def open(self, tag_name, value='', attrib={ }, **kwargs):
         """
         Method opens current element, shifts current top.
@@ -232,6 +254,7 @@ class htmltree(object):
         :param value:
         :return:
         """
+        # self.tag('span', 'DESCRIPTION', attrib={ 'class': 'desc-title' })
         if not value:
             return self.tag('div', 'no description provided', cls='description no-description')
 
@@ -239,7 +262,6 @@ class htmltree(object):
         value.attrib['class'] = 'description'
         self.add(value)
         # return self.tag('div', value, { 'class': 'description' }, no_escape=True)
-
 
     def __enter__(self):
         """
@@ -259,8 +281,7 @@ class htmltree(object):
         """
         # add debug info
         if exception_type:
-            print exception_type, exception_value, traceback
-            raise exception_value
+            return False
 
         self.counter -= 1
         self.roots.pop()
@@ -282,7 +303,7 @@ class htmltree(object):
         :param location: css file location relative to server
         :return: element
         """
-        self.tag('link', '', rel='stylesheet', type='text/css', media='screen', href=location )
+        self.tag('link', '', rel='stylesheet', type='text/css', media='screen', href=location)
 
     def script(self, location):
         """
@@ -290,7 +311,7 @@ class htmltree(object):
         :param location: css file location relative to server
         :return: element
         """
-        self.tag('script', '', attrib={}, type='text/javascript', src=location)
+        self.tag('script', '', attrib={ }, type='text/javascript', src=location)
 
     def id(self, id):
         """
@@ -298,24 +319,6 @@ class htmltree(object):
         :param id: id value
         """
         self.root.attrib['id'] = id
-
-    def generate_id(self, value, sub_value=''):
-        """
-        Method generates dict with id based on given value and sub_value
-        :param value: id main value
-        :param sub_value: id optional sub value part
-        :return: dict with id key
-        """
-        return { 'id': htmltree.chain_values(value, sub_value) }
-
-    def generate_href(self, value, sub_value=''):
-        """
-        Method generates dict with href based on given value and sub_value
-        :param value: href main value
-        :param sub_value: id optional sub value part
-        :return: dict with href key
-        """
-        return { 'href': '#' + htmltree.chain_values(value, sub_value) }
 
     @staticmethod
     def secure(value):

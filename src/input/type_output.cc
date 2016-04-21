@@ -18,6 +18,7 @@
 #include "input/type_output.hh"
 #include "input/type_repository.hh"
 #include "input/type_generic.hh"
+#include "input/type_tuple.hh"
 #include "system/system.hh"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -129,7 +130,7 @@ Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstract *a
 
 void OutputBase::print_base(ostream& stream, const TypeBase *type) {
 
-	if (typeid(*type) == typeid(Type::Record)) {
+	if (typeid(*type) == typeid(Type::Record) || typeid(*type) == typeid(Type::Tuple)) {
 		print_impl(stream, static_cast<const Type::Record *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Array)) {
@@ -212,6 +213,15 @@ bool OutputBase::was_written(std::size_t hash)
     return in_set;
 }
 
+void OutputBase::get_attr_and_param_data(const TypeBase *type, TypeBase::attribute_map &attr_map,
+    		TypeBase::TypeHash &generic_type_hash, TypeBase::json_string &parameter_map_to_json) {
+	attr_map = *( type->attributes_.get() );
+	generic_type_hash = type->generic_type_hash_;
+	if (type->parameter_map_.size()) {
+		parameter_map_to_json = type->print_parameter_map_to_json( type->parameter_map_ );
+	}
+}
+
 
 
 
@@ -229,18 +239,18 @@ ostream& OutputText::print(ostream& stream) {
 
 void OutputText::print_impl(ostream& stream, const Record *type) {
 	if (! type->is_finished()) {
-		xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
+		xprintf(Warn, "Printing documentation of unfinished Input::Type::%s!\n", type->class_name().c_str());
 	}
 	switch (doc_type_) {
 	case key_record:
-		stream << "" << "Record '" << type->type_name() << "' (" << type->size() << " keys).";
+		stream << "" << type->class_name() << " '" << type->type_name() << "' (" << type->size() << " keys).";
 		break;
 	case full_record:
 		TypeBase::TypeHash hash=type->content_hash();
 		if (! was_written(hash)) {
 			// header
 			stream << endl;
-			stream << "" << "Record '" << type->type_name() << "'";
+			stream << "" << type->class_name() << " '" << type->type_name() << "'";
 			// parent record
 			/*boost::shared_ptr<Abstract> parent_ptr;
 			get_parent_ptr(*type, parent_ptr);
@@ -511,7 +521,27 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
     stream << "\"id\" : " << type->hash_str() << "," << endl;
     stream << "\"input_type\" : \"" + type->class_name() + "\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-    type->write_attributes(stream);
+
+    // write data of parameters and attributes
+    TypeBase::attribute_map attr_map;
+    TypeBase::TypeHash generic_type_hash;
+    TypeBase::json_string parameter_map_to_json;
+    get_attr_and_param_data(type, attr_map, generic_type_hash, parameter_map_to_json);
+	// print hash of generic type and parameters into separate keys
+	if (generic_type_hash) { // print hash of generic type into separate keys
+		stream << "\"generic_type\" : " << TypeBase::hash_str(generic_type_hash) << endl;
+	}
+	if (parameter_map_to_json.size()) { // parameters into separate keys
+		stream << "\"parameters\" : " << parameter_map_to_json << endl;
+	}
+	stream << "\"attributes\" : {" << endl; // print map of attributes
+	for (std::map<std::string, TypeBase::json_string>::iterator it=attr_map.begin(); it!=attr_map.end(); ++it) {
+        if (it != attr_map.begin()) {
+        	stream << "," << endl;
+        }
+		stream << "\"" << it->first << "\" : " << it->second;
+	}
+	stream << endl << "}";
 }
 
 

@@ -65,6 +65,8 @@ bool Default::check_validity(boost::shared_ptr<TypeBase> type) const
 {
 	if ( storage_ ) return true;
 	if ( !has_value_at_declaration() ) return false;
+    
+    type->finish();
 
 	try {
 		istringstream is("[\n" + value_ + "\n]");
@@ -118,18 +120,7 @@ TypeBase::TypeHash Record::content_hash() const
 {
 	TypeHash seed=0;
     boost::hash_combine(seed, "Record");
-    boost::hash_combine(seed, type_name());
-    boost::hash_combine(seed, data_->description_);
-    boost::hash_combine(seed, data_->auto_conversion_key);
-    for( Key &key : data_->keys) {
-    	if (key.key_ != "TYPE") {
-    		boost::hash_combine(seed, key.key_);
-    		boost::hash_combine(seed, key.description_);
-    		boost::hash_combine(seed, key.type_->content_hash() );
-    		boost::hash_combine(seed, key.default_.content_hash() );
-    	}
-    }
-    attribute_content_hash(seed);
+    data_->content_hash(seed);
     return seed;
 }
 
@@ -319,6 +310,13 @@ Record &Record::has_obligatory_type_key() {
 TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) const {
 	Record rec = this->deep_copy();
 	ParameterMap parameter_map;
+	this->set_instance_data(rec, parameter_map, vec);
+
+	return std::make_pair( boost::make_shared<Record>(rec.close()), parameter_map );
+}
+
+
+void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) const {
 	// Replace keys of type Parameter
 	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
 		if ( key_it->key_ != "TYPE" ) { // TYPE key isn't substituted
@@ -330,9 +328,9 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 	}
 	// Set attributes
 	rec.set_parameters_attribute(parameter_map);
+	rec.parameter_map_ = parameter_map;
 	rec.add_attribute("generic_type", this->hash_str());
-
-	return std::make_pair( boost::make_shared<Record>(rec.close()), parameter_map );
+	rec.generic_type_hash_ = this->content_hash();
 }
 
 
@@ -342,6 +340,8 @@ Record Record::deep_copy() const {
 	rec.data_->closed_ = false;
 	rec.data_->finished = false;
 	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	rec.generic_type_hash_ = this->generic_type_hash_;
+	rec.parameter_map_ = this->parameter_map_;
 	return rec;
 }
 
@@ -432,6 +432,21 @@ void Record::RecordData::declare_key(const string &key,
 
 }
 
+void Record::RecordData::content_hash(TypeBase::TypeHash &seed) const {
+    boost::hash_combine(seed, type_name_);
+    boost::hash_combine(seed, description_);
+    boost::hash_combine(seed, auto_conversion_key);
+    for( const Key &key : keys) {
+    	if (key.key_ != "TYPE") {
+    		boost::hash_combine(seed, key.key_);
+    		boost::hash_combine(seed, key.description_);
+    		boost::hash_combine(seed, key.type_->content_hash() );
+    		boost::hash_combine(seed, key.default_.content_hash() );
+    	}
+    }
+}
+
+
 Record &Record::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
                         const Default &default_value, const string &description)
 {
@@ -481,6 +496,7 @@ RECORD_DECLARE_KEY(Abstract);
 RECORD_DECLARE_KEY(AdHocAbstract);
 RECORD_DECLARE_KEY(Parameter);
 RECORD_DECLARE_KEY(Instance);
+RECORD_DECLARE_KEY(Tuple);
 
 
 

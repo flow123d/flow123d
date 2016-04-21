@@ -105,6 +105,7 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
 
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
+  is_mass_diag_changed(false),
   input_rec(in_rec),
   mh_dh(nullptr)
 {
@@ -114,7 +115,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     transport_matrix_time = -1.0; // or -infty
     transport_bc_time = -1.0;
     is_convection_matrix_scaled = false;
-    is_src_term_scaled=false;
+    is_src_term_scaled = false;
+    is_bc_term_scaled = false;
 }
 
 void ConvectionTransport::initialize()
@@ -124,8 +126,8 @@ void ConvectionTransport::initialize()
     cfl_max_step = time_->end_time();
 
     data_.set_components(substances_.names());
-    data_.set_mesh(*mesh_);
     data_.set_input_list( input_rec.val<Input::Array>("input_fields") );
+    data_.set_mesh(*mesh_);
 
     make_transport_partitioning();
     alloc_transport_vectors();
@@ -187,6 +189,8 @@ ConvectionTransport::~ConvectionTransport()
 
     //Destroy mpi vectors at first
     MatDestroy(&tm);
+    VecDestroy(&mass_diag);
+    VecDestroy(&vpmass_diag);
     VecDestroy(&vcfl_flow_);
     VecDestroy(&vcfl_source_);
     delete cfl_flow_;
@@ -322,6 +326,9 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
     MatCreateAIJ(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize(), mesh_->n_elements(),
             mesh_->n_elements(), 16, PETSC_NULL, 4, PETSC_NULL, &tm);
+    
+    VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &mass_diag);
+    VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpmass_diag);
 
     VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
             cfl_flow_,&vcfl_flow_);
@@ -348,15 +355,13 @@ void ConvectionTransport::set_boundary_conditions()
         elm = mesh_->element(el_4_loc[loc_el]);
         if (elm->boundary_idx_ != NULL) {
             unsigned int new_i = row_4_el[elm.index()];
-            double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
-            double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
 
             FOR_ELEMENT_SIDES(elm,si) {
                 Boundary *b = elm->side(si)->cond();
                 if (b != NULL) {
                     double flux = mh_dh->side_flux( *(elm->side(si)) );
                     if (flux < 0.0) {
-                        double aij = -(flux / (elm->measure() * csection * por_m) );
+                        double aij = -(flux / elm->measure() );
 
                         arma::vec value = data_.bc_conc.value( b->element()->centre(), b->element_accessor() );
                         for (sbi=0; sbi<n_substances(); sbi++)
@@ -366,16 +371,20 @@ void ConvectionTransport::set_boundary_conditions()
                         {
                         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
                         	{
-//                         		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
+                         		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
                         		balance_->add_flux_vec_value(subst_idx[sbi], loc_b, flux*value[sbi]);
                         	}
                         }
                     } else {
+                        for (sbi=0; sbi<n_substances(); sbi++)
+                            VecSetValue(bcvcorr[sbi], new_i, 0, ADD_VALUES);
+                        
                     	if (balance_ != nullptr)
 						{
 							for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 							{
 								balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {flux});
+                                balance_->add_flux_vec_value(subst_idx[sbi], loc_b, 0);
 							}
 						}
                     }
@@ -405,7 +414,7 @@ void ConvectionTransport::compute_concentration_sources() {
 
   //temporary variables
   unsigned int loc_el, sbi;
-  double measure, por_m, source, diag;
+  double csection, source, diag;
   double max_cfl;
   Element *ele;
   ElementAccessor<3> ele_acc;
@@ -418,8 +427,7 @@ void ConvectionTransport::compute_concentration_sources() {
     if( (data_.sources_density.changed() )
           || (data_.sources_conc.changed() )
           || (data_.sources_sigma.changed() )
-          || (data_.cross_section.changed())
-          || (data_.porosity.changed() ))
+          || (data_.cross_section.changed()))
     {
         START_TIMER("sources_reinit"); 
         if (balance_ != nullptr) balance_->start_source_assembly(subst_idx);
@@ -429,11 +437,7 @@ void ConvectionTransport::compute_concentration_sources() {
             ele = mesh_->element(el_4_loc[loc_el]);
             ele_acc = ele->element_accessor();
             p = ele_acc.centre();
-            por_m = data_.porosity.value(p, ele_acc);
-            
-            if (balance_ != nullptr) 
-                measure = ele->measure() *
-                          data_.cross_section.value(p, ele_acc);
+            csection = data_.cross_section.value(p, ele_acc);
             
             // read for all substances
             src_density = data_.sources_density.value(p, ele_acc);
@@ -442,22 +446,22 @@ void ConvectionTransport::compute_concentration_sources() {
                 
             for (sbi = 0; sbi < n_substances(); sbi++)
             {      
-                source = src_density(sbi) + src_sigma(sbi) * src_conc(sbi);
+                source = csection * (src_density(sbi) + src_sigma(sbi) * src_conc(sbi));
                 // addition to RHS
-                sources_corr[sbi][loc_el] = source / por_m;
+                sources_corr[sbi][loc_el] = source;
                 // addition to diagonal of the transport matrix
-                diag = src_sigma(sbi) / por_m;
+                diag = src_sigma(sbi) * csection;
                 tm_diag[sbi][loc_el] = - diag;
                 
                 // compute maximal cfl condition over all substances
-                max_cfl = std::max(max_cfl, diag);
+                max_cfl = std::max(max_cfl, fabs(diag));
                 
                 if (balance_ != nullptr)
                 {
                     balance_->add_source_matrix_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
-                                                       {- src_sigma(sbi) * measure});
+                                                       {- src_sigma(sbi) * ele->measure() * csection});
                     balance_->add_source_rhs_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
-                                                    {source * measure});
+                                                    {source * ele->measure()});
                 }
             }
             
@@ -477,11 +481,12 @@ void ConvectionTransport::zero_time_step()
 {
 	ASSERT_EQUAL(time_->tlevel(), 0);
 
-	data_.mark_input_times(target_mark_type);
+	data_.mark_input_times(*time_);
 	data_.set_time(time_->step(), LimitSide::right);
 
     set_initial_condition();
-
+    create_mass_matrix();
+    
     if (balance_ != nullptr)
     {
     	START_TIMER("Convection balance zero time step");
@@ -498,7 +503,7 @@ void ConvectionTransport::zero_time_step()
 }
 
 
-bool ConvectionTransport::assess_time_constraint(double& time_constraint)
+bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
     ASSERT(mh_dh, "Null MH object.\n" );
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
@@ -508,7 +513,7 @@ bool ConvectionTransport::assess_time_constraint(double& time_constraint)
     bool cfl_changed = false;
     
     // if FLOW or DATA changed ---------------------> recompute transport matrix
-    if (mh_dh->time_changed() > transport_matrix_time  || data_.porosity.changed())
+    if (mh_dh->time_changed() > transport_matrix_time)
     {
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
@@ -516,9 +521,16 @@ bool ConvectionTransport::assess_time_constraint(double& time_constraint)
         DBGMSG("CFL changed - flow.\n");
     }
     
+    if (is_mass_diag_changed)
+    {
+        create_mass_matrix();
+        cfl_changed = true;
+        DBGMSG("CFL changed - mass matrix.\n");
+    }
+    
     // if DATA changed ---------------------> recompute concentration sources (rhs and matrix diagonal)
     if( data_.sources_density.changed() || data_.sources_conc.changed() || data_.sources_sigma.changed()
-       || data_.cross_section.changed() || data_.porosity.changed() )
+       || data_.cross_section.changed())
     {
         compute_concentration_sources();
         is_src_term_scaled = false;
@@ -526,18 +538,27 @@ bool ConvectionTransport::assess_time_constraint(double& time_constraint)
         DBGMSG("CFL changed - source.\n");
     }
     
-    //now resolve the CFL condition
+    // now resolve the CFL condition
     if(cfl_changed)
     {
         // find maximum of sum of contribution from flow and sources: MAX(vcfl_flow_ + vcfl_source_)
         Vec cfl;
         VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(),PETSC_DETERMINE, &cfl);
         VecWAXPY(cfl, 1.0, vcfl_flow_, vcfl_source_);
-        VecMax(cfl,nullptr, &cfl_max_step);
+        VecMaxPointwiseDivide(cfl,mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
         cfl_max_step = 1 / cfl_max_step;
     }
     
+    // although it does not influence CFL, compute BC so the full system is assembled
+    if ( (mh_dh->time_changed() > transport_bc_time)
+        || data_.porosity.changed()
+        || data_.bc_conc.changed() )
+    {
+        set_boundary_conditions();
+        is_bc_term_scaled = false;
+    }
+
     END_TIMER("data reinit");
     
     // return time constraint
@@ -554,73 +575,55 @@ void ConvectionTransport::update_solution() {
     // (data time set previously in assess_time_constraint())
     time_->next_time();
     
-    if(time_->is_changed_dt()) time_->view("Convection");    //show time governor
-    
     double dt_new = time_->dt(),                    // current time step we are about to compute
            dt_scaled = dt_new / time_->last_dt();   // scaling ratio to previous time step
     
     START_TIMER("time step rescaling");
-    bool scaled = false; //flag to avoid rescaling newly created bc term
-    // if FLOW or DATA or BC changed ---------------------> recompute boundary condition
-    if ( (mh_dh->time_changed() > transport_bc_time)
-        || data_.porosity.changed()
-        || data_.bc_conc.changed() )
-    {
-        set_boundary_conditions();  //TODO move to asses...
-        // rescale by time step
-        DBGMSG("BC - rescale NEW dt.\n");
-        for (unsigned int  sbi=0; sbi<n_substances(); sbi++)
-            VecScale(bcvcorr[sbi], dt_new);
-        scaled = true;
-    }
     
-    if( !scaled && time_->is_changed_dt() ) // if time step changed, only rescale
+    // if FLOW or DATA or BC or DT changed ---------------------> rescale boundary condition
+    if( ! is_bc_term_scaled || time_->is_changed_dt() )
     {
-        DBGMSG("BC - rescale SCALE dt.\n");
+        DBGMSG("BC - rescale dt.\n");
+        //choose between fresh scaling with new dt or rescaling to a new dt
+        double dt = (!is_bc_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int  sbi=0; sbi<n_substances(); sbi++)
-            VecScale(bcvcorr[sbi], dt_scaled);
+            VecScale(bcvcorr[sbi], dt);
+        is_bc_term_scaled = true;
     }
     
 
     // if DATA or TIME STEP changed -----------------------> rescale source term
-    scaled = false; //reset; flag to avoid rescaling newly created src term
-    if( !is_src_term_scaled ) { //if it is not scaled (freshly computed)
-        DBGMSG("SRC - rescale NEW dt.\n");
+    if( !is_src_term_scaled || time_->is_changed_dt()) {
+        DBGMSG("SRC - rescale dt.\n");
+        //choose between fresh scaling with new dt or rescaling to a new dt
+        double dt = (!is_src_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         {
-            VecScale(v_sources_corr[sbi], dt_new);
-            VecScale(v_tm_diag[sbi], dt_new);
+            VecScale(v_sources_corr[sbi], dt);
+            VecScale(v_tm_diag[sbi], dt);
         }
         is_src_term_scaled = true;
-        scaled = true;
-    }
-    if( !scaled && time_->is_changed_dt() ) { // if time step changed, only rescale
-        DBGMSG("SRC - rescale SCALE dt.\n");
-        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-        {
-            VecScale(v_sources_corr[sbi], dt_scaled);
-            VecScale(v_tm_diag[sbi], dt_scaled);
-        }
     }
     
     // if DATA or TIME STEP changed -----------------------> rescale transport matrix
-    scaled = false; //reset; flag to avoid rescaling newly created tm term
-    if ( !is_convection_matrix_scaled ) { // scale fresh convection term matrix
-        DBGMSG("TM - rescale NEW dt.\n");
-        MatScale(tm, dt_new);
-        MatShift(tm, 1.0);
+    if ( !is_convection_matrix_scaled || time_->is_changed_dt()) {
+        DBGMSG("TM - rescale dt.\n");
+        //choose between fresh scaling with new dt or rescaling to a new dt
+        double dt = (!is_convection_matrix_scaled) ? dt_new : dt_scaled;
+        
+        MatScale(tm, dt);
         is_convection_matrix_scaled = true;
-        scaled = true;
     }
-    if ( !scaled && time_->is_changed_dt()) {
-        DBGMSG("TM - rescale SCALE dt.\n");
-        // rescale matrix
-        MatShift(tm, -1.0);
-        MatScale(tm, dt_scaled );
-        MatShift(tm, 1.0);
-    }
-
+    
     END_TIMER("time step rescaling");
+    
+    
+    data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
+    if (data_.cross_section.changed() || data_.porosity.changed())
+    {
+        VecCopy(mass_diag, vpmass_diag);
+        create_mass_matrix();
+    } else is_mass_diag_changed = false;
     
 
     // Compute new concentrations for every substance.
@@ -644,7 +647,17 @@ void ConvectionTransport::update_solution() {
       // Then we set the new previous concentration.
       VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
       // And finally proceed with transport matrix multiplication.
-      MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
+      if (is_mass_diag_changed) {
+        VecPointwiseMult(vconc[sbi], vconc[sbi], vpmass_diag); // vconc*=vpmass_diag
+        MatMultAdd(tm, vpconc[sbi], vconc[sbi], vconc[sbi]);   // vconc+=tm*vpconc
+        VecAXPY(vconc[sbi], 1, vcumulative_corr[sbi]);         // vconc+=vcumulative_corr
+        VecPointwiseDivide(vconc[sbi], vconc[sbi], mass_diag); // vconc/=mass_diag
+      } else {
+        MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // vconc =tm*vpconc+vcumulative_corr
+        VecPointwiseDivide(vconc[sbi], vconc[sbi], mass_diag);          // vconc/=mass_diag
+        VecAXPY(vconc[sbi], 1, vpconc[sbi]);                            // vconc+=vpconc
+      }
+
       END_TIMER("mat mult");
     }
     
@@ -665,11 +678,45 @@ void ConvectionTransport::set_target_time(double target_time)
     // If CFL condition is changed, time fixation will change later from TOS.
     
     // Set the same constraint as was set last time.
-    time_->set_upper_constraint(cfl_max_step);
+    time_->set_upper_constraint(cfl_max_step, "CFL condition used from previous step.");
     
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes
     time_->fix_dt_until_mark();
+}
+
+
+void ConvectionTransport::create_mass_matrix()
+{
+    ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
+    
+    VecZeroEntries(mass_diag);
+    
+    if (balance_ != nullptr)
+        balance_->start_mass_assembly(subst_idx);
+
+    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+        elm = mesh_->element(el_4_loc[loc_el]);
+
+        double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
+        double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
+
+        if (balance_ != nullptr)
+        {
+            for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
+                balance_->add_mass_matrix_values(subst_idx[sbi], elm->region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, {csection*por_m*elm->measure()} );
+        }
+        
+        VecSetValue(mass_diag, row_4_el[elm.index()], csection*por_m, INSERT_VALUES);
+    }
+    
+    if (balance_ != nullptr)
+        balance_->finish_mass_assembly(subst_idx);
+    
+    VecAssemblyBegin(mass_diag);
+    VecAssemblyEnd(mass_diag);
+    
+    is_mass_diag_changed = true;
 }
 
 
@@ -694,40 +741,22 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     double flux, flux2, edg_flux;
 
-
-    vector<double> edge_flow(mesh_->n_edges(),0.0);
-    for(unsigned int i=0; i < mesh_->n_edges() ; i++) { // calculate edge Qv
-        Edge &edg = mesh_->edges[i];
-        for( int s=0; s < edg.n_sides; s++) {
-            flux = mh_dh->side_flux( *(edg.side(s)) );
-            if ( flux > 0)  edge_flow[i]+= flux;
-        }
-    }
-
-    if (balance_ != nullptr)
-    	balance_->start_mass_assembly(subst_idx);
-
     aii = 0.0;
 
     for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh_->element(el_4_loc[loc_el]);
         new_i = row_4_el[elm.index()];
 
-        double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
-        double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
-
-        if (balance_ != nullptr)
-        {
-        	for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-        		balance_->add_mass_matrix_values(subst_idx[sbi], elm->region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, {csection*por_m*elm->measure()} );
-        }
-        
         FOR_ELEMENT_SIDES(elm,si) {
             // same dim
             flux = mh_dh->side_flux( *(elm->side(si)) );
             if (elm->side(si)->cond() == NULL) {
                  edg = elm->side(si)->edge();
-                 edg_flux = edge_flow[ elm->side(si)->edge_idx() ];
+                 edg_flux = 0;
+                 for( int s=0; s < edg->n_sides; s++) {
+                   flux2 = mh_dh->side_flux( *(edg->side(s)) );
+                   if ( flux2 > 0)  edg_flux+= flux2;
+                 }
                  FOR_EDGE_SIDES(edg,s)
                     // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
                     // These edges on these sides should have just one side
@@ -737,16 +766,13 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
                         flux2 = mh_dh->side_flux( *(edg->side(s)));
                         if ( flux2 > 0.0 && flux <0.0)
-                            aij = -(flux * flux2 / ( edg_flux * elm->measure() * csection * por_m) );
+                            aij = -(flux * flux2 / ( edg_flux * elm->measure() ) );
                         else aij =0;
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                     }
-                if (flux > 0.0)
-                    aii -= (flux / (elm->measure() * csection * por_m) );
-            } else {
-                if (flux > 0.0)
-                    aii -= (flux / (elm->measure() * csection * por_m) );
             }
+            if (flux > 0.0)
+              aii -= (flux / elm->measure() );
         }  // end same dim     //ELEMENT_SIDES
 
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
@@ -757,17 +783,15 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
 
                 // volume source - out-flow from higher dimension
-                if (flux > 0.0)  aij = flux / (elm->measure() * csection * por_m);
+                if (flux > 0.0)  aij = flux / elm->measure();
                 else aij=0;
                 MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                 // out flow from higher dim. already accounted
 
                 // volume drain - in-flow to higher dimension
                 if (flux < 0.0) {
-                        aii -= (-flux) / (elm->measure() * csection * por_m);                           // diagonal drain
-                        aij = (-flux) / (el2->measure() *
-                                        data_.cross_section.value(el2->centre(), el2->element_accessor()) *
-                                        data_.porosity.value(el2->centre(), el2->element_accessor()));
+                  aii -= (-flux) / elm->measure();                           // diagonal drain
+                  aij = (-flux) / el2->measure();
                 } else aij=0;
                 MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
             }
@@ -778,9 +802,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         aii = 0.0;
     } // END ELEMENTS
 
-    if (balance_ != nullptr)
-    	balance_->finish_mass_assembly(subst_idx);
-    
     MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(tm, MAT_FINAL_ASSEMBLY);
 
