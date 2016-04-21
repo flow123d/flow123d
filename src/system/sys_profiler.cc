@@ -555,25 +555,22 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     for (int j = 0; j < Timer::max_n_childs; j++) {
         if (child_timers[j] != timer.child_timers[j]) {
             // this is severe error, timers indicies are different
-            if (child_timers[j] != timer_no_child) {
-                printf("Severe error: timers indicies are different\n");
+            ASSERT(child_timers[j] == timer_no_child, "Severe error: timers indicies are different");
+            
+            // explore the difference in more depth
+            if (timer.child_timers[j] == timer_no_child) {
+                // this processor does not have child timer
+                xprintf(Warn,
+                    "Inconsistent tree in '%s': this processor[%d] does not have child-timer[%d]\n",
+                    timer.tag().c_str(), mpi_rank, child_timers[j]);
             } else {
-                printf("Inconsistent tree: ");
-                if (timer.child_timers[j] == timer_no_child) {
-                    // this processor does not have child timer
-                    printf("this processor[%d] does not have child-timer[%d]\n", mpi_rank, child_timers[j]);
-                    printf("Child timer belongs to parent: \n");
-                    cout << timer << endl;
-                } else {
-                    // other processors do not have child timer
-                    printf("this processor[%d] contains child-timer[%d] which others do not\n", mpi_rank, timer.child_timers[j]);
-                    printf("Child timer belongs to parent timer: \n");
-                    cout << timer << endl;
-                }
+                // other processors do not have child timer
+                xprintf(Warn,
+                    "Inconsistent tree in '%s': this processor[%d] contains child-timer[%d] which others do not\n",
+                    timer.tag().c_str(), mpi_rank, timer.child_timers[j]);
             }
         }
     }
-    cout << endl;
     #endif // FLOW123D_DEBUG
 
     // write times children timers using secured child_timers array
