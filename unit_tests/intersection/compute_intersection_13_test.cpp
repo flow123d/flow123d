@@ -348,30 +348,30 @@ TEST(intersections_13d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-        const unsigned int np = 24;
+        const unsigned int np = 12;
         unsigned int permutations[np][4] = {{0,1,2,3},
-                                                {0,1,3,2},  // the tab means permutation with negative jacobian
+//                                                 {0,1,3,2},  // the tab means permutation with negative jacobian
                                             {0,3,1,2},
-                                                {0,3,2,1},
+//                                                 {0,3,2,1},
                                             {0,2,3,1},
-                                                {0,2,1,3},
-                                                {1,0,2,3},
+//                                                 {0,2,1,3},
+//                                                 {1,0,2,3},
                                             {1,0,3,2},
-                                                {1,3,0,2},
+//                                                 {1,3,0,2},
                                             {1,3,2,0},
-                                                {1,2,3,0},
+//                                                 {1,2,3,0},
                                             {1,2,0,3},
-                                                {2,1,0,3},
+//                                                 {2,1,0,3},
                                             {2,1,3,0},
-                                                {2,3,1,0},
+//                                                 {2,3,1,0},
                                             {2,3,0,1},
-                                                {2,0,3,1},
+//                                                 {2,0,3,1},
                                             {2,0,1,3},
-                                                {3,1,2,0},
+//                                                 {3,1,2,0},
                                             {3,1,0,2},
-                                                {3,0,1,2},
+//                                                 {3,0,1,2},
                                             {3,0,2,1},
-                                                {3,2,0,1},
+//                                                 {3,2,0,1},
                                             {3,2,1,0}};
         for(unsigned int p=0; p<np; p++)
         {

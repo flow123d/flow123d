@@ -61,6 +61,9 @@ enum IntersectionType
  * A candidate pair of elements is popped out of a queue.
  * Function @p prolongate computes intersection for a candidate pair and calls @p prolongation_decide again.
  * This is done in an infinite cycle, until both queues are empty.
+ * 
+ * Due to optimal tracing algorithm for 2d-3d, we consider tetrahedron only with positive Jacobian.
+ * This is checked in assert.
  */
 template<unsigned int dim>
 class InspectElementsAlgorithm{
