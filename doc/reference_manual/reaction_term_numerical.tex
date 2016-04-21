@@ -20,10 +20,13 @@ where $c_a$ is the weighted average
 If the time step is large, we use the analytic solution to compute new values of concentrations. 
 Otherwise, we replace the time derivatives in \eqref{eqn:dual_porosity_ode1} and \eqref{eqn:dual_porosity_ode2} 
 by first order forward differences and we get the classical Euler scheme
+\begin{subequations}
+\label{eq:dp_expl_euler}
 \begin{align}
   c_m(t^+) = \frac{D_{dp} \Delta t}{\vartheta_m}(c_i(t) - c_m(t)) + c_m(t), \\
   c_i(t^+) = \frac{D_{dp} \Delta t}{\vartheta_i}(c_m(t) - c_i(t)) + c_i(t), \\
 \end{align}
+\end{subequations}
 where $\Delta t = t^+ - t$ is the time step. 
 
 The condition on the size of the time step is derived from the Taylor expansion of 
@@ -40,7 +43,12 @@ We then transform the above inequation into the following condition which is tes
   \max(|c_m(0) - c_a(0)|, |c_i(0) - c_a(0)|) \leq 
   2 c_a \left(\frac{\vartheta_m \vartheta_i}{D_{dp} \Delta t (\vartheta_m + \vartheta_i)}\right)^2 tol. \\
 \end{equation}
-If the inequation \eqref{eqn:euler_scheme_condition} is not satisfied, then the analytic 
+In addition, the explicit Euler method \eqref{eq:dp_expl_euler} requires the satisfaction of a CFL condition of the form
+\begin{equation}
+\label{eq:dp_cfl}
+\Delta t \le \frac1{D_{dp}} \frac{\th_m \th_i}{\th_m+\th_i}.
+\end{equation}
+If either of the inequalities \eqref{eqn:euler_scheme_condition} or \eqref{eq:dp_cfl} is not satisfied, then the analytic 
 solution is used.
 
 
@@ -126,7 +134,8 @@ concentration is computed $c_s = (\mu_l\cdot c_l + \mu_s\cdot f(c_l) - \mu_l\cdo
 \label{sec:num_slode}
 
 A system of linear ordinary differential equations (ODE) appears in several places in the model. We provide 
-several \hyperA{IT::LinearODESolver}{solvers} which we shall brielfy describe in this section. Let us denote 
+several \hyperA{IT::LinearODESolver}{solvers} which we shall brielfy describe in this section. For the moment, however, we only use the method of Pad\'e approximant.
+Let us denote 
 the ODE system
 \[
   \partial_t \vc c(t) = \mathbf{A}(t) \vc{c}(t) + \vc{b}(t).
@@ -184,6 +193,8 @@ is called Pad{\' e} approximant. From \eqref{eqn:pade_coef_equations}, we obtain
 coefficients of the nominator $P_m$ (polynomial of \hyperA{PadeApproximant::nominator-degree}{degree} $m$) and 
 the denominator $Q_n$ (polynomial of \hyperA{PadeApproximant::denominator-degree}{degree} $n$). We also see that the error 
 of the approximation is $O(t^{m+n+1})$. By convention, the denominator is normalized such that $q_0=1$.
+Theoretical results show that for $m=n-1$ and $m=n-2$ the Pad\'e approximant corresponds to an implicit Runge-Kutta method
+which is A-stable and L-stable (see \cite{ehle1973}).
 
 Now, we consider the solution of our ODE system in a form $\vc{c}(t)=e^{\mathbf{A}t}\vc{c}(0)$. We shall 
 approximate the matrix exponential function using a matrix form of \eqref{eqn:pade_approximant}. 
