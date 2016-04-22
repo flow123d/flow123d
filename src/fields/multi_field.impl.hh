@@ -61,14 +61,16 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between multi fields with different meshes.\n");
 	ASSERT( shared_->comp_names_.size(), "Vector of component names can't be empty!\n");
-	ASSERT( shared_->comp_names_==other.shared_->comp_names_,
-	        "Assignment between multi fields with different vectors of components.\n");
+	ASSERT( shared_->comp_names_.size()==other.shared_->comp_names_.size(),
+	        "Both multi fields must have same size of vectors of component names.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
 
 	// class members derived from FieldCommon
+	std::vector< std::string > comp_names = shared_->comp_names_; // keep component names
 	shared_ = other.shared_;
+	shared_->comp_names_ = comp_names;
     shared_->is_fully_initialized_ = false;
 	set_time_result_ = other.set_time_result_;
 	last_time_ = other.last_time_;
@@ -78,11 +80,21 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	this->multifield_ = true;
 
 	// class members of Field class
-	if ( size() == other.size() ) {
-		// assign subfields of other, keep names of subfields
-		for (unsigned int i=0; i<size(); ++i) sub_fields_[i] = other.sub_fields_[i];
+	if ( size() == 0 ) {
+		// move subfields from other, set correct names
+		sub_fields_.clear();
+		sub_fields_.reserve( other.size() );
+		for (unsigned int i=0; i<other.size(); ++i) {
+			sub_fields_.push_back( other.sub_fields_[i] );
+			if (this->shared_->comp_names_[i].length() == 0)
+				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
+																	+ " has set empty name of component.") );
+			else {
+				sub_fields_[i].name_ = this->shared_->comp_names_[i] + "_" + name();
+			}
+		}
 	} else {
-		THROW( ExcMessage() << EI_Message("Internal error. Different sizes of subfield vectors.") );
+		THROW( ExcMessage() << EI_Message("Internal error. Assignment operator can't be used after call setup_component() method.") );
 	}
 	full_input_list_ = other.full_input_list_;
 	no_check_control_field_ = other.no_check_control_field_;

@@ -105,11 +105,11 @@ TEST(Operators, assignment) {
 	mf_assignment
 	    .name("b")
 	    .flags(FieldFlag::input_copy);
-	mf_assignment.set_components(component_names);
+	std::vector<string> component_names_2 = { "comp_a", "comp_b", "comp_c" };
+	mf_assignment.set_components(component_names_2);
 	mf_base.set_mesh( *mesh );
 	mf_assignment.set_mesh( *mesh );
 	mf_base.setup_components();
-	mf_assignment.setup_components();
 
 	MultiField<3, FieldValue<3>::Scalar> mf_copy(mf_base);	// copy constructor
 	mf_assignment = mf_base; // assignment
@@ -122,7 +122,7 @@ TEST(Operators, assignment) {
 	EXPECT_EQ(mf_copy.size(), mf_base.size());
 	for (unsigned int i=0; i<mf_base.size(); ++i) {
 		EXPECT_EQ( component_names[i] + "_a", mf_base[i].name() );
-		EXPECT_EQ( component_names[i] + "_b", mf_assignment[i].name() );
+		EXPECT_EQ( component_names_2[i] + "_b", mf_assignment[i].name() );
 		EXPECT_EQ( mf_base[i].name(), mf_copy[i].name() );
 	}
 
@@ -140,7 +140,7 @@ TEST(Operators, assignment) {
 
 	{
 		// throw assert, source field has different component names
-		std::vector<string> component_names = { "comp_a", "comp_b", "comp_c" };
+		std::vector<string> component_names = { "comp_a", "comp_b" };
 		MultiField<3, FieldValue<3>::Scalar> mf_assignment_error;
 		mf_assignment_error
 		    .name("d")
@@ -150,6 +150,6 @@ TEST(Operators, assignment) {
 		mf_assignment_error.setup_components();
 
 		EXPECT_ASSERT_DEATH( { mf_assignment_error = mf_base; },
-				"Assignment between fields with different vectors of components");
+				"Both multi fields must have same size of vectors");
 	}
 }
