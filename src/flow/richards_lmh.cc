@@ -129,6 +129,12 @@ void DarcyFlowLMH_Unsteady::assembly_linear_system()
 
     START_TIMER("RicharsLMH::assembly_linear_system");
 
+    if (balance_ != nullptr)
+        balance_->start_mass_assembly(water_balance_idx_);
+
+    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+
 
     bool is_steady = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     //DBGMSG("Assembly linear system\n");
@@ -146,14 +152,21 @@ void DarcyFlowLMH_Unsteady::assembly_linear_system()
         schur0->finish_assembly();
         schur0->set_matrix_changed();
 
-        if (balance_ != nullptr)
-            balance_->start_mass_assembly(water_balance_idx_);
 
         if (! is_steady) {
             START_TIMER("fix time term");
             //DBGMSG("    setup time term\n");
             // assembly time term and rhs
-            setup_time_term();
+            solution_changed_for_scatter=true;
+
+
+            //VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+            //VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
+            //schur0->set_rhs_changed();
+
+            // swap solutions
+            VecSwap(previous_solution, schur0->get_solution());
+
         }
 
         if (balance_ != nullptr)
@@ -172,10 +185,10 @@ void DarcyFlowLMH_Unsteady::compute_per_element_nonlinearities() {
 void DarcyFlowLMH_Unsteady::setup_time_term()
 {
     // save diagonal of steady matrix
-    MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
+    //MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
-    VecCopy(*( schur0->get_rhs()),steady_rhs);
-
+    //VecCopy(*( schur0->get_rhs()),steady_rhs);
+/*
     VecZeroEntries(new_diagonal);
 
     // modify matrix diagonal
@@ -208,7 +221,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
     VecAssemblyEnd(new_diagonal);
 
     MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
-
+*/
     solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
 
@@ -236,17 +249,28 @@ void DarcyFlowLMH_Unsteady::assembly_source_term()
         // set lumped source
         double diagonal_coef = ele->measure()
                   * data_.cross_section.value(ele->centre(), ele->element_accessor())
-                  * data_.water_source_density.value(ele->centre(), ele->element_accessor())
                   / ele->n_sides();
+
+        double source_diagonal = diagonal_coef * data_.water_source_density.value(ele->centre(), ele->element_accessor());
+        double mass_balance_diagonal = diagonal_coef * data_.storativity.value(ele->centre(), ele->element_accessor());
+        double mass_diagonal = mass_balance_diagonal / time_->dt();
+
 
         FOR_ELEMENT_SIDES(ele,i)
         {
-            int edge_row = row_4_edge[ele->side(i)->edge_idx()];
+            int mesh_edge=ele->side(i)->edge_idx();
+            int edge_row = row_4_edge[mesh_edge];
+            int local_edge = edge_new_local_4_mesh_idx_[mesh_edge];
+            //cout << "mesh edge: " << mesh_edge << "local: " << local_edge << endl;
+            double mass_rhs = mass_diagonal * phead_edge_[local_edge];
 
-            schur0->rhs_set_value(edge_row, -diagonal_coef);
+            schur0->mat_set_value(edge_row, edge_row, -mass_diagonal );
+            schur0->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
 
-            if (balance_ != nullptr)
-                balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {edge_row}, {diagonal_coef});
+            if (balance_ != nullptr) {
+                balance_->add_mass_matrix_values(water_balance_idx_, ele->region().bulk_idx(), {edge_row}, {mass_balance_diagonal});
+                balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {edge_row}, {source_diagonal});
+            }
         }
     }
 

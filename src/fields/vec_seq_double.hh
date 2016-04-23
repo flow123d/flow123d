@@ -147,6 +147,7 @@ public:
 
     VectorData &data()
     {
+        ASSERT(data_ptr_, "");
         return *data_ptr_;
     }
 
@@ -171,6 +172,7 @@ public:
      */
     inline double &operator[](unsigned int idx)
     {
+        ASSERT(data_ptr_, "");
         ASSERT(idx < data_ptr_->size(), "Index is out of range.\n");
         return (*data_ptr_)[idx];
     }

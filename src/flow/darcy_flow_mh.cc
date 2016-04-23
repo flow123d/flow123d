@@ -848,7 +848,8 @@ void DarcyFlowMH_Steady::assembly_mh_matrix(MultidimAssembler assembler)
     if (balance_ != nullptr)
         balance_->finish_flux_assembly(water_balance_idx_);
 
-    assembly_source_term();
+    if (fill_matrix)
+        assembly_source_term();
 
 
     if (mortar_method_ == MortarP0) {
