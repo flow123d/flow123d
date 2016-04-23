@@ -45,9 +45,61 @@ template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField(const MultiField &other)
 : FieldCommon(other),
   sub_fields_(other.sub_fields_),
-  full_input_list_(other.full_input_list_)
+  full_input_list_(other.full_input_list_),
+  no_check_control_field_(other.no_check_control_field_)
 {
 	this->multifield_ = true;
+}
+
+
+
+template<int spacedim, class Value>
+MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiField<spacedim,Value> &other)
+{
+	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
+	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
+	        "Assignment between multi fields with different meshes.\n");
+	ASSERT( shared_->comp_names_.size(), "Vector of component names can't be empty!\n");
+	ASSERT( shared_->comp_names_.size()==other.shared_->comp_names_.size(),
+	        "Both multi fields must have same size of vectors of component names.\n");
+
+	// check for self assignement
+	if (&other == this) return *this;
+
+	// class members derived from FieldCommon
+	std::vector< std::string > comp_names = shared_->comp_names_; // keep component names
+	shared_ = other.shared_;
+	shared_->comp_names_ = comp_names;
+    shared_->is_fully_initialized_ = false;
+	set_time_result_ = other.set_time_result_;
+	last_time_ = other.last_time_;
+	last_limit_side_ = other.last_limit_side_;
+	is_jump_time_ = other.is_jump_time_;
+	component_index_ = other.component_index_;
+	this->multifield_ = true;
+
+	// class members of Field class
+	if ( size() == 0 ) {
+		// move subfields from other, set correct names
+		sub_fields_.clear();
+		sub_fields_.reserve( other.size() );
+		for (unsigned int i=0; i<other.size(); ++i) {
+			sub_fields_.push_back( other.sub_fields_[i] );
+			if (this->shared_->comp_names_[i].length() == 0)
+				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
+																	+ " has set empty name of component.") );
+			else {
+				sub_fields_[i].name_ = this->shared_->comp_names_[i] + "_" + name();
+			}
+		}
+	} else {
+		THROW( ExcMessage() << EI_Message("Internal error. Assignment operator can't be used after call setup_component() method.") );
+	}
+	full_input_list_ = other.full_input_list_;
+	no_check_control_field_ = other.no_check_control_field_;
+
+	return *this;
 }
 
 
