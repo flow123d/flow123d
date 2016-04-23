@@ -59,7 +59,6 @@ protected:
 
     void read_initial_condition() override;
     void assembly_linear_system() override;
-    void modify_system() override;
     void setup_time_term();
     void postprocess() override;
 private:

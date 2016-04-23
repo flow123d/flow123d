@@ -242,7 +242,7 @@ protected:
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
     void make_serial_scatter();
-    virtual void modify_system();
+    void modify_system();
     virtual void setup_time_term();
 
 

@@ -126,52 +126,38 @@ void DarcyFlowLMH_Unsteady::read_initial_condition()
 
 void DarcyFlowLMH_Unsteady::assembly_linear_system()
 {
+
     START_TIMER("RicharsLMH::assembly_linear_system");
 
-    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(
-            *mesh_, data_, mh_dh );
-    assembly_mh_matrix( multidim_assembler ); // fill matrix
 
     bool is_steady = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     //DBGMSG("Assembly linear system\n");
-    if (data_.changed()) {
-        //DBGMSG("  Data changed\n");
-        // currently we have no optimization for cases when just time term data or RHS data are changed
         START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
-        schur0->mat_zero_entries();
-        schur0->rhs_zero_entries();
+        auto multidim_assembler = AssemblyBase::create< AssemblyMH >(
+                *mesh_, data_, mh_dh );
+        assembly_mh_matrix( multidim_assembler ); // fill matrix
 
-        schur0->finish_assembly();
-        schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
+        schur0->finish_assembly();
+        schur0->set_matrix_changed();
+
+        if (balance_ != nullptr)
+            balance_->start_mass_assembly(water_balance_idx_);
 
         if (! is_steady) {
             START_TIMER("fix time term");
             //DBGMSG("    setup time term\n");
             // assembly time term and rhs
             setup_time_term();
-            modify_system();
         }
-        else if (balance_ != nullptr)
-        {
-            balance_->start_mass_assembly(water_balance_idx_);
+
+        if (balance_ != nullptr)
             balance_->finish_mass_assembly(water_balance_idx_);
-        }
-        END_TIMER("full assembly");
-    } else {
-        START_TIMER("modify system");
-        if (! is_steady) {
-            modify_system();
-        } else {
-            //xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
-        }
-        END_TIMER("modify system");
-    }
 
 
 }
@@ -197,13 +183,11 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     DBGMSG("setup time term with dt: %f\n", time_->dt());
 
-    if (balance_ != nullptr)
-        balance_->start_mass_assembly(water_balance_idx_);
 
     for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
         ele = mesh_->element(el_4_loc[i_loc_el]);
 
-        data_.init_pressure.value(ele->centre(), ele->element_accessor());
+        //data_.init_pressure.value(ele->centre(), ele->element_accessor());
 
         FOR_ELEMENT_SIDES(ele,i) {
             int edge_row = row_4_edge[ele->side(i)->edge_idx()];
@@ -228,37 +212,16 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
     solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
 
-    if (balance_ != nullptr)
-        balance_->finish_mass_assembly(water_balance_idx_);
-}
 
-void DarcyFlowLMH_Unsteady::modify_system() {
-    START_TIMER("modify system");
-    //if (time_->step().index()>0)
-    //    DBGMSG("dt: %f dt-1: %f indexchanged: %d matrix: %d\n", time_->step().length(), time_->step(-1).length(), time_->is_changed_dt(), schur0->is_matrix_changed() );
-
-    if (time_->is_changed_dt() && time_->step().index()>0) {
-        // if time step has changed and setup_time_term not called
-
-        double scale_factor=time_->step(-2).length()/time_->step().length();
-        if (scale_factor != 1.0) {
-            MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
-
-            //DBGMSG("Scale factor: %f\n",scale_factor);
-            VecScale(new_diagonal, scale_factor);
-            MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
-            schur0->set_matrix_changed();
-        }
-    }
-
-    // modify RHS - add previous solution
     VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
 
     // swap solutions
     VecSwap(previous_solution, schur0->get_solution());
+
 }
+
 
 
 void DarcyFlowLMH_Unsteady::assembly_source_term()
