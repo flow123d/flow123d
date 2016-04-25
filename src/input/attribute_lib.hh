@@ -11,44 +11,70 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    attribute_lib.hh
+ * @file    type_attribute_lib.hh
  * @brief
  */
 
-#ifndef ATTRIBUTE_LIB_HH_
-#define ATTRIBUTE_LIB_HH_
+#ifndef TYPE_ATTRIBUTE_LIB_HH_
+#define TYPE_ATTRIBUTE_LIB_HH_
 
 using namespace std;
 
+namespace Input {
+namespace Type {
+
 /**
- * @brief Class with static methods provided special attributes of Flow123D application.
+ * @brief Class with static methods provided common attributes of Input::Type objects.
  *
- * This class contains only attributes typical for Flow123D application. Base attributes
- * are stored in @p Input::Type::Attributes.
+ * These attributes can be used in any Input::Type object.
  */
-class FlowAttributes {
+class Attribute {
 public:
-	/**
-	 * Reference to generic type from which Input::Type object is derived.
+    /**
+     * This attribute provides a list of names of the free parameters of the subtree of a generic type.
+     * Value is a list of strings.
+     */
+    inline static string generic_parameters()
+    { return "_generic_parameters"; }
+
+    /**
+     * This attribute is set to value 'true' for the generic types that are the root types of a generic subtree, i.e.
+     * The Input::Type::Instance was applied to them.
+     * Value is a bool.
+     */
+    inline static string root_of_generic_subtree()
+    { return "_root_of_generic_subtree"; }
+
+    /**
+	 * Indicates that formatter should make the type documentation part
+	 * of the documentation of the type that use it. E.g. documentation
+	 * of a record key contain documentation of its type.
 	 *
-	 * Format of value: hash of generic type
+	 * Value is a bool.
 	 */
-	inline static string generic_type()
-	{ return "generic_type"; }
+	inline static string embedded_doc()
+	{ return "_embedded_doc"; }
+
 	/**
-	 * List of parameters used in generic types or their instances
-	 *
-	 * Format of value: list of names or list of pairs (name : value)
-	 */
-	inline static string parameters()
-	{ return "parameters"; }
-	/**
-	 * Particular for GeoMop, units in machine readable form
+	 * Propose custom target name for hypertext reference.
 	 *
 	 * Format of value: string
 	 */
-	inline static string units()
-	{ return "units"; }
+	inline static string link_name()
+	{ return "_link_name"; }
+
+	/**
+	 * Attribute to mark obsolete types.
+	 *
+	 * Format of value: bool
+	 */
+	inline static string obsolete()
+	{ return "_obsolete"; }
+
 };
 
-#endif /* ATTRIBUTE_LIB_HH_ */
+
+} // closing namespace Type
+} // closing namespace Input
+
+#endif /* TYPE_ATTRIBUTE_LIB_HH_ */
