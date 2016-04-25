@@ -209,28 +209,21 @@ class TypeAttributes(Parsable):
     """
     :type obsolete       : unicode
     :type link_name      : unicode
-    :type parameters     : list[TypeAttributeParameter]
-    :type generic_type   : ist.extras.TypeReference
     :type input_type     : InputType
     """
     __fields__ = [
         Field('obsolete', t=str),
         Field('link_name', index=True),
-        Field('parameters', t=List, subtype=TypeAttributeParameter),
-        Field('generic_type', t=TypeReference),
     ]
 
     def __init__(self):
         super(TypeAttributes, self).__init__()
         self.obsolete = None
         self.link_name = None
-        self.parameters = None
-        self.generic_type = None
         self.input_type = InputType().parse('')
 
     def __repr__(self):
-        if self.obsolete is None and self.link_name is None \
-                and self.parameters is None and self.generic_type is None:
+        if self.obsolete is None and self.link_name is None:
             return '{}'
         return super(TypeAttributes, self).__repr__()
 
@@ -238,10 +231,12 @@ class TypeAttributes(Parsable):
         """
         :rtype : Dict
         """
-        if not self.parameters:
-            return Dict()
-
-        result = Dict()
-        for p in self.parameters:
-            result[p.name] = p
-        return result
+        # TODO compatibility
+        return Dict()
+        # if not self.parameters:
+        #     return Dict()
+        #
+        # result = Dict()
+        # for p in self.parameters:
+        #     result[p.name] = p
+        # return result
