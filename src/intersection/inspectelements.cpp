@@ -137,6 +137,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
             bt.find_bounding_box(elements_bb[component_ele_idx], searchedElements);
 
             component_counter_++;
+            DBGMSG("comp: %d\n", component_counter_);
             
             START_TIMER("Bounding box element iteration");
             
@@ -154,6 +155,11 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                     (last_slave_for_3D_elements[bulk_ele_idx] != (int)(component_ele_idx) &&
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
+                    // check that tetrahedron element is numbered correctly and is not degenerated
+                    ASSERT(ele_3D->tetrahedron_jacobian() > 0,
+                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).",
+                           ele_3D->index());
+                    
                         // - find first intersection
                         // - if found, prolongate and possibly fill both prolongation queues
                         // do-while loop:
@@ -462,6 +468,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                             if(edg->n_sides > 2)
                             {
                                 component_counter_++;
+                                DBGMSG("COMPONENT COUNTER: %d\n", component_counter_);
                                 component_idx = component_counter_;
                             }
                             
@@ -631,18 +638,19 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
                                                     bulk_idx, 
                                                     &(storage.back())
                                                 );
+                    
 //                  // write down intersections
-//                     IntersectionLocal<1,3>* il13 = 
-//                         static_cast<IntersectionLocal<1,3>*> (intersection_map_[idx][j].second);
-//                     cout << &(intersection_storage13_.back()) << "  " << il13 << *il13;
-//                     for(IntersectionPoint<1,3> &ip : il13->points())
+//                     IntersectionLocal<dim,3>* il = 
+//                         static_cast<IntersectionLocal<dim,3>*> (intersection_map_[idx][j].second);
+//                     cout << il;
+//                     for(IntersectionPoint<dim,3> &ip : il->points())
 //                         ip.coords(mesh->element(idx)).print(cout);
 
                     // create map for bulk element
                     intersection_map_[bulk_idx].push_back(
                                                 std::make_pair(
                                                     idx, 
-                                                    &(intersection_storage13_.back())
+                                                    &(storage.back())
                                                 ));
                 }
         }
@@ -916,7 +924,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
         
         const std::vector<ILpair> &local_map = intersection_map_[ele_idx];
         
-        DBGMSG("more than 2 intersections in tetrahedron found\n");
+        //DBGMSG("more than 2 intersections in tetrahedron found\n");
         for(unsigned int i=0; i < local_map.size(); i++)
         {
             //TODO: 1] compute all plucker coords at once
@@ -926,6 +934,9 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
             if(eleA->dim() !=2 ) continue;  //skip other dimension intersection
             unsigned int componentA_idx = local_map[i].second->component_idx();
             
+            IntersectionLocalBase * ilb = local_map[i].second;
+            DBGMSG("2d-2d ILB: %d %d %d\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), ilb->component_idx());
+            
             for(unsigned int j=i+1; j < local_map.size(); j++)
             {
                 ElementFullIter eleB = mesh->element(local_map[j].first);
@@ -933,7 +944,9 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
                 
                 unsigned int componentB_idx = local_map[j].second->component_idx();
                 if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
+                // this also skips the compatible connections (it is still a single component in this case)
                 
+                DBGMSG("compute intersection 2d-2d\n");
                 compute_single_intersection(eleA,
                                             eleB);
             }
@@ -952,7 +965,7 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
     update_simplex(eleA, triaA_);
     update_simplex(eleB, triaB_);
     
-    IntersectionAux<2,2> is(eleA->index(), eleB->index());
+    IntersectionAux<2,2> is(eleA->index(), eleB->index(), 0);
     std::vector<unsigned int> prolongation_table;
     
     ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA_, triaB_);
