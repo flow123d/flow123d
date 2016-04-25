@@ -19,10 +19,10 @@ class TypeSelection(Parsable):
     """
     __fields__ = [
         Field("id", index=True),
-        Field("values", t=List, subtype=TypeSelectionValue, link_to_parent=True),
+        Field("values", t=List, subtype=TypeSelectionValue, link_to_parent=True, default=[]),
         Field(["name", "type_name"], index=True),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
         Field("description"),
     ]
 
@@ -49,7 +49,7 @@ class TypeRecord(Parsable):
     """
     Class defining "Record" type in IST
     :type id                 : unicode
-    :type keys               : list[ist.extras.TypeRecordKey]
+    :type keys               : List[ist.extras.TypeRecordKey]
     :type name               : unicode
     :type implements         : List[ist.extras.TypeReference]
     :type input_type         : InputType
@@ -61,9 +61,9 @@ class TypeRecord(Parsable):
         Field("id", index=True),
         Field("keys", t=List, subtype=TypeRecordKey, link_to_parent=True),
         Field(["name", "type_name"], index=True),
-        Field("implements", t=List, subtype=TypeReference),
+        Field("implements", t=List, subtype=TypeReference, default=[]),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
         Field("description"),
         Field("reducible_to_key", t=Unicode, link_to_parent=True),
     ]
@@ -71,11 +71,11 @@ class TypeRecord(Parsable):
     def __init__(self):
         super(TypeRecord, self).__init__()
         self.id = None
-        self.keys = None
+        self.keys = []
         self.name = None
-        self.implements = None
+        self.implements = []
         self.input_type = None
-        self.attributes = None
+        self.attributes = TypeAttributes()
         self.description = None
         self.reducible_to_key = None
 
@@ -101,9 +101,9 @@ class TypeAbstract(Parsable):
         Field("id", index=True),
         Field(["name", "type_name"], index=True),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
         Field("description"),
-        Field("implementations", t=List, subtype=TypeReference),
+        Field("implementations", t=List, subtype=TypeReference, default=[]),
         Field("default_descendant", t=TypeReference),
     ]
 
@@ -130,7 +130,7 @@ class TypeString(Parsable):
         Field("id", index=True),
         Field(["name", "type_name"]),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
     ]
 
     def __init__(self):
@@ -155,7 +155,7 @@ class TypeDouble(Parsable):
         Field("range", t=TypeRange),
         Field(["name", "type_name"]),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
     ]
 
     def __init__(self):
@@ -180,7 +180,7 @@ class TypeFilename(Parsable):
         Field("id", index=True),
         Field(["name", "type_name"]),
         Field("file_mode"),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
         Field("input_type", t=InputType),
     ]
 
@@ -205,7 +205,7 @@ class TypeBool(Parsable):
         Field("id", index=True),
         Field(["name", "type_name"]),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
     ]
 
     def __init__(self):
@@ -230,7 +230,7 @@ class TypeInteger(Parsable):
         Field("range", t=TypeRange),
         Field(["name", "type_name"]),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
     ]
 
     def __init__(self):
@@ -258,7 +258,7 @@ class TypeArray(Parsable):
         Field("subtype", t=TypeReference),
         Field(["name", "type_name"]),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
     ]
 
     def __init__(self):
@@ -283,7 +283,7 @@ class TypeParameter(Parsable):
         Field("id", index=True),
         Field(["name", "type_name"]),
         Field("input_type", t=InputType),
-        Field("attributes", t=TypeAttributes),
+        Field("attributes", t=TypeAttributes, default=TypeAttributes()),
     ]
 
     def __init__(self):
