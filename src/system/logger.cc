@@ -23,13 +23,29 @@
 #include <mpi.h>
 
 
-Logger::Logger(MsgType type, bool every_process)
-: type_(type), every_process_(every_process)
+/*******************************************************************
+ * implementation of MultiTargetBuf
+ */
+
+
+const std::string MultiTargetBuf::msg_type_string(MsgType msg_type)
+{
+	switch (msg_type) {
+		case _warning: return "Warning";
+		case _message: return "Message";
+		case _log:     return "Log";
+		default:       return "Debug";
+	}
+}
+
+
+MultiTargetBuf::MultiTargetBuf(MsgType type, bool every_process)
+: std::stringbuf(), type_(type), every_process_(every_process), streams_mask_(0)
 {
 	// set actual time
 	time_t     now = time(0);
 	char buf[80];
-    strftime(buf, sizeof(buf) - 1, "%y.%m.%d_%H-%M-%S", localtime(&now));
+    strftime(buf, sizeof(buf) - 1, "%b %d %Y %X", localtime(&now));
     date_time_ = std::string(buf);
 
     // set MPI rank
@@ -41,15 +57,71 @@ Logger::Logger(MsgType type, bool every_process)
 }
 
 
-Logger::~Logger()
+int MultiTargetBuf::sync() {
+	print_to_stream(std::cout, MultiTargetBuf::mask_cout);
+	print_to_stream(std::cerr, MultiTargetBuf::mask_cerr);
+
+	str("");
+	return 0;
+}
+
+
+void MultiTargetBuf::set_context(const char* file_name, const char* function, const int line)
+{
+	this->set_mask();
+	file_name_ = std::string(file_name);
+	function_ = std::string(function);
+	line_ = line;
+}
+
+
+void MultiTargetBuf::set_mask()
+{
+	if ( !every_process_ && (mpi_rank_ > 0) ) return;
+	if (type_ == _warning) streams_mask_ = MultiTargetBuf::mask_cerr;
+	else streams_mask_ = MultiTargetBuf::mask_cout;
+}
+
+
+void MultiTargetBuf::print_to_stream(std::ostream& stream, unsigned int mask)
+{
+	if (streams_mask_ & mask) {
+		stream << str();
+		stream << "type : " << MultiTargetBuf::msg_type_string(type_) << "\n";
+		stream << "mpi_rank : " << mpi_rank_ << "\n";
+		stream << "time : " << date_time_ << "\n";
+		stream << "code_point : " << file_name_ << "(" << line_ << ")\n";
+		stream << "function : " << function_ << "\n";
+		stream << std::flush;
+	}
+}
+
+
+/*******************************************************************
+ * implementation of Logger
+ */
+
+
+Logger::Logger(MsgType type, bool every_process)
+: std::ostream( new MultiTargetBuf(type, every_process) )
 {}
+
+
+Logger::~Logger()
+{
+	delete rdbuf();
+	rdbuf(NULL);
+}
 
 
 Logger& Logger::set_context(const char* file_name, const char* function, const int line)
 {
-	file_name_ = std::string(file_name);
-	function_ = std::string(function);
-	line_ = line;
-
+	rdbuf()->pubsync();
+	dynamic_cast<MultiTargetBuf *>(rdbuf())->set_context(file_name, function, line);
 	return *this;
 }
+
+/**
+ * Solving of output to multiple stream
+ * http://www.cplusplus.com/forum/general/54588/
+ */

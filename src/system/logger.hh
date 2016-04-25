@@ -20,6 +20,7 @@
 
 
 #include <iostream>
+#include <sstream>
 
 
 
@@ -27,6 +28,43 @@
 typedef enum MsgType {
 	_warning, _message, _log, _debug
 } MsgType;
+
+
+/**
+ * Helper class
+ */
+class MultiTargetBuf : public std::stringbuf
+{
+public:
+	/// Return string value of given MsgType
+	static const std::string msg_type_string(MsgType msg_type);
+
+	/// Constructor
+	MultiTargetBuf(MsgType type, bool every_process);
+
+	/// Stores values for printing out line number, function, etc
+	void set_context(const char* file_name, const char* function, const int line);
+protected:
+	virtual int sync();
+private:
+	static const unsigned int mask_cout = 0b00000001;
+	static const unsigned int mask_cerr = 0b00000010;
+
+	/// Set @p streams_mask_ according to the tzpe of message.
+	void set_mask();
+
+	/// Print formated message to given stream if mask corresponds with @p streams_mask_.
+	void print_to_stream(std::ostream& stream, unsigned int mask);
+
+	MsgType type_;                 ///< Type of message.
+	bool every_process_;           ///< Flag marked if log message is printing for all processes or only for zero process.
+	std::string file_name_;        ///< Actual file.
+	std::string function_;         ///< Actual function.
+	int line_;                     ///< Actual line.
+	std::string date_time_;        ///< Actual date and time.
+	int mpi_rank_;                 ///< Actual process (if MPI is supported)
+	int streams_mask_;             ///< Mask of logger, specifies streams
+};
 
 
 /**
@@ -44,14 +82,6 @@ public:
 	/// Destructor.
 	~Logger();
 
-private:
-	MsgType type_;                 ///< Type of message.
-	bool every_process_;           ///< Flag marked if log message is printing for all processes or only for zero process.
-	std::string file_name_;        ///< Actual file.
-	std::string function_;         ///< Actual function.
-	int line_;                     ///< Actual line.
-	std::string date_time_;        ///< Actual date and time.
-	int mpi_rank_;                 ///< Actual process (if MPI is supported)
 };
 
 /// Macro defining one record of log
