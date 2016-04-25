@@ -339,7 +339,7 @@ Record Record::deep_copy() const {
 	rec.data_ =  boost::make_shared<Record::RecordData>(*this->data_);
 	rec.data_->closed_ = false;
 	rec.data_->finished = false;
-	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	rec.copy_attributes(*attributes_);
 	rec.generic_type_hash_ = this->generic_type_hash_;
 	rec.parameter_map_ = this->parameter_map_;
 	return rec;

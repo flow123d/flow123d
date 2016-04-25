@@ -145,12 +145,20 @@ TypeBase::json_string TypeBase::print_parameter_map_keys_to_json(ParameterMap pa
 }
 
 void TypeBase::set_generic_attributes(ParameterMap parameter_map) {
-    this->add_attribute( "generic_parameters", print_parameter_map_keys_to_json(parameter_map) );
-    if (is_root_of_generic_subtree()) this->add_attribute( "root_of_generic_subtree", "true");
+    // check if the type is really generic (it may be non-generic even if part of a generic subtree)
+    if (parameter_map.size() > 0)
+        this->add_attribute( "_generic_parameters", print_parameter_map_keys_to_json(parameter_map) );
+    if (is_root_of_generic_subtree()) this->add_attribute( "_root_of_generic_subtree", "true");
 }
 
 
-
+void TypeBase::copy_attributes(attribute_map other_attributes) {
+    attributes_->clear();
+    for(auto &item : other_attributes) {
+        if (item.first[0] != '_') // not internal attribute
+            attributes_->insert(item);
+    }
+}
 
 
 
@@ -219,7 +227,8 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	arr.data_->type_of_values_ = inst.first;
 	ParameterMap parameter_map = inst.second;
 	// Copy attributes
-	arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	arr.copy_attributes(*attributes_);
+
 	// Set parameters as attribute
 	json_string val = this->print_parameter_map_to_json(parameter_map);
 	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );

@@ -222,7 +222,8 @@ Abstract Abstract::deep_copy() const {
 	abstract.child_data_->finished_ = false;
 	abstract.child_data_->list_of_childs.clear();
 	abstract.child_data_->selection_of_childs = boost::make_shared<Selection>(this->type_name() + "_TYPE_selection");
-	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	abstract.copy_attributes(*attributes_);
+
 	abstract.generic_type_hash_ = this->generic_type_hash_;
 	abstract.parameter_map_ = this->parameter_map_;
 	return abstract;

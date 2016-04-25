@@ -139,8 +139,7 @@ Tuple Tuple::deep_copy() const {
 	tuple.data_->finished = false;
 	tuple.generic_type_hash_ = this->generic_type_hash_;
 	tuple.parameter_map_ = this->parameter_map_;
-	tuple.attributes_ = boost::make_shared<attribute_map>(*attributes_);
-
+	tuple.copy_attributes(*attributes_);
 	return tuple;
 }
 

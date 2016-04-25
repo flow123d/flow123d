@@ -250,6 +250,12 @@ protected:
      */
     void set_generic_attributes(ParameterMap param_map);
 
+    /**
+     * Copy attributes to the instance of the generic type. Remove all internal attributes starting with '_'.
+     */
+    void copy_attributes(attribute_map other_attributes);
+
+
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
 
