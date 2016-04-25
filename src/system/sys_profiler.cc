@@ -806,19 +806,17 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
 
 #ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-
+    
     if (json_filepath=="") return;
 
-    // debug info
-    // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
-    // cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
-    // cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
-    // cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
-    // cout << "Py_GetPath:            " << Py_GetPath() << endl;
-    // cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
-    // cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
+    // error under CYGWIN environment : more details in this repo 
+    // https://github.com/x3mSpeedy/cygwin-python-issue
+    // 
+    // For now we only support profiler report conversion in UNIX environment
+    // Windows users will have to use a python script located in bin folder
+    // 
 
-
+    #ifndef FLOW123D_HAVE_CYGWIN
     // grab module and function by importing module profiler_formatter_module.py
     PyObject * python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
     //
@@ -845,6 +843,18 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyObject_CallObject (convert_method, arguments);
 
     PythonLoader::check_error();
+
+    #else
+
+    // print information about windows-cygwin issue and offer manual solution
+    cout << "# Note: converting json profiler reports is not";
+    cout << " supported under Windows or Cygwin environment for now." << endl;
+    cout << "# You can use python script located in bin/python folder";
+    cout << " in order to convert json report to txt or csv format." << endl;
+    
+    cout << "python profiler_formatter_script.py --input \"" << json_filepath;
+    cout << "\" --output \"profiler.txt\"" << endl;
+    #endif // FLOW123D_HAVE_CYGWIN
 }
 #else
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
