@@ -28,39 +28,49 @@ namespace Type {
  *
  * These attributes can be used in any Input::Type object.
  */
-class Attributes {
+class Attribute {
 public:
-	/**
+    /**
+     * This attribute provides a list of names of the free parameters of the subtree of a generic type.
+     * Value is a list of strings.
+     */
+    inline static string generic_parameters()
+    { return "_generic_parameters"; }
+
+    /**
+     * This attribute is set to value 'true' for the generic types that are the root types of a generic subtree, i.e.
+     * The Input::Type::Instance was applied to them.
+     * Value is a bool.
+     */
+    inline static string root_of_generic_subtree()
+    { return "_root_of_generic_subtree"; }
+
+    /**
 	 * Indicates that formatter should make the type documentation part
 	 * of the documentation of the type that use it. E.g. documentation
 	 * of a record key contain documentation of its type.
 	 *
-	 * Format of value: string
+	 * Value is a bool.
 	 */
 	inline static string embedded_doc()
-	{ return "embedded_doc"; }
+	{ return "_embedded_doc"; }
+
 	/**
 	 * Propose custom target name for hypertext reference.
 	 *
 	 * Format of value: string
 	 */
 	inline static string link_name()
-	{ return "link_name"; }
+	{ return "_link_name"; }
+
 	/**
-	 * Obsolete type.
+	 * Attribute to mark obsolete types.
 	 *
 	 * Format of value: bool
 	 */
 	inline static string obsolete()
-	{ return "obsolete"; }
-	/**
-	 * JSON with description of move of the particular type/key (only if
-	 * we allow attributes of keys).
-	 *
-	 * Format of value: string
-	 */
-	inline static string ist_change()
-	{ return "ist_change"; }
+	{ return "_obsolete"; }
+
 };
 
 

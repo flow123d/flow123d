@@ -36,7 +36,7 @@
 #include "input_type.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
-#include "attribute_lib.hh"
+#include "type_attribute_lib.hh"
 #include "json_spirit/json_spirit.h"
 
 
@@ -148,8 +148,9 @@ TypeBase::json_string TypeBase::print_parameter_map_keys_to_json(ParameterMap pa
 void TypeBase::set_generic_attributes(ParameterMap parameter_map) {
     // check if the type is really generic (it may be non-generic even if part of a generic subtree)
     if (parameter_map.size() > 0)
-	this->add_attribute("parameters", this->print_parameter_map_to_json(parameter_map));
-    if (is_root_of_generic_subtree()) this->add_attribute( "_root_of_generic_subtree", "true");
+        add_attribute(Attribute::generic_parameters(), print_parameter_map_keys_to_json(parameter_map));
+    if (is_root_of_generic_subtree())
+        add_attribute(Attribute::root_of_generic_subtree(), "true");
 }
 
 
