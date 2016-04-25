@@ -245,6 +245,13 @@ class List(list):
         return len(self) == 1
 
 
+class SmartList(List):
+    def parse(self, json_data):
+        if type(json_data) is dict:
+            return super(SmartList, self).parse([dict([x]) for x in json_data.items()])
+        return super(SmartList, self).parse(json_data)
+
+
 class Dict(dict):
     def parse(self, json_data):
         for key, value in json_data.items():
