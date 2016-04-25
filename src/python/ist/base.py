@@ -50,7 +50,7 @@ class InputType(object):
 
 
 class Field(object):
-    def __init__(self, names, t=str, index=False, subtype=None, save_as=None, required=False, link_to_parent=False):
+    def __init__(self, names, t=str, index=False, subtype=None, save_as=None, required=False, link_to_parent=False, default=None):
         """
         :type subtype: class
         """
@@ -61,6 +61,7 @@ class Field(object):
         self.subtype = subtype
         self.save_as = save_as or self.names[0]
         self.link_to_parent = link_to_parent
+        self.default = default
 
     def parse(self, json_data):
         for name in self.names:
@@ -73,6 +74,9 @@ class Field(object):
                     return instance.parse(json_data[name])
 
                 return json_data[name]
+
+        if self.default:
+            return self.default
 
         if self.required:
             raise
@@ -239,6 +243,13 @@ class List(list):
 
     def is_single(self):
         return len(self) == 1
+
+
+class SmartList(List):
+    def parse(self, json_data):
+        if type(json_data) is dict:
+            return super(SmartList, self).parse([dict([x]) for x in json_data.items()])
+        return super(SmartList, self).parse(json_data)
 
 
 class Dict(dict):
