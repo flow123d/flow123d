@@ -388,7 +388,7 @@ public:
     Record &has_obligatory_type_key();
 
     /// Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;
@@ -428,7 +428,7 @@ protected:
      *
      * Called from make_instance method and set data of Record or its descendants.
      */
-    void set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) const;
+    void set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec);
 
     /**
      * Internal data class.

@@ -184,7 +184,7 @@ public:
 
 
     // Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 private:
 
     /**

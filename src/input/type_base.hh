@@ -74,12 +74,17 @@ class TypeBase {
 public:
 	/// Type returned by content_hash methods.
 	typedef std::size_t TypeHash;
+
 	/// String stored in JSON format.
 	typedef std::string json_string;
 	/// Defines map of Input::Type attributes.
 	typedef std::map<std::string, json_string> attribute_map;
+
 	/// Defines pairs of (name, Input::Type), that are used for replace of parameters in generic types.
 	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
+	/// Define vector of parameters passed to the overloaded make_instance method.
+	typedef std::vector<ParameterPair> ParameterVector;
+
 	/// Defines map of used parameters
 	typedef std::map< std::string, TypeHash > ParameterMap;
 	/// Return type of make_instance methods, contains instance of generic type and map of used parameters
@@ -187,7 +192,7 @@ public:
     void add_attribute(std::string name, json_string val);
 
     /// Create instance of generic type, replace parameters in input tree by type stored in @p vec.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
+    virtual MakeInstanceReturnType make_instance(ParameterVector vec = ParameterVector()) =0;
 
     /// Indicates if type is marked with flag @p root_of_generic_subtree_
     inline bool is_root_of_generic_subtree() {
@@ -233,8 +238,17 @@ protected:
     /// Create JSON output from @p parameter_map formatted as attribute.
     json_string print_parameter_map_to_json(ParameterMap parameter_map) const;
 
-    /// Set attribute parameters from value stored in @p parameter_map
-    void set_parameters_attribute(ParameterMap parameter_map);
+    /**
+     * JSON format of the vector of parameter names. Used for generic composed types.
+     * TODO: use ParameterVector instead of ParameterMap and merge this method with the previous one.
+     */
+    json_string print_parameter_map_keys_to_json(ParameterMap param_map) const;
+
+    /**
+     * Extract and set attributes from the ParameterMap containing parameters of the subtree.
+     * Used in implementations of the make_instance method.
+     */
+    void set_generic_attributes(ParameterMap param_map);
 
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
@@ -340,7 +354,7 @@ public:
     bool operator==(const TypeBase &other) const override;
 
     // Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
     /// Create deep copy of Array (copy all data stored in shared pointers etc.)
     Array deep_copy() const;
@@ -384,7 +398,7 @@ public:
     string class_name() const override { return "Bool"; }
 
 
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 };
 
 
@@ -418,7 +432,7 @@ public:
     string type_name() const override;
     string class_name() const override { return "Integer"; }
 
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>())  override;
 private:
 
     std::int64_t lower_bound_, upper_bound_;
@@ -456,7 +470,7 @@ public:
     string type_name() const override;
     string class_name() const override { return "Double"; }
 
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 private:
 
 
@@ -484,7 +498,7 @@ public:
      */
     virtual bool match(const string &value) const;
 
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 };
 
 
@@ -533,7 +547,7 @@ public:
     }
 
 
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
 
 

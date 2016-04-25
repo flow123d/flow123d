@@ -264,7 +264,7 @@ public:
     Default &get_selection_default() const;
 
     // Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
     /// Create deep copy of Abstract (copy all data stored in shared pointers etc.)
     Abstract deep_copy() const;

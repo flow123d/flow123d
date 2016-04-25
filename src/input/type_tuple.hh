@@ -114,7 +114,7 @@ public:
     unsigned int obligatory_keys_count() const;
 
     /// Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
     /// Overrides Record::deep_copy
     Tuple deep_copy() const;

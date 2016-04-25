@@ -124,19 +124,31 @@ bool TypeBase::validate_json(json_string str) const {
 
 TypeBase::json_string TypeBase::print_parameter_map_to_json(ParameterMap parameter_map) const {
 	std::stringstream ss;
-	ss << "[";
+	ss << "{";
 	for (ParameterMap::iterator it=parameter_map.begin(); it!=parameter_map.end(); it++) {
 		if (it != parameter_map.begin()) ss << "," << endl;
-		ss << "{ \"" << (*it).first << "\" : " << TypeBase::hash_str( (*it).second ) << " }";
+		ss << "\"" << (*it).first << "\" : " << TypeBase::hash_str( (*it).second );
 	}
-	ss << "]";
+	ss << "}";
 	return ss.str();
 }
 
-
-void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
-	this->add_attribute("parameters", this->print_parameter_map_to_json(parameter_map));
+TypeBase::json_string TypeBase::print_parameter_map_keys_to_json(ParameterMap parameter_map) const {
+    stringstream ss;
+    ss << "[ ";
+    for (ParameterMap::iterator it=parameter_map.begin(); it!=parameter_map.end(); it++) {
+        if (it != parameter_map.begin()) ss << ", ";
+        ss << "\"" << it->first << "\"";
+    }
+    ss << " ]";
+    return ss.str();
 }
+
+void TypeBase::set_generic_attributes(ParameterMap parameter_map) {
+    this->add_attribute( "generic_parameters", print_parameter_map_keys_to_json(parameter_map) );
+    if (is_root_of_generic_subtree()) this->add_attribute( "root_of_generic_subtree", "true");
+}
+
 
 
 
@@ -199,7 +211,7 @@ bool Array::operator==(const TypeBase &other) const    {
 
 
 
-TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec)  {
 	// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
 	Array arr = this->deep_copy();
 	// Replace parameter stored in type_of_values_
@@ -211,9 +223,7 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	// Set parameters as attribute
 	json_string val = this->print_parameter_map_to_json(parameter_map);
 	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
-	(*arr.attributes_)["parameters"] = val;
 	arr.parameter_map_ = parameter_map;
-	(*arr.attributes_)["generic_type"] = TypeBase::hash_str();
 	arr.generic_type_hash_ = this->content_hash();
 
 	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );
@@ -290,7 +300,7 @@ string Bool::type_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec)  {
 	return std::make_pair( boost::make_shared<Bool>(*this), ParameterMap() );
 }
 
@@ -320,7 +330,7 @@ string Integer::type_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) {
 	return std::make_pair( boost::make_shared<Integer>(*this), ParameterMap() );
 }
 
@@ -352,7 +362,7 @@ string Double::type_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) {
 	return std::make_pair( boost::make_shared<Double>(*this), ParameterMap() );
 }
 
@@ -392,7 +402,7 @@ bool FileName::match(const string &str) const {
 
 
 
-TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec)  {
 	return std::make_pair( boost::make_shared<FileName>(*this), ParameterMap() );
 }
 
@@ -424,7 +434,7 @@ bool String::match(const string &str) const {
 
 
 
-TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) {
 	return std::make_pair( boost::make_shared<String>(*this), ParameterMap() );
 }
 

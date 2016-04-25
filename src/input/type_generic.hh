@@ -62,7 +62,7 @@ public:
     TypeHash content_hash() const  override;
 
     /// Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
     /// Implements @p TypeBase::finish.
     bool finish(bool is_generic = false) override;
@@ -101,7 +101,7 @@ public:
      *
      * At each successive call returns this stored type.
      */
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
 protected:
     /// Reference to generic types (contains some descendants of type @p Parameter).

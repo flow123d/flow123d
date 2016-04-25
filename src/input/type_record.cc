@@ -307,7 +307,7 @@ Record &Record::has_obligatory_type_key() {
 }
 
 
-TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) {
 	Record rec = this->deep_copy();
 	ParameterMap parameter_map;
 	this->set_instance_data(rec, parameter_map, vec);
@@ -316,7 +316,7 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 }
 
 
-void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) const {
+void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) {
 	// Replace keys of type Parameter
 	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
 		if ( key_it->key_ != "TYPE" ) { // TYPE key isn't substituted
@@ -327,10 +327,10 @@ void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::ve
 		}
 	}
 	// Set attributes
-	rec.set_parameters_attribute(parameter_map);
 	rec.parameter_map_ = parameter_map;
-	rec.add_attribute("generic_type", this->hash_str());
 	rec.generic_type_hash_ = this->content_hash();
+
+	this->set_generic_attributes(parameter_map);
 }
 
 

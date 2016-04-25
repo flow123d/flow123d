@@ -189,9 +189,10 @@ bool Abstract::have_default_descendant() const {
 
 
 
-TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPair> vec) {
 	Abstract abstract = this->deep_copy();
 	ParameterMap parameter_map;
+
 
 	// Set close flag - add_child method required closed child_data
 	abstract.child_data_->closed_ = true;
@@ -206,10 +207,9 @@ TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPa
 	abstract.child_data_->closed_ = false;
 
 	// Set parameters and generic type as attributes
-	abstract.set_parameters_attribute(parameter_map);
 	abstract.parameter_map_ = parameter_map;
-	abstract.add_attribute("generic_type", this->hash_str() );
 	abstract.generic_type_hash_ = this->content_hash();
+	TypeBase::set_generic_attributes(parameter_map);
 
 	return std::make_pair( boost::make_shared<Abstract>(abstract.close()), parameter_map );
 }

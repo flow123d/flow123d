@@ -123,7 +123,7 @@ unsigned int Tuple::obligatory_keys_count() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Tuple::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Tuple::make_instance(std::vector<ParameterPair> vec)  {
 	Tuple tuple = this->deep_copy();
 	ParameterMap parameter_map;
 	this->set_instance_data(tuple, parameter_map, vec);
