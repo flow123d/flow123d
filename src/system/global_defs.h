@@ -179,7 +179,9 @@ if ( !(expr) ) \
 if ( !(expr) ) \
   feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
 #else
-#define FEAL_DEBUG_ASSERT( expr)
+#define FEAL_DEBUG_ASSERT( expr) \
+if ( !(expr) ) \
+  feal::AssertNull()._FEAL_ASSERT_A
 #endif
 
 
