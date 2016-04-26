@@ -35,7 +35,7 @@ using namespace std;
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
 #include "input/accessors.hh"
-
+#include "input/flow_attribute_lib.hh"
 
 namespace it = Input::Type;
 
@@ -66,9 +66,12 @@ string FieldAlgorithmBase<spacedim, Value>::template_name() {
 
 template <int spacedim, class Value>
 Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
-	return it::Abstract("Field:"+template_name(), "Abstract for all time-space functions.")
+	stringstream ss;
+	ss << "[" << Value::NRows_  << ", " << Value::NCols_  << "]";
+    return it::Abstract("Field:"+template_name(), "Abstract for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
 			.root_of_generic_subtree()
+			.add_attribute(FlowAttribute::field_value_shape(), ss.str() )
 			.close();
 }
 

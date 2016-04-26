@@ -127,12 +127,12 @@ std::string UnitSI::format_text() const {
 }
 
 
+// Symbols for base SI units.
+std::vector<std::string> UnitSI::unit_symbols={"m","md","kg","s","A","K","mol","cd" };
+
 
 std::string UnitSI::format(OutputFormat form) const {
 	ASSERT(is_def(), "UnitSI object must be defined!");
-
-    // Symbols for base SI units.
-    std::vector<std::string> unit_symbols={"m","d","kg","s","A","K","mol","cd" };
 
 	std::stringstream output;
 
@@ -167,6 +167,18 @@ std::string UnitSI::format(OutputFormat form) const {
 	}
 
 	return output.str();
+}
+
+
+std::string UnitSI::json() const {
+    stringstream ss;
+    ss << "{ ";
+    for(unsigned int i=0; i < n_base_units; i++ ) {
+        if (i!=0) ss << ", ";
+        ss << string("\"") << unit_symbols[i] << "\" : " << exponents_[i];
+    }
+    ss << " }";
+    return ss.str();
 }
 
 void UnitSI::undef(bool val) {

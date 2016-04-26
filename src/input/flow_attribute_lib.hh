@@ -26,29 +26,25 @@ using namespace std;
  * This class contains only attributes typical for Flow123D application. Base attributes
  * are stored in @p Input::Type::Attributes.
  */
-class FlowAttributes {
+class FlowAttribute {
 public:
+
 	/**
-	 * Reference to generic type from which Input::Type object is derived.
-	 *
-	 * Format of value: hash of generic type
-	 */
-	inline static string generic_type()
-	{ return "generic_type"; }
-	/**
-	 * List of parameters used in generic types or their instances
-	 *
-	 * Format of value: list of names or list of pairs (name : value)
-	 */
-	inline static string parameters()
-	{ return "parameters"; }
-	/**
-	 * Particular for GeoMop, units in machine readable form
+	 * Attribute specify unit of a field, specified in the field abstract record.
 	 *
 	 * Format of value: string
 	 */
-	inline static string units()
-	{ return "units"; }
+	inline static string field_unit()
+	{ return "key_field_unit"; }
+
+    /**
+     * Particular for GeoMop, units in machine readable form
+     *
+     * Format of value: string
+     */
+    inline static string field_value_shape()
+    { return "field_value_shape"; }
+
 };
 
 #endif /* ATTRIBUTE_LIB_HH_ */
