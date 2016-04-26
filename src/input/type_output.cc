@@ -516,6 +516,21 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 	return stream;
 }
 
+string print_attributes(TypeBase::attribute_map attribute_map) {
+    stringstream stream;
+
+    stream << "\"attributes\" : {" << endl; // print map of attributes
+    for (auto it=attribute_map.begin(); it!=attribute_map.end(); ++it) {
+        if (it != attribute_map.begin()) {
+            stream << "," << endl;
+        }
+        stream << "\"" << it->first << "\" : " << it->second;
+    }
+    stream << endl << "}";
+
+}
+
+
 void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type) {
     stream << "{" << endl;
     stream << "\"id\" : " << type->hash_str() << "," << endl;
@@ -534,14 +549,7 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
 	if (parameter_map_to_json.size()) { // parameters into separate keys
 		stream << "\"parameters\" : " << parameter_map_to_json << "," << endl;
 	}
-	stream << "\"attributes\" : {" << endl; // print map of attributes
-	for (std::map<std::string, TypeBase::json_string>::iterator it=attr_map.begin(); it!=attr_map.end(); ++it) {
-        if (it != attr_map.begin()) {
-        	stream << "," << endl;
-        }
-		stream << "\"" << it->first << "\" : " << it->second;
-	}
-	stream << endl << "}";
+	stream << print_attributes(attr_map);
 }
 
 
@@ -593,6 +601,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
                 <<"\"type\" : \"" << dft_type << "\"," << endl
                 <<"\"value\" : " << dft_value << " }," << endl;
         stream << "\"type\" : " << it->type_->hash_str() << endl;
+        stream << print_attributes(it->attributes);
         stream << "}";
     }
 

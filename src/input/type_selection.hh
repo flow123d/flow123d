@@ -102,6 +102,7 @@ public:
      */
     Selection &add_value(const int value, const std::string &key, const std::string &description = "");
 
+    Selection &add_attribute(std::string key, TypeBase::json_string value);
 
     /// Close the Selection, no more values can be added.
     const Selection &close() const;

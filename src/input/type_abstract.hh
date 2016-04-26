@@ -157,6 +157,12 @@ public:
     /// Can be used to close the Abstract for further declarations of keys.
     Abstract &close();
 
+    /// Set flag @p root_of_generic_subtree_ to true
+    Abstract &root_of_generic_subtree();
+
+    /// Frontend to TypeBase::add_attribute_
+    Abstract &add_attribute(std::string key, TypeBase::json_string value);
+
     /**
      *  @brief Finish declaration of the Abstract type.
      *
@@ -250,16 +256,13 @@ public:
     // Implements @p TypeBase::make_instance.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
+
+
+
+protected:
     /// Create deep copy of Abstract (copy all data stored in shared pointers etc.)
     Abstract deep_copy() const;
 
-    /// Set flag @p root_of_generic_subtree_ to true
-    Abstract &root_of_generic_subtree();
-
-    /// Set @p generic_content_hash_
-    //Abstract &set_generic_content_hash(TypeHash generic_content_hash);
-
-protected:
     /// Check if type has set value of default descendants.
     bool have_default_descendant() const;
 

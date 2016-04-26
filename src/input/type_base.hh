@@ -198,12 +198,6 @@ public:
         return hash_str(content_hash());
     }
 
-    /**
-     * @brief Add attribute of given @p name to attribute map.
-     *
-     * Parameter @p val must contain valid JSON string.
-     */
-    void add_attribute(std::string name, json_string val);
 
     /**
      * Create instance of generic type.
@@ -225,6 +219,12 @@ protected:
     /// Copy constructor.
     TypeBase(const TypeBase& other);
 
+    /**
+     * @brief Add attribute of given @p name to attribute map.
+     *
+     * Parameter @p val must contain valid JSON string.
+     */
+    void add_attribute_(std::string name, json_string val);
 
 
 

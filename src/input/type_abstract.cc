@@ -235,6 +235,13 @@ Abstract &Abstract::root_of_generic_subtree() {
 }
 
 
+Abstract &Abstract::add_attribute(std::string key, TypeBase::json_string value) {
+    this->add_attribute_(key, value);
+    return *this;
+}
+
+
+
 /*Abstract &Abstract::set_generic_content_hash(TypeHash generic_content_hash) {
 	child_data_->generic_content_hash_ = generic_content_hash;
 	return *this;

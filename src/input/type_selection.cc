@@ -54,11 +54,18 @@ Selection &Selection::add_value(const int value, const std::string &key, const s
     return *this;
 }
 
+Selection &Selection::add_attribute(std::string key, TypeBase::json_string value) {
+    this->add_attribute_(key, value);
+    return *this;
+}
+
 
 const Selection & Selection::close() const {
     data_->closed_=true;
     return *( Input::TypeRepository<Selection>::get_instance().add_type( *this ) );
 }
+
+
 
 
 

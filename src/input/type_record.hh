@@ -270,7 +270,8 @@ public:
      * The parameter @p type points to a descendant of TypeBase.
      */
     Record &declare_key(const string &key, std::shared_ptr<TypeBase> type,
-                            const Default &default_value, const string &description);
+                            const Default &default_value, const string &description,
+                            TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
     /**
      * @brief Declares a new key of the Record.
@@ -281,7 +282,9 @@ public:
      */
     template <class KeyType>
     Record &declare_key(const string &key, const KeyType &type,
-                            const Default &default_value, const string &description);
+                            const Default &default_value,
+                            const string &description,
+                            TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
 
     /**
@@ -291,7 +294,8 @@ public:
      */
     template <class KeyType>
     Record &declare_key(const string &key, const KeyType &type,
-                            const string &description);
+                            const string &description,
+                            TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
 
     /**
@@ -378,6 +382,8 @@ public:
      */
     Record &has_obligatory_type_key();
 
+    Record &add_attribute(std::string key, TypeBase::json_string value);
+
     /// Implements @p TypeBase::make_instance.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
@@ -441,7 +447,9 @@ protected:
          */
         void declare_key(const string &key,
                          std::shared_ptr<TypeBase> type,
-                         const Default &default_value, const string &description);
+                         const Default &default_value,
+                         const string &description,
+                         TypeBase::attribute_map key_attributes);
 
         /// Returns iterator to auto-conversion key.
         Record::KeyIter auto_conversion_key_iter() const;

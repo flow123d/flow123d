@@ -298,7 +298,7 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 Record &Record::declare_type_key() {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
 	data_->declare_key("TYPE", std::make_shared<String>(), Default::obligatory(),
-			"Sub-record selection.");
+			"Sub-record selection.", TypeBase::attribute_map());
 	return *this;
 }
 
@@ -306,6 +306,11 @@ Record &Record::has_obligatory_type_key() {
 	ASSERT( ! data_->parent_vec_.size(), "Record with obligatory TYPE key can't be derived.\n");
 	declare_type_key();
 	return *this;
+}
+
+Record &Record::add_attribute(std::string key, TypeBase::json_string value) {
+    this->add_attribute_(key, value);
+    return *this;
 }
 
 
@@ -403,7 +408,8 @@ Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 void Record::RecordData::declare_key(const string &key,
                          std::shared_ptr<TypeBase> type,
                          const Default &default_value,
-                         const string &description)
+                         const string &description,
+                         TypeBase::attribute_map key_attributes)
 {
     ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
     // validity test of default value
@@ -422,7 +428,7 @@ void Record::RecordData::declare_key(const string &key,
     key_to_index_const_iter it = key_to_index.find(key_h);
     if ( it == key_to_index.end() ) {
        key_to_index.insert( std::make_pair(key_h, keys.size()) );
-       Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false};
+       Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false, key_attributes };
        keys.push_back(tmp_key);
     } else {
        if (keys[it->second].derived) {
@@ -450,32 +456,35 @@ void Record::RecordData::content_hash(TypeBase::TypeHash &seed) const {
 }
 
 
-Record &Record::declare_key(const string &key, std::shared_ptr<TypeBase> type,
-                        const Default &default_value, const string &description)
+Record &Record::declare_key_(const string &key, std::shared_ptr<TypeBase> type,
+                        const Default &default_value, const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    data_->declare_key(key, type, default_value, description);
+    data_->declare_key(key, type, default_value, description, key_attributes);
     return *this;
 }
 
 
 template <class KeyType>
 Record &Record::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
+                        const Default &default_value, const string &description,
+                        TypeBase::attribute_map key_attributes)
 // this accept only lvalues - we assume that these are not local variables
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
 	std::shared_ptr<TypeBase> type_copy = std::make_shared<KeyType>(type);
-	return declare_key(key, type_copy, default_value, description);
+	return declare_key_(key, type_copy, default_value, description, key_attributes);
 }
 
 
 
 template <class KeyType>
 Record &Record::declare_key(const string &key, const KeyType &type,
-                        const string &description)
+                        const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    return declare_key(key,type, Default::optional(), description);
+    return declare_key(key,type, Default::optional(), description, key_attributes);
 }
 
 
@@ -483,8 +492,8 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 // explicit instantiation of template methods
 
 #define RECORD_DECLARE_KEY(TYPE) \
-template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description, TypeBase::attribute_map key_attributes); \
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description, TypeBase::attribute_map key_attributes)
 
 
 RECORD_DECLARE_KEY(String);

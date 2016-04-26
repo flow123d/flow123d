@@ -327,13 +327,13 @@ protected:
 TEST_F(InputTypeAttributesTest, base_test) {
 	std::map<std::string, json_string>::iterator it;
 
-	this->add_attribute("attr_1", "\"some attribute\"");
-	this->add_attribute("attr_2", "\"other attribute\"");
-	this->add_attribute("numeric", "\"10\"");
-	this->add_attribute("pair", "[\"0\", \"50\"]");
-	this->add_attribute("float_point", "\"0.5\"");
-	//this->add_attribute(FlowAttributes::parameters(), "[\"a\", \"b\", \"c\"]");
-	this->add_attribute(Input::Type::Attribute::obsolete(), "\"true\"");
+	this->add_attribute_("attr_1", "\"some attribute\"");
+	this->add_attribute_("attr_2", "\"other attribute\"");
+	this->add_attribute_("numeric", "\"10\"");
+	this->add_attribute_("pair", "[\"0\", \"50\"]");
+	this->add_attribute_("float_point", "\"0.5\"");
+	//this->add_attribute_(FlowAttributes::parameters(), "[\"a\", \"b\", \"c\"]");
+	this->add_attribute_(Input::Type::Attributes::obsolete(), "\"true\"");
 
 	EXPECT_TRUE( (it=attributes_->find("attr_1")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"some attribute\"" );
@@ -348,11 +348,11 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	EXPECT_TRUE( (it=attributes_->find("_obsolete")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"true\"" );
 
-	this->add_attribute("numeric", "\"5\"");
+	this->add_attribute_("numeric", "\"5\"");
 	EXPECT_TRUE( (it=attributes_->find("numeric")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"5\"" );
 
-    EXPECT_THROW_WHAT( { this->add_attribute("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
+    EXPECT_THROW_WHAT( { this->add_attribute_("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
             "Invalid JSON format of attribute 'invalid_attr'." );
 }
 
