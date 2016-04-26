@@ -144,8 +144,13 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(Inters
     local_triangle.print();
     global_triangle.print();
     */
-    IP.set_topology(0, 1, 0, 2);
+    IP.set_topology_B(0, 2);
     IP.set_orientation(signed_plucker_product(0) > 0 ? 1 : 0);
+    
+    // possibly set abscissa vertex {0,1}
+    if( fabs(t) <= rounding_epsilon)       { t = 0; IP.set_topology_A(0,0);}
+    else if(fabs(1-t) <= rounding_epsilon) { t = 1; IP.set_topology_A(1,0);}
+    else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
     arma::vec2 local_abscissa = {1-t, t};
 
     IP.set_coordinates(local_abscissa,local_triangle);
@@ -1028,7 +1033,12 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 				IntersectionPointAux<2,3> IP23(IP21,tetra_edge);
                 
                 if(IP.dim_A() == 0) // IP is vertex of line (i.e. line of tetrahedron)
+                {
                     IP23.set_topology_B(RefElement<3>::interact<0,1>(tetra_edge)[IP.idx_A()], 0);
+                    // in case of tetrahedron vertex set pathologic case
+                    // since we cannot trace it optimally
+                    intersection.pathologic_ = true;
+                }
                 
 				//IP23.print();
                 if (IP23.is_pathologic()) intersection.pathologic_ = true;
