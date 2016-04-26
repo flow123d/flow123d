@@ -18,6 +18,7 @@
 #ifndef TYPE_RECORD_HH_
 #define TYPE_RECORD_HH_
 
+#include <memory>
 #include "system/exceptions.hh"
 
 #include "type_base.hh"
@@ -138,10 +139,10 @@ public:
         {return type_ == other.type_; }
 
     /// Check validity of @p value_ using the JSON reader if default type is default_at_declaration.
-    bool check_validity(boost::shared_ptr<TypeBase> type) const;
+    bool check_validity(std::shared_ptr<TypeBase> type) const;
 
     /// Return @p storage_, if storage_ is NULL, call check_validity method
-    Input::StorageBase *get_storage(boost::shared_ptr<TypeBase> type) const;
+    Input::StorageBase *get_storage(std::shared_ptr<TypeBase> type) const;
 
 private:
     string value_;                          ///< Stored value.
@@ -191,9 +192,10 @@ public:
         unsigned int key_index;                ///< Position inside the record.
         string key_;                           ///< Key identifier.
         string description_;                   ///< Key description in context of particular Record type.
-        boost::shared_ptr<TypeBase> type_;     ///< Type of the key.
+        std::shared_ptr<TypeBase> type_;     ///< Type of the key.
         Default default_;                      ///< Default, type and possibly value itself.
         bool derived;                          ///< Is true if the key was only derived from the parent Record, but not explicitly declared.
+        Input::Type::TypeBase::attribute_map attributes;               ///< Key specific attributes.
     };
 
     /// Public typedef of constant iterator into array of keys.
@@ -267,7 +269,7 @@ public:
      * default value by parameter @p default_value, and with given @p description.
      * The parameter @p type points to a descendant of TypeBase.
      */
-    Record &declare_key(const string &key, boost::shared_ptr<TypeBase> type,
+    Record &declare_key(const string &key, std::shared_ptr<TypeBase> type,
                             const Default &default_value, const string &description);
 
     /**
@@ -438,7 +440,7 @@ protected:
          * only this raw pointer is stored and key is fully completed later through TypeBase::lazy_finish().
          */
         void declare_key(const string &key,
-                         boost::shared_ptr<TypeBase> type,
+                         std::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description);
 
         /// Returns iterator to auto-conversion key.
@@ -461,7 +463,7 @@ protected:
         const string type_name_;
 
         /// Permanent pointer to parent Abstract, necessary for output.
-        std::vector< boost::shared_ptr<Abstract> > parent_vec_;
+        std::vector< std::shared_ptr<Abstract> > parent_vec_;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
@@ -479,13 +481,14 @@ protected:
          * Final value can be assigned just after possible inheritance copy of keys from parent Abstract.
          */
         int auto_conversion_key_idx;
+
         /// Name of key to use for auto conversion.
         std::string auto_conversion_key;
 
     };
 
     /// Data handle.
-    boost::shared_ptr<RecordData> data_;
+    std::shared_ptr<RecordData> data_;
 };
 
 

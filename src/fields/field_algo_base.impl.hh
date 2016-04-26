@@ -78,9 +78,9 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 	std::vector<it::TypeBase::ParameterPair> param_vec;
 	if (is_enum_valued) {
 		ASSERT(value_selection, "Not defined 'value_selection' for enum element type.\n");
-		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::Selection>(*value_selection)) );
+		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<it::Selection>(*value_selection)) );
 	} else {
-		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
+		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<typename Value::ElementInputType>()) );
 	}
 
 	return it::Instance(get_input_type(), param_vec).close();

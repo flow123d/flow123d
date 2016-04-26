@@ -630,7 +630,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 
 
 
-StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, boost::shared_ptr<Type::TypeBase> type) {
+StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, std::shared_ptr<Type::TypeBase> type) {
     try {
     	// default strings must be valid JSON
     	Type::Default dflt(dflt_str);

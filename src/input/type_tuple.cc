@@ -128,13 +128,13 @@ TypeBase::MakeInstanceReturnType Tuple::make_instance(std::vector<ParameterPair>
 	ParameterMap parameter_map;
 	this->set_instance_data(tuple, parameter_map, vec);
 
-	return std::make_pair( boost::make_shared<Tuple>(tuple.close()), parameter_map );
+	return std::make_pair( std::make_shared<Tuple>(tuple.close()), parameter_map );
 }
 
 
 Tuple Tuple::deep_copy() const {
 	Tuple tuple = Tuple();
-	tuple.data_ =  boost::make_shared<Record::RecordData>(*this->data_);
+	tuple.data_ =  std::make_shared<Record::RecordData>(*this->data_);
 	tuple.data_->closed_ = false;
 	tuple.data_->finished = false;
 	tuple.generic_type_hash_ = this->generic_type_hash_;
@@ -150,7 +150,7 @@ Tuple &Tuple::root_of_generic_subtree() {
 }
 
 
-Tuple &Tuple::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
+Tuple &Tuple::declare_key(const string &key, std::shared_ptr<TypeBase> type,
                         const Default &default_value, const string &description)
 {
     Record::declare_key(key, type, default_value, description);

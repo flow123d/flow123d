@@ -82,14 +82,14 @@ public:
 	typedef std::map<std::string, json_string> attribute_map;
 
 	/// Defines pairs of (name, Input::Type), that are used for replace of parameters in generic types.
-	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
+	typedef std::pair< std::string, std::shared_ptr<TypeBase> > ParameterPair;
 	/// Define vector of parameters passed to the overloaded make_instance method.
 	typedef std::vector<ParameterPair> ParameterVector;
 
 	/// Defines map of used parameters
 	typedef std::map< std::string, TypeHash > ParameterMap;
 	/// Return type of make_instance methods, contains instance of generic type and map of used parameters
-	typedef std::pair< boost::shared_ptr<TypeBase>, ParameterMap > MakeInstanceReturnType;
+	typedef std::pair< std::shared_ptr<TypeBase>, ParameterMap > MakeInstanceReturnType;
 
 
     /**
@@ -273,7 +273,7 @@ protected:
 
 
     /// map of type attributes (e. g. input_type, name etc.)
-    boost::shared_ptr<attribute_map> attributes_;
+    std::shared_ptr<attribute_map> attributes_;
 
     /// flag is true if type should be root of generic subtree
     bool root_of_generic_subtree_;
@@ -332,7 +332,7 @@ protected:
     	/// Finishes initialization of the ArrayData.
     	bool finish(bool is_generic = false);
     	/// Type of Array
-    	boost::shared_ptr<TypeBase> type_of_values_;
+    	std::shared_ptr<TypeBase> type_of_values_;
     	/// Minimal size of Array
     	unsigned int lower_bound_;
     	/// Maximal size of Array
@@ -355,7 +355,7 @@ public:
     /**
      * @brief Constructor with a shared pointer @p type of array.
      */
-    Array(boost::shared_ptr<TypeBase> type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
+    Array(std::shared_ptr<TypeBase> type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /**
      * @brief Implements @p TypeBase::content_hash.
@@ -404,7 +404,7 @@ public:
 protected:
 
     /// Handle to the actual array data.
-    boost::shared_ptr<ArrayData> data_;
+    std::shared_ptr<ArrayData> data_;
 private:
     /// Forbids default constructor in order to prevent empty data_.
     Array();

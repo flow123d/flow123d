@@ -72,7 +72,7 @@ void OutputBase::get_array_sizes(Array array, unsigned int &lower , unsigned int
 
 
 
-void OutputBase::get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type) {
+void OutputBase::get_array_type(Array array, std::shared_ptr<TypeBase> &arr_type) {
     arr_type = array.data_->type_of_values_;
 }
 
@@ -90,7 +90,7 @@ const string & OutputBase::get_abstract_description(const Abstract *a_rec) {
 
 
 
-void OutputBase::get_parent_vec(Record rec, std::vector< boost::shared_ptr<Abstract> > &parent_vec) {
+void OutputBase::get_parent_vec(Record rec, std::vector< std::shared_ptr<Abstract> > &parent_vec) {
 	parent_vec = rec.data_->parent_vec_;
 }
 
@@ -252,7 +252,7 @@ void OutputText::print_impl(ostream& stream, const Record *type) {
 			stream << endl;
 			stream << "" << type->class_name() << " '" << type->type_name() << "'";
 			// parent record
-			/*boost::shared_ptr<Abstract> parent_ptr;
+			/*std::shared_ptr<Abstract> parent_ptr;
 			get_parent_ptr(*type, parent_ptr);
 			if (parent_ptr) {
 				stream << ", implementation of " << parent_ptr->type_name();
@@ -287,7 +287,7 @@ void OutputText::print_impl(ostream& stream, const Record *type) {
 	}
 }
 void OutputText::print_impl(ostream& stream, const Array *type) {
-	boost::shared_ptr<TypeBase> array_type;
+	std::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 	switch (doc_type_) {
 	case key_record:
@@ -555,7 +555,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
             escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
 
     // parent records, implemented abstracts
-    std::vector< boost::shared_ptr<Abstract> > parent_vec;
+    std::vector< std::shared_ptr<Abstract> > parent_vec;
     get_parent_vec(*type, parent_vec);
     if (parent_vec.size()) {
         stream << "\"implements\" : [ ";
@@ -615,7 +615,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type) {
     if (was_written(hash)) return;
 
     unsigned int lower_size, upper_size;
-	boost::shared_ptr<TypeBase> array_type;
+	std::shared_ptr<TypeBase> array_type;
 
     get_array_sizes(*type, lower_size, upper_size);
 	get_array_type(*type, array_type);

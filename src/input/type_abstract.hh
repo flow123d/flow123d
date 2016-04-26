@@ -64,7 +64,7 @@ protected:
     public:
     	/// Constructor
         ChildData(const string &name, const string &description)
-        : selection_of_childs( boost::make_shared<Selection> (name + "_TYPE_selection") ),
+        : selection_of_childs( std::make_shared<Selection> (name + "_TYPE_selection") ),
 		  description_(description),
 		  type_name_(name),
 		  finished_(false),
@@ -77,7 +77,7 @@ protected:
          *
          * Indices are according to the order of derivation (starting from zero).
          */
-        boost::shared_ptr< Selection> selection_of_childs;
+        std::shared_ptr< Selection> selection_of_childs;
 
         /// Vector of derived Records (proxies) in order of derivation.
         vector< Record > list_of_childs;
@@ -264,7 +264,7 @@ protected:
     bool have_default_descendant() const;
 
     /// Actual data of the Abstract.
-    boost::shared_ptr<ChildData> child_data_;
+    std::shared_ptr<ChildData> child_data_;
 
     friend class Record;
 };

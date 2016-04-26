@@ -21,8 +21,6 @@
 
 #include "system/system.hh"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/functional/hash.hpp>
 
 namespace Input {
@@ -36,7 +34,7 @@ using namespace std;
  */
 
 Abstract::Abstract()
-: child_data_( boost::make_shared<ChildData>( "EmptyAbstract", "" ) )
+: child_data_( std::make_shared<ChildData>( "EmptyAbstract", "" ) )
 {
 	close();
 	finish();
@@ -51,7 +49,7 @@ Abstract::Abstract(const Abstract& other)
 
 
 Abstract::Abstract(const string & type_name_in, const string & description)
-: child_data_( boost::make_shared<ChildData>( type_name_in, description ) )
+: child_data_( std::make_shared<ChildData>( type_name_in, description ) )
 {}
 
 
@@ -212,17 +210,17 @@ TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPa
 	abstract.generic_type_hash_ = this->content_hash();
 	TypeBase::set_generic_attributes(parameter_map);
 
-	return std::make_pair( boost::make_shared<Abstract>(abstract.close()), parameter_map );
+	return std::make_pair( std::make_shared<Abstract>(abstract.close()), parameter_map );
 }
 
 
 Abstract Abstract::deep_copy() const {
 	Abstract abstract = Abstract();
-	abstract.child_data_ =  boost::make_shared<Abstract::ChildData>(*this->child_data_);
+	abstract.child_data_ =  std::make_shared<Abstract::ChildData>(*this->child_data_);
 	abstract.child_data_->closed_ = false;
 	abstract.child_data_->finished_ = false;
 	abstract.child_data_->list_of_childs.clear();
-	abstract.child_data_->selection_of_childs = boost::make_shared<Selection>(this->type_name() + "_TYPE_selection");
+	abstract.child_data_->selection_of_childs = std::make_shared<Selection>(this->type_name() + "_TYPE_selection");
 	abstract.copy_attributes(*attributes_);
 
 	abstract.generic_type_hash_ = this->generic_type_hash_;

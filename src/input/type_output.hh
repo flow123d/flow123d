@@ -24,7 +24,7 @@
 #include "input/type_abstract.hh"
 #include <string>
 #include <ostream>
-#include <boost/shared_ptr.hpp>
+
 
 
 namespace Input {
@@ -98,9 +98,9 @@ protected:
     /// Gets range of double
     void get_double_bounds(Double dbl, double &lower , double &upper );
     /// Gets pointer of parent Abstract for given Record
-    void get_parent_vec(Record rec, std::vector< boost::shared_ptr<Abstract> > &parent_vec);
+    void get_parent_vec(Record rec, std::vector< std::shared_ptr<Abstract> > &parent_vec);
     /// Gets pointer of inner type for given Array
-    void get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type);
+    void get_array_type(Array array, std::shared_ptr<TypeBase> &arr_type);
     /// Gets values of default for given record key
     void get_default(Record::KeyIter it, string &type, string &value);
     /// Gets description of the given selection type.

@@ -36,7 +36,7 @@
 #include "input_type.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
-#include "type_attribute_lib.hh"
+#include "attribute_lib.hh"
 #include "json_spirit/json_spirit.h"
 
 
@@ -54,7 +54,7 @@ using namespace std;
 
 
 TypeBase::TypeBase()
-: attributes_( boost::make_shared<attribute_map>() ), root_of_generic_subtree_(false),
+: attributes_( std::make_shared<attribute_map>() ), root_of_generic_subtree_(false),
   generic_type_hash_(0) {}
 
 
@@ -237,20 +237,20 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	arr.parameter_map_ = parameter_map;
 	arr.generic_type_hash_ = this->content_hash();
 
-	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );
+	return std::make_pair( std::make_shared<Array>(arr), parameter_map );
 }
 
 
 Array Array::deep_copy() const {
 	Array arr = Array(Integer()); // Type integer will be overwritten
-	arr.data_ = boost::make_shared<Array::ArrayData>(*this->data_);
+	arr.data_ = std::make_shared<Array::ArrayData>(*this->data_);
 	arr.data_->finished = false;
 	return arr;
 }
 
 
-Array::Array(boost::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
-: data_(boost::make_shared<ArrayData>(min_size, max_size))
+Array::Array(std::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
+: data_(std::make_shared<ArrayData>(min_size, max_size))
 {
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
     ASSERT( type->is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type->type_name().c_str());
@@ -265,7 +265,7 @@ Array::Array(boost::shared_ptr<TypeBase> type, unsigned int min_size, unsigned i
 
 template <class ValueType>
 Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size)
-: Array(boost::static_pointer_cast<TypeBase>( boost::make_shared<ValueType>(type) ), min_size, max_size)
+: Array(std::static_pointer_cast<TypeBase>( std::make_shared<ValueType>(type) ), min_size, max_size)
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
@@ -312,7 +312,7 @@ string Bool::type_name() const {
 
 
 TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec)  {
-	return std::make_pair( boost::make_shared<Bool>(*this), ParameterMap() );
+	return std::make_pair( std::make_shared<Bool>(*this), ParameterMap() );
 }
 
 /**********************************************************************************
@@ -342,7 +342,7 @@ string Integer::type_name() const {
 
 
 TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) {
-	return std::make_pair( boost::make_shared<Integer>(*this), ParameterMap() );
+	return std::make_pair( std::make_shared<Integer>(*this), ParameterMap() );
 }
 
 
@@ -374,7 +374,7 @@ string Double::type_name() const {
 
 
 TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) {
-	return std::make_pair( boost::make_shared<Double>(*this), ParameterMap() );
+	return std::make_pair( std::make_shared<Double>(*this), ParameterMap() );
 }
 
 
@@ -414,7 +414,7 @@ bool FileName::match(const string &str) const {
 
 
 TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec)  {
-	return std::make_pair( boost::make_shared<FileName>(*this), ParameterMap() );
+	return std::make_pair( std::make_shared<FileName>(*this), ParameterMap() );
 }
 
 
@@ -446,7 +446,7 @@ bool String::match(const string &str) const {
 
 
 TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) {
-	return std::make_pair( boost::make_shared<String>(*this), ParameterMap() );
+	return std::make_pair( std::make_shared<String>(*this), ParameterMap() );
 }
 
 

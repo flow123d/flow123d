@@ -237,7 +237,7 @@ private:
     };
 
     /// Handle to actual Selection data.
-    boost::shared_ptr<SelectionData> data_;
+    std::shared_ptr<SelectionData> data_;
 
 };
 

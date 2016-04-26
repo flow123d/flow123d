@@ -25,7 +25,7 @@ namespace Type {
 using std::string;
 
 Selection::Selection()
-: data_(boost::make_shared<SelectionData>("EmptySelection"))
+: data_(std::make_shared<SelectionData>("EmptySelection"))
 {
     close();
 }
@@ -39,7 +39,7 @@ Selection::Selection(const Selection& other)
 
 
 Selection::Selection(const string &name, const string &desc)
-: data_(boost::make_shared<SelectionData>(name))
+: data_(std::make_shared<SelectionData>(name))
 {
     data_->description_=desc;
 }
@@ -144,7 +144,7 @@ string Selection::key_list() const {
 
 // Implements @p TypeBase::make_instance.
 TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) {
-	return std::make_pair( boost::make_shared<Selection>(*this), ParameterMap() );
+	return std::make_pair( std::make_shared<Selection>(*this), ParameterMap() );
 }
 
 
