@@ -219,4 +219,7 @@ TEST(FealAssert, warning) {
     std::string s2 = "assert";
     FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Strings must be empty.");
 
+    // shorter version of macro - "ASSERT" - is not in conflict with external library
+    ASSERT(0).warning("Zero value.");
+
 }

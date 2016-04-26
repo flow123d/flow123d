@@ -186,6 +186,16 @@ if ( !(expr) ) \
 
 
 
+/// Allow use shorter versions of macro names if these names is not used with external library
+#ifndef ASSERT
+#define ASSERT( expr) FEAL_ASSERT( expr)
+#endif
+#ifndef DEBUG_ASSERT
+#define DEBUG_ASSERT( expr) FEAL_DEBUG_ASSERT( expr)
+#endif
+
+
+
 
 
 #ifdef FLOW123D_DEBUG_MESSAGES
