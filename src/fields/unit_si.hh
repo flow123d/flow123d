@@ -111,7 +111,10 @@ private:
 	    std::string exp_open, exp_close, delimiter;
 	};
 
-
+    /**
+     * Symbols for individual units. Can not use static variable due to usage in static initialization.
+     */
+	static const std::string &unit_symbol(unsigned int idx);
 
 	/// Generic output formating method.
 	std::string format(OutputFormat form) const;
@@ -125,10 +128,6 @@ private:
 	 */
 	std::vector<int> exponents_;
 
-	/**
-	 * Symbols for individual units.
-	 */
-	static std::vector<std::string> unit_symbols;
 
 	/**
 	 * Flag if object is undefined.

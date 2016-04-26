@@ -128,7 +128,11 @@ std::string UnitSI::format_text() const {
 
 
 // Symbols for base SI units.
-std::vector<std::string> UnitSI::unit_symbols={"m","md","kg","s","A","K","mol","cd" };
+const std::string &UnitSI::unit_symbol(unsigned int idx) {
+    static std::vector<std::string> unit_symbols={"m","md","kg","s","A","K","mol","cd" };
+    return unit_symbols[idx];
+}
+
 
 
 std::string UnitSI::format(OutputFormat form) const {
@@ -138,7 +142,7 @@ std::string UnitSI::format(OutputFormat form) const {
 
 	// format of meter (can be m^{n} or m^{n-d})
 	if (exponents_[ UnitSI::order_m ] || exponents_[ UnitSI::order_md ]) {
-		output << unit_symbols[ UnitSI::order_m ];
+		output << unit_symbol( UnitSI::order_m );
 		if (exponents_[ UnitSI::order_m ]!=1 || exponents_[ UnitSI::order_md ]) {
 			output << form.exp_open;
 			if (exponents_[ UnitSI::order_m ]) {
@@ -148,7 +152,7 @@ std::string UnitSI::format(OutputFormat form) const {
 			if (exponents_[ UnitSI::order_md ]) {
 				if (exponents_[ UnitSI::order_md ]==-1) output << "-";
 				else if (exponents_[ UnitSI::order_md ]!=1) output << exponents_[ UnitSI::order_md ];
-				output << unit_symbols[ UnitSI::order_md ];
+				output << unit_symbol( UnitSI::order_md );
 			}
 			output << form.exp_close;
 		}
@@ -158,7 +162,7 @@ std::string UnitSI::format(OutputFormat form) const {
 	for (unsigned int i=2; i<UnitSI::n_base_units; i++)
 		if (exponents_[i]) {
 		    if (output.str().size() > 0) output << form.delimiter;
-		    output << unit_symbols[i];
+		    output << unit_symbol(i);
 			if (exponents_[i] != 1) output <<  form.exp_open << exponents_[i] << form.exp_close;
 		}
 
@@ -175,7 +179,10 @@ std::string UnitSI::json() const {
     ss << "{ ";
     for(unsigned int i=0; i < n_base_units; i++ ) {
         if (i!=0) ss << ", ";
-        ss << string("\"") << unit_symbols[i] << "\" : " << exponents_[i];
+        ss << string("\"")
+           << unit_symbol(i)
+           << "\" : "
+           << exponents_[i];
     }
     ss << " }";
     return ss.str();

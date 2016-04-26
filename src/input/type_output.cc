@@ -516,8 +516,10 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 	return stream;
 }
 
-string print_attributes(TypeBase::attribute_map attribute_map) {
+std::string print_attributes(TypeBase::attribute_map attribute_map) {
     stringstream stream;
+
+    if (attribute_map.size() == 0) return "\"attributes\" : {}";
 
     stream << "\"attributes\" : {" << endl; // print map of attributes
     for (auto it=attribute_map.begin(); it!=attribute_map.end(); ++it) {
@@ -528,6 +530,7 @@ string print_attributes(TypeBase::attribute_map attribute_map) {
     }
     stream << endl << "}";
 
+    return stream.str();
 }
 
 
@@ -600,7 +603,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
         stream << "\"default\" : { "
                 <<"\"type\" : \"" << dft_type << "\"," << endl
                 <<"\"value\" : " << dft_value << " }," << endl;
-        stream << "\"type\" : " << it->type_->hash_str() << endl;
+        stream << "\"type\" : " << it->type_->hash_str() << "," << endl;
         stream << print_attributes(it->attributes);
         stream << "}";
     }
@@ -693,10 +696,8 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
     }
     stream << "\"implementations\" : [" << endl;
     for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-        if (it != type->begin_child_data()) {
-            stream << ",\n" << endl;
-        }
-
+        if (it != type->begin_child_data())
+            stream << "," << endl;
         stream << "" << it->hash_str() << "";
     }
     stream << "]";

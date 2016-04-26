@@ -200,7 +200,7 @@ Record &Record::derive_from(Abstract &parent) {
 
 	if (data_->keys.size() == 0) {
     	data_->declare_key("TYPE", std::make_shared<String>(), Default( "\""+type_name()+"\"" ),
-    	        "Sub-record Selection.");
+    	        "Sub-record Selection.", TypeBase::attribute_map());
     }
 
 	return *this;
@@ -456,7 +456,7 @@ void Record::RecordData::content_hash(TypeBase::TypeHash &seed) const {
 }
 
 
-Record &Record::declare_key_(const string &key, std::shared_ptr<TypeBase> type,
+Record &Record::declare_key(const string &key, std::shared_ptr<TypeBase> type,
                         const Default &default_value, const string &description,
                         TypeBase::attribute_map key_attributes)
 {
@@ -474,7 +474,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
 	std::shared_ptr<TypeBase> type_copy = std::make_shared<KeyType>(type);
-	return declare_key_(key, type_copy, default_value, description, key_attributes);
+	return declare_key(key, type_copy, default_value, description, key_attributes);
 }
 
 
