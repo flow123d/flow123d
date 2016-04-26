@@ -170,7 +170,7 @@ public:
      */
     inline const SubFieldType &operator[](unsigned int idx) const
     {
-        ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
+    	OLD_ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
         return sub_fields_[idx];
     }
     

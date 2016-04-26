@@ -56,12 +56,12 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
 template<int spacedim, class Value>
 MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiField<spacedim,Value> &other)
 {
-	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
-	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
-	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
+	OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
+	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between multi fields with different meshes.\n");
-	ASSERT( shared_->comp_names_.size(), "Vector of component names can't be empty!\n");
-	ASSERT( shared_->comp_names_.size()==other.shared_->comp_names_.size(),
+	OLD_ASSERT( shared_->comp_names_.size(), "Vector of component names can't be empty!\n");
+	OLD_ASSERT( shared_->comp_names_.size()==other.shared_->comp_names_.size(),
 	        "Both multi fields must have same size of vectors of component names.\n");
 
 	// check for self assignement
