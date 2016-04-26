@@ -91,6 +91,12 @@ public:
     MultiField(const MultiField &other);
 
     /**
+     * Assignment operator. Same properties as copy constructor, but class member name_ is not copied.
+     */
+    MultiField &operator=(const MultiField &other);
+
+
+    /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
@@ -98,6 +104,15 @@ public:
     IT::Instance get_input_type() override;
 
     IT::Array get_multifield_input_type() override;
+    
+    /**
+     * By this method you can allow that the field need not to be set on regions (and times) where the given @p control_field is
+     * FieldConstant and has value in given @p value_list. We check this in the set_time method. Through this mechanism we
+     * can switch of e.g. boundary data fields according to the type of the boundary condition.
+     */
+    auto disable_where(
+            const MultiField<spacedim, typename FieldValue<spacedim>::Enum > &control_field,
+            const vector<FieldEnum> &value_list) -> MultiField &;
 
     /**
      * Abstract method to update field to the new time level.
@@ -149,7 +164,16 @@ public:
     	OLD_ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
     	return sub_fields_[idx];
     }
-
+    
+    /** 
+     * Returns constant reference to the sub-field (component) of given index @p idx.
+     */
+    inline const SubFieldType &operator[](unsigned int idx) const
+    {
+        ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
+        return sub_fields_[idx];
+    }
+    
     /**
      * Initialize components of MultiField.
      *
@@ -179,6 +203,15 @@ private:
 
     /// Full list of input field descriptors from which the subfields of MultiField are set.
     Input::Array full_input_list_;
+    
+    /**
+     * If this pointer is set, turn off check of initialization in the
+     * @p set_time method on the regions where the method @p get_constant_enum_value
+     * of the control field returns value from @p no_check_values_. This
+     * field is private copy, its set_time method is called from the
+     * set_Time method of actual object.
+     */
+    const MultiField<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
 };
 
 

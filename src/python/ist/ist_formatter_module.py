@@ -1,22 +1,20 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-#
-import json, datetime
-
+from __future__ import absolute_import
+import re, json, datetime
+from ist.formatters.extensions.json2latex2 import LatexFormatter
 from ist.formatters.json2html import HTMLFormatter
-from ist.formatters.json2latex import LatexFormatter
-from ist.nodes import TypedList
+from ist.globals import FormatMode
 from ist.utils.htmltree import htmltree
+from utils.logger import Logger
 
 
 class ProfilerJSONDecoder(json.JSONDecoder):
     def decode(self, json_string):
         default_obj = super(ProfilerJSONDecoder, self).decode(json_string)
-        ist_nodes = default_obj.get('ist_nodes')
-        lst = TypedList()
-        lst.parse(ist_nodes)
-        return lst
+        return default_obj
 
 
 class ISTFormatter(object):
@@ -24,49 +22,48 @@ class ISTFormatter(object):
     Class for formatting json to other formats
     """
 
+
     @staticmethod
-    def json2latex(input_file='examples/example.json', output_file='../../docs/input_reference_red.tex'):
+    def json2latex(items, output_file='../../docs/input_reference_red.tex', info=None):
         """
         Method converts given json file to latex output file
-        :param input_file:
+        :param items:  list of parsed IST items
         :param output_file:
         :return:
         """
-        with open(input_file, 'r') as fp:
-            json_object = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
-
-        latex_result = ''.join(LatexFormatter.format(json_object))
+        FormatMode.format_mode = FormatMode.LATEX_MODE
+        latex_result = LatexFormatter.format(items).to_string()
         with open(output_file, 'w') as fp:
             fp.write(latex_result)
 
 
     @staticmethod
-    def json2html(input_file, output_file, focus_element_id='root', skip_block_creation=[]):
+    def json2html(items, output_file, focus_element_id='root', skip_block_creation=[],
+                  multi_mode=[False, False, True], info=None):
         """
         Method converts given input file to single html output file
-        :param input_file:  input json file
+        :param items:  list of parsed IST items
         :param output_file: output html file
         :param focus_element_id: id of element which will be visible, default root
         :param skip_block_creation: list of items which won't be created:
-         [title, button-control, left-list, ist, right-list]
+         [title, button-control, tree-list, ist, abcd-list]
         :return:
         """
-        with open(input_file, 'r') as fp:
-            json_object = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
-
-        html_content = HTMLFormatter.format(json_object)
-        html_nav_abc = HTMLFormatter.abc_navigation_bar(json_object)
-        html_nav_tree = HTMLFormatter.tree_navigation_bar(json_object)
+        FormatMode.format_mode = FormatMode.HTML_MODE
+        multi_mode.reverse()
+        html_content = HTMLFormatter.format(items)
+        html_nav_abc = HTMLFormatter.abc_navigation_bar(items)
+        html_nav_tree = HTMLFormatter.tree_navigation_bar(items)
+        skip_block_creation.append('tree-list')
 
         # show specified element by given id
         for child in html_content.current():
             if child.attrib['id'].lower() == focus_element_id.lower():
                 child.attrib['class'] = child.attrib['class'].replace('hidden', '')
-                print "Element {:s} is displayed".format(child.attrib['id'])
                 break
 
         max_cols = 12
-        if 'right-list' not in skip_block_creation or 'left-list' not in skip_block_creation:
+        if 'abcd-list' not in skip_block_creation or 'tree-list' not in skip_block_creation:
             max_cols -= 3
 
         html_body = htmltree('body')
@@ -77,7 +74,11 @@ class ISTFormatter(object):
 
                 if 'title' not in skip_block_creation:
                     with html_body.open('h1', 'Flow123d '):
-                        html_body.tag('small', 'input reference')
+                        version = 'input reference' if not info else info['version']
+                        if version.startswith('0.0.'):
+                            version = version.replace('0.0.', '')
+                        version = re.sub(r'_+', ' ', version)
+                        html_body.tag('small', version)
 
                 if 'search' not in skip_block_creation:
                     with html_body.open('div', cls='form-group has-default has-feedback search-wrapper'):
@@ -86,12 +87,12 @@ class ISTFormatter(object):
                                       placeholder='type to search')
 
                 with html_body.open('div', cls='row'):
-                    if 'right-list' not in skip_block_creation or 'left-list' not in skip_block_creation:
+                    if 'abcd-list' not in skip_block_creation or 'tree-list' not in skip_block_creation:
                         with html_body.open('div', cls="col-md-3 tree-list"):
                             with html_body.open('ul', cls="nav nav-tabs", role="tablist"):
                                 classes = ['', 'active']
 
-                                if 'left-list' not in skip_block_creation:
+                                if 'tree-list' not in skip_block_creation:
                                     with html_body.open('li', cls=classes.pop(), role="presentation"):
                                         html_body.tag('a', 'Tree', attrib={
                                             'role': 'rab',
@@ -99,9 +100,9 @@ class ISTFormatter(object):
                                             'data-toggle': 'tab'
                                         })
 
-                                if 'right-list' not in skip_block_creation:
+                                if 'abcd-list' not in skip_block_creation:
                                     with html_body.open('li', role="presentation", cls=classes.pop()):
-                                        html_body.tag('a', 'Abcd', attrib={
+                                        html_body.tag('a', 'Abc', attrib={
                                             'role': 'rab',
                                             'aria-controls': 'abc-view',
                                             'data-toggle': 'tab'
@@ -109,10 +110,10 @@ class ISTFormatter(object):
 
                             with html_body.open('div', cls='tab-content'):
                                 classes = ['tab-pane', 'tab-pane active']
-                                if 'left-list' not in skip_block_creation:
+                                if 'tree-list' not in skip_block_creation:
                                     with html_body.open('div', role='tabpanel', cls=classes.pop(), id='tree-view'):
                                         html_body.add(html_nav_tree.current())
-                                if 'right-list' not in skip_block_creation:
+                                if 'abcd-list' not in skip_block_creation:
                                     with html_body.open('div', role='tabpanel', cls=classes.pop(), id='abc-view'):
                                         html_body.add(html_nav_abc.current())
 
@@ -123,33 +124,38 @@ class ISTFormatter(object):
                                 with html_body.open('div', id='button-control', cls='row'):
                                     with html_body.open('div', cls='col-md-12'):
                                         with html_body.open('div', id='btn-filter-one-wrapper'):
-                                            html_body.tag('input', '', attrib={
+                                            single_filter = html_body.tag('input', '', attrib={
                                                 'type': 'checkbox',
                                                 'class': 'btn btn-default',
                                                 'id': 'btn-filter-one',
                                                 'data-toggle': 'toggle',
                                                 'data-on': 'Single-item',
-                                                'data-off': 'Multi-item',
-                                                'checked': 'checked'
+                                                'data-off': 'Multi-item'
                                             })
+                                            if not max(multi_mode):
+                                                single_filter.attrib['checked'] = 'checked'
+
                                         with html_body.open('div', cls='btn-group filter-btns'):
                                             btn_cls = dict()
 
                                             btn_cls['data-type'] = 'record'
                                             btn_cls['class'] = 'btn btn-warning btn-filter'
-                                            html_body.tag('a', 'Records', btn_cls)
+                                            btn_cls['class'] += ' active' if multi_mode.pop() else ''
+                                            html_body.tag('a', 'Records', btn_cls.copy())
 
                                             btn_cls['data-type'] = 'abstract-record'
                                             btn_cls['class'] = 'btn btn-success btn-filter'
-                                            html_body.tag('a', 'Abstract records', btn_cls)
+                                            btn_cls['class'] += ' active' if multi_mode.pop() else ''
+                                            html_body.tag('a', 'Abstract records', btn_cls.copy())
 
                                             btn_cls['data-type'] = 'selection'
                                             btn_cls['class'] = 'btn btn-info btn-filter'
-                                            html_body.tag('a', 'Selections', btn_cls)
+                                            btn_cls['class'] += ' active' if multi_mode.pop() else ''
+                                            html_body.tag('a', 'Selections', btn_cls.copy())
 
                             with html_body.open('div', cls='row'):
                                 with html_body.open('a', id='top-link-block', title='Scroll to top',
-                                                    href='#input-reference', cls='well well-sm'):
+                                                    href='#top', cls='well well-sm'):
                                     html_body.span(cls='glyphicon glyphicon-menu-up')
                                 html_body.add(html_content.current())
 
@@ -171,21 +177,31 @@ class ISTFormatter(object):
         html.add(html_head.current())
         html.add(html_body.current())
 
+        # try:
+        # Logger.instance().info('Trying module BeautifulSoup')
+        #     from BeautifulSoup import BeautifulSoup
+        #
+        #     Logger.instance().info('Converting to html string')
+        #     html_string = html.dump()
+        #     Logger.instance().info('Parsing html string')
+        #     soup = BeautifulSoup(html_string)
+        #     Logger.instance().info('Prettifying html string')
+        #     html_pretty = soup.prettify()
+        #
+        #     Logger.instance().info('Writing to file')
+        #     with open(output_file, 'w') as fp:
+        #         fp.write(r'<!DOCTYPE html>')
+        #         fp.write(html_pretty)
+        #     Logger.instance().info('File created')
+        # except ImportError as e:
+        #     Logger.instance().warning('Import error', exc_info=e)
+        Logger.instance().info('Using module ElementTree')
+        import xml.etree.ElementTree as ET
+
+        Logger.instance().info('Converting to html string')
+        html_string = html.dump()
+        Logger.instance().info('Writing to file')
         with open(output_file, 'w') as fp:
             fp.write(r'<!DOCTYPE html>')
-            fp.write(html.dump())
-
-
-if __name__ == '__main__':
-    formatter = ISTFormatter()
-    formatter.json2latex(
-        input_file='/home/jan-hybs/Dokumenty/Flow123d-python-utils/src/ist/examples/example.json',
-        output_file='/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/doc/reference_manual/input_reference.tex'
-    )
-
-    formatter.json2html(
-        input_file='/home/jan-hybs/Dokumenty/Flow123d-python-utils/src/ist/examples/example.json',
-        output_file='/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/doc/reference_manual/input_reference.html',
-        focus_element_id='root',
-        # skip_block_creation=['title', 'left-list', 'right-list', 'search', 'button-control']
-    )
+            fp.write(ET.tostring(html.root, method='html'))
+        Logger.instance().info('File created')

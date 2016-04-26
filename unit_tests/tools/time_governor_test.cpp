@@ -153,7 +153,7 @@ TEST(TimeGovernor, estimate_dt)
     TimeGovernor tg( read_input(tg_in));
     tg.marks().add(TimeMark(0.5, tg.equation_fixed_mark_type()));
     EXPECT_FLOAT_EQ(0.5, tg.estimate_dt());
-    tg.set_upper_constraint(0.15);
+    tg.set_upper_constraint(0.15, "My constraint.");
     EXPECT_FLOAT_EQ(0.125, tg.estimate_dt());
     tg.next_time();
     EXPECT_FLOAT_EQ(0.375, tg.estimate_dt());
@@ -161,13 +161,13 @@ TEST(TimeGovernor, estimate_dt)
 
     // test slight rounding up, violating upper constraint
     tg.marks().add(TimeMark(1.0, tg.equation_fixed_mark_type()));
-    tg.set_upper_constraint(0.1+1E-14);
+    tg.set_upper_constraint(0.1+1E-14, "My constraint.");
     EXPECT_FLOAT_EQ(0.1, tg.estimate_dt());
     double epsilon = 0.4*numeric_limits<double>::epsilon();
     EXPECT_FALSE( 0.1 == (0.1-epsilon) );
-    tg.set_upper_constraint(0.1-epsilon);
+    tg.set_upper_constraint(0.1-epsilon, "My constraint.");
     EXPECT_EQ(0.1, tg.estimate_dt());
-    tg.set_upper_constraint(0.1 - 2*epsilon);
+    tg.set_upper_constraint(0.1 - 2*epsilon, "My constraint.");
     EXPECT_TRUE(0.1 > tg.estimate_dt());
 }
 
@@ -270,19 +270,19 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     
     //testing setting of upper constraint
     //if out of allowed interval, cannot change the user constraints
-    EXPECT_EQ(-1,tm_tg->set_upper_constraint(25.0));
+    EXPECT_EQ(-1,tm_tg->set_upper_constraint(25.0, "My upper constraint (fail)."));
     EXPECT_EQ(20.0,tm_tg->upper_constraint());
-    EXPECT_EQ(1,tm_tg->set_upper_constraint(1e-4));
+    EXPECT_EQ(1,tm_tg->set_upper_constraint(1e-4, "My upper constraint (in interval)."));
     EXPECT_EQ(20.0,tm_tg->upper_constraint());
     
     //testing setting of lower constraint
-    EXPECT_EQ(-1,tm_tg->set_lower_constraint(25.0));
+    EXPECT_EQ(-1,tm_tg->set_lower_constraint(25.0, "My lower constraint (fail)."));
     EXPECT_EQ(0.01,tm_tg->lower_constraint());
-    EXPECT_EQ(1,tm_tg->set_lower_constraint(1e-4));
+    EXPECT_EQ(1,tm_tg->set_lower_constraint(1e-4, "My lower constraint (in interval)."));
     EXPECT_EQ(0.01,tm_tg->lower_constraint());
     
-    //upper time step constraint fot next change of time_step
-    EXPECT_EQ(0,tm_tg->set_upper_constraint(0.5));
+    //upper time step constraint for next change of time_step
+    EXPECT_EQ(0,tm_tg->set_upper_constraint(0.5, "My new upper constraint."));
     
     //cout << "Estimated time (t+dt): " << tm_tg->estimate_time() << endl;
     //fixing time_step until next fixed mark_type (in time 5.0)
@@ -337,7 +337,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     // time mark 0x8 in time 2.0 is the last in interval (1.5;2.0]
     
     
-    tm_tg->set_upper_constraint(2.0);
+    tm_tg->set_upper_constraint(2.0, "My newest upper constraint.");
     //fixing time_step until next fixed mark_type (in time 5.0)
     tm_tg->fix_dt_until_mark();
     cout << "Dt fixed. Estimated time (t+dt): " << tm_tg->estimate_time() << endl;

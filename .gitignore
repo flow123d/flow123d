@@ -44,3 +44,4 @@ doc/reference_manual/flow_version.tex
 .settings
 
 *.pyc
+/.idea/

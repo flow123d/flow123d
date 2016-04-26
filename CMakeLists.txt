@@ -953,6 +953,14 @@ if (CYGWIN)
         DESTINATION bin/
         PATTERN mpiexec EXCLUDE
         )
+    
+    # replace path separator and make path relative
+    STRING(REGEX REPLACE ";" ":.." PY_WRAPPER_PATHS_WIN "${PY_WRAPPER_PATHS}")
+    # add relative path to first path if some paths exists
+    if(PY_WRAPPER_PATHS_WIN)
+        set(PY_WRAPPER_PATHS_WIN "..${PY_WRAPPER_PATHS_WIN}")
+    endif()
+    configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.bat @ONLY)
 else()
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
     install(DIRECTORY build_tree/lib/            
@@ -978,15 +986,17 @@ endif()
 
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
-if (UNIX)
+if (CYGWIN)
+    install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin.exe"
+            DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d.bat"
+            DESTINATION bin/)
+else()
     install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin"
             DESTINATION bin/)
     install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d"
             DESTINATION bin/)
     install(PROGRAMS    build_tree/bin/ld-linux-loader.so  DESTINATION bin/)
-else()
-  install(TARGETS       bin/flow123d
-          RUNTIME DESTINATION bin)
 endif()
 
 
