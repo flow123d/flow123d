@@ -851,13 +851,15 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     #else
 
     // print information about windows-cygwin issue and offer manual solution
-    cout << "# Note: converting json profiler reports is not";
-    cout << " supported under Windows or Cygwin environment for now." << endl;
-    cout << "# You can use python script located in bin/python folder";
-    cout << " in order to convert json report to txt or csv format." << endl;
+    stringstream msg;
+    msg << "# Note: converting json profiler reports is not";
+    msg << " supported under Windows or Cygwin environment for now." << endl;
+    msg << "# You can use python script located in bin/python folder";
+    msg << " in order to convert json report to txt or csv format." << endl;
     
-    cout << "python profiler_formatter_script.py --input \"" << json_filepath;
-    cout << "\" --output \"profiler.txt\"" << endl;
+    msg << "python profiler_formatter_script.py --input \"" << json_filepath;
+    msg << "\" --output \"profiler.txt\"" << endl;
+    xprintf(Msg, msg.str().c_str());
     #endif // FLOW123D_HAVE_CYGWIN
 }
 #else
