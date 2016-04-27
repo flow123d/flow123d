@@ -151,18 +151,20 @@ Tuple &Tuple::root_of_generic_subtree() {
 
 
 Tuple &Tuple::declare_key(const string &key, std::shared_ptr<TypeBase> type,
-                        const Default &default_value, const string &description)
+                        const Default &default_value, const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    Record::declare_key(key, type, default_value, description);
+    Record::declare_key(key, type, default_value, description, key_attributes);
     return *this;
 }
 
 
 template <class KeyType>
 Tuple &Tuple::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
+                        const Default &default_value, const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    Record::declare_key(key, type, default_value, description);
+    Record::declare_key(key, type, default_value, description, key_attributes);
     return *this;
 }
 
@@ -170,9 +172,10 @@ Tuple &Tuple::declare_key(const string &key, const KeyType &type,
 
 template <class KeyType>
 Tuple &Tuple::declare_key(const string &key, const KeyType &type,
-                        const string &description)
+                        const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    Record::declare_key(key, type, description);
+    Record::declare_key(key, type, description, key_attributes);
     return *this;
 }
 
@@ -181,8 +184,8 @@ Tuple &Tuple::declare_key(const string &key, const KeyType &type,
 // explicit instantiation of template methods
 
 #define TUPLE_DECLARE_KEY(TYPE) \
-template Tuple & Tuple::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template Tuple & Tuple::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
+template Tuple & Tuple::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description, TypeBase::attribute_map key_attributes); \
+template Tuple & Tuple::declare_key<TYPE>(const string &key, const TYPE &type, const string &description, TypeBase::attribute_map key_attributes)
 
 
 TUPLE_DECLARE_KEY(String);

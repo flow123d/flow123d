@@ -124,18 +124,21 @@ public:
 
     /// Overrides Record::declare_key(const string &, std::shared_ptr<TypeBase>, const Default &, const string &)
     Tuple &declare_key(const string &key, std::shared_ptr<TypeBase> type,
-                            const Default &default_value, const string &description);
+                            const Default &default_value, const string &description,
+	                        TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
     /// Overrides Record::declare_key(const string &, const KeyType &, const Default &, const string &)
     template <class KeyType>
     Tuple &declare_key(const string &key, const KeyType &type,
-                            const Default &default_value, const string &description);
+                            const Default &default_value, const string &description,
+	                        TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
 
     /// Overrides Record::declare_key(const string &, const KeyType &, const string &)
     template <class KeyType>
     Tuple &declare_key(const string &key, const KeyType &type,
-                            const string &description);
+                            const string &description,
+	                        TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
 };
 
