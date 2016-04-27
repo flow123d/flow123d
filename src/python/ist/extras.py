@@ -210,10 +210,16 @@ class TypeAttributes(Parsable):
     :type obsolete       : unicode
     :type link_name      : unicode
     :type input_type     : InputType
+    :type generic_parameters           : list
+    :type root_of_generic_subtree      : bool
+    :type field_value_shape            : list
     """
     __fields__ = [
         Field('obsolete', t=str),
         Field('link_name', index=True),
+        Field(['generic_parameters', '_generic_parameters'], t=list, default=list()),
+        Field(['root_of_generic_subtree', '_root_of_generic_subtree'], t=bool),
+        Field('field_value_shape', t=list),
     ]
 
     def __init__(self):
@@ -221,6 +227,9 @@ class TypeAttributes(Parsable):
         self.obsolete = None
         self.link_name = None
         self.input_type = InputType().parse('')
+        self.generic_parameters = None
+        self.root_of_generic_subtree = None
+        self.field_value_shape = None
 
     def __repr__(self):
         if self.obsolete is None and self.link_name is None:

@@ -194,6 +194,14 @@ class HTMLRecord(HTMLItemFormatter):
                             # fmt.format(record_key, record)
                             # self.add(fmt.current())
 
+        if record.attributes.generic_parameters:
+            self.italic('Generic parameters', attrib={'class': 'section-list'})
+            with self.open('ul', attrib={'class': 'item-list'}):
+                for param_name in record.attributes.generic_parameters:
+                    with self.open('li'):
+                        with self.open('section', attrib={'class': 'record-param'}):
+                            self.h3(param_name)
+
         if record.parameters:
             self.italic('Parameters', attrib={'class': 'section-list'})
             with self.open('ul', attrib={'class': 'item-list'}):
@@ -379,6 +387,10 @@ class HTMLAbstractRecord(HTMLItemFormatter):
                     self.italic('Default descendant: ')
                     self.link_to_main(reference)
 
+            if abstract_record.attributes.root_of_generic_subtree:
+                with self.open('div'):
+                    self.italic('This abstract is root of the generic tree')
+
             if abstract_record.generic_type:
                 with self.open('div'):
                     self.italic('Generic type: ')
@@ -397,6 +409,14 @@ class HTMLAbstractRecord(HTMLItemFormatter):
                             with self.open('h3'):
                                 self.link_to_main(reference)
                             self.span(reference.description)
+
+        if abstract_record.attributes.generic_parameters:
+            self.italic('Generic parameters', attrib={'class': 'section-list'})
+            with self.open('ul', attrib={'class': 'item-list'}):
+                for param_name in abstract_record.attributes.generic_parameters:
+                    with self.open('li'):
+                        with self.open('section', attrib={'class': 'record-param'}):
+                            self.h3(param_name)
 
         if abstract_record.parameters:
             self.italic('Parameters', attrib={'class': 'section-list'})

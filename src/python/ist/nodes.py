@@ -103,7 +103,10 @@ class TypeRecord(Parsable):
                 if sub_item.key.lower() == arg.lower():
                     return sub_item
 
+
 class TypeParameters(Parsable): pass
+
+
 class TypeAbstract(Parsable):
     """
     Class defining "Abstract" type in IST
