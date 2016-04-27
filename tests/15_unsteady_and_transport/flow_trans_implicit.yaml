@@ -5,6 +5,8 @@ problem: !SequentialCoupling
     mesh_file: ./input/channel_structured.msh
   primary_equation: !UnsteadyDarcy_LMH
     input_fields:
+      - region: ALL
+        storativity: 1.0
       - region: domain
         anisotropy: 1
         # default
