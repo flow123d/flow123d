@@ -37,6 +37,7 @@
 #include "system/python_loader.hh"
 #include "mpi.h"
 #include "time_point.hh"
+#include "../main.h"
 
 // namespace alias
 namespace property_tree = boost::property_tree;
@@ -549,7 +550,10 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     // using operation MPI_MIN, so if some processor does not contain some 
     // time-frame other processors will forget this time-frame (information lost)
     int child_timers[ Timer::max_n_childs];
-    MPI_Allreduce(&timer.child_timers, &child_timers, Timer::max_n_childs, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+    if (Application::petsc_initialized) {
+        MPI_Allreduce(&timer.child_timers, &child_timers, Timer::max_n_childs, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+    }
+    
     #ifdef FLOW123D_DEBUG
     int mpi_rank = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     for (int j = 0; j < Timer::max_n_childs; j++) {
