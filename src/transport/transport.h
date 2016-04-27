@@ -218,6 +218,7 @@ private:
      * Updates CFL time step constrain.
      */
     void create_transport_matrix_mpi();
+    void create_mass_matrix();
 
     void make_transport_partitioning(); //
 	void set_initial_condition();
@@ -259,6 +260,9 @@ private:
      * If true, the object is scaled (not necessarily with the current time step).
      */
 	bool is_convection_matrix_scaled, is_src_term_scaled, is_bc_term_scaled;
+	
+	/// Flag indicates that porosity or cross_section changed during last time.
+	bool is_mass_diag_changed;
     //@}
     
     double **sources_corr;
@@ -275,6 +279,8 @@ private:
 
     VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
+    Vec mass_diag;  // diagonal entries in pass matrix (cross_section * porosity)
+    Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)
     Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
     double **tm_diag;
 
