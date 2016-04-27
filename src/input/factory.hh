@@ -40,7 +40,7 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
 
 
 /**
- * This class implements more general factory mechanism to construct classes.
+ * @brief This class implements more general factory mechanism to construct classes.
  *
  * One factory allows constructing derived classes of one base class. This class is determined
  * by template parameter Type and all descendants must implement constructor with same
@@ -140,7 +140,7 @@ public:
 
 
 private:
-    /// a private constructor
+    /// Forbid default constructor
     Factory(){}
 
     /// the registry of factory functions
@@ -150,7 +150,7 @@ private:
 
 
 /**
- * Function allows simplified call of registering class to factory.
+ * @brief Function allows simplified call of registering class to factory.
  *
  * It is used for declaration of registration variable.
  * @see Factory
