@@ -152,7 +152,7 @@ std::string UnitSI::format(OutputFormat form) const {
 			if (exponents_[ UnitSI::order_md ]) {
 				if (exponents_[ UnitSI::order_md ]==-1) output << "-";
 				else if (exponents_[ UnitSI::order_md ]!=1) output << exponents_[ UnitSI::order_md ];
-				output << unit_symbol( UnitSI::order_md );
+				output << "d"; // Use 'd' for dimension in exponent, converting m^x md^y to m^(x+yd)
 			}
 			output << form.exp_close;
 		}

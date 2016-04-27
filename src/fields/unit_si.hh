@@ -62,7 +62,7 @@ public:
 	UnitSI & K(int exp = 1);
 	UnitSI & mol(int exp = 1);
 	UnitSI & cd(int exp = 1);
-	/// Method sets value of exponent for m^{-d}, where d is dimension of region
+	/// The dimension dependent meter: md^y = m^(yd), where 'd' is dimension.
 	UnitSI & md(int exp = -1);
 
 	/**
