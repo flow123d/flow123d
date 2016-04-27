@@ -332,8 +332,8 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	this->add_attribute_("numeric", "\"10\"");
 	this->add_attribute_("pair", "[\"0\", \"50\"]");
 	this->add_attribute_("float_point", "\"0.5\"");
-	//this->add_attribute_(FlowAttributes::parameters(), "[\"a\", \"b\", \"c\"]");
-	this->add_attribute_(Input::Type::Attributes::obsolete(), "\"true\"");
+	//this->add_attribute_(FlowAttribute::parameters(), "[\"a\", \"b\", \"c\"]");
+	this->add_attribute_(Input::Type::Attribute::obsolete(), "\"true\"");
 
 	EXPECT_TRUE( (it=attributes_->find("attr_1")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"some attribute\"" );
