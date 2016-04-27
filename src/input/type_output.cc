@@ -529,10 +529,10 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
     get_attr_and_param_data(type, attr_map, generic_type_hash, parameter_map_to_json);
 	// print hash of generic type and parameters into separate keys
 	if (generic_type_hash) { // print hash of generic type into separate keys
-		stream << "\"generic_type\" : " << TypeBase::hash_str(generic_type_hash) << endl;
+		stream << "\"generic_type\" : " << TypeBase::hash_str(generic_type_hash) << "," << endl;
 	}
 	if (parameter_map_to_json.size()) { // parameters into separate keys
-		stream << "\"parameters\" : " << parameter_map_to_json << endl;
+		stream << "\"parameters\" : " << parameter_map_to_json << "," << endl;
 	}
 	stream << "\"attributes\" : {" << endl; // print map of attributes
 	for (std::map<std::string, TypeBase::json_string>::iterator it=attr_map.begin(); it!=attr_map.end(); ++it) {
