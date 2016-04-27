@@ -194,7 +194,11 @@ public:
         string description_;                   ///< Key description in context of particular Record type.
         std::shared_ptr<TypeBase> type_;     ///< Type of the key.
         Default default_;                      ///< Default, type and possibly value itself.
-        bool derived;                          ///< Is true if the key was only derived from the parent Record, but not explicitly declared.
+        /**
+         * Is true if the key was created through copy_keys method, but not explicitly declared.
+         * This is used to check duplicate key declaration while allowing overriding of copied keys.
+         */
+        bool derived;
         Input::Type::TypeBase::attribute_map attributes;               ///< Key specific attributes.
     };
 
@@ -390,7 +394,11 @@ public:
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;
 
-    /// Set flag @p root_of_generic_subtree_ to true
+    /**
+     *  Mark the type to be root of a generic subtree.
+     *  Such type can not appear in IST directly but only as the internal type
+     *  of the Instance auxiliary object.
+     */
     virtual Record &root_of_generic_subtree();
 
 

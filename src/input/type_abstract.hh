@@ -157,7 +157,11 @@ public:
     /// Can be used to close the Abstract for further declarations of keys.
     Abstract &close();
 
-    /// Set flag @p root_of_generic_subtree_ to true
+    /**
+     *  Mark the type to be root of a generic subtree.
+     *  Such type can not appear in IST directly but only as the internal type
+     *  of the Instance auxiliary object.
+     */
     Abstract &root_of_generic_subtree();
 
     /// Frontend to TypeBase::add_attribute_
