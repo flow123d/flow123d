@@ -4,11 +4,9 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/channel_unstructured.msh
   primary_equation: !UnsteadyDarcy_LMH
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
     input_fields:
+      - region: ALL
+        storativity: 1.0
       - region: domain
         anisotropy: 1
         # default
@@ -20,6 +18,10 @@ problem: !SequentialCoupling
       - region: .left
         bc_type: dirichlet
         bc_pressure: 0
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     n_schurs: 2
     output:
       output_stream: 
