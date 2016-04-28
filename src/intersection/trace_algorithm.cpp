@@ -12,6 +12,8 @@
 #include "mesh/ref_element.hh"
 #include <algorithm>
 
+#include "system/sys_profiler.hh"
+
 namespace computeintersection{
     
 void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
@@ -26,6 +28,7 @@ void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, Inter
 
 void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
 
+    START_TIMER("CI trace opt");
     ASSERT(!p.is_pathologic(), "Cannot call this polygonal tracing in pathologic case.");
     
     prolongation_table.clear();
@@ -177,10 +180,12 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
 
     p.points() = new_points;
 
+    END_TIMER("CI trace opt");
 };
 
 void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
 
+    START_TIMER("CI trace convex hull");
     DBGMSG("convex hull tracing\n");
     //TODO: this is checked outside in inspect_elements; assert??
     // skip tracing if not enough IPs
@@ -246,6 +251,7 @@ void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_
         }
     }
 
+    END_TIMER("CI trace convex hull");
 };
 
 double Tracing::convex_hull_cross(const IntersectionPointAux<2,3> &O,

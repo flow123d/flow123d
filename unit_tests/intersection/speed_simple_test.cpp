@@ -2,7 +2,7 @@
  * intersection_area_test.cpp
  *
  *  Created on: Nov 14, 2014
- *      Author: VF, PE
+ *      Author: PE
  */
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
@@ -32,8 +32,8 @@
 
 using namespace std;
 
-static const unsigned int profiler_loop = 1;
-static const unsigned int n_meshes = 10;
+static const unsigned int profiler_loop = 100;
+static const unsigned int n_meshes = 100000;
 
 // results - number of cases with number of ips 0-7
 static unsigned int n_intersection[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -205,22 +205,36 @@ template<unsigned int dimA, unsigned int dimB>
 void compute_intersection(Mesh *mesh)
 {
     // compute intersection
-    computeintersection::Simplex<dimA> comp_simplex;
-    computeintersection::Simplex<dimB> bulk_simplex;
     std::vector< unsigned int > prolongation_table;
     
+    ElementFullIter elmA = mesh->element(0);
+    ElementFullIter elmB = mesh->element(1);
+    
     START_TIMER("Compute intersection");
-    update_simplex(mesh->element(0), comp_simplex);
-    update_simplex(mesh->element(1), bulk_simplex);
+   
+    BoundingBox bbA = elmA->bounding_box();
+    BoundingBox bbB = elmB->bounding_box();
     
-    computeintersection::IntersectionAux<dimA,dimB> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
-    computeintersection::ComputeIntersection<computeintersection::Simplex<dimA>, computeintersection::Simplex<dimB>> CI(comp_simplex, bulk_simplex);
-    CI.init();
-    CI.compute(is, prolongation_table);
+    if(bbA.intersect(bbB)) {
+    
+        computeintersection::Simplex<dimA> comp_simplex;
+        computeintersection::Simplex<dimB> bulk_simplex;
+        update_simplex(elmA, comp_simplex);
+        update_simplex(elmB, bulk_simplex);
+    
+        START_TIMER("CI create");
+        computeintersection::IntersectionAux<dimA,dimB> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
+        computeintersection::ComputeIntersection<computeintersection::Simplex<dimA>, computeintersection::Simplex<dimB>> CI(comp_simplex, bulk_simplex);
+        CI.init();
+        END_TIMER("CI create");
+        START_TIMER("CI compute");
+        CI.compute(is, prolongation_table);
+        END_TIMER("CI compute");
+        
+        n_intersection[is.size()]++;
+        if(is.is_pathologic()) n_intersection_p[is.size()]++;
+    }
     END_TIMER("Compute intersection");
-    
-    n_intersection[is.size()]++;
-    if(is.is_pathologic()) n_intersection_p[is.size()]++;
 }
 
 
@@ -271,51 +285,50 @@ void compute_intersection_ngh_22(Mesh *mesh)
 
 void compute_intersection_ngh_13(Mesh *mesh)
 {
-    TAbscissa tabs;
-    TTetrahedron tte;
-    TIntersectionType it = line;
     double length;
-
     ElementFullIter elmA = mesh->element(0);
     ElementFullIter elmB = mesh->element(1);
+    
+    { START_TIMER("Compute intersection NGH");
+        
+    TPoint p1 = TPoint(elmA->node[0]->point()(0), elmA->node[0]->point()(1), elmA->node[0]->point()(2)),
+           p2 = TPoint(elmA->node[1]->point()(0), elmA->node[1]->point()(1), elmA->node[1]->point()(2)),
+           p3 = TPoint(elmB->node[0]->point()(0), elmB->node[0]->point()(1), elmB->node[0]->point()(2)),
+           p4 = TPoint(elmB->node[1]->point()(0), elmB->node[1]->point()(1), elmB->node[1]->point()(2)),
+           p5 = TPoint(elmB->node[2]->point()(0), elmB->node[2]->point()(1), elmB->node[2]->point()(2)),
+           p6 = TPoint(elmB->node[3]->point()(0), elmB->node[3]->point()(1), elmB->node[3]->point()(2));
 
-    START_TIMER("Compute intersection NGH");
-
-    tabs.SetPoints(TPoint(elmA->node[0]->point()(0), elmA->node[0]->point()(1), elmA->node[0]->point()(2)),
-                   TPoint(elmA->node[1]->point()(0), elmA->node[1]->point()(1), elmA->node[1]->point()(2)));
-
-    tte.SetPoints(TPoint(elmB->node[0]->point()(0), elmB->node[0]->point()(1), elmB->node[0]->point()(2)),
-                  TPoint(elmB->node[1]->point()(0), elmB->node[1]->point()(1), elmB->node[1]->point()(2)),
-                  TPoint(elmB->node[2]->point()(0), elmB->node[2]->point()(1), elmB->node[2]->point()(2)),
-                  TPoint(elmB->node[3]->point()(0), elmB->node[3]->point()(1), elmB->node[3]->point()(2)));
-
+    TAbscissa tabs(p1,p2);
+    TTetrahedron tte(p3, p4, p5, p6);
+    TIntersectionType it = Intersections::line;
+    
     GetIntersection(tabs, tte, it, length);
-    END_TIMER("Compute intersection NGH");
+    END_TIMER("Compute intersection NGH"); }
 } 
 
 void compute_intersection_ngh_23(Mesh *mesh)
 {
-    TTriangle ttr;
-    TTetrahedron tte;
-    TIntersectionType it = area;
     double area;
-
     ElementFullIter elmA = mesh->element(0);
     ElementFullIter elmB = mesh->element(1);
-
-    START_TIMER("Compute intersection NGH");
-
-    ttr.SetPoints(TPoint(elmA->node[0]->point()(0), elmA->node[0]->point()(1), elmA->node[0]->point()(2)),
-                  TPoint(elmA->node[1]->point()(0), elmA->node[1]->point()(1), elmA->node[1]->point()(2)),
-                  TPoint(elmA->node[2]->point()(0), elmA->node[2]->point()(1), elmA->node[2]->point()(2)) );
-
-    tte.SetPoints(TPoint(elmB->node[0]->point()(0), elmB->node[0]->point()(1), elmB->node[0]->point()(2)),
-                  TPoint(elmB->node[1]->point()(0), elmB->node[1]->point()(1), elmB->node[1]->point()(2)),
-                  TPoint(elmB->node[2]->point()(0), elmB->node[2]->point()(1), elmB->node[2]->point()(2)),
-                  TPoint(elmB->node[3]->point()(0), elmB->node[3]->point()(1), elmB->node[3]->point()(2)));
+    
+    {START_TIMER("Compute intersection NGH");
+        
+    TPoint p1 = TPoint(elmA->node[0]->point()(0), elmA->node[0]->point()(1), elmA->node[0]->point()(2)),
+           p2 = TPoint(elmA->node[1]->point()(0), elmA->node[1]->point()(1), elmA->node[1]->point()(2)),
+           p3 = TPoint(elmA->node[2]->point()(0), elmA->node[2]->point()(1), elmA->node[2]->point()(2)),
+           p4 = TPoint(elmB->node[0]->point()(0), elmB->node[0]->point()(1), elmB->node[0]->point()(2)),
+           p5 = TPoint(elmB->node[1]->point()(0), elmB->node[1]->point()(1), elmB->node[1]->point()(2)),
+           p6 = TPoint(elmB->node[2]->point()(0), elmB->node[2]->point()(1), elmB->node[2]->point()(2)),
+           p7 = TPoint(elmB->node[3]->point()(0), elmB->node[3]->point()(1), elmB->node[3]->point()(2));
+           
+        
+    TTriangle ttr(p1,p2,p3);
+    TTetrahedron tte(p4,p5,p6,p7);
+    TIntersectionType it = Intersections::area;
 
     GetIntersection(ttr, tte, it, area);
-    END_TIMER("Compute intersection NGH");
+    END_TIMER("Compute intersection NGH");}
 } 
 
 
@@ -340,10 +353,9 @@ TEST(speed_simple_13, all) {
     {
         generate_mesh<1,3>(&meshes[i]);
         
-        stringstream stream;
-        stream << "random_meshes/rand_mesh_" << i << ".msh";
-        
-        //print_mesh(&meshes[i], stream.str());
+//         stringstream stream;
+//         stream << "random_meshes/rand_mesh_" << i << ".msh";
+//         print_mesh(&meshes[i], stream.str());
     }
     
     { START_TIMER("Speed test NGH");
@@ -401,10 +413,9 @@ TEST(speed_simple_23, all) {
     {
         generate_mesh<2,3>(&meshes[i]);
         
-        stringstream stream;
-        stream << "random_meshes/rand_mesh_" << i << ".msh";
-        
-        //print_mesh(&meshes[i], stream.str());
+//         stringstream stream;
+//         stream << "random_meshes/rand_mesh_" << i << ".msh";
+//         print_mesh(&meshes[i], stream.str());
     }
     
     { START_TIMER("Speed test NGH");

@@ -25,18 +25,13 @@
 
 #include <dirent.h>
 
-
-
 using namespace std;
 using namespace computeintersection;
 
-static const std::string profiler_file = "speed_test_13d_profiler.log";
+static const std::string profiler_file = "speed_test_profiler.log";
 static const unsigned int profiler_loop = 1;
 
-//*
-// ******************************************************************************************* TEST 1d-3d ****
-
-void compute_intersection_13d(Mesh *mesh)
+void compute_intersection(Mesh *mesh)
 {
     // compute intersection
     
@@ -99,8 +94,9 @@ std::vector<string> read_filenames(string dir_name)
     return filenames;
 }
 
-TEST(intersection_prolongation_13d, all) {
+TEST(benchmark_meshes, all) {
     Profiler::initialize();
+    DBGMSG("tolerances: %e\t%e\n", rounding_epsilon, geometry_epsilon);
     
     // directory with testing meshes
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/benchmarks/";
@@ -121,7 +117,7 @@ TEST(intersection_prolongation_13d, all) {
             
             xprintf(Msg, "==============\n");
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
-                compute_intersection_13d(&mesh);
+                compute_intersection(&mesh);
             xprintf(Msg, "==============\n");
     }
     std::fstream fs;
