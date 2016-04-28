@@ -4,7 +4,7 @@ flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
-    mesh_file: ./input/test1_new.msh
+    mesh_file: ../00_mesh/cube_2frac.msh
     regions:
       - !Union
         name: all_2d

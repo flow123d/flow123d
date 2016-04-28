@@ -1,8 +1,8 @@
 flow123d_version: 1.8.9
 problem: !SequentialCoupling
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
-  mesh:
-    mesh_file: ./input/test1_new.msh
+  # test auto conversion for the Mesh record
+  mesh: ../00_mesh/cube_2frac.msh
   primary_equation: !SteadyDarcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
@@ -37,7 +37,7 @@ problem: !SequentialCoupling
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z
-    balance: true
+    balance: false
     output:
       output_stream: 
         file: ./test1.pvd
