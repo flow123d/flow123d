@@ -45,11 +45,11 @@ const int DarcyFlowLMH_Unsteady::registrar =
 
 
 DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec,false)
+    : DarcyFlowMH_Steady(mesh_in, in_rec)
 {
+    /*
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-    data_.mark_input_times(this->time());
-
+    data_.mark_input_times(this->mark_type());
     data_.set_time(time_->step(), LimitSide::right);
 
     output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
@@ -70,13 +70,19 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
     assembly_linear_system();
     read_init_condition();
     output_data();
+    */
 }
 
 
 
 
-void DarcyFlowLMH_Unsteady::read_init_condition()
+void DarcyFlowLMH_Unsteady::read_initial_condition()
 {
+    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecDuplicate(steady_diagonal,& new_diagonal);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
+
     VecZeroEntries(schur0->get_solution());
 
     // apply initial condition

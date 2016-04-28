@@ -112,15 +112,15 @@ _NOTIFICATIONS = [
     },
     {
         'code': 309,
-        'name': 'MissingAbstractRecordType',
-        'description': 'AbstractRecord type is missing and has no default_descendant.',
+        'name': 'MissingAbstractType',
+        'description': 'Abstract type is missing and has no default_descendant.',
         'message': 'Missing record type',
         'example': 'example_validation_abstract_record.yaml',
     },
     {
         'code': 310,
-        'name': 'InvalidAbstractRecordType',
-        'description': 'AbstractRecord type is invalid.',
+        'name': 'InvalidAbstractType',
+        'description': 'Abstract type is invalid.',
         'message': 'Invalid type (yaml tag) "{0}" for record {1}',
         'example': 'example_validation_abstract_record.yaml',
     },
@@ -163,7 +163,7 @@ _NOTIFICATIONS = [
         'code': 451,
         'name': 'UnsupportedTransposition',
         'description': 'Transposition on unsupported input type. It should happen when Array of '
-                       'AbstractRecords would be expected from transposition.',
+                       'Abstracts would be expected from transposition.',
         'message': 'Transposition is not supported for input_type "{0}"',
         'example': '',  # no example - it's not be possible with the current IST
     },
@@ -311,7 +311,7 @@ _NOTIFICATIONS = [
     {
         'code': 901,
         'name': 'UselessTag',
-        'description': 'When tag is found anywhere except AbstractRecord.',
+        'description': 'When tag is found anywhere except Abstract.',
         'message': 'Tag "!{0}" has no effect here',
         'example': None,
         'deprecated': True

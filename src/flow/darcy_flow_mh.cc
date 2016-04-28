@@ -17,12 +17,17 @@
  *          porous media flow with possible preferential flow in fractures and chanels.
  */
 
+//#include <limits>
+#include <vector>
+//#include <iostream>
+//#include <iterator>
+//#include <algorithm>
+#include <armadillo>
+
 #include "petscmat.h"
 #include "petscviewer.h"
 #include "petscerror.h"
-#include <armadillo>
-#include <boost/foreach.hpp>
-
+#include "mpi.h"
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -39,7 +44,6 @@
 #include "la/sparse_graph.hh"
 #include "la/local_to_global_map.hh"
 
-#include "system/file_path.hh"
 #include "flow/darcy_flow_mh.hh"
 
 #include "flow/darcy_flow_mh_output.hh"
@@ -47,22 +51,14 @@
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
-#include <fem/fe_rt.hh>
+#include "fem/fe_rt.hh"
 #include "quadrature/quadrature_lib.hh"
-
-#include <limits>
-#include <set>
-#include <vector>
-#include <iostream>
-#include <iterator>
-#include <algorithm>
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
-
 
 #include "coupling/balance.hh"
 
@@ -76,7 +72,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
 
 namespace it = Input::Type;
 
-const it::Selection & DarcyFlowMH::get_mh_mortar_selection() {
+const it::Selection & DarcyFlowMH_Steady::get_mh_mortar_selection() {
 	return it::Selection("MH_MortarMethod")
 		.add_value(NoMortar, "None", "Mortar space: P0 on elements of lower dimension.")
 		.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.")
@@ -85,52 +81,77 @@ const it::Selection & DarcyFlowMH::get_mh_mortar_selection() {
 }
 
 
-const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
+const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
 	return it::Selection("DarcyFlow_BC_Type")
-               .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
-               .add_value(dirichlet, "dirichlet",
-                       "Dirichlet boundary condition. "
-                       "Specify the pressure head through the 'bc_pressure' field "
-                       "or the piezometric head through the 'bc_piezo_head' field.")
-//                .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water inflow by the 'bc_flux' field.")
-//                .add_value(robin, "robin", "Robin boundary condition. Water inflow equal to (($\\sigma (h^R - h)$)). "
-//                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
-//                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
-               .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
-		       "Water inflow equal to (($q^N + \\sigma (h^R - h)$)). "
-                        "Specify the water inflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
-			"and the reference pressure head or pieozmetric head through 'bc_pressure' or 'bc_piezo_head' respectively.")
-			   .close();
+        .add_value(none, "none",
+            "Homogeneous Neumann boundary condition. Zero flux")
+        .add_value(dirichlet, "dirichlet",
+            "Dirichlet boundary condition. "
+            "Specify the pressure head through the 'bc_pressure' field "
+            "or the piezometric head through the 'bc_piezo_head' field.")
+        .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
+            "Water inflow equal to (($q^N + \\sigma (h^R - h)$)). "
+            "Specify the water inflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
+            "and the reference pressure head or pieozmetric head through 'bc_pressure' or 'bc_piezo_head' respectively.")
+        .add_value(seepage, "seepage",
+            "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
+            "is described by the pair of inequalities:"
+            "(($h \\le h_d^D$)) and (($ q \\le q_d^N)), where the equality holds in at least one of them. Caution! Setting $q_d^N$ strictly negative"
+            "may lead to an ill posed problem since a positive outflow is enforced."
+            "Parameters (($h_d^D$)) and (($q_d^N)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
+            )
+        .add_value(river, "river",
+            "River boundary condition. For the water level above the bedrock, (($H > H^S$)), the Robin boundary condition is used with the inflow given by: "
+            "(( $q^N + \\sigma(H^D - H)$ )). For the water level under the bedrock, constant infiltration is used "
+            "(( $q^N + \\sigma(H^D - H^S)$ )). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
+            " ``bc_sigma, ``bc_flux``."
+            )
+        .close();
 }
 
 
 const it::Record & DarcyFlowMH_Steady::get_input_type() {
+    it::Record field_descriptor =
+        it::Record("DarcyFlowMH_Data",FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
+        .copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH_Data_aux") )
+        .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
+                "Boundary piezometric head for BC types: dirichlet, robin, and river." )
+        .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
+                "Boundary switch piezometric head for BC types: seepage, river." )
+        .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
+                "Initial condition for the pressure given as the piezometric head." )
+        .close();
+
+    it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
+        .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
+            "Linear solver for MH problem.")
+        .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"),
+            "Residual tolerance.")
+        .declare_key("max_it", it::Integer(0), it::Default("100"),
+            "Maximal number of iterations (linear solves) of the non-linear solver.")
+        .declare_key("converge_on_stagnation", it::Bool(), it::Default("false"),
+            "If a stagnation of the nonlinear solver is detected the solver stops. "
+            "A divergence is reported by default forcing the end of the simulation. Setting this flag to 'true', the solver"
+            "ends with convergence success on stagnation, but report warning about it.")
+        .close();
+
     return it::Record("SteadyDarcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
+        .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
+                "Input data for Darcy flow model.")				
+        .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
+                "Non-linear solver for MH problem.")
+
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
+                "Parameters of output form MH module.")
+        .declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
+                "Settings for computing mass balance.")
+        .declare_key("time", TimeGovernor::get_input_type(),
+                "Time governor setting for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
-		.declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
-				"Linear solver for MH problem.")
-		.declare_key("output",
-		        DarcyFlowMHOutput::get_input_type(),
-		        it::Default::obligatory(),
-				"Parameters of output form MH module.")
-		.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("\"None\""),
+		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions." )
-		.declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
-				"Settings for computing mass balance.")
-		.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
-				"Boundary condition for pressure as piezometric head." )
-		.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
-				"Initial condition for pressure as piezometric head." )
-		.declare_key("input_fields", it::Array(
-					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
-					.copy_keys( DarcyFlowMH_Steady::EqData()
-                        .make_field_descriptor_type("DarcyFlowMH_Data_aux") )
-					.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Boundary condition for pressure as piezometric head." )
-					.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "Initial condition for pressure as piezometric head." )
-					.close()
-					), it::Default::obligatory(), ""  )
 		.close();
 }
 
@@ -140,23 +161,8 @@ const int DarcyFlowMH_Steady::registrar =
 		DarcyFlowMH_Steady::get_input_type().size();
 
 
-const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
-	return it::Record("UnsteadyDarcy_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
-		.derive_from(DarcyFlowInterface::get_input_type())
-		.copy_keys(DarcyFlowMH_Steady::get_input_type())
-		.declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
-					 "Time governor setting for the unsteady Darcy flow model.")
-		.close();
-}
 
-
-const int DarcyFlowMH_Unsteady::registrar =
-		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("UnsteadyDarcy_MH") +
-		DarcyFlowMH_Unsteady::get_input_type().size();
-
-
-
-DarcyFlowMH::EqData::EqData()
+DarcyFlowMH_Steady::EqData::EqData()
 {
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
     	anisotropy.units( UnitSI::dimensionless() );
@@ -178,23 +184,29 @@ DarcyFlowMH::EqData::EqData()
         bc_type.input_selection( &get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(bc_pressure,"Prescribed pressure value for bc_type=\"dirichlet\" or reference pressure for bc_type=\"total_flux\".", "0.0");
-    	bc_pressure.disable_where(bc_type, {none/*, neumann*/} );
+    ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' save the bc_type='none'."
+		"See documentation of 'bc_type' for exact meaning of 'bc_pressure' in individual boundary condition types.", "0.0");
+    	bc_pressure.disable_where(bc_type, {none} );
         bc_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(bc_flux,"Incoming flux in total flux boundary condition.", "0.0");
-    	bc_flux.disable_where(bc_type, {none, dirichlet/*, robin*/} );
+    ADD_FIELD(bc_flux,"Incoming water boundary flux. Used for bc_types : 'none', 'total_flux', 'seepage', 'river'.", "0.0");
+    	bc_flux.disable_where(bc_type, {none, dirichlet} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in total flux boundary condition.", "0.0");
-    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet/*, neumann*/} );
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in the 'total_flux' or the 'river' boundary condition type.", "0.0");
+    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, seepage} );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
+
+    ADD_FIELD(bc_switch_pressure,
+            "Critical switch pressure for 'seepage' and 'river' boundary conditions.", "0.0");
+    bc_switch_pressure.disable_where(bc_type, {none, dirichlet, total_flux} );
+    bc_switch_pressure.units( UnitSI().m() );
 
     //these are for unsteady
     ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
     	init_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(storativity,"Storativity.", "1.0" );
+    ADD_FIELD(storativity,"Storativity.", "0.0" );
     	storativity.units( UnitSI().m(-1) );
 
     //time_term_fields = this->subset({"storativity"});
@@ -216,7 +228,7 @@ DarcyFlowMH_Steady::Assembly<dim>::Assembly(AssemblyData ad)
   velocity_interpolation_quad_(0), // veloctiy values in barycenter
   velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
-  d(ad)
+  ad_(ad)
 {
 }
 
@@ -238,43 +250,54 @@ DarcyFlowMH_Steady::Assembly<dim>::~Assembly()
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec, bool make_tg )
-: DarcyFlowMH(mesh_in, in_rec)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec)
+: DarcyFlowInterface(mesh_in, in_rec),
+  solution(nullptr),
+  schur0(nullptr),
+  edge_ds(nullptr),
+  el_ds(nullptr),
+  side_ds(nullptr),
+  el_4_loc(nullptr)
 
 {
-    using namespace Input;
-    START_TIMER("Darcy constructor");
 
-    this->eq_data_ = &data_;
+    is_linear_=true;
+
+    START_TIMER("Darcy constructor");
+    {
+        Input::Record time_record;
+        if ( in_rec.opt_val("time", time_record) )
+            time_ = new TimeGovernor(time_record);
+        else
+            time_ = new TimeGovernor();
+        this->eq_data_ = &data_;
+    }
 
     //connecting data fields with mesh
-    START_TIMER("data init");
-    data_.set_mesh(mesh_in);
-    //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
-    data_.gravity_ =  arma::vec4(" 0 0 -1 0");
-    data_.bc_pressure.add_factory(
+    {
+        START_TIMER("data init");
+        data_.set_mesh(mesh_in);
+        //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+        data_.gravity_ =  arma::vec4(" 0 0 -1 0");
+        data_.bc_pressure.add_factory(
     		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
     		(data_.gravity_, "bc_piezo_head") );
+        data_.bc_switch_pressure.add_factory(
+                std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
+                (data_.gravity_, "bc_switch_piezo_head") );
 
-    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-
-
-    
-    END_TIMER("data init");
+        data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
+        data_.mark_input_times(*time_);
+    }
+    output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    
-    solution = NULL;
-    schur0   = NULL;
-
-    
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
         mesh_->make_intersec_elements();
     }
-
     mh_dh.reinit(mesh_);
     
     AssemblyData assembly_data;
@@ -285,17 +308,31 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     assembly_.push_back(new Assembly<2>(assembly_data));
     assembly_.push_back(new Assembly<3>(assembly_data));
 
-    
-    prepare_parallel(in_rec.val<AbstractRecord>("solver"));
-
     //side_ds->view( std::cout );
     //el_ds->view( std::cout );
     //edge_ds->view( std::cout );
     //rows_ds->view( std::cout );
     
+}
 
+
+
+void DarcyFlowMH_Steady::zero_time_step()
+{
+    data_.set_time(time_->step(), LimitSide::right);
+    // zero_time_term means steady case
+    bool zero_time_term_from_right
+        = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+
+    nonlinear_iteration_=0;
+    Input::AbstractRecord rec = this->input_record_
+            .val<Input::Record>("nonlinear_solver")
+            .val<Input::AbstractRecord>("linear_solver");
+
+    prepare_parallel();
+    create_linear_system(rec);
     // initialization of balance object
-    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
+    Input::Iterator<Input::Record> it = input_record_.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
         balance_ = boost::make_shared<Balance>("water", mesh_, *it);
@@ -304,47 +341,139 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         balance_->units(UnitSI().m(3));
     }
 
+    /* TODO:
+     * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
+     * - Steady solution as an intitial condition may be forced by setting inti_time =-1, and set data for the steady solver in that time.
+     *   Solver should be able to switch from and to steady case depending on the zero time term.
+     */
 
-    if (make_tg) {
-    	// steady time governor
-    	time_ = new TimeGovernor();
-    	data_.mark_input_times(this->time());
-    	data_.set_time(time_->step(), LimitSide::right);
 
-    	create_linear_system();
-    	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
+    if (zero_time_term_from_right) {
+        // steady case
+        //read_initial_condition(); // Possible solution guess for steady case.
+        use_steady_assembly_ = true;
+        solve_nonlinear(); // with right limit data
+    } else {
+        read_initial_condition();
+        assembly_linear_system(); // in particular due to balance
+        // TODO: reconstruction of solution in zero time.
     }
+    //solution_output(T,right_limit); // data for time T in any case
+    output_data();
 }
-
-
 
 //=============================================================================
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
 //=============================================================================
-void DarcyFlowMH_Steady::update_solution() {
+void DarcyFlowMH_Steady::update_solution()
+{
     START_TIMER("Solving MH system");
 
 
-    if (time_->is_end()) return;
+    time_->next_time();
 
-    if (! time_->is_steady()) time_->next_time();
-    
+    data_.set_time(time_->step(), LimitSide::left);
+    bool zero_time_term_from_left
+        = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    bool jump_time = data_.storativity.is_jump_time();
+    if (! zero_time_term_from_left) {
+        // time term not treated as zero
+        // Unsteady solution up to the T.
+
+        // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
+        use_steady_assembly_ = false;
+        solve_nonlinear(); // with left limit data
+        if (jump_time) {
+            xprintf(Warn, "Output of solution discontinuous in time not supported yet.\n");
+            //solution_output(T, left_limit); // output use time T- delta*dt
+            //output_data();
+        }
+    }
+
+    if (time_->is_end()) {
+        // output for unsteady case, end_time should not be the jump time
+        // but rether check that
+        if (! zero_time_term_from_left && ! jump_time) output_data();
+        return;
+    }
+
+    data_.set_time(time_->step(), LimitSide::right);
+    bool zero_time_term_from_right
+        = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    if (zero_time_term_from_right) {
+        // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
+        use_steady_assembly_ = true;
+        solve_nonlinear(); // with right limit data
+
+    } else if (! zero_time_term_from_left && jump_time) {
+        xprintf(Warn, "Discontinuous time term not supported yet.\n");
+        //solution_transfer(); // internally call set_time(T, left) and set_time(T,right) again
+        //solve_nonlinear(); // with right limit data
+    }
+    //solution_output(T,right_limit); // data for time T in any case
+    output_data();
+
+}
 
 
+
+void DarcyFlowMH_Steady::solve_nonlinear()
+{
     assembly_linear_system();
+    double residual_norm = schur0->compute_residual();
+    unsigned int l_it=0;
+    nonlinear_iteration_ = 0;
+    xprintf(Msg, "Nonlin initial res: %d %g\n",nonlinear_iteration_, residual_norm);
 
-    int convergedReason = schur0->solve();
+    // Reduce is_linear flag.
+    int is_linear_common;
+    MPI_Allreduce(&is_linear_, &is_linear_common,1, MPI_INT ,MPI_MIN,PETSC_COMM_WORLD);
 
-    xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
-    ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+    Input::Record nl_solver_rec = input_record_.val<Input::Record>("nonlinear_solver");
+    this->tolerance_ = nl_solver_rec.val<double>("tolerance");
+    this->max_n_it_  = nl_solver_rec.val<unsigned int>("max_it");
 
-    this -> postprocess();
+    if (! is_linear_common) {
+        // set tolerances of the linear solver unless they are set by user.
+        schur0->set_tolerances(0.1, 0.1*this->tolerance_, 10);
+    }
+    vector<double> convergence_history;
+
+
+    while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
+        ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
+        convergence_history.push_back(residual_norm);
+        if (convergence_history.size() >= 5 &&
+            convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
+            convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 5] > 0.8) {
+            // stagnation
+            if (input_record_.val<bool>("converge_on_stagnation")) {
+                xprintf(Warn, "Accept solution on stagnation. Its: %d Residual: %g\n", nonlinear_iteration_, residual_norm);
+                break;
+            } else {
+                THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
+            }
+        }
+
+
+        int convergedReason = schur0->solve();
+        this -> postprocess();
+        nonlinear_iteration_++;
+
+        // hack to make BDDC work with empty compute_residual
+        if (is_linear_common) break;
+
+        //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
+        //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+        assembly_linear_system();
+        residual_norm = schur0->compute_residual();
+        xprintf(Msg, "Nonlin iter: %d %d (%d) %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
+
+
+    }
 
     solution_changed_for_scatter=true;
 
-    output_data();
-
-    if (time_->is_steady()) time_->next_time();
 }
 
 void DarcyFlowMH_Steady::postprocess() 
@@ -397,10 +526,12 @@ void DarcyFlowMH_Steady::output_data() {
 	}
 }
 
+
 double DarcyFlowMH_Steady::solution_precision() const
 {
 	return schur0->get_solution_precision();
 }
+
 
 
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
@@ -436,8 +567,8 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
     local_matrix.zeros(ndofs, ndofs);
 
     double scale = 1
-                   / d.data->conductivity.value( ele->centre(), ele->element_accessor() )
-                   / d.data->cross_section.value( ele->centre(), ele->element_accessor() );
+                   / ad_.data->conductivity.value( ele->centre(), ele->element_accessor() )
+                   / ad_.data->cross_section.value( ele->centre(), ele->element_accessor() );
                            
     for (unsigned int k=0; k<qsize; k++)
     {
@@ -447,7 +578,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
                 local_matrix[i*ndofs+j] += 
                         scale
                         * arma::dot(fe_values_.shape_vector(i,k),
-                                    (d.data->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
+                                    (ad_.data->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
                                      * fe_values_.shape_vector(j,k)
                                    ) 
                         * fe_values_.JxW(k);
@@ -461,16 +592,16 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, Elem
     //START_TIMER("Assembly<dim>::assembly_local_vb");
     // compute normal vector to side
     arma::vec3 nv;
-    ElementFullIter ele_higher = d.mesh->element.full_iter(ngh->side()->element());
+    ElementFullIter ele_higher = ad_.mesh->element.full_iter(ngh->side()->element());
     fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
     nv = fe_side_values_.normal_vector(0);
 
-    double value = d.data->sigma.value( ele->centre(), ele->element_accessor()) *
-                    2*d.data->conductivity.value( ele->centre(), ele->element_accessor()) *
-                    arma::dot(d.data->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-                    d.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-                    d.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
-                    d.data->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+    double value = ad_.data->sigma.value( ele->centre(), ele->element_accessor()) *
+                    2*ad_.data->conductivity.value( ele->centre(), ele->element_accessor()) *
+                    arma::dot(ad_.data->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+                    ad_.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                    ad_.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                    ad_.data->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
                     ngh->side()->measure();
 
     local_vb[0] = -value;   local_vb[1] = value;
@@ -488,11 +619,11 @@ arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIte
     
     velocity_interpolation_fv_.reinit(ele);
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        flux_in_center += d.mh_dh->side_flux( *(ele->side( li ) ) )
+        flux_in_center += ad_.mh_dh->side_flux( *(ele->side( li ) ) )
                   * velocity_interpolation_fv_.shape_vector(li,0);
     }
 
-    flux_in_center /= d.data->cross_section.value(ele->centre(), ele->element_accessor() );
+    flux_in_center /= ad_.data->cross_section.value(ele->centre(), ele->element_accessor() );
     return flux_in_center;
 }
 
@@ -507,6 +638,7 @@ arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIte
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 {
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
+    is_linear_=true;
     
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
@@ -542,8 +674,15 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
         double cross_section = data_.cross_section.value(ele->centre(), ele->element_accessor());
 
         for (unsigned int i = 0; i < nsides; i++) {
-            side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
-            edge_row = edge_rows[i] = row_4_edge[ele->side(i)->edge_idx()];
+            unsigned int idx_side= mh_dh.side_dof( ele->side(i) );
+/*            if (! side_ds->is_local(idx_side)) {
+                cout << el_ds->myp() << " : iside: " << ele.index() << " [" << el_ds->begin() << ", " << el_ds->end() << "]" << endl;
+                cout << el_ds->myp() << " : iside: " << idx_side << " [" << side_ds->begin() << ", " << side_ds->end() << "]" << endl;
+
+            }*/
+            unsigned int idx_edge= ele->side(i)->edge_idx();
+            side_row = side_rows[i] = side_row_4_id[idx_side];
+            edge_row = edge_rows[i] = row_4_edge[idx_edge];
             bcd=ele->side(i)->cond();
 
             // gravity term on RHS
@@ -555,33 +694,109 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
                 EqData::BC_Type type = (EqData::BC_Type)data_.bc_type.value(b_ele.centre(), b_ele);
+
                 if ( type == EqData::none) {
                     // homogeneous neumann
                 } else if ( type == EqData::dirichlet ) {
-                    c_val = 0.0;
                     double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+                    c_val = 0.0;
                     loc_side_rhs[i] -= bc_pressure;
                     ls->rhs_set_value(edge_row, -bc_pressure);
                     ls->mat_set_value(edge_row, edge_row, -1.0);
 
-//                } else if ( type == EqData::neumann) {
-//                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
-//                    ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
-//
-//                } else if ( type == EqData::robin) {
-//                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
-//                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-//                    ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
-//                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-//
-		} else if ( type == EqData::total_flux) {
-		    // internally we work with outward flux
-		    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
-		    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
-                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-                    ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
+                } else if ( type == EqData::total_flux) {
+                    // internally we work with outward flux
+                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+                            double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
+                            ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+                            ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
 
+                } else if (type==EqData::seepage) {
+                    is_linear_=false;
+                    //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
+                    unsigned int loc_edge_idx = bcd->bc_ele_idx_;
+                    char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
+                    double bc_pressure = data_.bc_switch_pressure.value(b_ele.centre(), b_ele);
+                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
+                    double side_flux=bc_flux * bcd->element()->measure() * cross_section;
+
+                    // ** Update BC type. **
+                    if (switch_dirichlet) {
+                        // check and possibly switch to flux BC
+                        // The switch raise error on the corresponding edge row.
+                        // Magnitude of the error is abs(solution_flux - side_flux).
+                        ASSERT(rows_ds->is_local(side_row), "" );
+                        unsigned int loc_side_row = side_row - rows_ds->begin();
+                        double & solution_flux = ls->get_solution_array()[loc_side_row];
+
+                        if ( solution_flux < side_flux) {
+                            //DBGMSG("x: %g, to neum, p: %g f: %g -> f: %g\n",b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
+                            solution_flux = side_flux;
+                            switch_dirichlet=0;
+
+                        }
+                    } else {
+                        // check and possibly switch to  pressure BC
+                        // TODO: What is the appropriate DOF in not local?
+                        // The switch raise error on the corresponding side row.
+                        // Magnitude of the error is abs(solution_head - bc_pressure)
+                        // Since usually K is very large, this error would be much
+                        // higher then error caused by the inverse switch, this
+                        // cause that a solution  with the flux violating the
+                        // flux inequality leading may be accepted, while the error
+                        // in pressure inequality is always satisfied.
+                        ASSERT(rows_ds->is_local(edge_row), "" );
+                        unsigned int loc_edge_row = edge_row - rows_ds->begin();
+                        double & solution_head = ls->get_solution_array()[loc_edge_row];
+
+                        if ( solution_head > bc_pressure) {
+                            //DBGMSG("x: %g, to dirich, p: %g -> p: %g f: %g\n",b_ele.centre()[0], solution_head, bc_pressure,  bc_flux);
+                            solution_head = bc_pressure;
+                            switch_dirichlet=1;
+                        }
+                    }
+
+                    // ** Apply BCUpdate BC type. **
+                    // Force Dirichlet type during the first iteration of the unsteady case.
+                    if (switch_dirichlet || (use_steady_assembly_ && nonlinear_iteration_ == 0) ) {
+                        //DBGMSG("x: %g, dirich, bcp: %g\n",b_ele.centre()[0], bc_pressure);
+                        c_val = 0.0;
+                        loc_side_rhs[i] -= bc_pressure;
+                        ls->rhs_set_value(edge_row, -bc_pressure);
+                        ls->mat_set_value(edge_row, edge_row, -1.0);
+                    } else {
+                        //DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], side_flux, bc_flux);
+                        ls->rhs_set_value(edge_row, side_flux);
+                    }
+
+                } else if (type==EqData::river) {
+                    is_linear_=false;
+                    //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
+                    //unsigned int loc_edge_idx = bcd->bc_ele_idx_;
+                    //char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
+
+                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+                    double bc_switch_pressure = data_.bc_switch_pressure.value(b_ele.centre(), b_ele);
+                    double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    ASSERT(rows_ds->is_local(edge_row), "" );
+                    unsigned int loc_edge_row = edge_row - rows_ds->begin();
+                    double & solution_head = ls->get_solution_array()[loc_edge_row];
+
+
+                    // Force Robin type during the first iteration of the unsteady case.
+                    if (solution_head > bc_switch_pressure  || (use_steady_assembly_ && nonlinear_iteration_ ==0)) {
+                        // Robin BC
+                        //DBGMSG("x: %g, robin, bcp: %g\n",b_ele.centre()[0], bc_pressure);
+                        ls->rhs_set_value(edge_row, bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
+                        ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+                    } else {
+                        // Neumann BC
+                        //DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], bc_switch_pressure, bc_pressure);
+                        double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
+                        ls->rhs_set_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
+                    }
                 } else {
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
@@ -748,9 +963,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 		Boundary * bcd = ele->side(i_side)->cond();
 		if (bcd) {			
 			ElementAccessor<3> b_ele = bcd->element_accessor();
-			DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
+			auto type = (DarcyFlowMH_Steady::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
-			if (type == DarcyFlowMH::EqData::dirichlet) {
+			if (type == DarcyFlowMH_Steady::EqData::dirichlet) {
 				//DBGMSG("Dirichlet: %d\n", ele->index());
 				dofs[i_side] = -dofs[i_side];
 				double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
@@ -831,9 +1046,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 			if (bcd) {
 				ElementAccessor<3> b_ele = bcd->element_accessor();
-				DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
+				auto type = (DarcyFlowMH_Steady::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 				//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
-				if (type == DarcyFlowMH::EqData::dirichlet) {
+				if (type == DarcyFlowMH_Steady::EqData::dirichlet) {
 					//DBGMSG("Dirichlet: %d\n", ele->index());
 					dofs[shift + i_side] = -dofs[shift + i_side];
 					double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
@@ -959,17 +1174,16 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyFlowMH_Steady::create_linear_system() {
+void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
   
     START_TIMER("preallocation");
-
-    auto in_rec = this->input_record_.val<Input::AbstractRecord>("solver");
 
     if (schur0 == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 #ifdef FLOW123D_HAVE_BDDCML
-            xprintf(Warn, "For BDDC is using no Schur complements.");
+            xprintf(Warn, "For BDDC no Schur complements are used.");
+            prepare_parallel_bddc();
             n_schur_compls = 0;
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
@@ -1031,6 +1245,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
                     // make schur2
                     schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
                     schur2->set_positive_definite();
+                    schur2->set_from_input(in_rec);
                     ls1->set_complement( schur2 );
                     schur1 = ls1;
                 }
@@ -1050,11 +1265,8 @@ void DarcyFlowMH_Steady::create_linear_system() {
         }
     }
 
-
     END_TIMER("preallocation");
-
     make_serial_scatter();
-
 }
 
 
@@ -1063,9 +1275,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
 void DarcyFlowMH_Steady::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-    {
-        data_.set_time(time_->step(), LimitSide::right);
-    }
+    bool is_steady = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 	//DBGMSG("Assembly linear system\n");
 	if (data_.changed()) {
 		//DBGMSG("  Data changed\n");
@@ -1082,7 +1292,8 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
-	    if (!time_->is_steady()) {
+
+	    if (! is_steady) {
 	        START_TIMER("fix time term");
 	    	//DBGMSG("    setup time term\n");
 	    	// assembly time term and rhs
@@ -1097,10 +1308,10 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 	    END_TIMER("full assembly");
 	} else {
 		START_TIMER("modify system");
-		if (!time_->is_steady()) {
+		if (! is_steady) {
 			modify_system();
 		} else {
-			xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
+			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
 		}
 		END_TIMER("modiffy system");
 	}
@@ -1396,7 +1607,7 @@ void DarcyFlowMH_Steady::make_serial_scatter() {
 // - compute appropriate partitioning of elements and sides
 // - make arrays: *_id_4_loc and *_row_4_id to allow parallel assembly of the MH matrix
 // ====================================================================================
-void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
+void DarcyFlowMH_Steady::prepare_parallel() {
     
     START_TIMER("prepare parallel");
     
@@ -1416,30 +1627,30 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     el_4_loc = mesh_->get_el_4_loc();
     el_ds = mesh_->get_el_ds();
 
-        //optimal element part; loc. els. id-> new el. numbering
-        Distribution init_edge_ds(DistributionLocalized(), mesh_->n_edges(), PETSC_COMM_WORLD);
-        // partitioning of edges, edge belongs to the proc of his first element
-        // this is not optimal but simple
-        loc_part = new int[init_edge_ds.lsize()];
-        id_4_old = new int[mesh_->n_edges()];
-        {
-            loc_i = 0;
-            FOR_EDGES(mesh_, edg ) {
-                unsigned int i_edg = edg - mesh_->edges.begin();
-                // partition
-                e_idx = mesh_->element.index(edg->side(0)->element());
-                if (init_edge_ds.is_local(i_edg)) {
-                    // find (new) proc of the first element of the edge
-                    loc_part[loc_i++] = el_ds->get_proc(row_4_el[e_idx]);
-                }
-                // id array
-                id_4_old[i_edg] = i_edg;
+    //optimal element part; loc. els. id-> new el. numbering
+    Distribution init_edge_ds(DistributionLocalized(), mesh_->n_edges(), PETSC_COMM_WORLD);
+    // partitioning of edges, edge belongs to the proc of his first element
+    // this is not optimal but simple
+    loc_part = new int[init_edge_ds.lsize()];
+    id_4_old = new int[mesh_->n_edges()];
+    {
+        loc_i = 0;
+        FOR_EDGES(mesh_, edg ) {
+            unsigned int i_edg = edg - mesh_->edges.begin();
+            // partition
+            e_idx = mesh_->element.index(edg->side(0)->element());
+            if (init_edge_ds.is_local(i_edg)) {
+                // find (new) proc of the first element of the edge
+                loc_part[loc_i++] = el_ds->get_proc(row_4_el[e_idx]);
             }
+            // id array
+            id_4_old[i_edg] = i_edg;
         }
+    }
 
-        Partitioning::id_maps(mesh_->n_edges(), id_4_old, init_edge_ds, loc_part, edge_ds, edge_4_loc, row_4_edge);
-        delete[] loc_part;
-        delete[] id_4_old;
+    Partitioning::id_maps(mesh_->n_edges(), id_4_old, init_edge_ds, loc_part, edge_ds, edge_4_loc, row_4_edge);
+    delete[] loc_part;
+    delete[] id_4_old;
 
     //optimal side part; loc. sides; id-> new side numbering
     Distribution init_side_ds(DistributionBlock(), mesh_->n_sides(), PETSC_COMM_WORLD);
@@ -1469,49 +1680,48 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     // convert row_4_id arrays from separate numberings to global numbering of rows
     make_row_numberings();
 
-    // prepare global_row_4_sub_row
-
-#ifdef FLOW123D_HAVE_BDDCML
-    if (in_rec.type() ==  LinSys_BDDC::get_input_type()) {
-        // auxiliary
-        Element *el;
-        int side_row, edge_row;
-
-        global_row_4_sub_row = boost::make_shared<LocalToGlobalMap>(rows_ds);
-
-        //
-        // ordering of dofs
-        // for each subdomain:
-        // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
-        for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-            el = mesh_->element(el_4_loc[i_loc]);
-            int el_row = row_4_el[el_4_loc[i_loc]];
-
-            global_row_4_sub_row->insert( el_row );
-
-            unsigned int nsides = el->n_sides();
-            for (unsigned int i = 0; i < nsides; i++) {
-                side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
-		        edge_row = row_4_edge[el->side(i)->edge_idx()];
-
-		        global_row_4_sub_row->insert( side_row );
-		        global_row_4_sub_row->insert( edge_row );
-            }
-
-            for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
-                // mark this edge
-                edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
-                global_row_4_sub_row->insert( edge_row );
-            }
-        }
-        global_row_4_sub_row->finalize();
-    }
-#endif // FLOW123D_HAVE_BDDCML
-
+    // Initialize bc_switch_dirichlet to size of global boundary.
+    bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
 }
 
+void DarcyFlowMH_Steady::prepare_parallel_bddc() {
+#ifdef FLOW123D_HAVE_BDDCML
+    // auxiliary
+    Element *el;
+    int side_row, edge_row;
 
+    global_row_4_sub_row = boost::make_shared<LocalToGlobalMap>(rows_ds);
 
+    //
+    // ordering of dofs
+    // for each subdomain:
+    // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
+    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+        el = mesh_->element(el_4_loc[i_loc]);
+        int el_row = row_4_el[el_4_loc[i_loc]];
+
+        global_row_4_sub_row->insert( el_row );
+
+        unsigned int nsides = el->n_sides();
+        for (unsigned int i = 0; i < nsides; i++) {
+            side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
+            edge_row = row_4_edge[el->side(i)->edge_idx()];
+
+            global_row_4_sub_row->insert( side_row );
+            global_row_4_sub_row->insert( edge_row );
+        }
+
+        for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
+            // mark this edge
+            edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
+            global_row_4_sub_row->insert( edge_row );
+        }
+    }
+    global_row_4_sub_row->finalize();
+#endif // FLOW123D_HAVE_BDDCML
+}
+
+/*
 void mat_count_off_proc_values(Mat m, Vec v) {
     int n, first, last;
     const PetscInt *cols;
@@ -1534,7 +1744,7 @@ void mat_count_off_proc_values(Mat m, Vec v) {
         MatRestoreRow(m, row, &n, &cols, PETSC_NULL);
     }
 }
-
+*/
 
 
 
@@ -1548,12 +1758,13 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 
 // ========================
 // unsteady
-
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec, false)
+/*
+DarcyFlowMH_Steady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
+    : DarcyFlowMH_Steady(mesh_in, in_rec)
 {
+
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-	data_.mark_input_times(this->time());
+	data_.mark_input_times(this->mark_type());
 	data_.set_time(time_->step(), LimitSide::right);
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
@@ -1562,20 +1773,23 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
 	//time_->fix_dt_until_mark();
 	create_linear_system();
 
-	VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecZeroEntries(new_diagonal);
-    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
+
 
     assembly_linear_system();
 	read_init_condition();
 
     output_data();
 }
+*/
 
-void DarcyFlowMH_Unsteady::read_init_condition()
+void DarcyFlowMH_Steady::read_initial_condition()
 {
+
+    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecDuplicate(steady_diagonal,& new_diagonal);
+    VecZeroEntries(new_diagonal);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
 
 	// read inital condition
 	VecZeroEntries(schur0->get_solution());
@@ -1598,7 +1812,7 @@ void DarcyFlowMH_Unsteady::read_init_condition()
 
 }
 
-void DarcyFlowMH_Unsteady::setup_time_term() {
+void DarcyFlowMH_Steady::setup_time_term() {
     // save diagonal of steady matrix
     MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
@@ -1637,7 +1851,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     	balance_->finish_mass_assembly(water_balance_idx_);
 }
 
-void DarcyFlowMH_Unsteady::modify_system() {
+void DarcyFlowMH_Steady::modify_system() {
 	START_TIMER("modify system");
 	if (time_->is_changed_dt() && time_->step().index()>0) {
         double scale_factor=time_->step(-2).length()/time_->step().length();

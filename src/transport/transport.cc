@@ -371,6 +371,8 @@ void ConvectionTransport::set_boundary_conditions()
                         {
                         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
                         	{
+                        	    // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
+                        	    // So we have to add also values that may be non-zero in future due to changing velocity field.
                          		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
                         		balance_->add_flux_vec_value(subst_idx[sbi], loc_b, flux*value[sbi]);
                         	}
@@ -415,7 +417,7 @@ void ConvectionTransport::compute_concentration_sources() {
   //temporary variables
   unsigned int loc_el, sbi;
   double csection, source, diag;
-  double max_cfl;
+
   Element *ele;
   ElementAccessor<3> ele_acc;
   arma::vec3 p;
@@ -443,7 +445,8 @@ void ConvectionTransport::compute_concentration_sources() {
             src_density = data_.sources_density.value(p, ele_acc);
             src_conc = data_.sources_conc.value(p, ele_acc);
             src_sigma = data_.sources_sigma.value(p, ele_acc);
-                
+
+            double max_cfl=0;
             for (sbi = 0; sbi < n_substances(); sbi++)
             {      
                 source = csection * (src_density(sbi) + src_sigma(sbi) * src_conc(sbi));
@@ -466,7 +469,6 @@ void ConvectionTransport::compute_concentration_sources() {
             }
             
             cfl_source_[loc_el] = max_cfl;
-            max_cfl = 0;
         }
         
         if (balance_ != nullptr) balance_->finish_source_assembly(subst_idx);
@@ -678,8 +680,13 @@ void ConvectionTransport::set_target_time(double target_time)
     // If CFL condition is changed, time fixation will change later from TOS.
     
     // Set the same constraint as was set last time.
-    time_->set_upper_constraint(cfl_max_step, "CFL condition used from previous step.");
     
+    // TODO: fix this hack, remove this method completely, leaving just the first line at the calling point
+    // in TransportOperatorSplitting::update_solution()
+    // doing this directly leads to choose of large time step violationg CFL condition
+    if (cfl_max_step > time_->dt()*1e-10)
+    time_->set_upper_constraint(cfl_max_step, "CFL condition used from previous step.");
+
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes
     time_->fix_dt_until_mark();

@@ -4,6 +4,9 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: input/large_mesh.msh
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
     input_fields:
       - region: IMPLICIT BOUNDARY
         bc_type: dirichlet
@@ -23,5 +26,3 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-    solver: !Petsc
-      a_tol: 1.0e-07

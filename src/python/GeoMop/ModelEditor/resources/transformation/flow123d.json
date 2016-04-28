@@ -383,6 +383,171 @@
         "addition_path":"/problem/mesh/regions_elementary",
         "destination_path":"/problem/mesh/regions"        
       }
-    }
+    },
+    {
+      "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "key": "nonlinear_solver"
+      }
+    }, 
+    {
+      "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/primary_equation/solver",
+        "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
+        "create_path":true  
+      }
+    },
+    {
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/primary_equation/solver",
+        "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
+        "create_path":true  
+      }
+    },
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_LMH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",        
+        "key": "aux_region_key",
+        "value": "ALL",
+        "path-type-filter" : "UnsteadyDarcy_LMH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_LMH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",        
+        "key": "aux_storativity_key",
+        "value": "1.0",
+        "path-type-filter" : "UnsteadyDarcy_LMH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_LMH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/aux_region_key",
+        "destination_path":"/problem/primary_equation/_input_fields/0/region",
+        "path-type-filter" : "UnsteadyDarcy_LMH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true
+      }  
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_LMH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/aux_storativity_key",
+        "destination_path":"/problem/primary_equation/_input_fields/0/storativity",
+        "path-type-filter" : "UnsteadyDarcy_LMH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true
+      }  
+    },
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_LMH.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path":"/problem/primary_equation/_input_fields",
+        "addition_path":"/problem/primary_equation/input_fields",
+        "destination_path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "UnsteadyDarcy_LMH",
+        "path-type-filter-path" : "/problem/primary_equation"     
+      }
+    },
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_LMH.",
+      "action" : "move-key-forward",
+      "parameters": {
+        "path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "UnsteadyDarcy_LMH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",        
+        "key": "aux_region_key",
+        "value": "ALL",
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",        
+        "key": "aux_storativity_key",
+        "value": "1.0",
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/aux_region_key",
+        "destination_path":"/problem/primary_equation/_input_fields/0/region",
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true  
+            
+      }
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/aux_storativity_key",
+        "destination_path":"/problem/primary_equation/_input_fields/0/storativity",
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true  
+            
+      }
+    },      
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path":"/problem/primary_equation/_input_fields",
+        "addition_path":"/problem/primary_equation/input_fields",
+        "destination_path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },            
+    {
+      "NAME": "Set storativity for UnsteadyDarcy_MH.",
+      "action" : "move-key-forward",
+      "parameters": {
+        "path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "UnsteadyDarcy_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },
+
+    {
+      "NAME": "Use time aware DarcyFlowMH_Steady instead of Unsteady.",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "UnsteadyDarcy_MH",
+        "new_name": "SteadyDarcy_MH"
+      }
+    }        
   ]
 }

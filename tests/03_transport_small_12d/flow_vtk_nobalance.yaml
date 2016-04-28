@@ -14,6 +14,11 @@ problem: !SequentialCoupling
           - 1d_left_branch
   # mesh
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    # primary equation
     input_fields:
       - region: 1d_domain
         conductivity: 1.0e-06
@@ -35,9 +40,6 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: false
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
   # primary equation
   secondary_equation: !Transport_OS
     transport: !Convection_FV

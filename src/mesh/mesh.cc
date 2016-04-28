@@ -278,8 +278,10 @@ void Mesh::setup_topology() {
     // create parallel distribution and numbering of elements
     int *id_4_old = new int[element.size()];
     int i = 0;
-    FOR_ELEMENTS(this, ele) id_4_old[i++] = ele.index();
+    FOR_ELEMENTS(this, ele)
+        id_4_old[i++] = ele.index();
     part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
+
     delete[] id_4_old;
 }
 

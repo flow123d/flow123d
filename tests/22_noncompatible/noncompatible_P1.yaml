@@ -4,6 +4,10 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: input/noncompatible_r_1.msh
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
     n_schurs: 2
     mortar_method: P1
     input_fields:
@@ -35,6 +39,3 @@ problem: !SequentialCoupling
         - pressure_diff
         - div_diff
     balance: true
-    solver: !Petsc
-      r_tol: 1.0e-10
-      a_tol: 1.0e-10

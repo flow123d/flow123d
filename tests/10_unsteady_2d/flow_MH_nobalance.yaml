@@ -7,8 +7,10 @@ problem: !SequentialCoupling
   description: Test10 - Unsteady flow in 2D, Mixed Hybrid method
   mesh:
     mesh_file: ${INPUT}/test10.msh
-  primary_equation: !UnsteadyDarcy_MH
+  primary_equation: !SteadyDarcy_MH
     input_fields:
+      - region: ALL
+        storativity: 1.0
       - region: plane
         anisotropy: 0.02
         init_pressure: 0
@@ -21,6 +23,9 @@ problem: !SequentialCoupling
       - region: .bc_outflow
         bc_type: dirichlet
         bc_pressure: 0
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
     n_schurs: 2
     output:
       output_stream: 
@@ -34,6 +39,4 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: false
-    solver: !Petsc
-      a_tol: 1.0e-07
     time: *anchor2

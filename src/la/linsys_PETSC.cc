@@ -29,13 +29,20 @@
 namespace it = Input::Type;
 
 const it::Record & LinSys_PETSC::get_input_type() {
-	return it::Record("Petsc", "Solver setting.")
+	return it::Record("Petsc", "Interface to PETSc solvers. Convergence criteria is:\n"
+	        " ```norm( res_n )  < max( norm( res_0 ) * r_tol, a_tol )```\n"
+	        "where res_i is the residuum vector after i-th iteration of the solver and res_0 is an estimate of the norm of initial residual.\n"
+	        "If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used,\n"
+	        "otherwise the norm of preconditioned RHS is used.\n"
+	        "The default norm is L2 norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key.\n"
+	        "See also PETSc documentation for KSPSetNormType.")
 		.derive_from(LinSys::get_input_type())
-		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
-					"Relative residual tolerance (to initial error).")
-		.declare_key("max_it", it::Integer(0), it::Default("10000"),
-					"Maximum number of outer iterations of the linear solver.")
-		.declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"), "Absolute residual tolerance.")
+		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-7."),
+					"Relative residual tolerance,  (to initial error).")
+		.declare_key("a_tol", it::Double(0.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-11."),
+		            "Absolute residual tolerance.")
+        .declare_key("max_it", it::Integer(0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1000."),
+                    "Maximum number of outer iterations of the linear solver.")
 		.declare_key("options", it::String(), it::Default("\"\""),  "Options passed to PETSC before creating KSP instead of default setting.")
 		.close();
 }
@@ -55,6 +62,7 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
     v_rhs_= new double[ rows_ds_->lsize() + 1 ];
     ierr = VecCreateMPIWithArray( comm_, 1, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
+    VecDuplicate(rhs_, &residual_);
 
     params_ = "";
     matrix_ = NULL;
@@ -71,6 +79,17 @@ LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
 	VecCopy(other.on_vec_, on_vec_);
 	VecCopy(other.off_vec_, off_vec_);
 }
+
+void LinSys_PETSC::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
+{
+    if (! in_rec_.is_empty()) {
+        // input record is set
+        r_tol_ = in_rec_.val<double>("r_tol", r_tol);
+        a_tol_ = in_rec_.val<double>("a_tol", a_tol);
+        max_it_ = in_rec_.val<unsigned int>("max_it", max_it);
+    }
+}
+
 
 void LinSys_PETSC::start_allocation( )
 {
@@ -295,8 +314,6 @@ void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
 
 int LinSys_PETSC::solve()
 {
-    KSP                system;
-    KSPConvergedReason reason;
 
     const char *petsc_dflt_opt;
     int nits;
@@ -327,11 +344,12 @@ int LinSys_PETSC::solve()
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
-    KSPCreate( comm_, &system );
-    KSPSetOperators(system, matrix_, matrix_);
+    chkerr(KSPCreate( comm_, &system ));
+    chkerr(KSPSetOperators(system, matrix_, matrix_));
+
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
-    KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
+    chkerr(KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT));
     KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero
     // unless KSP type is preonly.
@@ -347,7 +365,7 @@ int LinSys_PETSC::solve()
     {
 		START_TIMER("PETSC linear solver");
 		START_TIMER("PETSC linear iteration");
-		KSPSolve(system, rhs_, solution_ );
+		chkerr(KSPSolve(system, rhs_, solution_ ));
 		KSPGetConvergedReason(system,&reason);
 		KSPGetIterationNumber(system,&nits);
 		ADD_CALLS(nits);
@@ -405,16 +423,14 @@ LinSys_PETSC::~LinSys_PETSC( )
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 
+
+
 void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 {
-	if (! in_rec.is_empty()) {
-		// common values
-		LinSys::set_from_input( in_rec );
+	LinSys::set_from_input( in_rec );
 
-		// PETSc specific setting
-		a_tol_  = in_rec.val<double>("a_tol");
-		params_ = in_rec.val<string>("options");
-	}
+	// PETSC specific parameters
+	params_ = in_rec.val<string>("options");
 }
 
 
@@ -423,3 +439,12 @@ double LinSys_PETSC::get_solution_precision()
 	return solution_precision_;
 }
 
+
+double LinSys_PETSC::compute_residual()
+{
+    MatMult(matrix_, solution_, residual_);
+    VecAXPY(residual_,-1.0, rhs_);
+    double residual_norm;
+    VecNorm(residual_, NORM_2, &residual_norm);
+    return residual_norm;
+}

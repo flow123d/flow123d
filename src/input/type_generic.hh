@@ -32,13 +32,14 @@ namespace Type {
 // Declaration of exception
 TYPEDEF_ERR_INFO(EI_Object, std::string);
 TYPEDEF_ERR_INFO(EI_ParameterList, std::string);
-DECLARE_INPUT_EXCEPTION(ExcParamaterNotSubsituted,
+
+DECLARE_EXCEPTION(ExcParamaterNotSubsituted,
         << "No input type substitution for input type parameter " << EI_Object::qval
 		<< " found during creation of instance with parameter list: " << EI_ParameterList::val << ".");
-DECLARE_INPUT_EXCEPTION(ExcParamaterInIst,
+DECLARE_EXCEPTION(ExcParamaterInIst,
 		<< "Parameter " << EI_Object::qval << " appears in the IST. Check where Instance is missing.");
-DECLARE_INPUT_EXCEPTION(ExcGenericWithoutInstance,
-		<< "Root of generic subtree " << EI_Object::qval << " used without Instance.");
+DECLARE_EXCEPTION(ExcGenericWithoutInstance,
+		<< "Root of generic subtree " << EI_Object::qval << " used without Instance.\n Used in type: " << EI_TypeName::qval);
 
 
 

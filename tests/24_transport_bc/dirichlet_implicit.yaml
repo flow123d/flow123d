@@ -4,6 +4,10 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/mesh.msh
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc &anchor3
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     input_fields:
       - region: BOUNDARY
         bc_type: dirichlet
@@ -19,9 +23,6 @@ problem: !SequentialCoupling
         - pressure_p0
         - velocity_p0
     balance: true
-    solver: !Petsc &anchor3
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:
@@ -42,7 +43,9 @@ problem: !SequentialCoupling
         - region: .bottom
           bc_type: dirichlet
           bc_conc: 1
-      solver: *anchor3
+      solver: 
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     output_stream: 
       file: ./transport.pvd
       format: !vtk

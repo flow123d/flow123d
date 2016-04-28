@@ -154,7 +154,7 @@ void SchurComplement::form_schur()
 
         VecGetArray( Sol2, &sol_array );
         Compl->set_solution( sol_array );
-        Compl->set_from_input( in_rec_ );
+
         VecRestoreArray( Sol2, &sol_array );
 
     }
@@ -236,6 +236,9 @@ void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
 	ASSERT(ls != nullptr, "NULL complement ls.\n");
     Compl = ls;
+    if (!in_rec_.is_empty()) {
+        Compl->set_from_input( in_rec_ );
+    }
 }
 
 

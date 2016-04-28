@@ -57,7 +57,7 @@ class ModelEditor:
             return
         yaml_file = QtWidgets.QFileDialog.getOpenFileName(
             self.mainwindow, "Choose Yaml Model File",
-            cfg.config.last_data_dir, "Yaml Files (*.yaml)")
+            cfg.config.data_dir, "Yaml Files (*.yaml)")
         if yaml_file[0]:
             cfg.open_file(yaml_file[0])
             self.mainwindow.reload()
@@ -71,7 +71,7 @@ class ModelEditor:
             return
         con_file = QtWidgets.QFileDialog.getOpenFileName(
             self.mainwindow, "Choose Con Model File",
-            cfg.config.last_data_dir, "Con Files (*.con)")
+            cfg.config.data_dir, "Con Files (*.con)")
         if con_file[0]:
             cfg.import_file(con_file[0])
             self.mainwindow.reload()
@@ -106,7 +106,7 @@ class ModelEditor:
             if cfg.imported_file_name is not None:
                 new_file = cfg.imported_file_name
             else:
-                new_file = cfg.config.last_data_dir + os.path.sep + "NewFile.yaml"
+                new_file = cfg.config.data_dir + os.path.sep + "NewFile.yaml"
         else:
             new_file = cfg.curr_file
         dialog = QtWidgets.QFileDialog(self.mainwindow, 'Save as YAML File', new_file,
