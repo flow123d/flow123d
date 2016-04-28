@@ -34,8 +34,6 @@ const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
     return it::Record("UnsteadyDarcy_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyFlowMH_Steady::get_input_type())
-        .declare_key("time",         TimeGovernor::get_input_type(), it::Default::obligatory(),
-                                    "Time governor setting for the unsteady Darcy flow model.")
         .close();
 }
 
@@ -52,7 +50,6 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 }
 
 void DarcyFlowLMH_Unsteady::initialize_specific() {
-    DBGMSG("initialize_specific");
 
     // create edge vectors
     unsigned int n_local_edges = edge_new_local_4_mesh_idx_.size();
@@ -142,8 +139,7 @@ void DarcyFlowLMH_Unsteady::assembly_linear_system()
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
-        auto multidim_assembler = AssemblyBase::create< AssemblyMH >(
-                *mesh_, data_, mh_dh );
+        auto multidim_assembler = AssemblyBase::create< AssemblyMH >(*mesh_, data_, mh_dh );
         assembly_mh_matrix( multidim_assembler ); // fill matrix
 
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
