@@ -140,7 +140,7 @@ private:
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_plucker(IntersectionPointAux<1,2> &IP);
+    bool compute_plucker(IntersectionPointAux<1,2> &IP, const arma::vec3 &local_triangle);
     
     /** Computes intersection of abscissa and triangle side for zero Plucker product - pathologic case.
      * @param side is the local index of the triangle side

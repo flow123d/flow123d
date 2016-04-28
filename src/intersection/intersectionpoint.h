@@ -6,11 +6,12 @@
 
 namespace computeintersection{
 
-//http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
-static const double rounding_epsilon = 8*std::numeric_limits<double>::epsilon();
-
 //TODO: idea:replace with relative tolerance and use some user input tolerance (absolute) of the coordinates
-static const double geometry_epsilon = 1e-9;
+static const double geometry_epsilon = 1e-9;//8*std::numeric_limits<double>::epsilon();//1e-9;
+
+//http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
+static const double rounding_epsilon = geometry_epsilon;//8*std::numeric_limits<double>::epsilon();
+static const double rounding_epsilonX = 8*std::numeric_limits<double>::epsilon();
 
 //forward declare
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
