@@ -200,6 +200,7 @@ public:
 
     DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
 
+    static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
     const MH_DofHandler &get_mh_dofhandler() {

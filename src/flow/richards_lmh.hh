@@ -45,6 +45,20 @@
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
+    /// Class with all fields used in the equation DarcyFlow.
+    /// This is common to all implementations since this provides interface
+    /// to this equation for possible coupling.
+    class EqData : public DarcyFlowMH_Steady::EqData {
+    public:
+        EqData();
+        // input fields
+        Field<3, FieldValue<3>::Scalar > water_content_saturated;
+        Field<3, FieldValue<3>::Scalar > water_content_residual;
+        Field<3, FieldValue<3>::Scalar > genuchten_p_head_scale;
+        Field<3, FieldValue<3>::Scalar > genuchten_n_exponent;
+
+        //output fields
+    };
 
     DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
 

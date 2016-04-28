@@ -30,10 +30,46 @@ FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
 
 
 namespace it=Input::Type;
+
+
+DarcyFlowLMH_Unsteady::EqData::EqData()
+{
+
+    ADD_FIELD(water_content_saturated,
+            "Saturated water content (($ \theta_s $)).\n"
+            "Relative volume of the water in a reference volume of a saturated porous media.", "0.0");
+        water_content_saturated.units( UnitSI::dimensionless() );
+
+    ADD_FIELD(water_content_residual,
+            "Residual water content (($ \theta_r $)).\n"
+            "Relative volume of the water in a reference volume of an ideally dry porous media.", "0.0");
+        water_content_residual.units( UnitSI::dimensionless() );
+
+    ADD_FIELD(genuchten_p_head_scale,
+            "The van Genuchten pressure head scaling parameter (($ \alpha $)).\n"
+            "The parameter of the van Genuchten's model to scale the pressure head."
+            "Related to the inverse of the air entry pressure, i.e. the pressure where the relative water content starts to decrease below 1.", "1.0");
+        genuchten_p_head_scale.units( UnitSI().m(-1) );
+
+    ADD_FIELD(genuchten_n_exponent,
+            "The van Genuchten exponent parameter (($ n $)).\n", "2.0");
+        genuchten_n_exponent.units( UnitSI::dimensionless() );
+
+}
+
+
 const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
+    it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
+    .copy_keys( DarcyFlowMH_Steady::type_field_descriptor() )
+    .copy_keys( DarcyFlowLMH_Unsteady::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
+    .close();
+
     return it::Record("UnsteadyDarcy_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyFlowMH_Steady::get_input_type())
+        .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
+                "Input data for Darcy flow model.")
+
         .close();
 }
 

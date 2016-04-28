@@ -112,18 +112,22 @@ const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
         .close();
 }
 
+const it::Record & DarcyFlowMH_Steady::type_field_descriptor() {
+
+        const it::Record &field_descriptor =
+            it::Record("DarcyFlowMH_Data",FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
+            .copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH_Data_aux") )
+            .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
+                    "Boundary piezometric head for BC types: dirichlet, robin, and river." )
+            .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
+                    "Boundary switch piezometric head for BC types: seepage, river." )
+            .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
+                    "Initial condition for the pressure given as the piezometric head." )
+            .close();
+        return field_descriptor;
+}
 
 const it::Record & DarcyFlowMH_Steady::get_input_type() {
-    it::Record field_descriptor =
-        it::Record("DarcyFlowMH_Data",FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
-        .copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH_Data_aux") )
-        .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
-                "Boundary piezometric head for BC types: dirichlet, robin, and river." )
-        .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
-                "Boundary switch piezometric head for BC types: seepage, river." )
-        .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
-                "Initial condition for the pressure given as the piezometric head." )
-        .close();
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
@@ -140,7 +144,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 
     return it::Record("SteadyDarcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
-        .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
+        .declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
                 "Non-linear solver for MH problem.")
