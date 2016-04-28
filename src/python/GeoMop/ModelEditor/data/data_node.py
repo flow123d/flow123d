@@ -75,7 +75,7 @@ class DataNode:
         self.value = None
         """the scalar value of the node (:py:class:`TextValue <util.util.TextValue>`"""
         self.type = None
-        """specifies the type of AbstractRecord"""  # TODO is type TextValue?
+        """specifies the type of Abstract"""  # TODO is type TextValue?
 
     @property
     def absolute_path(self):
@@ -220,7 +220,7 @@ class DataNode:
         if input_type == 'Selection':
             selected_item = self.value
 
-        if is_parent and input_type in ['AbstractRecord', 'Record']:
+        if is_parent and input_type in ['Abstract', 'Record']:
             node = self
         else:
             # find first parent record node
@@ -238,7 +238,7 @@ class DataNode:
         if node.input_type is not None:
             if 'implemented_abstract_record' in node.input_type:
                 abstract_id = node.input_type['implemented_abstract_record']['id']
-            if node.input_type['base_type'] == 'AbstractRecord':
+            if node.input_type['base_type'] == 'Abstract':
                 abstract_id = node.input_type['id']
             else:
                 record_id = node.input_type['id']

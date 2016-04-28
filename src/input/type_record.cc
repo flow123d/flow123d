@@ -17,6 +17,7 @@
 
 #include "input_type.hh"
 #include "type_repository.hh"
+#include "attribute_lib.hh"
 
 #include "system/system.hh"
 #include "input/reader_to_storage.hh"
@@ -61,7 +62,7 @@ TypeBase::TypeHash Default::content_hash() const
 }
 
 
-bool Default::check_validity(boost::shared_ptr<TypeBase> type) const
+bool Default::check_validity(std::shared_ptr<TypeBase> type) const
 {
 	if ( storage_ ) return true;
 	if ( !has_value_at_declaration() ) return false;
@@ -82,7 +83,7 @@ bool Default::check_validity(boost::shared_ptr<TypeBase> type) const
 }
 
 
-Input::StorageBase *Default::get_storage(boost::shared_ptr<TypeBase> type) const
+Input::StorageBase *Default::get_storage(std::shared_ptr<TypeBase> type) const
 {
 	if ( !storage_ ) this->check_validity(type);
 	return storage_;
@@ -96,7 +97,7 @@ Input::StorageBase *Default::get_storage(boost::shared_ptr<TypeBase> type) const
 
 
 Record::Record()
-: data_( boost::make_shared<RecordData> ("EmptyRecord","") )
+: data_( std::make_shared<RecordData> ("EmptyRecord","") )
 {
 	close();
     finish();
@@ -111,7 +112,7 @@ Record::Record(const Record & other)
 
 
 Record::Record(const string & type_name_in, const string & description)
-: data_( boost::make_shared<RecordData>(type_name_in, description) )
+: data_( std::make_shared<RecordData>(type_name_in, description) )
 
 {}
 
@@ -195,10 +196,11 @@ Record &Record::derive_from(Abstract &parent) {
 			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
 
 	// add Abstract to vector of parents
-	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
+	data_->parent_vec_.push_back( std::make_shared<Abstract>(parent) );
 
 	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", boost::make_shared<String>(), Default( "\""+type_name()+"\"" ), "Sub-record Selection.");
+    	data_->declare_key("TYPE", std::make_shared<String>(), Default( "\""+type_name()+"\"" ),
+    	        "Sub-record Selection.", TypeBase::attribute_map());
     }
 
 	return *this;
@@ -298,8 +300,8 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 
 Record &Record::declare_type_key() {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", boost::make_shared<String>(), Default::obligatory(),
-			"Sub-record selection.");
+	data_->declare_key("TYPE", std::make_shared<String>(), Default::obligatory(),
+			"Sub-record selection.", TypeBase::attribute_map());
 	return *this;
 }
 
@@ -309,17 +311,22 @@ Record &Record::has_obligatory_type_key() {
 	return *this;
 }
 
+Record &Record::add_attribute(std::string key, TypeBase::json_string value) {
+    this->add_attribute_(key, value);
+    return *this;
+}
 
-TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) const {
+
+TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) {
 	Record rec = this->deep_copy();
 	ParameterMap parameter_map;
 	this->set_instance_data(rec, parameter_map, vec);
 
-	return std::make_pair( boost::make_shared<Record>(rec.close()), parameter_map );
+	return std::make_pair( std::make_shared<Record>(rec.close()), parameter_map );
 }
 
 
-void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) const {
+void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) {
 	// Replace keys of type Parameter
 	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
 		if ( key_it->key_ != "TYPE" ) { // TYPE key isn't substituted
@@ -330,19 +337,19 @@ void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::ve
 		}
 	}
 	// Set attributes
-	rec.set_parameters_attribute(parameter_map);
 	rec.parameter_map_ = parameter_map;
-	rec.add_attribute("generic_type", this->hash_str());
 	rec.generic_type_hash_ = this->content_hash();
+
+	this->set_generic_attributes(parameter_map);
 }
 
 
 Record Record::deep_copy() const {
 	Record rec = Record();
-	rec.data_ =  boost::make_shared<Record::RecordData>(*this->data_);
+	rec.data_ =  std::make_shared<Record::RecordData>(*this->data_);
 	rec.data_->closed_ = false;
 	rec.data_->finished = false;
-	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	rec.copy_attributes(*attributes_);
 	rec.generic_type_hash_ = this->generic_type_hash_;
 	rec.parameter_map_ = this->parameter_map_;
 	return rec;
@@ -360,7 +367,7 @@ const Record &Record::add_parent(Abstract &parent) const {
 		}
 	}
 
-	data_->parent_vec_.push_back( boost::make_shared<Abstract>(parent) );
+	data_->parent_vec_.push_back( std::make_shared<Abstract>(parent) );
 
 	// finish inheritance
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
@@ -402,8 +409,10 @@ Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 
 
 void Record::RecordData::declare_key(const string &key,
-                         boost::shared_ptr<TypeBase> type,
-                         const Default &default_value, const string &description)
+                         std::shared_ptr<TypeBase> type,
+                         const Default &default_value,
+                         const string &description,
+                         TypeBase::attribute_map key_attributes)
 {
     ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
     // validity test of default value
@@ -422,7 +431,7 @@ void Record::RecordData::declare_key(const string &key,
     key_to_index_const_iter it = key_to_index.find(key_h);
     if ( it == key_to_index.end() ) {
        key_to_index.insert( std::make_pair(key_h, keys.size()) );
-       Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false};
+       Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false, key_attributes };
        keys.push_back(tmp_key);
     } else {
        if (keys[it->second].derived) {
@@ -450,32 +459,35 @@ void Record::RecordData::content_hash(TypeBase::TypeHash &seed) const {
 }
 
 
-Record &Record::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
-                        const Default &default_value, const string &description)
+Record &Record::declare_key(const string &key, std::shared_ptr<TypeBase> type,
+                        const Default &default_value, const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    data_->declare_key(key, type, default_value, description);
+    data_->declare_key(key, type, default_value, description, key_attributes);
     return *this;
 }
 
 
 template <class KeyType>
 Record &Record::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
+                        const Default &default_value, const string &description,
+                        TypeBase::attribute_map key_attributes)
 // this accept only lvalues - we assume that these are not local variables
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
-	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
-	return declare_key(key, type_copy, default_value, description);
+	std::shared_ptr<TypeBase> type_copy = std::make_shared<KeyType>(type);
+	return declare_key(key, type_copy, default_value, description, key_attributes);
 }
 
 
 
 template <class KeyType>
 Record &Record::declare_key(const string &key, const KeyType &type,
-                        const string &description)
+                        const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    return declare_key(key,type, Default::optional(), description);
+    return declare_key(key,type, Default::optional(), description, key_attributes);
 }
 
 
@@ -483,8 +495,8 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 // explicit instantiation of template methods
 
 #define RECORD_DECLARE_KEY(TYPE) \
-template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description, TypeBase::attribute_map key_attributes); \
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description, TypeBase::attribute_map key_attributes)
 
 
 RECORD_DECLARE_KEY(String);

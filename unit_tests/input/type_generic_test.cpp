@@ -35,8 +35,8 @@ static const Selection & get_shapes_selection() {
 
 static const Instance & get_generic_record(const Selection *sel, int max_limit) {
 	std::vector<TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("param1", boost::make_shared<Selection>(*sel)) );
-	param_vec.push_back( std::make_pair("param2", boost::make_shared<Integer>(0, max_limit)) );
+	param_vec.push_back( std::make_pair("param1", std::make_shared<Selection>(*sel)) );
+	param_vec.push_back( std::make_pair("param2", std::make_shared<Integer>(0, max_limit)) );
 
 	static Record rec = Record("generic_rec", "desc.")
 							.root_of_generic_subtree()
@@ -50,10 +50,10 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 			.close();
 }
 
-static const Instance & get_generic_tuple(const boost::shared_ptr<TypeBase> type, int max_limit) {
+static const Instance & get_generic_tuple(const std::shared_ptr<TypeBase> type, int max_limit) {
 	std::vector<TypeBase::ParameterPair> param_vec;
 	param_vec.push_back( std::make_pair("param1", type ) );
-	param_vec.push_back( std::make_pair("param2", boost::make_shared<Integer>(0, max_limit)) );
+	param_vec.push_back( std::make_pair("param2", std::make_shared<Integer>(0, max_limit)) );
 
 	static Tuple tuple = Tuple("generic_tuple", "desc.")
 							.root_of_generic_subtree()
@@ -70,7 +70,7 @@ static const Instance & get_generic_array(const Selection *sel) {
 	static Array arr = Array(Parameter("param"), 0, 100);
 
 	std::vector<TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("param", boost::make_shared<Selection>(*sel)) );
+	param_vec.push_back( std::make_pair("param", std::make_shared<Selection>(*sel)) );
 
 	return Instance( arr, param_vec )
 			.close();
@@ -82,7 +82,7 @@ static Abstract & get_abstract_type() {
 
 static const Instance & get_generic_abstract(const Selection *sel) {
 	std::vector<TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("param", boost::make_shared<Selection>(*sel)) );
+	param_vec.push_back( std::make_pair("param", std::make_shared<Selection>(*sel)) );
 
 	return Instance( get_abstract_type(), param_vec )
 			.close();
@@ -114,9 +114,9 @@ static const Tuple & get_inner_tuple() {
  *  - Tuple
  *  - Double
  */
-static const Instance & get_record_with_record(const Selection *sel, const boost::shared_ptr<TypeBase> type) {
+static const Instance & get_record_with_record(const Selection *sel, const std::shared_ptr<TypeBase> type) {
 	std::vector<TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("param1", boost::make_shared<Selection>(*sel)) );
+	param_vec.push_back( std::make_pair("param1", std::make_shared<Selection>(*sel)) );
 	param_vec.push_back( std::make_pair("param2", type) );
 
 	static Record rec = Record("record", "desc.")
@@ -155,8 +155,8 @@ TEST(GenericType, generic_record) {
 TEST(GenericType, generic_tuple) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	static Record tpl_problem = Record("problem_with_tuple", "desc.")
-			.declare_key("primary", get_generic_tuple(boost::make_shared<Double>(0.0, 1.0), 10), "Primary problem.")
-			.declare_key("secondary", get_generic_tuple(boost::make_shared<Double>(1.0), 1000), "Secondary problem.")
+			.declare_key("primary", get_generic_tuple(std::make_shared<Double>(0.0, 1.0), 10), "Primary problem.")
+			.declare_key("secondary", get_generic_tuple(std::make_shared<Double>(1.0), 1000), "Secondary problem.")
 			.declare_key("description", String(), "desc.")
 			.close();
 
@@ -258,8 +258,8 @@ TEST(GenericType, generic_abstract) {
 TEST(GenericType, record_with_record) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	static Record problem = Record("problem", "desc.")
-			.declare_key("primary", get_record_with_record(&get_colors_selection(), boost::make_shared<Integer>(0,100)), "Primary problem.")
-			.declare_key("secondary", get_record_with_record(&get_shapes_selection(), boost::make_shared<Double>()), "Secondary problem.")
+			.declare_key("primary", get_record_with_record(&get_colors_selection(), std::make_shared<Integer>(0,100)), "Primary problem.")
+			.declare_key("secondary", get_record_with_record(&get_shapes_selection(), std::make_shared<Double>()), "Secondary problem.")
 			.declare_key("bool", Bool(), "Some bool key.")
 			.close();
 
@@ -290,7 +290,7 @@ TEST(GenericType, parameter_in_deep) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	std::vector<TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("param", boost::make_shared<Double>()) );
+	param_vec.push_back( std::make_pair("param", std::make_shared<Double>()) );
 
 	static Record with_array = Record("inner_rec", "")
 			.root_of_generic_subtree()
@@ -313,7 +313,7 @@ TEST(GenericType, array_of_instances) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	std::vector<TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("param", boost::make_shared<Double>()) );
+	param_vec.push_back( std::make_pair("param", std::make_shared<Double>()) );
 
 	static Parameter param = Parameter("param");
 
@@ -332,8 +332,8 @@ TEST(GenericType, instance_in_instance) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	std::vector<TypeBase::ParameterPair> param_vec1, param_vec2;
-	param_vec1.push_back( std::make_pair("param", boost::make_shared<Double>()) );
-	param_vec2.push_back( std::make_pair("param", boost::make_shared<String>()) );
+	param_vec1.push_back( std::make_pair("param", std::make_shared<Double>()) );
+	param_vec2.push_back( std::make_pair("param", std::make_shared<String>()) );
 
 	static Parameter param = Parameter("param");
 	static Instance inst_in = Instance(param, param_vec2).close();
@@ -437,7 +437,7 @@ public:
 
 	static const Instance & get_input_type_instance() {
 		std::vector<TypeBase::ParameterPair> param_vec;
-		param_vec.push_back( std::make_pair("param", boost::make_shared<Array>(Double(), 0, spacedim)) );
+		param_vec.push_back( std::make_pair("param", std::make_shared<Array>(Double(), 0, spacedim)) );
 
 		return Instance(get_input_type(), param_vec).close();
 	}
@@ -466,8 +466,8 @@ TEST(GenericType, parameter_not_used) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	std::vector<TypeBase::ParameterPair> param_vec;
-	param_vec.push_back( std::make_pair("param", boost::make_shared<Integer>()) );
-	param_vec.push_back( std::make_pair("param2", boost::make_shared<Double>()) );
+	param_vec.push_back( std::make_pair("param", std::make_shared<Integer>()) );
+	param_vec.push_back( std::make_pair("param2", std::make_shared<Double>()) );
 
 	static Record inner = Record("inner_rec", "")
 			.root_of_generic_subtree()

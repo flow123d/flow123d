@@ -6,6 +6,9 @@
 import os
 import yaml
 
+from geomop_util import Serializable
+
+
 if 'APPDATA' in os.environ:
     __config_dir__ = os.path.join(os.environ['APPDATA'], 'GeoMop')
 else:
@@ -18,9 +21,9 @@ except:
     raise Exception('Cannot create config directory')
 
 
-def get_config_file(name, directory=None):
+def get_config_file(name, directory=None, cls=None, extension='yaml'):
     """
-    Get config object from file Name.cfg in config directory
+    Get config object from filename in config directory
 
     return: Config object or None (if file not exist)
     """
@@ -30,18 +33,19 @@ def get_config_file(name, directory=None):
             return None
     else:
         directory = __config_dir__
-    file_name = os.path.join(directory, name+'.yaml')
+    file_name = os.path.join(directory, name+'.'+extension)
     try:
         yaml_file = open(file_name, 'r')
     except (FileNotFoundError, IOError):
         return None
     config = yaml.load(yaml_file)
     yaml_file.close()
+    config = Serializable.load(config, cls)
     return config
 
 
-def save_config_file(name, config, directory=None):
-    """Save config object to file Name.cfg in config directory"""
+def save_config_file(name, config, directory=None, extension='yaml'):
+    """Save config object to file name.extension in config directory"""
     if directory is not None:
         directory = os.path.join(__config_dir__, directory)
         try:
@@ -51,15 +55,16 @@ def save_config_file(name, config, directory=None):
             raise Exception('Cannot create config directory: ' + directory)
     else:
         directory = __config_dir__
-    file_name = os.path.join(directory, name+'.yaml')
+    file_name = os.path.join(directory, name+'.'+extension)
+    data = Serializable.dump(config)
     yaml_file = open(file_name, 'w')
-    yaml.dump(config, yaml_file)
+    yaml.dump(data, yaml_file)
     yaml_file.close()
 
 
-def delete_config_file(name, directory=None):
+def delete_config_file(name, directory=None, extension='yaml'):
     """
-    Delete config file Name.cfg from config directory
+    Delete config file name.extension from config directory
      """
     if directory is not None:
         directory = os.path.join(__config_dir__, directory)
@@ -67,7 +72,7 @@ def delete_config_file(name, directory=None):
             return
     else:
         directory = __config_dir__
-    file_name = os.path.join(directory, name+'.yaml')
+    file_name = os.path.join(directory, name+'.'+extension)
     try:
         os.remove(file_name)
     except (RuntimeError, IOError):

@@ -8,10 +8,9 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ${INPUT}/test10.msh
   primary_equation: !UnsteadyDarcy_LMH
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-07
     input_fields:
+      - region: ALL
+        storativity: 1.0
       - region: plane
         anisotropy: 0.02
         init_pressure: 0
@@ -24,6 +23,9 @@ problem: !SequentialCoupling
       - region: .bc_outflow
         bc_type: dirichlet
         bc_pressure: 0
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
     n_schurs: 2
     output:
       output_stream: 

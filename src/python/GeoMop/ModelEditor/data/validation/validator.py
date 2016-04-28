@@ -2,13 +2,14 @@
 
 .. codeauthor:: Tomas Krizek <tomas.krizek1@tul.cz>
 """
-
 from helpers import Notification
 from util import TextValue, Span
 
+from geomop_project import Parameter
+
 from . import checks
 from ..data_node import DataNode
-from ..format import is_scalar
+from ..format import is_scalar, is_param
 
 
 class Validator:
@@ -18,6 +19,7 @@ class Validator:
         """Initializes the validator with a NotificationHandler."""
         self.notification_handler = notification_handler
         self.valid = True
+        self.params = []
 
     def validate(self, node, input_type):
         """
@@ -30,6 +32,7 @@ class Validator:
         Attribute errors contains a list of occurred errors.
         """
         self.valid = True
+        self.params = []
         self._validate_node(node, input_type)
         return self.valid
 
@@ -42,7 +45,25 @@ class Validator:
         if node is None:
             raise Notification.from_name('ValidationError', 'Invalid node (None)')
 
-        if input_type['base_type'] != 'AbstractRecord' and hasattr(node, 'type') \
+        # parameters
+        # TODO: enable parameters in unknown IST?
+        if hasattr(node, 'value'):
+            match = is_param(node.value)
+            if match:
+                # extract parameters
+                new_param = Parameter(match.group(1))
+                exists = False
+                for param in self.params:
+                    if param.name == new_param.name:
+                        exists = True
+                        break
+                if not exists:
+                    self.params.append(new_param)
+                node.input_type = input_type
+                # assume parameters are correct, do not validate further
+                return
+
+        if input_type['base_type'] != 'Abstract' and hasattr(node, 'type') \
                 and node.type is not None and 'implemented_abstract_record' not in input_type:
             notification = Notification.from_name('UselessTag', node.type.value)
             notification.span = node.type.span
@@ -53,7 +74,7 @@ class Validator:
             self._validate_scalar(node, input_type)
         elif input_type['base_type'] == 'Record':
             self._validate_record(node, input_type)
-        elif input_type['base_type'] == 'AbstractRecord':
+        elif input_type['base_type'] == 'Abstract':
             self._validate_abstract(node, input_type)
         elif input_type['base_type'] == 'Array':
             self._validate_array(node, input_type)
@@ -108,16 +129,16 @@ class Validator:
         try:
             concrete_type = checks.get_abstractrecord_type(node, input_type)
         except Notification as notification:
-            if notification.name == 'InvalidAbstractRecordType':
+            if notification.name == 'InvalidAbstractType':
                 notification.span = node.type.span
             else:
                 notification.span = get_node_key(node).notification_span
             self._report_notification(notification)
         else:
             if node.type is None:
-                # if default_descendant defines the AbstractRecord type, add it to data structure
+                # if default_descendant defines the Abstract type, add it to data structure
                 node.type = TextValue()
-                node.type.value = concrete_type.get('type_name')
+                node.type.value = concrete_type.get('name')
                 node.type.span = Span(node.span.start, node.span.start)
             concrete_type['implemented_abstract_record'] = input_type
             node.input_type = concrete_type

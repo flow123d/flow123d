@@ -92,7 +92,7 @@ def check_record_key(children_keys, key, input_type):
     if key not in input_type['keys']:
         if key == 'fatal_error':
             raise ntf.Notification.from_name('SilencedNotification')
-        raise ntf.Notification.from_name('UnknownRecordKey', key, input_type['type_name'])
+        raise ntf.Notification.from_name('UnknownRecordKey', key, input_type['name'])
 
     try:
         key_type = input_type['keys'][key]['default']['type']
@@ -102,7 +102,7 @@ def check_record_key(children_keys, key, input_type):
         if key_type == 'obligatory':
             if key not in children_keys:
                 raise ntf.Notification.from_name('MissingObligatoryKey', key,
-                                                 input_type['type_name'])
+                                                 input_type['name'])
     return True
 
 
@@ -114,19 +114,19 @@ def get_abstractrecord_type(node, input_type):
     try:
         type_node = node.type
     except AttributeError:
-        raise ntf.Notification.from_name('ValidationTypeError', 'AbstractRecord')
+        raise ntf.Notification.from_name('ValidationTypeError', 'Abstract')
 
     if type_node is None:
         try:
             concrete_type = input_type['default_descendant']
         except KeyError:
-            raise ntf.Notification.from_name('MissingAbstractRecordType')
+            raise ntf.Notification.from_name('MissingAbstractType')
     else:
         try:
             concrete_type = input_type['implementations'][type_node.value]
         except KeyError:
-            raise ntf.Notification.from_name('InvalidAbstractRecordType', type_node.value,
+            raise ntf.Notification.from_name('InvalidAbstractType', type_node.value,
                                              input_type['name'])
     if concrete_type is None:
-        raise ntf.Notification.from_name('MissingAbstractRecordType')
+        raise ntf.Notification.from_name('MissingAbstractType')
     return concrete_type

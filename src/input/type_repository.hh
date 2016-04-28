@@ -27,8 +27,10 @@ namespace Input {
 
 
 /**
- * The Singleton class TypeRepository serves for handling the lazy-evaluated input types, derived from the base class
- * LazyType. When all static variables are initialized, the method TypeRepository::instance().finish() can be called
+ * @brief The Singleton class TypeRepository serves for handling the lazy-evaluated input types, derived from the base class
+ * Type::TypeBase.
+ *
+ * When all static variables are initialized, the method TypeRepository::instance().finish() can be called
  * in order to finish initialization of lazy types such as Records, Abstracts, Arrays and Selections.
  * Selections have to be finished after all other types since they are used by Abstracts to register all
  * derived types. For this reason TypeRepository contains two arrays - one for Selections, one for the rest.
@@ -46,23 +48,24 @@ public:
 	        "T must be a descendant of Input::Type::TypeBase"
 	    );
 
+	/// Type stored objects of input types.
     typedef std::map< Type::TypeBase::TypeHash, boost::shared_ptr<T> > TypeRepositoryMap;
 
     /// Public typedef of constant iterator into map of stored type.
     typedef typename TypeRepositoryMap::const_iterator TypeRepositoryMapIter;
 
+    /// Return singleton instance of class.
     static TypeRepository & get_instance() {
     	static TypeRepository instance;
     	return instance;
     };
 
-    /**
-     * Add @p type to TypeRepository if doesn't exist there
-     * or get existing type with same TypeHash
-     */
+    /// Add @p type to TypeRepository if doesn't exist there or get existing type with same TypeHash
     boost::shared_ptr<T> add_type(const T & type);
 
     /**
+     * @brief Finish all stored types.
+     *
      * Iterate through all types stored in TypeRepository
      * and call finish if flag @p root_of_generic_subtree_
      * has same value as @param is_root_of_generic_subtree.
@@ -88,6 +91,7 @@ private:
     /// Default constructor.
     TypeRepository() {};
 
+    /// Stores input type objects.
     TypeRepositoryMap type_repository_map_;
 };
 

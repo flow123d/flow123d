@@ -22,7 +22,6 @@ class ISTFormatter(object):
     Class for formatting json to other formats
     """
 
-
     @staticmethod
     def json2latex(items, output_file='../../docs/input_reference_red.tex', info=None):
         """
