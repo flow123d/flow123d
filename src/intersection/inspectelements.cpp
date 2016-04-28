@@ -447,7 +447,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
             is_triangle_side = false;
         }
 
-        DBGMSG("prolongation table: %d %d\n", side, is_triangle_side);
+//         DBGMSG("prolongation table: %d %d\n", side, is_triangle_side);
 
         if(is_triangle_side){
             // prolongation through the triangle side
@@ -728,9 +728,11 @@ void InspectElements::print_mesh_to_file_13(string name)
         fprintf(file, "$Nodes\n");
         fprintf(file, "%d\n", (mesh->n_nodes() + number_of_intersection_points));
 
+        unsigned int idx = 1;
         FOR_NODES(mesh, nod){
             arma::vec3 _nod = nod->point();
-            fprintf(file,"%d %f %f %f\n", nod.id(), _nod[0], _nod[1], _nod[2]);
+            fprintf(file,"%d %.16f %.16f %.16f\n", idx, _nod[0], _nod[1], _nod[2]);
+            idx++;
         }
 
         for(unsigned int j = 0; j < intersection_storage13_.size();j++){
@@ -753,7 +755,7 @@ void InspectElements::print_mesh_to_file_13(string name)
 //                                                        +(IP13.local_bcoords_B())[3] * el3D->node[3]->point();
 //                 }
 
-                fprintf(file,"%d %f %f %f\n", number_of_nodes, global[0], global[1], global[2]);
+                fprintf(file,"%d %.16f %.16f %.16f\n", number_of_nodes, global[0], global[1], global[2]);
             }
         }
 
@@ -822,9 +824,11 @@ void InspectElements::print_mesh_to_file_23(string name)
         fprintf(file, "$Nodes\n");
         fprintf(file, "%d\n", (mesh->n_nodes() + number_of_intersection_points));
 
+        unsigned int idx = 1;
         FOR_NODES(mesh, nod){
             arma::vec3 _nod = nod->point();
-            fprintf(file,"%d %f %f %f\n", nod.id(), _nod[0], _nod[1], _nod[2]);
+            fprintf(file,"%d %.16f %.16f %.16f\n", idx, _nod[0], _nod[1], _nod[2]);
+            idx++;
         }
 
         for(unsigned int j = 0; j < intersection_storage23_.size();j++){
@@ -848,7 +852,7 @@ void InspectElements::print_mesh_to_file_23(string name)
 //                                                            +(IP23.local_bcoords_B())[2] * el3D->node[2]->point()
 //                                                            +(IP23.local_bcoords_B())[3] * el3D->node[3]->point();
 //                     }
-                    fprintf(file,"%d %f %f %f\n", number_of_nodes, global[0], global[1], global[2]);
+                    fprintf(file,"%d %.16f %.16f %.16f\n", number_of_nodes, global[0], global[1], global[2]);
             }
         }
 
@@ -892,11 +896,12 @@ void InspectElements::print_mesh_to_file_23(string name)
                         last = nodes;
                     }
 
-                    if((k+1) == il.size()){
+                    if((k+1) == il.size() && il.size()){
                         fprintf(file,"%d 1 2 1002 0 %d %d\n", number_of_elements, nodes, last);
                     }else{
                         fprintf(file,"%d 1 2 1002 0 %d %d\n", number_of_elements, nodes, nodes+1);
                     }
+                    //if(il.size() < 3) break;
             }
         }
 

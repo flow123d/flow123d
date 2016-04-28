@@ -16,6 +16,10 @@ namespace computeintersection{
     
 void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
     
+//     DBGMSG("%d intersections:\n",p.size());
+//     for(IntersectionPointAux<2,3> &ip : p.points())
+//         cout << ip;
+    
     if(p.is_pathologic()) trace_polygon_convex_hull(prolongation_table, p);
     else trace_polygon_opt(prolongation_table, p);
 };
@@ -42,9 +46,6 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     
     // index of the first set row
     unsigned int first_row_index = tt_size;
-
-//     for(IntersectionPointAux<2,3> &ip : p.points())
-//         cout << ip;
     
     // go through all intersection points (vertices of polygon)
     for(unsigned int i = 0; i < p.points().size();i++){
