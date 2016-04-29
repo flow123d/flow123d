@@ -49,10 +49,10 @@ using namespace Input::Type;
    // errors during declaration
 #ifdef FLOW123D_DEBUG_ASSERTS
    Record rec_empty;
-   EXPECT_THROW( {rec_empty.declare_key("xx", Integer(), "");}, feal::AssertException);
+   EXPECT_THROW( {rec_empty.declare_key("xx", Integer(), "");}, feal::Exc_assert);
 
    Record rec_fin = Record("xx","").close();
-   EXPECT_THROW( {rec_fin.declare_key("xx", String(),"");}, feal::AssertException);
+   EXPECT_THROW( {rec_fin.declare_key("xx", String(),"");}, feal::Exc_assert);
 #endif
 
 
@@ -64,7 +64,7 @@ using namespace Input::Type;
 							.declare_key("data_description", String(), Default::optional(),"")
 							.declare_key("data_description", String(),"")
 							.close();
-   	   	   	   	   	  }, feal::AssertException, "Re-declaration of the key");
+   	   	   	   	   	  }, feal::Exc_assert, "Re-declaration of the key");
 
    EXPECT_THROW_WHAT( { Record("yy","")
    	   	   	   				.declare_key("wrong_double", Double(), Default("1.23 4"),"")
@@ -159,7 +159,7 @@ using namespace Input::Type;
     	.declare_key("int_key", Integer(),  "")
     	.allow_auto_conversion("int_key")
 		.close();
-    EXPECT_THROW_WHAT( {sub_rec.finish();}, feal::AssertException,
+    EXPECT_THROW_WHAT( {sub_rec.finish();}, feal::Exc_assert,
     		"other_key : 'obligatory_int'");
     }
 
@@ -259,13 +259,13 @@ using namespace Input::Type;
     Record output_record("OutputRecord",
             "Information about one file for field data.");
     EXPECT_THROW_WHAT( {output_record.declare_key("a b",Bool(),"desc."); },
-    		feal::AssertException, "Invalid key identifier"
+    		feal::Exc_assert, "Invalid key identifier"
             );
     EXPECT_THROW_WHAT( {output_record.declare_key("AB",Bool(),"desc."); },
-    		feal::AssertException, "Invalid key identifier"
+    		feal::Exc_assert, "Invalid key identifier"
             );
     EXPECT_THROW_WHAT( {output_record.declare_key("%$a",Bool(),"desc."); },
-    		feal::AssertException, "Invalid key identifier"
+    		feal::Exc_assert, "Invalid key identifier"
             );
 
 }
