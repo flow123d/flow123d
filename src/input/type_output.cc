@@ -72,7 +72,7 @@ void OutputBase::get_array_sizes(Array array, unsigned int &lower , unsigned int
 
 
 
-void OutputBase::get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type) {
+void OutputBase::get_array_type(Array array, std::shared_ptr<TypeBase> &arr_type) {
     arr_type = array.data_->type_of_values_;
 }
 
@@ -90,7 +90,7 @@ const string & OutputBase::get_abstract_description(const Abstract *a_rec) {
 
 
 
-void OutputBase::get_parent_vec(Record rec, std::vector< boost::shared_ptr<Abstract> > &parent_vec) {
+void OutputBase::get_parent_vec(Record rec, std::vector< std::shared_ptr<Abstract> > &parent_vec) {
 	parent_vec = rec.data_->parent_vec_;
 }
 
@@ -250,7 +250,7 @@ void OutputText::print_impl(ostream& stream, const Record *type) {
 			stream << endl;
 			stream << "" << type->class_name() << " '" << type->type_name() << "'";
 			// parent record
-			/*boost::shared_ptr<Abstract> parent_ptr;
+			/*std::shared_ptr<Abstract> parent_ptr;
 			get_parent_ptr(*type, parent_ptr);
 			if (parent_ptr) {
 				stream << ", implementation of " << parent_ptr->type_name();
@@ -285,7 +285,7 @@ void OutputText::print_impl(ostream& stream, const Record *type) {
 	}
 }
 void OutputText::print_impl(ostream& stream, const Array *type) {
-	boost::shared_ptr<TypeBase> array_type;
+	std::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 	switch (doc_type_) {
 	case key_record:
@@ -512,6 +512,24 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 	return stream;
 }
 
+std::string print_attributes(TypeBase::attribute_map attribute_map) {
+    stringstream stream;
+
+    if (attribute_map.size() == 0) return "\"attributes\" : {}";
+
+    stream << "\"attributes\" : {" << endl; // print map of attributes
+    for (auto it=attribute_map.begin(); it!=attribute_map.end(); ++it) {
+        if (it != attribute_map.begin()) {
+            stream << "," << endl;
+        }
+        stream << "\"" << it->first << "\" : " << it->second;
+    }
+    stream << endl << "}";
+
+    return stream.str();
+}
+
+
 void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type) {
     stream << "{" << endl;
     stream << "\"id\" : " << type->hash_str() << "," << endl;
@@ -530,14 +548,7 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
 	if (parameter_map_to_json.size()) { // parameters into separate keys
 		stream << "\"parameters\" : " << parameter_map_to_json << "," << endl;
 	}
-	stream << "\"attributes\" : {" << endl; // print map of attributes
-	for (std::map<std::string, TypeBase::json_string>::iterator it=attr_map.begin(); it!=attr_map.end(); ++it) {
-        if (it != attr_map.begin()) {
-        	stream << "," << endl;
-        }
-		stream << "\"" << it->first << "\" : " << it->second;
-	}
-	stream << endl << "}";
+	stream << print_attributes(attr_map);
 }
 
 
@@ -551,7 +562,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
             escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
 
     // parent records, implemented abstracts
-    std::vector< boost::shared_ptr<Abstract> > parent_vec;
+    std::vector< std::shared_ptr<Abstract> > parent_vec;
     get_parent_vec(*type, parent_vec);
     if (parent_vec.size()) {
         stream << "\"implements\" : [ ";
@@ -588,7 +599,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
         stream << "\"default\" : { "
                 <<"\"type\" : \"" << dft_type << "\"," << endl
                 <<"\"value\" : " << dft_value << " }," << endl;
-        stream << "\"type\" : " << it->type_->hash_str() << endl;
+        stream << "\"type\" : " << it->type_->hash_str() << "," << endl;
+        stream << print_attributes(it->attributes);
         stream << "}";
     }
 
@@ -611,7 +623,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type) {
     if (was_written(hash)) return;
 
     unsigned int lower_size, upper_size;
-	boost::shared_ptr<TypeBase> array_type;
+	std::shared_ptr<TypeBase> array_type;
 
     get_array_sizes(*type, lower_size, upper_size);
 	get_array_type(*type, array_type);
@@ -680,10 +692,8 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
     }
     stream << "\"implementations\" : [" << endl;
     for (Abstract::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-        if (it != type->begin_child_data()) {
-            stream << ",\n" << endl;
-        }
-
+        if (it != type->begin_child_data())
+            stream << "," << endl;
         stream << "" << it->hash_str() << "";
     }
     stream << "]";

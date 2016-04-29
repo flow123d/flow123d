@@ -31,14 +31,14 @@ namespace feal {
  *
  * Stores data of assert and allow throws exception.
  */
-class AssertException : public ExceptionBase {
+class Exc_assert : public ExceptionBase {
 	friend class Assert;
 public:
 	// Default constructor
-	AssertException();
+	Exc_assert();
 
 	/// Destructor.
-	~AssertException() {}
+	~Exc_assert() {}
 
 	/// Print formatted assert message.
 	void print_info(std::ostringstream &out) const override;
@@ -108,6 +108,7 @@ public:
 	  thrown_(false)
 	{
 		exception_.expression_ = expression;
+		exception_.frames_to_cut_ = { "feal", "Assert"};
 	}
 
 	/// Copy constructor.
@@ -144,7 +145,7 @@ public:
 	void warning(std::string warning_msg = "");
 
 protected:
-    AssertException exception_;               ///< Exception object
+    Exc_assert exception_;               ///< Exception object
 	bool thrown_;                             ///< Flag marked if Assert thrown error, warning, ...
 
 };

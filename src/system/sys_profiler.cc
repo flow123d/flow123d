@@ -549,6 +549,7 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     // the same time-frames, for now we simply reduce info to current timer
     // using operation MPI_MIN, so if some processor does not contain some 
     // time-frame other processors will forget this time-frame (information lost)
+    /*
     int child_timers[ Timer::max_n_childs];
     MPI_Allreduce(&timer.child_timers, &child_timers, Timer::max_n_childs, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
     #ifdef FLOW123D_DEBUG
@@ -573,13 +574,16 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
         }
     }
     #endif // FLOW123D_DEBUG
-
+*/
     // write times children timers using secured child_timers array
     property_tree::ptree children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
+        if (timer.child_timers[i] != timer_no_child) {
+            add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
+        /*
 		if (child_timers[i] != timer_no_child) {
-			add_timer_info (reduce, &children, child_timers[i], cumul_time_sum);
+			add_timer_info (reduce, &children, child_timers[i], cumul_time_sum); */
 			has_children = true;
 		}
     }

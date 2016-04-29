@@ -237,7 +237,7 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::zero_time_step()
 {
-  
+    //DBGMSG("tos ZERO TIME STEP.\n");
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream()->write_time_frame();

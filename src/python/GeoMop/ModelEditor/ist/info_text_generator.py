@@ -18,7 +18,8 @@ class InfoTextGenerator:
     def init(cls, json_text):
         """Initializes the class with format information."""
         data = json.loads(json_text, encoding="utf-8")
-        for item in data:
+        assert 'ist_nodes' in data
+        for item in data['ist_nodes']:
             if 'id' in item:
                 cls._input_types[item['id']] = item
 
@@ -125,7 +126,7 @@ class InfoTextGenerator:
         selected_key_type = None
 
         with section.open('header'):
-            section.tag('h2', type_.get('type_name', ''))
+            section.tag('h2', type_.get('name', ''))
             section.description(type_.get('description', ''))
 
         with section.open('div', cls='key-list col-md-4 col-sm-4 col-xs-4'):
@@ -181,7 +182,7 @@ class InfoTextGenerator:
                     cls_ += 'record'
                     section.add(cls._generate_key_type_record(key_type, cls_=cls_,
                                                               prepend=array_div))
-                elif key_type['input_type'] == 'AbstractRecord':
+                elif key_type['input_type'] == 'Abstract':
                     cls_ += 'abstract-record'
                     section.add(cls._generate_key_type_abstract_record(key_type, cls_=cls_,
                                                                        prepend=array_div))
@@ -256,7 +257,7 @@ class InfoTextGenerator:
             href = cls.generate_href(
                 record_id=key_type.get('id')
             )
-            div.tag('a', key_type.get('type_name', ''), attrib={'class': 'h2', 'href': href})
+            div.tag('a', key_type.get('name', ''), attrib={'class': 'h2', 'href': href})
             if 'reducible_to_key' in key_type:
                 with div.open('div', cls='small'):
                     div.info('Constructible from key: ')
@@ -288,7 +289,7 @@ class InfoTextGenerator:
                 if implementation_type is None:
                     continue
                 with tree.open('li'):
-                    name = implementation_type.get('type_name')
+                    name = implementation_type.get('name')
                     if not name:
                         name = implementation_type.get('name', '')
                     href = cls.generate_href(

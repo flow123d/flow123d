@@ -25,6 +25,7 @@
 FieldCommon::FieldCommon()
 : shared_( std::make_shared<SharedData>() ),
   set_time_result_(TimeStatus::unknown),
+  is_jump_time_(true),
   component_index_(std::numeric_limits<unsigned int>::max())
 {
     shared_->bc_=false;

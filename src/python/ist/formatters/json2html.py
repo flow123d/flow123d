@@ -87,10 +87,10 @@ class HTMLSelection(HTMLItemFormatter):
                         self.item_list_title(selection_value, add_link=True)
                         self.description(selection_value.description)
 
-        if selection.attributes.parameters:
+        if selection.parameters:
             self.italic('Parameters', attrib={'class': 'section-list'})
             with self.open('ul', attrib={'class': 'item-list'}):
-                for param in selection.attributes.parameters:
+                for param in selection.parameters:
                     reference = param.reference.get_reference()
                     with self.open('li'):
                         with self.open('section', attrib={'class': 'record-param'}):
@@ -157,10 +157,10 @@ class HTMLRecord(HTMLItemFormatter):
                                 self.info(', ')
             self.main_section_title(record)
 
-            if record.attributes.generic_type:
+            if record.generic_type:
                 with self.open('div'):
                     self.italic('Generic type: ')
-                    self.link_to_main(record.attributes.generic_type.get_reference())
+                    self.link_to_main(record.generic_type.get_reference())
 
             if record.reducible_to_key:
                 with self.open('div'):
@@ -194,10 +194,18 @@ class HTMLRecord(HTMLItemFormatter):
                             # fmt.format(record_key, record)
                             # self.add(fmt.current())
 
-        if record.attributes.parameters:
+        if record.attributes.generic_parameters:
+            self.italic('Generic parameters', attrib={'class': 'section-list'})
+            with self.open('ul', attrib={'class': 'item-list'}):
+                for param_name in record.attributes.generic_parameters:
+                    with self.open('li'):
+                        with self.open('section', attrib={'class': 'record-param'}):
+                            self.h3(param_name)
+
+        if record.parameters:
             self.italic('Parameters', attrib={'class': 'section-list'})
             with self.open('ul', attrib={'class': 'item-list'}):
-                for param in record.attributes.parameters:
+                for param in record.parameters:
                     reference = param.reference.get_reference()
                     with self.open('li'):
                         with self.open('section', attrib={'class': 'record-param'}):
@@ -272,7 +280,7 @@ class HTMLRecord(HTMLItemFormatter):
                             self.span(str(subtype.input_type))
                         else:
                             # self.tag('br')
-                            if not subtype.attributes.generic_type:
+                            if not subtype.generic_type:
                                 self.info(' of ')
                                 with self.open('span', attrib={'class': 'item-value chevron'}):
                                     self.link_to_main(subtype)
@@ -281,7 +289,7 @@ class HTMLRecord(HTMLItemFormatter):
             if input_type == InputType.MAIN_TYPE:
                 with self.open('ul', cls='side-info'):
                     with self.open('li'):
-                        if not reference.attributes.generic_type:
+                        if not reference.generic_type:
                             with self.open('span', attrib={'class': 'item-key'}):
                                 self.span(str(reference.input_type))
                             with self.open('span', attrib={'class': 'item-value chevron'}):
@@ -295,16 +303,16 @@ class HTMLRecord(HTMLItemFormatter):
                         self.add_genericity(reference)
 
     def add_genericity(self, item):
-        if not item.attributes.generic_type:
+        if not item.generic_type:
             return
-        generic_class = item.attributes.generic_type.get_reference()
+        generic_class = item.generic_type.get_reference()
         generic_impl = item
         with self.open('li'):
             self.info(' generic type')
             with self.open('span', attrib={'class': 'item-value chevron'}):
                 self.link_to_main(generic_class)
 
-        for param in generic_impl.attributes.parameters:
+        for param in generic_impl.parameters:
             # self.tag('br')
             with self.open('li'):
                 self.info('parameter ')
@@ -379,10 +387,14 @@ class HTMLAbstractRecord(HTMLItemFormatter):
                     self.italic('Default descendant: ')
                     self.link_to_main(reference)
 
-            if abstract_record.attributes.generic_type:
+            if abstract_record.attributes.root_of_generic_subtree:
+                with self.open('div'):
+                    self.italic('This abstract is root of the generic tree')
+
+            if abstract_record.generic_type:
                 with self.open('div'):
                     self.italic('Generic type: ')
-                    self.link_to_main(abstract_record.attributes.generic_type.get_reference())
+                    self.link_to_main(abstract_record.generic_type.get_reference())
 
             self.italic('Description', attrib={'class': 'section-list'})
             self.description(abstract_record.description)
@@ -398,10 +410,18 @@ class HTMLAbstractRecord(HTMLItemFormatter):
                                 self.link_to_main(reference)
                             self.span(reference.description)
 
-        if abstract_record.attributes.parameters:
+        if abstract_record.attributes.generic_parameters:
+            self.italic('Generic parameters', attrib={'class': 'section-list'})
+            with self.open('ul', attrib={'class': 'item-list'}):
+                for param_name in abstract_record.attributes.generic_parameters:
+                    with self.open('li'):
+                        with self.open('section', attrib={'class': 'record-param'}):
+                            self.h3(param_name)
+
+        if abstract_record.parameters:
             self.italic('Parameters', attrib={'class': 'section-list'})
             with self.open('ul', attrib={'class': 'item-list'}):
-                for param in abstract_record.attributes.parameters:
+                for param in abstract_record.parameters:
                     reference = param.reference.get_reference()
                     with self.open('li'):
                         with self.open('section', attrib={'class': 'record-param'}):

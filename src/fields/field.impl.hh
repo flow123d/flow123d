@@ -234,9 +234,16 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 {
 	OLD_ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
 
-    // We perform set_time only once for every time.
-    if (time_step.end() == last_time_ &&
-        limit_side == last_limit_side_ )  return changed();
+    // Skip setting time if the new time is equal to current time of the field
+	// and if either the field is continuous in that time or the current limit side is same as the new one.
+    if (time_step.end() == last_time_) {
+        if ( ! is_jump_time() ||
+             limit_side == last_limit_side_) {
+            last_limit_side_ = limit_side;
+            return changed();
+        }
+    }
+
     last_time_=time_step.end();
     last_limit_side_ = limit_side;
 
@@ -251,6 +258,8 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     update_history(time_step);
     check_initialized_region_fields_();
 
+    //
+    is_jump_time_=false;
     // set time_step on all regions
     // for regions that match type of the field domain
     for(const Region &reg: mesh()->region_db().get_region_set("ALL") ) {
@@ -262,11 +271,12 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
         	double last_time_in_history = rh.front().first;
         	unsigned int history_size=rh.size();
         	unsigned int i_history;
+        	ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+
         	// set history index
         	if ( time_step.gt(last_time_in_history) ) {
         		// in smooth time_step
         		i_history=0;
-        		is_jump_time_=false;
         	} else {
         		// time_step .eq. input_time; i.e. jump time
         	    is_jump_time_=true;

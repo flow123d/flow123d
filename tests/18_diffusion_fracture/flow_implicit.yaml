@@ -10,6 +10,10 @@ problem: !SequentialCoupling
         element_list:
           - 45
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     input_fields:
       - region: BOUNDARY
         bc_type: dirichlet
@@ -29,9 +33,6 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
   secondary_equation: !Transport_OS
     transport: !ConvectionDiffusion_DG
       input_fields:

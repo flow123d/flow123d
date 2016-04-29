@@ -17,6 +17,7 @@
 
 #include "fields/field_set.hh"
 #include "system/sys_profiler.hh"
+#include "input/flow_attribute_lib.hh"
 
 
 
@@ -73,11 +74,16 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             //if (units != "") description+= " [" +field->units() + "]";
 
             // TODO: temporary solution, see FieldCommon::multifield_
+
+            std::shared_ptr<Input::Type::TypeBase> field_type_ptr;
             if (field->is_multifield()) {
-            	rec.declare_key(field->input_name(), field->get_multifield_input_type(), description);
+            	field_type_ptr = std::make_shared<Input::Type::Array>(field->get_multifield_input_type());
             } else {
-            	rec.declare_key(field->input_name(), field->get_input_type(), description);
+                field_type_ptr = std::make_shared<Input::Type::Instance>(field->get_input_type());
             }
+            ASSERT( field->units().is_def() , "units not def.");
+            rec.declare_key(field->input_name(), field_type_ptr, Input::Type::Default::optional(), description,
+                    {{FlowAttribute::field_unit(), field->units().json() }});
         }
 
     }

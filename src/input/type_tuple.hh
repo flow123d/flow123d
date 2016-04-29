@@ -114,7 +114,7 @@ public:
     unsigned int obligatory_keys_count() const;
 
     /// Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
     /// Overrides Record::deep_copy
     Tuple deep_copy() const;
@@ -122,20 +122,23 @@ public:
     /// Overrides Record::root_of_generic_subtree
     Tuple &root_of_generic_subtree() override;
 
-    /// Overrides Record::declare_key(const string &, boost::shared_ptr<TypeBase>, const Default &, const string &)
-    Tuple &declare_key(const string &key, boost::shared_ptr<TypeBase> type,
-                            const Default &default_value, const string &description);
+    /// Overrides Record::declare_key(const string &, std::shared_ptr<TypeBase>, const Default &, const string &)
+    Tuple &declare_key(const string &key, std::shared_ptr<TypeBase> type,
+                            const Default &default_value, const string &description,
+	                        TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
     /// Overrides Record::declare_key(const string &, const KeyType &, const Default &, const string &)
     template <class KeyType>
     Tuple &declare_key(const string &key, const KeyType &type,
-                            const Default &default_value, const string &description);
+                            const Default &default_value, const string &description,
+	                        TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
 
     /// Overrides Record::declare_key(const string &, const KeyType &, const string &)
     template <class KeyType>
     Tuple &declare_key(const string &key, const KeyType &type,
-                            const string &description);
+                            const string &description,
+	                        TypeBase::attribute_map key_attributes = TypeBase::attribute_map());
 
 };
 

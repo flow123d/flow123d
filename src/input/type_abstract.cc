@@ -17,11 +17,10 @@
 
 #include "input_type.hh"
 #include "type_repository.hh"
+#include "attribute_lib.hh"
 
 #include "system/system.hh"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/functional/hash.hpp>
 
 namespace Input {
@@ -35,7 +34,7 @@ using namespace std;
  */
 
 Abstract::Abstract()
-: child_data_( boost::make_shared<ChildData>( "EmptyAbstract", "" ) )
+: child_data_( std::make_shared<ChildData>( "EmptyAbstract", "" ) )
 {
 	close();
 	finish();
@@ -50,7 +49,7 @@ Abstract::Abstract(const Abstract& other)
 
 
 Abstract::Abstract(const string & type_name_in, const string & description)
-: child_data_( boost::make_shared<ChildData>( type_name_in, description ) )
+: child_data_( std::make_shared<ChildData>( type_name_in, description ) )
 {}
 
 
@@ -189,9 +188,10 @@ bool Abstract::have_default_descendant() const {
 
 
 
-TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPair> vec) {
 	Abstract abstract = this->deep_copy();
 	ParameterMap parameter_map;
+
 
 	// Set close flag - add_child method required closed child_data
 	abstract.child_data_->closed_ = true;
@@ -206,23 +206,23 @@ TypeBase::MakeInstanceReturnType Abstract::make_instance(std::vector<ParameterPa
 	abstract.child_data_->closed_ = false;
 
 	// Set parameters and generic type as attributes
-	abstract.set_parameters_attribute(parameter_map);
 	abstract.parameter_map_ = parameter_map;
-	abstract.add_attribute("generic_type", this->hash_str() );
 	abstract.generic_type_hash_ = this->content_hash();
+	TypeBase::set_generic_attributes(parameter_map);
 
-	return std::make_pair( boost::make_shared<Abstract>(abstract.close()), parameter_map );
+	return std::make_pair( std::make_shared<Abstract>(abstract.close()), parameter_map );
 }
 
 
 Abstract Abstract::deep_copy() const {
 	Abstract abstract = Abstract();
-	abstract.child_data_ =  boost::make_shared<Abstract::ChildData>(*this->child_data_);
+	abstract.child_data_ =  std::make_shared<Abstract::ChildData>(*this->child_data_);
 	abstract.child_data_->closed_ = false;
 	abstract.child_data_->finished_ = false;
 	abstract.child_data_->list_of_childs.clear();
-	abstract.child_data_->selection_of_childs = boost::make_shared<Selection>(this->type_name() + "_TYPE_selection");
-	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	abstract.child_data_->selection_of_childs = std::make_shared<Selection>(this->type_name() + "_TYPE_selection");
+	abstract.copy_attributes(*attributes_);
+
 	abstract.generic_type_hash_ = this->generic_type_hash_;
 	abstract.parameter_map_ = this->parameter_map_;
 	return abstract;
@@ -233,6 +233,13 @@ Abstract &Abstract::root_of_generic_subtree() {
 	root_of_generic_subtree_ = true;
 	return *this;
 }
+
+
+Abstract &Abstract::add_attribute(std::string key, TypeBase::json_string value) {
+    this->add_attribute_(key, value);
+    return *this;
+}
+
 
 
 /*Abstract &Abstract::set_generic_content_hash(TypeHash generic_content_hash) {

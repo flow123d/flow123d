@@ -4,6 +4,9 @@ problem: !SequentialCoupling
   mesh:
     mesh_file: ./input/1D2D.msh
   primary_equation: !SteadyDarcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        accuracy: 1.0e-07
     n_schurs: 2
     data:
       - region: 2d_porous_block_left
@@ -56,5 +59,3 @@ problem: !SequentialCoupling
       pressure_p1: flow_output_stream
       raw_flow_output: ./raw_output.txt
       velocity_p0: flow_output_stream
-    solver: !Petsc
-      accuracy: 1.0e-07
