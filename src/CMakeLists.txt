@@ -200,6 +200,7 @@ add_library(intersections_lib
     intersection/intersection_local.cpp
     intersection/trace_algorithm.cpp
     intersection/computeintersection.cpp
+    intersection/inspect_elements_algorithm.cpp
     intersection/inspectelements.cpp
 )
 target_link_libraries(intersections_lib
