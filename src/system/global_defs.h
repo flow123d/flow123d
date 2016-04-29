@@ -81,12 +81,6 @@
 #endif
 
 
-// Undefine ASERT_LE macro from gtest.
-#if defined(OLD_ASSERT_LE) && defined(FLOW123D_INCLUDES_GTEST)
-#undef OLD_ASSERT_LE
-#endif
-
-
 
 #ifdef FLOW123D_DEBUG_ASSERTS
 
