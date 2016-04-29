@@ -96,14 +96,14 @@ const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
         .add_value(seepage, "seepage",
             "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
             "is described by the pair of inequalities:"
-            "(($h \\le h_d^D$)) and (($ q \\le q_d^N)), where the equality holds in at least one of them. Caution! Setting $q_d^N$ strictly negative"
+            "(($h \\le h_d^D$)) and (($ q \\le q_d^N$)), where the equality holds in at least one of them. Caution! Setting $q_d^N$ strictly negative"
             "may lead to an ill posed problem since a positive outflow is enforced."
-            "Parameters (($h_d^D$)) and (($q_d^N)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
+            "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
             )
         .add_value(river, "river",
             "River boundary condition. For the water level above the bedrock, (($H > H^S$)), the Robin boundary condition is used with the inflow given by: "
-            "(( $q^N + \\sigma(H^D - H)$ )). For the water level under the bedrock, constant infiltration is used "
-            "(( $q^N + \\sigma(H^D - H^S)$ )). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
+            "(( $q^N + \\sigma(H^D - H)$)). For the water level under the bedrock, constant infiltration is used "
+            "(( $q^N + \\sigma(H^D - H^S)$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
             " ``bc_sigma, ``bc_flux``."
             )
         .close();
