@@ -424,7 +424,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
     double residual_norm = schur0->compute_residual();
     unsigned int l_it=0;
     nonlinear_iteration_ = 0;
-    xprintf(Msg, "Nonlin initial res: %d %g\n",nonlinear_iteration_, residual_norm);
+    xprintf(Msg, "[nonlin solver] norm of initial residual: %g\n", residual_norm);
 
     // Reduce is_linear flag.
     int is_linear_common;
@@ -450,7 +450,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 5] > 0.8) {
             // stagnation
-            if (input_record_.val<bool>("converge_on_stagnation")) {
+            if (input_record_.val<Input::Record>("nonlinear_solver").val<bool>("converge_on_stagnation")) {
                 xprintf(Warn, "Accept solution on stagnation. Its: %d Residual: %g\n", nonlinear_iteration_, residual_norm);
                 break;
             } else {
@@ -470,7 +470,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
         //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
         residual_norm = schur0->compute_residual();
-        xprintf(Msg, "Nonlin iter: %d %d (%d) %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
+        xprintf(Msg, "[nonlinear solver] it: %d lin. it:%d (reason: %d) resisual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
 
 
     }
@@ -599,14 +599,8 @@ void DarcyFlowMH_Steady::assembly_mh_matrix(MultidimAssembler assembler)
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
 
-    if (fill_matrix) {
-        schur0->mat_zero_entries();
-        schur0->rhs_zero_entries();
-
-        if (balance_ != nullptr)
-            balance_->start_flux_assembly(water_balance_idx_);
-
-    }
+    if (balance_ != nullptr && fill_matrix)
+        balance_->start_flux_assembly(water_balance_idx_);
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         arma::mat local_matrix;
@@ -751,7 +745,7 @@ void DarcyFlowMH_Steady::assembly_mh_matrix(MultidimAssembler assembler)
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
 
-                if (balance_ != nullptr)
+                if (balance_ != nullptr && fill_matrix)
                 {
                     balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
                 }
@@ -849,7 +843,7 @@ void DarcyFlowMH_Steady::assembly_mh_matrix(MultidimAssembler assembler)
         }
     }    
     
-    if (balance_ != nullptr)
+    if (balance_ != nullptr && fill_matrix)
         balance_->finish_flux_assembly(water_balance_idx_);
 
 
@@ -1238,6 +1232,9 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 
 	    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(
 	            *mesh_, data_, mh_dh );
+
+        schur0->mat_zero_entries();
+        schur0->rhs_zero_entries();
 
         assembly_source_term();
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix

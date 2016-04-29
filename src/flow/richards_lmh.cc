@@ -176,6 +176,10 @@ void DarcyFlowLMH_Unsteady::assembly_linear_system()
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
         auto multidim_assembler = AssemblyBase::create< AssemblyMH >(*mesh_, data_, mh_dh );
+
+        schur0->mat_zero_entries();
+        schur0->rhs_zero_entries();
+
         assembly_source_term();
         assembly_mh_matrix( multidim_assembler ); // fill matrix
 
