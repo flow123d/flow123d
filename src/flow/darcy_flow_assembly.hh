@@ -56,7 +56,7 @@
 
 
         // assembly just A block of local matrix
-        virtual void assembly_local_matrix(ElementFullIter ele,
+        virtual void assembly_local_matrix(ElementFullIter ele, unsigned int loc_ele_idx,
                                            arma::mat &local_matrix) =0;
 
         // assembly compatible neighbourings
@@ -91,18 +91,15 @@
         ~AssemblyMH<dim>() override
         {}
 
-        void assembly_local_matrix(ElementFullIter ele,
-                arma::mat &local_matrix) override
+        arma::mat::fixed<dim+1,dim+1>  assembly_local_geometry_matrix(ElementFullIter ele)
+
         {
             //START_TIMER("Assembly<dim>::assembly_local_matrix");
             fe_values_.reinit(ele);
             unsigned int ndofs = fe_values_.get_fe()->n_dofs();
             unsigned int qsize = fe_values_.get_quadrature()->size();
-            local_matrix.zeros(ndofs, ndofs);
-
-            double scale = 1
-                           / ad_.data->conductivity.value( ele->centre(), ele->element_accessor() )
-                           / ad_.data->cross_section.value( ele->centre(), ele->element_accessor() );
+            arma::mat::fixed<dim+1,dim+1> local_matrix;
+            local_matrix.zeros();
 
             for (unsigned int k=0; k<qsize; k++)
             {
@@ -110,16 +107,25 @@
                 {
                      for (unsigned int j=0; j<ndofs; j++)
                         local_matrix[i*ndofs+j] +=
-                                scale
-                                * arma::dot(fe_values_.shape_vector(i,k),
+                                arma::dot(fe_values_.shape_vector(i,k),
                                             (ad_.data->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
                                              * fe_values_.shape_vector(j,k)
                                            )
                                 * fe_values_.JxW(k);
                 }
             }
+            return local_matrix;
         }
 
+        void assembly_local_matrix(ElementFullIter ele, unsigned int loc_ele_idx,
+                                                   arma::mat &local_matrix) override
+        {
+            double cs = ad_.data->cross_section.value(ele->centre(), ele->element_accessor());
+            double conduct =  ad_.data->conductivity.value(ele->centre(), ele->element_accessor());
+
+            double scale = 1 / cs /conduct;
+            local_matrix = scale*assembly_local_geometry_matrix(ele);
+        }
 
         void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
         {
@@ -184,6 +190,16 @@
 
     template<int dim>
     class AssemblyLMH : public AssemblyMH<dim> {
+
+        void assembly_local_matrix(ElementFullIter ele, unsigned int loc_ele_idx,
+                                                   arma::mat &local_matrix) override
+        {
+            double cs = this->ad_.data->cross_section.value(ele->centre(), ele->element_accessor());
+            double conduct =  this->ad_.data->conductivity.value(ele->centre(), ele->element_accessor());
+
+            double scale = 1 / cs /conduct;
+            local_matrix = scale * this->assembly_local_geometry_matrix(ele);
+        }
 
     };
 

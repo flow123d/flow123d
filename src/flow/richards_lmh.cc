@@ -176,6 +176,7 @@ void DarcyFlowLMH_Unsteady::assembly_linear_system()
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
         auto multidim_assembler = AssemblyBase::create< AssemblyMH >(*mesh_, data_, mh_dh );
+        assembly_source_term();
         assembly_mh_matrix( multidim_assembler ); // fill matrix
 
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
@@ -279,9 +280,8 @@ void DarcyFlowLMH_Unsteady::assembly_source_term()
         ElementFullIter ele = mesh_->element(el_4_loc[i_loc]);
 
         // set lumped source
-        double diagonal_coef = ele->measure()
-                  * data_.cross_section.value(ele->centre(), ele->element_accessor())
-                  / ele->n_sides();
+        double cs = data_.cross_section.value(ele->centre(), ele->element_accessor());
+        double diagonal_coef = ele->measure() * cs / ele->n_sides();
 
         double source_diagonal = diagonal_coef * data_.water_source_density.value(ele->centre(), ele->element_accessor());
         double mass_balance_diagonal = diagonal_coef * data_.storativity.value(ele->centre(), ele->element_accessor());

@@ -618,7 +618,7 @@ void DarcyFlowMH_Steady::assembly_mh_matrix(MultidimAssembler assembler)
         //if (fill_matrix) local_assembly_specific( loc_data );
 
         if (fill_matrix) 
-            assembler[ele->dim()-1]->assembly_local_matrix(ele, local_matrix);
+            assembler[ele->dim()-1]->assembly_local_matrix(ele, i_loc, local_matrix);
         
 
         for (unsigned int i = 0; i < nsides; i++) {
@@ -852,8 +852,6 @@ void DarcyFlowMH_Steady::assembly_mh_matrix(MultidimAssembler assembler)
     if (balance_ != nullptr)
         balance_->finish_flux_assembly(water_balance_idx_);
 
-    if (fill_matrix)
-        assembly_source_term();
 
 
     if (mortar_method_ == MortarP0) {
@@ -875,9 +873,10 @@ void DarcyFlowMH_Steady::assembly_source_term()
         ElementFullIter ele = mesh_->element(el_4_loc[i_loc]);
         int el_row = row_4_el[el_4_loc[i_loc]];
 
+        double cs = data_.cross_section.value(ele->centre(), ele->element_accessor());
+
         // set sources
-        double source = ele->measure() *
-                data_.cross_section.value(ele->centre(), ele->element_accessor()) *
+        double source = ele->measure() * cs *
                 data_.water_source_density.value(ele->centre(), ele->element_accessor());
         schur0->rhs_set_value(el_row, -1.0 * source );
 
@@ -1239,6 +1238,8 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 
 	    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(
 	            *mesh_, data_, mh_dh );
+
+        assembly_source_term();
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();
