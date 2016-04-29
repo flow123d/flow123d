@@ -81,7 +81,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             } else {
                 field_type_ptr = std::make_shared<Input::Type::Instance>(field->get_input_type());
             }
-            ASSERT( field->units().is_def() , "units not def.");
+            OLD_ASSERT( field->units().is_def() , "units not def.");
             rec.declare_key(field->input_name(), field_type_ptr, Input::Type::Default::optional(), description,
                     {{FlowAttribute::field_unit(), field->units().json() }});
         }

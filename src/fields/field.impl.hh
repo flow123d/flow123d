@@ -271,7 +271,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
         	double last_time_in_history = rh.front().first;
         	unsigned int history_size=rh.size();
         	unsigned int i_history;
-        	ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+        	OLD_ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
 
         	// set history index
         	if ( time_step.gt(last_time_in_history) ) {

@@ -726,7 +726,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
-                        ASSERT(rows_ds->is_local(side_row), "" );
+                        OLD_ASSERT(rows_ds->is_local(side_row), "" );
                         unsigned int loc_side_row = side_row - rows_ds->begin();
                         double & solution_flux = ls->get_solution_array()[loc_side_row];
 
@@ -746,7 +746,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         // cause that a solution  with the flux violating the
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
-                        ASSERT(rows_ds->is_local(edge_row), "" );
+                        OLD_ASSERT(rows_ds->is_local(edge_row), "" );
                         unsigned int loc_edge_row = edge_row - rows_ds->begin();
                         double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -780,7 +780,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     double bc_switch_pressure = data_.bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ASSERT(rows_ds->is_local(edge_row), "" );
+                    OLD_ASSERT(rows_ds->is_local(edge_row), "" );
                     unsigned int loc_edge_row = edge_row - rows_ds->begin();
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 
