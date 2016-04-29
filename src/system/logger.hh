@@ -56,14 +56,16 @@ private:
 	/// Print formated message to given stream if mask corresponds with @p streams_mask_.
 	void print_to_stream(std::ostream& stream, unsigned int mask);
 
-	MsgType type_;                 ///< Type of message.
-	bool every_process_;           ///< Flag marked if log message is printing for all processes or only for zero process.
-	std::string file_name_;        ///< Actual file.
-	std::string function_;         ///< Actual function.
-	int line_;                     ///< Actual line.
-	std::string date_time_;        ///< Actual date and time.
-	int mpi_rank_;                 ///< Actual process (if MPI is supported)
-	int streams_mask_;             ///< Mask of logger, specifies streams
+	MsgType type_;                        ///< Type of message.
+	bool every_process_;                  ///< Flag marked if log message is printing for all processes or only for zero process.
+	std::string file_name_;               ///< Actual file.
+	std::string function_;                ///< Actual function.
+	int line_;                            ///< Actual line.
+	std::string date_time_;               ///< Actual date and time.
+	int mpi_rank_;                        ///< Actual process (if MPI is supported)
+	int streams_mask_;                    ///< Mask of logger, specifies streams
+	bool printed_header_;                 ///< Flag marked message header was printed (in first call of sync method)
+	std::ostringstream formated_output_;  ///< Helper stream, store message during printout to individual output
 };
 
 

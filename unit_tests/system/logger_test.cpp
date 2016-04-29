@@ -13,16 +13,13 @@
 #include "system/sys_profiler.hh"
 
 
-TEST(Logger, String) {
-	Profiler::initialize();
-
-    LOG(_warning) << "Test of logger\n - type: warning" << "\n" << "Description" << std::endl;
-}
-
 TEST(Logger, CompleteTest) {
 	Profiler::initialize();
 
+	LOG(_message) << "Test of logger \n... next line" << "\n" << "... next line" << std::endl;
+
 	unsigned int mesh_size = 150;
 	double start_time = 0.5;
-    LOG(_message) << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << std::endl;
+    LOG(_warning) << "Start of simulation at time " << start_time << ", mesh has " << mesh_size
+    		<< " elements." << std::endl << "... next line in separate message" << std::endl;
 }

@@ -21,6 +21,7 @@
 
 #include <time.h>
 #include <mpi.h>
+#include <iomanip>
 
 
 /*******************************************************************
@@ -40,7 +41,7 @@ const std::string MultiTargetBuf::msg_type_string(MsgType msg_type)
 
 
 MultiTargetBuf::MultiTargetBuf(MsgType type, bool every_process)
-: std::stringbuf(), type_(type), every_process_(every_process), streams_mask_(0)
+: std::stringbuf(), type_(type), every_process_(every_process), streams_mask_(0), printed_header_(false)
 {
 	// set actual time
 	time_t     now = time(0);
@@ -58,9 +59,36 @@ MultiTargetBuf::MultiTargetBuf(MsgType type, bool every_process)
 
 
 int MultiTargetBuf::sync() {
+	if (!streams_mask_) return 0;
+
+	std::string segment;
+	bool first_segment = true;
+
+	formated_output_.str("");
+	formated_output_ << std::setfill(' ');
+	if (!printed_header_) {
+		formated_output_ << " -  -" << std::setw(8) << "";
+		formated_output_ << "{ type : \"" << MultiTargetBuf::msg_type_string(type_) << "\", ";
+		formated_output_ << "mpi_rank : \"" << mpi_rank_ << "\", ";
+		formated_output_ << "time : \"" << date_time_ << "\",\n";
+		formated_output_ << std::setw(15) << "" << "code_point : \"";
+		formated_output_ << file_name_ << "(" << line_ << "), " << function_ << "\" }\n";
+	}
+	std::istringstream istream(str());
+	while(std::getline(istream, segment)) {
+		if (first_segment) {
+			formated_output_ << std::setw(4) << "" << "- ";
+			first_segment = false;
+		} else {
+			formated_output_ << std::setw(6) << "";
+		}
+		formated_output_ << segment << "\n";
+	}
+
 	print_to_stream(std::cout, MultiTargetBuf::mask_cout);
 	print_to_stream(std::cerr, MultiTargetBuf::mask_cerr);
 
+	printed_header_ = true;
 	str("");
 	return 0;
 }
@@ -86,13 +114,7 @@ void MultiTargetBuf::set_mask()
 void MultiTargetBuf::print_to_stream(std::ostream& stream, unsigned int mask)
 {
 	if (streams_mask_ & mask) {
-		stream << str();
-		stream << "type : " << MultiTargetBuf::msg_type_string(type_) << "\n";
-		stream << "mpi_rank : " << mpi_rank_ << "\n";
-		stream << "time : " << date_time_ << "\n";
-		stream << "code_point : " << file_name_ << "(" << line_ << ")\n";
-		stream << "function : " << function_ << "\n";
-		stream << std::flush;
+		stream << formated_output_.str() << std::flush;
 	}
 }
 
