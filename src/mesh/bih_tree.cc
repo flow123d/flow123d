@@ -230,8 +230,8 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 #ifdef DEBUG_ASSERT
 	// check uniqueness of element indexes
 	sort(result_list.begin(), result_list.end());
-	it = unique(result_list.begin(), result_list.end());
-	OLD_ASSERT_EQUAL(searsearchedElements.size() , it - result_list.begin());
+	std::vector<unsigned int>::iterator it = unique(result_list.begin(), result_list.end());
+	OLD_ASSERT_EQUAL(result_list.size() , it - result_list.begin());
 #endif
 }
 
