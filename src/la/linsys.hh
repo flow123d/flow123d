@@ -127,7 +127,7 @@ public:
       globalSolution_(other.globalSolution_), in_rec_(other.in_rec_)
 
     {
-    	ASSERT( false, "Using copy constructor of LinSys is not allowed!");
+    	OLD_ASSERT( false, "Using copy constructor of LinSys is not allowed!");
     	set_solution(other.v_solution_);
     };
 
@@ -160,7 +160,7 @@ public:
      */
     virtual const Mat *get_matrix()
     {
-        ASSERT( false, "Function get_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function get_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
         return NULL;
     }
 
@@ -176,7 +176,7 @@ public:
      */
     virtual const Vec *get_rhs()
     {
-        ASSERT( false, "Function get_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function get_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
         return NULL;
     }
     
@@ -219,7 +219,7 @@ public:
      */
     virtual PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
     {
-        ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
         return 0;
     }
 
@@ -228,7 +228,7 @@ public:
      */
     virtual PetscErrorCode set_rhs(Vec &rhs)
     {
-        ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
         return 0;
     }
 
@@ -237,7 +237,7 @@ public:
      */
     virtual PetscErrorCode mat_zero_entries()
     {
-    	ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
     	return 0;
     }
 
@@ -246,7 +246,7 @@ public:
      */
     virtual PetscErrorCode rhs_zero_entries()
     {
-    	ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
     	return 0;
     }
 
@@ -287,7 +287,7 @@ public:
      */
     virtual void start_allocation()
     {
-        ASSERT( false, "Function start_allocation is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function start_allocation is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -295,7 +295,7 @@ public:
      */
     virtual void start_add_assembly()
     {
-        ASSERT( false, "Function start_add_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function start_add_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -303,7 +303,7 @@ public:
      */
     virtual void start_insert_assembly()
     {
-        ASSERT( false, "Function start_insert_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function start_insert_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -544,7 +544,7 @@ public:
      */
     virtual void view()
     {
-        ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**

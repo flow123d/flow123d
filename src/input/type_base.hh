@@ -198,7 +198,6 @@ public:
         return hash_str(content_hash());
     }
 
-
     /**
      * Create instance of generic type.
      *

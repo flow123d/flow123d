@@ -24,7 +24,7 @@
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
     if (found_field) {
-        ASSERT(&add_field==found_field, "Another field of the same name exists when adding field: %s\n",
+    	OLD_ASSERT(&add_field==found_field, "Another field of the same name exists when adding field: %s\n",
                 add_field.name().c_str());
     } else {
         field_list.push_back(&add_field);
@@ -81,7 +81,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             } else {
                 field_type_ptr = std::make_shared<Input::Type::Instance>(field->get_input_type());
             }
-            ASSERT( field->units().is_def() , "units not def.");
+            OLD_ASSERT( field->units().is_def() , "units not def.");
             rec.declare_key(field->input_name(), field_type_ptr, Input::Type::Default::optional(), description,
                     {{FlowAttribute::field_unit(), field->units().json() }});
         }

@@ -249,8 +249,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, ExcAssertMsg,
-            "The key 'optional_int' is declared as optional .*you have to use Record::find instead.");
+    EXPECT_THROW( {record.val<int>("optional_int");}, feal::Exc_assert );
 #endif
 
 }
@@ -344,9 +343,9 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ++it;
     EXPECT_EQ(2, *it);
     ++it;
-    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, feal::Exc_assert, "out of array");
     ++it;
-    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, feal::Exc_assert, "out of array");
 
 
 

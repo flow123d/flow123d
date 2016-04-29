@@ -80,7 +80,7 @@ template <int spacedim, class Value>
 const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(const Input::Type::Selection *value_selection) {
 	std::vector<it::TypeBase::ParameterPair> param_vec;
 	if (is_enum_valued) {
-		ASSERT(value_selection, "Not defined 'value_selection' for enum element type.\n");
+		OLD_ASSERT(value_selection, "Not defined 'value_selection' for enum element type.\n");
 		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<it::Selection>(*value_selection)) );
 	} else {
 		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<typename Value::ElementInputType>()) );
@@ -138,9 +138,9 @@ void FieldAlgorithmBase<spacedim, Value>::value_list(
         const ElementAccessor<spacedim> &elm,
         std::vector<typename Value::return_type>  &value_list)
 {
-    ASSERT_EQUAL( point_list.size(), value_list.size() );
+	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
     for(unsigned int i=0; i< point_list.size(); i++) {
-        ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
+    	OLD_ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, Value(value_list[i]).n_rows(),this->value_.n_rows());
         value_list[i]=this->value(point_list[i], elm);

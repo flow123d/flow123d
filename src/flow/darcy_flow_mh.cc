@@ -441,7 +441,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
 
 
     while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
-        ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
+    	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
         if (convergence_history.size() >= 5 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
@@ -464,7 +464,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
         if (is_linear_common) break;
 
         //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
-        //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+        //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
         residual_norm = schur0->compute_residual();
         xprintf(Msg, "Nonlin iter: %d %d (%d) %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
@@ -548,13 +548,13 @@ void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_s
 
     vec = solution;
     vec_size = this->size;
-    ASSERT(vec != NULL, "Requested solution is not allocated!\n");
+    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
 void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 {
     vec=schur0->get_solution();
-    ASSERT(vec != NULL, "Requested solution is not allocated!\n");
+    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
 
@@ -726,7 +726,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
-                        ASSERT(rows_ds->is_local(side_row), "" );
+                        OLD_ASSERT(rows_ds->is_local(side_row), "" );
                         unsigned int loc_side_row = side_row - rows_ds->begin();
                         double & solution_flux = ls->get_solution_array()[loc_side_row];
 
@@ -746,7 +746,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         // cause that a solution  with the flux violating the
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
-                        ASSERT(rows_ds->is_local(edge_row), "" );
+                        OLD_ASSERT(rows_ds->is_local(edge_row), "" );
                         unsigned int loc_edge_row = edge_row - rows_ds->begin();
                         double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -780,7 +780,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     double bc_switch_pressure = data_.bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ASSERT(rows_ds->is_local(edge_row), "" );
+                    OLD_ASSERT(rows_ds->is_local(edge_row), "" );
                     unsigned int loc_edge_row = edge_row - rows_ds->begin();
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -885,7 +885,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
         switch (n_schur_compls) {
         case 2:
             // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
-            ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
+        	OLD_ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
             ls->mat_set_values(ele->n_neighs_vb, tmp_rows+2,
                                ele->n_neighs_vb, tmp_rows+2, zeros);
 
@@ -1031,7 +1031,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 				ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
 			}
 		}
-                ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
+		OLD_ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
     } // loop over master elements
 }
 
@@ -1224,7 +1224,7 @@ void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
             } else {
                 IS is;
                 ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
-                //ASSERT(err == 0,"Error in ISCreateStride.");
+                //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
                 ls->set_from_input(in_rec);
@@ -1238,7 +1238,7 @@ void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
                 } else {
                     IS is;
                     ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
-                    //ASSERT(err == 0,"Error in ISCreateStride.");
+                    //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
 
@@ -1407,14 +1407,14 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // Maybe divide by cs
         coef = conduct*coef / 3;
 
-        ASSERT( coef > 0.,
+        OLD_ASSERT( coef > 0.,
                 "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
         element_permeability.push_back( 1. / coef );
     }
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    ASSERT_EQUAL( (unsigned int)numNodeSub, global_row_4_sub_row->size() );
+    OLD_ASSERT_EQUAL( (unsigned int)numNodeSub, global_row_4_sub_row->size() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
@@ -1456,7 +1456,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
             int indGlob = inet[indInet];
             // map it to local node
             Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
-            ASSERT( pos != global2LocalNodeMap.end(),
+            OLD_ASSERT( pos != global2LocalNodeMap.end(),
                     "Cannot remap node index %d to local indices. \n ", indGlob );
             int indLoc = static_cast<int> ( pos -> second );
 
@@ -1588,7 +1588,7 @@ void DarcyFlowMH_Steady::make_serial_scatter() {
             for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
                 loc_idx[i++] = row_4_edge[i_edg];
             }
-            ASSERT( i==size,"Size of array does not match number of fills.\n");
+            OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
             //DBGPRINT_INT("loc_idx",size,loc_idx);
             ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
             xfree(loc_idx);
@@ -1619,7 +1619,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
     
     //ierr = MPI_Barrier(PETSC_COMM_WORLD);
-    //ASSERT(ierr == 0, "Error in MPI_Barrier.");
+    //OLD_ASSERT(ierr == 0, "Error in MPI_Barrier.");
 
     // row_4_el will be modified so we make a copy of the array from mesh
     row_4_el = new int[mesh_->n_elements()];

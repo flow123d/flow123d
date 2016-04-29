@@ -481,7 +481,7 @@ void ConvectionTransport::compute_concentration_sources() {
 
 void ConvectionTransport::zero_time_step()
 {
-	ASSERT_EQUAL(time_->tlevel(), 0);
+	OLD_ASSERT_EQUAL(time_->tlevel(), 0);
 
 	data_.mark_input_times(*time_);
 	data_.set_time(time_->step(), LimitSide::right);
@@ -507,7 +507,7 @@ void ConvectionTransport::zero_time_step()
 
 bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
-    ASSERT(mh_dh, "Null MH object.\n" );
+	OLD_ASSERT(mh_dh, "Null MH object.\n" );
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
     
     START_TIMER("data reinit");
@@ -785,7 +785,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
             {
                 el2 = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->side()->element() ); // higher dim. el.
-                ASSERT( el2 != elm, "Elm. same\n");
+                OLD_ASSERT( el2 != elm, "Elm. same\n");
                 new_j = row_4_el[el2.index()];
                 flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
 
