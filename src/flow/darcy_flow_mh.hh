@@ -177,6 +177,9 @@ public:
          */
         arma::vec4 gravity_;
 
+        Mesh *mesh;
+        MH_DofHandler *mh_dh;
+
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;
@@ -217,6 +220,7 @@ public:
        return mh_dh;
     }
 
+    void init_eq_data();
     void initialize() override;
     virtual void initialize_specific();
     void zero_time_step() override;
@@ -365,7 +369,7 @@ protected:
     Vec new_diagonal;
     Vec previous_solution;
 
-	EqData data_;
+	std::shared_ptr<EqData> data_;
 
     friend class DarcyFlowMHOutput;
     friend class P0_CouplingAssembler;

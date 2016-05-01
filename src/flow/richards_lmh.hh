@@ -77,6 +77,7 @@ protected:
     void postprocess() override;
 private:
 
+    std::shared_ptr<EqData> data_;
     /// PETSC scatter from the solution vector to the parallel edge vector with ghost values.
     VecScatter solution_2_edge_scatter_;
 
@@ -87,9 +88,6 @@ private:
     Vec previous_solution;
 */
     VectorMPI phead_edge_;
-    VectorMPI capacity_edge_;
-    VectorMPI conductivity_edge_;
-    VectorMPI saturation_edge_;
     //Vec time_term;
 };
 

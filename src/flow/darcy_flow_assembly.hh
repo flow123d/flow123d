@@ -16,24 +16,10 @@
 #include "quadrature/quadrature_lib.hh"
 
 
-    struct AssemblyData
-    {
-        Mesh *mesh;
-        DarcyFlowMH_Steady::EqData* data;
-        MH_DofHandler *mh_dh;
-
-        double effective_conductivity;
-        double cross_section;
-        double edge_saturation[4];
-
-        LinSys *system;
-
-    };
-
-
     class AssemblyBase
     {
     public:
+        typedef std::shared_ptr<DarcyFlowMH_Steady::EqData> AssemblyDataPtr;
         typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
 
         virtual ~AssemblyBase() {}
@@ -43,14 +29,10 @@
          * particular assembly objects.
          */
         template< template<int dim> class Impl >
-        static MultidimAssembly create(Mesh &mesh, DarcyFlowMH_Steady::EqData& data, MH_DofHandler &mh_dh) {
-            AssemblyData ad;
-            ad.mesh = &mesh;
-            ad.data = &data;
-            ad.mh_dh = &mh_dh;
-            return { std::make_shared<Impl<1> >(ad),
-                std::make_shared<Impl<2> >(ad),
-                std::make_shared<Impl<3> >(ad) };
+        static MultidimAssembly create(typename Impl<1>::AssemblyDataPtr data) {
+            return { std::make_shared<Impl<1> >(data),
+                std::make_shared<Impl<2> >(data),
+                std::make_shared<Impl<3> >(data) };
 
         }
 
@@ -73,7 +55,7 @@
     class AssemblyMH : public AssemblyBase
     {
     public:
-        AssemblyMH<dim>(AssemblyData ad)
+        AssemblyMH<dim>(AssemblyDataPtr data)
         : quad_(3),
           fe_values_(map_, quad_, fe_rt_,
                     update_values | update_gradients | update_JxW_values | update_quadrature_points),
@@ -84,7 +66,7 @@
           velocity_interpolation_quad_(0), // veloctiy values in barycenter
           velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
-          ad_(ad)
+          ad_(data)
         {}
 
 
@@ -108,7 +90,7 @@
                      for (unsigned int j=0; j<ndofs; j++)
                         local_matrix[i*ndofs+j] +=
                                 arma::dot(fe_values_.shape_vector(i,k),
-                                            (ad_.data->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
+                                            (ad_->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
                                              * fe_values_.shape_vector(j,k)
                                            )
                                 * fe_values_.JxW(k);
@@ -120,8 +102,8 @@
         void assembly_local_matrix(ElementFullIter ele, unsigned int loc_ele_idx,
                                                    arma::mat &local_matrix) override
         {
-            double cs = ad_.data->cross_section.value(ele->centre(), ele->element_accessor());
-            double conduct =  ad_.data->conductivity.value(ele->centre(), ele->element_accessor());
+            double cs = ad_->cross_section.value(ele->centre(), ele->element_accessor());
+            double conduct =  ad_->conductivity.value(ele->centre(), ele->element_accessor());
 
             double scale = 1 / cs /conduct;
             local_matrix = scale*assembly_local_geometry_matrix(ele);
@@ -132,16 +114,16 @@
             //START_TIMER("Assembly<dim>::assembly_local_vb");
             // compute normal vector to side
             arma::vec3 nv;
-            ElementFullIter ele_higher = ad_.mesh->element.full_iter(ngh->side()->element());
+            ElementFullIter ele_higher = ad_->mesh->element.full_iter(ngh->side()->element());
             fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
             nv = fe_side_values_.normal_vector(0);
 
-            double value = ad_.data->sigma.value( ele->centre(), ele->element_accessor()) *
-                            2*ad_.data->conductivity.value( ele->centre(), ele->element_accessor()) *
-                            arma::dot(ad_.data->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-                            ad_.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-                            ad_.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
-                            ad_.data->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+            double value = ad_->sigma.value( ele->centre(), ele->element_accessor()) *
+                            2*ad_->conductivity.value( ele->centre(), ele->element_accessor()) *
+                            arma::dot(ad_->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+                            ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                            ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                            ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
                             ngh->side()->measure();
 
             local_vb[0] = -value;   local_vb[1] = value;
@@ -157,11 +139,11 @@
 
             velocity_interpolation_fv_.reinit(ele);
             for (unsigned int li = 0; li < ele->n_sides(); li++) {
-                flux_in_center += ad_.mh_dh->side_flux( *(ele->side( li ) ) )
+                flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
                           * velocity_interpolation_fv_.shape_vector(li,0);
             }
 
-            flux_in_center /= ad_.data->cross_section.value(ele->centre(), ele->element_accessor() );
+            flux_in_center /= ad_->cross_section.value(ele->centre(), ele->element_accessor() );
             return flux_in_center;
         }
 
@@ -182,24 +164,7 @@
         FEValues<dim,3> velocity_interpolation_fv_;
 
         // data shared by assemblers of different dimension
-        AssemblyData ad_;
-
-    };
-
-
-
-    template<int dim>
-    class AssemblyLMH : public AssemblyMH<dim> {
-
-        void assembly_local_matrix(ElementFullIter ele, unsigned int loc_ele_idx,
-                                                   arma::mat &local_matrix) override
-        {
-            double cs = this->ad_.data->cross_section.value(ele->centre(), ele->element_accessor());
-            double conduct =  this->ad_.data->conductivity.value(ele->centre(), ele->element_accessor());
-
-            double scale = 1 / cs /conduct;
-            local_matrix = scale * this->assembly_local_geometry_matrix(ele);
-        }
+        AssemblyDataPtr ad_;
 
     };
 

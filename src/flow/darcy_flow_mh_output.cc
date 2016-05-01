@@ -243,8 +243,7 @@ void DarcyFlowMHOutput::make_element_vector() {
     // need to call this to create mh solution vector
     darcy_flow->get_mh_dofhandler();
 
-    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(
-            *mesh_, darcy_flow->data_, darcy_flow->mh_dh );
+    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     unsigned int i=0;
     arma::vec3 flux_in_center;
     FOR_ELEMENTS(mesh_, ele) {
@@ -484,8 +483,8 @@ void DarcyFlowMHOutput::water_balance() {
     std::vector<double> src_balance( mesh_->region_db().bulk_size(), 0.0 ); // initialize by zero
     FOR_ELEMENTS(mesh_, elm) {
       src_balance[elm->element_accessor().region().bulk_idx()] += elm->measure() * 
-            darcy_flow->data_.cross_section.value(elm->centre(), elm->element_accessor()) *
-            darcy_flow->data_.water_source_density.value(elm->centre(), elm->element_accessor());
+            darcy_flow->data_->cross_section.value(elm->centre(), elm->element_accessor()) *
+            darcy_flow->data_->water_source_density.value(elm->centre(), elm->element_accessor());
     }
   
     total_balance = 0;
@@ -748,7 +747,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     result.dh = &( darcy_flow->get_mh_dofhandler());
     result.darcy = darcy_flow;
-    result.data_ = &(darcy_flow->data_);
+    result.data_ = darcy_flow->data_.get();
 
     FOR_ELEMENTS( mesh_, ele) {
 
