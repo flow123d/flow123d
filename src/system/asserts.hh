@@ -150,6 +150,44 @@ protected:
 
 };
 
+
+
+/**
+ * Helper class defined empty code.
+ *
+ * Usage only in FEAL_DEBUG_ASSERT macro if FLOW123D_DEBUG_ASSERTS is off.
+ */
+class AssertNull {
+public:
+	/// Constructor.
+	AssertNull()
+	: _FEAL_ASSERT_A (*this),
+	  _FEAL_ASSERT_B (*this) {}
+
+	/// Copy constructor.
+	AssertNull(const Assert& other)
+	: _FEAL_ASSERT_A (*this),
+	  _FEAL_ASSERT_B (*this) {}
+
+	/// Destructor.
+	~AssertNull() {}
+
+	AssertNull& _FEAL_ASSERT_A; ///< clever macro A
+	AssertNull& _FEAL_ASSERT_B; ///< clever macro B
+
+	/// Empty method, only guarantees consistent code
+	template <typename T>
+	inline AssertNull& add_value(T var_current_val, const char* var_name) {
+		return *this;
+	}
+
+	/// Empty method, only guarantees consistent code
+	inline void error(std::string error_msg = "") {}
+
+	/// Empty method, only guarantees consistent code
+	inline void warning(std::string warning_msg = "") {}
+};
+
 } // namespace feal
 
 /**

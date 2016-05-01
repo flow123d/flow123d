@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <memory>
+#include "system/global_defs.h"
 
 #include <petscvec.h>
 
@@ -85,7 +86,7 @@ public:
      */
     inline double &operator[](unsigned int idx)
     {
-    	ASSERT(idx < data_ptr_->size(), "Index is out of range.\n");
+    	DEBUG_ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
     	return (*data_ptr_)[idx];
     }
 
@@ -120,7 +121,7 @@ public:
         if (data_ptr_.use_count() ==0) {
             data_ptr_ = std::make_shared< std::vector<double> >(local_size);
         } else {
-            ASSERT_EQUAL( data_ptr_.use_count(),  1 );
+            DEBUG_ASSERT( data_ptr_.use_count() ==  1 ) ( data_ptr_.use_count() ).error("Object referenced by other pointer. Can not resize.");
             chkerr(VecDestroy(&data_petsc_));
             data_ptr_->resize(local_size);
         }
@@ -147,7 +148,7 @@ public:
 
     VectorData &data()
     {
-        ASSERT(data_ptr_, "");
+        DEBUG_ASSERT(data_ptr_);
         return *data_ptr_;
     }
 
@@ -172,8 +173,8 @@ public:
      */
     inline double &operator[](unsigned int idx)
     {
-        ASSERT(data_ptr_, "");
-        ASSERT(idx < data_ptr_->size(), "Index is out of range.\n");
+        DEBUG_ASSERT(data_ptr_);
+        DEBUG_ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
         return (*data_ptr_)[idx];
     }
 

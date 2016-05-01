@@ -50,8 +50,8 @@ InterpolantBase::~InterpolantBase()
 
 void InterpolantBase::set_interval(double bound_a, double bound_b)
 {
-  ASSERT(bound_a != bound_b,"Bounds overlap.");
-  ASSERT(bound_a < bound_b,"a must be lower and b must be upper bound.");
+  OLD_ASSERT(bound_a != bound_b,"Bounds overlap.");
+  OLD_ASSERT(bound_a < bound_b,"a must be lower and b must be upper bound.");
   this->bound_a_ = bound_a;
   checks[Check::bound_a] = true;
   this->bound_b_ = bound_b;
@@ -67,7 +67,7 @@ void InterpolantBase::set_interval(double bound_a, double bound_b)
   
 void InterpolantBase::set_size(unsigned int size)
 {
-  ASSERT(size >0, "Size of interpolation table must be positive number!.");
+  OLD_ASSERT(size >0, "Size of interpolation table must be positive number!.");
   this->size_ = size;
   checks[Check::size] = true;
   
@@ -83,8 +83,8 @@ void InterpolantBase::set_norm(ErrorNorm::Type norm_type, double p)
 
 void InterpolantBase::set_size_automatic(double user_tol, unsigned int init_size, unsigned int max_size)
 {
-  ASSERT(init_size >0, "Maximal size of interpolation table must be positive number!.");
-  ASSERT(max_size >= init_size, "Maximal size of interpolation table is smaller than initial size.");
+  OLD_ASSERT(init_size >0, "Maximal size of interpolation table must be positive number!.");
+  OLD_ASSERT(max_size >= init_size, "Maximal size of interpolation table is smaller than initial size.");
   this->user_tol = user_tol;
   this->max_size = max_size;
   size_ = init_size;
@@ -139,11 +139,11 @@ void InterpolantBase::check_stats_and_reinterpolate(double percentage)
   
 void InterpolantBase::check_all()
 {
-  ASSERT(checks[Check::functor], "Functor is not set.");
-  ASSERT(checks[Check::bound_a], "Left boundary of the interval is not set.");
-  ASSERT(checks[Check::bound_b], "Right boundary of the interval is not set.");
-  ASSERT(checks[Check::size], "Step is not set.");
-  ASSERT(! ((user_tol == 0) && automatic_size), "Tolerance for automatic interpolation is not set.");
+  OLD_ASSERT(checks[Check::functor], "Functor is not set.");
+  OLD_ASSERT(checks[Check::bound_a], "Left boundary of the interval is not set.");
+  OLD_ASSERT(checks[Check::bound_b], "Right boundary of the interval is not set.");
+  OLD_ASSERT(checks[Check::size], "Step is not set.");
+  OLD_ASSERT(! ((user_tol == 0) && automatic_size), "Tolerance for automatic interpolation is not set.");
 }
 
 long InterpolantBase::fact(long n)
@@ -174,7 +174,7 @@ Interpolant::~Interpolant()
   
 double Interpolant::f_diffn(double x,unsigned int n)
 {
-  ASSERT(n <= n_derivatives,"Not allowed to obtain higher than n-th derivate.");
+  OLD_ASSERT(n <= n_derivatives,"Not allowed to obtain higher than n-th derivate.");
   T<double> xx,f;
 
   xx = x;
@@ -207,7 +207,7 @@ int Interpolant::interpolate()
   {
     case 0: interpolate_func = &Interpolant::interpolate_p0; break; 
     case 1: interpolate_func = &Interpolant::interpolate_p1; break; 
-    default: ASSERT(degree > 1, "Higher order interpolation is not available at the moment.");
+    default: OLD_ASSERT(degree > 1, "Higher order interpolation is not available at the moment.");
   }
   */
   
@@ -581,7 +581,7 @@ int InterpolantImplicit::interpolate()
 {
   //BUG: FuncExplicit cannot be copied in interpolant constructor with its members !!!
   /*
-  ASSERT(fix_ != IFixVariable::no_fix,"Cannot do interpolation. No varible was fixed.");
+  OLD_ASSERT(fix_ != IFixVariable::no_fix,"Cannot do interpolation. No varible was fixed.");
   check_all();
   DBGMSG("seg %f\n",func_u);
   explicit_interpolant = new Interpolant(func_u, interpolate_derivative);

@@ -183,7 +183,7 @@ TEST(Exceptions, assert_msg) {
 
     int zero=1;
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
+    EXPECT_THROW_WHAT( {OLD_ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
 #endif
 
 }
@@ -218,5 +218,8 @@ TEST(FealAssert, warning) {
     std::string s1 = "feal";
     std::string s2 = "assert";
     FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Strings must be empty.");
+
+    // shorter version of macro - "ASSERT" - is not in conflict with external library
+    ASSERT(0).warning("Zero value.");
 
 }

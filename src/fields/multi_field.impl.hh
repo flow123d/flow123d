@@ -56,12 +56,12 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
 template<int spacedim, class Value>
 MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiField<spacedim,Value> &other)
 {
-	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
-	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
-	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
+	OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
+	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between multi fields with different meshes.\n");
-	ASSERT( shared_->comp_names_.size(), "Vector of component names can't be empty!\n");
-	ASSERT( shared_->comp_names_.size()==other.shared_->comp_names_.size(),
+	OLD_ASSERT( shared_->comp_names_.size(), "Vector of component names can't be empty!\n");
+	OLD_ASSERT( shared_->comp_names_.size()==other.shared_->comp_names_.size(),
 	        "Both multi fields must have same size of vectors of component names.\n");
 
 	// check for self assignement
@@ -106,7 +106,7 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 
 template<int spacedim, class Value>
 it::Instance MultiField<spacedim,Value>::get_input_type() {
-	ASSERT(false, "This method can't be used for MultiField");
+	OLD_ASSERT(false, "This method can't be used for MultiField");
 
 	it::Abstract abstract = it::Abstract();
 	it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
@@ -204,8 +204,8 @@ template<int spacedim, class Value>
 void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
 	string full_name;
-	ASSERT(comp_size, "Vector of component names is empty!\n");
-	ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
+	OLD_ASSERT(comp_size, "Vector of component names is empty!\n");
+	OLD_ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
 
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
@@ -275,7 +275,7 @@ typename MultiField<spacedim, Value>::MultiFieldValue::return_type MultiField<sp
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
                    std::vector<typename MultiFieldValue::return_type>  &value_list) const {
-	ASSERT_EQUAL( point_list.size(), value_list.size() );
+	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
 	for(unsigned int i=0; i< point_list.size(); i++) {
 		value_list[i]=this->value(point_list[i], elm);
 	}
@@ -288,7 +288,7 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 	Input::Array multifield_arr;
 	if (descriptor_rec.opt_val(field.input_name(), multifield_arr))
 	{
-		//ASSERT(multifield_arr.size() == 1 || multifield_arr.size() == field.n_comp(),
+		//OLD_ASSERT(multifield_arr.size() == 1 || multifield_arr.size() == field.n_comp(),
 		//		"Invalid size of Array defined for MultiField '%s'!\n", field.input_name().c_str());
 		unsigned int position = 0;
 		auto it = multifield_arr.begin<Input::AbstractRecord>();

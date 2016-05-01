@@ -23,7 +23,7 @@ const double BoundingBox::epsilon = 64*numeric_limits<double>::epsilon();
 
 
 BoundingBox::BoundingBox(const vector<Point> &points) {
-	ASSERT_LESS( 0, points.size() );
+	OLD_ASSERT_LESS( 0, points.size() );
 
 	auto it = points.begin();
 	max_vertex_ = min_vertex_ = *it;

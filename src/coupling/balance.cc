@@ -64,7 +64,7 @@ Balance::Balance(const std::string &file_prefix,
 	  	  allocation_done_(false),
 	  	  output_line_counter_(0)
 {
-    ASSERT_PTR(mesh);
+    OLD_ASSERT_PTR(mesh);
 
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
 
@@ -120,7 +120,7 @@ Balance::~Balance()
 
 unsigned int Balance::add_quantity(const string &name)
 {
-	ASSERT(!allocation_done_, "Attempt to add quantity after allocation.");
+	OLD_ASSERT(!allocation_done_, "Attempt to add quantity after allocation.");
 
 	Quantity q(quantities_.size(), name);
 	quantities_.push_back(q);
@@ -131,7 +131,7 @@ unsigned int Balance::add_quantity(const string &name)
 
 std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &names)
 {
-	ASSERT(!allocation_done_, "Attempt to add quantity after allocation.");
+	OLD_ASSERT(!allocation_done_, "Attempt to add quantity after allocation.");
 
 	vector<unsigned int> indices;
 
@@ -145,7 +145,7 @@ std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &nam
 void Balance::allocate(unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
 {
-	ASSERT(!allocation_done_, "Attempt to allocate Balance object multiple times.");
+	OLD_ASSERT(!allocation_done_, "Attempt to allocate Balance object multiple times.");
 	// Max. number of regions to which a single dof can contribute.
 	// TODO: estimate or compute this number directly (from mesh or dof handler).
 	const int n_bulk_regs_per_dof = min(10, (int)mesh_->region_db().bulk_size());
@@ -309,14 +309,14 @@ void Balance::allocate(unsigned int n_loc_dofs,
 
 void Balance::start_mass_assembly(unsigned int quantity_idx)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	chkerr(MatZeroEntries(region_mass_matrix_[quantity_idx]));
 }
 
 
 void Balance::start_flux_assembly(unsigned int quantity_idx)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	chkerr(MatZeroEntries(be_flux_matrix_[quantity_idx]));
 	chkerr(VecZeroEntries(be_flux_vec_[quantity_idx]));
 }
@@ -324,7 +324,7 @@ void Balance::start_flux_assembly(unsigned int quantity_idx)
 
 void Balance::start_source_assembly(unsigned int quantity_idx)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	chkerr(MatZeroEntries(region_source_matrix_[quantity_idx]));
 	chkerr(MatZeroEntries(region_source_rhs_[quantity_idx]));
 	chkerr(VecZeroEntries(region_source_vec_[quantity_idx]));
@@ -333,14 +333,14 @@ void Balance::start_source_assembly(unsigned int quantity_idx)
 
 void Balance::finish_mass_assembly(unsigned int quantity_idx)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	chkerr(MatAssemblyBegin(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 }
 
 void Balance::finish_flux_assembly(unsigned int quantity_idx)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	chkerr(MatAssemblyBegin(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(VecAssemblyBegin(be_flux_vec_[quantity_idx]));
@@ -349,7 +349,7 @@ void Balance::finish_flux_assembly(unsigned int quantity_idx)
 
 void Balance::finish_source_assembly(unsigned int quantity_idx)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	chkerr(MatAssemblyBegin(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyBegin(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY));
@@ -444,7 +444,7 @@ void Balance::calculate_cumulative_sources(unsigned int quantity_idx,
 {
 	if (!cumulative_) return;
 
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 
 	Vec bulk_vec;
 
@@ -476,7 +476,7 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 {
 	if (!cumulative_) return;
 
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 
 	Vec boundary_vec;
 
@@ -512,7 +512,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 		const Vec &solution,
 		vector<double> &output_array)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	Vec bulk_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
@@ -532,7 +532,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 void Balance::calculate_source(unsigned int quantity_idx,
 		const Vec &solution)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	Vec bulk_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
@@ -587,7 +587,7 @@ void Balance::calculate_source(unsigned int quantity_idx,
 void Balance::calculate_flux(unsigned int quantity_idx,
 		const Vec &solution)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	Vec boundary_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1,
@@ -635,7 +635,7 @@ void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
 
 void Balance::output(double time)
 {
-	ASSERT(allocation_done_, "Balance structures are not allocated!");
+	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 
 	// gather results from processes and sum them up
 	const unsigned int n_quant = quantities_.size();
