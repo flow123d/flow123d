@@ -4,7 +4,7 @@ problem: !SequentialCoupling
     section parameters.
   mesh:
     mesh_file: ${INPUT}/test6_21d.msh
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07

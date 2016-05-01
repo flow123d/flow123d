@@ -14,7 +14,7 @@ problem: !SequentialCoupling
         regions:
           - .fracture_top
           - .rock_top
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07

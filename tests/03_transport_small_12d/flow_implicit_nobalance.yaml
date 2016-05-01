@@ -3,7 +3,7 @@ problem: !SequentialCoupling
   description: Test3 - Transport implicit 1D-2D, (convection, dispersion)
   mesh:
     mesh_file: ./input/test3.msh
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

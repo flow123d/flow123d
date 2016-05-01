@@ -11,7 +11,7 @@ problem: !SequentialCoupling
         regions:
           - 2d_fracture_1
           - 2d_fracture_2
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10

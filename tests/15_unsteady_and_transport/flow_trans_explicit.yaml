@@ -3,7 +3,7 @@ problem: !SequentialCoupling
   description: Test15 - 2D unsteady flow LM
   mesh:
     mesh_file: ./input/channel_unstructured.msh
-  primary_equation: !UnsteadyDarcy_LMH
+  primary_equation: !Darcy_LMH
     input_fields:
       - region: ALL
         storativity: 1.0

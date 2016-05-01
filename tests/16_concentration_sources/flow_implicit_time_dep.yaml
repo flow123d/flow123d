@@ -15,7 +15,7 @@ problem: !SequentialCoupling
         id: 200
         element_list:
           - 721
-  primary_equation: !SteadyDarcy_MH
+  primary_equation: !Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
