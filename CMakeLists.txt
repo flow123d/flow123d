@@ -1125,7 +1125,7 @@ if (CYGWIN)
     set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
         WriteRegStr HKCR '.con' '' 'Flow123dFile'
         WriteRegStr HKCR 'Flow123dFile\\\\shell' '' 'open'
-        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\"%1\\"'
+        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\\"%1\\\"'
         System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
         ")
 
