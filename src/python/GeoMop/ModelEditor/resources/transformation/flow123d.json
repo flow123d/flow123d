@@ -539,15 +539,34 @@
         "path-type-filter-path" : "/problem/primary_equation"
       }
     },
-
     {
-      "NAME": "Use time aware DarcyFlowMH_Steady instead of Unsteady.",
+      "NAME": "Use time aware Darcy_MH instead of Steady.",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "SteadyDarcy_MH",
+        "new_name": "Darcy_MH"
+      }
+    },
+        {
+      "NAME": "Use time aware Darcy_MH instead of Steady.",
       "action": "rename-type",
       "parameters": {
         "path": "/problem/primary_equation",
         "old_name": "UnsteadyDarcy_MH",
-        "new_name": "SteadyDarcy_MH"
+        "new_name": "Darcy_MH"
+      }
+    },
+    {
+      "NAME": "Use time aware Darcy_MH instead of Steady.",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "UnsteadyDarcy_LMH",
+        "new_name": "Richards_LMH"
       }
     }        
+  
+  
   ]
 }
