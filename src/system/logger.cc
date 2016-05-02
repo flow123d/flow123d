@@ -25,6 +25,43 @@
 
 
 /*******************************************************************
+ * implementation of LoggerFileStream
+ */
+
+LoggerFileStream& LoggerFileStream::get_instance() {
+	if (instance_ == NULL) {
+		int mpi_rank;
+#ifdef FLOW123D_HAVE_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#else
+		mpi_rank = 0;
+#endif
+		std::stringstream file_name;
+		file_name << "flow." << mpi_rank << ".new.log";
+		instance_ = new LoggerFileStream( file_name.str().c_str() );
+	}
+	return *instance_;
+}
+
+
+LoggerFileStream* LoggerFileStream::instance_ = NULL;
+
+
+LoggerFileStream::~LoggerFileStream() {
+	(*this) << std::flush;
+	this->close();
+}
+
+
+LoggerFileStream::LoggerFileStream()
+: std::ofstream() {}
+
+
+LoggerFileStream::LoggerFileStream(const char* filename)
+: std::ofstream(filename) {}
+
+
+/*******************************************************************
  * implementation of MultiTargetBuf
  */
 
@@ -87,6 +124,7 @@ int MultiTargetBuf::sync() {
 
 	print_to_stream(std::cout, MultiTargetBuf::mask_cout);
 	print_to_stream(std::cerr, MultiTargetBuf::mask_cerr);
+	print_to_stream(LoggerFileStream::get_instance(), MultiTargetBuf::mask_file);
 
 	printed_header_ = true;
 	str("");
@@ -106,8 +144,8 @@ void MultiTargetBuf::set_context(const char* file_name, const char* function, co
 void MultiTargetBuf::set_mask()
 {
 	if ( !every_process_ && (mpi_rank_ > 0) ) return;
-	if (type_ == _warning) streams_mask_ = MultiTargetBuf::mask_cerr;
-	else streams_mask_ = MultiTargetBuf::mask_cout;
+	if (type_ == _warning) streams_mask_ = MultiTargetBuf::mask_cerr | MultiTargetBuf::mask_file;
+	else streams_mask_ = MultiTargetBuf::mask_cout | MultiTargetBuf::mask_file;
 }
 
 

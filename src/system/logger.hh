@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 
 
@@ -28,6 +29,31 @@
 typedef enum MsgType {
 	_warning, _message, _log, _debug
 } MsgType;
+
+
+/**
+ * Class defined logger file.
+ *
+ * Use singleton design pattern.
+ */
+class LoggerFileStream : public std::ofstream
+{
+public:
+    /// Getter of singleton instance object
+	static LoggerFileStream& get_instance();
+
+	/// Destructor
+	~LoggerFileStream();
+private:
+	/// Forbidden empty constructor
+	LoggerFileStream();
+
+	/// Forbidden constructor
+	LoggerFileStream(const char* filename);
+
+	/// Singleton instance
+	static LoggerFileStream* instance_;
+};
 
 
 /**
@@ -49,6 +75,7 @@ protected:
 private:
 	static const unsigned int mask_cout = 0b00000001;
 	static const unsigned int mask_cerr = 0b00000010;
+	static const unsigned int mask_file = 0b00000100;
 
 	/// Set @p streams_mask_ according to the tzpe of message.
 	void set_mask();
