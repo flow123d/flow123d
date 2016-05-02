@@ -10,7 +10,7 @@ problem: !SequentialCoupling
       - 1d_upper
       - 1d_lower
       - 1d_left_branch
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     input_fields:
     - region: 1d_domain
       conductivity: 1.0e-06

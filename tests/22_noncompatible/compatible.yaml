@@ -3,7 +3,7 @@ problem: !SequentialCoupling
   description: Flow in 2d-1d domain, compatible mesh
   mesh:
     mesh_file: ./input/compatible.msh
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10

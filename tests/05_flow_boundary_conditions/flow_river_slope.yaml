@@ -14,7 +14,7 @@ problem: !SequentialCoupling
   
   mesh:
     mesh_file: ${INPUT}/slope_surface.msh
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     n_schurs: 2
     input_fields:
       - region: plane

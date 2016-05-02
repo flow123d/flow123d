@@ -4,7 +4,7 @@ problem: !SequentialCoupling
     subdomain
   mesh:
     mesh_file: ./input/2D2D.msh
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         accuracy: 1.0e-07

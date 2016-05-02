@@ -5,7 +5,7 @@ problem: !SequentialCoupling
     such that it determines CFL condition (t equals 1/(10/0.9)).
   mesh:
     mesh_file: ./input/test16_small.msh
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

@@ -3,7 +3,7 @@ problem: !SequentialCoupling
   description: Test14 - 2D transport with time variable boundarty
   mesh:
     mesh_file: ./input/test14.msh
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

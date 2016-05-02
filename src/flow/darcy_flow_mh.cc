@@ -82,7 +82,7 @@ const it::Selection & DarcyMH::get_mh_mortar_selection() {
 
 
 const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
-	return it::Selection("Darcy_BC_Type")
+	return it::Selection("Flow_Darcy_BC_Type")
         .add_value(none, "none",
             "Homogeneous Neumann boundary condition. Zero flux")
         .add_value(dirichlet, "dirichlet",
@@ -112,8 +112,8 @@ const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
 
 const it::Record & DarcyMH::get_input_type() {
     it::Record field_descriptor =
-        it::Record("DarcyMH_Data",FieldCommon::field_descriptor_record_description("DarcyMH_Data") )
-        .copy_keys( DarcyMH::EqData().make_field_descriptor_type("DarcyMH_Data_aux") )
+        it::Record("Flow_Darcy_MH_Data",FieldCommon::field_descriptor_record_description("Flow_Darcy_MH_Data") )
+        .copy_keys( DarcyMH::EqData().make_field_descriptor_type("Flow_Darcy_MH_Data_aux") )
         .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
                 "Boundary piezometric head for BC types: dirichlet, robin, and river." )
         .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
@@ -135,7 +135,7 @@ const it::Record & DarcyMH::get_input_type() {
             "ends with convergence success on stagnation, but report warning about it.")
         .close();
 
-    return it::Record("Darcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
+    return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
@@ -157,7 +157,7 @@ const it::Record & DarcyMH::get_input_type() {
 
 
 const int DarcyMH::registrar =
-		Input::register_class< DarcyMH, Mesh &, const Input::Record >("Darcy_MH") +
+		Input::register_class< DarcyMH, Mesh &, const Input::Record >("Flow_Darcy_MH") +
 		DarcyMH::get_input_type().size();
 
 

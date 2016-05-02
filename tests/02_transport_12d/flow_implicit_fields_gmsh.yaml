@@ -14,7 +14,7 @@ problem: !SequentialCoupling
         regions:
           - .2d
           - .1d
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

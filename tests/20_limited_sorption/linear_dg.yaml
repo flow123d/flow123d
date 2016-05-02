@@ -16,7 +16,7 @@ problem: !SequentialCoupling
   description: Adsorption all
   mesh:
     mesh_file: input/test_20.msh
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     input_fields:
     - region: rectangle
       conductivity: 0.125

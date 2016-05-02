@@ -3,7 +3,7 @@ problem: !SequentialCoupling
   description: '[u''test18:'', u''diffusion'', u''through'', u''fractures'']'
   mesh:
     mesh_file: ./input/test18.msh
-  primary_equation: !Darcy_MH
+  primary_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
