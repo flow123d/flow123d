@@ -342,10 +342,12 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     EXPECT_EQ(1, *it);
     ++it;
     EXPECT_EQ(2, *it);
+#ifdef FLOW123D_DEBUG_ASSERTS
     ++it;
     EXPECT_THROW_WHAT( {*it;}, feal::Exc_assert, "out of array");
     ++it;
     EXPECT_THROW_WHAT( {*it;}, feal::Exc_assert, "out of array");
+#endif
 
 
 
