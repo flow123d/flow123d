@@ -113,7 +113,7 @@
       "parameters": {
         "path": "/problem/secondary_equation",
         "old_name": "TransportOperatorSplitting",
-        "new_name": "Transport_OS"
+        "new_name": "Coupling_OperatorSplitting"
       }
     },
     {
@@ -123,8 +123,8 @@
         "path": "/problem/secondary_equation",
         "key": "transport",
         "parent": "Transport",
-        "type": "Convection_FV",
-        "type-filter": "Transport_OS"
+        "type": "Solute_Advection_FV",
+        "type-filter": "Coupling_OperatorSplitting"
       }
     },
     {
@@ -133,7 +133,7 @@
       "parameters": {
         "source_path": "/problem/secondary_equation/output_fields",
         "destination_path": "/problem/secondary_equation/transport/output_fields",
-        "parent-type-filter": "Transport_OS"
+        "parent-type-filter": "Coupling_OperatorSplitting"
       }
     },  
     {
@@ -142,7 +142,7 @@
       "parameters": {
         "source_path": "/problem/secondary_equation/input_fields",
         "destination_path": "/problem/secondary_equation/transport/input_fields",
-        "parent-type-filter": "Transport_OS"
+        "parent-type-filter": "Coupling_OperatorSplitting"
       }
     },
     {
@@ -152,7 +152,7 @@
         "path": "/problem/secondary_equation",
         "key": "transport",
         "parent": "Transport",
-        "type": "ConvectionDiffusion_DG",
+        "type": "Solute_AdvectionDiffusion_DG",
         "type-filter": "SoluteTransport_DG"
       }
     },
@@ -207,9 +207,18 @@
       "parameters": {
         "path": "/problem/secondary_equation",
         "old_name": "SoluteTransport_DG",
-        "new_name": "Transport_OS"
+        "new_name": "Coupling_OperatorSplitting"
       }
     },
+    {
+      "NAME": "Rename SoluteTransport_DG to Transport_OS",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "old_name": "HeatTransfer_DG",
+        "new_name": "Heat_AdvectionDiffusion_DG"
+      }
+    },      
     { 
       "NAME" : "region to r_set",
       "TODO": "Need to check that target key 'region' is not used.",
@@ -538,6 +547,42 @@
         "old_name": "Unsteady_LMH",
         "new_name": "Flow_Richards_LMH"
       }
-    }         
+    },
+    {
+      "NAME": "Rename sequential coupling",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem",
+        "old_name": "SequentialCoupling",
+        "new_name": "Coupling_Sequential"
+      }
+    },
+    {
+      "NAME": "Rename sequential coupling keys",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/primary_equation",
+        "destination_path": "/problem/flow_equation"
+      }
+    },
+    {
+      "NAME": "Rename sequential coupling keys",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation",
+        "destination_path": "/problem/solute_equation",
+        "type-filter": "Coupling_OperatorSplitting"
+      }
+    },
+    {
+      "NAME": "Rename sequential coupling keys",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation",
+        "destination_path": "/problem/heat_equation",
+        "type-filter": "Heat_AdvectionDiffusion_DG"
+      }
+    }
+      
   ]
 }

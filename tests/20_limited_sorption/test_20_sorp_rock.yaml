@@ -10,11 +10,11 @@ output_streams:
     format: !vtk
       variant: ascii
     name: transport_output_stream
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: TestXXX-pork
   mesh:
     mesh_file: ${INPUT}/test_20.msh
-  primary_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -35,8 +35,8 @@ problem: !SequentialCoupling
       pressure_p1: flow_output_stream
       velocity_p0: flow_output_stream
     balance: true
-  secondary_equation: !Transport_OS
-    transport: !Convection_FV
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
       input_fields:
         - region: ALL
           init_conc: 0

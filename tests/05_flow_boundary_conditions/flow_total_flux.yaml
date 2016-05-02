@@ -1,9 +1,9 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition
   mesh:
     mesh_file: ${INPUT}/square_xy.msh
-  primary_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_MH
     n_schurs: 2
     input_fields:
     - region: plane

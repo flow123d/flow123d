@@ -1,10 +1,10 @@
 # COMMENT_Stop_time:"1275",
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Steady flow + transport with source
   mesh:
     mesh_file: ./input/test16.msh
-  primary_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -29,8 +29,8 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-  secondary_equation: !Transport_OS
-    transport: !ConvectionDiffusion_DG
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
       # dual_porosity:false,
       input_fields:
         - region: BOUNDARY

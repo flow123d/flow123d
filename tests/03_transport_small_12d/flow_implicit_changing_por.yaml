@@ -1,5 +1,5 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Test3 - Transport implicit 1D-2D, (convection, dispersion)
   mesh:
     mesh_file: ./input/mesh_with_boundary.msh
@@ -10,7 +10,7 @@ problem: !SequentialCoupling
       - 1d_upper
       - 1d_lower
       - 1d_left_branch
-  primary_equation: !SteadyDarcy_MH
+  flow_equation: !SteadyDarcy_MH
     input_fields:
     - region: 1d_domain
       conductivity: 1.0e-06
@@ -37,7 +37,7 @@ problem: !SequentialCoupling
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
-  secondary_equation: !Transport_OS
+  solute_equation: !Coupling_OperatorSplitting
     substances:
     - name: age
       molar_mass: 0.018

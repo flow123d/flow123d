@@ -1,6 +1,6 @@
 # problem
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Transport 1D-2D, (convection, dual porosity, sorption)
   mesh:
     mesh_file: ./input/mesh_with_boundary.msh
@@ -11,7 +11,7 @@ problem: !SequentialCoupling
           - 1d_upper
           - 1d_lower
           - 1d_left_branch
-  primary_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -40,8 +40,8 @@ problem: !SequentialCoupling
         - anisotropy
     balance: true
   # primary equation
-  secondary_equation: !Transport_OS
-    transport: !Convection_FV
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
       output_fields:
         - conc
         - porosity
@@ -103,5 +103,5 @@ problem: !SequentialCoupling
       end_time: 1.0
     balance:
       cumulative: true
-  # secondary_equation
+  # solute_equation
 # problem

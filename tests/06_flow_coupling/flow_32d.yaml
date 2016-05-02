@@ -1,10 +1,10 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Test6 - Coupling between dimension 2D-3D - influence of sigma and cross
     section parameters.
   mesh:
     mesh_file: ${INPUT}/test6_32d.msh
-  primary_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07

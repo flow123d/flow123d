@@ -1,9 +1,9 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Test8 - Steady flow with sources
   mesh:
     mesh_file: ${INPUT}/test08.msh
-  primary_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10

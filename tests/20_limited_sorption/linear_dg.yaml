@@ -12,11 +12,11 @@ output_streams:
   time_step: 0.5
   name: transport_output_stream
 
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Adsorption all
   mesh:
     mesh_file: input/test_20.msh
-  primary_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_MH
     input_fields:
     - region: rectangle
       conductivity: 0.125
@@ -37,7 +37,7 @@ problem: !SequentialCoupling
     nonlinear_solver: 
       linear_solver: !Petsc
         a_tol: 1.0e-07
-  secondary_equation: !Transport_OS
+  solute_equation: !Coupling_OperatorSplitting
     substances:
     - A
     transport: !ConvectionDiffusion_DG
