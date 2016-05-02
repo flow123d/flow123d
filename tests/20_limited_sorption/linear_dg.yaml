@@ -40,7 +40,7 @@ problem: !Coupling_Sequential
   solute_equation: !Coupling_OperatorSplitting
     substances:
     - A
-    transport: !ConvectionDiffusion_DG
+    transport: !Solute_AdvectionDiffusion_DG
       input_fields:
       - region: ALL
         init_conc: 0

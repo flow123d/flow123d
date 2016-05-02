@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-12
   
   solute_equation: !Coupling_OperatorSplitting
-    transport: !ConvectionDiffusion_DG
+    transport: !Solute_AdvectionDiffusion_DG
       input_fields:
       - region: .sides
         bc_conc: 1

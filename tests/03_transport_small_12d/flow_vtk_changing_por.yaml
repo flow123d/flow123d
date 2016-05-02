@@ -41,7 +41,7 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-12
   # primary equation
   solute_equation: !Coupling_OperatorSplitting
-    transport: !Convection_FV
+    transport: !Solute_Advection_FV
       input_fields:
         - region: ALL
           init_conc: 0

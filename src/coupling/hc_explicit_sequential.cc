@@ -126,8 +126,9 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
             secondary_eq->data()["cross_section"]
                     .copy_from(water->data()["cross_section"]);
             secondary_eq->initialize();
+        } else {
+            secondary_eq = std::make_shared<TransportNothing>(*mesh);
         }
-        secondary_eq = std::make_shared<TransportNothing>(*mesh);
     }
 }
 

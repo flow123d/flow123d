@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
     - name: U235
       molar_mass: 0.235
     # uranium 235
-    transport: !ConvectionDiffusion_DG
+    transport: !Solute_AdvectionDiffusion_DG
       input_fields:
       - region: ALL
         init_conc: 0
