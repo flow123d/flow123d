@@ -1,5 +1,5 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: heat_transfer
   mesh:
     mesh_file: ./input/test21.msh
@@ -14,7 +14,7 @@ problem: !SequentialCoupling
         regions:
           - .fracture_top
           - .rock_top
-  primary_equation: !SteadyDarcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -42,7 +42,7 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-  secondary_equation: !HeatTransfer_DG
+  heat_equation: !Heat_AdvectionDiffusion_DG
     balance:
       cumulative: true
     input_fields:

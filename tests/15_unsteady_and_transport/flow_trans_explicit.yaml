@@ -1,9 +1,9 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
     mesh_file: ./input/channel_unstructured.msh
-  primary_equation: !UnsteadyDarcy_LMH
+  flow_equation: !Flow_Richards_LMH
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -40,8 +40,8 @@ problem: !SequentialCoupling
       end_time: 2.0
       max_dt: 0.01
       min_dt: 0.01
-  secondary_equation: !Transport_OS
-    transport: !Convection_FV
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
       input_fields:
         - region: domain
           init_conc: 0

@@ -1,5 +1,5 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: "Sorption with sources - no flow, no transport, only source term and\
     \ sorptions. \nQualitative and mass balance check.\n- A - check sorption none\
     \ (with source, init_conc_solid)"
@@ -14,7 +14,7 @@ problem: !SequentialCoupling
           - .left
           - .up
           - .down
-  primary_equation: !SteadyDarcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -34,8 +34,8 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-  secondary_equation: !Transport_OS
-    transport: !Convection_FV
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
       input_fields:
         - region: volume
           init_conc: 0.0
@@ -108,6 +108,6 @@ problem: !SequentialCoupling
       format: !vtk
         variant: ascii
       time_step: 0.2
-  # secondary_equation
+  # solute_equation
 # problem
 # root

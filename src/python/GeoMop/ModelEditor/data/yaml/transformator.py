@@ -781,7 +781,7 @@ class Transformator:
         
         indentation1 = StructureChanger.get_indentation(lines, sl1)
         al1, ac1, al2, ac2 = StructureChanger.add_comments(lines, al1, ac1, al2, ac2)
-        add = StructureChanger.copy_structure(lines, al1, ac1, al2, ac2, indentation1)
+        add = StructureChanger.copy_structure(lines, al1, ac1, al2, ac2, indentation1, False)
  
         if sl2 < al1 or (sl2 == al1 and sl2 < ac1):
             # addition after source, first delete

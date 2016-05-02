@@ -1,5 +1,5 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   time: &anchor2
     end_time: 0.5
     max_dt: 0.01
@@ -7,7 +7,7 @@ problem: !SequentialCoupling
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
     mesh_file: ${INPUT}/test10.msh
-  primary_equation: !UnsteadyDarcy_LMH
+  flow_equation: !Flow_Richards_LMH
     input_fields:
       - region: ALL
         storativity: 1.0
