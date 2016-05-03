@@ -37,7 +37,7 @@ using namespace Input::Type;
 
 
 const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
-	return Selection("HeatTransfer_BC_Type", "Types of boundary conditions for heat transfer model.")
+	return Selection("Heat_BC_Type", "Types of boundary conditions for heat transfer model.")
             .add_value(bc_inflow, "inflow",
           		  "Default heat transfer boundary condition.\n"
           		  "On water inflow (($(q_w \\le 0)$)), total energy flux is given by the reference temperature 'bc_temperature'. "

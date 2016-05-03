@@ -263,7 +263,7 @@ void Timer::add_child(int child_index, const Timer &child)
         do {
             i=( i < max_n_childs ? i+1 : 0);
         } while (i!=idx && child_timers[i] != timer_no_child);
-        ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag().c_str());
+        FEAL_DEBUG_ASSERT(i!=idx)(tag()).error("Too many children of the timer");
         idx=i;
     }
     //DBGMSG("Adding child %d at index: %d\n", child_index, idx);
@@ -347,7 +347,7 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 
 int  Profiler::start_timer(const CodePoint &cp) {
-    Timer &parent_timer = timers_[actual_node];
+    unsigned int parent_node = actual_node;
     //DBGMSG("Start timer: %s\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
@@ -360,7 +360,7 @@ int  Profiler::start_timer(const CodePoint &cp) {
     actual_node=child_idx;
     
     // pause current timer
-    parent_timer.pause();
+    timers_[parent_node].pause();
     
     timers_[actual_node].start();
     
@@ -377,7 +377,7 @@ int Profiler::find_child(const CodePoint &cp) {
         if (timer.child_timers[idx] == timer_no_child) break; // tag is not there
 
         child_idx=timer.child_timers[idx];
-        ASSERT(child_idx < timers_.size(), "Assert error: child_idx >= timers_.size(): %d != %d", child_idx, timers_.size());
+        FEAL_DEBUG_ASSERT(child_idx < timers_.size())(child_idx)(timers_.size()).error();
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
         idx = ( (unsigned int)(idx)==(Timer::max_n_childs - 1) ? 0 : idx+1 );
     } while ( (unsigned int)(idx) != cp.hash_idx_ ); // passed through whole array
@@ -392,7 +392,8 @@ void Profiler::stop_timer(const CodePoint &cp) {
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] != timer_no_child)
-            ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
+        	FEAL_DEBUG_ASSERT(! timers_[timer.child_timers[i]].running())(timers_[timer.child_timers[i]].tag())(timer.tag())
+				.error("Child timer running while closing timer.");
 #endif
     unsigned int child_timer = actual_node;
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
@@ -439,7 +440,7 @@ void Profiler::stop_timer(int timer_index) {
     // timer which is still running MUST be the same as actual_node index
     // if timer is not running index will differ
     if (timers_[timer_index].running()) {
-        ASSERT(timer_index == actual_node, "Assert error: timer_index != actual_node: %d != %d", timer_index, actual_node);
+    	FEAL_DEBUG_ASSERT(timer_index == actual_node)(timer_index)(actual_node).error();
         stop_timer(*timers_[timer_index].code_point_);
     }
     
@@ -515,8 +516,8 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 
     // get timer and check preconditions
     Timer &timer = timers_[timer_idx];
-    ASSERT( timer_idx >=0, "Wrong timer index %d.\n", timer_idx);
-    ASSERT( timer.parent_timer >=0 , "Inconsistent tree.\n");
+    FEAL_DEBUG_ASSERT(timer_idx >=0)(timer_idx).error("Wrong timer index.");
+    FEAL_DEBUG_ASSERT(timer.parent_timer >=0).error("Inconsistent tree.");
 
     // fix path
     string filepath = timer.code_point_->file_;
@@ -544,12 +545,45 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
     node.put<double> ("percent", 	percent);
 
-    // write times children timers
+    // when collecting timer info, we need to make sure each processor contains 
+    // the same time-frames, for now we simply reduce info to current timer
+    // using operation MPI_MIN, so if some processor does not contain some 
+    // time-frame other processors will forget this time-frame (information lost)
+    /*
+    int child_timers[ Timer::max_n_childs];
+    MPI_Allreduce(&timer.child_timers, &child_timers, Timer::max_n_childs, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+    #ifdef FLOW123D_DEBUG
+    int mpi_rank = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    for (int j = 0; j < Timer::max_n_childs; j++) {
+        if (child_timers[j] != timer.child_timers[j]) {
+            // this is severe error, timers indicies are different
+            FEAL_DEBUG_ASSERT(child_timers[j] == timer_no_child).error("Severe error: timers indicies are different.");
+            
+            // explore the difference in more depth
+            if (timer.child_timers[j] == timer_no_child) {
+                // this processor does not have child timer
+                xprintf(Warn,
+                    "Inconsistent tree in '%s': this processor[%d] does not have child-timer[%d]\n",
+                    timer.tag().c_str(), mpi_rank, child_timers[j]);
+            } else {
+                // other processors do not have child timer
+                xprintf(Warn,
+                    "Inconsistent tree in '%s': this processor[%d] contains child-timer[%d] which others do not\n",
+                    timer.tag().c_str(), mpi_rank, timer.child_timers[j]);
+            }
+        }
+    }
+    #endif // FLOW123D_DEBUG
+*/
+    // write times children timers using secured child_timers array
     property_tree::ptree children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-		if (timer.child_timers[i] != timer_no_child) {
-			add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
+        if (timer.child_timers[i] != timer_no_child) {
+            add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
+        /*
+		if (child_timers[i] != timer_no_child) {
+			add_timer_info (reduce, &children, child_timers[i], cumul_time_sum); */
 			has_children = true;
 		}
     }
@@ -600,7 +634,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     set_memory_monitoring(false, petsc_monitor_memory);
 
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    FEAL_DEBUG_ASSERT(ierr == 0).error("Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
     // output header
@@ -665,7 +699,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 void Profiler::output(MPI_Comm comm) {
     int mpi_rank, ierr;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    FEAL_DEBUG_ASSERT(ierr == 0).error("Error in MPI test of rank.");
     if (mpi_rank == 0) {
         output(comm, *get_default_output_stream());
     } else {
@@ -777,19 +811,17 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
 
 #ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-
+    
     if (json_filepath=="") return;
 
-    // debug info
-    // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
-    // cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
-    // cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
-    // cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
-    // cout << "Py_GetPath:            " << Py_GetPath() << endl;
-    // cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
-    // cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
+    // error under CYGWIN environment : more details in this repo 
+    // https://github.com/x3mSpeedy/cygwin-python-issue
+    // 
+    // For now we only support profiler report conversion in UNIX environment
+    // Windows users will have to use a python script located in bin folder
+    // 
 
-
+    #ifndef FLOW123D_HAVE_CYGWIN
     // grab module and function by importing module profiler_formatter_module.py
     PyObject * python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
     //
@@ -816,6 +848,20 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyObject_CallObject (convert_method, arguments);
 
     PythonLoader::check_error();
+
+    #else
+
+    // print information about windows-cygwin issue and offer manual solution
+    stringstream msg;
+    msg << "# Note: converting json profiler reports is not";
+    msg << " supported under Windows or Cygwin environment for now." << endl;
+    msg << "# You can use python script located in bin/python folder";
+    msg << " in order to convert json report to txt or csv format." << endl;
+    
+    msg << "python profiler_formatter_script.py --input \"" << json_filepath;
+    msg << "\" --output \"profiler.txt\"" << endl;
+    xprintf(Msg, msg.str().c_str());
+    #endif // FLOW123D_HAVE_CYGWIN
 }
 #else
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
@@ -826,8 +872,8 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 void Profiler::uninitialize() {
     if (_instance) {
-        ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
-                _instance->timers_[_instance->actual_node].tag().c_str());
+    	FEAL_DEBUG_ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
+    			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         _instance->stop_timer(0);
         set_memory_monitoring(false, false);
         delete _instance;
@@ -837,17 +883,6 @@ void Profiler::uninitialize() {
 bool Profiler::global_monitor_memory = false;
 bool Profiler::petsc_monitor_memory = true;
 void Profiler::set_memory_monitoring(const bool global_monitor, const bool petsc_monitor) {
-    #ifdef FLOW123D_DEBUG
-        if (global_monitor && !global_monitor_memory)
-            cout << "Memory monitoring is ON" << endl;
-        if (!global_monitor && global_monitor_memory)
-            cout << "Memory monitoring is OFF" << endl;
-        
-        if (petsc_monitor && !petsc_monitor_memory)
-            cout << "Petsc monitoring is ON" << endl;
-        if (!petsc_monitor && petsc_monitor_memory)
-            cout << "Petsc monitoring is OFF" << endl;
-    #endif // FLOW123D_DEBUG
     global_monitor_memory = global_monitor;
     petsc_monitor_memory = petsc_monitor;
 }
@@ -919,8 +954,8 @@ void Profiler::initialize() {
 
 void Profiler::uninitialize() {
     if (_instance) {
-        ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
-                _instance->timers_[_instance->actual_node].tag().c_str());
+        FEAL_DEBUG_ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
+    			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         set_memory_monitoring(false, false);
         _instance->stop_timer(0);
         delete _instance;

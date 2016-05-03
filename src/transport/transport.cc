@@ -51,17 +51,18 @@ FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
 
 namespace IT = Input::Type;
 
+const string _equation_name = "Solute_Advection_FV";
 
 const int ConvectionTransport::registrar =
-		Input::register_class< ConvectionTransport, Mesh &, const Input::Record >("Convection_FV") +
+		Input::register_class< ConvectionTransport, Mesh &, const Input::Record >(_equation_name) +
 		ConvectionTransport::get_input_type().size();
 
 const IT::Record &ConvectionTransport::get_input_type()
 {
-	return IT::Record("Convection_FV", "Explicit in time finite volume method for solute transport.")
+	return IT::Record(_equation_name, "Explicit in time finite volume method for advection only solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
 			.declare_key("input_fields", IT::Array(
-			        EqData().make_field_descriptor_type("Convection_FV")),
+			        EqData().make_field_descriptor_type(_equation_name)),
 			        IT::Default::obligatory(),
 			        "")
 
@@ -69,15 +70,15 @@ const IT::Record &ConvectionTransport::get_input_type()
 			                IT::Array(
 			                        ConvectionTransport::EqData().output_fields
 			                            .make_output_field_selection(
-			                                "ConvectionTransport_output_fields",
-			                                "Selection of output fields for Convection Solute Transport model.")
+			                                    _equation_name + "_output_fields",
+			                                "Selection of output fields for Advective Solute Transport model.")
 			                            .close()),
 			                IT::Default("\"conc\""),
 			                "List of fields to write to output file.")
 			.close();
 }
 
-
+/*
 const IT::Selection & ConvectionTransport::get_output_selection() {
 	return  ConvectionTransport::EqData().output_fields
             .make_output_field_selection(
@@ -86,7 +87,7 @@ const IT::Selection & ConvectionTransport::get_output_selection() {
             .close();
 
 }
-
+*/
 
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
@@ -371,6 +372,8 @@ void ConvectionTransport::set_boundary_conditions()
                         {
                         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
                         	{
+                        	    // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
+                        	    // So we have to add also values that may be non-zero in future due to changing velocity field.
                          		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
                         		balance_->add_flux_vec_value(subst_idx[sbi], loc_b, flux*value[sbi]);
                         	}
@@ -415,7 +418,7 @@ void ConvectionTransport::compute_concentration_sources() {
   //temporary variables
   unsigned int loc_el, sbi;
   double csection, source, diag;
-  double max_cfl;
+
   Element *ele;
   ElementAccessor<3> ele_acc;
   arma::vec3 p;
@@ -443,7 +446,8 @@ void ConvectionTransport::compute_concentration_sources() {
             src_density = data_.sources_density.value(p, ele_acc);
             src_conc = data_.sources_conc.value(p, ele_acc);
             src_sigma = data_.sources_sigma.value(p, ele_acc);
-                
+
+            double max_cfl=0;
             for (sbi = 0; sbi < n_substances(); sbi++)
             {      
                 source = csection * (src_density(sbi) + src_sigma(sbi) * src_conc(sbi));
@@ -466,7 +470,6 @@ void ConvectionTransport::compute_concentration_sources() {
             }
             
             cfl_source_[loc_el] = max_cfl;
-            max_cfl = 0;
         }
         
         if (balance_ != nullptr) balance_->finish_source_assembly(subst_idx);
@@ -479,7 +482,7 @@ void ConvectionTransport::compute_concentration_sources() {
 
 void ConvectionTransport::zero_time_step()
 {
-	ASSERT_EQUAL(time_->tlevel(), 0);
+	OLD_ASSERT_EQUAL(time_->tlevel(), 0);
 
 	data_.mark_input_times(*time_);
 	data_.set_time(time_->step(), LimitSide::right);
@@ -505,7 +508,7 @@ void ConvectionTransport::zero_time_step()
 
 bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
-    ASSERT(mh_dh, "Null MH object.\n" );
+	OLD_ASSERT(mh_dh, "Null MH object.\n" );
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
     
     START_TIMER("data reinit");
@@ -679,8 +682,13 @@ void ConvectionTransport::set_target_time(double target_time)
     // If CFL condition is changed, time fixation will change later from TOS.
     
     // Set the same constraint as was set last time.
-    time_->set_upper_constraint(cfl_max_step, "CFL condition used from previous step.");
     
+    // TODO: fix this hack, remove this method completely, leaving just the first line at the calling point
+    // in TransportOperatorSplitting::update_solution()
+    // doing this directly leads to choose of large time step violationg CFL condition
+    if (cfl_max_step > time_->dt()*1e-10)
+    time_->set_upper_constraint(cfl_max_step, "CFL condition used from previous step.");
+
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes
     time_->fix_dt_until_mark();
@@ -779,7 +787,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
             {
                 el2 = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->side()->element() ); // higher dim. el.
-                ASSERT( el2 != elm, "Elm. same\n");
+                OLD_ASSERT( el2 != elm, "Elm. same\n");
                 new_j = row_4_el[el2.index()];
                 flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
 

@@ -32,6 +32,10 @@ public:
 		delete rows_ds_;
 	}
 
+	void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override {
+	}
+
+
 	void mat_set_values(int nrow, int *rows, int ncol, int *cols,double *vals) {
 		//cout << endl << "Matrix:" << endl;
 		for(int i =0; i<nrow; i++) {
@@ -133,6 +137,8 @@ public:
             */
 	}
 	
+	double compute_residual() {return 0;}
+
 	
 	arma::uvec non_dirichlet_rows_;
 	arma::uvec dirichlet_rows_;
@@ -163,4 +169,4 @@ TEST_F(SetValues, dirichlet) {
         this->add( {1,3,4}, {4,5} );
         this->add( {0,3}, {4,5,} );
     }     
-}
+};

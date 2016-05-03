@@ -65,7 +65,8 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
 /**
  * @brief Base of classes for declaring structure of the input data.
  *
- *  Provides methods common to all types. Namely, the type name, finished status (nontrivial only for types with complex initialization - Record, AbstractRecosd, Selection)
+ *  Provides methods and class members common to all types. Namely, the type name, finished status (nontrivial only
+ *  for types with complex initialization - Record, AbstractRecosd, Selection), attributes, data of generic types
  *  and output of the documentation.
  *
  *  @ingroup input_types
@@ -74,48 +75,55 @@ class TypeBase {
 public:
 	/// Type returned by content_hash methods.
 	typedef std::size_t TypeHash;
+
 	/// String stored in JSON format.
 	typedef std::string json_string;
 	/// Defines map of Input::Type attributes.
 	typedef std::map<std::string, json_string> attribute_map;
+
 	/// Defines pairs of (name, Input::Type), that are used for replace of parameters in generic types.
-	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
+	typedef std::pair< std::string, std::shared_ptr<TypeBase> > ParameterPair;
+	/// Define vector of parameters passed to the overloaded make_instance method.
+	typedef std::vector<ParameterPair> ParameterVector;
+
 	/// Defines map of used parameters
 	typedef std::map< std::string, TypeHash > ParameterMap;
 	/// Return type of make_instance methods, contains instance of generic type and map of used parameters
-	typedef std::pair< boost::shared_ptr<TypeBase>, ParameterMap > MakeInstanceReturnType;
+	typedef std::pair< std::shared_ptr<TypeBase>, ParameterMap > MakeInstanceReturnType;
 
 
     /**
-     * Returns true if the type is fully specified and ready for read access. For Record and Array types
-     * this say nothing about child types referenced in particular type object.
-     * In particular for Record and Selection, it returns true after @p finish() method is called.
+     * @brief Returns true if the type is fully specified and ready for read access.
      *
+     * For Record and Array types this say nothing about child types referenced in particular type object.
+     * In particular for Record and Selection, it returns true after @p finish() method is called.
      */
     virtual bool is_finished() const
     {return true;}
 
     /**
-     * Returns true if the type is closed.
-     *
+     * @brief Returns true if the type is closed.
      */
     virtual bool is_closed() const
     {return true;}
 
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  { return "TypeBase"; }
+    /// Returns an identification of the class. Useful for output of the documentation.
     virtual string class_name() const { return "TypeBase"; }
 
     /**
-     * Returns string with Type extensive documentation. We need this to pass Type description at
-     * throw points since the Type object can be deallocated during stack unrolling so it is not good idea to pass
-     * pointer. Maybe we can pass smart pointers. Actually this method is used in various exceptions in json_to_storage.
+     * @brief Returns string with Type extensive documentation.
      *
-     * Some old note on this topic:
+     * We need this to pass Type description at throw points since the Type object can be deallocated during stack
+     * unrolling so it is not good idea to pass pointer. Maybe we can pass smart pointers. Actually this method is
+     * used in various exceptions in json_to_storage.
+     *
+     * TODO: Some old note on this topic:
      *    !!! how to pass instance of descendant of TypeBase through EI -
      *  - can not pass it directly since TypeBase is not copyconstructable
      *  - can not use shared_ptr for same reason
-     *  - can not use C pointers since the refered object can be temporary
+     *  - can not use C pointers since the referred object can be temporary
      *  solutions:
      *   - consistently move TypeBase to Pimpl design
      *   - provide virtual function make_copy, that returns valid shared_ptr
@@ -126,8 +134,10 @@ public:
 
 
     /**
-     * Comparison of types. It compares kind of type (Integer, Double, String, Record, ..), for complex types
-     * it also compares names. For arrays compare subtypes.
+     * @brief Comparison of types.
+     *
+     * It compares kind of type (Integer, Double, String, Record, ..), for complex types it also compares names.
+     * For arrays compare subtypes.
      */
     virtual bool operator==(const TypeBase &other) const
         { return typeid(*this) == typeid(other); }
@@ -136,26 +146,30 @@ public:
     bool operator!=(const TypeBase & other) const
         { return ! (*this == other); }
 
-    /**
-     *  Destructor
-     */
+    ///  Destructor
     virtual ~TypeBase();
 
 
 
-    /// Finishes all types registered in type repositories.
+    /**
+     * @brief Finishes all types registered in type repositories.
+     *
+     * Finish must be executed in suitable order
+     *  1) finish of Instance types, generic Abstract and generic Record types
+     *  2) finish of non-generic Abstract and non-generic Record types
+     *  3) finish of the other types
+     */
     static void lazy_finish();
 
 
     /**
-     * Finish method. Finalize construction of "Lazy types": Record, Selection, Abstract and Array.
-     * These input types are typically defined by means
-     * of static variables, whose order of initialization is not known a priori. Since e.g. a Record can link to other
-     * input types through its keys, these input types cannot be accessed directly at the initialization phase.
-     * The remaining part of initialization can be done later, typically from main(), by calling the method finish().
+     * @brief Finish method. Finalize construction of "Lazy types": Record, Selection, Abstract and generic type.
      *
-     * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
-     * are still raw pointers to not constructed objects the method returns false.
+     * These input types are typically defined by means of static generating methods, whose allows initialization
+     * any of other input types. Since e.g. a Record can link to other input types through its keys at the
+     * initialization phase. But some setting (e.g. add descendants to Abstract) can't be done in initialization
+     * phase. Therefore, the remaining part of initialization can be done later, in finalization phase, typically
+     * from main(), by calling the method finish().
      *
      * Finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p is_generic
      * to true.
@@ -164,30 +178,32 @@ public:
     { return true; };
 
     /**
-     * Hash of the type specification. Provides unique id computed from its
-     * content (definition) so that same types have same hash.
+     * @brief Hash of the type specification.
+     *
+     * Provides unique id computed from its content (definition) so that same types have same hash.
      *
      * Hash is counted using type, name and other class members specific for descendants.
      */
     virtual TypeHash content_hash() const =0;
 
     /**
-     * Format given hash for output. Use hex format and double quotas.
+     * @brief Format given hash for output.
+     *
+     * Use hex format and double quotas.
      */
     static std::string hash_str(TypeHash hash);
 
-    /**
-     * Format the hash of this type.
-     */
+    /// Format the hash of this type.
     inline std::string hash_str() const {
         return hash_str(content_hash());
     }
 
-    /// Add attribute to map
-    void add_attribute(std::string name, json_string val);
-
-    /// Create instance of generic type, replace parameters in input tree by type stored in @p vec.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
+    /**
+     * Create instance of generic type.
+     *
+     * Replace parameters in input tree by type stored in @p vec.
+     */
+    virtual MakeInstanceReturnType make_instance(ParameterVector vec = ParameterVector()) =0;
 
     /// Indicates if type is marked with flag @p root_of_generic_subtree_
     inline bool is_root_of_generic_subtree() {
@@ -196,21 +212,23 @@ public:
 
 protected:
 
-    /**
-     * Default constructor.
-     */
+    /// The default constructor.
     TypeBase();
 
-    /**
-     * Copy constructor.
-     */
+    /// Copy constructor.
     TypeBase(const TypeBase& other);
 
+    /**
+     * @brief Add attribute of given @p name to attribute map.
+     *
+     * Parameter @p val must contain valid JSON string.
+     */
+    void add_attribute_(std::string name, json_string val);
 
 
 
     /**
-     * Type of hash values used in associative array that translates key names to indices in Record and Selection.
+     * @brief The type of hash values used in associative array that translates key names to indices in Record and Selection.
      *
      * For simplicity, we currently use whole strings as "hash".
      */
@@ -222,22 +240,39 @@ protected:
     }
 
     /**
-     * Check that a @p key is valid identifier, i.e. consists only of valid characters, that are lower-case letters, digits and underscore,
+     * @brief Check that a @p key is valid identifier.
+     *
+     * I.e. consists only of valid characters, that are lower-case letters, digits and underscore,
      * we allow identifiers starting with a digit, but it is discouraged since it slows down parsing of the input file.
      */
     static bool is_valid_identifier(const string& key);
 
-    /// Check if JSON string is valid
+    /// Check if @p str is valid JSON string
     bool validate_json(json_string str) const;
 
-    /// Create JSON output from @p parameter_map formatted as attribute.
+    /// Create JSON output from @p parameter_map formatted as value of attribute.
     json_string print_parameter_map_to_json(ParameterMap parameter_map) const;
 
-    /// Set attribute parameters from value stored in @p parameter_map
-    void set_parameters_attribute(ParameterMap parameter_map);
+    /**
+     * JSON format of the vector of parameter names. Used for generic composed types.
+     * TODO: use ParameterVector instead of ParameterMap and merge this method with the previous one.
+     */
+    json_string print_parameter_map_keys_to_json(ParameterMap param_map) const;
+
+    /**
+     * Extract and set attributes from the ParameterMap containing parameters of the subtree.
+     * Used in implementations of the make_instance method.
+     */
+    void set_generic_attributes(ParameterMap param_map);
+
+    /**
+     * Copy attributes to the instance of the generic type. Remove all internal attributes starting with '_'.
+     */
+    void copy_attributes(attribute_map other_attributes);
+
 
     /// map of type attributes (e. g. input_type, name etc.)
-    boost::shared_ptr<attribute_map> attributes_;
+    std::shared_ptr<attribute_map> attributes_;
 
     /// flag is true if type should be root of generic subtree
     bool root_of_generic_subtree_;
@@ -254,7 +289,7 @@ protected:
 };
 
 /**
- * For convenience we provide also redirection operator for output documentation of Input:Type classes.
+ * @brief For convenience we provide also redirection operator for output documentation of Input:Type classes.
  */
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
@@ -283,36 +318,46 @@ class Array : public TypeBase {
 
 protected:
 
+	/**
+	 * @brief Actual data of the Array.
+	 */
     class ArrayData  {
     public:
 
+    	/// Constructor
     	ArrayData(unsigned int min_size, unsigned int max_size)
     	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
     	{}
-
+    	/// Finishes initialization of the ArrayData.
     	bool finish(bool is_generic = false);
-
-    	boost::shared_ptr<TypeBase> type_of_values_;
-    	unsigned int lower_bound_, upper_bound_;
+    	/// Type of Array
+    	std::shared_ptr<TypeBase> type_of_values_;
+    	/// Minimal size of Array
+    	unsigned int lower_bound_;
+    	/// Maximal size of Array
+    	unsigned int upper_bound_;
+    	/// Flag specified if Array is finished
     	bool finished;
 
     };
 
 public:
     /**
-     * Constructor with a @p type of array items given as pure reference. In this case \p type has to by descendant of \p TypeBase different from
-     * 'complex' types @p Record and @p Selection. You can also specify minimum and maximum size of the array.
+     * @brief Constructor with a @p type of array items given as pure reference.
+     *
+     * In this case \p type has to by descendant of \p TypeBase different from 'complex' types
+     * @p Record and @p Selection. You can also specify minimum and maximum size of the array.
      */
     template <class ValueType>
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /**
-     * Constructor with a shared pointer @p type of array.
+     * @brief Constructor with a shared pointer @p type of array.
      */
-    Array(boost::shared_ptr<TypeBase> type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
+    Array(std::shared_ptr<TypeBase> type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /**
-     * Implements @p TypeBase::content_hash.
+     * @brief Implements @p TypeBase::content_hash.
      *
      * Hash is calculated by type name, bounds, hash of stored type and hash of attributes.
      */
@@ -321,6 +366,7 @@ public:
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
     bool finish(bool is_generic = false) override;
 
+    /// Override @p Type::TypeBase::is_finished.
     bool is_finished() const override {
         return data_->finished; }
 
@@ -332,23 +378,32 @@ public:
     inline bool match_size(unsigned int size) const {
         return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
-    /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Name has form \p array_of_'subtype_name'.
+     */
     string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "Array"; }
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     bool operator==(const TypeBase &other) const override;
 
-    // Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    /// Implements @p TypeBase::make_instance.
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
-    /// Create deep copy of Array (copy all data stored in shared pointers etc.)
+    /**
+     * @brief Create deep copy of Array.
+     *
+     * Copy all data stored in shared pointers etc.
+     */
     Array deep_copy() const;
 
 protected:
 
     /// Handle to the actual array data.
-    boost::shared_ptr<ArrayData> data_;
+    std::shared_ptr<ArrayData> data_;
 private:
     /// Forbids default constructor in order to prevent empty data_.
     Array();
@@ -373,6 +428,7 @@ class Scalar : public TypeBase {};
  */
 class Bool : public Scalar {
 public:
+	/// Constructor.
     Bool()
 	{}
 
@@ -380,11 +436,17 @@ public:
     TypeHash content_hash() const   override;
 
 
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Name has form \p Bool.
+     */
     string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "Bool"; }
 
-
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    /// Implements @p TypeBase::make_instance.
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 };
 
 
@@ -399,29 +461,44 @@ class Integer : public Scalar {
 	friend class OutputBase;
 
 public:
+	/**
+	 * @brief Constructor.
+	 *
+	 * You can also specify minimum and maximum value.
+	 */
     Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
 	: lower_bound_(lower_bound), upper_bound_(upper_bound)
 	{}
 
     /**
-     * Implements @p TypeBase::content_hash.
+     * @brief Implements @p TypeBase::content_hash.
      *
-     * Hash is calculated by tape name and bounds.
+     * Hash is calculated by type name and bounds.
      */
     TypeHash content_hash() const   override;
 
     /**
+     * @brief Check valid value of Integer.
+     *
      * Returns true if the given integer value conforms to the Type::Integer bounds.
      */
     bool match(std::int64_t value) const;
 
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Name has form \p Integer.
+     */
     string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "Integer"; }
 
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    /// Implements @p TypeBase::make_instance.
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>())  override;
 private:
 
-    std::int64_t lower_bound_, upper_bound_;
+    std::int64_t lower_bound_; ///< Minimal value of Integer.
+    std::int64_t upper_bound_; ///< Maximal value of Integer.
 
 };
 
@@ -437,54 +514,71 @@ class Double : public Scalar {
 	friend class OutputBase;
 
 public:
+	/**
+	 * @brief Constructor.
+	 *
+	 * You can also specify minimum and maximum value.
+	 */
     Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
 	: lower_bound_(lower_bound), upper_bound_(upper_bound)
 	{}
 
     /**
-     * Implements @p TypeBase::content_hash.
+     * @brief Implements @p TypeBase::content_hash.
      *
      * Hash is calculated by type name and bounds.
      */
     TypeHash content_hash() const   override;
 
-    /**
-     * Returns true if the given integer value conforms to the Type::Double bounds.
-     */
+    /// Returns true if the given integer value conforms to the Type::Double bounds.
     bool match(double value) const;
 
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Name has form \p Double.
+     */
     string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "Double"; }
 
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    /// Implements @p TypeBase::make_instance.
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 private:
 
-
-    double lower_bound_, upper_bound_;
+    double lower_bound_; ///< Minimal value of Integer.
+    double upper_bound_; ///< Maximal value of Integer.
 
 };
 
 
 
 /**
+ * @brief Class for declaration of the input data that are in string format.
+ *
  * Just for consistency, but is essentially same as Scalar.
  *
  * @ingroup input_types
  */
 class String : public Scalar {
 public:
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Name has form \p String.
+     */
     virtual string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "String"; }
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const   override;
 
-    /**
-     * Particular descendants can check validity of the string.
-     */
+    /// Particular descendants can check validity of the string.
     virtual bool match(const string &value) const;
 
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    /// Implements @p TypeBase::make_instance.
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 };
 
 
@@ -502,20 +596,27 @@ public:
 	TypeHash content_hash() const   override;
 
     /**
-     * Factory function for declaring type FileName for input files.
+     * @brief The factory function for declaring type FileName for input files.
      */
     static FileName input()
     { return FileName(::FilePath::input_file); }
 
     /**
-     * Factory function for declaring type FileName for input files.
+     * @brief The factory function for declaring type FileName for input files.
      */
     static FileName output()
     { return FileName(::FilePath::output_file); }
 
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Name has form \p FileName_input or \p FileName_output
+     */
     string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "FileName"; }
 
+    /// Comparison of types.
     bool operator==(const TypeBase &other) const
     { return  typeid(*this) == typeid(other) &&
                      (type_== static_cast<const FileName *>(&other)->get_file_type() );
@@ -526,18 +627,19 @@ public:
 
 
     /**
-     * Returns type of the file input/output.
+     * @brief Returns type of the file input/output.
      */
     ::FilePath::FileType get_file_type() const {
         return type_;
     }
 
-
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    /// Implements @p TypeBase::make_instance.
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
 
 
 private:
+    /// The type of file (input or output).
     ::FilePath::FileType    type_;
 
     /// Forbids default constructor.

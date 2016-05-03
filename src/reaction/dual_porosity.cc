@@ -155,10 +155,10 @@ void DualPorosity::make_reactions() {
 
 void DualPorosity::initialize()
 {
-  ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  ASSERT(output_stream_,"Null output stream.");
-  ASSERT_LESS(0, substances_.size());
+  OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+  OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  OLD_ASSERT(output_stream_,"Null output stream.");
+  OLD_ASSERT_LESS(0, substances_.size());
   
   //allocating memory for immobile concentration matrix
   conc_immobile = (double**) xmalloc(substances_.size() * sizeof(double*));
@@ -221,10 +221,10 @@ void DualPorosity::initialize_fields()
 
 void DualPorosity::zero_time_step()
 {
-  ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  ASSERT(output_stream_,"Null output stream.");
-  ASSERT_LESS(0, substances_.size());
+  OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+  OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  OLD_ASSERT(output_stream_,"Null output stream.");
+  OLD_ASSERT_LESS(0, substances_.size());
  
   //coupling - passing fields
   if(reaction_mobile)

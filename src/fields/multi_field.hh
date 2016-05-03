@@ -91,6 +91,12 @@ public:
     MultiField(const MultiField &other);
 
     /**
+     * Assignment operator. Same properties as copy constructor, but class member name_ is not copied.
+     */
+    MultiField &operator=(const MultiField &other);
+
+
+    /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
@@ -155,7 +161,7 @@ public:
      */
     inline SubFieldType &operator[](unsigned int idx)
     {
-    	ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
+    	OLD_ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
     	return sub_fields_[idx];
     }
     
@@ -164,7 +170,7 @@ public:
      */
     inline const SubFieldType &operator[](unsigned int idx) const
     {
-        ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
+    	OLD_ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
         return sub_fields_[idx];
     }
     

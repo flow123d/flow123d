@@ -54,19 +54,19 @@ public:
             << "Error in input file: " << EI_JsonFile::qval << "\nReference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
             << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
 
-    /**
-     * Must have virtual destructor to call the right one form child.
-     */
+    /// Must have virtual destructor to call the right one form child.
     virtual ~PathBase() {};
 
 
     /**
-     * Returns level of actual path. Root has level == 0.
+     * @brief Returns level of actual path.
+     *
+     * Root has level == 0.
      */
 	virtual int level() const =0;
 
     /**
-     * Check if current head node is containing one key REF of type string.
+     * @brief Check if current head node is containing one key REF of type string.
      *
      * If yes, creates a new path object given by address string possibly relative to the current
      * path. In other else return NULL.
@@ -76,14 +76,10 @@ public:
      */
 	virtual PathBase * find_ref_node() =0;
 
-	/**
-	 * Create copy of derived class.
-	 */
+	/// Create copy of derived class.
 	virtual PathBase * clone() const =0;
 
-    /**
-     * Output to the given stream.
-     */
+    /// Output to the given stream.
     void output(std::ostream &stream) const;
 
     /// Check if type of head node is null
@@ -120,28 +116,31 @@ public:
     virtual bool is_array_type() const =0;
 
     /**
-     * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
+     * @brief Dive one level down into path hierarchy.
+     *
+     * Store current path and returns true if pointer to new node is not NULL.
      */
     virtual bool down(unsigned int index) =0;
+
+    /**
+     * @brief Dive one level down into path hierarchy.
+     *
+     * Store current path and returns true if pointer to new node is not NULL.
+     */
     virtual bool down(const std::string& key) =0;
 
-    /**
-     * Return one level up in the hierarchy.
-     */
+    /// Return one level up in the hierarchy.
     virtual void up() =0;
 
-    /**
-     * Move to root node.
-     */
+    /// Move to root node.
     void go_to_root();
 
-    /**
-     * Returns string address of current position.
-     */
+    /// Returns string address of current position.
     std::string as_string() const;
 
     /**
-     * Gets name of descendant of Abstract:
+     * @brief Gets name of descendant of Abstract.
+     *
      * - for JSON returns value of TYPE key
      * - for YAML returns value of tag
      *
@@ -150,17 +149,21 @@ public:
     virtual std::string get_descendant_name() const =0;
 
 protected:
+    /// Forbid default constructor.
     PathBase();
 
     /**
-     * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
+     * @brief One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
+     *
      * For the first type we save index into first part of the pair and empty string to the second.
      * For the later type of level, we save -1 for index and the key into the secodn part of the pair.
      */
     std::vector< std::pair<int, std::string> > path_;
 
     /**
-     * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
+     * @brief Names of all possible node types in parsed input tree.
+     *
+     * Names are provided by JSON Spirit or YAML-cpp library.
      * Initialized in constructor.
      *
      */

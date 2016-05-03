@@ -278,8 +278,10 @@ void Mesh::setup_topology() {
     // create parallel distribution and numbering of elements
     int *id_4_old = new int[element.size()];
     int i = 0;
-    FOR_ELEMENTS(this, ele) id_4_old[i++] = ele.index();
+    FOR_ELEMENTS(this, ele)
+        id_4_old[i++] = ele.index();
     part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
+
     delete[] id_4_old;
 }
 
@@ -428,7 +430,7 @@ void Mesh::make_neighbours_and_edges()
                     SideIter si = elem->side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (elem->edge_idx_[ecs] != Mesh::undef_idx) {
-                            ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
+                        	OLD_ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=bc_ele.index();
                             THROW( ExcDuplicateBoundary()
@@ -541,7 +543,7 @@ void Mesh::make_neighbours_and_edges()
                     }
                 } // search for side of other connected element
             } // connected elements
-            ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
+            OLD_ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
 		} // for element sides
 	}   // for elements
 

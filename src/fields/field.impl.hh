@@ -92,29 +92,32 @@ Field<spacedim,Value>::Field(const Field &other)
 template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
-	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
-	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
-	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
+	OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
+	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between fields with different meshes.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
 
+	// class members derived from FieldCommon
 	shared_ = other.shared_;
     shared_->is_fully_initialized_ = false;
-	set_time_result_ = TimeStatus::unknown;
+	set_time_result_ = other.set_time_result_;
+	last_time_ = other.last_time_;
+	last_limit_side_ = other.last_limit_side_;
+	is_jump_time_ = other.is_jump_time_;
+	component_index_ = other.component_index_;
+	this->multifield_ = false;
 
-	factories_ = other.factories_;
+	// class members of Field class
 	data_ = other.data_;
+	factories_ = other.factories_;
+	region_fields_ = other.region_fields_;
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
 	}
-
-	// initialize region_fields_ vector
-	// shared_is already same as other.shared_
-	this->set_mesh( *(shared_->mesh_) );
-
 
 	return *this;
 }
@@ -130,7 +133,7 @@ it::Instance Field<spacedim,Value>::get_input_type() {
 
 template<int spacedim, class Value>
 it::Array Field<spacedim,Value>::get_multifield_input_type() {
-	ASSERT(false, "This method can't be used for Field");
+	OLD_ASSERT(false, "This method can't be used for Field");
 
 	it::Array arr = it::Array( it::Integer() );
 	return arr;
@@ -172,7 +175,7 @@ template<int spacedim, class Value>
 boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
-    ASSERT_LESS(reg.idx(), this->region_fields_.size());
+    OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
     return this->region_fields_[reg.idx()];
 }
 */
@@ -180,8 +183,8 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
-    ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
-	ASSERT_LESS(reg.idx(), this->region_fields_.size());
+	OLD_ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
+	OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
     return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
 }
@@ -193,19 +196,19 @@ void Field<spacedim, Value>::set_field(
 		FieldBasePtr field,
 		double time)
 {
-	ASSERT(field, "Null field pointer.\n");
+	OLD_ASSERT(field, "Null field pointer.\n");
 
-    ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before set_field().\n");
+	OLD_ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
-    ASSERT_EQUAL( field->n_comp() , n_comp());
+    OLD_ASSERT_EQUAL( field->n_comp() , n_comp());
     field->set_mesh( mesh() , is_bc() );
 
     HistoryPoint hp = HistoryPoint(time, field);
     for(const Region &reg: domain) {
     	RegionHistory &region_history = data_->region_history_[reg.idx()];
     	// insert hp into descending time sequence
-    	ASSERT( region_history.size() == 0 || region_history[0].first < hp.first, "Can not insert smaller time %g then last time %g in field's history.\n",
+    	OLD_ASSERT( region_history.size() == 0 || region_history[0].first < hp.first, "Can not insert smaller time %g then last time %g in field's history.\n",
     			hp.first, region_history[0].first );
     	region_history.push_front(hp);
     }
@@ -229,11 +232,18 @@ void Field<spacedim, Value>::set_field(
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit_side)
 {
-	ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
+	OLD_ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
 
-    // We perform set_time only once for every time.
-    if (time_step.end() == last_time_ &&
-        limit_side == last_limit_side_ )  return changed();
+    // Skip setting time if the new time is equal to current time of the field
+	// and if either the field is continuous in that time or the current limit side is same as the new one.
+    if (time_step.end() == last_time_) {
+        if ( ! is_jump_time() ||
+             limit_side == last_limit_side_) {
+            last_limit_side_ = limit_side;
+            return changed();
+        }
+    }
+
     last_time_=time_step.end();
     last_limit_side_ = limit_side;
 
@@ -248,6 +258,8 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     update_history(time_step);
     check_initialized_region_fields_();
 
+    //
+    is_jump_time_=false;
     // set time_step on all regions
     // for regions that match type of the field domain
     for(const Region &reg: mesh()->region_db().get_region_set("ALL") ) {
@@ -259,11 +271,12 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
         	double last_time_in_history = rh.front().first;
         	unsigned int history_size=rh.size();
         	unsigned int i_history;
+        	OLD_ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+
         	// set history index
         	if ( time_step.gt(last_time_in_history) ) {
         		// in smooth time_step
         		i_history=0;
-        		is_jump_time_=false;
         	} else {
         		// time_step .eq. input_time; i.e. jump time
         	    is_jump_time_=true;
@@ -274,7 +287,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
         		}
         	}
         	i_history=min(i_history, history_size - 1);
-        	ASSERT(i_history >= 0, "Empty field history.");
+        	OLD_ASSERT(i_history >= 0, "Empty field history.");
         	// possibly update field pointer
         	auto new_ptr = rh.at(i_history).second;
         	if (new_ptr != region_fields_[reg.idx()]) {
@@ -293,7 +306,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
-	ASSERT( flags().match(FieldFlag::input_copy), "Try to call copy from the field '%s' to the non-copy field '%s'.",
+	OLD_ASSERT( flags().match(FieldFlag::input_copy), "Try to call copy from the field '%s' to the non-copy field '%s'.",
 	        other.name().c_str(), this->name().c_str());
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);
@@ -339,7 +352,7 @@ FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::update_history(const TimeStep &time) {
-    ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before.\n");
+	OLD_ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before.\n");
 
     // read input up to given time
 	double input_time;
@@ -379,7 +392,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
-					ASSERT_EQUAL( field_instance->n_comp() , n_comp());
+					OLD_ASSERT_EQUAL( field_instance->n_comp() , n_comp());
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
 						data_->region_history_[reg.idx()].push_front(
@@ -397,7 +410,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::check_initialized_region_fields_() {
-	ASSERT(mesh(), "Null mesh pointer.");
+	OLD_ASSERT(mesh(), "Null mesh pointer.");
     if (shared_->is_fully_initialized_) return;
 
     // check there are no empty field pointers, collect regions to be initialized from default value

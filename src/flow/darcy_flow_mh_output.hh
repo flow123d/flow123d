@@ -33,7 +33,7 @@
 #include "fields/vec_seq_double.hh"
 
 
-class DarcyFlowMH_Steady;
+class DarcyMH;
 class OutputTime;
 class DOFHandlerMultiDim;
 
@@ -80,7 +80,7 @@ public:
 	    static const Input::Type::Selection & get_output_selection();
 	};
 
-    DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_rec) ;
+    DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
     static const Input::Type::Record & get_input_type();
@@ -143,7 +143,7 @@ private:
     void water_balance();
     double calc_water_balance();
 
-    DarcyFlowMH_Steady *darcy_flow;
+    DarcyMH *darcy_flow;
     Mesh *mesh_;
 
     /// Accessor to the input record for the DarcyFlow output.

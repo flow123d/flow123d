@@ -66,7 +66,7 @@ public:
 
 		ModelEqData();
 
-		static constexpr const char * name() { return "ConvectionDiffusion"; }
+		static constexpr const char * name() { return "Solute_AdvectionDiffusion"; }
 
 		static string default_output_field() { return "\"conc\""; }
 

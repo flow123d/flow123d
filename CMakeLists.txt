@@ -989,7 +989,7 @@ endif()
 if (CYGWIN)
     install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin.exe"
             DESTINATION bin/)
-    install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d.bat"
+    install(PROGRAMS    build_tree/bin/flow123d_wrapper.bat RENAME "flow123d.bat"
             DESTINATION bin/)
 else()
     install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin"
