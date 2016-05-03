@@ -627,6 +627,19 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& com
 
 
 template<>
+void InspectElementsAlgorithm<2>::assert_same_intersection(unsigned int comp_ele_idx, unsigned int bulk_ele_idx)
+{
+    for(unsigned int i=0; i < intersection_list_[comp_ele_idx].size(); i++)
+    {
+        if(intersection_list_[comp_ele_idx][i].bulk_ele_idx() == bulk_ele_idx)
+        {
+            DBGMSG("intersection comp-bulk: %d %d\n", comp_ele_idx, bulk_ele_idx);
+            ASSERT(0, "Want to add the same intersection!");
+        }
+    }
+}
+
+template<>
 void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& comp_ele,
                                                       const ElementFullIter& bulk_ele,
                                                       const IntersectionAux<2,3> &is,
@@ -671,6 +684,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                             }
                             
                             DBGMSG("2d prolong\n");
+                            assert_same_intersection(sousedni_element, bulk_ele->index());
                             // Vytvoření průniku bez potřeby počítání
                             IntersectionAux<2,3> il_other(sousedni_element, bulk_ele->index(), component_idx);
                             intersection_list_[sousedni_element].push_back(il_other);
@@ -707,10 +721,11 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                     if(last_slave_for_3D_elements[sousedni_element] == undefined_elm_idx_ || 
                         (last_slave_for_3D_elements[sousedni_element] != comp_ele->index() && !intersection_exists(comp_ele->index(),sousedni_element))){
                         
-//                         last_slave_for_3D_elements[sousedni_element] = comp_ele->index();
+                        last_slave_for_3D_elements[sousedni_element] = comp_ele->index();
 
                         DBGMSG("3d prolong\n");
-                        
+                        DBGMSG("last_slave_for_3D_elements: %d, exists: %d\n", last_slave_for_3D_elements[sousedni_element], intersection_exists(comp_ele->index(),sousedni_element));
+                        assert_same_intersection(comp_ele->index(), sousedni_element);
                         // Vytvoření průniku bez potřeby počítání
                         IntersectionAux<2,3> il_other(comp_ele->index(), sousedni_element, is.component_idx());
                         intersection_list_[comp_ele->index()].push_back(il_other);
