@@ -1050,6 +1050,11 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                 // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
                 IP23.set_topology_A(RefElement<2>::interact<0,1>(triangle_line)[IP.idx_A()], 0);
+            
+                if( IP.dim_B() < 3 )
+                    // if IP is on the surface of the tetrahedron,
+                    // we cannot trace it optimally
+                    intersection.pathologic_ = true;
             }
             
             if (IP.is_pathologic()) {intersection.pathologic_ = true; /*DBGMSG("pathologic 13\n");*/}
