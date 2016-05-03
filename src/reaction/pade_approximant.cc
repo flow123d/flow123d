@@ -37,7 +37,9 @@ const Record & PadeApproximant::get_input_type() {
                   "Note that stable method is guaranteed only if d-n=1 or d-n=2, "
                   "where d=degree of denominator and n=degree of nominator. "
                   "In those cases the Pade approximant corresponds to an implicit "
-                  "Runge-Kutta method which is both A- and L-stable.")
+                  "Runge-Kutta method which is both A- and L-stable. "
+                  "The default values n=2, d=3 yield relatively good precision "
+                  "while keeping the order moderately low.")
 //     	.derive_from(LinearODESolverBase::get_input_type())
 		.declare_key("pade_nominator_degree", Integer(1), Default("1"),
                 "Polynomial degree of the nominator of Pade approximant.")
