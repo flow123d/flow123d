@@ -1,0 +1,57 @@
+flow123d_version: 1.8.9
+problem: !SequentialCoupling
+  description: Test12 - demonstration of unstability of reaction solver without CFL condition
+    (exact solution (50+5*exp(-55*t))/55)
+  mesh:
+    mesh_file: ./input/sit_decay.msh
+  primary_equation: !SteadyDarcy_MH
+    input_fields:
+      - rid: 1
+        anisotropy: 1
+      - region: BOUNDARY
+        bc_type: dirichlet
+        bc_piezo_head: 0
+    output:
+      output_stream: 
+        file: ./decay.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-07
+  secondary_equation: !Transport_OS
+    transport: !Convection_FV
+      input_fields:
+        - rid: 1
+          init_conc:
+            - 1
+            - 0
+        - region: BOUNDARY
+          bc_conc:
+            - 1
+            - 0
+    output_stream: 
+      file: ./transport_decay.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 2e-0
+    substances:
+      - A
+      - B
+    time:
+      end_time: 10.0
+    reaction_term: !RadioactiveDecay
+      decays:
+        - radionuclide: A
+          half_life: 1.38e-1 # ~ ln(2)/5 -> k=5
+          products: B
+        - radionuclide: B
+          half_life: 1.38e-2 # ~ ln(2)/50 -> k=50
+          products: A
+    balance:
+      cumulative: true
