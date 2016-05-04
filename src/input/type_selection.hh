@@ -267,7 +267,7 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    ASSERT_DBG(data_->keys_.size() == data_->key_to_index_.size())(data_->keys_.size())(data_->key_to_index_.size()).error();
+    ASSERT_EQ(data_->keys_.size(), data_->key_to_index_.size()).error();
     return data_->keys_.size();
 }
 

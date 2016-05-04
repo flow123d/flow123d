@@ -126,7 +126,7 @@ int Abstract::add_child(const Record &subrec)
 bool Abstract::finish(bool is_generic) {
 	if (child_data_->finished_) return true;
 
-	ASSERT(child_data_->closed_).error();
+	ASSERT(child_data_->closed_)(this->type_name()).error();
 
 	child_data_->selection_of_childs->close();
 

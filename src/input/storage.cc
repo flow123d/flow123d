@@ -99,14 +99,14 @@ StorageArray::StorageArray(unsigned int size)
 }
 
  void StorageArray::new_item(unsigned int index, StorageBase* item) {
-	 ASSERT_DBG(index < array_.size())(index)(array_.size()).error("Index is out of array.");
-	 ASSERT_DBG( array_[index] == NULL )(index).error("Can not replace non NULL pointer.");
+	 ASSERT_LT(index, array_.size()).error("Index is out of array.");
+	 ASSERT( array_[index] == NULL )(index).error("Can not replace non NULL pointer.");
      array_[index] = item;
  }
 
 
  void StorageArray::set_item(unsigned int index, StorageBase* item) {
-	ASSERT_DBG(index < array_.size())(index)(array_.size()).error("Index is out of array.");
+	ASSERT_LT(index, array_.size()).error("Index is out of array.");
 	ASSERT( array_[index] == NULL || typeid(*array_[index]) == typeid(StorageNull) )(index)
 			.error("Can not replace non NULL pointer.");
 
@@ -117,8 +117,8 @@ StorageArray::StorageArray(unsigned int size)
 
 
 StorageBase * StorageArray::get_item(const unsigned int index) const {
-	ASSERT_DBG( index < array_.size() )(index)(array_.size()).error("Index is out of array.");
-    ASSERT_DBG(array_[index] != NULL)(index).error();
+	ASSERT_LT(index, array_.size()).error("Index is out of array.");
+    ASSERT_PTR(array_[index])(index).error();
     return array_[index];
 }
 

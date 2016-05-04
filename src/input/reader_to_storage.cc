@@ -88,7 +88,7 @@ ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_
 
 void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
-	ASSERT_DBG(storage_==nullptr).error();
+	ASSERT(storage_==nullptr).error();
 
     PathBase * root_path;
 	if (format == FileFormat::format_JSON) {
@@ -112,7 +112,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 		throw;
 	}
 
-	ASSERT_DBG(storage_ != nullptr).error();
+	ASSERT_PTR(storage_).error();
 }
 
 
@@ -127,7 +127,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *type)
 {
-	ASSERT_DBG(type != NULL).error("Can not dispatch, NULL pointer to TypeBase.");
+	ASSERT_PTR(type).error("Can not dispatch, NULL pointer to TypeBase.");
 
     // find reference node, if doesn't exist return NULL
     PathBase * ref_path = p.find_ref_node();
@@ -471,7 +471,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
         	}
         }
 
-		ASSERT( arr_size <= (int)tuple->size() )(arr_size)(tuple->size())(tuple->type_name()).warning("Unprocessed keys in tuple");
+		if ( arr_size > (int)tuple->size() ) {
+            xprintf(Warn, "Unprocessed keys in tuple '%s', tuple has %d keys but the input is specified by %d values.\n",
+                    p.as_string().c_str(), tuple->size(), arr_size );
+		}
 
         return storage_array;
 
@@ -688,7 +691,7 @@ StorageBase * ReaderToStorage::make_autoconversion_array_storage(PathBase &p, co
 template <class T>
 T ReaderToStorage::get_root_interface() const
 {
-	ASSERT_DBG(storage_!=nullptr).error();
+	ASSERT_PTR(storage_).error();
 
     Address addr(storage_, root_type_);
     // try to create an iterator just to check type

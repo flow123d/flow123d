@@ -577,7 +577,7 @@ inline bool Record::has_key(const string& key) const
 
 inline unsigned int Record::size() const {
 	ASSERT(is_closed())(this->type_name()).error();
-	ASSERT_DBG(data_->keys.size() == data_->key_to_index.size())(data_->keys.size())(data_->key_to_index.size()).error();
+	ASSERT_EQ(data_->keys.size(), data_->key_to_index.size()).error();
     return data_->keys.size();
 }
 
