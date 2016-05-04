@@ -128,7 +128,7 @@ TypeBase::TypeHash Record::content_hash() const
 
 
 Record &Record::allow_auto_conversion(const string &from_key) {
-	FEAL_DEBUG_ASSERT(data_->auto_conversion_key_idx == -1)(from_key).error("auto conversion key is already set");
+	ASSERT(data_->auto_conversion_key_idx == -1)(from_key).error("auto conversion key is already set");
     data_->auto_conversion_key_idx = 0;
     data_->auto_conversion_key=from_key;
 
@@ -139,7 +139,7 @@ Record &Record::allow_auto_conversion(const string &from_key) {
 
 void Record::make_copy_keys(Record &origin) {
 
-	FEAL_DEBUG_ASSERT( origin.is_closed() ).error();
+	ASSERT( origin.is_closed() ).error();
 
 	std::vector<Key>::iterator it = data_->keys.begin();
 	if (data_->keys.size() && it->key_ == "TYPE") it++; // skip TYPE key if exists
@@ -191,8 +191,8 @@ void Record::make_copy_keys(Record &origin) {
 
 
 Record &Record::derive_from(Abstract &parent) {
-	FEAL_DEBUG_ASSERT( parent.is_closed() )(parent.type_name()).error();
-	FEAL_DEBUG_ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE") )(this->type_name())
+	ASSERT( parent.is_closed() )(parent.type_name()).error();
+	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE") )(this->type_name())
 			.error("Derived record can have defined only TYPE key!");
 
 	// add Abstract to vector of parents
@@ -209,7 +209,7 @@ Record &Record::derive_from(Abstract &parent) {
 
 
 Record &Record::copy_keys(const Record &other) {
-	FEAL_DEBUG_ASSERT( other.is_closed() )(other.type_name()).error();
+	ASSERT( other.is_closed() )(other.type_name()).error();
 
    	Record tmp(other);
    	make_copy_keys(tmp);
@@ -235,7 +235,7 @@ bool Record::finish(bool is_generic)
 
 	if (data_->finished) return true;
 
-	FEAL_DEBUG_ASSERT(data_->closed_)(this->type_name()).error();
+	ASSERT(data_->closed_)(this->type_name()).error();
 
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
@@ -257,7 +257,7 @@ bool Record::finish(bool is_generic)
         // check that all other obligatory keys have default values
         for(KeyIter it=data_->keys.begin(); it != data_->keys.end(); ++it) {
         	const string &other_key = it->key_;
-        	FEAL_ASSERT(!it->default_.is_obligatory() || (int)(it->key_index) == data_->auto_conversion_key_idx)
+        	ASSERT(!it->default_.is_obligatory() || (int)(it->key_index) == data_->auto_conversion_key_idx)
         			   (data_->auto_conversion_key_iter()->key_)(other_key)
 					   .error("Finishing auto convertible Record from given key, but other obligatory key has no default value.");
         }
@@ -300,14 +300,14 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 
 
 Record &Record::declare_type_key() {
-	FEAL_DEBUG_ASSERT(data_->keys.size() == 0).error("Declaration of TYPE key must be carried as the first.");
+	ASSERT(data_->keys.size() == 0).error("Declaration of TYPE key must be carried as the first.");
 	data_->declare_key("TYPE", std::make_shared<String>(), Default::obligatory(),
 			"Sub-record selection.", TypeBase::attribute_map());
 	return *this;
 }
 
 Record &Record::has_obligatory_type_key() {
-	FEAL_DEBUG_ASSERT(! data_->parent_vec_.size()).error("Record with obligatory TYPE key can't be derived");
+	ASSERT(! data_->parent_vec_.size()).error("Record with obligatory TYPE key can't be derived");
 	declare_type_key();
 	return *this;
 }
@@ -358,7 +358,7 @@ Record Record::deep_copy() const {
 
 
 const Record &Record::add_parent(Abstract &parent) const {
-	FEAL_DEBUG_ASSERT( parent.is_closed() )(parent.type_name()).error();
+	ASSERT( parent.is_closed() )(parent.type_name()).error();
 
 	// check if parent exists in parent_vec_ vector
 	TypeHash hash = parent.content_hash();
@@ -371,7 +371,7 @@ const Record &Record::add_parent(Abstract &parent) const {
 	data_->parent_vec_.push_back( std::make_shared<Abstract>(parent) );
 
 	// finish inheritance
-	FEAL_DEBUG_ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name())
+	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name())
 			.error("Derived record must have defined TYPE key!");
 	data_->keys[0].default_ = Default( "\""+type_name()+"\"" );
 
@@ -415,7 +415,7 @@ void Record::RecordData::declare_key(const string &key,
                          const string &description,
                          TypeBase::attribute_map key_attributes)
 {
-	FEAL_DEBUG_ASSERT(!closed_)(key)(this->type_name_).error();
+	ASSERT(!closed_)(key)(this->type_name_).error();
     // validity test of default value
     try {
     	default_value.check_validity(type);
@@ -424,8 +424,8 @@ void Record::RecordData::declare_key(const string &key,
         throw;
     }
 
-    FEAL_ASSERT( !finished )(key)(type_name_).error("Declaration of key in finished Record");
-    FEAL_ASSERT( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
+    ASSERT( !finished )(key)(type_name_).error("Declaration of key in finished Record");
+    ASSERT( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
 
     KeyHash key_h = key_hash(key);
     key_to_index_const_iter it = key_to_index.find(key_h);
@@ -434,7 +434,7 @@ void Record::RecordData::declare_key(const string &key,
        Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false, key_attributes };
        keys.push_back(tmp_key);
     } else {
-    	FEAL_ASSERT( keys[it->second].derived )(key)(type_name_).error("Re-declaration of the key in Record");
+    	ASSERT( keys[it->second].derived )(key)(type_name_).error("Re-declaration of the key in Record");
         Key tmp_key = { it->second, key, description, type, default_value, false};
         keys[ it->second ] = tmp_key;
     }

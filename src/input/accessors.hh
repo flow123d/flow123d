@@ -208,7 +208,7 @@ public:
      * Getter. Returns actual storage node.
      */
     inline const StorageBase * storage_head() const {
-    	FEAL_DEBUG_ASSERT(data_->actual_storage_!=nullptr).error();
+    	ASSERT_DBG(data_->actual_storage_!=nullptr).error();
 
     	return data_->actual_storage_;
     }

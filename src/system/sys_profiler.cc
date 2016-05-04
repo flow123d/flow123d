@@ -263,7 +263,7 @@ void Timer::add_child(int child_index, const Timer &child)
         do {
             i=( i < max_n_childs ? i+1 : 0);
         } while (i!=idx && child_timers[i] != timer_no_child);
-        FEAL_DEBUG_ASSERT(i!=idx)(tag()).error("Too many children of the timer");
+        ASSERT(i!=idx)(tag()).error("Too many children of the timer");
         idx=i;
     }
     //DBGMSG("Adding child %d at index: %d\n", child_index, idx);
@@ -377,7 +377,7 @@ int Profiler::find_child(const CodePoint &cp) {
         if (timer.child_timers[idx] == timer_no_child) break; // tag is not there
 
         child_idx=timer.child_timers[idx];
-        FEAL_DEBUG_ASSERT(child_idx < timers_.size())(child_idx)(timers_.size()).error();
+        ASSERT(child_idx < timers_.size())(child_idx)(timers_.size()).error();
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
         idx = ( (unsigned int)(idx)==(Timer::max_n_childs - 1) ? 0 : idx+1 );
     } while ( (unsigned int)(idx) != cp.hash_idx_ ); // passed through whole array
@@ -392,7 +392,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] != timer_no_child)
-        	FEAL_DEBUG_ASSERT(! timers_[timer.child_timers[i]].running())(timers_[timer.child_timers[i]].tag())(timer.tag())
+        	ASSERT(! timers_[timer.child_timers[i]].running())(timers_[timer.child_timers[i]].tag())(timer.tag())
 				.error("Child timer running while closing timer.");
 #endif
     unsigned int child_timer = actual_node;
@@ -440,7 +440,7 @@ void Profiler::stop_timer(int timer_index) {
     // timer which is still running MUST be the same as actual_node index
     // if timer is not running index will differ
     if (timers_[timer_index].running()) {
-    	FEAL_DEBUG_ASSERT(timer_index == actual_node)(timer_index)(actual_node).error();
+    	ASSERT(timer_index == actual_node)(timer_index)(actual_node).error();
         stop_timer(*timers_[timer_index].code_point_);
     }
     
@@ -516,8 +516,8 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 
     // get timer and check preconditions
     Timer &timer = timers_[timer_idx];
-    FEAL_DEBUG_ASSERT(timer_idx >=0)(timer_idx).error("Wrong timer index.");
-    FEAL_DEBUG_ASSERT(timer.parent_timer >=0).error("Inconsistent tree.");
+    ASSERT(timer_idx >=0)(timer_idx).error("Wrong timer index.");
+    ASSERT(timer.parent_timer >=0).error("Inconsistent tree.");
 
     // fix path
     string filepath = timer.code_point_->file_;
@@ -557,7 +557,7 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     for (int j = 0; j < Timer::max_n_childs; j++) {
         if (child_timers[j] != timer.child_timers[j]) {
             // this is severe error, timers indicies are different
-            FEAL_DEBUG_ASSERT(child_timers[j] == timer_no_child).error("Severe error: timers indicies are different.");
+            ASSERT(child_timers[j] == timer_no_child).error("Severe error: timers indicies are different.");
             
             // explore the difference in more depth
             if (timer.child_timers[j] == timer_no_child) {
@@ -633,8 +633,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     bool temp_memory_monitoring = global_monitor_memory;
     set_memory_monitoring(false, petsc_monitor_memory);
 
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    FEAL_DEBUG_ASSERT(ierr == 0).error("Error in MPI test of rank.");
+    chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
     MPI_Comm_size(comm, &mpi_size);
 
     // output header
@@ -697,9 +696,8 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
 
 void Profiler::output(MPI_Comm comm) {
-    int mpi_rank, ierr;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    FEAL_DEBUG_ASSERT(ierr == 0).error("Error in MPI test of rank.");
+    int mpi_rank;
+    chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
     if (mpi_rank == 0) {
         output(comm, *get_default_output_stream());
     } else {
@@ -872,7 +870,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 void Profiler::uninitialize() {
     if (_instance) {
-    	FEAL_DEBUG_ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
+    	ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         _instance->stop_timer(0);
         set_memory_monitoring(false, false);
@@ -954,7 +952,7 @@ void Profiler::initialize() {
 
 void Profiler::uninitialize() {
     if (_instance) {
-        FEAL_DEBUG_ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
+        ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         set_memory_monitoring(false, false);
         _instance->stop_timer(0);

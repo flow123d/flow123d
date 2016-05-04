@@ -176,7 +176,7 @@ public:
 
     /// Finish declaration of the Selection type.
     bool finish(bool is_generic = false) override
-        { FEAL_DEBUG_ASSERT(data_->closed_)(this->type_name()).error(); return true; }
+        { ASSERT(data_->closed_)(this->type_name()).error(); return true; }
 
 
     /// Implements \p TypeBase::is_closed
@@ -267,7 +267,7 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    FEAL_DEBUG_ASSERT(data_->keys_.size() == data_->key_to_index_.size())(data_->keys_.size())(data_->key_to_index_.size()).error();
+    ASSERT_DBG(data_->keys_.size() == data_->key_to_index_.size())(data_->keys_.size())(data_->key_to_index_.size()).error();
     return data_->keys_.size();
 }
 
@@ -275,7 +275,7 @@ inline unsigned int Selection::size() const {
 
 
 inline void Selection::finished_check() const {
-	FEAL_DEBUG_ASSERT(data_->closed_)(this->type_name()).error();
+	ASSERT(data_->closed_)(this->type_name()).error();
 }
 
 

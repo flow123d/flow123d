@@ -206,7 +206,7 @@ TEST(FealAssert, assert) {
 
     // only in debug mode
     try {
-        FEAL_DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+        FEAL_ASSERT_DBG(s1.empty() && s2.empty())(s1)(s2).error();
     } catch (feal::Exc_assert &e) {
         std::cout << e.what();
     }

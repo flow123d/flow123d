@@ -60,7 +60,7 @@ protected:
  *
  * Allows define assert, warning etc. either only for debug mode or for release mode also.
  *
- * Definition of asserts is designed using macros FEAL_ASSERT and FEAL_DEBUG_ASSERT. First macro
+ * Definition of asserts is designed using macros FEAL_ASSERT and FEAL_ASSERT_DBG. First macro
  * is used for both modes, second is only for debug. Definition allows to printout given
  * variables too.
  *
@@ -84,7 +84,7 @@ protected:
  *
  * 3) This example is same as previous, but assert is performed only for debug mode.
  @code
-    FEAL_DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error("Both strings must be empty!");
+    FEAL_ASSERT_DBG(s1.empty() && s2.empty())(s1)(s2).error("Both strings must be empty!");
  @endcode
  *
  * 4) Example is same as case 1). Assert type error is called automatically if any other is
@@ -155,7 +155,7 @@ protected:
 /**
  * Helper class defined empty code.
  *
- * Usage only in FEAL_DEBUG_ASSERT macro if FLOW123D_DEBUG_ASSERTS is off.
+ * Usage only in FEAL_ASSERT_DBG macro if FLOW123D_DEBUG_ASSERTS is off.
  */
 class AssertNull {
 public:
