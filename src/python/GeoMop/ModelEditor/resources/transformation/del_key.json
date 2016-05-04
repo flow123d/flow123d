@@ -8,7 +8,9 @@
 "action": "move-key",
 "parameters":{
 "source_path":"/problem/primary_equation/input_fields",
-"destination_path":"/problem/mesh/balance"
+"destination_path":"/problem/mesh/balance",
+"path-type-filter":"SequentialCoupling",
+"path-type-filter-path":"/problem"
 }
 },
 {

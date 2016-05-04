@@ -28,24 +28,24 @@ FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
 
 
 namespace it=Input::Type;
-const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
-    return it::Record("UnsteadyDarcy_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
+const it::Record & RichardsLMH::get_input_type() {
+    return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
-        .copy_keys(DarcyFlowMH_Steady::get_input_type())
+        .copy_keys(DarcyMH::get_input_type())
         .declare_key("time",         TimeGovernor::get_input_type(), it::Default::obligatory(),
                                     "Time governor setting for the unsteady Darcy flow model.")
         .close();
 }
 
 
-const int DarcyFlowLMH_Unsteady::registrar =
-        Input::register_class< DarcyFlowLMH_Unsteady, Mesh &, const Input::Record >("UnsteadyDarcy_LMH") +
-        DarcyFlowLMH_Unsteady::get_input_type().size();
+const int RichardsLMH::registrar =
+        Input::register_class< RichardsLMH, Mesh &, const Input::Record >("Flow_Richards_LMH") +
+        RichardsLMH::get_input_type().size();
 
 
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec)
+RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
+    : DarcyMH(mesh_in, in_rec)
 {
     /*
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
@@ -76,7 +76,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 
 
 
-void DarcyFlowLMH_Unsteady::read_initial_condition()
+void RichardsLMH::read_initial_condition()
 {
     VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
@@ -109,7 +109,7 @@ void DarcyFlowLMH_Unsteady::read_initial_condition()
 
 
 
-void DarcyFlowLMH_Unsteady::setup_time_term()
+void RichardsLMH::setup_time_term()
 {
     // save diagonal of steady matrix
     MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
@@ -158,7 +158,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
         balance_->finish_mass_assembly(water_balance_idx_);
 }
 
-void DarcyFlowLMH_Unsteady::modify_system() {
+void RichardsLMH::modify_system() {
     START_TIMER("modify system");
     //if (time_->step().index()>0)
     //    DBGMSG("dt: %f dt-1: %f indexchanged: %d matrix: %d\n", time_->step().length(), time_->step(-1).length(), time_->is_changed_dt(), schur0->is_matrix_changed() );
@@ -187,7 +187,7 @@ void DarcyFlowLMH_Unsteady::modify_system() {
 }
 
 
-void DarcyFlowLMH_Unsteady::assembly_source_term()
+void RichardsLMH::assembly_source_term()
 {
     if (balance_ != nullptr)
         balance_->start_source_assembly(water_balance_idx_);
@@ -218,7 +218,7 @@ void DarcyFlowLMH_Unsteady::assembly_source_term()
 }
 
 
-void DarcyFlowLMH_Unsteady::postprocess() {
+void RichardsLMH::postprocess() {
     int side_row, loc_edge_row, i;
     Edge* edg;
     ElementIter ele;

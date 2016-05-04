@@ -1,12 +1,12 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   time: &anchor3
     end_time: 100.0
   description: Test13 - mixing of substances on edges and quantitative test on trivial
     transport problem.
   mesh:
     mesh_file: input/Y_branch.msh
-  primary_equation: !SteadyDarcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-14
@@ -38,8 +38,8 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-  secondary_equation: !Transport_OS
-    transport: !Convection_FV
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
       input_fields:
         - region: BULK
           init_conc: 0

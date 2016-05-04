@@ -41,11 +41,11 @@
  * -# Nonlinear solve.
  * -# In case of slow convergence, use shorter time-step, within estimated limits. Otherwise there is a different problem.
  */
-class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
+class RichardsLMH : public DarcyMH
 {
 public:
 
-    DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
+    RichardsLMH(Mesh &mesh, const Input::Record in_rec);
 
     static const Input::Type::Record & get_input_type();
 protected:

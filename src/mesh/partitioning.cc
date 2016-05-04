@@ -136,6 +136,8 @@ void Partitioning::make_element_connection_graph() {
 
 
 void Partitioning::make_partition() {
+
+
     // prepare dual graph
     switch ( in_.val<PartitionTool>("tool")) {
     case PETSc:
@@ -148,6 +150,12 @@ void Partitioning::make_partition() {
         graph_ = new SparseGraphMETIS(*init_el_ds_);
         break;
     }
+    int mesh_size = mesh_->n_elements();
+    int num_of_procs = init_el_ds_->np();
+    if (mesh_size < num_of_procs) { // check if decomposing is possible
+        THROW( ExcDecomposeMesh() << EI_NElems( mesh_size ) << EI_NProcs( num_of_procs ) );
+    }
+
     make_element_connection_graph();
 
     // compute partitioning
@@ -180,12 +188,6 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,
     AO new_old_ao;
     int *old_4_new;
     int i_loc;
-
-    int mesh_size = old_ds.size();
-    int num_of_procs = old_ds.np();
-    if (mesh_size < num_of_procs) { // check if decomposing is possible
-        THROW( ExcDecomposeMesh() << EI_NElems( mesh_size ) << EI_NProcs( num_of_procs ) );
-    }
 
     // make distribution and numbering
     ISCreateGeneral(PETSC_COMM_WORLD, old_ds.lsize(), loc_part, PETSC_COPY_VALUES, &part); // global IS part.
