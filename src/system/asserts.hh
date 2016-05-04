@@ -62,7 +62,8 @@ protected:
  *
  * Definition of asserts is designed using macros FEAL_ASSERT and FEAL_ASSERT_DBG. First macro
  * is used for both modes, second is only for debug. Definition allows to printout given
- * variables too.
+ * variables too. For simplifying are designed shorter names of macros ASSERT and ASSERT_DBG,
+ * these names can be used if thea aren't in conflicts with external libraries.
  *
  * Examples of usage:
  *
@@ -97,6 +98,21 @@ protected:
  *    is not thrown, only warning is printed. Parameter of warning method is optional.
  @code
     FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Both strings should be empty!");
+ @endcode
+ *
+ * For simplifying we have defined several macros for comparsion of values:
+ *  - ASSERT_LT(a, b) or ASSERT_LT_DBG(a, b) ... check if (a < b)
+ *  - ASSERT_LE(a, b) or ASSERT_LE_DBG(a, b) ... check if (a <= b)
+ *  - ASSERT_GT(a, b) or ASSERT_GT_DBG(a, b) ... check if (a > b)
+ *  - ASSERT_GE(a, b) or ASSERT_GE_DBG(a, b) ... check if (a >= b)
+ *  - ASSERT_EQ(a, b) or ASSERT_EQ_DBG(a, b) ... check if (a == b)
+ *  - ASSERT_PTR(obj) or ASSERT_PTR_DBG(obj) ... check if obj is non-null pointer
+ *
+ * All macros allow easier declaration of assert. Following example shows declarations of same
+ * cases with usage of different macros:
+ @code
+    ASSERT_LT( idx, arr.size() ).error("Index out of array!");
+    FEAL_ASSERT( idx < arr.size() )(idx)(arr.size()).error("Index out of array!");
  @endcode
  */
 class Assert {

@@ -161,6 +161,54 @@ if ( !(expr) ) \
   feal::AssertNull()._FEAL_ASSERT_A
 #endif
 
+/// Definition of comparative assert macro (Less Than)
+#define ASSERT_LT(a, b) \
+	FEAL_ASSERT(a < b)(a)(b)
+
+/// Definition of comparative assert macro (Less Than) only for debug mode
+#define ASSERT_LT_DBG(a, b) \
+	FEAL_ASSERT_DBG(a < b)(a)(b)
+
+/// Definition of comparative assert macro (Less or Equal)
+#define ASSERT_LE(a, b) \
+	FEAL_ASSERT(a <= b)(a)(b)
+
+/// Definition of comparative assert macro (Less or Equal) only for debug mode
+#define ASSERT_LE_DBG(a, b) \
+	FEAL_ASSERT_DBG(a <= b)(a)(b)
+
+/// Definition of comparative assert macro (Greater Than)
+#define ASSERT_GT(a, b) \
+	FEAL_ASSERT(a > b)(a)(b)
+
+/// Definition of comparative assert macro (Greater Than) only for debug mode
+#define ASSERT_GT_DBG(a, b) \
+	FEAL_ASSERT_DBG(a > b)(a)(b)
+
+/// Definition of comparative assert macro (Greater or Equal)
+#define ASSERT_GE(a, b) \
+	FEAL_ASSERT(a >= b)(a)(b)
+
+/// Definition of comparative assert macro (Greater or Equal) only for debug mode
+#define ASSERT_GE_DBG(a, b) \
+	FEAL_ASSERT_DBG(a >= b)(a)(b)
+
+/// Definition of comparative assert macro (EQual)
+#define ASSERT_EQ(a, b) \
+	FEAL_ASSERT(a == b)(a)(b)
+
+/// Definition of comparative assert macro (EQual) only for debug mode
+#define ASSERT_EQ_DBG(a, b) \
+	FEAL_ASSERT_DBG(a == b)(a)(b)
+
+/// Definition of assert macro checking non-null pointer (PTR)
+#define ASSERT_PTR( ptr ) \
+	FEAL_ASSERT( (ptr) != nullptr )
+
+/// Definition of assert macro checking non-null pointer (PTR) only for debug mode
+#define ASSERT_PTR_DBG( ptr ) \
+	FEAL_ASSERT_DBG( (ptr) != nullptr )
+
 
 
 /// Allow use shorter versions of macro names if these names is not used with external library
