@@ -85,4 +85,8 @@ if action is None or actions.get(action, None) is None:
     parser.print_help()
     exit(1)
 
-print get_formatter(options.format)(actions.get(action)())
+path_list = actions.get(action)()
+# force sorted list in order to have subdirs first
+# this is crucial for correct copy of python libs in CMakeLists.txt.
+path_list.sort()
+print get_formatter(options.format)(path_list)
