@@ -25,12 +25,6 @@
 
 
 
-/// Enum of types of Logger class messages.
-typedef enum MsgType {
-	_warning, _message, _log, _debug
-} MsgType;
-
-
 /**
  * Class defined logger file.
  *
@@ -62,6 +56,11 @@ private:
 class MultiTargetBuf : public std::stringbuf
 {
 public:
+	/// Enum of types of Logger messages.
+	enum MsgType {
+		warning, message, log, debug
+	};
+
 	/// Return string value of given MsgType
 	static const std::string msg_type_string(MsgType msg_type);
 
@@ -106,7 +105,7 @@ private:
 class Logger : public std::ostream {
 public:
 	/// Constructor.
-	Logger(MsgType type);
+	Logger(MultiTargetBuf::MsgType type);
 
 	/// Stores values for printing out line number, function, etc
 	Logger& set_context(const char* file_name, const char* function, const int line);
@@ -119,9 +118,23 @@ public:
 
 };
 
-/// Macro defining one record of log
-#define LOG(type) \
+/// Internal macro defining universal record of log
+#define _LOG(type) \
 	Logger( type ).set_context( __FILE__, __func__, __LINE__)
+/// Macro defining 'message' record of log
+#define MessageOut() \
+	_LOG( MultiTargetBuf::MsgType::message ).set_context( __FILE__, __func__, __LINE__)
+/// Macro defining 'warning' record of log
+#define WarningOut() \
+	_LOG( MultiTargetBuf::MsgType::warning ).set_context( __FILE__, __func__, __LINE__)
+/// Macro defining 'log' record of log
+#define LogOut() \
+	_LOG( MultiTargetBuf::MsgType::log ).set_context( __FILE__, __func__, __LINE__)
+/// Macro defining 'debug' record of log
+#define DebugOut() \
+	_LOG( MultiTargetBuf::MsgType::debug ).set_context( __FILE__, __func__, __LINE__)
+
+
 
 
 #endif /* LOGGER_HH_ */

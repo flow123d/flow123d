@@ -69,10 +69,10 @@ LoggerFileStream::LoggerFileStream(const char* filename)
 const std::string MultiTargetBuf::msg_type_string(MsgType msg_type)
 {
 	switch (msg_type) {
-		case _warning: return "Warning";
-		case _message: return "Message";
-		case _log:     return "Log";
-		default:       return "Debug";
+		case MsgType::warning: return "Warning";
+		case MsgType::message: return "Message";
+		case MsgType::log:     return "Log";
+		default:               return "Debug";
 	}
 }
 
@@ -151,7 +151,7 @@ void MultiTargetBuf::every_proc()
 void MultiTargetBuf::set_mask()
 {
 	if ( !every_process_ && (mpi_rank_ > 0) ) return;
-	if (type_ == _warning) streams_mask_ = MultiTargetBuf::mask_cerr | MultiTargetBuf::mask_file;
+	if (type_ == MsgType::warning) streams_mask_ = MultiTargetBuf::mask_cerr | MultiTargetBuf::mask_file;
 	else streams_mask_ = MultiTargetBuf::mask_cout | MultiTargetBuf::mask_file;
 }
 
@@ -169,7 +169,7 @@ void MultiTargetBuf::print_to_stream(std::ostream& stream, unsigned int mask)
  */
 
 
-Logger::Logger(MsgType type)
+Logger::Logger(MultiTargetBuf::MsgType type)
 : std::ostream( new MultiTargetBuf(type) )
 {}
 
