@@ -128,7 +128,6 @@ class Html2Latex(object):
             self.extend_children()
             self.add_tail()
 
-
         # so far, code tag will be monospaced only
         elif self.tag_is('code'):
             # self.tex.open_element ('lstlisting')

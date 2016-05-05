@@ -304,7 +304,7 @@ void Application::run() {
             ver_fields[1]=match[2];
             ver_fields[2]=match[3];
         } else {
-            ASSERT(1, "Bad Flow123d version format: %s\n", version.c_str() );
+        	OLD_ASSERT(1, "Bad Flow123d version format: %s\n", version.c_str() );
         }
 
         std::string input_version = i_rec.val<string>("flow123d_version");
@@ -357,8 +357,12 @@ void Application::after_run() {
 
 Application::~Application() {
     if (use_profiler) {
-        // log profiler data to this stream
-        Profiler::instance()->output (PETSC_COMM_WORLD);
+        if (petsc_initialized) {
+            // log profiler data to this stream
+            Profiler::instance()->output (PETSC_COMM_WORLD);
+        } else {
+            Profiler::instance()->output();
+        }
 
         // call python script which transforms json file at given location
         // Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");

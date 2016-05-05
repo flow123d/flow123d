@@ -62,7 +62,7 @@ public:
 	UnitSI & K(int exp = 1);
 	UnitSI & mol(int exp = 1);
 	UnitSI & cd(int exp = 1);
-	/// Method sets value of exponent for m^{-d}, where d is dimension of region
+	/// The dimension dependent meter: md^y = m^(yd), where 'd' is dimension.
 	UnitSI & md(int exp = -1);
 
 	/**
@@ -73,6 +73,12 @@ public:
 	std::string format_latex() const;
 
 	std::string format_text() const;
+
+    /**
+     * Machine readable JSON format. Units are stored as a record with keys given by
+     * SI units strings (corresponding to setters). Values of the keys are integer.
+     */
+    std::string json() const;
 
 	/**
 	 * Set flag that unit is undefined.
@@ -105,17 +111,22 @@ private:
 	    std::string exp_open, exp_close, delimiter;
 	};
 
-	/// Generic output formating mtehod.
+    /**
+     * Symbols for individual units. Can not use static variable due to usage in static initialization.
+     */
+	static const std::string &unit_symbol(unsigned int idx);
+
+	/// Generic output formating method.
 	std::string format(OutputFormat form) const;
 
+
 	/**
-	 * Stores exponents of base SI units in this order:
-	 * [m, kg, s, A, K, mol, cd, md]
+	 * Stores exponents of base SI units in the order given by the
+	 * UnitOrder enum
 	 *
 	 * where md represents value of exponent depended on dimension (m^{-d})
 	 */
 	std::vector<int> exponents_;
-
 
 
 	/**

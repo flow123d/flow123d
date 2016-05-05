@@ -1,5 +1,11 @@
 #!/bin/bash
 GEOMOP_DIR=$1
+
+if [ -z $GEOMOP_DIR ]
+then
+    GEOMOP_DIR=~/workspace/GeoMop
+fi
+
 find "${GEOMOP_DIR}" -name '*.pyc' -delete
 find "${GEOMOP_DIR}" -name '__pycache__' -delete
 

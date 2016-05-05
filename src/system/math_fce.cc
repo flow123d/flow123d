@@ -351,7 +351,7 @@ void matrix_x_matrix(double *A,int ra, int ca,
                      double *B, int rb, int cb, double *X)
 {
   int i,j,k;
-  ASSERT(!(ca != rb),"Matrix A has different number of columns than matrix B rows in the function matrix_x_matrix()\n");
+  OLD_ASSERT(!(ca != rb),"Matrix A has different number of columns than matrix B rows in the function matrix_x_matrix()\n");
   for (i = 0; i < ra; i++)
     for (j = 0; j < cb; j++)
     {

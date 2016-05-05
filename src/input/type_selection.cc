@@ -25,7 +25,7 @@ namespace Type {
 using std::string;
 
 Selection::Selection()
-: data_(boost::make_shared<SelectionData>("EmptySelection"))
+: data_(std::make_shared<SelectionData>("EmptySelection"))
 {
     close();
 }
@@ -39,7 +39,7 @@ Selection::Selection(const Selection& other)
 
 
 Selection::Selection(const string &name, const string &desc)
-: data_(boost::make_shared<SelectionData>(name))
+: data_(std::make_shared<SelectionData>(name))
 {
     data_->description_=desc;
 }
@@ -47,10 +47,14 @@ Selection::Selection(const string &name, const string &desc)
 
 
 Selection &Selection::add_value(const int value, const std::string &key, const std::string &description) {
-    if (is_finished())
-        xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
+    FEAL_ASSERT(!is_finished())(key)(type_name()).error("Declaration of new key in finished Selection.");
 
     data_->add_value(value, key, description);
+    return *this;
+}
+
+Selection &Selection::add_attribute(std::string key, TypeBase::json_string value) {
+    this->add_attribute_(key, value);
     return *this;
 }
 
@@ -59,6 +63,8 @@ const Selection & Selection::close() const {
     data_->closed_=true;
     return *( Input::TypeRepository<Selection>::get_instance().add_type( *this ) );
 }
+
+
 
 
 
@@ -143,24 +149,19 @@ string Selection::key_list() const {
 
 
 // Implements @p TypeBase::make_instance.
-TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<Selection>(*this), ParameterMap() );
+TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) {
+	return std::make_pair( std::make_shared<Selection>(*this), ParameterMap() );
 }
 
 
 
 void Selection::SelectionData::add_value(const int value, const std::string &key, const std::string &description) {
     KeyHash key_h = TypeBase::key_hash(key);
-    if (key_to_index_.find(key_h) != key_to_index_.end()) {
-        xprintf(PrgErr, "Name '%s' already exists in Selection: %s\n", key.c_str(), type_name_.c_str());
-        return;
-    }
+    FEAL_ASSERT(key_to_index_.find(key_h) == key_to_index_.end())(key)(type_name_).error("Key already exists in Selection.");
     value_to_index_const_iter it = value_to_index_.find(value);
-    if (it != value_to_index_.end()) {
-        xprintf(
-                PrgErr, "Value %d of new name '%s' conflicts with value %d of previous name '%s' in Selection: '%s'.\n", value, key.c_str(), keys_[it->second].value, keys_[it->second].key_.c_str(), type_name_.c_str());
-        return;
-    }
+    const std::string &existing_key = keys_[it->second].key_;
+    FEAL_ASSERT(it == value_to_index_.end())(value)(key)(existing_key)(type_name_)
+    		.error("Value of new key conflicts with value of existing key in Selection");
 
     unsigned int new_idx = key_to_index_.size();
     key_to_index_.insert(std::make_pair(key_h, new_idx));

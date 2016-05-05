@@ -153,7 +153,7 @@ public:
         * TODO: think what kind of information we may need, is the next time value enough?
         */
        virtual double next_change_time()
-       { ASSERT(0, "Not implemented yet."); return 0.0; }
+       { OLD_ASSERT(0, "Not implemented yet."); return 0.0; }
 
        /**
         * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

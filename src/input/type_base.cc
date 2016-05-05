@@ -36,6 +36,7 @@
 #include "input_type.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
+#include "attribute_lib.hh"
 #include "json_spirit/json_spirit.h"
 
 
@@ -53,7 +54,7 @@ using namespace std;
 
 
 TypeBase::TypeBase()
-: attributes_( boost::make_shared<attribute_map>() ), root_of_generic_subtree_(false),
+: attributes_( std::make_shared<attribute_map>() ), root_of_generic_subtree_(false),
   generic_type_hash_(0) {}
 
 
@@ -102,12 +103,9 @@ void TypeBase::lazy_finish() {
 
 
 
-void TypeBase::add_attribute(std::string name, json_string val) {
-	if (validate_json(val)) {
-		(*attributes_)[name] = val;
-	} else {
-		xprintf(PrgErr, "Invalid JSON format of attribute '%s'.\n", name.c_str());
-	}
+void TypeBase::add_attribute_(std::string name, json_string val) {
+	FEAL_ASSERT(validate_json(val))(name)(val).error("Invalid JSON format of attribute");
+	(*attributes_)[name] = val;
 }
 
 
@@ -124,21 +122,42 @@ bool TypeBase::validate_json(json_string str) const {
 
 TypeBase::json_string TypeBase::print_parameter_map_to_json(ParameterMap parameter_map) const {
 	std::stringstream ss;
-	ss << "[";
+	ss << "{";
 	for (ParameterMap::iterator it=parameter_map.begin(); it!=parameter_map.end(); it++) {
 		if (it != parameter_map.begin()) ss << "," << endl;
-		ss << "{ \"" << (*it).first << "\" : " << TypeBase::hash_str( (*it).second ) << " }";
+		ss << "\"" << (*it).first << "\" : " << TypeBase::hash_str( (*it).second );
 	}
-	ss << "]";
+	ss << "}";
 	return ss.str();
 }
 
+TypeBase::json_string TypeBase::print_parameter_map_keys_to_json(ParameterMap parameter_map) const {
+    stringstream ss;
+    ss << "[ ";
+    for (ParameterMap::iterator it=parameter_map.begin(); it!=parameter_map.end(); it++) {
+        if (it != parameter_map.begin()) ss << ", ";
+        ss << "\"" << it->first << "\"";
+    }
+    ss << " ]";
+    return ss.str();
+}
 
-void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
-	this->add_attribute("parameters", this->print_parameter_map_to_json(parameter_map));
+void TypeBase::set_generic_attributes(ParameterMap parameter_map) {
+    // check if the type is really generic (it may be non-generic even if part of a generic subtree)
+    if (parameter_map.size() > 0)
+        add_attribute_(Attribute::generic_parameters(), print_parameter_map_keys_to_json(parameter_map));
+    if (is_root_of_generic_subtree())
+        add_attribute_(Attribute::root_of_generic_subtree(), "true");
 }
 
 
+void TypeBase::copy_attributes(attribute_map other_attributes) {
+    attributes_->clear();
+    for(auto &item : other_attributes) {
+        if (item.first[0] != '_') // not internal attribute
+            attributes_->insert(item);
+    }
+}
 
 
 
@@ -199,7 +218,7 @@ bool Array::operator==(const TypeBase &other) const    {
 
 
 
-TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec)  {
 	// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
 	Array arr = this->deep_copy();
 	// Replace parameter stored in type_of_values_
@@ -207,32 +226,31 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	arr.data_->type_of_values_ = inst.first;
 	ParameterMap parameter_map = inst.second;
 	// Copy attributes
-	arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	arr.copy_attributes(*attributes_);
+
 	// Set parameters as attribute
 	json_string val = this->print_parameter_map_to_json(parameter_map);
-	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
-	(*arr.attributes_)["parameters"] = val;
+	FEAL_DEBUG_ASSERT(this->validate_json(val))(val).error("Invalid JSON format of attribute 'parameters'.");
 	arr.parameter_map_ = parameter_map;
-	(*arr.attributes_)["generic_type"] = TypeBase::hash_str();
 	arr.generic_type_hash_ = this->content_hash();
 
-	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );
+	return std::make_pair( std::make_shared<Array>(arr), parameter_map );
 }
 
 
 Array Array::deep_copy() const {
 	Array arr = Array(Integer()); // Type integer will be overwritten
-	arr.data_ = boost::make_shared<Array::ArrayData>(*this->data_);
+	arr.data_ = std::make_shared<Array::ArrayData>(*this->data_);
 	arr.data_->finished = false;
 	return arr;
 }
 
 
-Array::Array(boost::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
-: data_(boost::make_shared<ArrayData>(min_size, max_size))
+Array::Array(std::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
+: data_(std::make_shared<ArrayData>(min_size, max_size))
 {
-    ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
-    ASSERT( type->is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type->type_name().c_str());
+	FEAL_DEBUG_ASSERT(min_size <= max_size)(min_size)(max_size).error("Wrong limits for size of Input::Type::Array");
+	FEAL_DEBUG_ASSERT(type->is_closed()).error();
 
 	data_->type_of_values_ = type;
 }
@@ -244,7 +262,7 @@ Array::Array(boost::shared_ptr<TypeBase> type, unsigned int min_size, unsigned i
 
 template <class ValueType>
 Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size)
-: Array(boost::static_pointer_cast<TypeBase>( boost::make_shared<ValueType>(type) ), min_size, max_size)
+: Array(std::static_pointer_cast<TypeBase>( std::make_shared<ValueType>(type) ), min_size, max_size)
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
@@ -290,8 +308,8 @@ string Bool::type_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<Bool>(*this), ParameterMap() );
+TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec)  {
+	return std::make_pair( std::make_shared<Bool>(*this), ParameterMap() );
 }
 
 /**********************************************************************************
@@ -320,8 +338,8 @@ string Integer::type_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<Integer>(*this), ParameterMap() );
+TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) {
+	return std::make_pair( std::make_shared<Integer>(*this), ParameterMap() );
 }
 
 
@@ -352,8 +370,8 @@ string Double::type_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<Double>(*this), ParameterMap() );
+TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) {
+	return std::make_pair( std::make_shared<Double>(*this), ParameterMap() );
 }
 
 
@@ -392,8 +410,8 @@ bool FileName::match(const string &str) const {
 
 
 
-TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<FileName>(*this), ParameterMap() );
+TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec)  {
+	return std::make_pair( std::make_shared<FileName>(*this), ParameterMap() );
 }
 
 
@@ -424,8 +442,8 @@ bool String::match(const string &str) const {
 
 
 
-TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<String>(*this), ParameterMap() );
+TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) {
+	return std::make_pair( std::make_shared<String>(*this), ParameterMap() );
 }
 
 

@@ -61,14 +61,14 @@ using namespace Input::Type;
 
 
 Abstract & ConcentrationTransportBase::get_input_type() {
-	return Abstract("Transport",
-			"Transport of substances.")
+	return Abstract("Solute",
+			"Transport of soluted  substances.")
 			.close();
 }
 
 
 const Record & TransportOperatorSplitting::get_input_type() {
-	return Record("Transport_OS",
+	return Record("Coupling_OperatorSplitting",
             "Transport by convection and/or diffusion\n"
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
@@ -95,7 +95,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 
 
 const int TransportOperatorSplitting::registrar =
-		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record>("Transport_OS") +
+		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record>("Coupling_OperatorSplitting") +
 		TransportOperatorSplitting::get_input_type().size();
 
 
@@ -237,7 +237,7 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::zero_time_step()
 {
-  
+    //DBGMSG("tos ZERO TIME STEP.\n");
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream()->write_time_frame();

@@ -58,7 +58,7 @@ void LinearODEAnalytic::compute_matrix()
 {
     START_TIMER("ODEAnalytic::compute_matrix");
 
-    ASSERT(system_matrix_.n_cols == system_matrix_.n_rows, "Matrix is not square.");
+    OLD_ASSERT(system_matrix_.n_cols == system_matrix_.n_rows, "Matrix is not square.");
     solution_matrix_.copy_size(system_matrix_);
     
     double exponential, temp;

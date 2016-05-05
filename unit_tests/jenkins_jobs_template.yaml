@@ -320,6 +320,7 @@
           branches:
             - master
             - 1.8.2
+            - 1.8.4
             - geomop_testing
             - JHY_continuous_package_testing
     triggers:

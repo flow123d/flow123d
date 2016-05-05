@@ -24,7 +24,7 @@
 
     // side of the edge in higher dim. mesh
     inline SideIter Neighbour::side() {
-        ASSERT( edge()->n_sides == 1 , "VB neighbouring with %d sides.\n", edge()->n_sides);
+    	OLD_ASSERT( edge()->n_sides == 1 , "VB neighbouring with %d sides.\n", edge()->n_sides);
         //DBGMSG("VB neighbouring with %d sides.\n", edge_->n_sides);
         return edge()->side(0);
     }

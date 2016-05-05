@@ -43,7 +43,7 @@ add_test_directory("${libs}")
     
     # reqires raw strings  
     define_test(tokenizer)
-    define_mpi_test(tokenizer_speed 1)
+    define_test(tokenizer_speed)
 
 
 

@@ -26,6 +26,8 @@
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
 
+#include "petscksp.h"
+
 class LinSys_PETSC : public LinSys
 {
 
@@ -40,6 +42,9 @@ public:
      * Copy constructor.
      */
     LinSys_PETSC( LinSys_PETSC &other );
+
+
+    void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
 
     /**
      * Returns whole Distribution class for distribution of the solution.
@@ -123,6 +128,8 @@ public:
 
     double get_solution_precision();
 
+    double compute_residual() override;
+
     ~LinSys_PETSC( );
 
 private:
@@ -154,13 +161,18 @@ protected:
 
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
+    Vec     residual_;
 
     double  *v_rhs_;             //!< local RHS array pointing to Vec rhs_
 
     Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
 
+
     double  solution_precision_; // precision of KSP system solver
+
+    KSP                system;
+    KSPConvergedReason reason;
 
 
 };
