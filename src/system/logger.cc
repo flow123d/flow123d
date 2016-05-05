@@ -30,17 +30,21 @@
 
 LoggerFileStream& LoggerFileStream::get_instance() {
 	if (instance_ == NULL) {
-		int mpi_rank;
-#ifdef FLOW123D_HAVE_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-#else
-		mpi_rank = 0;
-#endif
 		std::stringstream file_name;
-		file_name << "flow." << mpi_rank << ".new.log";
+		file_name << "flow123d." << LoggerFileStream::get_mpi_rank() << ".new.log";
 		instance_ = new LoggerFileStream( file_name.str().c_str() );
 	}
 	return *instance_;
+}
+
+int LoggerFileStream::get_mpi_rank() {
+#ifdef FLOW123D_HAVE_MPI
+	int mpi_rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+	return mpi_rank;
+#else
+	return 0;
+#endif
 }
 
 
@@ -87,11 +91,7 @@ MultiTargetBuf::MultiTargetBuf(MsgType type)
     date_time_ = std::string(buf);
 
     // set MPI rank
-#ifdef FLOW123D_HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank_);
-#else
-    mpi_rank_ = -1;
-#endif
+    mpi_rank_ = LoggerFileStream::get_mpi_rank();
 }
 
 

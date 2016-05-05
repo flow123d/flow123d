@@ -36,6 +36,9 @@ public:
     /// Getter of singleton instance object
 	static LoggerFileStream& get_instance();
 
+    /// Returns number of actual process, if MPI is not supported returns 0.
+	static int get_mpi_rank();
+
 	/// Destructor
 	~LoggerFileStream();
 private:
