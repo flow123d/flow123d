@@ -77,8 +77,8 @@ const std::string MultiTargetBuf::msg_type_string(MsgType msg_type)
 }
 
 
-MultiTargetBuf::MultiTargetBuf(MsgType type, bool every_process)
-: std::stringbuf(), type_(type), every_process_(every_process), streams_mask_(0), printed_header_(false)
+MultiTargetBuf::MultiTargetBuf(MsgType type)
+: std::stringbuf(), type_(type), every_process_(false), streams_mask_(0), printed_header_(false)
 {
 	// set actual time
 	time_t     now = time(0);
@@ -141,6 +141,13 @@ void MultiTargetBuf::set_context(const char* file_name, const char* function, co
 }
 
 
+void MultiTargetBuf::every_proc()
+{
+	every_process_ = true;
+	this->set_mask();
+}
+
+
 void MultiTargetBuf::set_mask()
 {
 	if ( !every_process_ && (mpi_rank_ > 0) ) return;
@@ -162,8 +169,8 @@ void MultiTargetBuf::print_to_stream(std::ostream& stream, unsigned int mask)
  */
 
 
-Logger::Logger(MsgType type, bool every_process)
-: std::ostream( new MultiTargetBuf(type, every_process) )
+Logger::Logger(MsgType type)
+: std::ostream( new MultiTargetBuf(type) )
 {}
 
 
@@ -178,6 +185,14 @@ Logger& Logger::set_context(const char* file_name, const char* function, const i
 {
 	rdbuf()->pubsync();
 	dynamic_cast<MultiTargetBuf *>(rdbuf())->set_context(file_name, function, line);
+	return *this;
+}
+
+
+Logger& Logger::every_proc()
+{
+	rdbuf()->pubsync();
+	dynamic_cast<MultiTargetBuf *>(rdbuf())->every_proc();
 	return *this;
 }
 

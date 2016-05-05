@@ -66,10 +66,13 @@ public:
 	static const std::string msg_type_string(MsgType msg_type);
 
 	/// Constructor
-	MultiTargetBuf(MsgType type, bool every_process);
+	MultiTargetBuf(MsgType type);
 
 	/// Stores values for printing out line number, function, etc
 	void set_context(const char* file_name, const char* function, const int line);
+
+	/// Set flag every_process_ to true
+	void every_proc();
 protected:
 	virtual int sync();
 private:
@@ -103,10 +106,13 @@ private:
 class Logger : public std::ostream {
 public:
 	/// Constructor.
-	Logger(MsgType type, bool every_process = false);
+	Logger(MsgType type);
 
 	/// Stores values for printing out line number, function, etc
 	Logger& set_context(const char* file_name, const char* function, const int line);
+
+	/// Set flag MultiTargetBuf::every_process_ to true
+	Logger& every_proc();
 
 	/// Destructor.
 	~Logger();
@@ -114,8 +120,8 @@ public:
 };
 
 /// Macro defining one record of log
-#define LOG(...) \
-	Logger( __VA_ARGS__ ).set_context( __FILE__, __func__, __LINE__)
+#define LOG(type) \
+	Logger( type ).set_context( __FILE__, __func__, __LINE__)
 
 
 #endif /* LOGGER_HH_ */
