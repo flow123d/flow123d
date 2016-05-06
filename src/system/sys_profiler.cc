@@ -440,7 +440,7 @@ void Profiler::stop_timer(int timer_index) {
     // timer which is still running MUST be the same as actual_node index
     // if timer is not running index will differ
     if (timers_[timer_index].running()) {
-    	ASSERT_EQ(timer_index, actual_node).error();
+    	ASSERT_EQ(timer_index, (int)actual_node).error();
         stop_timer(*timers_[timer_index].code_point_);
     }
     
@@ -623,7 +623,7 @@ void save_mpi_metric (property_tree::ptree &node, MPI_Comm comm, T * ptr, string
 }
 
 void Profiler::output(MPI_Comm comm, ostream &os) {
-    int ierr, mpi_rank, mpi_size;
+    int mpi_rank, mpi_size;
     //wait until profiling on all processors is finished
     MPI_Barrier(comm);
     stop_timer(0);
