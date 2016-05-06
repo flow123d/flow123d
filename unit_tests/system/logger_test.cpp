@@ -15,6 +15,7 @@
 
 TEST(Logger, CompleteTest) {
 	Profiler::initialize();
+	LoggerFileStream::init("flow123d");
 
 	MessageOut() << "Test of logger \n... next line" << "\n" << "... next line" << std::endl;
 

@@ -39,6 +39,13 @@ public:
     /// Returns number of actual process, if MPI is not supported returns 0.
 	static int get_mpi_rank();
 
+    /// Initialize instance object in format 'log_file_name.process.log'
+	static void init(const std::string &log_file_name);
+
+    /// Check if singleton instance object is initialize.
+	static inline bool is_init()
+	{ return (instance_ != nullptr); }
+
 	/// Destructor
 	~LoggerFileStream();
 private:

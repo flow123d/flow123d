@@ -17,6 +17,7 @@
 
 
 #include "system/logger.hh"
+#include "system/global_defs.h"
 #include "config.h"
 
 #include <time.h>
@@ -29,13 +30,9 @@
  */
 
 LoggerFileStream& LoggerFileStream::get_instance() {
-	if (instance_ == NULL) {
-		std::stringstream file_name;
-		file_name << "flow123d." << LoggerFileStream::get_mpi_rank() << ".new.log";
-		instance_ = new LoggerFileStream( file_name.str().c_str() );
-	}
 	return *instance_;
 }
+
 
 int LoggerFileStream::get_mpi_rank() {
 #ifdef FLOW123D_HAVE_MPI
@@ -47,8 +44,16 @@ int LoggerFileStream::get_mpi_rank() {
 #endif
 }
 
+void LoggerFileStream::init(const std::string &log_file_name) {
+	ASSERT(instance_ == nullptr).error("Recurrent initialization of logger file stream.");
 
-LoggerFileStream* LoggerFileStream::instance_ = NULL;
+	std::stringstream file_name;
+	file_name << log_file_name << "." << LoggerFileStream::get_mpi_rank() << ".log";
+	instance_ = new LoggerFileStream( file_name.str().c_str() );
+}
+
+
+LoggerFileStream* LoggerFileStream::instance_ = nullptr;
 
 
 LoggerFileStream::~LoggerFileStream() {
@@ -124,7 +129,8 @@ int MultiTargetBuf::sync() {
 
 	print_to_stream(std::cout, MultiTargetBuf::mask_cout);
 	print_to_stream(std::cerr, MultiTargetBuf::mask_cerr);
-	print_to_stream(LoggerFileStream::get_instance(), MultiTargetBuf::mask_file);
+	if (LoggerFileStream::get_instance() != nullptr)
+		print_to_stream(LoggerFileStream::get_instance(), MultiTargetBuf::mask_file);
 
 	printed_header_ = true;
 	str("");
