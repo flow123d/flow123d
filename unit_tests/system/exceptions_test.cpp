@@ -6,6 +6,7 @@
  */
 
 #define FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
+#define FEAL_OVERRIDE_ASSERTS
 
 #include "system/exceptions.hh"
 #include <flow_gtest.hh>

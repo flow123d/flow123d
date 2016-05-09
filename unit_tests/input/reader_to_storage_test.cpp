@@ -9,6 +9,8 @@
  * TODO: test catching of errors in JSON file format.
  */
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include <fstream>
 
