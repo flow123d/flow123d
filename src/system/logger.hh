@@ -26,7 +26,7 @@
 
 
 /**
- * Class defined logger file.
+ * Helper class defined logger file.
  *
  * Use singleton design pattern.
  */
@@ -67,6 +67,8 @@ private:
 
 /**
  * Helper class
+ *
+ * Manage logger stream that is used for all logger outputs.
  */
 class MultiTargetBuf : public std::stringbuf
 {
@@ -114,7 +116,58 @@ private:
 
 
 /**
- * @brief Class for storing log messages.
+ * @brief Class for storing logger messages.
+ *
+ * Allow define different levels of log messages and distinguish output streams
+ * for individual leves. These output streams are -
+ *  - standard console output (std::cout)
+ *  - standard error output (std::cerr)
+ *  - file output (LoggerFileStream class)
+ *
+ * Logger distinguishes four type of levels -
+ *  - warning: printed to standard error and file output
+ *  - message: printed to standard console and file output
+ *  - log: printed to file output
+ *  - debug: printed to file output (level is used only in debug mode)
+ *
+ * File output is optional. See \p LoggerFileStream for setting this output stream.
+ *
+ * <b>Example of Logger usage:</b>
+ *
+ * For individual levels are defined macros -
+ *  - MessageOut()
+ *  - WarningOut()
+ *  - LogOut()
+ *  - DebugOut()
+ * that ensure display of actual code point (source file, line and function).
+ *
+ * Logger message is created by using an operator << and allow to add each type
+ * that has override this operator. Message is terminated with manipulator
+ * std::endl. Implicitly logger message is printed only in processor with rank
+ * zero. If necessary printed message for all process, it provides a method
+ * every_proc().
+ *
+ * Examples of logger messages formating:
+ *
+ @code
+   MessageOut() << "End of simulation at time: " << secondary_eq->solved_time() << std::endl;
+   WarningOut() << "Unprocessed key '" << key_name << "' in Record '" << rec->type_name() << "'." << std::endl;
+   LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time << std::endl;
+   DebugOut() << "Calling 'initialize' of empty equation '" << typeid(*this).name() << "'." << std::endl;
+ @endcode
+ *
+ * Logger message can be created by more than one separate message (std::endl
+ * manipulator can be used multiple times):
+ *
+ @code
+   MessageOut() << "Start time: " << this->start_time() << std::endl << "End time: " << this->end_time() << std::endl;
+ @endcode
+ *
+ * In some cases message can be printed for all processes:
+ *
+ @code
+   MessageOut().every_proc() << "Size distributed at process: " << distr->lsize() << std::endl;
+ @endcode
  *
  */
 class Logger : public std::ostream {
