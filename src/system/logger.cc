@@ -44,16 +44,21 @@ int LoggerFileStream::get_mpi_rank() {
 #endif
 }
 
-void LoggerFileStream::init(const std::string &log_file_name) {
-	ASSERT(instance_ == nullptr).error("Recurrent initialization of logger file stream.");
+void LoggerFileStream::init(const std::string &log_file_name, bool no_log) {
+	ASSERT(instance_ == nullptr && !no_log).error("Recurrent initialization of logger file stream.");
 
-	std::stringstream file_name;
-	file_name << log_file_name << "." << LoggerFileStream::get_mpi_rank() << ".log";
-	instance_ = new LoggerFileStream( file_name.str().c_str() );
+	if (no_log) {
+		LoggerFileStream::no_log_ = true;
+	} else {
+		std::stringstream file_name;
+		file_name << log_file_name << "." << LoggerFileStream::get_mpi_rank() << ".log";
+		instance_ = new LoggerFileStream( file_name.str().c_str() );
+	}
 }
 
 
 LoggerFileStream* LoggerFileStream::instance_ = nullptr;
+bool LoggerFileStream::no_log_ = false;
 
 
 LoggerFileStream::~LoggerFileStream() {
@@ -157,8 +162,35 @@ void MultiTargetBuf::every_proc()
 void MultiTargetBuf::set_mask()
 {
 	if ( !every_process_ && (mpi_rank_ > 0) ) return;
-	if (type_ == MsgType::warning) streams_mask_ = MultiTargetBuf::mask_cerr | MultiTargetBuf::mask_file;
-	else streams_mask_ = MultiTargetBuf::mask_cout | MultiTargetBuf::mask_file;
+
+	switch (type_) {
+	case MsgType::warning:
+		if (LoggerFileStream::no_log_)
+			streams_mask_ = MultiTargetBuf::mask_cerr;
+		else
+			streams_mask_ = MultiTargetBuf::mask_cerr | MultiTargetBuf::mask_file;
+		break;
+	case MsgType::message:
+		if (LoggerFileStream::no_log_)
+			streams_mask_ = MultiTargetBuf::mask_cout;
+		else
+			streams_mask_ = MultiTargetBuf::mask_cout | MultiTargetBuf::mask_file;
+		break;
+#ifndef FLOW123D_DEBUG
+	case MsgType::debug: // for release build
+		streams_mask_ = 0;
+		break;
+#endif
+	default: //MsgType::log + MsgType::debug (only for debug build)
+		if (LoggerFileStream::no_log_)
+			streams_mask_ = 0;
+		else if (LoggerFileStream::is_init())
+			streams_mask_ = MultiTargetBuf::mask_file;
+		else
+			streams_mask_ = MultiTargetBuf::mask_cerr;
+		break;
+	}
+
 }
 
 

@@ -40,7 +40,7 @@ public:
 	static int get_mpi_rank();
 
     /// Initialize instance object in format 'log_file_name.process.log'
-	static void init(const std::string &log_file_name);
+	static void init(const std::string &log_file_name, bool no_log = false);
 
     /// Check if singleton instance object is initialize.
 	static inline bool is_init()
@@ -57,6 +57,11 @@ private:
 
 	/// Singleton instance
 	static LoggerFileStream* instance_;
+
+	/// Turn off logger file output
+	static bool no_log_;
+
+	friend class MultiTargetBuf;
 };
 
 
