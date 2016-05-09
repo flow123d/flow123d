@@ -5,6 +5,8 @@
  *      Author: jb
  */
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include "system/system.hh"
 #include <input/input_type.hh>

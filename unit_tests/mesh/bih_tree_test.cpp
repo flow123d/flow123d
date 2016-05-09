@@ -8,6 +8,8 @@
 
 
 #define TEST_USE_MPI
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest_mpi.hh>
 #include <cmath>
 #include <algorithm>
