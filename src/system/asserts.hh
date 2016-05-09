@@ -162,7 +162,7 @@ public:
 
 protected:
     Exc_assert exception_;               ///< Exception object
-	bool thrown_;                             ///< Flag marked if Assert thrown error, warning, ...
+	bool thrown_;                        ///< Flag marked if Assert thrown error, warning, ...
 
 };
 
@@ -212,7 +212,9 @@ public:
  * Definitions of macros
  */
 
-/// Internal definitions of macros
+/**
+ * Definitions of internal macros
+ */
 /// Internal clever macro A
 #define _FEAL_ASSERT_A(x) _FEAL_ASSERT_OP(x, B)
 /// Internal clever macro B
@@ -222,6 +224,55 @@ public:
     _FEAL_ASSERT_A.add_value((x), #x)._FEAL_ASSERT_ ## next
 
 
+/**
+ * Undefining redefinitions of comparsion macros.
+ *
+ * You can define FEAL_OVERRIDE_ASSERTS (e.g. in unit tests) and undefine macros with same name in external libraries.
+ */
+#ifdef ASSERT_LT
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_LT
+    #else
+        #warning "ASSERT_LT already defined out of FEAL."
+    #endif
+#endif
+
+#ifdef ASSERT_LE
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_LE
+    #else
+        #warning "ASSERT_LE already defined out of FEAL."
+    #endif
+#endif
+
+#ifdef ASSERT_GT
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_GT
+    #else
+        #warning "ASSERT_GT already defined out of FEAL."
+    #endif
+#endif
+
+#ifdef ASSERT_GE
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_GE
+    #else
+        #warning "ASSERT_GE already defined out of FEAL."
+    #endif
+#endif
+
+#ifdef ASSERT_EQ
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_EQ
+    #else
+        #warning "ASSERT_EQ already defined out of FEAL."
+    #endif
+#endif
+
+
+/**
+ * Definitions of assert macros
+ */
 /// Definition of assert for debug and release mode
 #define FEAL_ASSERT( expr) \
 if ( !(expr) ) \
