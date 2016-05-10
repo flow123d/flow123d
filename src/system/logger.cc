@@ -21,58 +21,53 @@
 #include "config.h"
 
 #include <time.h>
-#include <mpi.h>
 #include <iomanip>
 
 
 /*******************************************************************
- * implementation of LoggerFileStream
+ * implementation of LoggerOptions
  */
 
-LoggerFileStream& LoggerFileStream::get_instance() {
+LoggerOptions& LoggerOptions::get_instance() {
 	return *instance_;
 }
 
 
-int LoggerFileStream::get_mpi_rank() {
-#ifdef FLOW123D_HAVE_MPI
-	int mpi_rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-	return mpi_rank;
-#else
-	return 0;
-#endif
+LoggerOptions* LoggerOptions::instance_ = new LoggerOptions();
+
+
+LoggerOptions::LoggerOptions()
+: mpi_rank_(-1), no_log_(false), init_(false) {}
+
+
+LoggerOptions::~LoggerOptions() {
+	file_stream_ << std::flush;
+	file_stream_.close();
 }
 
-void LoggerFileStream::init(const std::string &log_file_name, bool no_log) {
-	ASSERT(instance_ == nullptr && !no_log).error("Recurrent initialization of logger file stream.");
 
-	if (no_log) {
-		LoggerFileStream::no_log_ = true;
+int LoggerOptions::get_mpi_rank() {
+	return mpi_rank_;
+}
+
+
+int LoggerOptions::setup_mpi(MPI_Comm comm) {
+	return MPI_Comm_rank(comm, &mpi_rank_);
+}
+
+
+void LoggerOptions::set_log_file(std::string log_file_base) {
+	ASSERT(!init_).error("Recurrent initialization of logger file stream.");
+
+	if (log_file_base.size() == 0) { // empty string > no_log
+		no_log_ = true;
 	} else {
 		std::stringstream file_name;
-		file_name << log_file_name << "." << LoggerFileStream::get_mpi_rank() << ".log";
-		instance_ = new LoggerFileStream( file_name.str().c_str() );
+		file_name << log_file_base << "." << LoggerOptions::get_mpi_rank() << ".log";
+		file_stream_.open( file_name.str().c_str() );
 	}
+	init_ = true;
 }
-
-
-LoggerFileStream* LoggerFileStream::instance_ = nullptr;
-bool LoggerFileStream::no_log_ = false;
-
-
-LoggerFileStream::~LoggerFileStream() {
-	(*this) << std::flush;
-	this->close();
-}
-
-
-LoggerFileStream::LoggerFileStream()
-: std::ofstream() {}
-
-
-LoggerFileStream::LoggerFileStream(const char* filename)
-: std::ofstream(filename) {}
 
 
 /*******************************************************************
@@ -101,7 +96,7 @@ MultiTargetBuf::MultiTargetBuf(MsgType type)
     date_time_ = std::string(buf);
 
     // set MPI rank
-    mpi_rank_ = LoggerFileStream::get_mpi_rank();
+    mpi_rank_ = LoggerOptions::get_instance().get_mpi_rank();
 }
 
 
@@ -134,8 +129,8 @@ int MultiTargetBuf::sync() {
 
 	print_to_stream(std::cout, MultiTargetBuf::mask_cout);
 	print_to_stream(std::cerr, MultiTargetBuf::mask_cerr);
-	if (LoggerFileStream::get_instance() != nullptr)
-		print_to_stream(LoggerFileStream::get_instance(), MultiTargetBuf::mask_file);
+	if (LoggerOptions::get_instance().is_init())
+		print_to_stream(LoggerOptions::get_instance().file_stream_, MultiTargetBuf::mask_file);
 
 	printed_header_ = true;
 	str("");
@@ -165,13 +160,13 @@ void MultiTargetBuf::set_mask()
 
 	switch (type_) {
 	case MsgType::warning:
-		if (LoggerFileStream::no_log_)
+		if (LoggerOptions::get_instance().no_log_)
 			streams_mask_ = MultiTargetBuf::mask_cerr;
 		else
 			streams_mask_ = MultiTargetBuf::mask_cerr | MultiTargetBuf::mask_file;
 		break;
 	case MsgType::message:
-		if (LoggerFileStream::no_log_)
+		if (LoggerOptions::get_instance().no_log_)
 			streams_mask_ = MultiTargetBuf::mask_cout;
 		else
 			streams_mask_ = MultiTargetBuf::mask_cout | MultiTargetBuf::mask_file;
@@ -182,9 +177,9 @@ void MultiTargetBuf::set_mask()
 		break;
 #endif
 	default: //MsgType::log + MsgType::debug (only for debug build)
-		if (LoggerFileStream::no_log_)
+		if (LoggerOptions::get_instance().no_log_)
 			streams_mask_ = 0;
-		else if (LoggerFileStream::is_init())
+		else if (LoggerOptions::get_instance().is_init())
 			streams_mask_ = MultiTargetBuf::mask_file;
 		else
 			streams_mask_ = MultiTargetBuf::mask_cerr;

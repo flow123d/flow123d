@@ -22,6 +22,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <mpi.h>
 
 
 
@@ -30,36 +31,45 @@
  *
  * Use singleton design pattern.
  */
-class LoggerFileStream : public std::ofstream
+class LoggerOptions
 {
 public:
     /// Getter of singleton instance object
-	static LoggerFileStream& get_instance();
+	static LoggerOptions& get_instance();
 
-    /// Returns number of actual process, if MPI is not supported returns 0.
-	static int get_mpi_rank();
+    /// Returns number of actual process, if MPI is not supported returns -1.
+	int get_mpi_rank();
 
-    /// Initialize instance object in format 'log_file_name.process.log'
-	static void init(const std::string &log_file_name, bool no_log = false);
+	/// Set rank of actual process by MPI communicator.
+	int setup_mpi(MPI_Comm comm);
+
+    /// Initialize instance object in format 'log_file_base.process.log'.
+	void set_log_file(std::string log_file_base);
 
     /// Check if singleton instance object is initialize.
-	static inline bool is_init()
-	{ return (instance_ != nullptr); }
+	inline bool is_init()
+	{ return init_; }
 
 	/// Destructor
-	~LoggerFileStream();
+	~LoggerOptions();
 private:
-	/// Forbidden empty constructor
-	LoggerFileStream();
-
 	/// Forbidden constructor
-	LoggerFileStream(const char* filename);
+	LoggerOptions();
 
 	/// Singleton instance
-	static LoggerFileStream* instance_;
+	static LoggerOptions* instance_;
+
+	/// Stream for storing logger messages to file.
+	std::ofstream file_stream_;
+
+	/// Actual process number
+	int mpi_rank_;
 
 	/// Turn off logger file output
-	static bool no_log_;
+	bool no_log_;
+
+	/// Flag sign if logger is initialized by set_log_file method
+	bool init_;
 
 	friend class MultiTargetBuf;
 };
@@ -122,7 +132,7 @@ private:
  * for individual leves. These output streams are -
  *  - standard console output (std::cout)
  *  - standard error output (std::cerr)
- *  - file output (LoggerFileStream class)
+ *  - file output (LoggerOptions class)
  *
  * Logger distinguishes four type of levels -
  *  - warning: printed to standard error and file output
@@ -130,7 +140,7 @@ private:
  *  - log: printed to file output
  *  - debug: printed to file output (level is used only in debug mode)
  *
- * File output is optional. See \p LoggerFileStream for setting this output stream.
+ * File output is optional. See \p LoggerOptions for setting this output stream.
  *
  * <b>Example of Logger usage:</b>
  *

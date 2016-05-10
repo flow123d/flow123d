@@ -15,7 +15,8 @@
 
 TEST(Logger, CompleteTest) {
 	Profiler::initialize();
-	LoggerFileStream::init("flow123d");
+	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_log_file("flow123d");
 
 	MessageOut() << "Test of logger \n... next line" << "\n" << "... next line" << std::endl;
 
