@@ -67,6 +67,8 @@ public:
     
     void update_solution(arma::vec &init_vector, arma::vec &output_vec) override;
     
+    bool evaluate_time_constraint(double &time_constraint) override;
+    
 protected:
     /**
      *   Computes the standard fundamental matrix.
@@ -75,7 +77,7 @@ protected:
     
     /// The solution is computed only by a matrix multiplication (standard fundamental matrix).
     arma::mat solution_matrix_;
-
+    
 private:
     /// Registrar of class to factory
     static const int registrar;
