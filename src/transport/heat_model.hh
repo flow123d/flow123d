@@ -19,6 +19,7 @@
 #ifndef HEAT_MODEL_HH_
 #define HEAT_MODEL_HH_
 
+#include "coupling/equation.hh"
 #include "advection_diffusion_model.hh"
 #include "fields/bc_field.hh"
 #include "fields/bc_multi_field.hh"
@@ -26,8 +27,56 @@
 #include "fields/multi_field.hh"
 
 
+class HeatProcessBase : public EquationBase
+{
+public:
+    typedef HeatProcessBase FactoryBaseType;
 
-class HeatTransferModel : public AdvectionDiffusionModel, public AdvectionProcessBase {
+
+    HeatProcessBase(Mesh &mesh, const Input::Record in_rec)
+    : EquationBase(mesh, in_rec)
+    {};
+
+    /**
+     * This method takes sequential PETSc vector of side velocities and update
+     * transport matrix. The ordering is same as ordering of sides in the mesh.
+     * We just keep the pointer, but do not destroy the object.
+     *
+     * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
+     */
+    virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
+
+    /// Common specification of the input record for secondary equations.
+    static Input::Type::Abstract & get_input_type() {
+        return Input::Type::Abstract("Heat",
+                "Equation for heat transfer.")
+                .close();
+    }
+};
+
+
+class HeatNothing : public HeatProcessBase {
+public:
+    inline HeatNothing(Mesh &mesh_in)
+    : HeatProcessBase(mesh_in, Input::Record() )
+
+    {
+        // make module solved for ever
+        time_=new TimeGovernor();
+        time_->next_time();
+    };
+
+    inline virtual ~HeatNothing()
+    {}
+
+    inline void set_velocity_field(const MH_DofHandler &dh) override {};
+
+    inline virtual void output_data() override {};
+
+};
+
+
+class HeatTransferModel : public AdvectionDiffusionModel, public HeatProcessBase {
 public:
 
 	class ModelEqData : public FieldSet {
@@ -100,9 +149,6 @@ public:
 		static IT::Selection get_output_selection();
 	};
 
-
-
-	typedef AdvectionProcessBase FactoryBaseType;
 
 
 	HeatTransferModel(Mesh &mesh, const Input::Record in_rec);

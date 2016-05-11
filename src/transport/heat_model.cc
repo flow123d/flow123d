@@ -104,7 +104,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Porosity.")
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
-            .flags_add(in_main_matrix & in_time_term);
+            .flags_add(input_copy & in_main_matrix & in_time_term);
 
     *this+=fluid_density
             .name("fluid_density")
@@ -238,7 +238,7 @@ IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 
 
 HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
-		AdvectionProcessBase(mesh, in_rec),
+		HeatProcessBase(mesh, in_rec),
 		flux_changed(true),
 		mh_dh(nullptr)
 {

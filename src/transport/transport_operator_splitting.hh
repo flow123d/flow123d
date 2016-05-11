@@ -224,6 +224,7 @@ public:
 
     virtual void set_velocity_field(const MH_DofHandler &dh) override;
 
+    void initialize() override;
     void zero_time_step() override;
     void update_solution() override;
 
