@@ -22,6 +22,8 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x+y
+      - region: ALL
+        porosity: 0.25
     output:
       output_stream:
         file: flow.pvd
@@ -50,7 +52,6 @@ problem: !Coupling_Sequential
           diff_m:
           - 0
           - 1e-2
-          porosity: 0.25
         - region: BOUNDARY
           bc_conc: 1.0
       solver: !Petsc

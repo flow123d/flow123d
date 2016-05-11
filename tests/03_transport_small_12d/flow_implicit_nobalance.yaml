@@ -18,6 +18,11 @@ problem: !Coupling_Sequential
         cross_section: 1
       - region: IMPLICIT BOUNDARY
         flow_old_bcd_file: ./input/test3.fbc
+      - region: IMPLICIT BOUNDARY
+        rid: 17
+        porosity: 0.25
+      - rid: 18
+        porosity: 0.25
     output:
       output_stream: 
         file: flow.pvd
@@ -34,10 +39,8 @@ problem: !Coupling_Sequential
       input_fields:
         - rid: 17
           init_conc: 0
-          porosity: 0.25
         - rid: 18
           init_conc: 0
-          porosity: 0.25
         - region: IMPLICIT BOUNDARY
           bc_conc: 1
       solver: !Petsc

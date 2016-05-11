@@ -31,6 +31,8 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
+      - region: subset
+        porosity: 0.25
     balance: true
     output:
       output_stream:
@@ -49,7 +51,6 @@ problem: !Coupling_Sequential
           bc_conc: 1
         - region: subset
           init_conc: 0
-          porosity: 0.25
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
