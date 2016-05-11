@@ -208,6 +208,10 @@ DarcyMH::EqData::EqData()
 
     ADD_FIELD(storativity,"Storativity.", "0.0" );
     	storativity.units( UnitSI().m(-1) );
+        
+    ADD_FIELD(porosity, "Porosity.", "1.0" );
+        porosity.units( UnitSI::dimensionless() )
+                .flags(declare_input & allow_output);
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -287,7 +291,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
                 (data_.gravity_, "bc_switch_piezo_head") );
 
         data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-        data_.mark_input_times(*time_);
+        data_.subset(FieldFlag::equation_input).mark_input_times(*time_);
     }
     output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
@@ -319,7 +323,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 
 void DarcyMH::zero_time_step()
 {
-    data_.set_time(time_->step(), LimitSide::right);
+    data_.subset(FieldFlag::equation_input).set_time(time_->step(), LimitSide::right);
     // zero_time_term means steady case
     bool zero_time_term_from_right
         = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
@@ -372,7 +376,7 @@ void DarcyMH::update_solution()
 
     time_->next_time();
 
-    data_.set_time(time_->step(), LimitSide::left);
+    data_.subset(FieldFlag::equation_input).set_time(time_->step(), LimitSide::left);
     bool zero_time_term_from_left
         = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     bool jump_time = data_.storativity.is_jump_time();
@@ -397,7 +401,7 @@ void DarcyMH::update_solution()
         return;
     }
 
-    data_.set_time(time_->step(), LimitSide::right);
+    data_.subset(FieldFlag::equation_input).set_time(time_->step(), LimitSide::right);
     bool zero_time_term_from_right
         = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     if (zero_time_term_from_right) {
@@ -1277,7 +1281,7 @@ void DarcyMH::assembly_linear_system() {
 
     bool is_steady = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 	//DBGMSG("Assembly linear system\n");
-	if (data_.changed()) {
+	if (data_.subset(FieldFlag::equation_input).changed()) {
 		//DBGMSG("  Data changed\n");
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");

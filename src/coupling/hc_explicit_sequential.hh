@@ -28,6 +28,7 @@ class DarcyFlowInterface;
 class Mesh;
 class EquationBase;
 class AdvectionProcessBase;
+class HeatProcessBase;
 
 
 /**
@@ -62,8 +63,11 @@ private:
     /// steady or unsteady water flow simulator based on MH scheme
     std::shared_ptr<DarcyFlowInterface> water;
 
-    /// explicit transport with chemistry through operator splitting
-    std::shared_ptr<AdvectionProcessBase> secondary_eq;
+    /// solute transport with chemistry through operator splitting
+    std::shared_ptr<AdvectionProcessBase> solute;
+    
+    /// heat transport
+    std::shared_ptr<HeatProcessBase> heat;
 
 };
 
