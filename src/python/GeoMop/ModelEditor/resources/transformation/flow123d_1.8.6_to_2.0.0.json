@@ -582,6 +582,174 @@
         "destination_path": "/problem/heat_equation",
         "type-filter": "Heat_AdvectionDiffusion_DG"
       }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/input_fields/*/region",
+        "destination_path": "/problem/flow_equation/_input_fields/$1/region",
+        "keep-source": "true",
+        "create_path": "true"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/input_fields/*/rid",
+        "destination_path": "/problem/flow_equation/_input_fields/$1/rid",
+        "keep-source": "true",
+        "create_path": "true"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/input_fields/*/time",
+        "destination_path": "/problem/flow_equation/_input_fields/$1/time",
+        "keep-source": "true",
+        "create_path": "true"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/input_fields/*/porosity",
+        "destination_path": "/problem/flow_equation/_input_fields/$1/porosity"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields/*/region",
+        "key-not-exists-filter": "porosity"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields/*/rid",
+        "key-not-exists-filter": "porosity"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields/*/time",
+        "key-not-exists-filter": "porosity"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields/*"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/flow_equation/input_fields",
+        "addition_path": "/problem/flow_equation/_input_fields"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/transport/input_fields/*/region",
+        "destination_path": "/problem/flow_equation/_input_fields/$1/region",
+        "keep-source": "true",
+        "create_path": "true"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/transport/input_fields/*/rid",
+        "destination_path": "/problem/flow_equation/_input_fields/$1/rid",
+        "keep-source": "true",
+        "create_path": "true"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/transport/input_fields/*/time",
+        "destination_path": "/problem/flow_equation/_input_fields/$1/time",
+        "keep-source": "true",
+        "create_path": "true"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/transport/input_fields/*/porosity",
+        "destination_path": "/problem/flow_equation/_input_fields/$1/porosity"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields/*/region",
+        "key-not-exists-filter": "porosity"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields/*/rid",
+        "key-not-exists-filter": "porosity"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields/*/time",
+        "key-not-exists-filter": "porosity"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields/*"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/flow_equation/_input_fields"
+      }
+    },
+    {
+      "NAME": "Move porosity to flow",
+      "action": "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/flow_equation/input_fields",
+        "addition_path": "/problem/flow_equation/_input_fields"
+      }
     }
       
   ]
