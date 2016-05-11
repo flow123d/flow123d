@@ -17,7 +17,8 @@ problem: !Coupling_Sequential
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
-        a_tol: 1.0e-07
+        a_tol: 1e-9
+        r_tol: 1e-9
     input_fields:
       - region: rock
         conductivity: 0.001
@@ -59,7 +60,8 @@ problem: !Coupling_Sequential
       time_step: 0.1
       name: transport_output_stream
     solver: !Petsc
-      a_tol: 1.0e-07
+      a_tol: 1e-9
+      r_tol: 1e-9
     time:
       end_time: 1
   heat_equation: !Heat_AdvectionDiffusion_DG
@@ -83,6 +85,7 @@ problem: !Coupling_Sequential
       time_step: 5
       name: transport_output_stream
     solver: !Petsc
-      a_tol: 1.0e-07
+      a_tol: 1e-9
+      r_tol: 1e-9
     time:
       end_time: 20
