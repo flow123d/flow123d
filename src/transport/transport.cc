@@ -51,17 +51,18 @@ FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
 
 namespace IT = Input::Type;
 
+const string _equation_name = "Solute_Advection_FV";
 
 const int ConvectionTransport::registrar =
-		Input::register_class< ConvectionTransport, Mesh &, const Input::Record >("Convection_FV") +
+		Input::register_class< ConvectionTransport, Mesh &, const Input::Record >(_equation_name) +
 		ConvectionTransport::get_input_type().size();
 
 const IT::Record &ConvectionTransport::get_input_type()
 {
-	return IT::Record("Convection_FV", "Explicit in time finite volume method for solute transport.")
+	return IT::Record(_equation_name, "Explicit in time finite volume method for advection only solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
 			.declare_key("input_fields", IT::Array(
-			        EqData().make_field_descriptor_type("Convection_FV")),
+			        EqData().make_field_descriptor_type(_equation_name)),
 			        IT::Default::obligatory(),
 			        "")
 
@@ -69,15 +70,15 @@ const IT::Record &ConvectionTransport::get_input_type()
 			                IT::Array(
 			                        ConvectionTransport::EqData().output_fields
 			                            .make_output_field_selection(
-			                                "ConvectionTransport_output_fields",
-			                                "Selection of output fields for Convection Solute Transport model.")
+			                                    _equation_name + "_output_fields",
+			                                "Selection of output fields for Advective Solute Transport model.")
 			                            .close()),
 			                IT::Default("\"conc\""),
 			                "List of fields to write to output file.")
 			.close();
 }
 
-
+/*
 const IT::Selection & ConvectionTransport::get_output_selection() {
 	return  ConvectionTransport::EqData().output_fields
             .make_output_field_selection(
@@ -86,7 +87,7 @@ const IT::Selection & ConvectionTransport::get_output_selection() {
             .close();
 
 }
-
+*/
 
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
@@ -550,6 +551,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         VecMaxPointwiseDivide(cfl,mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
         cfl_max_step = 1 / cfl_max_step;
+        DBGMSG("CFL constraint (transport): %g\n", cfl_max_step);
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled

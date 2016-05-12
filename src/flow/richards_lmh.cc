@@ -32,7 +32,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
 namespace it=Input::Type;
 
 
-DarcyFlowLMH_Unsteady::EqData::EqData()
+RichardsLMH::EqData::EqData()
 {
 
     ADD_FIELD(water_content_saturated,
@@ -58,15 +58,15 @@ DarcyFlowLMH_Unsteady::EqData::EqData()
 }
 
 
-const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
+const it::Record & RichardsLMH::get_input_type() {
     it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
     .copy_keys( DarcyFlowMH_Steady::type_field_descriptor() )
     .copy_keys( DarcyFlowLMH_Unsteady::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
 
-    return it::Record("UnsteadyDarcy_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
+    return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
-        .copy_keys(DarcyFlowMH_Steady::get_input_type())
+        .copy_keys(DarcyMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
 
@@ -74,21 +74,21 @@ const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
 }
 
 
-const int DarcyFlowLMH_Unsteady::registrar =
-        Input::register_class< DarcyFlowLMH_Unsteady, Mesh &, const Input::Record >("UnsteadyDarcy_LMH") +
-        DarcyFlowLMH_Unsteady::get_input_type().size();
+const int RichardsLMH::registrar =
+        Input::register_class< RichardsLMH, Mesh &, const Input::Record >("Flow_Richards_LMH") +
+        RichardsLMH::get_input_type().size();
 
 
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec)
+RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
+    : DarcyMH(mesh_in, in_rec)
 {
     data_ = make_shared<EqData>();
     DarcyFlowMH_Steady::data_ = data_;
     EquationBase::eq_data_ = data_.get();
 }
 
-void DarcyFlowLMH_Unsteady::initialize_specific() {
+void RichardsLMH::initialize_specific() {
 
     // create edge vectors
     unsigned int n_local_edges = edge_new_local_4_mesh_idx_.size();
@@ -129,13 +129,13 @@ void DarcyFlowLMH_Unsteady::initialize_specific() {
 }
 
 /*
-void DarcyFlowLMH_Unsteady::local_assembly_specific(LocalAssemblyData &local_data)
+void RichardsLMH::local_assembly_specific(LocalAssemblyData &local_data)
 {
 
 }
 */
 
-void DarcyFlowLMH_Unsteady::read_initial_condition()
+void RichardsLMH::read_initial_condition()
 {
     // apply initial condition
     // cycle over local element rows
@@ -160,7 +160,7 @@ void DarcyFlowLMH_Unsteady::read_initial_condition()
 }
 
 
-void DarcyFlowLMH_Unsteady::assembly_linear_system()
+void RichardsLMH::assembly_linear_system()
 {
 
     START_TIMER("RicharsLMH::assembly_linear_system");
@@ -216,13 +216,13 @@ void DarcyFlowLMH_Unsteady::assembly_linear_system()
 }
 
 /*
-void DarcyFlowLMH_Unsteady::compute_per_element_nonlinearities() {
+void RichardsLMH::compute_per_element_nonlinearities() {
 
 }
 */
 
 
-void DarcyFlowLMH_Unsteady::setup_time_term()
+void RichardsLMH::setup_time_term()
 {
     // save diagonal of steady matrix
     //MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
@@ -277,7 +277,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 
 
 
-void DarcyFlowLMH_Unsteady::assembly_source_term()
+void RichardsLMH::assembly_source_term()
 {
     if (balance_ != nullptr)
         balance_->start_source_assembly(water_balance_idx_);
@@ -318,7 +318,7 @@ void DarcyFlowLMH_Unsteady::assembly_source_term()
 }
 
 
-void DarcyFlowLMH_Unsteady::postprocess() {
+void RichardsLMH::postprocess() {
     int side_row, loc_edge_row, i;
     Edge* edg;
     ElementIter ele;

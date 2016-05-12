@@ -29,8 +29,9 @@ using namespace Input;
     sub_array1->new_item(1, new StorageInt(231));
     array.new_item(6, sub_array1);
 
+#ifdef FLOW123D_DEBUG_ASSERTS
     EXPECT_THROW_WHAT( {array.new_item(7, sub_array1);}, feal::Exc_assert, "index < array_.size()");
-    //EXPECT_ASSERT_DEATH( {array.new_item(7, sub_array1);}, "out of array of size:");
+#endif
 
     EXPECT_TRUE(array.get_item(0)->is_null());
     EXPECT_FALSE(array.get_item(1)->is_null());
@@ -45,7 +46,9 @@ using namespace Input;
     EXPECT_EQ(321, array.get_item(6)->get_item(0)->get_int());
     EXPECT_EQ(231, array.get_item(6)->get_item(1)->get_int());
 
+#ifdef FLOW123D_DEBUG_ASSERTS
     EXPECT_THROW_WHAT( {array.get_item(7);} , feal::Exc_assert, "Index is out of array");
+#endif
 
     // StorageArray
     EXPECT_THROW( {array.get_int();}, ExcStorageTypeMismatch);

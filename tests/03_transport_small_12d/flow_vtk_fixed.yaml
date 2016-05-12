@@ -1,4 +1,4 @@
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: 'Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption,
     sources).'
   mesh:
@@ -11,7 +11,7 @@ problem: !SequentialCoupling
       - 1d_lower
       - 1d_left_branch
   # mesh
-  primary_equation: !Steady_MH
+  flow_equation: !Steady_MH
     balance: true
     input_fields:
     - conductivity: 1.0e-06
@@ -37,7 +37,7 @@ problem: !SequentialCoupling
       a_tol: 1.0e-12
       r_tol: 1.0e-12
   # primary equation
-  secondary_equation: !TransportOperatorSplitting
+  solute_equation: !TransportOperatorSplitting
     balance:
       cumulative: true
     input_fields:
@@ -109,5 +109,5 @@ problem: !SequentialCoupling
       name: U235
     time:
       end_time: 1000000
-  # secondary_equation
+  # solute_equation
       

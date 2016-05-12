@@ -295,7 +295,7 @@ class StructureChanger:
         return add
 
     @staticmethod
-    def copy_structure(lines, l1, c1, l2, c2, indent):
+    def copy_structure(lines, l1, c1, l2, c2, indent, parent=True):
         """
         Copy structure from lines to separate array. Structure is
         move by indentation. 
@@ -309,10 +309,11 @@ class StructureChanger:
             if c1 > 0:
                 add.append(indent*" " + lines[l1][c1:])
                 from_line += 1
-                
-            #indentation2 = re.search(r'^(\s*- )(\S.*)$', lines[l1])
-            #if indentation2 is None:
-            indentation2 = re.search(r'^(\s*)(\S.*)$', lines[l1])
+            indentation2 = None
+            if parent:    
+                indentation2 = re.search(r'^(\s*- )(\S.*)$', lines[l1])
+            if indentation2 is None:
+                indentation2 = re.search(r'^(\s*)(\S.*)$', lines[l1])
             if indentation2 is None:
                 indentation2 = 0
             else:

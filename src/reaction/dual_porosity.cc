@@ -322,7 +322,11 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
         
         conc_max = std::max(previous_conc_mob-conc_average, previous_conc_immob-conc_average);
         
-        if( conc_max <= (2*scheme_tolerance_/(exponent*exponent)*conc_average) )               // forward euler
+        // the following 2 conditions guarantee:
+        // 1) stability of forward Euler's method
+        // 2) the error of forward Euler's method will not be large
+        if(time_->dt() <= por_mob*por_immob/(max(diff_vec)*(por_mob+por_immob)) &&
+           conc_max <= (2*scheme_tolerance_/(exponent*exponent)*conc_average))               // forward euler
         {
             double temp = diff_vec[sbi]*(previous_conc_immob - previous_conc_mob) * time_->dt();
             // ---compute concentration in mobile area
@@ -344,7 +348,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
         concentration_matrix_[sbi][loc_el] = conc_mob;
         conc_immobile[sbi][loc_el] = conc_immob;
     }
-  
+    
   return conc_immobile;
 }
 
@@ -395,4 +399,26 @@ void DualPorosity::output_data(void )
     
     if (reaction_mobile) reaction_mobile->output_data();
     if (reaction_immobile) reaction_immobile->output_data();
+}
+
+
+bool DualPorosity::evaluate_time_constraint(double &time_constraint)
+{
+    bool cfl_changed = false;
+    if (reaction_mobile)
+    {
+        if (reaction_mobile->evaluate_time_constraint(time_constraint))
+            cfl_changed = true;
+    }
+    if (reaction_immobile)
+    {
+        double cfl_immobile;
+        if (reaction_immobile->evaluate_time_constraint(cfl_immobile))
+        {
+            time_constraint = std::min(time_constraint, cfl_immobile);
+            cfl_changed = true;
+        }
+    }
+    
+    return cfl_changed;
 }

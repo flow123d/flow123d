@@ -91,7 +91,7 @@ public:
 
 		ModelEqData();
 
-		static  constexpr const char *  name() { return "HeatTransfer"; }
+		static  constexpr const char *  name() { return "Heat_AdvectionDiffusion"; }
 
 		static string default_output_field() { return "\"temperature\""; }
 

@@ -120,7 +120,7 @@ template<unsigned int dim> class QGauss;
  *
  */
 
-class DarcyFlowMH_Steady : public DarcyFlowInterface
+class DarcyMH : public DarcyFlowInterface
 {
 public:
     TYPEDEF_ERR_INFO( EI_Reason, string);
@@ -198,7 +198,7 @@ public:
 
 
 
-    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
+    DarcyMH(Mesh &mesh, const Input::Record in_rec);
 
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
@@ -233,7 +233,7 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
-    ~DarcyFlowMH_Steady();
+    ~DarcyMH();
 
 
 protected:
@@ -383,7 +383,7 @@ private:
 
 class P0_CouplingAssembler {
 public:
-	P0_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	P0_CouplingAssembler(const DarcyMH &darcy)
 	: darcy_(darcy),
 	  master_list_(darcy.mesh_->master_elements),
 	  intersections_(darcy.mesh_->intersections),
@@ -409,7 +409,7 @@ public:
 private:
 	typedef vector<unsigned int> IsecList;
 
-	const DarcyFlowMH_Steady &darcy_;
+	const DarcyMH &darcy_;
 
 	const vector<IsecList> &master_list_;
 	const vector<Intersection> &intersections_;
@@ -427,7 +427,7 @@ private:
 
 class P1_CouplingAssembler {
 public:
-	P1_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	P1_CouplingAssembler(const DarcyMH &darcy)
 	: darcy_(darcy),
 	  intersections_(darcy.mesh_->intersections),
 	  rhs(5),
@@ -441,7 +441,7 @@ public:
 	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
 private:
 
-	const DarcyFlowMH_Steady &darcy_;
+	const DarcyMH &darcy_;
 	const vector<Intersection> &intersections_;
 
 	arma::vec rhs;
