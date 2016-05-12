@@ -143,7 +143,8 @@ bool Abstract::finish(bool is_generic) {
 		try {
 			child_data_->selection_default_.check_validity(child_data_->selection_of_childs);
 		} catch (ExcWrongDefault & e) {
-			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of Abstract '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
+			ASSERT(false)(child_data_->selection_default_.value())(this->type_name())
+					.error("Default value for TYPE key do not match any descendant of Abstract.");
 		}
     }
 

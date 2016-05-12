@@ -173,7 +173,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         if (string_type != NULL ) return make_storage(p, string_type );
 
         // default -> error
-        xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
+        THROW( Type::ExcUnknownDescendant() << Type::EI_TypeName(typeid(type).name()) );
     }
 
     return new StorageNull();
@@ -237,7 +237,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         }
 
         for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
-        	xprintf(Warn, "Unprocessed key '%s' in %s '%s'.\n", (*set_it).c_str(), record->class_name().c_str(), p.as_string().c_str() );
+        	WarningOut() << "Unprocessed key '" << (*set_it) << "' in " << record->class_name()
+        			<< " '" << p.as_string() << "'." << std::endl;
         }
 
         return storage_array;
@@ -632,7 +633,7 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
 
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration
-        xprintf(Msg, "Wrong default value while reading an input stream:\n");
+    	e << Type::EI_Desc("Wrong default value while reading an input stream:\n");
         e << EI_KeyName("UNKNOWN KEY");
         throw;
     }
