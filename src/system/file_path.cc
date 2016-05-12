@@ -32,7 +32,7 @@ FilePath::FilePath(string file_path, const  FileType ft)
 {
 	abs_file_path_ = file_path;
     if (output_dir == "") {
-        xprintf(Warn, "Creating FileName object before set_io_dirs is called. No file path resolving.\n");
+    	WarningOut() << "Creating FileName object before set_io_dirs is called. No file path resolving." << std::endl;
         return;
     }
 
@@ -109,7 +109,9 @@ void FilePath::substitute_value() {
     for (std::map<std::string,std::string>::const_iterator it = this->placeholder.begin(); it != this->placeholder.end(); ++it) {
         size_t i = abs_file_path_.find(it->first,0);
         if (i != std::string::npos) {
-            if (it->second == "" ) xprintf(Warn, "Substituting placeholder %s with empty value.\n", it->first.c_str());
+            if (it->second == "" ) {
+            	WarningOut() << "Substituting placeholder " << it->first << " with empty value." << std::endl;
+            }
             abs_file_path_.replace(i, it->first.size(), it->second);
         }
     }

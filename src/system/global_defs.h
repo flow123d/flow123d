@@ -27,6 +27,7 @@
 #include "config.h"
 #include "mpi.h"
 #include "asserts.hh"
+#include "logger.hh"
 
 /*! @brief Debugging macros.
  *
