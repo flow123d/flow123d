@@ -27,9 +27,31 @@
 
 
 /**
- * Helper class defined logger file.
+ * Helper class defined logger output file and flags for setting of logger.
  *
  * Use singleton design pattern.
+ *
+ * Setting of logger is ensured by two methods: setup_mpi and set_log_file. Both methods are
+ * optional.
+ *
+ *  - setup_mpi sets actual rank of procces according to given MPI communicator. If setting
+ *    is not performed, rank has default value -1. For correct functioning this method must
+ *    be called before set_log_file.
+ *
+ *  - set_log_file allows set base name of logger output file (prefix). Name of logger file
+ *    is created in format '<log_file_base>.<MPI_rank>.log'. If MPI rank is not set, it's
+ *    generated random value (this option is not recommended). Method allows turn off logging
+ *    if parameter log_file_base is set to empty string. If set_log_file method is not called,
+ *    all logger messages are redirected to screen output.
+ *
+ * Example of complete initialization of logger:
+ *
+ @code
+   std::string log_file_prefix;
+   // ... set value of log_file_prefix
+   LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+   LoggerOptions::get_instance().set_log_file(log_file_prefix);
+ @endcode
  */
 class LoggerOptions
 {
