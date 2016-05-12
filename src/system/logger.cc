@@ -52,6 +52,8 @@ int LoggerOptions::get_mpi_rank() {
 
 
 int LoggerOptions::setup_mpi(MPI_Comm comm) {
+	ASSERT(!init_).error("Setup MPI must be performed before setting logger file.");
+
 	return MPI_Comm_rank(comm, &mpi_rank_);
 }
 
@@ -68,6 +70,7 @@ void LoggerOptions::set_log_file(std::string log_file_base) {
 			std::mt19937 gen(rd());
 			std::uniform_int_distribution<int> dis(0, 999999);
 			mpi_rank = dis(gen);
+			WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used." << std::endl;
 		}
 		std::stringstream file_name;
 		file_name << log_file_base << "." << mpi_rank << ".log";
