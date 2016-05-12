@@ -38,7 +38,7 @@
 # Multijob  project - release
 - project:
     name: "Multijob project release"
-    platform: [ linux, windows, windows32 ]
+    platform: [ linux, win64, win32 ]    
     build-type: release
     unit-dir: 
       - $PLACEHOLDER_unit_list$
@@ -219,6 +219,39 @@
           remove-prefix: build-${{GIT_BRANCH}}/publish_dir
 
 
+#######################################################################
+# Aux poke jobs.
+##########################################################
+- job:    
+    name: "aux-poke-win64-package-test-all"
+    scm:
+      - git:
+          url: https://github.com/flow123d/flow123d.git
+          basedir: flow123d     # workspace/flow123d
+          browser: githubweb
+          browser-url: https://github.com/flow123d/flow123d/
+          wipe-workspace: yes
+          skip-tag: true
+          branches:
+            - 2.0.0_rc
+            - JB_jenkins_package_test
+    triggers:
+      # run every day around 3 AM even if there is no change in code
+      - github
+    wrappers:
+      - build-name:
+          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+    builders:
+      - shell: |
+          echo "BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}" >prop.file
+          echo "GIT_BRANCH=${{GIT_BRANCH##origin/}}" >>prop.file
+    publishers:
+        trigger-parameterized-builds:
+            project: [Windows-64-package-test-all]
+            property-file: "prop.file"
+            condition: "FAILED_OR_BETTER"
+ 
+
 
 #########################################################################################
 # Multijob Job Templates
@@ -376,6 +409,8 @@
           projects:
             - name: "Flow123d-{platform}-packages"
 
+
+
 ######
 # Coverage with coberture
 # - install cobertura plugin
@@ -428,8 +463,7 @@
       # - pipeline: 
       # - plot:
 
-
-
+        
 
 ####################################################################
 # Multijob  project - (coveragetest)
@@ -488,6 +522,7 @@
           max-per-node: 1
           categories:
             - coverage
+          option: category  
     builders:
       - shell: |
           # run test and generate coverage.xml and delete old files
@@ -588,6 +623,7 @@
           max-per-node: 1
           categories:
             - coverage
+          option: category  
     builders:
       - shell: |
           # run test and generate coverage.xml and delete old files
@@ -801,10 +837,12 @@
     name: "Windows-{arch}-package-{action}"
     display-name: "Windows {arch} package - {action}"
     defaults: flow123d-windows-package-test
-    builders:
-      - batch: |
-          python package.py -a {arch} -m {action} --version %GIT_BRANCH%
+    #builders:
+      #- batch: |
+      #    python package.py -a {arch} -m {action} --version %GIT_BRANCH%
 
+
+         
 
 ########################################################################
 # Main multijob - release
@@ -815,15 +853,19 @@
     display-name: "Windows {arch} package multijob"
     defaults: flow123d-windows-package-test
     scm:
-      - git:
-          remotes:
-             - origin: 
-                 url: https://github.com/flow123d/flow123d.git
-             - packages: 
-                 url: https://github.com/x3mSpeedy/Flow123d-package-test.git
-          branches:
-            - origin/master
-            - origin/JHY_continuous_package_testing
+      - url:
+          url-list:
+             - http://http://flow.nti.tul.cz/packages/${{GIT_BRANCH##origin/}}/flow123d_${{GIT_BRANCH##origin/}}_windows_x86.exe
+
+#      - git:
+#          remotes:
+#             - origin: 
+#                 url: https://github.com/flow123d/flow123d.git
+#             - packages: 
+#                 url: https://github.com/x3mSpeedy/Flow123d-package-test.git
+#          branches:
+#            - origin/master           
+#            - origin/JB_jenkins_package_test
     triggers: 
       # run every day around 5 AM even if there is no change in code
       - timed: "H 5  * * *"
@@ -831,7 +873,8 @@
     builders:
       - batch: |
             rd /s /q windows_x86_{arch}
-            git checkout -f packages/master
+            url checkout
+             
       - multijob:
           condition: COMPLETED
           name: 'Install'
