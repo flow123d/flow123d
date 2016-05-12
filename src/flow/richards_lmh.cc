@@ -60,8 +60,8 @@ RichardsLMH::EqData::EqData()
 
 const it::Record & RichardsLMH::get_input_type() {
     it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
-    .copy_keys( DarcyFlowMH_Steady::type_field_descriptor() )
-    .copy_keys( DarcyFlowLMH_Unsteady::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
+    .copy_keys( DarcyMH::type_field_descriptor() )
+    .copy_keys( RichardsLMH::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
 
     return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
@@ -84,7 +84,7 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
     : DarcyMH(mesh_in, in_rec)
 {
     data_ = make_shared<EqData>();
-    DarcyFlowMH_Steady::data_ = data_;
+    DarcyMH::data_ = data_;
     EquationBase::eq_data_ = data_.get();
 }
 

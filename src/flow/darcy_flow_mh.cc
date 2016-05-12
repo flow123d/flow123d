@@ -127,7 +127,7 @@ const it::Record & DarcyMH::type_field_descriptor() {
         return field_descriptor;
 }
 
-const it::Record & DarcyFlowMH_Steady::get_input_type() {
+const it::Record & DarcyMH::get_input_type() {
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
@@ -344,10 +344,10 @@ void DarcyMH::initialize() {
     initialize_specific();
 }
 
-void DarcyFlowMH_Steady::initialize_specific()
+void DarcyMH::initialize_specific()
 {}
 
-void DarcyFlowMH_Steady::zero_time_step()
+void DarcyMH::zero_time_step()
 {
 
     /* TODO:

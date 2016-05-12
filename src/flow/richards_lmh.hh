@@ -48,7 +48,7 @@ public:
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
-    class EqData : public DarcyFlowMH_Steady::EqData {
+    class EqData : public DarcyMH::EqData {
     public:
         EqData();
         // input fields

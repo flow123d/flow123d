@@ -14,7 +14,7 @@
     template<int dim>
     class AssemblyLMH : public AssemblyMH<dim> {
     public:
-        typedef std::shared_ptr<DarcyFlowLMH_Unsteady::EqData> AssemblyDataPtr;
+        typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtr;
         AssemblyLMH(AssemblyDataPtr data)
         : AssemblyMH<dim>(data)
         {}

@@ -19,7 +19,7 @@
     class AssemblyBase
     {
     public:
-        typedef std::shared_ptr<DarcyFlowMH_Steady::EqData> AssemblyDataPtr;
+        typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
         typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
 
         virtual ~AssemblyBase() {}
