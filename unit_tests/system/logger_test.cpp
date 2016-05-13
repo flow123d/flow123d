@@ -26,4 +26,6 @@ TEST(Logger, CompleteTest) {
 	double start_time = 0.5;
 	WarningOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size
     		<< " elements." << std::endl << "... next line in separate message" << std::endl;
+
+	LogOut() << "Log output - only to file stream" << std::endl;
 }
