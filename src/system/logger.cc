@@ -18,6 +18,7 @@
 
 #include "system/logger.hh"
 #include "system/global_defs.h"
+#include "system/file_path.hh"
 #include "config.h"
 
 #include <time.h>
@@ -74,7 +75,7 @@ void LoggerOptions::set_log_file(std::string log_file_base) {
 		}
 		std::stringstream file_name;
 		file_name << log_file_base << "." << mpi_rank << ".log";
-		file_stream_.open( file_name.str().c_str(), std::ofstream::out );
+		file_stream_.open( FilePath(file_name.str().c_str(), FilePath::output_file), std::ofstream::out );
 	}
 	init_ = true;
 }
