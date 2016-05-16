@@ -37,9 +37,6 @@ const Record & OutputVTK::get_input_type() {
 		// The parallel or serial variant
 		.declare_key("parallel", Bool(), Default("false"),
 			"Parallel or serial version of file format.")
-		// Type of compression
-		.declare_key("compression", OutputVTK::get_input_type_compression(), Default("\"none\""),
-			"Compression used in output stream file format.")
 		.close();
 }
 
@@ -48,18 +45,10 @@ const Selection & OutputVTK::get_input_type_variant() {
     return Selection("VTK variant (ascii or binary)")
 		.add_value(OutputVTK::VARIANT_ASCII, "ascii",
 			"ASCII variant of VTK file format")
-		.add_value(OutputVTK::VARIANT_BINARY, "binary",
-			"Binary variant of VTK file format (not supported yet)")
-		.close();
-}
-
-
-const Selection & OutputVTK::get_input_type_compression() {
-    return Selection("Type of compression of VTK file format")
-		.add_value(OutputVTK::COMPRESSION_NONE, "none",
-			"Data in VTK file format are not compressed")
-		.add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
-			"Data in VTK file format are compressed using zlib (not supported yet)")
+		.add_value(OutputVTK::VARIANT_BINARY_UNCOMPRESSED, "binary",
+			"Uncompressed binary variant of VTK file format (not supported yet)")
+		.add_value(OutputVTK::VARIANT_BINARY_ZLIB, "binary_zlib",
+			"Binary variant of VTK file format compressed with zlib (not supported yet)")
 		.close();
 }
 
