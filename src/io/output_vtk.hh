@@ -63,11 +63,6 @@ public:
     static const Input::Type::Selection & get_input_type_variant();
 
     /**
-	 * \brief The definition of input record for selection of compression type
-	 */
-    static const Input::Type::Selection & get_input_type_compression();
-
-    /**
      * \brief This function write data to VTK (.pvd) file format
      * for curent time
      */
@@ -90,17 +85,9 @@ protected:
      */
     typedef enum Variant {
     	VARIANT_ASCII  = 1,
-    	VARIANT_BINARY = 2
+    	VARIANT_BINARY_UNCOMPRESSED = 2,
+    	VARIANT_BINARY_ZLIB = 3
     } Variant;
-
-    /**
-     * \brief The declaration of enumeration used for type of compression
-     * used in file format
-     */
-    typedef enum Compression {
-    	COMPRESSION_NONE = 1,
-    	COMPRESSION_GZIP = 2
-    } Compression;
 
     // VTK Element types
     typedef enum {
