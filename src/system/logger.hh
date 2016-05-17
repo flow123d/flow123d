@@ -84,7 +84,11 @@ private:
 	/// Stream for storing logger messages to file.
 	std::ofstream file_stream_;
 
-	/// Actual process number
+	/**
+	 * @brief Actual process number
+	 *
+	 * Default value is set to -1 and indicates that MPI is not set
+	 */
 	int mpi_rank_;
 
 	/// Turn off logger file output
