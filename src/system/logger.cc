@@ -41,8 +41,10 @@ LoggerOptions::LoggerOptions()
 
 
 LoggerOptions::~LoggerOptions() {
-	file_stream_ << std::flush;
-	file_stream_.close();
+	if (file_stream_.is_open()) {
+		file_stream_ << std::flush;
+		file_stream_.close();
+	}
 }
 
 
@@ -77,6 +79,17 @@ void LoggerOptions::set_log_file(std::string log_file_base) {
 		file_stream_.open( file_name.str().c_str(), std::ofstream::out );
 	}
 	init_ = true;
+}
+
+
+void LoggerOptions::reset() {
+	mpi_rank_ = -1;
+	no_log_ = false;
+	init_ = false;
+	if (file_stream_.is_open()) {
+		file_stream_ << std::flush;
+		file_stream_.close();
+	}
 }
 
 

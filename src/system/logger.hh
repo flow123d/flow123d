@@ -68,6 +68,9 @@ public:
     /// Initialize instance object in format 'log_file_base.process.log'.
 	void set_log_file(std::string log_file_base);
 
+    /// Reset MPI rank and log file name
+	void reset();
+
     /// Check if singleton instance object is initialize.
 	inline bool is_init()
 	{ return init_; }
