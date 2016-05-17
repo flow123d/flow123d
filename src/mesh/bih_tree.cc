@@ -227,7 +227,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 	}
 
 
-#ifdef DEBUG_ASSERT
+#ifdef FLOW123D_DEBUG_ASSERTS
 	// check uniqueness of element indexes
 	std::vector<unsigned int> cpy(result_list);
 	sort(cpy.begin(), cpy.end());
