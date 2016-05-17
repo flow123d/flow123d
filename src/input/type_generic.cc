@@ -136,7 +136,7 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
         ParameterMap aux_map;
         for(auto &item : vec) aux_map[item.first]=0;
 
-		FEAL_DEBUG_ASSERT(map_it != created_instance_.second.end())(vec_it->first)(TypeBase::print_parameter_map_keys_to_json(aux_map))
+		ASSERT_DBG(map_it != created_instance_.second.end())(vec_it->first)(TypeBase::print_parameter_map_keys_to_json(aux_map))
 				.error("Unused parameter in input type instance");
 	}
 #endif

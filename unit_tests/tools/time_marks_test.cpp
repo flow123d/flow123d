@@ -6,6 +6,7 @@
  */
 
 #define DEBUG_ASSERTS_WITHOUT_MPI
+#define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest.hh>
 

@@ -406,7 +406,7 @@ protected:
 
     /// Assertion for finished Type::Record.
     inline void finished_check() const {
-    	FEAL_DEBUG_ASSERT(is_finished())(this->type_name()).error();
+    	ASSERT(is_finished())(this->type_name()).error();
     }
 
     /// Auxiliary method that actually makes the copy of keys.
@@ -576,8 +576,8 @@ inline bool Record::has_key(const string& key) const
 
 
 inline unsigned int Record::size() const {
-	FEAL_DEBUG_ASSERT(is_closed())(this->type_name()).error();
-	FEAL_DEBUG_ASSERT(data_->keys.size() == data_->key_to_index.size())(data_->keys.size())(data_->key_to_index.size()).error();
+	ASSERT(is_closed())(this->type_name()).error();
+	ASSERT_EQ(data_->keys.size(), data_->key_to_index.size()).error();
     return data_->keys.size();
 }
 
