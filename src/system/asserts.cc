@@ -85,4 +85,12 @@ void Assert::warning(std::string warning_msg)
 	std::cerr << exception_.what();
 }
 
+void Assert::check_assert_dbg_count() {
+	static int count_LINENUM = 0;
+	ASSERT(count_LINENUM != Assert::assert_dbg_limit)(Assert::assert_dbg_limit)
+			.warning("Count of FEAL_ASSERT_DBG macro is more than given limit!");
+
+	++count_LINENUM;
+}
+
 } // namespace feal
