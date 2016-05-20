@@ -16,6 +16,42 @@
 #include "quadrature/quadrature_lib.hh"
 
 
+
+/**
+ * This is prototype of further much more complex and general accessor templated by
+ * element dimension. In fact we shall need an accessor for every kind of element interaction integral.
+ */
+class LocalElementAccessor {
+public:
+    LocalElementAccessor(ElementFullIter iter, unsigned int loc_idx)
+    :iter(iter), loc_idx(loc_idx) {};
+
+    ElementFullIter iter;
+    unsigned int loc_idx;
+    int local_edge_idx[4];
+    int edge_row[4];
+
+    void update() {
+        centre_ = iter->centre();
+        accessor_ = iter->element_accessor();
+    }
+
+    const arma::vec3 &centre() const {
+        return centre_;
+    }
+
+    const ElementAccessor<3> accessor() const {
+        return accessor_;
+    }
+private:
+    arma::vec3 centre_;
+    ElementAccessor<3> accessor_;
+};
+
+
+
+
+
     class AssemblyBase
     {
     public:
@@ -38,8 +74,7 @@
 
 
         // assembly just A block of local matrix
-        virtual void assembly_local_matrix(ElementFullIter ele, unsigned int loc_ele_idx,
-                                           arma::mat &local_matrix) =0;
+        virtual void assembly_local_matrix(LocalElementAccessor ele) =0;
 
         // assembly compatible neighbourings
         virtual void assembly_local_vb(double *local_vb,
@@ -50,6 +85,12 @@
         // TODO: implement and use general interpolations between discrete spaces
         virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
     };
+
+
+
+
+
+
 
     template<int dim>
     class AssemblyMH : public AssemblyBase
@@ -66,7 +107,8 @@
           velocity_interpolation_quad_(0), // veloctiy values in barycenter
           velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
-          ad_(data)
+          ad_(data),
+          system_(data->system_)
         {}
 
 
@@ -99,14 +141,14 @@
             return local_matrix;
         }
 
-        void assembly_local_matrix(ElementFullIter ele, unsigned int loc_ele_idx,
-                                                   arma::mat &local_matrix) override
+        void assembly_local_matrix(LocalElementAccessor ele) override
         {
-            double cs = ad_->cross_section.value(ele->centre(), ele->element_accessor());
-            double conduct =  ad_->conductivity.value(ele->centre(), ele->element_accessor());
+            ele.update();
+            double cs = ad_->cross_section.value(ele.centre(), ele.accessor());
+            double conduct =  ad_->conductivity.value(ele.centre(), ele.accessor());
 
             double scale = 1 / cs /conduct;
-            local_matrix = scale*assembly_local_geometry_matrix(ele);
+            *(system_.local_matrix) = scale*assembly_local_geometry_matrix(ele.iter);
         }
 
         void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
@@ -165,6 +207,7 @@
 
         // data shared by assemblers of different dimension
         AssemblyDataPtr ad_;
+        RichardsSystem system_;
 
     };
 

@@ -241,12 +241,17 @@ DarcyMH::EqData::EqData()
 //=============================================================================
 DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
-  solution(nullptr),
-  schur0(nullptr),
-  edge_ds(nullptr),
-  el_ds(nullptr),
-  side_ds(nullptr),
-  el_4_loc(nullptr)
+    solution(nullptr),
+    schur0(nullptr),
+    edge_ds(nullptr),
+    el_ds(nullptr),
+    side_ds(nullptr),
+    el_4_loc(nullptr),
+    row_4_el(nullptr),
+    side_id_4_loc(nullptr),
+    side_row_4_id(nullptr),
+    edge_4_loc(nullptr),
+    row_4_edge(nullptr)
 {
 
     is_linear_=true;
@@ -299,6 +304,7 @@ void DarcyMH::init_eq_data()
             std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
             (data_->gravity_, "bc_switch_piezo_head") );
 
+
     data_->set_input_list( this->input_record_.val<Input::Array>("input_fields") );
     data_->mark_input_times(*time_);
 }
@@ -319,7 +325,10 @@ void DarcyMH::initialize() {
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_->set_time(time_->step(), LimitSide::right);
+    data_->system_.local_matrix = std::make_shared<arma::mat>();
     create_linear_system(rec);
+
+
 
     // allocate time term vectors
     VecZeroEntries(schur0->get_solution());
@@ -334,11 +343,15 @@ void DarcyMH::initialize() {
     Input::Iterator<Input::Record> it = input_record_.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
-        balance_ = boost::make_shared<Balance>("water", mesh_, *it);
-        water_balance_idx_ = balance_->add_quantity("water_volume");
+        balance_ = std::make_shared<Balance>("water", mesh_, *it);
+        data_-> water_balance_idx_ = water_balance_idx_ = balance_->add_quantity("water_volume");
         balance_->allocate(rows_ds->lsize(), 1);
         balance_->units(UnitSI().m(3));
     }
+
+
+    data_->system_.balance = balance_;
+    data_->system_.lin_sys = schur0;
 
 
     initialize_specific();
@@ -483,7 +496,7 @@ void DarcyMH::solve_nonlinear()
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
         residual_norm = schur0->compute_residual();
-        xprintf(Msg, "[nonlinear solver] it: %d lin. it:%d (reason: %d) resisual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
+        xprintf(Msg, "  [nonlinear solver] it: %d lin. it:%d (reason: %d) residual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
 
 
     }
@@ -602,7 +615,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     bool fill_matrix = assembler.size() > 0;
     int el_row, side_row, edge_row, loc_b = 0;
     int tmp_rows[100];
-    int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
+    int side_rows[4], edge_rows[4], loc_edge_idx[4]; // rows for sides and edges of one element
     double local_vb[4]; // 2x2 matrix
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
@@ -612,11 +625,12 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
 
+    arma::mat &local_matrix = *(data_->system_.local_matrix);
+
     if (balance_ != nullptr && fill_matrix)
         balance_->start_flux_assembly(water_balance_idx_);
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-        arma::mat local_matrix;
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         unsigned int nsides = ele->n_sides();
@@ -624,20 +638,28 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
         //double conductivity_scale;
         //if (fill_matrix) local_assembly_specific( loc_data );
 
+        LocalElementAccessor acc(ele, i_loc);
+        for (unsigned int i = 0; i < nsides; i++) {
+            unsigned int idx_side= mh_dh.side_dof( ele->side(i) );
+            unsigned int idx_edge= ele->side(i)->edge_idx();
+            side_rows[i] = side_row_4_id[idx_side];
+            acc.edge_row [i] = edge_rows[i] = row_4_edge[idx_edge];
+            acc.local_edge_idx[i] = loc_edge_idx[i] = edge_new_local_4_mesh_idx_[idx_edge];
+        }
         if (fill_matrix) 
-            assembler[ele->dim()-1]->assembly_local_matrix(ele, i_loc, local_matrix);
+            assembler[ele->dim()-1]->assembly_local_matrix(acc);
         
 
         for (unsigned int i = 0; i < nsides; i++) {
-            unsigned int idx_side= mh_dh.side_dof( ele->side(i) );
+
 /*            if (! side_ds->is_local(idx_side)) {
                 cout << el_ds->myp() << " : iside: " << ele.index() << " [" << el_ds->begin() << ", " << el_ds->end() << "]" << endl;
                 cout << el_ds->myp() << " : iside: " << idx_side << " [" << side_ds->begin() << ", " << side_ds->end() << "]" << endl;
 
             }*/
-            unsigned int idx_edge= ele->side(i)->edge_idx();
-            side_row = side_rows[i] = side_row_4_id[idx_side];
-            edge_row = edge_rows[i] = row_4_edge[idx_edge];
+
+            side_row = side_rows[i];
+            edge_row = edge_rows[i];
             bcd=ele->side(i)->cond();
 
             // gravity term on RHS
@@ -1522,7 +1544,7 @@ void DarcyMH::make_row_numberings() {
     for (i = np - 1; i > 0; i--)
         rows_starts[i] -= rows_starts[i - 1];
 
-    rows_ds = boost::make_shared<Distribution>(&(rows_starts[0]), PETSC_COMM_WORLD);
+    rows_ds = std::make_shared<Distribution>(&(rows_starts[0]), PETSC_COMM_WORLD);
 }
 
 void DarcyMH::make_serial_scatter() {
@@ -1665,7 +1687,7 @@ void DarcyMH::prepare_parallel_bddc() {
     Element *el;
     int side_row, edge_row;
 
-    global_row_4_sub_row = boost::make_shared<LocalToGlobalMap>(rows_ds);
+    global_row_4_sub_row = std::make_shared<LocalToGlobalMap>(rows_ds);
 
     //
     // ordering of dofs
