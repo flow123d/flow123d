@@ -195,7 +195,6 @@ class LicenseManager(object):
         # add them to variable reference
         variables.update(new_vars)
 
-
     def process_file(self, file_path):
         """
         Process single file

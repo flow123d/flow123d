@@ -14,21 +14,26 @@ So to sys.path is appended ../../src/python path
 import sys, os
 
 
-def print_debug ():
+def print_debug():
     """Prints debug information about python"""
-    print ("Python:    " + str (sys.version).replace ("\n", "") + ", " + str (sys.executable))
+    print ("Python:    " + str(sys.version).replace("\n", "") + ", " + str(sys.executable))
 
 
-def append_to_path ():
+def append_to_path():
     """Performs path fix"""
 
     # for now, always print debug info
-    print_debug ()
+    print_debug()
 
     # add src/python into module path
-    path = os.path.join ('..', '..', 'src', 'python')
-    sys.path.append (path)
-    path = os.path.join ('src', 'python')
-    sys.path.append (path)
-    sys.path.append (os.getcwd())
+    path = os.path.join('..', '..', 'src', 'python')
+    sys.path.append(path)
+
+    path = os.path.join('src', 'python')
+    sys.path.append(path)
+    sys.path.append(os.getcwd())
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
     # print 'paths: \n{:s}'.format ('\n'.join(sys.path))
+
+# append to path on import
+append_to_path()
