@@ -23,6 +23,7 @@
 #include <sstream>
 #include <fstream>
 #include <mpi.h>
+#include "system/time_point.hh"
 
 
 
@@ -134,6 +135,7 @@ private:
 	static const unsigned int mask_cout = 0b00000001;
 	static const unsigned int mask_cerr = 0b00000010;
 	static const unsigned int mask_file = 0b00000100;
+	static TimePoint start_time;
 
 	/// Set @p streams_mask_ according to the tzpe of message.
 	void set_mask();

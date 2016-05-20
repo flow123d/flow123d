@@ -109,14 +109,15 @@ const std::string MultiTargetBuf::msg_type_string(MsgType msg_type)
 }
 
 
+TimePoint MultiTargetBuf::start_time = TimePoint();
+
+
 MultiTargetBuf::MultiTargetBuf(MsgType type)
 : std::stringbuf(), type_(type), every_process_(false), streams_mask_(0), printed_header_(false)
 {
 	// set actual time
-	time_t     now = time(0);
-	char buf[80];
-    strftime(buf, sizeof(buf) - 1, "%b %d %Y %X", localtime(&now));
-    date_time_ = std::string(buf);
+	TimePoint t = TimePoint();
+	date_time_ = TimePoint::format_hh_mm_ss(t-MultiTargetBuf::start_time);
 
     // set MPI rank
     mpi_rank_ = LoggerOptions::get_instance().get_mpi_rank();
