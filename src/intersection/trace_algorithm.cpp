@@ -173,6 +173,17 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
 //         DBGMSG("next_row = %d\n",next_row);
         unsigned int i_ip_orig = (unsigned int)trace_table_x[next_row][1];
         ASSERT_LESS(i_ip_orig, p.points().size());
+        
+        //////////////////////////////////////////////////////////////////////////////////////////////////////
+        // one ugly awful HACK:
+        // if the optimal tracing fails, then call convex hull tracing
+        if(i_ip_orig >= p.points().size())
+        {
+            trace_polygon_convex_hull(prolongation_table,p);
+            break;
+        }
+        //////////////////////////////////////////////////////////////////////////////////////////////////////
+        
         new_points.push_back(p.points()[i_ip_orig]);
         prolongation_table.push_back((unsigned int)trace_table_x[next_row][0]);
         next_row = trace_table_x[next_row][0];
@@ -191,6 +202,8 @@ void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_
     // skip tracing if not enough IPs
     if(p.points().size() <= 1) return;
 
+    prolongation_table.clear();
+    
     // sort IPs using IP's operator <
     std::sort(p.points().begin(),p.points().end());
 
