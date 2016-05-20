@@ -108,6 +108,9 @@ void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	nodes_.back().set_leaf(left_end, right_end, right_bound, depth);
 
 	nodes_[node_idx].set_non_leaf(nodes_.size()-2, nodes_.size()-1, axis);
+    
+//     xprintf(Msg, "%d %f %f %f %f %d %d\n", node_idx, node_box.min(axis), left_bound, right_bound, node_box.max(axis),
+//         left_end - left_begin, right_end - left_end );
 }
 
 
@@ -122,13 +125,18 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 		BoundingBox node_box(box);
 		node_box.set_max(node.axis(), child.bound() );
 		if (	child.leaf_size() > leaf_size_limit
-			&&  child.depth() < max_n_levels
-			&&  ( node.axis() != node_box.longest_axis()
-			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
-			)
+			&&  child.depth() < max_n_levels)
+// 			&&  ( node.axis() != node_box.longest_axis()
+// 			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
+// 			)
 		{
 				make_node(node_box, node.child(0) );
 		}
+// 		else{
+//             xprintf(Msg,"%d %d %f %f\n",node_idx, child.leaf_size(),
+//                                            node_box.size(node_box.longest_axis()),
+//                                            box.size(node.axis()));
+//         }
 	}
 
 	{
@@ -137,13 +145,18 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 		BoundingBox node_box(box);
 		node_box.set_min(node.axis(), child.bound() );
 		if (	child.leaf_size() > leaf_size_limit
-			&&  child.depth() < max_n_levels
-			&&  ( node.axis() != node_box.longest_axis()
-			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
-			)
+			&&  child.depth() < max_n_levels)
+// 			&&  ( node.axis() != node_box.longest_axis()
+// 			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
+// 			)
 		{
 				make_node(node_box, node.child(1) );
 		}
+// 		else{
+// 		            xprintf(Msg,"%d %d %f %f\n",node_idx, child.leaf_size(),
+//                                            node_box.size(node_box.longest_axis()),
+//                                            box.size(node.axis()));
+//         }
 	}
 }
 
@@ -153,17 +166,24 @@ double BIHTree::estimate_median(unsigned char axis, const BIHNode &node)
 	unsigned int median_idx;
 	unsigned int n_elements = node.leaf_size();
 
-	if (n_elements > max_median_sample_size) {
-		// random sample
-		std::uniform_int_distribution<unsigned int> distribution(node.leaf_begin(), node.leaf_end()-1);
-		coors_.resize(max_median_sample_size);
-		for (unsigned int i=0; i<coors_.size(); i++) {
-			median_idx = distribution(this->r_gen);
-
-			coors_[i] = elements_[ in_leaves_[ median_idx ] ].projection_center(axis);
-		}
-
-	} else {
+    // TODO: possible optimizations:
+    // - try to apply nth_element directly to in_leaves_ array
+    // - if current approach is better (due to cache memory), check randomization of median for large meshes 
+    // - good balancing of tree is crutial both for creation and find method
+    
+//     unsigned int sample_size = 50+n_elements/5;
+// 	if (n_elements > sample_size) {
+// 		// random sample
+// 		std::uniform_int_distribution<unsigned int> distribution(node.leaf_begin(), node.leaf_end()-1);
+// 		coors_.resize(sample_size);
+// 		for (unsigned int i=0; i<coors_.size(); i++) {
+// 			median_idx = distribution(this->r_gen);
+// 
+// 			coors_[i] = elements_[ in_leaves_[ median_idx ] ].projection_center(axis);
+// 		}
+// 
+//     } else 
+    {
 		// all elements
 		coors_.resize(n_elements);
 		for (unsigned int i=0; i<coors_.size(); i++) {
@@ -195,6 +215,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 	std::stack<unsigned int, std::vector<unsigned int> > node_stack;
 	ASSERT_EQUAL(result_list.size() , 0);
 
+    unsigned int counter = 0;
 	node_stack.push(0);
 	while (! node_stack.empty()) {
 		const BIHNode &node = nodes_[node_stack.top()];
@@ -204,6 +225,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 
 		if (node.is_leaf()) {
 
+            counter ++;
 			//START_TIMER("leaf");
 			for (unsigned int i=node.leaf_begin(); i<node.leaf_end(); i++) {
 				if (elements_[ in_leaves_[i] ].intersect(box)) {
@@ -226,6 +248,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 		}
 	}
 
+// 	xprintf(Msg,"leaves: %d\n",counter);
 
 #ifdef DEBUG_ASSERT
 	// check uniqueness of element indexes
