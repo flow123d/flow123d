@@ -109,6 +109,8 @@ private:
     /// Sets vector sizes and computes bulk bounding box.
     void init();
     
+    void assert_same_intersection(unsigned int comp_ele_idx, unsigned int bulk_ele_idx);
+    
     /// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
     template<unsigned int simplex_dim>
     void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);

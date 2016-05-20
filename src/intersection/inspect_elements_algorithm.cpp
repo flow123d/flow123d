@@ -103,15 +103,21 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_el
 template<unsigned int dim>
 bool InspectElementsAlgorithm<dim>::intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx) 
 {
+    START_TIMER("intersection_exists");
     bool found = false;
-
-    for(unsigned int i = 0; i < intersection_list_[component_ele_idx].size();i++){
+    
+    START_TIMER("cycle");
+    unsigned int i = 0;
+    for(; i < intersection_list_[component_ele_idx].size();i++){
 
         if(intersection_list_[component_ele_idx][i].bulk_ele_idx() == bulk_ele_idx){
             found = true;
             break;
         }
     }
+    ADD_CALLS(i);
+    END_TIMER("cycle");
+    END_TIMER("intersection_exists");
     return found;
 }
 
