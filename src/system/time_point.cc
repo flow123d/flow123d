@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "time_point.hh"
+#include "asserts.hh"
 
 using namespace std;
 
@@ -70,3 +71,32 @@ using namespace std;
     }
 
 #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+
+
+string TimePoint::format_hh_mm_ss(double seconds) {
+	ASSERT(seconds > -numeric_limits<double>::epsilon())(seconds).error("Formating of negative time.");
+
+	unsigned int h,m,s,ms;
+	unsigned int full_time = (int)(seconds * 1000); // in first step in miliseconds
+
+	ms = full_time % 1000;
+	full_time /= 1000;
+	s = full_time % 60;
+	full_time /= 60;
+	m = full_time % 60;
+	h = full_time / 60;
+
+	stringstream ss;
+	if (h<10) ss << "0";
+	ss << h << ":";
+	if (m<10) ss << "0";
+	ss << m << ":";
+	if (s<10) ss << "0";
+	ss << s << ".";
+	if (ms<100) ss << "0";
+	if (ms<10) ss << "0";
+	ss << ms;
+
+	return ss.str();
+}
+
