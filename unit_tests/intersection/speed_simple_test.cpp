@@ -360,6 +360,7 @@ TEST(speed_simple_13, all) {
     
     { START_TIMER("Speed test NGH");
     // for each mesh, compute intersection area and compare with old NGH
+    xprintf(Msg, "======== NGH ========\n");
     for(unsigned int i=0; i<n; i++)
     {       
             //xprintf(Msg, "================================================ %d\n",i);
@@ -369,10 +370,12 @@ TEST(speed_simple_13, all) {
             }
             //xprintf(Msg, "================================================\n");
     }
+    xprintf(Msg, "======== NGH end ========\n");
     END_TIMER("Speed test NGH"); }
     
     { START_TIMER("Speed test");
     // for each mesh, compute intersection area and compare with old NGH
+    xprintf(Msg, "======== NEW ========\n");
     for(unsigned int i=0; i<n; i++)
     {       
             //xprintf(Msg, "================================================ %d\n",i);
@@ -382,6 +385,7 @@ TEST(speed_simple_13, all) {
             }
             //xprintf(Msg, "================================================\n");
     }
+    xprintf(Msg, "======== NEW end ========\n");
     END_TIMER("Speed test"); }
     
     print_statistics();
@@ -420,6 +424,7 @@ TEST(speed_simple_23, all) {
     
     { START_TIMER("Speed test NGH");
     // for each mesh, compute intersection area and compare with old NGH
+    xprintf(Msg, "======== NGH ========\n");
     for(unsigned int i=0; i<n; i++)
     {       
             //xprintf(Msg, "================================================ %d\n",i);
@@ -429,10 +434,12 @@ TEST(speed_simple_23, all) {
             }
             //xprintf(Msg, "================================================\n");
     }
+    xprintf(Msg, "======== NGH end ========\n");
     END_TIMER("Speed test NGH"); }
     
     { START_TIMER("Speed test");
     // for each mesh, compute intersection area and compare with old NGH
+    xprintf(Msg, "======== NEW ========\n");
     for(unsigned int i=0; i<n; i++)
     {       
             //xprintf(Msg, "================================================ %d\n",i);
@@ -442,6 +449,7 @@ TEST(speed_simple_23, all) {
             }
             //xprintf(Msg, "================================================\n");
     }
+    xprintf(Msg, "======== NEW end ========\n");
     END_TIMER("Speed test"); }
     
     print_statistics();

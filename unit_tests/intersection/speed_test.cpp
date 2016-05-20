@@ -29,18 +29,19 @@ using namespace std;
 using namespace computeintersection;
 
 static const std::string profiler_file = "speed_test_profiler.log";
-static const unsigned int profiler_loop = 1;
+static const unsigned int profiler_loop = 10;
 
 void compute_intersection(Mesh *mesh)
 {
     // compute intersection
     
     InspectElements ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::all);
-    ie.print_mesh_to_file_13("output_intersection_speed_13");
-    ie.print_mesh_to_file_23("output_intersection_speed_23");
+    ie.compute_intersections(computeintersection::IntersectionType::d23);
+//     ie.compute_intersections((computeintersection::IntersectionType)(computeintersection::IntersectionType::d23 | computeintersection::IntersectionType::d22));
+//     ie.print_mesh_to_file_13("output_intersection_speed_13");
+//     ie.print_mesh_to_file_23("output_intersection_speed_23");
     
-    DBGMSG("N intersections 13(%d), 23(%d), 22(%d)\n",ie.intersection_storage13_.size(),
+    xprintf(Msg,"N intersections 13(%d), 23(%d), 22(%d)\n",ie.intersection_storage13_.size(),
                                                       ie.intersection_storage23_.size(),
                                                       ie.intersection_storage22_.size());
     
@@ -96,12 +97,15 @@ std::vector<string> read_filenames(string dir_name)
 
 TEST(benchmark_meshes, all) {
     Profiler::initialize();
+    
     DBGMSG("tolerances: %e\t%e\n", rounding_epsilon, geometry_epsilon);
     
     // directory with testing meshes
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/benchmarks/";
     std::vector<string> filenames = read_filenames(dir_name);
-        
+    
+    Profiler::instance()->set_task_info("Speed test Inspect Elements Algorithm. "+filenames[0],2);
+
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
@@ -121,7 +125,7 @@ TEST(benchmark_meshes, all) {
             xprintf(Msg, "==============\n");
     }
     std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    fs.open(profiler_file.c_str(), std::fstream::out /*| std::fstream::app*/);
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }
