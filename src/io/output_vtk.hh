@@ -154,7 +154,12 @@ protected:
     /**
      * Write registered data to output stream using ascii format
      */
-    void write_vtk_data_ascii(OutputDataFieldVec &output_data_map);
+    void write_vtk_data_vec_ascii(OutputDataFieldVec &output_data_map);
+
+    /**
+     * Write registered data to output stream using ascii format
+     */
+    void write_vtk_data_ascii(OutputDataPtr output_data, std::string type);
 
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.

@@ -82,14 +82,14 @@ public:
     typedef typename Value::element_type ElemType;
 
     /**
-     * \brief Constructor of templated OutputData
+     * \brief Constructor of templated OutputData without Field
      */
-    OutputData(const FieldCommon &field,
-            unsigned int size)
+    OutputData(std::string field_name, unsigned int size,
+    		UnitSI units = UnitSI::dimensionless())
     : val_aux(aux)
     {
-        this->field_name = field.name();
-        this->field_units = field.units();
+        this->field_name = field_name;
+        this->field_units = units;
         this->output_field_name = this->field_name;
 
         this->n_values = size;
@@ -123,6 +123,14 @@ public:
         data_ = new ElemType[this->n_values * this->n_elem_];
     }
 
+
+    /**
+     * \brief Constructor of templated OutputData with given Field
+     */
+    OutputData(const FieldCommon &field,
+            unsigned int size)
+    : OutputData(field.name(), size, field.units())
+    {}
 
     /**
      * \brief Destructor of OutputData

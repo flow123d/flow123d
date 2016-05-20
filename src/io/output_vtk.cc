@@ -16,6 +16,7 @@
  */
 
 #include "output_vtk.hh"
+#include "output_time.impl.hh"
 #include <limits.h>
 #include "mesh/mesh.h"
 #include "output_data_base.hh"
@@ -181,24 +182,19 @@ void OutputVTK::write_vtk_geometry(void)
 
     /* Write Points begin*/
     file << "<Points>" << endl;
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
-    /* Write own coordinates */
+
+    OutputDataPtr point_data = std::make_shared< OutputData<FieldValue<3>::VectorFixed> >("", mesh->n_nodes());
+    OutputData<FieldValue<3>::VectorFixed> &point_data_ref = (OutputData<FieldValue<3>::VectorFixed> &)(*point_data);
     tmp = 0;
-    /* Set floating point precision */
-    file.precision(std::numeric_limits<double>::digits10);
     FOR_NODES(mesh, node) {
-        node->aux = tmp;   /* store index in the auxiliary variable */
-
-        file << scientific << node->getX() << " ";
-        file << scientific << node->getY() << " ";
-        file << scientific << node->getZ() << " ";
-
+        node->aux = tmp;   // store index in the auxiliary variable
+        point_data_ref.store_value(tmp, node->point());
         tmp++;
     }
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-    /* Write Points end*/
+    /* Write data */
+    write_vtk_data_ascii(point_data, "Float64");
+
+    /* Write Points end */
     file << "</Points>" << endl;
 }
 
@@ -370,29 +366,42 @@ void OutputVTK::write_vtk_discont_topology(void)
 
 
 
-void OutputVTK::write_vtk_data_ascii(OutputDataFieldVec &output_data_vec)
+void OutputVTK::write_vtk_data_vec_ascii(OutputDataFieldVec &output_data_vec)
 {
-    ofstream &file = this->_data_file;
 
     for(OutputDataPtr data :  output_data_vec)
     {
-        file 	<< "<DataArray type=\"Float64\" "
-        		<< "Name=\"" << data->output_field_name <<"\" ";
-        if (data->n_elem_ > 1)
-        {
-        	file
-        		<< "NumberOfComponents=\"" << data->n_elem_ << "\" ";
-        }
-        file	<< "format=\"ascii\">"
-                << endl;
-
-        /* Set precision to max */
-        file.precision(std::numeric_limits<double>::digits10);
-
-        data->print_all(file);
-
-        file << "\n</DataArray>" << endl;
+    	write_vtk_data_ascii(data, "Float64");
     }
+}
+
+
+
+
+void OutputVTK::write_vtk_data_ascii(OutputDataPtr output_data, std::string type)
+{
+	ofstream &file = this->_data_file;
+
+    file 	<< "<DataArray type=\"" << type << "\" ";
+    if (output_data->output_field_name!="")
+    {
+    	file
+    		<< "Name=\"" << output_data->output_field_name <<"\" ";
+    }
+    if (output_data->n_elem_ > 1)
+    {
+    	file
+    		<< "NumberOfComponents=\"" << output_data->n_elem_ << "\" ";
+    }
+    file	<< "format=\"ascii\">"
+            << endl;
+
+    /* Set precision to max */
+    file.precision(std::numeric_limits<double>::digits10);
+
+    output_data->print_all(file);
+
+    file << "\n</DataArray>" << endl;
 }
 
 
@@ -436,10 +445,10 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
         /* Write data on nodes */
-        this->write_vtk_data_ascii(output_data_vec_[NODE_DATA]);
+        this->write_vtk_data_vec_ascii(output_data_vec_[NODE_DATA]);
 
         /* Write data in corners of elements */
-        this->write_vtk_data_ascii(output_data_vec_[CORNER_DATA]);
+        this->write_vtk_data_vec_ascii(output_data_vec_[CORNER_DATA]);
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -460,7 +469,7 @@ void OutputVTK::write_vtk_element_data(void)
     file << ">" << endl;
 
     /* Write own data */
-    this->write_vtk_data_ascii(data_map);
+    this->write_vtk_data_vec_ascii(data_map);
 
     /* Write PointData end */
     file << "</CellData>" << endl;
