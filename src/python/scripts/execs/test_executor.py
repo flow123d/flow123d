@@ -7,6 +7,8 @@ from subprocess import PIPE
 import threading
 import time
 
+import sys
+
 import psutil, shutil
 from psutil import NoSuchProcess
 
@@ -113,23 +115,53 @@ class ProcessUtils(object):
 class ExtendedThread(threading.Thread):
     def __init__(self, name, target=None):
         super(ExtendedThread, self).__init__(name=name, target=target)
-        self._is_over = False
+        self._is_over = True
         self.name = name
         assert type(name) is str
 
+    def _run(self):
+        pass
+
     def run(self):
-        super(ExtendedThread, self).run()
+        self._is_over = False
+        self._run()
         self._is_over = True
 
     def is_over(self):
         return self._is_over
 
+    def is_running(self):
+        return not self._is_over
+
 
 class BinExecutor(ExtendedThread):
     """
     :type process: psutil.Popen
+    :type threads: list[scripts.execs.test_executor.BinExecutor]
     """
+    threads = list()
+
+    @staticmethod
+    def register_SIGINT():
+        import signal
+        signal.signal(signal.SIGINT, BinExecutor.signal_handler)
+
+    @staticmethod
+    def signal_handler(signal, frame):
+        sys.stderr.write("\nError: Caught SIGINT! Terminating application in peaceful manner...\n")
+        # try to kill all running processes
+        for executor in BinExecutor.threads:
+            try:
+                if executor.process.is_running():
+                    sys.stderr.write('\nTerminating process {}...\n'.format(executor.process.pid))
+                    ProcessUtils.secure_kill(executor.process)
+            except Exception as e:
+                pass
+        sys.exit(1)
+        raise Exception('You pressed Ctrl+C!')
+
     def __init__(self, command=list(), name='bin'):
+        self.threads.append(self)
         self.command = [str(x) for x in ensure_iterable(command)]
         self.process = None
         self.running = False
@@ -138,26 +170,15 @@ class BinExecutor(ExtendedThread):
         self.returncode = None
         super(BinExecutor, self).__init__(name)
 
-    def run(self):
+    def _run(self):
         # run command and block current thread
         try:
             self.process = psutil.Popen(self.command, stdout=self.stdout, stderr=self.stderr)
             self.process.wait()
-            super(BinExecutor, self).run()
         except Exception as e:
             # broken process
             self.process = BrokenProcess(e)
         self.returncode = getattr(self.process, 'returncode', None)
-
-
-class BrokenProcess(object):
-    def __init__(self, exception=None):
-        self.exception = exception
-        self.pid = -1
-        self.returncode = 666
-
-    def is_running(self):
-        return False
 
 
 class ParallelProcesses(ExtendedThread):
@@ -172,13 +193,12 @@ class ParallelProcesses(ExtendedThread):
     def add(self, thread):
         self.threads.append(thread)
 
-    def run(self):
+    def _run(self):
         for t in self.threads:
             t.start()
 
         for t in self.threads:
             t.join()
-        super(ParallelProcesses, self).run()
 
 
 class SequentialProcesses(ExtendedThread):
@@ -198,7 +218,7 @@ class SequentialProcesses(ExtendedThread):
     def add(self, thread):
         self.threads.append(thread)
 
-    def run(self):
+    def _run(self):
         total = len(self.threads)
         rcs = [None]
         pc = None
@@ -226,7 +246,6 @@ class SequentialProcesses(ExtendedThread):
                 break
 
         self.returncode = max(rcs)
-        super(SequentialProcesses, self).run()
 
         if self.indent:
             Printer.close()
@@ -286,3 +305,12 @@ class FD(object):
 
     def write(self, data=''):
         self.data = data[:-1] if data.endswith('\r') else data
+
+class BrokenProcess(object):
+    def __init__(self, exception=None):
+        self.exception = exception
+        self.pid = -1
+        self.returncode = 666
+
+    def is_running(self):
+        return False

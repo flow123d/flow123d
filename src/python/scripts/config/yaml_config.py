@@ -55,7 +55,7 @@ class DummyConfigCase(ConfigCaseBase):
         """
         super(DummyConfigCase, self).__init__(config)
         self.files = ensure_iterable(yaml_file)
-        self.proc = [1, 2, 3]
+        self.proc = [1]
 
 
 class YamlConfigCase(ConfigCaseBase):

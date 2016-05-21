@@ -130,10 +130,9 @@ class Paths(object):
     def base_dir(cls, v=None):
         if v is None:
             return cls._base_dir
-        else:
-            cls._base_dir = os.path.abspath(v)
-            os.chdir(v)
-            cls.printer.err('switching to {}', cls._base_dir)
+        cls._base_dir = os.path.abspath(v)
+        # os.chdir(v)
+        # cls.printer.err('switching to {}', cls._base_dir)
 
     @classmethod
     def source_dir(cls):
@@ -159,18 +158,23 @@ class Paths(object):
 
     @classmethod
     @make_relative
+    def bin_dir(cls):
+        return cls.join(cls.base_dir(), '..')
+
+    @classmethod
+    @make_relative
     def ndiff(cls):
-        return cls.path_to('..', 'ndiff', 'ndiff.pl')
+        return cls.path_to(cls.bin_dir(), 'ndiff', 'ndiff.pl')
 
     @classmethod
     @make_relative
     def flow123d(cls):
-        return cls.path_to('..', 'flow123d')
+        return cls.path_to(cls.bin_dir(), 'flow123d')
 
     @classmethod
     @make_relative
     def mpiexec(cls):
-        return cls.path_to('..', 'mpiexec')
+        return cls.path_to(cls.bin_dir(), 'mpiexec')
 
     # -----------------------------------
 
