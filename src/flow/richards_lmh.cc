@@ -101,8 +101,8 @@ void RichardsLMH::initialize_specific() {
     // create edge vectors
     unsigned int n_local_edges = edge_new_local_4_mesh_idx_.size();
     data_->phead_edge_.resize( n_local_edges);
-    data_->water_content_previous_it.duplicate(data_->phead_edge_);
-    data_->water_content_previous_time.duplicate(data_->phead_edge_);
+    data_->water_content_previous_it.resize( side_ds->lsize() );
+    data_->water_content_previous_time.resize( side_ds->lsize() );
 
     Distribution ds_split_edges(n_local_edges, PETSC_COMM_WORLD);
     vector<int> local_edge_rows(n_local_edges);
@@ -149,16 +149,32 @@ void RichardsLMH::read_initial_condition()
 
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     double init_value;
+    double phead[4], water_content[4];
+
+    data_->time_step_ = time_->dt();
+    AssemblyBase::MultidimAssembly multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
 
     for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
-     ele = mesh_->element(el_4_loc[i_loc_el]);
 
-     init_value = data_->init_pressure.value(ele->centre(), ele->element_accessor());
+         ele = mesh_->element(el_4_loc[i_loc_el]);
+         init_value = data_->init_pressure.value(ele->centre(), ele->element_accessor());
 
-     FOR_ELEMENT_SIDES(ele,i) {
-         int edge_row = row_4_edge[ele->side(i)->edge_idx()];
-         VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides(),ADD_VALUES);
-     }
+         LocalElementAccessor acc(*mesh_, i_loc_el);
+         for (unsigned int i = 0; i < ele->n_sides(); i++) {
+             unsigned int idx_edge= ele->side(i)->edge_idx();
+             acc.local_edge_idx[i] = edge_new_local_4_mesh_idx_[idx_edge];
+             phead[i] = init_value;
+         }
+         multidim_assembler[ele->dim()-1]->init_water_content(acc, init_value);
+
+         FOR_ELEMENT_SIDES(ele,i) {
+             int edge_row = row_4_edge[ele->side(i)->edge_idx()];
+             VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides(),ADD_VALUES);
+         }
+
+
+
+         // assembly ad_->water_content_previous_time[local_edge]
     }
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());

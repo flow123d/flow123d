@@ -486,7 +486,7 @@ void DarcyMH::solve_nonlinear()
 
 
         int convergedReason = schur0->solve();
-        this -> postprocess();
+        //this -> postprocess();
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
@@ -500,6 +500,7 @@ void DarcyMH::solve_nonlinear()
 
 
     }
+    this -> postprocess();
 
     solution_changed_for_scatter=true;
 
@@ -638,13 +639,14 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
         //double conductivity_scale;
         //if (fill_matrix) local_assembly_specific( loc_data );
 
-        LocalElementAccessor acc(ele, i_loc);
+        LocalElementAccessor acc(*mesh_, i_loc);
         for (unsigned int i = 0; i < nsides; i++) {
             unsigned int idx_side= mh_dh.side_dof( ele->side(i) );
             unsigned int idx_edge= ele->side(i)->edge_idx();
             side_rows[i] = side_row_4_id[idx_side];
             acc.edge_row [i] = edge_rows[i] = row_4_edge[idx_edge];
             acc.local_edge_idx[i] = loc_edge_idx[i] = edge_new_local_4_mesh_idx_[idx_edge];
+            acc.local_side_idx[i] = side_rows[i] - rows_ds->begin();
         }
         if (fill_matrix) 
             assembler[ele->dim()-1]->assembly_local_matrix(acc);

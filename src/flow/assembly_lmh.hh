@@ -112,6 +112,7 @@ public:
         FOR_ELEMENT_SIDES(ele.iter, i)
         {
             uint local_edge = ele.local_edge_idx[i];
+            uint local_side = ele.local_side_idx[i];
             uint edge_row = ele.edge_row[i];
 
             if (genuchten_on) {
@@ -120,8 +121,9 @@ public:
                 evaluated.diff(0,1);
                 capacity =  x_phead.d(0);
 
-                ad_->water_content_previous_it[local_edge] = diagonal_coef * evaluated.val();
-                water_content_diff = -ad_->water_content_previous_it[local_edge] + ad_->water_content_previous_time[local_edge];
+                double side_water_content = diagonal_coef * (evaluated.val() + storativity*ad_->phead_edge_[local_edge]);
+                ad_->water_content_previous_it[local_side] = side_water_content;
+                water_content_diff = -side_water_content + ad_->water_content_previous_time[local_side];
             }
 
             double mass_balance_diagonal = diagonal_coef * (capacity + storativity);
@@ -139,6 +141,19 @@ public:
             }
         }
 
+    }
+
+    void init_water_content(LocalElementAccessor ele, double p_head) {
+        ele.update();
+        reset_soil_model(ele);
+        double storativity = this->ad_->storativity.value(ele.centre(), ele.accessor());
+        cross_section = this->ad_->cross_section.value(ele.centre(), ele.accessor());
+        double diagonal_coef = ele.iter->measure() * cross_section / ele.iter->n_sides();
+
+        for(int i=0; i<ele.iter->n_sides(); i++) {
+            uint local_side = ele.local_side_idx[i];
+            ad_->water_content_previous_time[local_side] = diagonal_coef * (soil_model.water_content(p_head) + storativity * p_head);
+        }
     }
 
     AssemblyDataPtr ad_;
