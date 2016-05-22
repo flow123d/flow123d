@@ -5,4 +5,4 @@
 # include ../all_tests.mk
 
 test-all:
-	python ../../bin/python/runtest.py . 
+	python ../../bin/python/runtest.py . -a

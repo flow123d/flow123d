@@ -202,6 +202,7 @@ def run_local_mode(all_yamls):
     """
     global arg_options, arg_others, arg_rest
     runner = ParallelRunner(arg_options.parallel)
+    runner.stop_on_error = not arg_options.keep_going
 
     for yaml_file, config in all_yamls.items():
         # extract all test cases (product of cpu x files)

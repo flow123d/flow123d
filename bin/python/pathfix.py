@@ -16,7 +16,20 @@ import sys, os
 
 def print_debug():
     """Prints debug information about python"""
-    print ("Python:    " + str(sys.version).replace("\n", "") + ", " + str(sys.executable))
+    print ("Python " + str(sys.version).replace("\n", "") + ", " + str(sys.executable))
+
+
+def add_path(*args):
+    root = os.path.dirname(__file__)
+    if not args:
+        return root
+    path = os.path.abspath(
+        os.path.join(
+            *args
+        )
+    )
+    sys.path.append(path)
+    return path
 
 
 def append_to_path():
@@ -25,15 +38,13 @@ def append_to_path():
     # for now, always print debug info
     print_debug()
 
-    # add src/python into module path
-    path = os.path.join('..', '..', 'src', 'python')
-    sys.path.append(path)
+    # path to src/python if COPY_PYTHON is disabled
+    add_path('..', '..', 'src', 'python')
+    # path to lib/flow123d after COPY_PYTHON
+    add_path('..', '..', 'build_tree', 'lib', 'flow123d')
+    # path to lib/flow123d/site-packages additional libs after COPY_PYTHON
+    add_path('..', '..', 'build_tree', 'lib', 'flow123d', 'site-packages')
 
-    path = os.path.join('src', 'python')
-    sys.path.append(path)
-    sys.path.append(os.getcwd())
-    sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
-    # print 'paths: \n{:s}'.format ('\n'.join(sys.path))
 
 # append to path on import
 append_to_path()

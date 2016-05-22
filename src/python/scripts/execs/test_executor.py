@@ -14,6 +14,7 @@ from psutil import NoSuchProcess
 
 from scripts.core.base import Paths, PathFilters, Printer
 from utils.counter import ProgressCounter
+from utils.events import Event
 from utils.globals import ensure_iterable
 
 
@@ -117,15 +118,21 @@ class ExtendedThread(threading.Thread):
         super(ExtendedThread, self).__init__(name=name, target=target)
         self._is_over = True
         self.name = name
-        assert type(name) is str
+        self.returncode = None
+
+        # create event object
+        self.on_start = Event()
+        self.on_complete = Event()
 
     def _run(self):
         pass
 
     def run(self):
         self._is_over = False
+        self.on_start(self)
         self._run()
         self._is_over = True
+        self.on_complete(self)
 
     def is_over(self):
         return self._is_over
@@ -142,7 +149,7 @@ class BinExecutor(ExtendedThread):
     threads = list()
 
     @staticmethod
-    def register_SIGINT():
+    def register_sigint():
         import signal
         signal.signal(signal.SIGINT, BinExecutor.signal_handler)
 
@@ -167,7 +174,6 @@ class BinExecutor(ExtendedThread):
         self.running = False
         self.stdout = PIPE
         self.stderr = PIPE
-        self.returncode = None
         super(BinExecutor, self).__init__(name)
 
     def _run(self):
@@ -203,7 +209,7 @@ class ParallelProcesses(ExtendedThread):
 
 class SequentialProcesses(ExtendedThread):
     """
-    :type threads: list[threading.Thread]
+    :type threads: list[scripts.execs.test_executor.ExtendedThread]
     """
     def __init__(self, name, pbar=True, indent=False, *args):
         super(SequentialProcesses, self).__init__(name)
@@ -238,7 +244,7 @@ class SequentialProcesses(ExtendedThread):
 
             t.start()
             t.join()
-            rc = getattr(t, 'returncode', None)
+            rc = t.returncode
             rcs.append(rc)
 
             if self.stop_on_error and rc > 0:
@@ -258,8 +264,12 @@ class ParallelRunner(object):
     def __init__(self, n=4):
         self.n = n if type(n) is int else 1
         self.i = 0
+        self.running = 0
+        self.total = None
         self.threads = list()
+        self.pc = ProgressCounter('Case {:02d} of {self.total:02d}')
         self.printer = Printer(Printer.LEVEL_KEY)
+        self.stop_on_error = True
 
     def add(self, process):
         self.threads.append(process)
@@ -276,24 +286,53 @@ class ParallelRunner(object):
             total += 1 if process.is_over() else 0
         return total
 
+    def on_thread_start(self, thread):
+        """
+        :type thread: scripts.execs.test_executor.ExtendedThread
+        """
+        self.running += 1
+        return self
+
+    def on_thread_complete(self, thread):
+        """
+        :type thread: scripts.execs.test_executor.ExtendedThread
+        """
+        self.running -= 1
+        if thread.returncode > 0 and self.stop_on_error:
+            self.total = 0
+            BinExecutor.signal_handler(None, None)
+            sys.exit(1)
+
+    def ensure_run_count(self):
+        if self.i >= self.total:
+            return True
+        if self.running < self.n:
+            self.run_next()
+
+    def run_next(self):
+        if self.i >= self.total:
+            return False
+        self.pc.next(locals())
+        self.i += 1
+        self.threads[self.i - 1].start()
+        return True
+
     def run(self):
+        # refresh values
         self.i = 0
-        total = len(self.threads)
+        self.running = 0
+        self.total = len(self.threads)
 
-        pc = ProgressCounter('Case {:02d} of {total:02d}')
-        while self.i < total:
-            while self.active_count() < self.n:
-                self.printer.key('-' * 60)
-                pc.next(locals())
-                self.threads[self.i].start()
-                self.i += 1
+        # register events
+        for thread in self.threads:
+            thread.on_start += self.on_thread_start
+            thread.on_complete += self.on_thread_complete
 
-                # no more processes
-                if self.i >= total:
-                    break
-                # sleep a bit to other threads can be active again
-                time.sleep(0.1)
-            time.sleep(0.1)
+        # start first thread which will cascade to start
+        while True:
+            if self.ensure_run_count():
+                break
+            time.sleep(1)
 
     def __repr__(self):
         return '<ParallelRunner x {self.n}>'.format(self=self)
@@ -305,6 +344,7 @@ class FD(object):
 
     def write(self, data=''):
         self.data = data[:-1] if data.endswith('\r') else data
+
 
 class BrokenProcess(object):
     def __init__(self, exception=None):

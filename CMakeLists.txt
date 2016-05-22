@@ -654,6 +654,12 @@ if (USE_PYTHON)
             execute_process(
                 COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include 
                 )
+
+            # Install
+            message(STATUS "Installing requirements.txt with pip")
+            execute_process(
+              COMMAND pip install --target=${PY_BUILD_PREFIX}/lib/flow123d/site-packages -r ${CMAKE_SOURCE_DIR}/bin/python/requirements.txt
+            )
             
             # save python system path without prefix to PY_WRAPPER_PATHS 
             # variable so it can be later used in wrapper via configure_file
