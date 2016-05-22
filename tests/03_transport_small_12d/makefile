@@ -4,5 +4,5 @@
 #
 # include ../all_tests.mk
 
-all:
+test-all:
 	python ../../bin/python/runtest.py . 
