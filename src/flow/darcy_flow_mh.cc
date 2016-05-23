@@ -383,6 +383,7 @@ void DarcyMH::zero_time_step()
 
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
+        //VecSwap(previous_solution, schur0->get_solution());
         // TODO: reconstruction of solution in zero time.
     }
     //solution_output(T,right_limit); // data for time T in any case
@@ -396,7 +397,6 @@ void DarcyMH::update_solution()
 {
     START_TIMER("Solving MH system");
 
-
     time_->next_time();
 
     data_->set_time(time_->step(), LimitSide::left);
@@ -409,6 +409,7 @@ void DarcyMH::update_solution()
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = false;
+        prepare_new_time_step();
         solve_nonlinear(); // with left limit data
         if (jump_time) {
             xprintf(Warn, "Output of solution discontinuous in time not supported yet.\n");
@@ -447,6 +448,7 @@ void DarcyMH::update_solution()
 void DarcyMH::solve_nonlinear()
 {
     assembly_linear_system();
+    //VecSwap(previous_solution, schur0->get_solution());
     double residual_norm = schur0->compute_residual();
     unsigned int l_it=0;
     nonlinear_iteration_ = 0;
@@ -495,15 +497,23 @@ void DarcyMH::solve_nonlinear()
         //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
+
         residual_norm = schur0->compute_residual();
         xprintf(Msg, "  [nonlinear solver] it: %d lin. it:%d (reason: %d) residual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
 
 
     }
+    //VecSwap(previous_solution, schur0->get_solution());
     this -> postprocess();
 
     solution_changed_for_scatter=true;
 
+}
+
+
+void DarcyMH::prepare_new_time_step()
+{
+    VecSwap(previous_solution, schur0->get_solution());
 }
 
 void DarcyMH::postprocess() 
@@ -1855,12 +1865,9 @@ void DarcyMH::modify_system() {
 	}
 
     // modify RHS - add previous solution
-    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
-
-    // swap solutions
-    VecSwap(previous_solution, schur0->get_solution());
 }
 
 
