@@ -101,10 +101,10 @@ void LoggerOptions::reset() {
 const std::string MultiTargetBuf::msg_type_string(MsgType msg_type)
 {
 	switch (msg_type) {
-		case MsgType::warning: return "Warning";
-		case MsgType::message: return "Message";
-		case MsgType::log:     return "Log";
-		default:               return "Debug";
+		case MsgType::warning: return "WARNING.";
+		case MsgType::message: return "MESSAGE.";
+		case MsgType::log:     return "LOG.";
+		default:               return "DEBUG.";
 	}
 }
 
@@ -125,10 +125,15 @@ MultiTargetBuf::MultiTargetBuf(MsgType type)
 
 
 int MultiTargetBuf::sync() {
-	if (!streams_mask_) return 0;
+	if (!this->in_avail()) return 0;
+	ASSERT_DBG(this->streams_mask_).error("Mask of logger is not set.");
 
 	std::string segment;
 	bool first_segment = true;
+	std::istringstream istream(str());
+	while(std::getline(istream, segment)) {
+		segments_.push_back(segment);
+	}
 
 	formated_output_.str("");
 	formated_output_ << std::setfill(' ');
@@ -140,24 +145,26 @@ int MultiTargetBuf::sync() {
 		formated_output_ << std::setw(15) << "" << "code_point : \"";
 		formated_output_ << file_name_ << "(" << line_ << "), " << function_ << "\" }\n";
 	}
-	std::istringstream istream(str());
-	while(std::getline(istream, segment)) {
+	for (auto seg : segments_) {
 		if (first_segment) {
 			formated_output_ << std::setw(4) << "" << "- ";
 			first_segment = false;
 		} else {
 			formated_output_ << std::setw(6) << "";
 		}
-		formated_output_ << segment << "\n";
+		formated_output_ << seg << "\n";
 	}
 
-	print_to_stream(std::cout, MultiTargetBuf::mask_cout);
-	print_to_stream(std::cerr, MultiTargetBuf::mask_cerr);
+	print_to_screen(std::cout, MultiTargetBuf::mask_cout);
+	print_to_screen(std::cerr, MultiTargetBuf::mask_cerr);
 	if (LoggerOptions::get_instance().is_init())
-		print_to_stream(LoggerOptions::get_instance().file_stream_, MultiTargetBuf::mask_file);
+		print_to_file(LoggerOptions::get_instance().file_stream_, MultiTargetBuf::mask_file);
 
+	// Marks printed header, clean class members
 	printed_header_ = true;
 	str("");
+	segments_.clear();
+
 	return 0;
 }
 
@@ -213,7 +220,46 @@ void MultiTargetBuf::set_mask()
 }
 
 
-void MultiTargetBuf::print_to_stream(std::ostream& stream, unsigned int mask)
+void MultiTargetBuf::print_to_screen(std::ostream& stream, unsigned int mask)
+{
+	if (streams_mask_ & mask) {
+		bool header_line = false;
+		stream << setfill(' ');
+
+		// print header (once time)
+		if (!printed_header_) {
+			stream << date_time_ << " ";
+			if (every_process_) { // rank
+				stringstream rank;
+				rank << "[" << mpi_rank_ << "]";
+				stream << setiosflags(ios::left) << std::setw(5) << rank.str();
+			} else {
+				stream << std::setw(5) << "";
+			}
+
+			if (type_ != MsgType::message) { // type of message (besides message)
+				stream << MultiTargetBuf::msg_type_string(type_) << "\n";
+			} else {
+				header_line = true;
+			}
+		}
+
+		// print message
+		for (auto segment : segments_) {
+			if (header_line) {
+				header_line = false;
+			} else {
+				stream << std::setw(18) << "";
+			}
+			stream << segment << "\n";
+		}
+
+		stream << std::flush;
+	}
+}
+
+
+void MultiTargetBuf::print_to_file(std::ofstream& stream, unsigned int mask)
 {
 	if (streams_mask_ & mask) {
 		stream << formated_output_.str() << std::flush;
