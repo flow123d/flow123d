@@ -162,6 +162,14 @@ public:
         return field_ptr;
     }*/
 
+    void swap(VectorMPI &other) {
+        OLD_ASSERT_EQUAL(this->data_ptr_->size(), other.data_ptr_->size());
+        uint size = this->data_ptr_->size();
+        std::swap(this->data_ptr_, other.data_ptr_);
+        this->resize(size);
+        other.resize(size);
+    }
+
     /// Destructor.
     ~VectorMPI()
     {
