@@ -119,8 +119,8 @@ public:
 		warning, message, log, debug
 	};
 
-	/// Return string value of given MsgType
-	static const std::string msg_type_string(MsgType msg_type);
+	/// Return string value of given MsgType in full or shorter format (e.g. "WARNING" of "Wrn")
+	static const std::string msg_type_string(MsgType msg_type, bool full_format = true);
 
 	/// Constructor
 	MultiTargetBuf(MsgType type);
@@ -156,7 +156,6 @@ private:
 	int mpi_rank_;                        ///< Actual process (if MPI is supported)
 	int streams_mask_;                    ///< Mask of logger, specifies streams
 	bool printed_header_;                 ///< Flag marked message header was printed (in first call of sync method)
-	std::ostringstream formated_output_;  ///< Helper stream, store message during printout to individual output
 	std::vector<std::string> segments_;   ///< Helper vector, store message string separate by lines
 };
 
