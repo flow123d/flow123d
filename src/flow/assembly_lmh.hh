@@ -54,7 +54,6 @@ public:
 
     void reset_soil_model(LocalElementAccessor ele) {
         genuchten_on = (this->ad_->genuchten_p_head_scale.field_result({ele.iter->region()}) != result_zeros);
-        DBGMSG("g on: %d\n", genuchten_on);
         if (genuchten_on) {
             SoilData soil_data = {
                     this->ad_->genuchten_n_exponent.value(ele.centre(), ele.accessor()),
