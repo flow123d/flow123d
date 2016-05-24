@@ -573,6 +573,12 @@ if (USE_PYTHON)
         # set extra python module path in src directory, if case PYTHON_COPY if OFF
         set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
         
+        # Install
+        message(STATUS "Installing requirements.txt with pip")
+        execute_process(
+          COMMAND pip install --target=${CMAKE_BINARY_DIR}/lib/flow123d/site-packages -r ${CMAKE_SOURCE_DIR}/bin/python/requirements.txt
+        )
+        
         if (PYTHON_COPY)
             set(PY_BUILD_PREFIX "${CMAKE_BINARY_DIR}")
             set(PYTHON_EXTRA_MODULES_PATH "${PY_BUILD_PREFIX}/lib/flow123d")
@@ -655,12 +661,6 @@ if (USE_PYTHON)
                 COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include 
                 )
 
-            # Install
-            message(STATUS "Installing requirements.txt with pip")
-            execute_process(
-              COMMAND pip install --target=${PY_BUILD_PREFIX}/lib/flow123d/site-packages -r ${CMAKE_SOURCE_DIR}/bin/python/requirements.txt
-            )
-            
             # save python system path without prefix to PY_WRAPPER_PATHS 
             # variable so it can be later used in wrapper via configure_file
             execute_process(
