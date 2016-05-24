@@ -1,8 +1,5 @@
-# INI_FILES="./flow_21d.yaml ./flow_32d.yaml"
-# NPROC="1 2"
-# FLOW_PARAMS="-i input -o output"
-# 
-# include ../all_tests.mk
+INI_FILES="./flow_21d.yaml ./flow_32d.yaml"
+NPROC="1 2"
+FLOW_PARAMS="-i input -o output"
 
-test-all:
-	python ../../bin/python/runtest.py . -a
+include ../all_tests.mk

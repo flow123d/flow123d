@@ -1,8 +1,5 @@
-# INI_FILES="flow_MH.yaml flow_LMH.yaml flow_MH_nobalance.yaml flow_LMH_nobalance.yaml"
-# NPROC="1"
-# FLOW_PARAMS="-o output -i input"
-# 
-# include ../all_tests.mk
+INI_FILES="flow_MH.yaml flow_LMH.yaml flow_MH_nobalance.yaml flow_LMH_nobalance.yaml"
+NPROC="1"
+FLOW_PARAMS="-o output -i input"
 
-test-all:
-	python ../../bin/python/runtest.py . -a
+include ../all_tests.mk

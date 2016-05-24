@@ -1,8 +1,5 @@
-# INI_FILES="./flow_vtk.yaml"
-# NPROC="1 2"
-# FLOW_PARAMS="-o output -i input"
-# 
-# include ../all_tests.mk
+INI_FILES="./flow_vtk.yaml"
+NPROC="1 2"
+FLOW_PARAMS="-o output -i input"
 
-test-all:
-	python ../../bin/python/runtest.py . -a
+include ../all_tests.mk
