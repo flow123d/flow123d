@@ -20,18 +20,18 @@ void logger_messages() {
 	double start_time = 0.5;
 
 	MessageOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements.\n"
-			<< "... next lines" << "\n" << "... in same message" << std::endl;
-	MessageOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << std::endl;
+			<< "... next line" << "\n" << "... next line" << "\n";
+	MessageOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
-	WarningOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements."
-			<< std::endl << "... next line in separate message" << std::endl;
-	WarningOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << std::endl;
+	WarningOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << "\n"
+			<< "... next line" << "\n";
+	WarningOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
-	LogOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << std::endl;
-	LogOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << std::endl;
+	LogOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << "\n";
+	LogOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
-	DebugOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << std::endl;
-	DebugOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << std::endl;
+	DebugOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << "\n";
+	DebugOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
 	// flush screen streams for better but not perfect output
 	std::cout << std::flush;
