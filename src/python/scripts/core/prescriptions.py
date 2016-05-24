@@ -4,8 +4,7 @@
 
 import shutil
 from scripts.core.base import Paths, Printer, PathFilters
-from scripts.execs.monitor import PyProcess
-from scripts.execs.test_executor import BinExecutor, SequentialProcesses, ExtendedThread
+from scripts.core.threads import BinExecutor, SequentialThreads, ExtendedThread, PyPy
 from scripts.comparisons import file_comparison
 
 
@@ -76,7 +75,7 @@ class TestPrescription(object):
         return ExtendedThread(name='clean', target=target)
 
     def create_comparison_threads(self):
-        compares = SequentialProcesses(name='Comparison', pbar=True, indent=True)
+        compares = SequentialThreads(name='Comparison', progress=True, indent=True)
         compares.thread_name_property = True
 
         for check_rule in self.test_case.check_rules:
@@ -92,17 +91,18 @@ class TestPrescription(object):
             if pairs:
                 for pair in pairs:
                     command = module.get_command(*pair, **comp_data)
-                    pm = PyProcess(BinExecutor(command))
+                    pm = PyPy(BinExecutor(command), progress=True)
 
                     pm.info_monitor.active = False
                     pm.limit_monitor.active = False
                     pm.progress_monitor.active = False
+                    pm.error_monitor.message = 'Error! Comparison using method {} failed!'.format(method)
+                    pm.stdout_stderr = self.ndiff_log
 
                     path = Paths.path_end_until(pair[0], 'ref_output')
                     test_name = Paths.basename(Paths.dirname(Paths.dirname(self.ref_output)))
                     size = Paths.filesize(pair[0], True)
                     pm.name = '{}: {} ({})'.format(test_name, path, size)
-                    pm.info_monitor.stdout_stderr = self.ndiff_log
                     compares.add(pm)
         return compares
 

@@ -6,6 +6,8 @@ import random
 
 import sys, os, re
 
+import datetime
+
 
 class Printer(object):
     LEVEL_DBG = 00
@@ -150,9 +152,19 @@ class Paths(object):
         return status
 
     @classmethod
-    def temp_file(cls, name=''):
-        # return cls.path_to('{}-{}'.format(random.randint(1000, 9999), name))
-        return cls.path_to('{}-{}'.format(1000, name))
+    @make_relative
+    def temp_file(cls, name='{date}-{time}-{rnd}.log'):
+        return cls.path_to(cls.temp_name(name))
+
+    @classmethod
+    def temp_name(cls, name='{date}-{time}-{rnd}.log'):
+        today = datetime.datetime.today()
+        time = '{:%H:%M:%S}'.format(today)
+        date = '{:%Y-%m-%d}'.format(today)
+        dt = '{:%Y-%m-%d_%H:%M:%S}'.format(today)
+        rnd = '{:04d}'.format(random.randint(0, 9999))
+
+        return name.format(date=date, time=time, today=today, datetime=dt, random=rnd, rnd=rnd)
 
     # -----------------------------------
 
@@ -303,7 +315,7 @@ class Paths(object):
         return cls.join(cls.dirname(path), new_name)
 
 
-class CommandEscapee(object):
+class Command(object):
     @classmethod
     def escape_command(cls, command):
         """
@@ -312,6 +324,10 @@ class CommandEscapee(object):
         """
         import pipes
         return [pipes.quote(x) for x in command]
+
+    @classmethod
+    def to_string(cls, command):
+        return ' '.join(cls.escape_command(command))
 
 
 class IO(object):

@@ -184,7 +184,6 @@ class YamlConfig(object):
 
         # no config was given yaml file was declared
         if not result:
-            # TODO YamlConfigCase(for default_values)
             result.append(prescription_class(default_values, 1, yaml_file))
         return result
 

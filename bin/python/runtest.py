@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import pathfix
 # ----------------------------------------------
 from scripts.core.base import Paths
-from scripts.execs.test_executor import BinExecutor
+from scripts.core.threads import BinExecutor
 from utils.argparser import ArgParser
 from utils.duration import Duration
 
@@ -87,8 +87,8 @@ if __name__ == '__main__':
 
     # for debug only set dir to where script should be
     Paths.base_dir(Paths.dirname(__file__))
-    # Paths.base_dir('/home/jan-hybs/projects/Flow123d/flow123d/bin/python')
+    Paths.base_dir('/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d/bin/python')
 
-    # # run work
+    # run work
     BinExecutor.register_sigint()
     do_work(parser)

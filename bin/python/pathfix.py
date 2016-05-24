@@ -38,6 +38,9 @@ def append_to_path():
     # for now, always print debug info
     print_debug()
 
+    # path to lib
+    add_path('lib')
+    add_path('..', 'lib')
     # path to src/python if COPY_PYTHON is disabled
     add_path('..', '..', 'src', 'python')
     # path to lib/flow123d after COPY_PYTHON

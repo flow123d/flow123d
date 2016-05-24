@@ -4,14 +4,15 @@
 import subprocess
 
 import time
+from apt import progress
+
+import sys
 
 from scripts.core import prescriptions
-from scripts.core.base import Paths, PathFormat, PathFilters, Printer, CommandEscapee, IO
+from scripts.core.base import Paths, PathFormat, PathFilters, Printer, Command, IO
 from scripts.config.yaml_config import YamlConfig
 from scripts.core.prescriptions import PBSModule
-from scripts.execs.monitor import PyProcess
-from scripts.execs.test_executor import BinExecutor, ParallelRunner, SequentialProcesses
-
+from scripts.core.threads import BinExecutor, ParallelThreads, SequentialThreads, PyPy
 
 # global arguments
 from scripts.pbs.common import get_pbs_module, job_ok_string
@@ -27,10 +28,10 @@ printer = Printer(Printer.LEVEL_KEY)
 def create_process(command, limits=None):
     """
     :type command: list[str]
-    :type limits: scripts.execs.monitor.Limits
+    :type limits: scripts.config.yaml_config.YamlConfigCase
     """
     test_executor = BinExecutor(command)
-    process_monitor = PyProcess(test_executor)
+    process_monitor = PyPy(test_executor)
     process_monitor.limit_monitor.set_limits(limits)
     return process_monitor
 
@@ -47,19 +48,14 @@ def create_process_from_case(case):
     :type case: scripts.core.prescriptions.TestPrescription
     """
     process_monitor = create_process(case.get_command(), case.test_case)
-    process_monitor.limit_monitor.active = True
-    process_monitor.info_monitor.active = True
     process_monitor.info_monitor.end_fmt = ''
     process_monitor.info_monitor.start_fmt = 'Running: {}'.format(format_case(case))
 
     # turn on output
-    if arg_options.batch:
-        process_monitor.progress_monitor.active = False
-        process_monitor.info_monitor.stdout_stderr = None
-    else:
-        process_monitor.info_monitor.stdout_stderr = Paths.temp_file('run-test.log')
+    process_monitor.progress = not arg_options.batch
+    process_monitor.stdout_stderr = Paths.temp_file('run-test-{datetime}.log')
 
-    seq = SequentialProcesses('test-case', pbar=False)
+    seq = SequentialThreads('test-case', progress=False)
     seq.add(case.create_clean_thread())
     seq.add(process_monitor)
 
@@ -73,7 +69,7 @@ def create_pbs_job_content(module, command):
     :type module: scripts.pbs.modules.pbs_tarkil_cesnet_cz
     :rtype : str
     """
-    escaped_command = ' '.join(CommandEscapee.escape_command(command))
+    escaped_command = ' '.join(Command.escape_command(command))
     template = PBSModule.format(
         module.template,
         command=escaped_command,
@@ -114,6 +110,8 @@ def run_pbs_mode(all_yamls):
     # start jobs
     if not arg_options.batch:
         printer.dyn('Starting jobs')
+
+    exit(0)
     total = len(jobs)
     job_id = 0
     multijob = MultiJob(pbs_module.ModuleJob)
@@ -145,6 +143,8 @@ def run_pbs_mode(all_yamls):
     if not arg_options.batch:
         multijob.print_status(printer)
 
+    returncodes = dict()
+
     # wait for finish
     while multijob.is_running():
         if not arg_options.batch:
@@ -174,6 +174,9 @@ def run_pbs_mode(all_yamls):
                     job.status = JobState.EXIT_ERROR
                     printer.key('ERROR: Job {} ended (wrong output). Case: {}', job, format_case(job.case))
 
+                # save return code
+                returncodes[job] = 0 if job.status == JobState.EXIT_OK else 1
+
                 # in batch mode print job output
                 # otherwise print output on error only
                 if arg_options.batch or job.status == JobState.EXIT_ERROR:
@@ -183,7 +186,7 @@ def run_pbs_mode(all_yamls):
                     printer.line()
             else:
                 # no output file was generated assuming it went wrong
-                job.status = JobState.ERROR
+                job.status = JobState.EXIT_ERROR
                 printer.key('ERROR: Job {} ended (no output file). Case: {}', job, format_case(job.case))
             printer.line()
 
@@ -195,13 +198,18 @@ def run_pbs_mode(all_yamls):
     printer.key(multijob.get_status_line())
     printer.key('All jobs finished')
 
+    # get max return code or number 2 if there are no returncodes
+    returncode = max(returncodes.values()) if returncodes else 2
+    sys.exit(returncode)
+
+
 def run_local_mode(all_yamls):
     # create parallel runner instance
     """
     :type all_yamls: dict[str, scripts.config.yaml_config.YamlConfig]
     """
     global arg_options, arg_others, arg_rest
-    runner = ParallelRunner(arg_options.parallel)
+    runner = ParallelThreads(arg_options.parallel)
     runner.stop_on_error = not arg_options.keep_going
 
     for yaml_file, config in all_yamls.items():
@@ -219,6 +227,9 @@ def run_local_mode(all_yamls):
 
     # run!
     runner.run()
+
+    # exit with runner's exit code
+    sys.exit(runner.returncode)
 
 
 def read_configs(all_yamls):
@@ -281,9 +292,7 @@ def do_work(parser):
 
     if arg_options.queue:
         printer.key('Running in PBS mode')
-        printer.key('-' * 60)
         run_pbs_mode(all_configs)
     else:
         printer.key('Running in LOCAL mode')
-        printer.key('-' * 60)
         run_local_mode(all_configs)

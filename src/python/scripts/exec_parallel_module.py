@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from scripts.core.base import Paths, Printer, CommandEscapee, IO
+from scripts.core.base import Paths, Printer, Command, IO
 from scripts.core.base import PathFormat
 from scripts.core.prescriptions import PBSModule
-from scripts.execs.monitor import PyProcess
-from scripts.execs.test_executor import BinExecutor
+from scripts.core.threads import BinExecutor, PyPy
 from scripts.pbs.common import get_pbs_module
 import subprocess, time, datetime
 
@@ -38,7 +37,7 @@ def run_local_mode():
 
     # prepare executor
     executor = BinExecutor(command)
-    process_monitor = PyProcess(executor, printer, batch_mode=arg_options.batch)
+    process_monitor = PyPy(executor, progress=not arg_options.batch)
 
     # set limits
     process_monitor.limit_monitor.time_limit = arg_options.time_limit
@@ -77,7 +76,7 @@ def run_pbs_mode():
     pbs_command = module.get_pbs_command(arg_options, temp_file)
 
     # create regular command for execution
-    escaped_command = ' '.join(CommandEscapee.escape_command(command))
+    escaped_command = ' '.join(Command.escape_command(command))
 
     # create pbs script
     pbs_content = PBSModule.format(
@@ -141,9 +140,9 @@ def do_work(parser):
     # run local or pbs mode
     if arg_options.queue:
         printer.dbg('Running in PBS mode')
-        printer.key('-' * 60)
+        printer.line()
         run_pbs_mode()
     else:
         printer.dbg('Running in LOCAL mode')
-        printer.key('-' * 60)
+        printer.line()
         run_local_mode()
