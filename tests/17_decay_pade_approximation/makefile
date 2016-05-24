@@ -1,5 +1,8 @@
-INI_FILES="flow_decay_vtk.yaml"
-NPROC="1 2"
-FLOW_PARAMS="-o output"
+# INI_FILES="flow_decay_vtk.yaml"
+# NPROC="1 2"
+# FLOW_PARAMS="-o output"
+# 
+# include ../all_tests.mk
 
-include ../all_tests.mk
+test-all:
+	python ../../bin/python/runtest.py . -a
