@@ -19,7 +19,7 @@ default_values = dict(
     check_rules=[
         {
             'ndiff': {
-                'files': ['*..']
+                'files': ['*']
             }
         }
     ]
