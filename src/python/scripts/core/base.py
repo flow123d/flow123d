@@ -132,9 +132,7 @@ class Paths(object):
     def base_dir(cls, v=None):
         if v is None:
             return cls._base_dir
-        cls._base_dir = os.path.abspath(v)
-        # os.chdir(v)
-        # cls.printer.err('switching to {}', cls._base_dir)
+        cls._base_dir = os.path.dirname(os.path.realpath(v))
 
     @classmethod
     def source_dir(cls):
@@ -301,6 +299,10 @@ class Paths(object):
     @staticmethod
     def relpath(*args, **kwargs):
         return os.path.relpath(*args, **kwargs)
+
+    @staticmethod
+    def realpath(*args, **kwargs):
+        return os.path.realpath(*args, **kwargs)
 
     @staticmethod
     def basename(*args, **kwargs):

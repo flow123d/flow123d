@@ -20,11 +20,12 @@ def print_debug():
 
 
 def add_path(*args):
-    root = os.path.dirname(__file__)
+    root = os.path.dirname(os.path.realpath(__file__))
     if not args:
         return root
     path = os.path.abspath(
         os.path.join(
+            root,
             *args
         )
     )

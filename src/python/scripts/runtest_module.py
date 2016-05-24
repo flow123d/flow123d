@@ -47,17 +47,18 @@ def create_process_from_case(case):
     """
     :type case: scripts.core.prescriptions.TestPrescription
     """
-    process_monitor = create_process(case.get_command(), case.test_case)
-    process_monitor.info_monitor.end_fmt = ''
-    process_monitor.info_monitor.start_fmt = 'Running: {}'.format(format_case(case))
+    pypy = create_process(case.get_command(), case.test_case)
+    pypy.case = case
+    pypy.info_monitor.end_fmt = ''
+    pypy.info_monitor.start_fmt = 'Running: {}'.format(format_case(case))
 
     # turn on output
-    process_monitor.progress = not arg_options.batch
-    process_monitor.stdout_stderr = Paths.temp_file('run-test-{datetime}.log')
+    pypy.progress = not arg_options.batch
+    pypy.stdout_stderr = Paths.temp_file('run-test-{datetime}.log')
 
     seq = SequentialThreads('test-case', progress=False)
     seq.add(case.create_clean_thread())
-    seq.add(process_monitor)
+    seq.add(pypy)
 
     # if clean-up fails do not run other
     seq.stop_on_error = True
@@ -212,9 +213,18 @@ def run_local_mode(all_yamls):
     runner = ParallelThreads(arg_options.parallel)
     runner.stop_on_error = not arg_options.keep_going
 
+    # turn on/off MPI mode
+    if set(arg_options.cpu) == {1}:
+        cls = prescriptions.TestPrescription
+        printer.key('Running WITHOUT MPI')
+    else:
+        cls = prescriptions.MPIPrescription
+
+    # go through each yaml file
     for yaml_file, config in all_yamls.items():
         # extract all test cases (product of cpu x files)
-        for case in config.get_cases_for_file(prescriptions.MPIPrescription, yaml_file):
+        config.parse()
+        for case in config.get_cases_for_file(cls, yaml_file):
             # create main process which first clean output dir
             # and then execute test
             multi_process = create_process_from_case(case)
@@ -227,7 +237,22 @@ def run_local_mode(all_yamls):
 
     # run!
     runner.run()
+    printer.line()
+    printer.key('Summary: ')
+    Printer.open()
+    for thread in runner.threads:
+        clean, pypy, comp = getattr(thread, 'threads', [None] * 3)
+        if pypy.returncode is None:
+            returncode = 666
+        else:
+            returncode = 1 if thread.returncode is None else thread.returncode
+        returncode = str(returncode)
+        if pypy:
+            printer.key('[{:^3s}] {:7s}: {}', returncode,
+                        PyPy.returncode_map.get(returncode, 'ERROR'),
+                        format_case(pypy.case))
 
+    Printer.close()
     # exit with runner's exit code
     sys.exit(runner.returncode)
 

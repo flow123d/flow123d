@@ -86,8 +86,8 @@ if __name__ == '__main__':
     from scripts.runtest_module import do_work
 
     # for debug only set dir to where script should be
-    Paths.base_dir(Paths.dirname(__file__))
-    Paths.base_dir('/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d/bin/python')
+    Paths.base_dir(__file__)
+    # Paths.base_dir('/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d/bin/python/foo')
 
     # run work
     BinExecutor.register_sigint()

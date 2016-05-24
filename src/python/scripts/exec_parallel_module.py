@@ -37,20 +37,20 @@ def run_local_mode():
 
     # prepare executor
     executor = BinExecutor(command)
-    process_monitor = PyPy(executor, progress=not arg_options.batch)
+    pypy = PyPy(executor, progress=not arg_options.batch)
 
     # set limits
-    process_monitor.limit_monitor.time_limit = arg_options.time_limit
-    process_monitor.limit_monitor.memory_limit = arg_options.memory_limit
+    pypy.limit_monitor.time_limit = arg_options.time_limit
+    pypy.limit_monitor.memory_limit = arg_options.memory_limit
 
     # turn on output
     if arg_options.batch:
-        process_monitor.info_monitor.stdout_stderr = None
+        pypy.info_monitor.stdout_stderr = None
     else:
-        process_monitor.info_monitor.stdout_stderr = Paths.temp_file('exec-paral.log')
+        pypy.info_monitor.stdout_stderr = Paths.temp_file('exec-paral.log')
 
     # start process
-    process_monitor.start()
+    pypy.start()
 
 
 def run_pbs_mode():

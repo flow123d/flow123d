@@ -233,16 +233,6 @@ class ParallelThreads(MultiThreads):
         self.stop_on_error = True
         self.separate = True
 
-    def on_thread_complete(self, thread):
-        """
-        :type thread: scripts.core.threads.ExtendedThread
-        """
-        super(ParallelThreads, self).on_thread_complete(thread)
-        if self.stop_on_error > 0 and thread.returncode:
-            self.stopped = True
-            BinExecutor.signal_handler(None, None)
-            sys.exit(1)
-
     def ensure_run_count(self):
         if self.stopped:
             return False
@@ -275,14 +265,23 @@ class ParallelThreads(MultiThreads):
 
 class PyPy(ExtendedThread):
     """
-    :type printer: scripts.core.base.Printer
-    :type executor: scripts.core.threads.BinExecutor
+    :type printer  : scripts.core.base.Printer
+    :type executor : scripts.core.threads.BinExecutor
+    :type case     : scripts.core.prescriptions.TestPrescription
     """
 
-    def __init__(self, executor, progress=False, period=.5, ):
+    returncode_map = {
+        '0': 'SUCCESS',
+        '1': 'ERROR',
+        'None': 'SKIPPED',
+        '666': 'SKIPPED',
+    }
+
+    def __init__(self, executor, progress=False, period=.5):
         super(PyPy, self).__init__(name='pypy')
         self.executor = executor
         self.period = period
+        self.case = None
         self._progress = None
 
         self.printer = Printer(Printer.LEVEL_DBG)
