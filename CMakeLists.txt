@@ -573,10 +573,15 @@ if (USE_PYTHON)
         # set extra python module path in src directory, if case PYTHON_COPY if OFF
         set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
         
-        # Install
+        # Install 3rd party libs using pip
         message(STATUS "Installing requirements.txt with pip")
         execute_process(
           COMMAND pip install --target=${CMAKE_BINARY_DIR}/lib/flow123d/site-packages -r ${CMAKE_SOURCE_DIR}/bin/python/requirements.txt
+        )
+        
+        # create symlink in tests
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/bin/python/runtest.py ${CMAKE_SOURCE_DIR}/tests/runtest.py
         )
         
         if (PYTHON_COPY)

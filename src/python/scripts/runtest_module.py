@@ -243,7 +243,7 @@ def run_local_mode(all_yamls):
     for thread in runner.threads:
         clean, pypy, comp = getattr(thread, 'threads', [None] * 3)
         if pypy.returncode is None:
-            returncode = 666
+            returncode = -1
         else:
             returncode = 1 if thread.returncode is None else thread.returncode
         returncode = str(returncode)

@@ -274,7 +274,7 @@ class PyPy(ExtendedThread):
         '0': 'SUCCESS',
         '1': 'ERROR',
         'None': 'SKIPPED',
-        '666': 'SKIPPED',
+        '-1': 'SKIPPED',
     }
 
     def __init__(self, executor, progress=False, period=.5):
