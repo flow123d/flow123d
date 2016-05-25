@@ -24,6 +24,13 @@
 #include <iomanip>
 
 
+/// Helper function, use for shorten the code point path
+std::string cmn_prefix( std::string a, std::string b ) {
+    if( a.size() > b.size() ) std::swap(a,b) ;
+    return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
+}
+
+
 /*******************************************************************
  * implementation of LoggerOptions
  */
@@ -252,6 +259,11 @@ void Logger::print_to_file(std::ofstream& stream, unsigned int mask)
 			stream << " , null";
 		}
 		stream << ", \"" << date_time_ << "\"";
+	    // if constant FLOW123D_SOURCE_DIR is defined, we try to erase it from beginning of each CodePoint's filepath
+	    #ifdef FLOW123D_SOURCE_DIR
+	        string common_path = cmn_prefix(string(FLOW123D_SOURCE_DIR), file_name_);
+	        file_name_.erase (0, common_path.size());
+	    #endif
 		stream << ", \"" << file_name_ << "\", " << line_ << ", \"" << function_ << "\"";
 		stream << " ]\n";
 
