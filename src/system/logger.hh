@@ -165,7 +165,10 @@ class Logger : public std::ostream {
 public:
 	/// Enum of types of Logger messages.
 	enum MsgType {
-		warning, message, log, debug
+		warning = 0,
+		message = 1,
+		log = 2,
+		debug = 3
 	};
 
 	/// Return string value of given MsgType in full or shorter format (e.g. "WARNING" of "Wrn")

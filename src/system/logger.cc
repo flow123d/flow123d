@@ -129,20 +129,14 @@ Logger::~Logger()
 
 const std::string Logger::msg_type_string(MsgType msg_type, bool full_format)
 {
+	static std::vector<std::string> type_names = {"WARNING.", "MESSAGE.", "LOG.", "DEBUG.",
+			                                      "Wrn", "Msg", "Log", "Dbg"};
+	int type_idx = msg_type;
+
 	if (full_format) {
-		switch (msg_type) {
-			case MsgType::warning: return "WARNING.";
-			case MsgType::message: return "MESSAGE.";
-			case MsgType::log:     return "LOG.";
-			default:               return "DEBUG.";
-		}
+		return type_names[type_idx];
 	} else {
-		switch (msg_type) {
-			case MsgType::warning: return "Wrn";
-			case MsgType::message: return "Msg";
-			case MsgType::log:     return "Log";
-			default:               return "Dbg";
-		}
+		return type_names[type_idx + 4];
 	}
 }
 
