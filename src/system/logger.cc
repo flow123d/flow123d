@@ -101,12 +101,49 @@ void LoggerOptions::reset() {
 
 
 /*******************************************************************
+ * implementation of StreamMask
+ */
+
+
+StreamMask StreamMask::cout_mask()
+{
+	return StreamMask(0b00000001);
+}
+
+StreamMask StreamMask::cerr_mask()
+{
+	return StreamMask(0b00000010);
+}
+
+StreamMask StreamMask::file_mask()
+{
+	return StreamMask(0b00000100);
+}
+
+
+StreamMask StreamMask::operator &(const StreamMask &other)
+{
+   return StreamMask(this->mask_ & other.mask_);
+}
+
+StreamMask StreamMask::operator |(const StreamMask &other)
+{
+   return StreamMask(this->mask_ | other.mask_);
+}
+
+int StreamMask::operator()(void)
+{
+	return mask_;
+}
+
+
+/*******************************************************************
  * implementation of Logger
  */
 
 
 Logger::Logger(MsgType type)
-: type_(type), every_process_(false), streams_mask_(0)
+: type_(type), every_process_(false)
 {
 	// set actual time
 	TimePoint t = TimePoint();
@@ -120,10 +157,10 @@ Logger::Logger(MsgType type)
 Logger::~Logger()
 {
 	// print output to streams
-	print_to_screen(std::cout, cout_stream_, Logger::cout_mask);
-	print_to_screen(std::cerr, cerr_stream_, Logger::cerr_mask);
+	print_to_screen(std::cout, cout_stream_, StreamMask::cout_mask());
+	print_to_screen(std::cerr, cerr_stream_, StreamMask::cerr_mask());
 	if (LoggerOptions::get_instance().is_init())
-		print_to_file(LoggerOptions::get_instance().file_stream_, Logger::file_mask);
+		print_to_file(LoggerOptions::get_instance().file_stream_, StreamMask::file_mask());
 }
 
 
@@ -170,37 +207,37 @@ void Logger::set_mask()
 	switch (type_) {
 	case MsgType::warning:
 		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = Logger::cerr_mask;
+			streams_mask_ = StreamMask::cerr_mask();
 		else
-			streams_mask_ = Logger::cerr_mask | Logger::file_mask;
+			streams_mask_ = StreamMask::cerr_mask() | StreamMask::file_mask();
 		break;
 	case MsgType::message:
 		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = Logger::cout_mask;
+			streams_mask_ = StreamMask::cout_mask();
 		else
-			streams_mask_ = Logger::cout_mask | Logger::file_mask;
+			streams_mask_ = StreamMask::cout_mask() | StreamMask::file_mask();
 		break;
 #ifndef FLOW123D_DEBUG
 	case MsgType::debug: // for release build
-		streams_mask_ = 0;
+		streams_mask_ = StreamMask();
 		break;
 #endif
 	default: //MsgType::log + MsgType::debug (only for debug build)
 		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = 0;
+			streams_mask_ = StreamMask();
 		else if (LoggerOptions::get_instance().is_init())
-			streams_mask_ = Logger::file_mask;
+			streams_mask_ = StreamMask::file_mask();
 		else
-			streams_mask_ = Logger::cerr_mask;
+			streams_mask_ = StreamMask::cerr_mask();
 		break;
 	}
 
 }
 
 
-void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream, unsigned int mask)
+void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream, StreamMask mask)
 {
-	if (streams_mask_ & mask) {
+	if ( streams_mask_() & mask() ) {
 		bool header_line = false;
 		stream << setfill(' ');
 
@@ -237,9 +274,9 @@ void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream
 }
 
 
-void Logger::print_to_file(std::ofstream& stream, unsigned int mask)
+void Logger::print_to_file(std::ofstream& stream, StreamMask mask)
 {
-	if (streams_mask_ & mask) {
+	if ( streams_mask_() & mask() ) {
 		stream << setfill(' ');
 
 		// print header

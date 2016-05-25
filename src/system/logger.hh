@@ -107,6 +107,42 @@ private:
 
 
 /**
+ * Helper class, store mask specifying streams
+ */
+class StreamMask {
+public:
+	/// Empty constructor
+	StreamMask()
+	: mask_(0) {}
+
+	/// Constructor set \p mask_ value
+	StreamMask(int mask)
+	: mask_(mask) {}
+
+	/// Predefined mask of std::cout output
+	static StreamMask cout_mask();
+
+	/// Predefined mask of std::cerr output
+	static StreamMask cerr_mask();
+
+	/// Predefined mask of std::file output
+	static StreamMask file_mask();
+
+	// Overload & operator
+	StreamMask operator &(const StreamMask &other);
+
+	// Overload | operator
+	StreamMask operator |(const StreamMask &other);
+
+	// Overload () operator
+	int operator()(void);
+
+private:
+	int mask_;
+};
+
+
+/**
  * @brief Class for storing logger messages.
  *
  * Allow define different levels of log messages and distinguish output streams
@@ -202,10 +238,10 @@ private:
 	void set_mask();
 
 	/// Print formated message to given screen stream if mask corresponds with @p streams_mask_.
-	void print_to_screen(std::ostream& stream, std::stringstream& scr_stream, unsigned int mask);
+	void print_to_screen(std::ostream& stream, std::stringstream& scr_stream, StreamMask mask);
 
 	/// Print formated message to given file stream if mask corresponds with @p streams_mask_.
-	void print_to_file(std::ofstream& stream, unsigned int mask);
+	void print_to_file(std::ofstream& stream, StreamMask mask);
 
 	std::stringstream cout_stream_;       ///< Store messages printed to cout output stream
 	std::stringstream cerr_stream_;       ///< Store messages printed to cerr output stream
@@ -218,7 +254,7 @@ private:
 	int line_;                            ///< Actual line.
 	std::string date_time_;               ///< Actual date and time.
 	int mpi_rank_;                        ///< Actual process (if MPI is supported)
-	int streams_mask_;                    ///< Mask of logger, specifies streams
+	StreamMask streams_mask_;             ///< Mask of logger, specifies streams
 
 	template <class T>
 	friend Logger &operator<<(Logger & log, const T & x);
@@ -228,9 +264,9 @@ private:
 template <class T>
 Logger &operator<<(Logger & log, const T & x)
 {
-	if (log.streams_mask_ & Logger::cout_mask) log.cout_stream_ << x;
-	if (log.streams_mask_ & Logger::cerr_mask) log.cerr_stream_ << x;
-	if (log.streams_mask_ & Logger::file_mask) log.file_stream_ << x;
+	if ( (log.streams_mask_ & StreamMask::cout_mask())() ) log.cout_stream_ << x;
+	if ( (log.streams_mask_ & StreamMask::cerr_mask())() ) log.cerr_stream_ << x;
+	if ( (log.streams_mask_ & StreamMask::file_mask())() ) log.file_stream_ << x;
     return log;
 }
 
