@@ -238,16 +238,16 @@ Logger &operator<<(Logger & log, const T & x)
 	Logger( type ).set_context( __FILE__, __func__, __LINE__)
 /// Macro defining 'message' record of log
 #define MessageOut() \
-	_LOG( Logger::MsgType::message ).set_context( __FILE__, __func__, __LINE__)
+	_LOG( Logger::MsgType::message )
 /// Macro defining 'warning' record of log
 #define WarningOut() \
-	_LOG( Logger::MsgType::warning ).set_context( __FILE__, __func__, __LINE__)
+	_LOG( Logger::MsgType::warning )
 /// Macro defining 'log' record of log
 #define LogOut() \
-	_LOG( Logger::MsgType::log ).set_context( __FILE__, __func__, __LINE__)
+	_LOG( Logger::MsgType::log )
 /// Macro defining 'debug' record of log
 #define DebugOut() \
-	_LOG( Logger::MsgType::debug ).set_context( __FILE__, __func__, __LINE__)
+	_LOG( Logger::MsgType::debug )
 
 
 
