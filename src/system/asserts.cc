@@ -17,6 +17,7 @@
 
 
 #include "system/asserts.hh"
+#include "system/logger.hh"
 
 
 namespace feal {
@@ -31,12 +32,12 @@ Exc_assert::Exc_assert()
 
 void Exc_assert::print_info(std::ostringstream &out) const
 {
-	out << std::endl << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << std::endl;
-	out << "> Expression: \'" << expression_ << "\'" << std::endl;
+	out << "\n" << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << "\n";
+	out << "> Expression: \'" << expression_ << "\'" << "\n";
 	if (current_val_.size()) {
-		out << "> Values:" << std::endl;
+		out << "> Values:" << "\n";
 		for (auto val : current_val_) {
-			out << "  " << val << std::endl;
+			out << "  " << val << "\n";
 		}
 	}
 }
@@ -81,8 +82,10 @@ void Assert::error(std::string error_msg)
 void Assert::warning(std::string warning_msg)
 {
 	thrown_ = true;
-	exception_.what_type_msg_ = "Warning: " + warning_msg;
-	std::cerr << exception_.what();
+	std::ostringstream info_str, stack_str;
+	exception_.print_info(info_str);
+	exception_.print_stacktrace(stack_str);
+	WarningOut() << warning_msg << info_str.str() << StreamMask::file_mask() << stack_str.str();
 }
 
 void Assert::check_assert_dbg_count() {

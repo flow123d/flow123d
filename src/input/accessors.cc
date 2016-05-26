@@ -48,7 +48,7 @@ const char * Exception::what() const throw () {
         converter << boost::diagnostic_information_what( *this );
         print_stacktrace(converter);
 #endif
-        converter << "--------------------------------------------------------" << std::endl;
+        converter << std::endl << "--------------------------------------------------------" << std::endl;
 
         message = converter.str();
         return message.c_str();
