@@ -163,6 +163,7 @@ void RichardsLMH::read_initial_condition()
          for (unsigned int i = 0; i < ele->n_sides(); i++) {
              unsigned int idx_edge= ele->side(i)->edge_idx();
              acc.local_edge_idx[i] = edge_new_local_4_mesh_idx_[idx_edge];
+             acc.local_side_idx[i] =  side_row_4_id[mh_dh.side_dof( ele->side(i) )] - rows_ds->begin();
              phead[i] = init_value;
          }
          multidim_assembler[ele->dim()-1]->init_water_content(acc, init_value);
