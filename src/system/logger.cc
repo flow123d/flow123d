@@ -160,7 +160,7 @@ Logger::~Logger()
 	print_to_screen(std::cout, cout_stream_, StreamMask::cout_mask());
 	print_to_screen(std::cerr, cerr_stream_, StreamMask::cerr_mask());
 	if (LoggerOptions::get_instance().is_init())
-		print_to_file(LoggerOptions::get_instance().file_stream_, StreamMask::file_mask());
+		print_to_file(LoggerOptions::get_instance().file_stream_, this->file_stream_, StreamMask::file_mask());
 }
 
 
@@ -238,24 +238,11 @@ void Logger::set_mask()
 void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream, StreamMask mask)
 {
 	if ( streams_mask_() & mask() ) {
-		bool header_line = false;
 		stream << setfill(' ');
 
-		// print header
-		stream << date_time_ << " ";
-		if (every_process_) { // rank
-			stringstream rank;
-			rank << "[" << mpi_rank_ << "]";
-			stream << setiosflags(ios::left) << std::setw(5) << rank.str();
-		} else {
-			stream << std::setw(5) << "";
-		}
-
-		if (type_ != MsgType::message) { // type of message (besides Message)
-			stream << msg_type_string(type_) << "\n";
-		} else {
-			header_line = true;
-		}
+		// print header, if method returns true, message continues on the same line and first line of message
+		// doesn't need indentation in following while cycle
+		bool header_line = this->print_screen_header(stream, scr_stream);
 
 		// print message
 		std::string segment;
@@ -274,38 +261,70 @@ void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream
 }
 
 
-void Logger::print_to_file(std::ofstream& stream, StreamMask mask)
+void Logger::print_to_file(std::ofstream& stream, std::stringstream& file_stream, StreamMask mask)
 {
 	if ( streams_mask_() & mask() ) {
 		stream << setfill(' ');
 
 		// print header
-		stream << "- -" << std::setw(13) << "" << "[ ";
-		stream << msg_type_string(type_, false);
-		if (every_process_) { // add 'E' (only for every_proc) + print rank
-			stream << "E, ";
-			if (mpi_rank_ >= 0) stream << setiosflags(ios::right) << std::setw(4) << mpi_rank_;
-			else stream << "null";
-		} else {
-			stream << " , null";
-		}
-		stream << ", \"" << date_time_ << "\"";
-	    // if constant FLOW123D_SOURCE_DIR is defined, we try to erase it from beginning of each CodePoint's filepath
-	    #ifdef FLOW123D_SOURCE_DIR
-	        string common_path = cmn_prefix(string(FLOW123D_SOURCE_DIR), file_name_);
-	        file_name_.erase (0, common_path.size());
-	    #endif
-		stream << ", \"" << file_name_ << "\", " << line_ << ", \"" << function_ << "\"";
-		stream << " ]\n";
+		this->print_file_header(stream, file_stream);
 
 		// print message
 		std::string segment;
-		std::istringstream istream(file_stream_.str());
-		stream << "  - |" << "\n";
+		std::vector<std::string> segments;
+		std::istringstream istream(file_stream.str());
 		while(std::getline(istream, segment)) {
-			stream << std::setw(4) << "" << segment << "\n";
+			segments.push_back(segment);
+		}
+		if (segments.size() > 1) {
+			stream << "  - |" << "\n";
+			for (auto seg : segments)
+				stream << std::setw(4) << "" << seg << "\n";
+		} else if (segments.size() == 1) {
+			stream << "  - " << segments[0] << "\n";
 		}
 
 		stream << std::flush;
 	}
+}
+
+bool Logger::print_screen_header(std::ostream& stream, std::stringstream& scr_stream)
+{
+	stream << date_time_ << " ";
+	if (every_process_) { // rank
+		stringstream rank;
+		rank << "[" << mpi_rank_ << "]";
+		stream << setiosflags(ios::left) << std::setw(5) << rank.str();
+	} else {
+		stream << std::setw(5) << "";
+	}
+
+	if (type_ != MsgType::message) { // type of message (besides Message)
+		stream << msg_type_string(type_) << "\n";
+		return false; // logger message starts at new line
+	} else {
+		return true; // logger message continues on the same line as header
+	}
+}
+
+
+void Logger::print_file_header(std::ofstream& stream, std::stringstream& file_stream)
+{
+	stream << "- -" << std::setw(13) << "" << "[ ";
+	stream << msg_type_string(type_, false);
+	if (every_process_) { // add 'E' (only for every_proc) + print rank
+		stream << "E, ";
+		if (mpi_rank_ >= 0) stream << setiosflags(ios::right) << std::setw(4) << mpi_rank_;
+		else stream << "null";
+	} else {
+		stream << " , null";
+	}
+	stream << ", \"" << date_time_ << "\"";
+    // if constant FLOW123D_SOURCE_DIR is defined, we try to erase it from beginning of each CodePoint's filepath
+    #ifdef FLOW123D_SOURCE_DIR
+        string common_path = cmn_prefix(string(FLOW123D_SOURCE_DIR), file_name_);
+        file_name_.erase (0, common_path.size());
+    #endif
+	stream << ", \"" << file_name_ << "\", " << line_ << ", \"" << function_ << "\"";
+	stream << " ]\n";
 }

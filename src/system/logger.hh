@@ -107,7 +107,10 @@ private:
 
 
 /**
- * Helper class, store mask specifying streams
+ * @brief Helper class, store mask specifying streams
+ *
+ * Defines masks of all used streams as static methods and allows combining and comparing masks using
+ * the overloaded operators.
  */
 class StreamMask {
 public:
@@ -177,25 +180,26 @@ private:
  * Examples of logger messages formating:
  *
  @code
-   MessageOut() << "End of simulation at time: " << secondary_eq->solved_time() << std::endl;
-   WarningOut() << "Unprocessed key '" << key_name << "' in Record '" << rec->type_name() << "'." << std::endl;
-   LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time << std::endl;
-   DebugOut() << "Calling 'initialize' of empty equation '" << typeid(*this).name() << "'." << std::endl;
+   MessageOut() << "End of simulation at time: " << secondary_eq->solved_time() << "\n";
+   WarningOut() << "Unprocessed key '" << key_name << "' in Record '" << rec->type_name() << "'." << "\n";
+   LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time << "\n";
+   DebugOut() << "Calling 'initialize' of empty equation '" << typeid(*this).name() << "'." << "\n";
  @endcode
  *
- * Logger message can be created by more than one separate message (std::endl
- * manipulator can be used multiple times):
+ * Logger message can be created by more than one line ("\n" can be used multiple
+ * times):
  *
  @code
-   MessageOut() << "Start time: " << this->start_time() << std::endl << "End time: " << this->end_time() << std::endl;
+   MessageOut() << "Start time: " << this->start_time() << "\n" << "End time: " << this->end_time() << "\n";
  @endcode
  *
  * In some cases message can be printed for all processes:
  *
  @code
-   MessageOut().every_proc() << "Size distributed at process: " << distr->lsize() << std::endl;
+   MessageOut().every_proc() << "Size distributed at process: " << distr->lsize() << "\n";
  @endcode
  *
+ * Implementation of Logger does not support manipulator std::endl. Please, use "\n" instead.
  */
 class Logger : public std::ostream {
 public:
@@ -241,7 +245,13 @@ private:
 	void print_to_screen(std::ostream& stream, std::stringstream& scr_stream, StreamMask mask);
 
 	/// Print formated message to given file stream if mask corresponds with @p streams_mask_.
-	void print_to_file(std::ofstream& stream, StreamMask mask);
+	void print_to_file(std::ofstream& stream, std::stringstream& file_stream, StreamMask mask);
+
+	/// Print header to screen stream, helper method called from \p print_to_screen.
+	bool print_screen_header(std::ostream& stream, std::stringstream& scr_stream);
+
+	/// Print header to file stream, helper method called from \p print_to_file.
+	void print_file_header(std::ofstream& stream, std::stringstream& file_stream);
 
 	std::stringstream cout_stream_;       ///< Store messages printed to cout output stream
 	std::stringstream cerr_stream_;       ///< Store messages printed to cerr output stream
