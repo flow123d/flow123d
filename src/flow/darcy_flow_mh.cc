@@ -241,12 +241,17 @@ DarcyMH::EqData::EqData()
 //=============================================================================
 DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
-  solution(nullptr),
-  schur0(nullptr),
-  edge_ds(nullptr),
-  el_ds(nullptr),
-  side_ds(nullptr),
-  el_4_loc(nullptr)
+    solution(nullptr),
+    schur0(nullptr),
+    edge_ds(nullptr),
+    el_ds(nullptr),
+    side_ds(nullptr),
+    el_4_loc(nullptr),
+    row_4_el(nullptr),
+    side_id_4_loc(nullptr),
+    side_row_4_id(nullptr),
+    edge_4_loc(nullptr),
+    row_4_edge(nullptr)
 {
 
     is_linear_=true;
@@ -334,8 +339,8 @@ void DarcyMH::initialize() {
     Input::Iterator<Input::Record> it = input_record_.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
-        balance_ = boost::make_shared<Balance>("water", mesh_, *it);
-        water_balance_idx_ = balance_->add_quantity("water_volume");
+        balance_ = std::make_shared<Balance>("water", mesh_, *it);
+        data_-> water_balance_idx_ = water_balance_idx_ = balance_->add_quantity("water_volume");
         balance_->allocate(rows_ds->lsize(), 1);
         balance_->units(UnitSI().m(3));
     }

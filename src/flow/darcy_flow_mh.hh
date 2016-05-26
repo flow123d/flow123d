@@ -312,7 +312,7 @@ protected:
     MortarMethod mortar_method_;
 
     /// object for calculation and writing the water balance to file.
-    boost::shared_ptr<Balance> balance_;
+    std::shared_ptr<Balance> balance_;
     /// index of water balance within the Balance object.
     unsigned int water_balance_idx_;
 
@@ -341,7 +341,7 @@ protected:
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
 	Distribution *side_ds;          //< optimal distribution of elements
-	boost::shared_ptr<Distribution> rows_ds;          //< final distribution of rows of MH matrix
+	std::shared_ptr<Distribution> rows_ds;          //< final distribution of rows of MH matrix
 
 	int *el_4_loc;		        //< array of idexes of local elements (in ordering matching the optimal global)
 	int *row_4_el;		        //< element index to matrix row
@@ -358,7 +358,7 @@ protected:
 	std::vector<char> bc_switch_dirichlet;
 
 	/// Necessary only for BDDC solver.
-    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
+    std::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
