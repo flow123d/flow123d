@@ -264,11 +264,24 @@ private:
 	int line_;                            ///< Actual line.
 	std::string date_time_;               ///< Actual date and time.
 	int mpi_rank_;                        ///< Actual process (if MPI is supported)
-	StreamMask streams_mask_;             ///< Mask of logger, specifies streams
+	StreamMask streams_mask_;             ///< Mask of logger, specifies streams in actual time into which to be written
+	StreamMask full_streams_mask_;        ///< Mask of logger, specifies all streams into which to be written in logger message
 
 	template <class T>
 	friend Logger &operator<<(Logger & log, const T & x);
+
+	friend Logger &operator<<(Logger & log, StreamMask mask);
 };
+
+
+inline Logger &operator<<(Logger & log, StreamMask mask)
+{
+	// set mask
+	log.streams_mask_ = mask;
+	log.full_streams_mask_ = log.full_streams_mask_ | log.streams_mask_;
+
+	return log;
+}
 
 
 template <class T>

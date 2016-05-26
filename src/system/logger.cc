@@ -232,12 +232,14 @@ void Logger::set_mask()
 		break;
 	}
 
+	full_streams_mask_ = full_streams_mask_ | streams_mask_;
+
 }
 
 
 void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream, StreamMask mask)
 {
-	if ( streams_mask_() & mask() ) {
+	if ( full_streams_mask_() & mask() ) {
 		stream << setfill(' ');
 
 		// print header, if method returns true, message continues on the same line and first line of message
@@ -263,7 +265,7 @@ void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream
 
 void Logger::print_to_file(std::ofstream& stream, std::stringstream& file_stream, StreamMask mask)
 {
-	if ( streams_mask_() & mask() ) {
+	if ( full_streams_mask_() & mask() ) {
 		stream << setfill(' ');
 
 		// print header

@@ -71,3 +71,14 @@ TEST(LoggerLogFileWithMPI, full) {
 
 	logger_messages();
 }
+
+TEST(MaskManipulator, full) {
+	Profiler::initialize();
+	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_log_file("manip");
+
+	MessageOut() << "First message to cout and file.\n"
+				 << StreamMask::cout_mask() << "Second message only to cout.\n"
+				 << StreamMask::file_mask() << "Third message only to file.\n"
+				 << (StreamMask::cout_mask() | StreamMask::file_mask()) << "Fourth message to cout and file.\n";
+}
