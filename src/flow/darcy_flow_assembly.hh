@@ -9,6 +9,7 @@
 #define SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 
 #include <memory>
+#include "mesh/mesh.h"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
@@ -23,12 +24,16 @@
  */
 class LocalElementAccessor {
 public:
-    LocalElementAccessor(ElementFullIter iter, unsigned int loc_idx)
-    :iter(iter), loc_idx(loc_idx) {};
+    LocalElementAccessor(Mesh &mesh, unsigned int loc_idx)
+    :iter(mesh.element(mesh.get_el_4_loc()[loc_idx])),
+     loc_idx(loc_idx),
+     mesh_(mesh)
+    {}
 
     ElementFullIter iter;
     unsigned int loc_idx;
     int local_edge_idx[4];
+    int local_side_idx[4];
     int edge_row[4];
 
     void update() {
@@ -43,8 +48,10 @@ public:
     const ElementAccessor<3> accessor() const {
         return accessor_;
     }
+
 private:
     arma::vec3 centre_;
+    Mesh &mesh_;
     ElementAccessor<3> accessor_;
 };
 
@@ -84,6 +91,10 @@ private:
         // compute velocity value in the barycenter
         // TODO: implement and use general interpolations between discrete spaces
         virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
+
+        virtual void init_water_content(LocalElementAccessor ele, double p_head)
+        {}
+
     };
 
 
