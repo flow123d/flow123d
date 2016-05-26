@@ -300,6 +300,13 @@ void RichardsLMH::assembly_source_term()
 
 }
 
+/*
+void RichardsLMH::prepare_new_time_step()
+{
+    DBGMSG("sol swap\n");
+    //VecSwap(previous_solution, schur0->get_solution());
+    data_->water_content_previous_time.copy(data_->water_content_previous_it);
+}*/
 
 void RichardsLMH::postprocess() {
     int side_row, loc_edge_row, i;
