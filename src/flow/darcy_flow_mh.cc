@@ -383,6 +383,7 @@ void DarcyMH::zero_time_step()
 
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
+        //VecSwap(previous_solution, schur0->get_solution());
         // TODO: reconstruction of solution in zero time.
     }
     //solution_output(T,right_limit); // data for time T in any case
@@ -396,7 +397,6 @@ void DarcyMH::update_solution()
 {
     START_TIMER("Solving MH system");
 
-
     time_->next_time();
 
     data_->set_time(time_->step(), LimitSide::left);
@@ -409,6 +409,7 @@ void DarcyMH::update_solution()
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = false;
+        prepare_new_time_step();
         solve_nonlinear(); // with left limit data
         if (jump_time) {
             xprintf(Warn, "Output of solution discontinuous in time not supported yet.\n");
@@ -447,6 +448,7 @@ void DarcyMH::update_solution()
 void DarcyMH::solve_nonlinear()
 {
     assembly_linear_system();
+    //VecSwap(previous_solution, schur0->get_solution());
     double residual_norm = schur0->compute_residual();
     unsigned int l_it=0;
     nonlinear_iteration_ = 0;
@@ -486,23 +488,34 @@ void DarcyMH::solve_nonlinear()
 
 
         int convergedReason = schur0->solve();
-        this -> postprocess();
+        //this -> postprocess();
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
-        if (is_linear_common) break;
+
 
         //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+        if (is_linear_common) break;
         assembly_linear_system();
+
+
         residual_norm = schur0->compute_residual();
         xprintf(Msg, "  [nonlinear solver] it: %d lin. it:%d (reason: %d) residual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
 
 
     }
+    //VecSwap(previous_solution, schur0->get_solution());
+    this -> postprocess();
 
     solution_changed_for_scatter=true;
 
+}
+
+
+void DarcyMH::prepare_new_time_step()
+{
+    VecSwap(previous_solution, schur0->get_solution());
 }
 
 void DarcyMH::postprocess() 
@@ -630,6 +643,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     if (balance_ != nullptr && fill_matrix)
         balance_->start_flux_assembly(water_balance_idx_);
 
+    DBGMSG("assembly.\n");
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
@@ -638,13 +652,14 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
         //double conductivity_scale;
         //if (fill_matrix) local_assembly_specific( loc_data );
 
-        LocalElementAccessor acc(ele, i_loc);
+        LocalElementAccessor acc(*mesh_, i_loc);
         for (unsigned int i = 0; i < nsides; i++) {
             unsigned int idx_side= mh_dh.side_dof( ele->side(i) );
             unsigned int idx_edge= ele->side(i)->edge_idx();
             side_rows[i] = side_row_4_id[idx_side];
             acc.edge_row [i] = edge_rows[i] = row_4_edge[idx_edge];
             acc.local_edge_idx[i] = loc_edge_idx[i] = edge_new_local_4_mesh_idx_[idx_edge];
+            acc.local_side_idx[i] = side_rows[i] - rows_ds->begin();
         }
         if (fill_matrix) 
             assembler[ele->dim()-1]->assembly_local_matrix(acc);
@@ -1853,12 +1868,9 @@ void DarcyMH::modify_system() {
 	}
 
     // modify RHS - add previous solution
-    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
-
-    // swap solutions
-    VecSwap(previous_solution, schur0->get_solution());
 }
 
 

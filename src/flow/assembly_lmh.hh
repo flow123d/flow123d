@@ -54,7 +54,7 @@ public:
 
     void reset_soil_model(LocalElementAccessor ele) {
         genuchten_on = (this->ad_->genuchten_p_head_scale.field_result({ele.iter->region()}) != result_zeros);
-        DBGMSG("g on: %d\n", genuchten_on);
+        //DBGMSG("g on: %d\n", genuchten_on);
         if (genuchten_on) {
             SoilData soil_data = {
                     this->ad_->genuchten_n_exponent.value(ele.centre(), ele.accessor()),
@@ -139,6 +139,90 @@ public:
             }
         }
 
+    }
+
+    AssemblyDataPtr ad_;
+    RichardsSystem system_;
+
+    SoilModel_VanGenuchten soil_model;
+    bool genuchten_on;
+    double cross_section;
+    /***
+     * Called from assembly_local_matrix, assumes precomputed:
+     * cross_section, genuchten_on, soil_model
+     */
+    void assembly_source_term(LocalElementAccessor ele) {
+
+        // set lumped source
+
+        double storativity = this->ad_->storativity.value(ele.centre(), ele.accessor());
+        double diagonal_coef = ele.iter->measure() * cross_section / ele.iter->n_sides();
+        double capacity = 0;
+        double water_content_diff = 0;
+        double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.accessor());
+        double side_water_content=0;
+
+        FOR_ELEMENT_SIDES(ele.iter, i)
+        {
+            uint local_edge = ele.local_edge_idx[i];
+            uint local_side = ele.local_side_idx[i];
+            uint edge_row = ele.edge_row[i];
+            double water_content=0;
+
+            if (genuchten_on) {
+                fadbad::B<double> x_phead(ad_->phead_edge_[local_edge]);
+                fadbad::B<double> evaluated( soil_model.water_content(x_phead) );
+                evaluated.diff(0,1);
+                capacity =  x_phead.d(0);
+
+                water_content = evaluated.val();
+            }
+            side_water_content = diagonal_coef * (water_content + storativity*ad_->phead_edge_[local_edge]);
+
+
+            //ad_->water_content_previous_it[local_side] = side_water_content;
+
+
+            water_content_diff = -side_water_content + ad_->water_content_previous_time[local_side];
+
+            double mass_balance_diagonal = diagonal_coef * (capacity + storativity);
+            double mass_diagonal = mass_balance_diagonal / this->ad_->time_step_;
+
+            //cout << "mesh edge: " << mesh_edge << "local: " << local_edge << endl;
+            double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] + water_content_diff / this->ad_->time_step_;
+            //DBGMSG("rhs: %d %f\n", local_side, ad_->phead_edge_[local_edge]);
+
+
+            system_.lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal );
+            system_.lin_sys->rhs_set_value(edge_row, source_diagonal - mass_rhs);
+
+            if (system_.balance != nullptr) {
+                system_.balance->add_mass_matrix_values(ad_->water_balance_idx_, ele.iter->region().bulk_idx(), {edge_row}, {mass_balance_diagonal});
+                system_.balance->add_source_rhs_values(ad_->water_balance_idx_, ele.iter->region().bulk_idx(), {edge_row}, {source_diagonal});
+            }
+        }
+
+    }
+
+    void init_water_content(LocalElementAccessor ele, double p_head) {
+        ele.update();
+        reset_soil_model(ele);
+        double storativity = this->ad_->storativity.value(ele.centre(), ele.accessor());
+        cross_section = this->ad_->cross_section.value(ele.centre(), ele.accessor());
+        double diagonal_coef = ele.iter->measure() * cross_section / ele.iter->n_sides();
+
+        double water_content = 0.0;
+        if (genuchten_on) {
+            water_content = soil_model.water_content(p_head);
+        }
+
+        for(int i=0; i<ele.iter->n_sides(); i++) {
+            uint local_side = ele.local_side_idx[i];
+            double wc_init = diagonal_coef * (water_content + storativity * p_head);
+            ad_->water_content_previous_it[local_side] = wc_init;
+            ad_->water_content_previous_time[local_side] = wc_init;
+            //DBGMSG("wc_init: %d %f\n", local_side, ad_->water_content_previous_it[local_side]);
+        }
     }
 
     AssemblyDataPtr ad_;

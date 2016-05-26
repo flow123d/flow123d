@@ -94,6 +94,9 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             std::vector<std::string> var_list;
 
             FunctionParser tmp_parser;
+            tmp_parser.AddConstant("Pi", 3.14159265358979323846);
+            tmp_parser.AddConstant("E", 2.71828182845904523536);
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
             {
@@ -112,13 +115,13 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                             value_input_address_.c_str() );
             }
             if (time_dependent) {
-                parser_matrix_[row][col].AddConstant("t", time.end());
+                tmp_parser.AddConstant("t", time.end());
             }
 
             // TODO:
             // - possibly add user defined constants and units here ...
             // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
-
+            parser_matrix_[row][col] = tmp_parser;
             if (time_dependent || this->time_ == TimeStep() ) {
                 parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
 
