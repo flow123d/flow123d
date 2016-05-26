@@ -7,6 +7,8 @@
 
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include "system/system.hh"
 #include "system/exceptions.hh"

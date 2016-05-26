@@ -9,6 +9,8 @@
  */
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include <vector>
 
@@ -249,7 +251,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW( {record.val<int>("optional_int");}, feal::Exc_assert );
+    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, ExcStorageTypeMismatch, "You want value of type 'int'" );
 #endif
 
 }
