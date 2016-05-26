@@ -81,4 +81,20 @@ TEST(MaskManipulator, full) {
 				 << StreamMask::cout_mask() << "Second message only to cout.\n"
 				 << StreamMask::file_mask() << "Third message only to file.\n"
 				 << (StreamMask::cout_mask() | StreamMask::file_mask()) << "Fourth message to cout and file.\n";
+
+	LoggerOptions::get_instance().reset();
+}
+
+TEST(FealAssert, warning) {
+	Profiler::initialize();
+	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_log_file("assert_warn");
+
+	std::string s1 = "feal";
+    std::string s2 = "assert";
+    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Strings must be empty.");
+
+    // shorter version of macro - "ASSERT" - is not in conflict with external library
+    ASSERT(0).warning("Zero value.");
+
 }
