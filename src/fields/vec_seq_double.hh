@@ -86,7 +86,7 @@ public:
      */
     inline double &operator[](unsigned int idx)
     {
-    	DEBUG_ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+    	ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
     	return (*data_ptr_)[idx];
     }
 
@@ -121,7 +121,7 @@ public:
         if (data_ptr_.use_count() ==0) {
             data_ptr_ = std::make_shared< std::vector<double> >(local_size);
         } else {
-            DEBUG_ASSERT( data_ptr_.use_count() ==  1 ) ( data_ptr_.use_count() ).error("Object referenced by other pointer. Can not resize.");
+            ASSERT_DBG( data_ptr_.use_count() ==  1 ) ( data_ptr_.use_count() ).error("Object referenced by other pointer. Can not resize.");
             chkerr(VecDestroy(&data_petsc_));
             data_ptr_->resize(local_size);
         }
@@ -148,7 +148,7 @@ public:
 
     VectorData &data()
     {
-        DEBUG_ASSERT(data_ptr_);
+        ASSERT_DBG(data_ptr_);
         return *data_ptr_;
     }
 
@@ -173,8 +173,8 @@ public:
      */
     inline double &operator[](unsigned int idx)
     {
-        DEBUG_ASSERT(data_ptr_);
-        DEBUG_ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+        ASSERT_DBG(data_ptr_);
+        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
         return (*data_ptr_)[idx];
     }
 

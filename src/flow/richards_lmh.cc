@@ -5,10 +5,9 @@
  *      Author: jb
  */
 
-// in the third_party/FADBAD++ dir, namespace "fadbad"
-#include "fadbad.h"
-#include "badiff.h"
-#include "fadiff.h"
+
+#include "system/global_defs.h"
+#include "system/sys_profiler.hh"
 
 
 #include "input/input_type.hh"
@@ -22,13 +21,16 @@
 #include "petscerror.h"
 #include <armadillo>
 
-#include "system/global_defs.h"
-#include "system/sys_profiler.hh"
 #include "la/schur.hh"
 
 #include "coupling/balance.hh"
 
 #include "fields/vec_seq_double.hh"
+
+// in the third_party/FADBAD++ dir, namespace "fadbad"
+#include "fadbad.h"
+#include "badiff.h"
+#include "fadiff.h"
 
 #include "flow/assembly_lmh.hh"
 
