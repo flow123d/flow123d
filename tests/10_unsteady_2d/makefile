@@ -1,5 +1,5 @@
-#INI_FILES="flow_MH.yaml flow_LMH.yaml flow_MH_nobalance.yaml flow_LMH_nobalance.yaml"
-INI_FILES="flow_MH.yaml flow_LMH.yaml"
+INI_FILES="flow_MH.yaml flow_LMH.yaml flow_MH_exact.yaml"
+#INI_FILES="flow_MH.yaml flow_LMH.yaml"
 NPROC="1"
 FLOW_PARAMS="-o output -i input"
 

@@ -84,6 +84,19 @@ template<unsigned int dim> class QGauss;
 
 
 /**
+ * This should contain target large algebra object to be assembled.
+ * Since this should be passed only once per the whole assembly and may be equation specific
+ * this structure is passed with the data
+ */
+class RichardsSystem {
+public:
+    std::shared_ptr<arma::mat> local_matrix;
+    std::shared_ptr<Balance> balance;
+    LinSys *lin_sys;
+};
+
+
+/**
  * @brief Mixed-hybrid of steady Darcy flow with sources and variable density.
  *
  * solve equations:
@@ -180,6 +193,8 @@ public:
         Mesh *mesh;
         MH_DofHandler *mh_dh;
 
+        RichardsSystem system_;
+        uint water_balance_idx_;
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;

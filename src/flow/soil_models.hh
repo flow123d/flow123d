@@ -46,7 +46,10 @@ struct SoilData {
 
 class SoilModel_VanGenuchten {
 public:
+    SoilModel_VanGenuchten();
     SoilModel_VanGenuchten(SoilData soil);
+
+    void reset(SoilData soil);
 
     template <class T>
     T conductivity(const T &h) const;
@@ -112,9 +115,23 @@ private:
 
 };
 
-SoilModel_VanGenuchten::SoilModel_VanGenuchten(SoilData soil)
-: soil_param_(soil), Bpar(0.5), Ppar(2), K_lower_limit(1.0E-20)
+SoilModel_VanGenuchten::SoilModel_VanGenuchten()
+:  Bpar(0.5), Ppar(2), K_lower_limit(1.0E-20)
 {
+
+}
+
+
+SoilModel_VanGenuchten::SoilModel_VanGenuchten(SoilData soil)
+:  SoilModel_VanGenuchten()
+{
+    reset(soil);
+}
+
+
+void SoilModel_VanGenuchten::reset(SoilData soil)
+{
+    soil_param_ = soil;
 
     m = 1-1/soil_param_.n;
     //arg_cap_max= -alpha * pow(m, 1.0/n);
@@ -132,7 +149,9 @@ SoilModel_VanGenuchten::SoilModel_VanGenuchten(SoilData soil)
     Hs = Q_non_cut_inv(soil_param_.Qs);
 
 
+
 }
+
 
 // pri generovani grafu jsem zjistil ze originalni vzorecek pro
 // vodivost pres theta je numericky nestabilni pro tlaky blizke

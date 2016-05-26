@@ -5,6 +5,12 @@
  *      Author: jb
  */
 
+// in the third_party/FADBAD++ dir, namespace "fadbad"
+#include "fadbad.h"
+#include "badiff.h"
+#include "fadiff.h"
+
+
 #include "input/input_type.hh"
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
@@ -25,6 +31,7 @@
 #include "fields/vec_seq_double.hh"
 
 #include "flow/assembly_lmh.hh"
+
 
 FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
 
@@ -48,7 +55,7 @@ RichardsLMH::EqData::EqData()
     ADD_FIELD(genuchten_p_head_scale,
             "The van Genuchten pressure head scaling parameter (($ \alpha $)).\n"
             "The parameter of the van Genuchten's model to scale the pressure head."
-            "Related to the inverse of the air entry pressure, i.e. the pressure where the relative water content starts to decrease below 1.", "1.0");
+            "Related to the inverse of the air entry pressure, i.e. the pressure where the relative water content starts to decrease below 1.", "0.0");
         genuchten_p_head_scale.units( UnitSI().m(-1) );
 
     ADD_FIELD(genuchten_n_exponent,
@@ -86,16 +93,16 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
     data_ = make_shared<EqData>();
     DarcyMH::data_ = data_;
     EquationBase::eq_data_ = data_.get();
+    data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
 }
 
 void RichardsLMH::initialize_specific() {
 
     // create edge vectors
     unsigned int n_local_edges = edge_new_local_4_mesh_idx_.size();
-    phead_edge_.resize( n_local_edges);
-    //capacity_edge_.duplicate(phead_edge_);
-    //conductivity_edge_.duplicate(phead_edge_);
-    //saturation_edge_.duplicate(phead_edge_);
+    data_->phead_edge_.resize( n_local_edges);
+    data_->water_content_previous_it.duplicate(data_->phead_edge_);
+    data_->water_content_previous_time.duplicate(data_->phead_edge_);
 
     Distribution ds_split_edges(n_local_edges, PETSC_COMM_WORLD);
     vector<int> local_edge_rows(n_local_edges);
@@ -108,7 +115,7 @@ void RichardsLMH::initialize_specific() {
             &(local_edge_rows[0]), PETSC_COPY_VALUES, &(is_loc));
 
     VecScatterCreate(schur0->get_solution(), is_loc,
-            phead_edge_.petsc_vec(), PETSC_NULL, &solution_2_edge_scatter_);
+            data_->phead_edge_.petsc_vec(), PETSC_NULL, &solution_2_edge_scatter_);
     ISDestroy(&is_loc);
 
 
@@ -168,8 +175,8 @@ void RichardsLMH::assembly_linear_system()
     if (balance_ != nullptr)
         balance_->start_mass_assembly(water_balance_idx_);
 
-    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
 
 
     bool is_steady = data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
@@ -178,13 +185,20 @@ void RichardsLMH::assembly_linear_system()
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
+        data_->time_step_ = time_->dt();
         auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
+
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
 
-        assembly_source_term();
+        if (balance_ != nullptr)
+            balance_->start_source_assembly(water_balance_idx_);
+
         assembly_mh_matrix( multidim_assembler ); // fill matrix
+
+        if (balance_ != nullptr)
+            balance_->finish_source_assembly(water_balance_idx_);
 
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
@@ -224,6 +238,7 @@ void RichardsLMH::compute_per_element_nonlinearities() {
 
 void RichardsLMH::setup_time_term()
 {
+    FEAL_ASSERT(false).error("Shold not be called.");
     // save diagonal of steady matrix
     //MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
@@ -262,6 +277,7 @@ void RichardsLMH::setup_time_term()
 
     MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
 */
+    /*
     solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
 
@@ -272,49 +288,14 @@ void RichardsLMH::setup_time_term()
 
     // swap solutions
     VecSwap(previous_solution, schur0->get_solution());
-
+*/
 }
 
 
 
 void RichardsLMH::assembly_source_term()
 {
-    if (balance_ != nullptr)
-        balance_->start_source_assembly(water_balance_idx_);
 
-    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++)
-    {
-        ElementFullIter ele = mesh_->element(el_4_loc[i_loc]);
-
-        // set lumped source
-        double cs = data_->cross_section.value(ele->centre(), ele->element_accessor());
-        double diagonal_coef = ele->measure() * cs / ele->n_sides();
-
-        double source_diagonal = diagonal_coef * data_->water_source_density.value(ele->centre(), ele->element_accessor());
-        double mass_balance_diagonal = diagonal_coef * data_->storativity.value(ele->centre(), ele->element_accessor());
-        double mass_diagonal = mass_balance_diagonal / time_->dt();
-
-
-        FOR_ELEMENT_SIDES(ele,i)
-        {
-            int mesh_edge=ele->side(i)->edge_idx();
-            int edge_row = row_4_edge[mesh_edge];
-            int local_edge = edge_new_local_4_mesh_idx_[mesh_edge];
-            //cout << "mesh edge: " << mesh_edge << "local: " << local_edge << endl;
-            double mass_rhs = mass_diagonal * phead_edge_[local_edge];
-
-            schur0->mat_set_value(edge_row, edge_row, -mass_diagonal );
-            schur0->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
-
-            if (balance_ != nullptr) {
-                balance_->add_mass_matrix_values(water_balance_idx_, ele->region().bulk_idx(), {edge_row}, {mass_balance_diagonal});
-                balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {edge_row}, {source_diagonal});
-            }
-        }
-    }
-
-    if (balance_ != nullptr)
-        balance_->finish_source_assembly(water_balance_idx_);
 }
 
 

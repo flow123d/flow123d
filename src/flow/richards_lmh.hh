@@ -58,6 +58,16 @@ public:
         Field<3, FieldValue<3>::Scalar > genuchten_n_exponent;
 
         //output fields
+
+        // Auxiliary assembly fields.
+        std::unordered_map<unsigned int, unsigned int> *edge_new_local_4_mesh_idx_;
+        VectorMPI phead_edge_;
+        VectorMPI water_content_previous_it;
+        VectorMPI water_content_previous_time;
+
+        // This is necessary in the assembly
+        // TODO: store time information in the field set and in fields, is it ok also for more complex discretization methods?
+        double time_step_;
     };
 
     RichardsLMH(Mesh &mesh, const Input::Record in_rec);
@@ -87,7 +97,7 @@ private:
     Vec new_diagonal;
     Vec previous_solution;
 */
-    VectorMPI phead_edge_;
+
     //Vec time_term;
 };
 
