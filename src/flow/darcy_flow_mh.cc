@@ -492,11 +492,13 @@ void DarcyMH::solve_nonlinear()
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
-        if (is_linear_common) break;
+
 
         //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+        if (is_linear_common) break;
         assembly_linear_system();
+
 
         residual_norm = schur0->compute_residual();
         xprintf(Msg, "  [nonlinear solver] it: %d lin. it:%d (reason: %d) residual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
@@ -641,6 +643,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     if (balance_ != nullptr && fill_matrix)
         balance_->start_flux_assembly(water_balance_idx_);
 
+    DBGMSG("assembly.\n");
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];

@@ -84,6 +84,7 @@ protected:
     void read_initial_condition() override;
     void assembly_linear_system() override;
     void setup_time_term();
+    void prepare_new_time_step() override;
     void postprocess() override;
 private:
 
