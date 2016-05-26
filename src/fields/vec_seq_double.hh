@@ -166,8 +166,16 @@ public:
         OLD_ASSERT_EQUAL(this->data_ptr_->size(), other.data_ptr_->size());
         uint size = this->data_ptr_->size();
         std::swap(this->data_ptr_, other.data_ptr_);
-        this->resize(size);
-        other.resize(size);
+        chkerr(VecDestroy(&data_petsc_));
+        chkerr(VecDestroy(&other.data_petsc_));
+        chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
+        chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, size, PETSC_DECIDE, &((*other.data_ptr_)[0]), &other.data_petsc_));
+    }
+
+
+    void copy(VectorMPI &other) {
+        OLD_ASSERT_EQUAL(this->data_ptr_->size(), other.data_ptr_->size());
+        chkerr(VecCopy(other.data_petsc_, data_petsc_));
     }
 
     /// Destructor.
@@ -187,6 +195,7 @@ public:
     }
 
 private:
+
     /// shared pointer to vector of data
     VectorDataPtr data_ptr_;
     /// stored vector of data in PETSC format
