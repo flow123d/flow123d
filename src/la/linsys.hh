@@ -110,6 +110,9 @@ public:
         MPI_Allreduce ( &lsizeInt, &sizeInt, 1, MPI_INT, MPI_SUM, comm_ );
         size_ = static_cast<unsigned>( sizeInt );
 
+        r_tol_ = default_r_tol_;
+        a_tol_ = default_a_tol_;
+        max_it_ = default_max_it_;
     };
 
     /**
@@ -124,7 +127,7 @@ public:
       globalSolution_(other.globalSolution_), in_rec_(other.in_rec_)
 
     {
-    	ASSERT( false, "Using copy constructor of LinSys is not allowed!");
+    	OLD_ASSERT( false, "Using copy constructor of LinSys is not allowed!");
     	set_solution(other.v_solution_);
     };
 
@@ -157,7 +160,7 @@ public:
      */
     virtual const Mat *get_matrix()
     {
-        ASSERT( false, "Function get_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function get_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
         return NULL;
     }
 
@@ -173,7 +176,7 @@ public:
      */
     virtual const Vec *get_rhs()
     {
-        ASSERT( false, "Function get_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function get_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
         return NULL;
     }
     
@@ -188,6 +191,15 @@ public:
      */
     void set_rhs_changed()
     { rhs_changed_ = true; }
+
+    /**
+     * Set relative tolerance, absolute tolerance, and maximum number of iterations of the linear solver.
+     *
+     * For each of these three parameters we first look for the value at user input
+     * if not set we use the value provided to this method and finally the default values are
+     * set by the call of this method in the constructor.
+     */
+    virtual void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) = 0;
 
     /**
      * Returns true if the system matrix has changed since the last solve.
@@ -207,7 +219,7 @@ public:
      */
     virtual PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
     {
-        ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
         return 0;
     }
 
@@ -216,7 +228,7 @@ public:
      */
     virtual PetscErrorCode set_rhs(Vec &rhs)
     {
-        ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
         return 0;
     }
 
@@ -225,7 +237,7 @@ public:
      */
     virtual PetscErrorCode mat_zero_entries()
     {
-    	ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
     	return 0;
     }
 
@@ -234,7 +246,7 @@ public:
      */
     virtual PetscErrorCode rhs_zero_entries()
     {
-    	ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
     	return 0;
     }
 
@@ -275,7 +287,7 @@ public:
      */
     virtual void start_allocation()
     {
-        ASSERT( false, "Function start_allocation is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function start_allocation is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -283,7 +295,7 @@ public:
      */
     virtual void start_add_assembly()
     {
-        ASSERT( false, "Function start_add_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function start_add_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -291,7 +303,7 @@ public:
      */
     virtual void start_insert_assembly()
     {
-        ASSERT( false, "Function start_insert_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function start_insert_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -437,6 +449,11 @@ public:
     };
 
     /**
+     * Explicitly compute residual and its norm for current solution.
+     */
+    virtual double compute_residual() =0;
+
+    /**
      * Returns information on relative solver accuracy
      */
     double get_relative_accuracy(){
@@ -527,7 +544,7 @@ public:
      */
     virtual void view()
     {
-        ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	OLD_ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -535,12 +552,8 @@ public:
      */
     virtual void set_from_input(const Input::Record in_rec)
     {
-    	if (! in_rec.is_empty()) {
-    		in_rec_ = Input::Record( in_rec );
-    		r_tol_  = in_rec.val<double>("r_tol");
-    		max_it_ = in_rec.val<int>("max_it");
-    		a_tol_  = 0.01 * r_tol_;
-    	}
+        in_rec_ = in_rec;
+        set_tolerances(default_r_tol_, default_a_tol_, default_max_it_);
     }
 
     /**
@@ -556,9 +569,14 @@ public:
     }
 
 protected:
-    double           r_tol_;  // relative tolerance of linear solver
-    double      	 a_tol_;  // absolute tolerance of linear solver
-    int              max_it_; // maximum number of iterations of linear solver
+    // Default values initialized in constructor
+    static constexpr double         default_r_tol_ = 1e-7;
+    static constexpr double         default_a_tol_ = 1e-11;
+    static constexpr unsigned int   default_max_it_ = 1000;
+
+    double           r_tol_;  ///< relative tolerance of linear solver
+    double      	 a_tol_;  ///< absolute tolerance of linear solver
+    unsigned int     max_it_; ///< maximum number of iterations of linear solver
 
     MPI_Comm         comm_;
     SetValuesMode    status_;         //!< Set value status of the linear system.

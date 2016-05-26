@@ -1,9 +1,13 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Test8 - Steady flow with sources
   mesh:
     mesh_file: ${INPUT}/test08.msh
-  primary_equation: !SteadyDarcy_MH
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
     input_fields:
       - region: plane
         anisotropy: 1
@@ -23,6 +27,3 @@ problem: !SequentialCoupling
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    solver: !Petsc
-      r_tol: 1.0e-10
-      a_tol: 1.0e-10

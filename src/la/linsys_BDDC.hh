@@ -45,6 +45,8 @@ public:
                  const int  numSubLoc = 1,
                  const bool swap_sign = false );
 
+    void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
+
     void load_mesh( const int nDim, const int numNodes, const int numDofs,
                     const std::vector<int> & inet, 
                     const std::vector<int> & nnet, 
@@ -75,6 +77,13 @@ public:
     void set_from_input(const Input::Record in_rec);
 
     double get_solution_precision();
+
+    double compute_residual() override
+    {
+        // until we have correct function for residual we
+        // return a practical infinity
+        return numeric_limits<double>::max();
+    }
 
     ~LinSys_BDDC( );
 

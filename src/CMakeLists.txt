@@ -83,6 +83,8 @@ add_library(system_lib
     system/system.cc
     system/xio.cc
     system/exceptions.cc
+    system/stack_trace.cc
+    system/asserts.cc
     io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
@@ -112,7 +114,6 @@ add_library(input_lib
     input/type_output.cc
     
     input/accessors.cc
-    input/storage_transpose.cc
 )
 target_link_libraries(input_lib 
     system_lib json_spirit

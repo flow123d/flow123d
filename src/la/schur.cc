@@ -62,7 +62,7 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
 : LinSys_PETSC(ds), IsA(ia), state(created)
 {
         // check index set
-        ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
+        OLD_ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 
         // initialize variables
         Compl   = NULL;
@@ -154,7 +154,7 @@ void SchurComplement::form_schur()
 
         VecGetArray( Sol2, &sol_array );
         Compl->set_solution( sol_array );
-        Compl->set_from_input( in_rec_ );
+
         VecRestoreArray( Sol2, &sol_array );
 
     }
@@ -189,7 +189,7 @@ void SchurComplement::form_schur()
 		}
 		Compl->set_matrix_changed();
 
-		ASSERT( ierr == 0, "PETSC Error during calculation of Schur complement.\n");
+		OLD_ASSERT( ierr == 0, "PETSC Error during calculation of Schur complement.\n");
 
     }
 
@@ -234,8 +234,11 @@ void SchurComplement::resolve()
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
-	ASSERT(ls != nullptr, "NULL complement ls.\n");
+	OLD_ASSERT(ls != nullptr, "NULL complement ls.\n");
     Compl = ls;
+    if (!in_rec_.is_empty()) {
+        Compl->set_from_input( in_rec_ );
+    }
 }
 
 
@@ -284,7 +287,7 @@ void SchurComplement::create_inversion_matrix()
             }
         }
         size_submat = max - min + 1;
-        ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
+        OLD_ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
 
         MatRestoreRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         arma::mat submat2(size_submat, size_submat);

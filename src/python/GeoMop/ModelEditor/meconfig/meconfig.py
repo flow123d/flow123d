@@ -21,11 +21,17 @@ from data.validation import Validator
 from data.format import get_root_input_type_from_json
 from data.autoconversion import autoconvert
 from geomop_util.logging import LOGGER_PREFIX
+from geomop_util import Serializable
+from geomop_project import Project, InvalidProject
 from util import constants
 
 
 class _Config:
     """Class for ModelEditor serialization"""
+
+    __serializable__ = Serializable(
+        excluded=['observers']
+    )
 
     DEBUG_MODE = False
     """debug mode changes the behaviour"""
@@ -38,43 +44,57 @@ class _Config:
 
     CONFIG_DIR = os.path.join(cfg.__config_dir__, 'ModelEditor')
 
-    def __init__(self, readfromconfig=True):
+    def __init__(self, **kwargs):
+
+        def kw_or_def(key, default=None):
+            """Get keyword arg or default value."""
+            return kwargs[key] if key in kwargs else default
 
         from os.path import expanduser
-        self.last_data_dir = expanduser("~")
+        self.observers = []
+        """objects to be notified of changes (currently only used for project)"""
+        self.last_data_dir = kw_or_def('last_data_dir', expanduser("~"))
         """directory of the most recently opened data file"""
-        self.recent_files = []
+        self.recent_files = kw_or_def('recent_files', [])
         """a list of recently opened files"""
-        self.format_files = []
+        self.format_files = kw_or_def('format_files', [])
         """a list of format files"""
-        self.display_autocompletion = False
+        self.display_autocompletion = kw_or_def('display_autocompletion', False)
         """whether to display autocompletion automatically"""
-        self.symbol_completion = False
+        self.symbol_completion = kw_or_def('symbol_completion', False)
         """whether to automatically complete brackets and array symbols"""
-        self.shortcuts = deepcopy(shortcuts.DEFAULT_USER_SHORTCUTS)
+        self.shortcuts = kw_or_def('shortcuts',
+                                           deepcopy(shortcuts.DEFAULT_USER_SHORTCUTS))
         """user customizable keyboard shortcuts"""
-        self.font = constants.DEFAULT_FONT
+        self.font = kw_or_def('font', constants.DEFAULT_FONT)
         """text editor font"""
+        self._project = kw_or_def('_project')
+        self._workspace = kw_or_def('_workspace')
 
-        if readfromconfig:
-            data = cfg.get_config_file(self.__class__.SERIAL_FILE, self.CONFIG_DIR)
-            self.last_data_dir = getattr(data, 'last_data_dir', self.last_data_dir)
-            self.recent_files = getattr(data, 'recent_files', self.recent_files)
-            self.format_files = getattr(data, 'format_files', self.format_files)
-            self.display_autocompletion = getattr(data, 'display_autocompletion',
-                                                  self.display_autocompletion)
-            self.symbol_completion = getattr(data, 'symbol_completion',
-                                             self.symbol_completion)
-            self.font = getattr(data, 'font', self.font)
-            if hasattr(data, 'shortcuts'):
-                self.shortcuts.update(data.shortcuts)
+        # initialize project and workspace
+        self.workspace = self._workspace
+        self.project = self._project
 
     def update_last_data_dir(self, file_name):
         """Save dir from last used file"""
-        self.last_data_dir = os.path.dirname(os.path.realpath(file_name))
+        project_directory = None
+        directory = os.path.dirname(os.path.realpath(file_name))
+        if self.workspace is not None and self.project is not None:
+            project_dir = os.path.join(self.workspace, self.project)
+        if project_directory is None or directory != project_dir:
+            self.last_data_dir = directory
+
+    @staticmethod
+    def open():
+        """Open config from saved file (if exists)."""
+        config = cfg.get_config_file(_Config.SERIAL_FILE,
+                                     _Config.CONFIG_DIR, cls=_Config)
+        if config is None:
+            config = _Config()
+        return config
 
     def save(self):
-        """Save AddPictureWidget data"""
+        """Save config data"""
         cfg.save_config_file(self.__class__.SERIAL_FILE, self, self.CONFIG_DIR)
 
     def add_recent_file(self, file_name, format_file):
@@ -129,6 +149,53 @@ class _Config:
                 return self.format_files[i]
         return None
 
+    @property
+    def data_dir(self):
+        """Data directory - either a project dir or the last udes dir."""
+        if self.workspace and self.project:
+            return os.path.join(self.workspace, self.project)
+        else:
+            return self.last_data_dir
+
+    @property
+    def workspace(self):
+        """path to workspace"""
+        return self._workspace
+
+    @workspace.setter
+    def workspace(self, value):
+        if value == '' or value is None:
+            self._workspace = None
+        if value != self._workspace:
+            # close project is workspace is changed
+            self.project = None
+        self._workspace = value
+
+    @property
+    def project(self):
+        """name of the project in the workspace"""
+        return self._project
+
+    @project.setter
+    def project(self, value):
+        if value == '' or value is None:
+            self._project = None
+            Project.current = None
+        else:
+            self._project = value
+            try:
+                project = Project.open(self._workspace, self._project)
+            except InvalidProject:
+                self._project = None
+            else:
+                Project.current = project
+        self.notify_all()
+
+    def notify_all(self):
+        """Notify all observers about changes."""
+        for observer in self.observers:
+            observer.config_changed()
+
 
 class MEConfig:
     """Static data class"""
@@ -142,7 +209,7 @@ class MEConfig:
     """Array of transformation files"""
     curr_format_file = None
     """selected format file"""
-    config = _Config()
+    config = _Config.open()
     """Serialized variables"""
     curr_file = None
     """Serialized variables"""
@@ -200,6 +267,8 @@ class MEConfig:
             if (isfile(join(cls.format_dir, file_name)) and
                     file_name[-5:].lower() == ".json"):
                 cls.format_files.append(file_name[:-5])
+        # reverse sorting 9 - 0
+        cls.format_files = cls.format_files[::-1]
 
     @classmethod
     def _read_transformation_files(cls):
@@ -291,6 +360,7 @@ class MEConfig:
             cls.config.add_recent_file(file_name, cls.curr_format_file)
             cls.update_format()
             cls.changed = False
+            cls.sync_project_for_curr_file()
             return True
         except (RuntimeError, IOError) as err:
             if cls.main_window is not None:
@@ -366,9 +436,10 @@ class MEConfig:
 
         return: if file have good format (boolean)
         """
-        format_file = cls.config.get_format_file(file_name)
-        if format_file is not None:
-            cls.curr_format_file = format_file
+        # If we want to use this code, GUI has to be updated as well.
+        # format_file = cls.config.get_format_file(file_name)
+        # if format_file is not None:
+        #     cls.curr_format_file = format_file
         try:
             with open(file_name, 'r') as file_d:
                 cls.document = file_d.read()
@@ -377,6 +448,7 @@ class MEConfig:
             cls.config. add_recent_file(file_name, cls.curr_format_file)
             cls.update_format()
             cls.changed = False
+            cls.sync_project_for_curr_file()
             return True
         except (RuntimeError, IOError) as err:
             if cls.main_window is not None:
@@ -398,6 +470,12 @@ class MEConfig:
             return
         cls.root = autoconvert(cls.root, cls.root_input_type)
         cls.validator.validate(cls.root, cls.root_input_type)
+
+        # handle parameters
+        if (Project.current is not None and
+                Project.current.is_abs_path_in_project_dir(cls.curr_file)):
+            Project.current.merge_params(cls.validator.params)
+
         StructureAnalyzer.add_node_info(cls.document, cls.root, cls.notification_handler)
         cls.notifications = cls.notification_handler.notifications
 
@@ -407,14 +485,19 @@ class MEConfig:
         if cls.curr_format_file is None:
             return
         text = cls.get_curr_format_text()
-        cls.root_input_type = get_root_input_type_from_json(text)
-        InfoTextGenerator.init(text)
-        cls.autocomplete_helper.create_options(cls.root_input_type)
-        cls.update()
+        try:
+            cls.root_input_type = get_root_input_type_from_json(text)
+        except Exception as e:
+            cls._report_error("Can't open format file", e)
+        else:
+            InfoTextGenerator.init(text)
+            cls.autocomplete_helper.create_options(cls.root_input_type)
+            cls.update()
 
     @classmethod
     def save_file(cls):
         """save file"""
+        cls.update()
         try:
             file_d = open(cls.curr_file, 'w')
             file_d.write(cls.document)
@@ -427,10 +510,13 @@ class MEConfig:
                 cls._report_error("Can't save file", err)
             else:
                 raise err
+        else:
+            cls.sync_project_for_curr_file()
 
     @classmethod
     def save_as(cls, file_name):
         """save file as"""
+        cls.update()
         try:
             file_d = open(file_name, 'w')
             file_d.write(cls.document)
@@ -444,6 +530,18 @@ class MEConfig:
                 cls._report_error("Can't save file", err)
             else:
                 raise err
+        else:
+            cls.sync_project_for_curr_file()
+
+    @classmethod
+    def sync_project_for_curr_file(cls):
+        """Write current file and params to a project file."""
+        if (Project.current is not None and
+                Project.current.is_abs_path_in_project_dir(cls.curr_file)):
+            Project.current.merge_params(cls.validator.params)
+            params = [param.name for param in cls.validator.params]
+            Project.current.add_file(cls.curr_file, params)
+            Project.current.save()
 
     @classmethod
     def update_yaml_file(cls, new_yaml_text):
@@ -522,8 +620,11 @@ class MEConfig:
     def _report_error(cls, mess, err):
         """Report an error with dialog."""
         from geomop_dialogs import GMErrorDialog
-        err_dialog = GMErrorDialog(cls.main_window)
-        err_dialog.open_error_dialog(mess, err)
+        if cls.main_window is not None:
+            err_dialog = GMErrorDialog(cls.main_window)
+            err_dialog.open_error_dialog(mess, err)
+        else:
+            raise Exception(mess)
         
     @classmethod
     def _report_notify(cls, errs):

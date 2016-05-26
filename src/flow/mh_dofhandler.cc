@@ -37,7 +37,7 @@ unsigned int MH_DofHandler::side_dof(const SideIter side) const {
 
 
 void MH_DofHandler::set_solution( double time, double * solution, double precision) {
-    ASSERT( solution != NULL, "Empty solution.\n");
+	OLD_ASSERT( solution != NULL, "Empty solution.\n");
     mh_solution = solution;
     solution_precision = precision;
     time_ = time;

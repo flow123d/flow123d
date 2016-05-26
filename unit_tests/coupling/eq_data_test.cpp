@@ -20,6 +20,7 @@
  */
 
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
 #include <vector>

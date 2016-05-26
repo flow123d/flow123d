@@ -9,6 +9,8 @@
  */
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include <vector>
 
@@ -249,8 +251,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, ExcAssertMsg,
-            "The key 'optional_int' is declared as optional .*you have to use Record::find instead.");
+    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, ExcStorageTypeMismatch, "You want value of type 'int'" );
 #endif
 
 }
@@ -343,10 +344,12 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     EXPECT_EQ(1, *it);
     ++it;
     EXPECT_EQ(2, *it);
+#ifdef FLOW123D_DEBUG_ASSERTS
     ++it;
-    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, feal::Exc_assert, "out of array");
     ++it;
-    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, feal::Exc_assert, "out of array");
+#endif
 
 
 

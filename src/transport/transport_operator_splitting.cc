@@ -61,14 +61,14 @@ using namespace Input::Type;
 
 
 Abstract & ConcentrationTransportBase::get_input_type() {
-	return Abstract("Transport",
-			"Transport of substances.")
+	return Abstract("Solute",
+			"Transport of soluted  substances.")
 			.close();
 }
 
 
 const Record & TransportOperatorSplitting::get_input_type() {
-	return Record("Transport_OS",
+	return Record("Coupling_OperatorSplitting",
             "Transport by convection and/or diffusion\n"
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
@@ -95,7 +95,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 
 
 const int TransportOperatorSplitting::registrar =
-		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record>("Transport_OS") +
+		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record>("Coupling_OperatorSplitting") +
 		TransportOperatorSplitting::get_input_type().size();
 
 
@@ -139,7 +139,9 @@ TransportEqData::TransportEqData()
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : AdvectionProcessBase(init_mesh, in_rec),
   convection(NULL),
-  Semchem_reactions(NULL)
+  Semchem_reactions(NULL),
+  cfl_convection(numeric_limits<double>::max()),
+  cfl_reaction(numeric_limits<double>::max())
 {
 	START_TIMER("TransportOperatorSpliting");
 
@@ -237,7 +239,7 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::zero_time_step()
 {
-  
+    //DBGMSG("tos ZERO TIME STEP.\n");
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream()->write_time_frame();
@@ -255,7 +257,6 @@ void TransportOperatorSplitting::update_solution() {
     time_->view("TOS");    //show time governor
 
     convection->set_target_time(time_->t());
-    convection->time().view("Convection");
     
     START_TIMER("TOS-one step");
     int steps=0;
@@ -263,19 +264,23 @@ void TransportOperatorSplitting::update_solution() {
     {
         steps++;
 	    // one internal step
-        double cfl_convection, cfl_reaction;
-        if (convection->assess_time_constraint(cfl_convection)
-            //|| reaction->assess_time_constraint(cfl_reaction)
-        )
+        // we call evaluate_time_constraint() of convection and reaction separately to
+        // make sure that both routines are executed.
+        bool cfl_convection_changed =  convection->evaluate_time_constraint(cfl_convection);
+        bool cfl_reaction_changed = (reaction?reaction->evaluate_time_constraint(cfl_reaction):0);
+        bool cfl_changed = cfl_convection_changed || cfl_reaction_changed;
+        
+        if (steps == 1 || cfl_changed)
         {
-            DBGMSG("CFL changed.\n");
-            convection->time().set_upper_constraint(cfl_convection);
-//             convection->time_->set_upper_constraint(std::min(cfl_convection, cfl_reaction));
+            convection->time().set_upper_constraint(cfl_convection, "Time step constrained by transport CFL condition (including both flow and sources).");
+            convection->time().set_upper_constraint(cfl_reaction, "Time step constrained by reaction CFL condition.");
             
             // fix step with new constraint
             convection->time().fix_dt_until_mark();
+        
+            convection->time().view("Convection");   // write TG only once on change
         }
-            
+        
 	    convection->update_solution();
         
 

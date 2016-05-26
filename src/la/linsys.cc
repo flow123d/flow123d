@@ -74,7 +74,7 @@ void LinSys::start_add_assembly()
         case DONE:
             break;
         default:
-            ASSERT(0, "Can not set values. Matrix is not preallocated.\n");
+        	OLD_ASSERT(0, "Can not set values. Matrix is not preallocated.\n");
     }
     status=ADD;
 }
@@ -92,7 +92,7 @@ void LinSys::start_insert_assembly()
         case DONE:
             break;
         default:
-            ASSERT(0, "Can not set values. Matrix is not preallocated.\n");
+        	OLD_ASSERT(0, "Can not set values. Matrix is not preallocated.\n");
     }
     status=INSERT;
 }
@@ -260,7 +260,7 @@ void LSSetCSR( LinSystem *mtx )
         MatGetRow(mtx->A,row,&nnz_loc,&cols,&vals);
         DBGMSG("CSR row: %d nnz_loc %d\n",row,nnz_loc);
         for(i=0; i<nnz_loc; i++) {
-                ASSERT(pos<nnz,"More nonzeroes then allocated! row: %d entry: %d\n",row,i);
+                OLD_ASSERT(pos<nnz,"More nonzeroes then allocated! row: %d entry: %d\n",row,i);
                 mtx->j[pos]=cols[i];
                 mtx->a[pos]=vals[i];
                 pos++;
@@ -295,7 +295,7 @@ void LinSys_MPIAIJ::start_allocation()
 
 void LinSys_MPIAIJ::preallocate_matrix()
 {
-     ASSERT(status == ALLOCATE, "Linear system has to be in ALLOCATE status.");
+     OLD_ASSERT(status == ALLOCATE, "Linear system has to be in ALLOCATE status.");
 
      PetscScalar *on_array, *off_array;
      int *on_nz, *off_nz;
@@ -384,7 +384,7 @@ LinSys_MATIS::LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_
             (const PetscInt*)(&(lg_map->get_map_vector()[0])),
             PETSC_COPY_VALUES, &map_local_to_global);
 
-    ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
+    OLD_ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
     // initialize loc_rows array
     loc_rows_size=100;
@@ -396,7 +396,7 @@ LinSys_MATIS::LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_
 
 void LinSys_MATIS::start_allocation()
 {
-  ASSERT(0, "Not implemented");
+  OLD_ASSERT(0, "Not implemented");
   /*
      PetscErrorCode err;
 
@@ -406,10 +406,10 @@ void LinSys_MATIS::start_allocation()
      }
      err = MatCreateIS(PETSC_COMM_WORLD, 1, vec_ds.lsize(), vec_ds.lsize(), vec_ds.size(), vec_ds.size(),
              map_local_to_global, &matrix);
-     ASSERT(err == 0,"Error in MatCreateIS.");
+     OLD_ASSERT(err == 0,"Error in MatCreateIS.");
 
      err = MatISGetLocalMat(matrix, &local_matrix);
-     ASSERT(err == 0,"Error in MatISGetLocalMat.");
+     OLD_ASSERT(err == 0,"Error in MatISGetLocalMat.");
 
      // extract scatter
      MatMyIS *mis = (MatMyIS*) matrix->data;
@@ -426,7 +426,7 @@ void LinSys_MATIS::start_allocation()
 
 void LinSys_MATIS::preallocate_matrix()
 {
-     ASSERT(status == ALLOCATE, "Linear system has to be in ALLOCATE status.");
+     OLD_ASSERT(status == ALLOCATE, "Linear system has to be in ALLOCATE status.");
 
      // printing subdomain_nz
      //DBGPRINT_INT("subdomain_nz",subdomain_size,subdomain_nz);
@@ -455,8 +455,8 @@ void LinSys_MATIS::preallocate_values(int nrow,int *rows,int ncol,int *cols)
 
      // translate from global to local indexes
      err = ISGlobalToLocalMappingApply(map_local_to_global, IS_GTOLM_DROP, nrow, rows, &n_loc_rows, loc_rows);
-     ASSERT(err == 0,"Error in ISGlobalToLocalMappingApply.");
-     ASSERT(nrow == n_loc_rows,"Not all global indices translated to local indices.");
+     OLD_ASSERT(err == 0,"Error in ISGlobalToLocalMappingApply.");
+     OLD_ASSERT(nrow == n_loc_rows,"Not all global indices translated to local indices.");
      // printing subdomain_embedding
      //DBGPRINT_INT("embed_element_to",nrow,loc_rows);
 
@@ -487,27 +487,27 @@ void LinSys_MATIS::view_local_matrix()
 //     int ierr;
 
 //     err = PetscViewerSetFormat(PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_ASCII_DENSE);
-//     ASSERT(err == 0,"Error in PetscViewerSetFormat.");
+//     OLD_ASSERT(err == 0,"Error in PetscViewerSetFormat.");
 
      // print local subdomain matrix
      err = MatView(local_matrix,PETSC_VIEWER_STDOUT_SELF);
-     ASSERT(err == 0,"Error in MatView.");
+     OLD_ASSERT(err == 0,"Error in MatView.");
 //
 //     ierr=MPI_Comm_rank(PETSC_COMM_WORLD, &(myid));
-//     ASSERT( ! ierr , "Can not get MPI rank.\n" );
+//     OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
 //
 //     sprintf(numstring,"%5.5d",myid);
 //     printf("Nunstring is >>>%s<<<\n",numstring);
 //
 //     PetscViewerASCIIOpen(PETSC_COMM_SELF,numstring,&lab);
 //
-//     ASSERT(!(loc_rows == NULL),"Local matrix is not assigned.");
+//     OLD_ASSERT(!(loc_rows == NULL),"Local matrix is not assigned.");
 //     err = PetscViewerSetFormat(lab,PETSC_VIEWER_ASCII_DENSE);
-//     ASSERT(err == 0,"Error in PetscViewerSetFormat.");
+//     OLD_ASSERT(err == 0,"Error in PetscViewerSetFormat.");
 //
 //     // print local subdomain matrix
 //     err = MatView(local_matrix,lab);
-//     ASSERT(err == 0,"Error in MatView.");
+//     OLD_ASSERT(err == 0,"Error in MatView.");
 //
 //     PetscViewerDestroy(lab);
 }
@@ -518,7 +518,7 @@ LinSys_MATIS:: ~LinSys_MATIS()
 
      // destroy mapping
      err = ISLocalToGlobalMappingDestroy(&map_local_to_global);
-     ASSERT(err == 0,"Error in ISLocalToGlobalMappingDestroy.");
+     OLD_ASSERT(err == 0,"Error in ISLocalToGlobalMappingDestroy.");
      xprintf(Msg,"Error code %d \n",err);
 
 

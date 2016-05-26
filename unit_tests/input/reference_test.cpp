@@ -2,6 +2,8 @@
  * reference_test.cpp
  */
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 
 #include "input/type_base.hh"

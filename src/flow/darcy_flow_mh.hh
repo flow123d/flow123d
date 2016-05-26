@@ -80,126 +80,6 @@ template<unsigned int dim> class QGauss;
  *
  */
 
-class DarcyFlowMH : public DarcyFlowInterface {
-public:
-
-
-    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
-    enum MortarMethod {
-        NoMortar = 0,
-        MortarP0 = 1,
-        MortarP1 = 2
-    };
-    
-    /// Class with all fields used in the equation DarcyFlow.
-    /// This is common to all implementations since this provides interface
-    /// to this equation for possible coupling.
-    class EqData : public FieldSet {
-    public:
-
-        /**
-         * For compatibility with old BCD file we have to assign integer codes starting from 1.
-         */
-        enum BC_Type {
-            none=0,
-            dirichlet=1,
-//             neumann=2,
-//             robin=3,
-            total_flux=4
-        };
-
-        /// Return a Selection corresponding to enum BC_Type.
-        static const Input::Type::Selection & get_bc_type_selection();
-
-        /// Creation of all fields.
-        EqData();
-
-
-        Field<3, FieldValue<3>::TensorFixed > anisotropy;
-        Field<3, FieldValue<3>::Scalar > conductivity;
-        Field<3, FieldValue<3>::Scalar > cross_section;
-        Field<3, FieldValue<3>::Scalar > water_source_density;
-        Field<3, FieldValue<3>::Scalar > sigma;
-
-        BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
-        BCField<3, FieldValue<3>::Scalar > bc_pressure; 
-        BCField<3, FieldValue<3>::Scalar > bc_flux;
-        BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
-        
-        Field<3, FieldValue<3>::Scalar > init_pressure;
-        Field<3, FieldValue<3>::Scalar > storativity;
-
-        /**
-         * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
-         * to pressure head and vice versa.
-         */
-        arma::vec4 gravity_;
-
-        //FieldSet	time_term_fields;
-        //FieldSet	main_matrix_fields;
-        //FieldSet	rhs_fields;
-    };
-
-
-    static const Input::Type::Selection & get_mh_mortar_selection();
-
-
-
-    /**
-     * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
-     *
-     * TODO:
-     * - how we can reuse field values computed during assembly
-     *
-     */
-    DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
-    : DarcyFlowInterface(mesh, in_rec)
-    {}
-
-
-    void get_velocity_seq_vector(Vec &velocity_vec)
-        { velocity_vec = velocity_vector; }
-
-    const MH_DofHandler &get_mh_dofhandler() {
-        double *array;
-        unsigned int size;
-        get_solution_vector(array, size);
-
-        // here assume that velocity field is extended as constant
-        // to the previous time, so here we set left bound of the interval where the velocity
-        // has current value; this may not be good for every transport !!
-        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
-        // let every equation set time according to nature of the time scheme
-
-        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
-        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
-        mh_dh.set_solution(time_->last_t(), array, solution_precision());
-       return mh_dh;
-    }
-    
-
-protected:
-    void setup_velocity_vector() {
-        double *velocity_array;
-        unsigned int size;
-
-        get_solution_vector(velocity_array, size);
-        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
-
-    }
-
-    virtual double solution_precision() const = 0;
-
-    bool solution_changed_for_scatter;
-    Vec velocity_vector;
-    MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
-
-    MortarMethod mortar_method_;
-
-    /// index of water balance within the Balance object.
-    unsigned int water_balance_idx_;
-};
-
 
 /**
  * @brief Mixed-hybrid of steady Darcy flow with sources and variable density.
@@ -223,33 +103,129 @@ protected:
  * @f]
  *   where @f$ c_i @f$ is concentration in @f$ kg m^{-3} @f$.
  *
+ * The time key is optional, when not specified the equation is forced to steady regime. Using Steady TimeGovernor which have no dt constraints.
+ *
+ *
+ * TODO:
+ * Make solution regular field (need FeSeystem and parallel DofHandler for edge pressures), then remove get_solution_vector from
+ * Equation interface.
+ */
+/**
+ * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
+ *
+ * TODO:
+ * - how we can reuse field values computed during assembly
  *
  */
-class DarcyFlowMH_Steady : public DarcyFlowMH
+
+class DarcyMH : public DarcyFlowInterface
 {
 public:
+    TYPEDEF_ERR_INFO( EI_Reason, string);
+    DECLARE_EXCEPTION(ExcSolverDiverge,
+            << "Diverged nonlinear solver. Reason: " << EI_Reason::val
+             );
 
-  
-    class EqData : public DarcyFlowMH::EqData {
+    /// Class with all fields used in the equation DarcyFlow.
+    /// This is common to all implementations since this provides interface
+    /// to this equation for possible coupling.
+    class EqData : public FieldSet {
     public:
-      
-      EqData() : DarcyFlowMH::EqData()
-      {}
+
+        /**
+         * For compatibility with old BCD file we have to assign integer codes starting from 1.
+         */
+        enum BC_Type {
+            none=0,
+            dirichlet=1,
+            //neumann=2,
+            //robin=3,
+            total_flux=4,
+            seepage=5,
+            river=6
+        };
+
+        /// Return a Selection corresponding to enum BC_Type.
+        static const Input::Type::Selection & get_bc_type_selection();
+
+        /// Creation of all fields.
+        EqData();
+
+
+        Field<3, FieldValue<3>::TensorFixed > anisotropy;
+        Field<3, FieldValue<3>::Scalar > conductivity;
+        Field<3, FieldValue<3>::Scalar > cross_section;
+        Field<3, FieldValue<3>::Scalar > water_source_density;
+        Field<3, FieldValue<3>::Scalar > sigma;
+
+        BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
+        BCField<3, FieldValue<3>::Scalar > bc_pressure; 
+        BCField<3, FieldValue<3>::Scalar > bc_flux;
+        BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+        BCField<3, FieldValue<3>::Scalar > bc_switch_pressure;
+        
+        Field<3, FieldValue<3>::Scalar > init_pressure;
+        Field<3, FieldValue<3>::Scalar > storativity;
+
+        /**
+         * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
+         * to pressure head and vice versa.
+         */
+        arma::vec4 gravity_;
+
+        //FieldSet  time_term_fields;
+        //FieldSet  main_matrix_fields;
+        //FieldSet  rhs_fields;
     };
-    
-    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec, bool make_tg=true);
+
+    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
+    enum MortarMethod {
+        NoMortar = 0,
+        MortarP0 = 1,
+        MortarP1 = 2
+    };
+    /// Selection for enum MortarMethod.
+    static const Input::Type::Selection & get_mh_mortar_selection();
+
+
+
+
+
+
+
+
+    DarcyMH(Mesh &mesh, const Input::Record in_rec);
 
     static const Input::Type::Record & get_input_type();
 
-    virtual void update_solution();
-    virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
-    virtual void get_parallel_solution_vector(Vec &vector);
+    const MH_DofHandler &get_mh_dofhandler() {
+        double *array;
+        unsigned int size;
+        get_solution_vector(array, size);
+
+        // here assume that velocity field is extended as constant
+        // to the previous time, so here we set left bound of the interval where the velocity
+        // has current value; this may not be good for every transport !!
+        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
+        // let every equation set time according to nature of the time scheme
+
+        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
+        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
+        mh_dh.set_solution(time_->last_t(), array, solution_precision());
+       return mh_dh;
+    }
+
+    void update_solution() override;
+    void zero_time_step() override;
+
+    void get_solution_vector(double * &vec, unsigned int &vec_size) override;
+    void get_parallel_solution_vector(Vec &vector) override;
     
     /// postprocess velocity field (add sources)
     virtual void postprocess();
     virtual void output_data() override;
 
-    ~DarcyFlowMH_Steady();
+    ~DarcyMH();
 
 
 protected:
@@ -310,31 +286,46 @@ protected:
         FEValues<dim,3> velocity_interpolation_fv_;
 
         // data shared by assemblers of different dimension
-        AssemblyData d;
+        AssemblyData ad_;
 
     };
     
+    /*
+    void setup_velocity_vector() {
+        double *velocity_array;
+        unsigned int size;
+
+        get_solution_vector(velocity_array, size);
+        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
+
+    }*/
+
+
+    /// Solve method common to zero_time_step and update solution.
+    void solve_nonlinear();
     void make_serial_scatter();
-    virtual void modify_system()
-    { ASSERT(0, "Modify system called for Steady darcy.\n"); };
-    virtual void setup_time_term()
-    { ASSERT(0, "Setup time term called for Steady darcy.\n"); };
+    virtual void modify_system();
+    virtual void setup_time_term();
 
 
-    void prepare_parallel( const Input::AbstractRecord in_rec);
+    void prepare_parallel();
     void make_row_numberings();
+    /// Initialize global_row_4_sub_row.
+    void prepare_parallel_bddc();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
      */
-    void create_linear_system();
+    void create_linear_system(Input::AbstractRecord rec);
 
     /**
      * Read initial condition into solution vector.
      * Must be called after create_linear_system.
      *
+     * For the LMH scheme we have to be able to save edge pressures in order to
+     * restart simulation or use results of one simulation as initial condition for other one.
      */
-    virtual void read_init_condition() {};
+    virtual void read_initial_condition();
 
     /**
      * Abstract assembly method used for both assembly and preallocation.
@@ -358,19 +349,44 @@ protected:
     void assembly_linear_system();
 
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
-    double solution_precision() const;
+    /**
+     * Return a norm of residual vector.
+     * TODO: Introduce Equation::compute_residual() updating
+     * residual field, standard part of EqData.
+     */
+    virtual double solution_precision() const;
 
+    bool solution_changed_for_scatter;
+    //Vec velocity_vector;
+    MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
+
+    MortarMethod mortar_method_;
+
+    /// object for calculation and writing the water balance to file.
+    boost::shared_ptr<Balance> balance_;
+    /// index of water balance within the Balance object.
+    unsigned int water_balance_idx_;
 
     DarcyFlowMHOutput *output_object;
 
-	int size;				// global size of MH matrix
-	int  n_schur_compls;  	// number of shur complements to make
+	int size;				    // global size of MH matrix
+	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
+	int is_linear_;             // Hack fo BDDC solver.
+
+	// Propagate test for the time term to the assembly.
+	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
+	bool use_steady_assembly_;
+
+	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
+	double tolerance_;
+	unsigned int max_n_it_;
+	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
 
 	LinSys *schur0;  		//< whole MH Linear System
 
-	AssemblyData *assembly_data_;
+	//AssemblyData *assembly_data_;
 	std::vector<AssemblyBase *> assembly_;
 	
 	// parallel
@@ -386,18 +402,26 @@ protected:
 	int *edge_4_loc;		//< array of indexes of local edges
 	int	*row_4_edge;		//< edge index to matrix row
 
-	// MATIS related arrays
-        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
+	/// Idicator of dirichlet or neumann type of switch boundary conditions.
+	std::vector<char> bc_switch_dirichlet;
+
+	/// Necessary only for BDDC solver.
+    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
-        
-  EqData data_;
 
-  friend class DarcyFlowMHOutput;
-  friend class P0_CouplingAssembler;
-  friend class P1_CouplingAssembler;
+	Vec steady_diagonal;
+    Vec steady_rhs;
+    Vec new_diagonal;
+    Vec previous_solution;
+
+	EqData data_;
+
+    friend class DarcyFlowMHOutput;
+    friend class P0_CouplingAssembler;
+    friend class P1_CouplingAssembler;
 
 private:
   /// Registrar of class to factory
@@ -407,7 +431,7 @@ private:
 
 class P0_CouplingAssembler {
 public:
-	P0_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	P0_CouplingAssembler(const DarcyMH &darcy)
 	: darcy_(darcy),
 	  master_list_(darcy.mesh_->master_elements),
 	  intersections_(darcy.mesh_->intersections),
@@ -433,7 +457,7 @@ public:
 private:
 	typedef vector<unsigned int> IsecList;
 
-	const DarcyFlowMH_Steady &darcy_;
+	const DarcyMH &darcy_;
 
 	const vector<IsecList> &master_list_;
 	const vector<Intersection> &intersections_;
@@ -451,7 +475,7 @@ private:
 
 class P1_CouplingAssembler {
 public:
-	P1_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	P1_CouplingAssembler(const DarcyMH &darcy)
 	: darcy_(darcy),
 	  intersections_(darcy.mesh_->intersections),
 	  rhs(5),
@@ -465,7 +489,7 @@ public:
 	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
 private:
 
-	const DarcyFlowMH_Steady &darcy_;
+	const DarcyMH &darcy_;
 	const vector<Intersection> &intersections_;
 
 	arma::vec rhs;
@@ -486,17 +510,17 @@ void mat_count_off_proc_values(Mat m, Vec v);
  * on the element. This leads to violation of the discrete maximum principle for
  * non-acute meshes or to too small timesteps. For simplicial meshes this can be solved by lumping to the edges. See DarcyFlowLMH_Unsteady.
  */
-
+/*
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
 
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
-    DarcyFlowMH_Unsteady();
+    //DarcyFlowMH_Unsteady();
 
     static const Input::Type::Record & get_input_type();
 protected:
-    void read_init_condition() override;
+    void read_initial_condition() override;
     void modify_system() override;
     void setup_time_term();
     
@@ -504,13 +528,9 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    Vec steady_diagonal;
-    Vec steady_rhs;
-    Vec new_diagonal;
-    Vec previous_solution;
 
 };
-
+*/
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------

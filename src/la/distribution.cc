@@ -30,9 +30,9 @@ lsizes(NULL)
 {
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
-    ASSERT( ! ierr , "Can not get MPI rank.\n" );
+    OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
     ierr=MPI_Comm_size(communicator, &(num_of_procs));
-    ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
 // TODO: zavest odchytavani vyjimek a pouzivat new a delete
 
     // communicate global sizes array
@@ -54,9 +54,9 @@ Distribution::Distribution(const unsigned int * const sizes, MPI_Comm comm)
 {
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
-    ASSERT( ! ierr , "Can not get MPI rank.\n" );
+    OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
     ierr=MPI_Comm_size(communicator, &(num_of_procs));
-    ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
 // TODO: zavest odchytavani vyjimek a pouzivat new a delete
     starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));
     starts[0]=0;
@@ -73,13 +73,13 @@ Distribution::Distribution(const Vec &petsc_vector)
 {
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
-    ASSERT( ! ierr , "Can not get MPI rank.\n" );
+    OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
     ierr=MPI_Comm_size(communicator, &(num_of_procs));
-    ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
 
     const PetscInt *petsc_starts;
     VecGetOwnershipRanges(petsc_vector,&petsc_starts);
-    ASSERT( ! ierr , "Can not get vector ownership range.\n" );
+    OLD_ASSERT( ! ierr , "Can not get vector ownership range.\n" );
 
     starts=(unsigned int *)xmalloc((np()+1)*sizeof(int));
     for(unsigned  int i=0 ; i<=np(); i++) starts[i]=petsc_starts[i];
@@ -95,10 +95,10 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
 {
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
-    ASSERT( ! ierr , "Can not get MPI rank.\n" );
+    OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
     ierr=MPI_Comm_size(communicator, &(num_of_procs));
-    ASSERT( ! ierr  , "Can not get MPI size.\n" );
-    ASSERT( num_of_procs > 0, "MPI size is not positive, possibly broken MPI communicator.\n");
+    OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    OLD_ASSERT( num_of_procs > 0, "MPI size is not positive, possibly broken MPI communicator.\n");
 
     if (type.type_ == Block) {
         unsigned int reminder, per_proc;
@@ -117,7 +117,7 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
         for(unsigned int i=1; i<=np(); i++) starts[i]=global_size;
     }
     else {
-        ASSERT( 0 , "Cyclic distribution is not yet implemented.\n");
+    	OLD_ASSERT( 0 , "Cyclic distribution is not yet implemented.\n");
     }
  }
 /**
@@ -142,13 +142,13 @@ Distribution::Distribution(const Distribution &distr)
  */
 unsigned int Distribution::get_proc(unsigned  int idx) const
 {
-    ASSERT( starts,"Distribution is not initialized.\n");
-    ASSERT(idx < size(), "Index %d greater then distribution size %d.\n", idx, size());
+	OLD_ASSERT( starts,"Distribution is not initialized.\n");
+	OLD_ASSERT(idx < size(), "Index %d greater then distribution size %d.\n", idx, size());
 
     for(unsigned int i=0; i<np(); i++) {
         if (is_on_proc(idx,i)) return (i);
     }
-    ASSERT( 0 , "Can not find owner of index %d. \n", idx);
+    OLD_ASSERT( 0 , "Can not find owner of index %d. \n", idx);
     return (-1);
 }
 

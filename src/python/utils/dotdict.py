@@ -1,5 +1,7 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
+
 
 class DotDict(dict):
     """ Helper class which enabled field access via dot
@@ -12,6 +14,7 @@ class DotDict(dict):
     More, if fields are in somewhat readable format (such as key-name)
     by using dict.key_name will still get desired field
     """
+
     def __init__(self, *a, **kw):
         dict.__init__(self, *a, **kw)
 
@@ -21,8 +24,3 @@ class DotDict(dict):
         except AttributeError:
             if name in self:
                 return self[name]
-
-            # name = name.replace('_', '-')
-            # if name in self:
-            #     return self[name]
-            # raise

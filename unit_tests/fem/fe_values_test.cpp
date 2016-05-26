@@ -5,6 +5,8 @@
  *      Author: jb
  */
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include <cmath>
 #include "quadrature/quadrature_lib.hh"
