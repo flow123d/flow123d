@@ -1055,6 +1055,74 @@ std::string Balance::format_csv_val(double val, char delimiter, bool initial)
 	return ss.str();
 }
 
+void Balance::output_yaml(double time)
+{
+	// write output only on process #0
+	if (rank_ != 0) return;
+
+	const unsigned int n_quant = quantities_.size();
+
+	// print data header only once
+	if (output_line_counter_==0) {
+		output_ << "column_names: [ flux,  flux_in,  flux_out,  mass,  source,  source_in,  source_out,  flux_increment,  "
+			<< "source_increment,  flux_cumulative,  source_cumulative,  error ]"  << endl;
+		output_ << "data:" << endl;
+	}
+
+	output_ << setfill(' ');
+
+	// print sources and masses over bulk regions
+	const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
+	for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++)
+		{
+			output_ << "  - time: " << time << endl;
+			output_ << setw(4) << "" << "region: " << reg->label() << endl;
+			output_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
+			output_ << setw(4) << "" << "data: " << "[ 0, 0, 0, " << masses_[qi][reg->bulk_idx()] << ", "
+					<< sources_[qi][reg->bulk_idx()] << ", " << sources_in_[qi][reg->bulk_idx()] << ", "
+					<< sources_out_[qi][reg->bulk_idx()] << ", 0, 0, 0, 0, 0 ]" << endl;
+			++output_line_counter_;
+		}
+	}
+
+	// print mass fluxes over boundaries
+	const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
+	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++) {
+			output_ << "  - time: " << time << endl;
+			output_ << setw(4) << "" << "region: " << reg->label() << endl;
+			output_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
+			output_ << setw(4) << "" << "data: " << "[ " << fluxes_[qi][reg->boundary_idx()] << ", "
+					<< fluxes_in_[qi][reg->boundary_idx()] << ", " << fluxes_out_[qi][reg->boundary_idx()]
+					<< ", 0, 0, 0, 0, 0, 0, 0, 0, 0 ]" << endl;
+			++output_line_counter_;
+		}
+	}
+
+	if (cumulative_)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++)
+		{
+			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
+			output_ << "  - time: " << time << endl;
+			output_ << setw(4) << "" << "region: ALL" << endl;
+			output_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
+			output_ << setw(4) << "" << "data: " << "[ " << sum_fluxes_[qi] << ", " <<
+					sum_fluxes_in_[qi] << ", " << sum_fluxes_out_[qi] << ", " <<
+					sum_masses_[qi] << ", " << sum_sources_[qi] << ", " <<
+					sum_sources_in_[qi] << ", " << sum_sources_out_[qi] << ", " <<
+					increment_fluxes_[qi] << ", " << increment_sources_[qi] << ", " <<
+					integrated_fluxes_[qi] << ", " << integrated_sources_[qi] << ", " <<
+					error << " ]" << endl;
+			++output_line_counter_;
+		}
+	}
+}
+
+
 
 
 

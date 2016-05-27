@@ -390,6 +390,9 @@ private:
 	/// Perform output in csv format
 	void output_csv(double time, char delimiter, const std::string& comment_string, unsigned int repeat = 0);
 
+	/// Perform output in yaml format
+	void output_yaml(double time);
+
 	/// Return part of output represented by zero values. Count of zero values is given by cnt parameter.
 	std::string csv_zero_vals(unsigned int cnt, char delimiter);
 
