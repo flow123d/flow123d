@@ -56,8 +56,9 @@
         // TODO: implement and use general interpolations between discrete spaces
         virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
 
-        virtual void init_water_content(LocalElementAccessorBase<3> ele, double p_head)
+        virtual void update_water_content(LocalElementAccessorBase<3> ele)
         {}
+
 
     };
 

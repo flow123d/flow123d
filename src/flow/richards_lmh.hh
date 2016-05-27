@@ -64,6 +64,7 @@ public:
         VectorMPI phead_edge_;
         VectorMPI water_content_previous_it;
         VectorMPI water_content_previous_time;
+        VectorMPI capacity;
         // source terms to be added to the side fluxes, in order to get proper (continuous) velocity field
         VectorMPI postprocess_side_sources;
 

@@ -70,6 +70,26 @@ public:
 
     }
 
+    void update_water_content(LocalElementAccessorBase<3> ele) {
+        reset_soil_model(ele);
+        double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
+        FOR_ELEMENT_SIDES(ele.full_iter(), i) {
+            double capacity = 0;
+            double water_content = 0;
+            double phead = ad_->phead_edge_[ele.edge_local_idx(i)];
+            if (genuchten_on) {
+
+                  fadbad::B<double> x_phead(phead);
+                  fadbad::B<double> evaluated( soil_model.water_content(x_phead) );
+                  evaluated.diff(0,1);
+                  water_content = evaluated.val();
+                  capacity = x_phead.d(0);
+            }
+            ad_->capacity[ele.side_local_idx(i)] = capacity + storativity;
+            ad_->water_content_previous_it[ele.side_local_idx(i)] = water_content + storativity * phead;
+        }
+    }
+
     void assembly_local_matrix(LocalElementAccessorBase<3> ele) override
     {
         reset_soil_model(ele);
@@ -102,38 +122,34 @@ public:
 
         // set lumped source
 
-        double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
+        //double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
         double diagonal_coef = ele.measure() * cross_section / ele.n_sides();
-        double capacity = 0;
+
         double water_content_diff = 0;
         double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.element_accessor());
 
+        update_water_content(ele);
         FOR_ELEMENT_SIDES(ele.full_iter(), i)
         {
             uint local_edge = ele.edge_local_idx(i);
+            uint local_side = ele.side_local_idx(i);
             uint edge_row = ele.edge_row(i);
+            double capacity = this->ad_->capacity[local_side];
+            water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
 
-            if (genuchten_on) {
-                fadbad::B<double> x_phead(ad_->phead_edge_[local_edge]);
-                fadbad::B<double> evaluated( soil_model.water_content(x_phead) );
-                evaluated.diff(0,1);
-                capacity =  x_phead.d(0);
 
-                ad_->water_content_previous_it[local_edge] = diagonal_coef * evaluated.val();
-                water_content_diff = -ad_->water_content_previous_it[local_edge] + ad_->water_content_previous_time[local_edge];
-            }
+            double mass_diagonal = diagonal_coef * capacity;
 
-            double mass_balance_diagonal = diagonal_coef * (capacity + storativity);
-            double mass_diagonal = mass_balance_diagonal / this->ad_->time_step_;
 
             //cout << "mesh edge: " << mesh_edge << "local: " << local_edge << endl;
-            double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] + water_content_diff / this->ad_->time_step_;
+            double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] / this->ad_->time_step_
+                              + water_content_diff / this->ad_->time_step_;
 
-            system_.lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal );
+            system_.lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal/this->ad_->time_step_ );
             system_.lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
 
             if (system_.balance != nullptr) {
-                system_.balance->add_mass_matrix_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {mass_balance_diagonal});
+                system_.balance->add_mass_matrix_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {mass_diagonal});
                 system_.balance->add_source_rhs_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {source_diagonal});
             }
         }

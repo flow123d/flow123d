@@ -102,9 +102,11 @@ void RichardsLMH::initialize_specific() {
 
     // create edge vectors
     unsigned int n_local_edges = mh_dh.edge_new_local_4_mesh_idx_.size();
+    unsigned int n_local_sides = mh_dh.side_ds->lsize();
     data_->phead_edge_.resize( n_local_edges);
-    data_->water_content_previous_it.duplicate(data_->phead_edge_);
-    data_->water_content_previous_time.duplicate(data_->phead_edge_);
+    data_->water_content_previous_it.resize(n_local_sides);
+    data_->water_content_previous_time.resize(n_local_sides);
+    data_->capacity.resize(n_local_sides);
 
     Distribution ds_split_edges(n_local_edges, PETSC_COMM_WORLD);
     vector<int> local_edge_rows(n_local_edges);
@@ -163,6 +165,11 @@ void RichardsLMH::read_initial_condition()
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
 
+    // set water_content
+    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    postprocess();
+
     solution_changed_for_scatter=true;
 }
 
@@ -170,6 +177,7 @@ void RichardsLMH::read_initial_condition()
 void RichardsLMH::prepare_new_time_step()
 {
     VecCopy(schur0->get_solution(), previous_solution);
+    data_->water_content_previous_time.copy(data_->water_content_previous_it);
     //VecCopy(schur0->get_solution(), previous_solution);
 }
 
@@ -180,9 +188,6 @@ void RichardsLMH::assembly_linear_system()
 
     if (balance_ != nullptr)
         balance_->start_mass_assembly(water_balance_idx_);
-
-    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
 
 
     bool is_steady = data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
@@ -342,30 +347,38 @@ void RichardsLMH::postprocess() {
     int side_rows[4];
     double values[4];
 
+    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+
+
   // modify side fluxes in parallel
   // for every local edge take time term on digonal and add it to the corresponding flux
     PetscScalar *loc_prev_sol;
+    auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
+
     VecGetArray(previous_solution, &loc_prev_sol);
 
-  for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
       auto ele_ac = mh_dh.accessor(i_loc);
+      multidim_assembler[ele_ac.dim()]->update_water_content(ele_ac);
+
       double ele_scale = ele_ac.measure() *
               data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) / ele_ac.n_sides();
       double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-      double storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
+      //double storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
 
       FOR_ELEMENT_SIDES(ele_ac.full_iter(),i) {
-          unsigned int loc_edge_row = ele_ac.edge_local_row(i);
+          //unsigned int loc_edge_row = ele_ac.edge_local_row(i);
           side_rows[i] = ele_ac.side_row(i);
-          double new_pressure = (schur0->get_solution_array())[loc_edge_row];
-          double old_pressure = loc_prev_sol[loc_edge_row];
+          double water_content = data_->water_content_previous_it[ele_ac.side_local_idx(i)];
+          double water_content_previous_time = data_->water_content_previous_time[ele_ac.side_local_idx(i)];
 
-          values[i] = ele_scale * (ele_source - storativity * (new_pressure - old_pressure) / time_->dt());
+          values[i] = ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
       }
       VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
-  }
-  VecAssemblyBegin(schur0->get_solution());
-  VecRestoreArray(previous_solution, &loc_prev_sol);
-  VecAssemblyEnd(schur0->get_solution());
+    }
+    VecAssemblyBegin(schur0->get_solution());
+    VecRestoreArray(previous_solution, &loc_prev_sol);
+    VecAssemblyEnd(schur0->get_solution());
 }
 
