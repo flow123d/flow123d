@@ -15,45 +15,9 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "flow/mh_dofhandler.hh"
 
 
-
-/**
- * This is prototype of further much more complex and general accessor templated by
- * element dimension. In fact we shall need an accessor for every kind of element interaction integral.
- */
-class LocalElementAccessor {
-public:
-    LocalElementAccessor(Mesh &mesh, unsigned int loc_idx)
-    :iter(mesh.element(mesh.get_el_4_loc()[loc_idx])),
-     loc_idx(loc_idx),
-     mesh_(mesh)
-    {}
-
-    ElementFullIter iter;
-    unsigned int loc_idx;
-    int local_edge_idx[4];
-    int local_side_idx[4];
-    int edge_row[4];
-
-    void update() {
-        centre_ = iter->centre();
-        accessor_ = iter->element_accessor();
-    }
-
-    const arma::vec3 &centre() const {
-        return centre_;
-    }
-
-    const ElementAccessor<3> accessor() const {
-        return accessor_;
-    }
-
-private:
-    arma::vec3 centre_;
-    Mesh &mesh_;
-    ElementAccessor<3> accessor_;
-};
 
 
 
@@ -81,7 +45,7 @@ private:
 
 
         // assembly just A block of local matrix
-        virtual void assembly_local_matrix(LocalElementAccessor ele) =0;
+        virtual void assembly_local_matrix(LocalElementAccessorBase<3> ele) =0;
 
         // assembly compatible neighbourings
         virtual void assembly_local_vb(double *local_vb,
@@ -92,7 +56,7 @@ private:
         // TODO: implement and use general interpolations between discrete spaces
         virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
 
-        virtual void init_water_content(LocalElementAccessor ele, double p_head)
+        virtual void init_water_content(LocalElementAccessorBase<3> ele, double p_head)
         {}
 
     };
@@ -152,14 +116,13 @@ private:
             return local_matrix;
         }
 
-        void assembly_local_matrix(LocalElementAccessor ele) override
+        void assembly_local_matrix(LocalElementAccessorBase<3> ele) override
         {
-            ele.update();
-            double cs = ad_->cross_section.value(ele.centre(), ele.accessor());
-            double conduct =  ad_->conductivity.value(ele.centre(), ele.accessor());
+            double cs = ad_->cross_section.value(ele.centre(), ele.element_accessor());
+            double conduct =  ad_->conductivity.value(ele.centre(), ele.element_accessor());
 
             double scale = 1 / cs /conduct;
-            *(system_.local_matrix) = scale*assembly_local_geometry_matrix(ele.iter);
+            *(system_.local_matrix) = scale*assembly_local_geometry_matrix(ele.full_iter());
         }
 
         void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override

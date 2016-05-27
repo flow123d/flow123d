@@ -34,7 +34,6 @@
 #define DARCY_FLOW_MH_HH
 
 #include <memory>
-#include <unordered_map>
 #include "input/input_type_forward.hh"
 
 #include <petscmat.h>
@@ -264,10 +263,10 @@ protected:
     virtual void setup_time_term();
 
 
-    void prepare_parallel();
+    //void prepare_parallel();
     void make_row_numberings();
     /// Initialize global_row_4_sub_row.
-    void prepare_parallel_bddc();
+    //void prepare_parallel_bddc();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
@@ -353,28 +352,11 @@ protected:
 
 
 	
-	// parallel
-	Distribution *edge_ds;          //< optimal distribution of edges
-	Distribution *el_ds;            //< optimal distribution of elements
-	Distribution *side_ds;          //< optimal distribution of elements
-	std::shared_ptr<Distribution> rows_ds;          //< final distribution of rows of MH matrix
 
-	int *el_4_loc;		        //< array of idexes of local elements (in ordering matching the optimal global)
-	int *row_4_el;		        //< element index to matrix row
-	int *side_id_4_loc;		//< array of ids of local sides
-	int	*side_row_4_id;		//< side id to matrix row
-	int *edge_4_loc;		//< array of indexes of local edges
-	int	*row_4_edge;		//< edge index to matrix row
-
-	/// Maps mesh index of the edge to the edge index in the mesh portion local to the processor.
-	/// Temporary solution until we have parallel mesh which should provide such information.
-	std::unordered_map<unsigned int, unsigned int> edge_new_local_4_mesh_idx_;
 
 	/// Idicator of dirichlet or neumann type of switch boundary conditions.
 	std::vector<char> bc_switch_dirichlet;
 
-	/// Necessary only for BDDC solver.
-    std::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
