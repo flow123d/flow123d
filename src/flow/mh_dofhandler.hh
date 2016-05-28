@@ -157,7 +157,7 @@ public:
     }
 
     uint ele_local_row() {
-        return ele_row() - dh->el_ds->begin(); //  i_loc_el + side_ds->lsize();
+        return ele_row() - dh->rows_ds->begin(); //  i_loc_el + side_ds->lsize();
     }
 
     uint edge_global_idx(uint i) {
@@ -173,7 +173,7 @@ public:
     }
 
     uint edge_local_row( uint i) {
-        return edge_row(i) - dh->edge_ds->begin();
+        return edge_row(i) - dh->rows_ds->begin();
     }
 
     int *edge_rows() {
@@ -198,7 +198,7 @@ public:
     }
 
     uint side_local_row( uint i) {
-        return side_global_idx(i);
+        return side_row(i) - dh->rows_ds->begin();
     }
 
     int *side_rows() {
