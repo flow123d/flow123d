@@ -166,9 +166,12 @@ void RichardsLMH::read_initial_condition()
     VecAssemblyEnd(schur0->get_solution());
 
     // set water_content
+    // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
+    VecSwap(schur0->get_solution(), previous_solution); // store solution vector
     VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
     postprocess();
+    VecSwap(schur0->get_solution(), previous_solution); // restore solution vector
 
     solution_changed_for_scatter=true;
 }
@@ -186,10 +189,6 @@ void RichardsLMH::assembly_linear_system()
 
     START_TIMER("RicharsLMH::assembly_linear_system");
 
-    if (balance_ != nullptr)
-        balance_->start_mass_assembly(water_balance_idx_);
-
-
     bool is_steady = data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     //DBGMSG("Assembly linear system\n");
         START_TIMER("full assembly");
@@ -203,14 +202,17 @@ void RichardsLMH::assembly_linear_system()
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
 
-        if (balance_ != nullptr)
+        if (balance_ != nullptr) {
             balance_->start_source_assembly(water_balance_idx_);
+            balance_->start_mass_assembly(water_balance_idx_);
+        }
 
         assembly_mh_matrix( multidim_assembler ); // fill matrix
 
-        if (balance_ != nullptr)
+        if (balance_ != nullptr) {
             balance_->finish_source_assembly(water_balance_idx_);
-
+            balance_->finish_mass_assembly(water_balance_idx_);
+        }
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
@@ -231,14 +233,7 @@ void RichardsLMH::assembly_linear_system()
 
             // swap solutions
             //VecSwap(previous_solution, schur0->get_solution());
-
-
         }
-
-        if (balance_ != nullptr)
-            balance_->finish_mass_assembly(water_balance_idx_);
-
-
 }
 
 /*

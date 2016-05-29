@@ -325,7 +325,6 @@ void DarcyMH::initialize() {
 
 
     // allocate time term vectors
-    VecZeroEntries(schur0->get_solution());
     VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, mh_dh.rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
@@ -370,11 +369,13 @@ void DarcyMH::zero_time_step()
 
     if (zero_time_term_from_right) {
         // steady case
+        VecZeroEntries(schur0->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
-
+        VecZeroEntries(schur0->get_solution());
+        VecZeroEntries(previous_solution);
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
         // TODO: reconstruction of solution in zero time.
@@ -774,6 +775,12 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 
                 if (balance_ != nullptr && fill_matrix)
                 {
+                   /*
+                    DBGMSG("add_flux: %d %d %d %d\n",
+                            mh_dh.el_ds->myp(),
+                            ele_ac.ele_global_idx(),
+                            loc_b,
+                            side_row);*/
                     balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
                 }
                 ++loc_b;
@@ -1271,7 +1278,6 @@ void DarcyMH::assembly_linear_system() {
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
-
 	    if (! is_steady) {
 	        START_TIMER("fix time term");
 	    	//DBGMSG("    setup time term\n");
@@ -1611,6 +1617,7 @@ void DarcyMH::setup_time_term() {
     if (balance_ != nullptr)
     	balance_->start_mass_assembly(water_balance_idx_);
 
+    //DBGMSG("time_term lsize: %d %d\n",mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
     for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
         auto ele_ac = mh_dh.accessor(i_loc_el);
 
@@ -1622,6 +1629,7 @@ void DarcyMH::setup_time_term() {
 				* ele_ac.measure();
         local_diagonal[i_loc_row]= - diagonal_coeff / time_->dt();
 
+        //DBGMSG("time_term: %d %d %d %d %f\n",mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
         if (balance_ != nullptr)
         	balance_->add_mass_matrix_values(water_balance_idx_, ele_ac.region().bulk_idx(), {i_loc_row}, {diagonal_coeff});
     }
