@@ -146,6 +146,10 @@ public:
         return data_petsc_;
     }
 
+    void zero_entries() {
+        chkerr(VecZeroEntries( data_petsc_ ));
+    }
+
     VectorData &data()
     {
         ASSERT_DBG(data_ptr_);
