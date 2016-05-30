@@ -64,7 +64,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Parameter"; }
+    string class_name() const override;
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const  override;

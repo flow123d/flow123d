@@ -126,7 +126,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Selection"; }
+    string class_name() const override;
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     bool operator==(const TypeBase &other) const override;
@@ -175,8 +175,7 @@ public:
     inline unsigned int size() const;
 
     /// Finish declaration of the Selection type.
-    bool finish(bool is_generic = false) override
-        { ASSERT(data_->closed_)(this->type_name()).error(); return true; }
+    bool finish(bool is_generic = false) override;
 
 
     /// Implements \p TypeBase::is_closed
@@ -206,9 +205,7 @@ private:
     public:
 
     	/// Constructor.
-        SelectionData(const string &name)
-        : type_name_(name), closed_(false)
-        {}
+        SelectionData(const string &name);
 
         /// Inster new value to the Selection
         void add_value(const int value, const std::string &key, const std::string &description);

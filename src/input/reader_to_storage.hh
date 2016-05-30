@@ -144,8 +144,7 @@ protected:
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format);
 
     /// Getter for root of the storage tree.
-    StorageBase *get_storage()
-    { return storage_;}
+    StorageBase *get_storage();
 
 
     /**

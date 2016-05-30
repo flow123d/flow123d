@@ -325,7 +325,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    virtual string class_name() const override { return "Record"; }
+    virtual string class_name() const override;
 
     /// Class comparison and Record type name comparision.
     bool operator==(const TypeBase &other) const;

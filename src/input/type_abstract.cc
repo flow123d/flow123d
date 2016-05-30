@@ -172,6 +172,11 @@ string Abstract::type_name() const {
 }
 
 
+string Abstract::class_name() const {
+	return "Abstract";
+}
+
+
 Default &Abstract::get_selection_default() const {
 	return child_data_->selection_default_;
 }
@@ -257,6 +262,16 @@ Abstract::ChildDataIter Abstract::end_child_data() const {
 }
 
 
+Abstract::ChildData::ChildData(const string &name, const string &description)
+: selection_of_childs( std::make_shared<Selection> (name + "_TYPE_selection") ),
+  description_(description),
+  type_name_(name),
+  finished_(false),
+  closed_(false),
+  selection_default_(Default::obligatory())
+{}
+
+
 /************************************************
  * implementation of AdHocAbstract
  */
@@ -313,6 +328,11 @@ TypeBase::TypeHash AdHocAbstract::content_hash() const {
     boost::hash_combine(seed, ancestor_.type_name());
 
     return seed;
+}
+
+
+string AdHocAbstract::class_name() const {
+	return "AdHocAbstract";
 }
 
 

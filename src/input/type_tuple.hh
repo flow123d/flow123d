@@ -73,7 +73,7 @@ public:
     TypeHash content_hash() const  override;
 
 	/// Override @p Type::TypeBase::class_name.
-	string class_name() const override { return "Tuple"; }
+	string class_name() const override;
 
 	/**
 	 * @brief Override Record::allow_auto_conversion

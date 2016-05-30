@@ -169,13 +169,7 @@ protected:
         /**
          * Delete whole storage tree when last root input accessor is destroyed.
          */
-        ~AddressData() {
-        	if (	!parent_
-        			&& root_storage_ == actual_storage_
-        			&& root_type_ ) {
-        		delete root_storage_;
-        	}
-        }
+        ~AddressData();
     };
 
 public:
@@ -669,9 +663,7 @@ public:
      * that is parameter @p address points to StorageArray and parameter @p index gives index into this array.
      *
      */
-    IteratorBase(const Address &address, const unsigned int index)
-    : address_(address), index_(index)
-    {}
+    IteratorBase(const Address &address, const unsigned int index);
 
     /// Comparison of two Iterators. Do no compare types only position in the storage
     inline bool operator == (const IteratorBase &that) const;
@@ -691,8 +683,7 @@ public:
     /**
      * Returns address
      */
-    const Address &get_address() const
-    { return address_; }
+    const Address &get_address() const;
 
 
 protected:

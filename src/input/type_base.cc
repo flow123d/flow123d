@@ -160,6 +160,42 @@ void TypeBase::copy_attributes(attribute_map other_attributes) {
 }
 
 
+bool TypeBase::is_finished() const {
+	return true;
+}
+
+
+bool TypeBase::is_closed() const {
+	return true;
+}
+
+
+string TypeBase::type_name() const {
+	return "TypeBase";
+}
+
+
+string TypeBase::class_name() const {
+	return "TypeBase";
+}
+
+
+bool TypeBase::finish(bool is_generic) {
+	return true;
+}
+
+
+bool TypeBase::operator==(const TypeBase &other) const {
+	return typeid(*this) == typeid(other);
+}
+
+bool TypeBase::operator!=(const TypeBase & other) const {
+	return ! (*this == other);
+}
+
+
+
+
 
 
 
@@ -193,6 +229,11 @@ bool Array::finish(bool is_generic) {
 
 
 
+Array::ArrayData::ArrayData(unsigned int min_size, unsigned int max_size)
+: lower_bound_(min_size), upper_bound_(max_size), finished(false)
+{}
+
+
 bool Array::ArrayData::finish(bool is_generic)
 {
 	if (finished) return true;
@@ -207,6 +248,12 @@ bool Array::ArrayData::finish(bool is_generic)
 
 string Array::type_name() const {
     return "array_of_" + data_->type_of_values_->type_name();
+}
+
+
+
+string Array::class_name() const {
+	return "Array";
 }
 
 
@@ -253,6 +300,11 @@ Array::Array(std::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int
 	ASSERT(type->is_closed()).error();
 
 	data_->type_of_values_ = type;
+}
+
+
+bool Array::is_finished() const {
+    return data_->finished;
 }
 
 
@@ -308,6 +360,11 @@ string Bool::type_name() const {
 }
 
 
+string Bool::class_name() const {
+	return "Bool";
+}
+
+
 TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec)  {
 	return std::make_pair( std::make_shared<Bool>(*this), ParameterMap() );
 }
@@ -315,6 +372,12 @@ TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> 
 /**********************************************************************************
  * implementation of Type::Integer
  */
+
+Integer::Integer(int lower_bound, int upper_bound)
+: lower_bound_(lower_bound), upper_bound_(upper_bound)
+{}
+
+
 
 TypeBase::TypeHash Integer::content_hash() const
 {
@@ -338,6 +401,11 @@ string Integer::type_name() const {
 }
 
 
+string Integer::class_name() const {
+	return "Integer";
+}
+
+
 TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Integer>(*this), ParameterMap() );
 }
@@ -346,6 +414,11 @@ TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPai
 /**********************************************************************************
  * implementation of Type::Double
  */
+
+
+Double::Double(double lower_bound, double upper_bound)
+: lower_bound_(lower_bound), upper_bound_(upper_bound)
+{}
 
 
 TypeBase::TypeHash Double::content_hash() const
@@ -370,6 +443,11 @@ string Double::type_name() const {
 }
 
 
+string Double::class_name() const {
+	return "Double";
+}
+
+
 TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Double>(*this), ParameterMap() );
 }
@@ -378,6 +456,30 @@ TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair
 /**********************************************************************************
  * implementation of Type::FileName
  */
+
+FileName::FileName() {}
+
+
+
+FileName::FileName(enum ::FilePath::FileType type)
+: type_(type)
+{}
+
+
+
+FileName FileName::input()
+{
+	return FileName(::FilePath::input_file);
+}
+
+
+
+FileName FileName::output()
+{
+	return FileName(::FilePath::output_file);
+}
+
+
 
 TypeBase::TypeHash FileName::content_hash() const
 {
@@ -404,6 +506,12 @@ string FileName::type_name() const {
 
 
 
+string FileName::class_name() const {
+	return "FileName";
+}
+
+
+
 bool FileName::match(const string &str) const {
     return (type_ == ::FilePath::input_file) || (str[0] != DIR_DELIMITER); // output files can not be absolute
 }
@@ -412,6 +520,21 @@ bool FileName::match(const string &str) const {
 
 TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec)  {
 	return std::make_pair( std::make_shared<FileName>(*this), ParameterMap() );
+}
+
+
+
+::FilePath::FileType FileName::get_file_type() const {
+    return type_;
+}
+
+
+
+
+bool FileName::operator==(const TypeBase &other) const
+{
+	return typeid(*this) == typeid(other) &&
+                 (type_== static_cast<const FileName *>(&other)->get_file_type() );
 }
 
 
@@ -433,6 +556,11 @@ string String::type_name() const {
     return "String";
 }
 
+
+
+string String::class_name() const {
+	return "String";
+}
 
 
 

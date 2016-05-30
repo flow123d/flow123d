@@ -98,19 +98,17 @@ public:
      * For Record and Array types this say nothing about child types referenced in particular type object.
      * In particular for Record and Selection, it returns true after @p finish() method is called.
      */
-    virtual bool is_finished() const
-    {return true;}
+    virtual bool is_finished() const;
 
     /**
      * @brief Returns true if the type is closed.
      */
-    virtual bool is_closed() const
-    {return true;}
+    virtual bool is_closed() const;
 
     /// Returns an identification of the type. Useful for error messages.
-    virtual string type_name() const  { return "TypeBase"; }
+    virtual string type_name() const;
     /// Returns an identification of the class. Useful for output of the documentation.
-    virtual string class_name() const { return "TypeBase"; }
+    virtual string class_name() const;
 
     /**
      * @brief Returns string with Type extensive documentation.
@@ -139,12 +137,10 @@ public:
      * It compares kind of type (Integer, Double, String, Record, ..), for complex types it also compares names.
      * For arrays compare subtypes.
      */
-    virtual bool operator==(const TypeBase &other) const
-        { return typeid(*this) == typeid(other); }
+    virtual bool operator==(const TypeBase &other) const;
 
     /// Comparison of types.
-    bool operator!=(const TypeBase & other) const
-        { return ! (*this == other); }
+    bool operator!=(const TypeBase & other) const;
 
     ///  Destructor
     virtual ~TypeBase();
@@ -174,8 +170,7 @@ public:
      * Finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p is_generic
      * to true.
      */
-    virtual bool finish(bool is_generic = false)
-    { return true; };
+    virtual bool finish(bool is_generic = false);
 
     /**
      * @brief Hash of the type specification.
@@ -325,9 +320,7 @@ protected:
     public:
 
     	/// Constructor
-    	ArrayData(unsigned int min_size, unsigned int max_size)
-    	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
-    	{}
+    	ArrayData(unsigned int min_size, unsigned int max_size);
     	/// Finishes initialization of the ArrayData.
     	bool finish(bool is_generic = false);
     	/// Type of Array
@@ -367,8 +360,7 @@ public:
     bool finish(bool is_generic = false) override;
 
     /// Override @p Type::TypeBase::is_finished.
-    bool is_finished() const override {
-        return data_->finished; }
+    bool is_finished() const override;
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const {
@@ -385,7 +377,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Array"; }
+    string class_name() const override;
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     bool operator==(const TypeBase &other) const override;
@@ -443,7 +435,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Bool"; }
+    string class_name() const override;
 
     /// Implements @p TypeBase::make_instance.
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
@@ -466,9 +458,7 @@ public:
 	 *
 	 * You can also specify minimum and maximum value.
 	 */
-    Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
-	: lower_bound_(lower_bound), upper_bound_(upper_bound)
-	{}
+    Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max());
 
     /**
      * @brief Implements @p TypeBase::content_hash.
@@ -491,7 +481,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Integer"; }
+    string class_name() const override;
 
     /// Implements @p TypeBase::make_instance.
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>())  override;
@@ -519,9 +509,7 @@ public:
 	 *
 	 * You can also specify minimum and maximum value.
 	 */
-    Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
-	: lower_bound_(lower_bound), upper_bound_(upper_bound)
-	{}
+    Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max());
 
     /**
      * @brief Implements @p TypeBase::content_hash.
@@ -540,7 +528,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Double"; }
+    string class_name() const override;
 
     /// Implements @p TypeBase::make_instance.
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
@@ -569,7 +557,7 @@ public:
      */
     virtual string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "String"; }
+    string class_name() const override;
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const   override;
@@ -598,14 +586,12 @@ public:
     /**
      * @brief The factory function for declaring type FileName for input files.
      */
-    static FileName input()
-    { return FileName(::FilePath::input_file); }
+    static FileName input();
 
     /**
      * @brief The factory function for declaring type FileName for input files.
      */
-    static FileName output()
-    { return FileName(::FilePath::output_file); }
+    static FileName output();
 
     /**
      * @brief Implements @p Type::TypeBase::type_name.
@@ -614,13 +600,10 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "FileName"; }
+    string class_name() const override;
 
     /// Comparison of types.
-    bool operator==(const TypeBase &other) const
-    { return  typeid(*this) == typeid(other) &&
-                     (type_== static_cast<const FileName *>(&other)->get_file_type() );
-    }
+    bool operator==(const TypeBase &other) const;
 
     /// Checks relative output paths.
     bool match(const string &str) const;
@@ -629,9 +612,7 @@ public:
     /**
      * @brief Returns type of the file input/output.
      */
-    ::FilePath::FileType get_file_type() const {
-        return type_;
-    }
+    ::FilePath::FileType get_file_type() const;
 
     /// Implements @p TypeBase::make_instance.
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
@@ -643,12 +624,10 @@ private:
     ::FilePath::FileType    type_;
 
     /// Forbids default constructor.
-    FileName() {}
+    FileName();
 
     /// Forbids direct construction.
-    FileName(enum ::FilePath::FileType type)
-    : type_(type)
-    {}
+    FileName(enum ::FilePath::FileType type);
 
 };
 

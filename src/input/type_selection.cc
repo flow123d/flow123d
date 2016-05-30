@@ -65,6 +65,11 @@ const Selection & Selection::close() const {
 }
 
 
+bool Selection::finish(bool is_generic) {
+	ASSERT(data_->closed_)(this->type_name()).error();
+	return true;
+}
+
 
 
 
@@ -97,6 +102,10 @@ string Selection::type_name() const {
    return data_->type_name_;
 }
 
+
+string Selection::class_name() const {
+	return "Selection";
+}
 
 
 bool Selection::operator==(const TypeBase &other) const {
@@ -152,6 +161,12 @@ string Selection::key_list() const {
 TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Selection>(*this), ParameterMap() );
 }
+
+
+
+Selection::SelectionData::SelectionData(const string &name)
+: type_name_(name), closed_(false)
+{}
 
 
 

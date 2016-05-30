@@ -45,6 +45,11 @@ string Parameter::type_name() const {
 }
 
 
+string Parameter::class_name() const {
+	return "Parameter";
+}
+
+
 TypeBase::TypeHash Parameter::content_hash() const {
 	TypeHash seed=0;
 	boost::hash_combine(seed, "Parameter");

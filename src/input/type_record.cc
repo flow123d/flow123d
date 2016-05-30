@@ -287,6 +287,12 @@ string Record::type_name() const {
 
 
 
+string Record::class_name() const {
+	return "Record";
+}
+
+
+
 bool Record::operator==(const TypeBase &other) const
 { return  typeid(*this) == typeid(other) &&
                  (type_name() == static_cast<const Record *>(&other)->type_name() );
