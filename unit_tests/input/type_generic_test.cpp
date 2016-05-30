@@ -12,10 +12,19 @@
 
 #include <flow_gtest.hh>
 
-#include <input/input_type.hh>
-
+#include <input/type_generic.hh>
 
 using namespace Input::Type;
+
+
+// Test of correct includes in type_base.hh
+TEST(GenericType, includes) {
+	Parameter param = Parameter("param0");
+	EXPECT_EQ( param.class_name(), "Parameter");
+}
+
+
+#include <input/input_type.hh>
 
 
 
