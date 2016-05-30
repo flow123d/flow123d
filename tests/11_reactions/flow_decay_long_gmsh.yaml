@@ -1,9 +1,9 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Test11 - radioactive decay simulation, long decay chain with biffurcation
   mesh:
     mesh_file: ./input/sit_decay.msh
-  primary_equation: !SteadyDarcy_MH
+  flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -22,8 +22,8 @@ problem: !SequentialCoupling
         - pressure_p1
         - velocity_p0
     balance: true
-  secondary_equation: !Transport_OS
-    transport: !Convection_FV
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
       input_fields:
         - rid: 1
           init_conc:

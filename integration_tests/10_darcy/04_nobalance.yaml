@@ -1,5 +1,5 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   # test auto conversion for the Mesh record
   mesh: ../00_mesh/cube_2frac.msh

@@ -1,5 +1,5 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Steady flow with River boundary condition
   # The test problem use a square computational domain and emulate slope of the top surface
   # by prescribing boundary (hD) and switch pressure (hS) as linear functions, while
@@ -14,7 +14,7 @@ problem: !SequentialCoupling
   
   mesh:
     mesh_file: ${INPUT}/slope_surface.msh
-  primary_equation: !SteadyDarcy_MH
+  flow_equation: !Flow_Darcy_MH
     n_schurs: 2
     input_fields:
       - region: plane

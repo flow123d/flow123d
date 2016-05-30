@@ -157,7 +157,7 @@ inline double Interpolant::val_test(double x)
 
 inline DiffValue Interpolant::diff(double x)
 {
-  ASSERT(interpolate_derivative, "Derivative is not interpolated. Flag must be switched true in constructor (or set_functor).");
+  OLD_ASSERT(interpolate_derivative, "Derivative is not interpolated. Flag must be switched true in constructor (or set_functor).");
   //increase calls
   stats.total_calls++;
   

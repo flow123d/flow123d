@@ -6,6 +6,8 @@
  */
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 
 #include <input/input_type.hh>
@@ -183,20 +185,20 @@ using namespace Input::Type;
     sel2.add_value(white,"white","White color");
     sel1->add_value(black,"black");
     sel2.add_value(red,"red");
-    EXPECT_THROW_WHAT( {sel1->add_value(green,"red");}, ExcXprintfMsg, "already exists in Selection:");
-    EXPECT_THROW_WHAT( {sel2.add_value(green,"red");}, ExcXprintfMsg, "already exists in Selection:");
-    EXPECT_THROW_WHAT( {sel1->add_value(blue,"blue1");}, ExcXprintfMsg, "conflicts with value");
-    EXPECT_THROW_WHAT( {sel2.add_value(blue,"blue1");}, ExcXprintfMsg, "conflicts with value");
+    EXPECT_THROW_WHAT( {sel1->add_value(green,"red");}, feal::Exc_assert, "already exists in Selection");
+    EXPECT_THROW_WHAT( {sel2.add_value(green,"red");}, feal::Exc_assert, "already exists in Selection");
+    EXPECT_THROW_WHAT( {sel1->add_value(blue,"blue1");}, feal::Exc_assert, "conflicts with value");
+    EXPECT_THROW_WHAT( {sel2.add_value(blue,"blue1");}, feal::Exc_assert, "conflicts with value");
 
 
     sel2.add_value(green,"green");
     sel2.close();
-    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, ExcXprintfMsg, "in finished Selection type:");
+    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, feal::Exc_assert, "in finished Selection.");
 
     Selection sel3;
     EXPECT_TRUE( sel3.is_finished());
     EXPECT_EQ("EmptySelection", sel3.type_name());
-    EXPECT_THROW_WHAT( {sel3.add_value(1,"one");}, ExcXprintfMsg, "in finished Selection type:");
+    EXPECT_THROW_WHAT( {sel3.add_value(1,"one");}, feal::Exc_assert, "in finished Selection.");
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
     EXPECT_FALSE( sel2.has_name("xblue") );
@@ -352,8 +354,8 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	EXPECT_TRUE( (it=attributes_->find("numeric")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"5\"" );
 
-    EXPECT_THROW_WHAT( { this->add_attribute_("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
-            "Invalid JSON format of attribute 'invalid_attr'." );
+    EXPECT_THROW_WHAT( { this->add_attribute_("invalid_attr", "non quotation attribute"); }, feal::Exc_assert,
+            "Invalid JSON format of attribute" );
 }
 
 /*TEST(InputTypeAttributes, complete_test) {

@@ -156,7 +156,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 template<unsigned int dim,unsigned int spacedim>
 void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
 {
-    ASSERT_EQUAL( dim, cell->dim() );
+	OLD_ASSERT_EQUAL( dim, cell->dim() );
     this->data.present_cell = &cell;
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)

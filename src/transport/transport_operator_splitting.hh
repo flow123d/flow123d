@@ -242,6 +242,9 @@ private:
 
     double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
     Semchem_interface *Semchem_reactions;
+    
+    double cfl_convection; ///< Time restriction due to transport
+    double cfl_reaction;   ///< Time restriction due to reactions
 
 };
 

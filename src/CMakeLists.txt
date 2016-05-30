@@ -114,7 +114,6 @@ add_library(input_lib
     input/type_output.cc
     
     input/accessors.cc
-    input/storage_transpose.cc
 )
 target_link_libraries(input_lib 
     system_lib json_spirit

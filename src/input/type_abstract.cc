@@ -74,7 +74,7 @@ TypeBase::TypeHash Abstract::content_hash() const
 
 
 Abstract & Abstract::allow_auto_conversion(const string &type_default) {
-    if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the Abstract '%s' is closed.\n", type_name().c_str());
+	ASSERT(!child_data_->closed_)(type_name()).error("Can not specify default value for TYPE key as the Abstract is closed.");
     child_data_->selection_default_=Default("\""+type_default+"\""); // default record is closed; other constructor creates the zero item
     return *this;
 }
@@ -83,7 +83,7 @@ Abstract & Abstract::allow_auto_conversion(const string &type_default) {
 
 const Record  & Abstract::get_descendant(const string& name) const
 {
-    ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
+	ASSERT(child_data_->selection_of_childs->is_finished()).error();
     return child_data_->list_of_childs[ child_data_->selection_of_childs->name_to_int(name) ];
 }
 
@@ -112,7 +112,7 @@ unsigned int Abstract::child_size() const {
 
 int Abstract::add_child(const Record &subrec)
 {
-    ASSERT( child_data_->closed_, "Can not add descendant to Abstract that is not closed.\n");
+	ASSERT(child_data_->closed_).error();
 
     if (std::find(child_data_->list_of_childs.begin(), child_data_->list_of_childs.end(), subrec) == child_data_->list_of_childs.end()) {
         child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
@@ -126,7 +126,7 @@ int Abstract::add_child(const Record &subrec)
 bool Abstract::finish(bool is_generic) {
 	if (child_data_->finished_) return true;
 
-	ASSERT(child_data_->closed_, "Finished Abstract '%s' must be closed!", this->type_name().c_str());
+	ASSERT(child_data_->closed_)(this->type_name()).error();
 
 	child_data_->selection_of_childs->close();
 

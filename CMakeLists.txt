@@ -573,6 +573,17 @@ if (USE_PYTHON)
         # set extra python module path in src directory, if case PYTHON_COPY if OFF
         set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
         
+        # Install 3rd party libs using pip
+        message(STATUS "Installing requirements.txt with pip")
+        execute_process(
+          COMMAND pip install --target=${CMAKE_BINARY_DIR}/lib/flow123d/site-packages -r ${CMAKE_SOURCE_DIR}/bin/python/requirements.txt
+        )
+        
+        # create symlink in tests
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/bin/python/runtest.py ${CMAKE_SOURCE_DIR}/tests/runtest.py
+        )
+        
         if (PYTHON_COPY)
             set(PY_BUILD_PREFIX "${CMAKE_BINARY_DIR}")
             set(PYTHON_EXTRA_MODULES_PATH "${PY_BUILD_PREFIX}/lib/flow123d")
@@ -654,7 +665,7 @@ if (USE_PYTHON)
             execute_process(
                 COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include 
                 )
-            
+
             # save python system path without prefix to PY_WRAPPER_PATHS 
             # variable so it can be later used in wrapper via configure_file
             execute_process(
@@ -989,7 +1000,7 @@ endif()
 if (CYGWIN)
     install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin.exe"
             DESTINATION bin/)
-    install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d.bat"
+    install(PROGRAMS    build_tree/bin/flow123d_wrapper.bat RENAME "flow123d.bat"
             DESTINATION bin/)
 else()
     install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin"

@@ -485,14 +485,14 @@ class MEConfig:
         if cls.curr_format_file is None:
             return
         text = cls.get_curr_format_text()
-        #try:
-        cls.root_input_type = get_root_input_type_from_json(text)
-        #except Exception as e:
-        #    cls._report_error("Can't open format file", e)
-        #else:
-        InfoTextGenerator.init(text)
-        cls.autocomplete_helper.create_options(cls.root_input_type)
-        cls.update()
+        try:
+            cls.root_input_type = get_root_input_type_from_json(text)
+        except Exception as e:
+            cls._report_error("Can't open format file", e)
+        else:
+            InfoTextGenerator.init(text)
+            cls.autocomplete_helper.create_options(cls.root_input_type)
+            cls.update()
 
     @classmethod
     def save_file(cls):

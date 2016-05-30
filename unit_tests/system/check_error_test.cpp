@@ -7,6 +7,8 @@
 
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include "system/exceptions.hh"
 #include "system/global_defs.h"
@@ -38,6 +40,6 @@ TEST(CheckError, assert_message) {
 #ifdef FLOW123D_DEBUG_ASSERTS
 TEST(ASSERTS, assert_ptr) {
     void * test_ptr = nullptr;
-    EXPECT_THROW_WHAT( {ASSERT_PTR(test_ptr);}, ExcAssertMsg, "test_ptr");
+    EXPECT_THROW_WHAT( {OLD_ASSERT_PTR(test_ptr);}, ExcAssertMsg, "test_ptr");
 }
 #endif

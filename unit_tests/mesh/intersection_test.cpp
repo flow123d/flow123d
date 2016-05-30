@@ -1,3 +1,5 @@
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include "system/system.hh"
 #include "mesh/ngh/include/point.h"

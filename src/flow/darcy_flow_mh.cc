@@ -72,7 +72,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
 
 namespace it = Input::Type;
 
-const it::Selection & DarcyFlowMH_Steady::get_mh_mortar_selection() {
+const it::Selection & DarcyMH::get_mh_mortar_selection() {
 	return it::Selection("MH_MortarMethod")
 		.add_value(NoMortar, "None", "Mortar space: P0 on elements of lower dimension.")
 		.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.")
@@ -81,8 +81,8 @@ const it::Selection & DarcyFlowMH_Steady::get_mh_mortar_selection() {
 }
 
 
-const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
-	return it::Selection("DarcyFlow_BC_Type")
+const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
+	return it::Selection("Flow_Darcy_BC_Type")
         .add_value(none, "none",
             "Homogeneous Neumann boundary condition. Zero flux")
         .add_value(dirichlet, "dirichlet",
@@ -96,24 +96,24 @@ const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
         .add_value(seepage, "seepage",
             "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
             "is described by the pair of inequalities:"
-            "(($h \\le h_d^D$)) and (($ q \\le q_d^N)), where the equality holds in at least one of them. Caution! Setting $q_d^N$ strictly negative"
+            "(($h \\le h_d^D$)) and (($ q \\le q_d^N$)), where the equality holds in at least one of them. Caution! Setting $q_d^N$ strictly negative"
             "may lead to an ill posed problem since a positive outflow is enforced."
-            "Parameters (($h_d^D$)) and (($q_d^N)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
+            "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
             )
         .add_value(river, "river",
             "River boundary condition. For the water level above the bedrock, (($H > H^S$)), the Robin boundary condition is used with the inflow given by: "
-            "(( $q^N + \\sigma(H^D - H)$ )). For the water level under the bedrock, constant infiltration is used "
-            "(( $q^N + \\sigma(H^D - H^S)$ )). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
+            "(( $q^N + \\sigma(H^D - H)$)). For the water level under the bedrock, constant infiltration is used "
+            "(( $q^N + \\sigma(H^D - H^S)$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
             " ``bc_sigma, ``bc_flux``."
             )
         .close();
 }
 
 
-const it::Record & DarcyFlowMH_Steady::get_input_type() {
+const it::Record & DarcyMH::get_input_type() {
     it::Record field_descriptor =
-        it::Record("DarcyFlowMH_Data",FieldCommon::field_descriptor_record_description("DarcyFlowMH_Data") )
-        .copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH_Data_aux") )
+        it::Record("Flow_Darcy_MH_Data",FieldCommon::field_descriptor_record_description("Flow_Darcy_MH_Data") )
+        .copy_keys( DarcyMH::EqData().make_field_descriptor_type("Flow_Darcy_MH_Data_aux") )
         .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
                 "Boundary piezometric head for BC types: dirichlet, robin, and river." )
         .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
@@ -135,7 +135,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
             "ends with convergence success on stagnation, but report warning about it.")
         .close();
 
-    return it::Record("SteadyDarcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
+    return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
@@ -156,13 +156,13 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 }
 
 
-const int DarcyFlowMH_Steady::registrar =
-		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("SteadyDarcy_MH") +
-		DarcyFlowMH_Steady::get_input_type().size();
+const int DarcyMH::registrar =
+		Input::register_class< DarcyMH, Mesh &, const Input::Record >("Flow_Darcy_MH") +
+		DarcyMH::get_input_type().size();
 
 
 
-DarcyFlowMH_Steady::EqData::EqData()
+DarcyMH::EqData::EqData()
 {
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
     	anisotropy.units( UnitSI::dimensionless() );
@@ -217,7 +217,7 @@ DarcyFlowMH_Steady::EqData::EqData()
 
 
 template<unsigned int dim>
-DarcyFlowMH_Steady::Assembly<dim>::Assembly(AssemblyData ad)
+DarcyMH::Assembly<dim>::Assembly(AssemblyData ad)
 : quad_(3),
   fe_values_(map_, quad_, fe_rt_, 
             update_values | update_gradients | update_JxW_values | update_quadrature_points),
@@ -233,7 +233,7 @@ DarcyFlowMH_Steady::Assembly<dim>::Assembly(AssemblyData ad)
 }
 
 template<unsigned int dim>
-DarcyFlowMH_Steady::Assembly<dim>::~Assembly()
+DarcyMH::Assembly<dim>::~Assembly()
 {
 }
 
@@ -250,7 +250,7 @@ DarcyFlowMH_Steady::Assembly<dim>::~Assembly()
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec)
+DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
   solution(nullptr),
   schur0(nullptr),
@@ -317,7 +317,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
 
 
-void DarcyFlowMH_Steady::zero_time_step()
+void DarcyMH::zero_time_step()
 {
     data_.set_time(time_->step(), LimitSide::right);
     // zero_time_term means steady case
@@ -365,7 +365,7 @@ void DarcyFlowMH_Steady::zero_time_step()
 //=============================================================================
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
 //=============================================================================
-void DarcyFlowMH_Steady::update_solution()
+void DarcyMH::update_solution()
 {
     START_TIMER("Solving MH system");
 
@@ -417,7 +417,7 @@ void DarcyFlowMH_Steady::update_solution()
 
 
 
-void DarcyFlowMH_Steady::solve_nonlinear()
+void DarcyMH::solve_nonlinear()
 {
     assembly_linear_system();
     double residual_norm = schur0->compute_residual();
@@ -441,7 +441,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
 
 
     while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
-        ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
+    	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
         if (convergence_history.size() >= 5 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
@@ -464,7 +464,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
         if (is_linear_common) break;
 
         //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
-        //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+        //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
         residual_norm = schur0->compute_residual();
         xprintf(Msg, "Nonlin iter: %d %d (%d) %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
@@ -476,7 +476,7 @@ void DarcyFlowMH_Steady::solve_nonlinear()
 
 }
 
-void DarcyFlowMH_Steady::postprocess() 
+void DarcyMH::postprocess() 
 {
     START_TIMER("postprocess");
     //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
@@ -501,7 +501,7 @@ void DarcyFlowMH_Steady::postprocess()
 }
 
 
-void DarcyFlowMH_Steady::output_data() {
+void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
     time_->view("DARCY"); //time governor information output
 	this->output_object->output();
@@ -527,14 +527,14 @@ void DarcyFlowMH_Steady::output_data() {
 }
 
 
-double DarcyFlowMH_Steady::solution_precision() const
+double DarcyMH::solution_precision() const
 {
 	return schur0->get_solution_precision();
 }
 
 
 
-void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
+void  DarcyMH::get_solution_vector(double * &vec, unsigned int &vec_size)
 {
     // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
     // and use its mechanism to manage dependency between vectors
@@ -548,18 +548,18 @@ void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_s
 
     vec = solution;
     vec_size = this->size;
-    ASSERT(vec != NULL, "Requested solution is not allocated!\n");
+    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
-void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
+void  DarcyMH::get_parallel_solution_vector(Vec &vec)
 {
     vec=schur0->get_solution();
-    ASSERT(vec != NULL, "Requested solution is not allocated!\n");
+    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
 
 template<unsigned int dim>
-void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_matrix, ElementFullIter ele)
+void DarcyMH::Assembly<dim>::assembly_local_matrix(arma::mat& local_matrix, ElementFullIter ele)
 {
     //START_TIMER("Assembly<dim>::assembly_local_matrix");
     fe_values_.reinit(ele);
@@ -587,7 +587,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
 }
 
 template<unsigned int dim>
-void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, ElementFullIter ele, Neighbour *ngh)
+void DarcyMH::Assembly<dim>::assembly_local_vb(double* local_vb, ElementFullIter ele, Neighbour *ngh)
 {
     //START_TIMER("Assembly<dim>::assembly_local_vb");
     // compute normal vector to side
@@ -611,7 +611,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, Elem
 
 
 template<unsigned int dim>
-arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIter ele)
+arma::vec3 DarcyMH::Assembly<dim>::make_element_vector(ElementFullIter ele)
 {
     //START_TIMER("Assembly<dim>::make_element_vector");
     arma::vec3 flux_in_center;
@@ -635,7 +635,7 @@ arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIte
 //
 // =======================================================================================
 
-void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
+void DarcyMH::assembly_steady_mh_matrix()
 {
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
     is_linear_=true;
@@ -726,7 +726,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
-                        ASSERT(rows_ds->is_local(side_row), "" );
+                        OLD_ASSERT(rows_ds->is_local(side_row), "" );
                         unsigned int loc_side_row = side_row - rows_ds->begin();
                         double & solution_flux = ls->get_solution_array()[loc_side_row];
 
@@ -746,7 +746,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                         // cause that a solution  with the flux violating the
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
-                        ASSERT(rows_ds->is_local(edge_row), "" );
+                        OLD_ASSERT(rows_ds->is_local(edge_row), "" );
                         unsigned int loc_edge_row = edge_row - rows_ds->begin();
                         double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -780,7 +780,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
                     double bc_switch_pressure = data_.bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -data_.bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ASSERT(rows_ds->is_local(edge_row), "" );
+                    OLD_ASSERT(rows_ds->is_local(edge_row), "" );
                     unsigned int loc_edge_row = edge_row - rows_ds->begin();
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -885,7 +885,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
         switch (n_schur_compls) {
         case 2:
             // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
-            ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
+        	OLD_ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
             ls->mat_set_values(ele->n_neighs_vb, tmp_rows+2,
                                ele->n_neighs_vb, tmp_rows+2, zeros);
 
@@ -912,7 +912,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 }
 
 
-void DarcyFlowMH_Steady::assembly_source_term()
+void DarcyMH::assembly_source_term()
 {
     START_TIMER("assembly source term");
     if (balance_ != nullptr)
@@ -963,9 +963,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 		Boundary * bcd = ele->side(i_side)->cond();
 		if (bcd) {			
 			ElementAccessor<3> b_ele = bcd->element_accessor();
-			auto type = (DarcyFlowMH_Steady::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
+			auto type = (DarcyMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
-			if (type == DarcyFlowMH_Steady::EqData::dirichlet) {
+			if (type == DarcyMH::EqData::dirichlet) {
 				//DBGMSG("Dirichlet: %d\n", ele->index());
 				dofs[i_side] = -dofs[i_side];
 				double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
@@ -1031,7 +1031,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 				ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
 			}
 		}
-                ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
+		OLD_ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
     } // loop over master elements
 }
 
@@ -1046,9 +1046,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 			if (bcd) {
 				ElementAccessor<3> b_ele = bcd->element_accessor();
-				auto type = (DarcyFlowMH_Steady::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
+				auto type = (DarcyMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 				//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
-				if (type == DarcyFlowMH_Steady::EqData::dirichlet) {
+				if (type == DarcyMH::EqData::dirichlet) {
 					//DBGMSG("Dirichlet: %d\n", ele->index());
 					dofs[shift + i_side] = -dofs[shift + i_side];
 					double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
@@ -1174,7 +1174,7 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
+void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
   
     START_TIMER("preallocation");
 
@@ -1224,7 +1224,7 @@ void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
             } else {
                 IS is;
                 ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
-                //ASSERT(err == 0,"Error in ISCreateStride.");
+                //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
                 ls->set_from_input(in_rec);
@@ -1238,7 +1238,7 @@ void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
                 } else {
                     IS is;
                     ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
-                    //ASSERT(err == 0,"Error in ISCreateStride.");
+                    //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
 
@@ -1272,7 +1272,7 @@ void DarcyFlowMH_Steady::create_linear_system(Input::AbstractRecord in_rec) {
 
 
 
-void DarcyFlowMH_Steady::assembly_linear_system() {
+void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
     bool is_steady = data_.storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
@@ -1320,7 +1320,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 
 
 
-void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
+void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     START_TIMER("DarcyFlowMH_Steady::set_mesh_data_for_bddc");
     // prepare mesh for BDDCML
     // initialize arrays
@@ -1407,14 +1407,14 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // Maybe divide by cs
         coef = conduct*coef / 3;
 
-        ASSERT( coef > 0.,
+        OLD_ASSERT( coef > 0.,
                 "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
         element_permeability.push_back( 1. / coef );
     }
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    ASSERT_EQUAL( (unsigned int)numNodeSub, global_row_4_sub_row->size() );
+    OLD_ASSERT_EQUAL( (unsigned int)numNodeSub, global_row_4_sub_row->size() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
@@ -1456,7 +1456,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
             int indGlob = inet[indInet];
             // map it to local node
             Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
-            ASSERT( pos != global2LocalNodeMap.end(),
+            OLD_ASSERT( pos != global2LocalNodeMap.end(),
                     "Cannot remap node index %d to local indices. \n ", indGlob );
             int indLoc = static_cast<int> ( pos -> second );
 
@@ -1479,7 +1479,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 //=============================================================================
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
-DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
+DarcyMH::~DarcyMH() {
     if (schur0 != NULL) delete schur0;
 
 	delete edge_ds;
@@ -1516,7 +1516,7 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 // arrays.
 // we employ macros to avoid code redundancy
 // =======================================================================
-void DarcyFlowMH_Steady::make_row_numberings() {
+void DarcyMH::make_row_numberings() {
     int i, shift;
     int np = edge_ds->np();
     int edge_shift[np], el_shift[np], side_shift[np];
@@ -1561,7 +1561,7 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     rows_ds = boost::make_shared<Distribution>(&(rows_starts[0]), PETSC_COMM_WORLD);
 }
 
-void DarcyFlowMH_Steady::make_serial_scatter() {
+void DarcyMH::make_serial_scatter() {
     START_TIMER("prepare scatter");
     // prepare Scatter form parallel to sequantial in original numbering
     {
@@ -1588,7 +1588,7 @@ void DarcyFlowMH_Steady::make_serial_scatter() {
             for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
                 loc_idx[i++] = row_4_edge[i_edg];
             }
-            ASSERT( i==size,"Size of array does not match number of fills.\n");
+            OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
             //DBGPRINT_INT("loc_idx",size,loc_idx);
             ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
             xfree(loc_idx);
@@ -1607,7 +1607,7 @@ void DarcyFlowMH_Steady::make_serial_scatter() {
 // - compute appropriate partitioning of elements and sides
 // - make arrays: *_id_4_loc and *_row_4_id to allow parallel assembly of the MH matrix
 // ====================================================================================
-void DarcyFlowMH_Steady::prepare_parallel() {
+void DarcyMH::prepare_parallel() {
     
     START_TIMER("prepare parallel");
     
@@ -1619,7 +1619,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
     
     //ierr = MPI_Barrier(PETSC_COMM_WORLD);
-    //ASSERT(ierr == 0, "Error in MPI_Barrier.");
+    //OLD_ASSERT(ierr == 0, "Error in MPI_Barrier.");
 
     // row_4_el will be modified so we make a copy of the array from mesh
     row_4_el = new int[mesh_->n_elements()];
@@ -1684,7 +1684,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
 }
 
-void DarcyFlowMH_Steady::prepare_parallel_bddc() {
+void DarcyMH::prepare_parallel_bddc() {
 #ifdef FLOW123D_HAVE_BDDCML
     // auxiliary
     Element *el;
@@ -1782,7 +1782,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_r
 }
 */
 
-void DarcyFlowMH_Steady::read_initial_condition()
+void DarcyMH::read_initial_condition()
 {
 
     VecDuplicate(schur0->get_solution(), &previous_solution);
@@ -1812,7 +1812,7 @@ void DarcyFlowMH_Steady::read_initial_condition()
 
 }
 
-void DarcyFlowMH_Steady::setup_time_term() {
+void DarcyMH::setup_time_term() {
     // save diagonal of steady matrix
     MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
@@ -1851,7 +1851,7 @@ void DarcyFlowMH_Steady::setup_time_term() {
     	balance_->finish_mass_assembly(water_balance_idx_);
 }
 
-void DarcyFlowMH_Steady::modify_system() {
+void DarcyMH::modify_system() {
 	START_TIMER("modify system");
 	if (time_->is_changed_dt() && time_->step().index()>0) {
         double scale_factor=time_->step(-2).length()/time_->step().length();

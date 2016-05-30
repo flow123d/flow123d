@@ -30,7 +30,7 @@
 #include "la/distribution.hh"
 #include "input/accessors.hh"
 
-FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
+// FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
 FLOW123D_FORCE_LINK_IN_PARENT(linearODEAnalytic);
 
 
@@ -40,15 +40,8 @@ using namespace Input::Type;
 FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
-	Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
-    if ( num_it )
-    {
-    	linear_ode_solver_ = (*num_it).factory< LinearODESolverBase, Input::Record >(*num_it);
-    }
-    else    //default linear ode solver
-    {
-        linear_ode_solver_ = Input::Factory< LinearODESolverBase, Input::Record >::instance()->create("LinearODEAnalytic", Input::Record());
-    }
+    Input::Iterator<Input::Record> num_it = input_record_.find<Input::Record>("ode_solver");
+    linear_ode_solver_ = std::make_shared<PadeApproximant>(*num_it);
 }
 
 FirstOrderReactionBase::~FirstOrderReactionBase()
@@ -57,9 +50,9 @@ FirstOrderReactionBase::~FirstOrderReactionBase()
 
 void FirstOrderReactionBase::initialize()
 {
-    ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-    ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-    ASSERT_LESS(0, substances_.size());
+	OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+	OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+	OLD_ASSERT_LESS(0, substances_.size());
     
     n_substances_ = substances_.size();
     initialize_from_input();
@@ -83,13 +76,14 @@ void FirstOrderReactionBase::initialize()
 
 void FirstOrderReactionBase::zero_time_step()
 {
-    ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-    ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-    ASSERT_LESS(0, substances_.size());
+	OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+	OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+	OLD_ASSERT_LESS(0, substances_.size());
 
     assemble_ode_matrix();
     // make scaling that takes into account different molar masses of substances
     reaction_matrix_ = molar_matrix_ * reaction_matrix_ * molar_mat_inverse_;
+    
     linear_ode_solver_->set_system_matrix(reaction_matrix_);
 }
 
@@ -137,4 +131,14 @@ unsigned int FirstOrderReactionBase::find_subst_name(const string &name)
                 if (name == substances_[k].name()) return k;
 
         return k;
+}
+
+
+bool FirstOrderReactionBase::evaluate_time_constraint(double &time_constraint)
+{
+    if (!linear_ode_solver_->evaluate_time_constraint(time_constraint)) return false;
+    
+    DBGMSG("CFL constraint(first order reaction): %g.\n", time_constraint);
+    
+    return true;
 }

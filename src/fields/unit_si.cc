@@ -136,7 +136,7 @@ const std::string &UnitSI::unit_symbol(unsigned int idx) {
 
 
 std::string UnitSI::format(OutputFormat form) const {
-	ASSERT(is_def(), "UnitSI object must be defined!");
+	OLD_ASSERT(is_def(), "UnitSI object must be defined!");
 
 	std::stringstream output;
 

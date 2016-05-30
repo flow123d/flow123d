@@ -104,11 +104,8 @@ void TypeBase::lazy_finish() {
 
 
 void TypeBase::add_attribute_(std::string name, json_string val) {
-	if (validate_json(val)) {
-		(*attributes_)[name] = val;
-	} else {
-		xprintf(PrgErr, "Invalid JSON format of attribute '%s'.\n", name.c_str());
-	}
+	ASSERT(validate_json(val))(name)(val).error("Invalid JSON format of attribute");
+	(*attributes_)[name] = val;
 }
 
 
@@ -233,7 +230,7 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 
 	// Set parameters as attribute
 	json_string val = this->print_parameter_map_to_json(parameter_map);
-	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
+	ASSERT(this->validate_json(val))(val).error("Invalid JSON format of attribute 'parameters'.");
 	arr.parameter_map_ = parameter_map;
 	arr.generic_type_hash_ = this->content_hash();
 
@@ -252,8 +249,8 @@ Array Array::deep_copy() const {
 Array::Array(std::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
 : data_(std::make_shared<ArrayData>(min_size, max_size))
 {
-    ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
-    ASSERT( type->is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type->type_name().c_str());
+	ASSERT_LE(min_size, max_size).error("Wrong limits for size of Input::Type::Array");
+	ASSERT(type->is_closed()).error();
 
 	data_->type_of_values_ = type;
 }
