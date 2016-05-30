@@ -19,14 +19,17 @@
 #define TYPE_SELECTION_HH_
 
 #include "system/exceptions.hh"
-
 #include "system/system.hh"
+
 #include "type_base.hh"
+
+#include <string>
+#include <vector>
 
 namespace Input {
 namespace Type {
 
-using std::string;
+using namespace std;
 
 
 

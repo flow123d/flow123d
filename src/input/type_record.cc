@@ -17,10 +17,8 @@
 
 #include "input_type.hh"
 #include "type_repository.hh"
-#include "attribute_lib.hh"
-
-#include "system/system.hh"
 #include "input/reader_to_storage.hh"
+#include "attribute_lib.hh"
 
 #include <boost/typeof/typeof.hpp>
 #include <boost/shared_ptr.hpp>

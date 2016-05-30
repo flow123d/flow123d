@@ -18,15 +18,24 @@
 #ifndef TYPE_ABSTRACT_HH_
 #define TYPE_ABSTRACT_HH_
 
-#include "system/exceptions.hh"
-
 #include "type_base.hh"
-#include "type_selection.hh"
+#include "type_record.hh"
+
+#include <string>
+#include <vector>
+#include <memory>
 
 
 namespace Input {
 namespace Type {
 
+
+using namespace std;
+
+
+class Selection;
+class AdHocAbstract;
+class OutputBase;
 
 
 /**

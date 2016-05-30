@@ -18,7 +18,11 @@
 #ifndef TYPE_TUPLE_HH_
 #define TYPE_TUPLE_HH_
 
+#include "system/exceptions.hh"
 #include "type_record.hh"
+#include "type_base.hh"
+
+#include <string>
 
 namespace Input {
 
