@@ -9,11 +9,10 @@ import sys
 import time
 
 import math
-import psutil
 
+from scripts import psutils
 from scripts.core import monitors
 from scripts.core.base import Printer, Paths, Command
-from scripts.core.process import ProcessUtils
 from utils.counter import ProgressCounter
 from utils.events import Event
 from utils.globals import ensure_iterable, wait_for
@@ -46,11 +45,15 @@ class ExtendedThread(threading.Thread):
     def returncode(self, value):
         self._returncode = value
 
+    def start(self):
+        self._is_over = False
+        super(ExtendedThread, self).start()
+
     def run(self):
-        # self._is_over = False
+        self._is_over = False
         self.on_start(self)
         self._run()
-        # self._is_over = True
+        self._is_over = True
         self.on_complete(self)
 
     def is_over(self):
@@ -62,10 +65,11 @@ class ExtendedThread(threading.Thread):
 
 class BinExecutor(ExtendedThread):
     """
-    :type process: psutil.Popen
+    :type process: scripts.psutils.Process
     :type threads: list[scripts.core.threads.BinExecutor]
     """
     threads = list()
+    stopped = False
 
     @staticmethod
     def register_sigint():
@@ -74,6 +78,8 @@ class BinExecutor(ExtendedThread):
 
     @staticmethod
     def signal_handler(signal, frame):
+        BinExecutor.stopped = True
+
         if signal:
             sys.stderr.write("\nError: Caught SIGINT! Terminating application in peaceful manner...\n")
         else:
@@ -83,7 +89,7 @@ class BinExecutor(ExtendedThread):
             try:
                 if executor.process.is_running():
                     sys.stderr.write('\nTerminating process {}...\n'.format(executor.process.pid))
-                    ProcessUtils.secure_kill(executor.process)
+                    executor.process.secure_kill()
             except Exception as e:
                 pass
         sys.exit(1)
@@ -98,20 +104,29 @@ class BinExecutor(ExtendedThread):
         self.stderr = subprocess.PIPE
 
     def _run(self):
+        if self.stopped:
+            process = BrokenProcess(Exception('Application terminating'))
+            self.returncode = process.returncode
+            self.broken = True
+            self.process = process
+            return
+
         # run command and block current thread
         try:
-            self.process = psutil.Popen(self.command, stdout=self.stdout, stderr=self.stderr)
+            process = psutils.Process.popen(self.command, stdout=self.stdout, stderr=self.stderr)
+            self.process = psutils.Process(process.pid)
         except Exception as e:
             # broken process
             process = BrokenProcess(e)
             self.returncode = process.returncode
             self.broken = True
             self.process = process
+            return
 
         # process successfully started to wait for result
         self.broken = False
-        self.process.wait()
-        self.returncode = getattr(self.process, 'returncode', None)
+        process.wait()
+        self.returncode = getattr(process, 'returncode', None)
 
 
 class BrokenProcess(object):

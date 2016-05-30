@@ -3,8 +3,15 @@
 # author:   Jan Hybs
 from __future__ import absolute_import
 import random
+import sys
+import os
+import re
+import platform
 
-import sys, os, re
+is_linux = platform.system().lower().startswith('linux')
+
+flow123d_name = "flow123d" if is_linux else "flow123d.exe"
+mpiexec_name = "mpiexec" if is_linux else "mpiexec.hydra"
 
 import datetime
 
@@ -157,9 +164,9 @@ class Paths(object):
     @classmethod
     def temp_name(cls, name='{date}-{time}-{rnd}.log'):
         today = datetime.datetime.today()
-        time = '{:%H:%M:%S}'.format(today)
+        time = '{:%H-%M-%S}'.format(today)
         date = '{:%Y-%m-%d}'.format(today)
-        dt = '{:%Y-%m-%d_%H:%M:%S}'.format(today)
+        dt = '{:%Y-%m-%d_%H-%M-%S}'.format(today)
         rnd = '{:04d}'.format(random.randint(0, 9999))
 
         return name.format(date=date, time=time, today=today, datetime=dt, random=rnd, rnd=rnd)
@@ -179,12 +186,12 @@ class Paths(object):
     @classmethod
     @make_relative
     def flow123d(cls):
-        return cls.path_to(cls.bin_dir(), 'flow123d')
+        return cls.path_to(cls.bin_dir(), flow123d_name)
 
     @classmethod
     @make_relative
     def mpiexec(cls):
-        return cls.path_to(cls.bin_dir(), 'mpiexec')
+        return cls.path_to(cls.bin_dir(), mpiexec_name)
 
     # -----------------------------------
 

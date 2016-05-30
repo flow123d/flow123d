@@ -4,7 +4,6 @@
 import subprocess
 
 import time
-from apt import progress
 
 import sys
 
@@ -224,6 +223,7 @@ def run_local_mode(all_yamls):
     for yaml_file, config in all_yamls.items():
         # extract all test cases (product of cpu x files)
         config.parse()
+        config.update(proc=set(arg_options.cpu) if arg_options.cpu else None)
         for case in config.get_cases_for_file(cls, yaml_file):
             # create main process which first clean output dir
             # and then execute test
@@ -236,7 +236,10 @@ def run_local_mode(all_yamls):
     printer.dbg('Executing tasks')
 
     # run!
-    runner.run()
+    runner.start()
+    while runner.is_running():
+        time.sleep(1)
+
     printer.line()
     printer.key('Summary: ')
     Printer.open()
