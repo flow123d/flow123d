@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
   #      * clearly displays the switch point in for x:0.5. Again the pressure is slightly above the switch pressure
   #      * since we do not plot values directly on the boundary.
   mesh:
-    mesh_file: ${INPUT}/square_xz.msh
+    mesh_file: ../00_mesh/square_xz.msh
   flow_equation: !Flow_Darcy_MH
     n_schurs: 2
     input_fields:

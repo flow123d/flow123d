@@ -13,24 +13,44 @@ problem: !Coupling_Sequential
   # The inflow velocity is sigma*(bc_pressure - bc_switch_pressure) = 0.0004*0.3 = 1.2e-4 
   
   mesh:
-    mesh_file: ${INPUT}/slope_surface.msh
+    mesh_file: ../00_mesh/square_xz.msh
   flow_equation: !Flow_Darcy_MH
     n_schurs: 2
     input_fields:
       - region: plane
         conductivity: 0.001
-      - region: .top_left  
-        bc_type: total_flux
-        bc_flux: 0.001
-        
-      - region: .top_right
+      - region: .top
         bc_type: river
-        bc_switch_pressure: 0
-        bc_pressure: 0
+        bc_switch_pressure: !FieldFormula
+          value: -x+0.3
+        bc_pressure: !FieldFormula
+          value: -x+0.6
         bc_robin_sigma: 0.0004
+#      - time: 1.0
+#        region: .top
+#        bc_type: river
+#        bc_switch_pressure: !FieldFormula
+#          value: -x
+#        bc_pressure: !FieldFormula
+#          value: -x
+#        bc_robin_sigma: 0.0004
+        
+      # ,
     output:
+      # 
+      #         { region:".bottom",
+      #           bc_type:"neumann" // zero flux
+      #         },
+      #         { region:".right",
+      #           bc_type:"dirichlet",
+      #           bc_piezo_head:1.25
+      #         },
+      #         { region:".left",
+      #           bc_type:"dirichlet",
+      #           bc_piezo_head:0.75
+      #         }
       output_stream:
-        file: ./flow_river_slope.pvd
+        file: ./flow_river_square.pvd
         format: !vtk
           variant: ascii
 #        add_input_times: true          
@@ -40,8 +60,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: true
-    nonlinear_solver:        
+    nonlinear_solver:
         tolerance: 1e-6
-        max_it: 10
         linear_solver: !Petsc
             a_tol: 1.0e-07
