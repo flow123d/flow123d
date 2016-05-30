@@ -1621,17 +1621,15 @@ void DarcyMH::setup_time_term() {
     for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
         auto ele_ac = mh_dh.accessor(i_loc_el);
 
-        int i_loc_row = ele_ac.ele_local_row();
-
         // set new diagonal
         double diagonal_coeff = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor())
         		* data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor())
 				* ele_ac.measure();
-        local_diagonal[i_loc_row]= - diagonal_coeff / time_->dt();
+        local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
 
         //DBGMSG("time_term: %d %d %d %d %f\n",mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
         if (balance_ != nullptr)
-        	balance_->add_mass_matrix_values(water_balance_idx_, ele_ac.region().bulk_idx(), {i_loc_row}, {diagonal_coeff});
+        	balance_->add_mass_matrix_values(water_balance_idx_, ele_ac.region().bulk_idx(), {ele_ac.ele_row()}, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
