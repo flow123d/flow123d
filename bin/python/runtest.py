@@ -87,7 +87,7 @@ if __name__ == '__main__':
     #
     # # for debug only set dir to where script should be
     Paths.base_dir(__file__)
-    Paths.base_dir('/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d/bin/python/foo')
+    # Paths.base_dir('/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d/bin/python/foo')
     # Paths.base_dir(r'c:\cygwin64\home\Jan\flow\bin\python\testrun.py')
     #
     # run work
