@@ -85,7 +85,7 @@ void Assert::warning(std::string warning_msg)
 	std::ostringstream info_str, stack_str;
 	exception_.print_info(info_str);
 	exception_.print_stacktrace(stack_str);
-	WarningOut() << warning_msg << info_str.str() << StreamMask::file_mask() << stack_str.str();
+	WarningOut() << warning_msg << info_str.str() << StreamMask::log << stack_str.str();
 }
 
 void Assert::check_assert_dbg_count() {

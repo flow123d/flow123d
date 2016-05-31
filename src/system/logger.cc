@@ -104,21 +104,9 @@ void LoggerOptions::reset() {
  * implementation of StreamMask
  */
 
-
-StreamMask StreamMask::cout_mask()
-{
-	return StreamMask(0b00000001);
-}
-
-StreamMask StreamMask::cerr_mask()
-{
-	return StreamMask(0b00000010);
-}
-
-StreamMask StreamMask::file_mask()
-{
-	return StreamMask(0b00000100);
-}
+StreamMask StreamMask::cout = StreamMask(0b00000001);
+StreamMask StreamMask::cerr = StreamMask(0b00000010);
+StreamMask StreamMask::log  = StreamMask(0b00000100);
 
 
 StreamMask StreamMask::operator &(const StreamMask &other)
@@ -157,10 +145,10 @@ Logger::Logger(MsgType type)
 Logger::~Logger()
 {
 	// print output to streams
-	print_to_screen(std::cout, cout_stream_, StreamMask::cout_mask());
-	print_to_screen(std::cerr, cerr_stream_, StreamMask::cerr_mask());
+	print_to_screen(std::cout, cout_stream_, StreamMask::cout);
+	print_to_screen(std::cerr, cerr_stream_, StreamMask::cerr);
 	if (LoggerOptions::get_instance().is_init())
-		print_to_file(LoggerOptions::get_instance().file_stream_, this->file_stream_, StreamMask::file_mask());
+		print_to_file(LoggerOptions::get_instance().file_stream_, this->file_stream_, StreamMask::log);
 }
 
 
@@ -207,15 +195,15 @@ void Logger::set_mask()
 	switch (type_) {
 	case MsgType::warning:
 		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = StreamMask::cerr_mask();
+			streams_mask_ = StreamMask::cerr;
 		else
-			streams_mask_ = StreamMask::cerr_mask() | StreamMask::file_mask();
+			streams_mask_ = StreamMask::cerr | StreamMask::log;
 		break;
 	case MsgType::message:
 		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = StreamMask::cout_mask();
+			streams_mask_ = StreamMask::cout;
 		else
-			streams_mask_ = StreamMask::cout_mask() | StreamMask::file_mask();
+			streams_mask_ = StreamMask::cout | StreamMask::log;
 		break;
 #ifndef FLOW123D_DEBUG
 	case MsgType::debug: // for release build
@@ -226,9 +214,9 @@ void Logger::set_mask()
 		if (LoggerOptions::get_instance().no_log_)
 			streams_mask_ = StreamMask();
 		else if (LoggerOptions::get_instance().is_init())
-			streams_mask_ = StreamMask::file_mask();
+			streams_mask_ = StreamMask::log;
 		else
-			streams_mask_ = StreamMask::cerr_mask();
+			streams_mask_ = StreamMask::cerr;
 		break;
 	}
 
