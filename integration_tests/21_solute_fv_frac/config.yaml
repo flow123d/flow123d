@@ -9,3 +9,4 @@ test_cases:
 - file: 04_fv_dp_sorp_small_output_input_fields.yaml
 - file: 05_fv_dp_sorp_small_output_multi_fields.yaml
 - file: 06_fv_dp_sorp_small_nobalance.yaml
+- file: 07_y_branch.yaml

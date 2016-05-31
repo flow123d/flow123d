@@ -7,3 +7,4 @@ test_cases:
 - file: 02_dg_dp.yaml
 - file: 03_dg_dp_sorp_small_output_multi_fields.yaml
 - file: 04_dg_dp_sorp_small.yaml
+- file: 05_y_branch.yaml
