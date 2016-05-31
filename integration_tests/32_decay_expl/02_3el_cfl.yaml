@@ -1,16 +1,13 @@
 flow123d_version: 1.8.9
 problem: !Coupling_Sequential
-  description: Test12 - narrow radioaoctive decay chain, with transport switched enabled
-    but with zero pressure gradient
+  description: Test12 - demonstration of unstability of reaction solver without CFL condition
+    (exact solution (50+5*exp(-55*t))/55)
   mesh:
-    mesh_file: ./input/sit_decay.msh
+    mesh_file: ../00_mesh/sit_decay.msh
   flow_equation: !Flow_Darcy_MH
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-07
     input_fields:
       - rid: 1
-        anisotropy: 0.01
+        anisotropy: 1
       - region: BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: 0
@@ -25,49 +22,37 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: true
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
         - rid: 1
           init_conc:
-            - 0.01
-            - 0.02
-            - 0.03
-            - 0.04
-            - 0.05
-            - 0.06
+            - 1
+            - 0
         - region: BOUNDARY
           bc_conc:
-            - 0.01
-            - 0.02
-            - 0.03
-            - 0.04
-            - 0.05
-            - 0.06
+            - 1
+            - 0
     output_stream: 
       file: ./transport_decay.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.5
-      name: transport_output_stream
+      time_step: 2e-0
     substances:
       - A
       - B
-      - C
-      - D
-      - E
-      - F
     time:
       end_time: 10.0
     reaction_term: !RadioactiveDecay
       decays:
-        - radionuclide: D
-          half_life: 2.5
-          products:
-            - F
-        - radionuclide: F
-          half_life: 2.5
-          products:
-            - B
+        - radionuclide: A
+          half_life: 1.38e-1 # ~ ln(2)/5 -> k=5
+          products: B
+        - radionuclide: B
+          half_life: 1.38e-2 # ~ ln(2)/50 -> k=50
+          products: A
     balance:
       cumulative: true
