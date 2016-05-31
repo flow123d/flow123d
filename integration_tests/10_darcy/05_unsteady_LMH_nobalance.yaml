@@ -6,7 +6,7 @@ problem: !Coupling_Sequential
     min_dt: 0.01
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
-    mesh_file: ${INPUT}/test10.msh
+    mesh_file: ../00_mesh/square_2d.msh
   flow_equation: !Flow_Richards_LMH
     input_fields:
       - region: ALL

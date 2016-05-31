@@ -6,7 +6,7 @@ problem: !Coupling_Sequential
     min_dt: 0.01
   description: Test10 - Unsteady flow in 2D, Mixed Hybrid method
   mesh:
-    mesh_file: ${INPUT}/test10.msh
+    mesh_file: ../00_mesh/square_2d.msh
   flow_equation: !Flow_Darcy_MH
     input_fields:
       - region: ALL
@@ -32,11 +32,12 @@ problem: !Coupling_Sequential
         file: ./test10.pvd
         format: !vtk
           variant: ascii
-        time_step: 0.25
+        time_step: 0.1
         name: flow_output_stream
       output_fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: false
+    balance:
+      cumulative: true
     time: *anchor2
