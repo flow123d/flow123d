@@ -8,3 +8,4 @@ test_cases:
 - file: 03_piezo.yaml
 - file: 04_nobalance.yaml
 - file: 05_bddc.yaml
+- file: 06_source.yaml
