@@ -3,5 +3,10 @@ common_config:
   memory_limit: 1000
 
 test_cases:
-- file: 01_21d.yaml
-- file: 02_32d.yaml
+- file: 01_gmsh.yaml
+- file: 02_vtk.yaml
+- file: 03_piezo.yaml
+- file: 04_nobalance.yaml
+- file: 05_bddc.yaml
+- file: 06_square.yaml
+- file: 07_cube.yaml
