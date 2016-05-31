@@ -140,9 +140,6 @@ public:
 	Assert& _FEAL_ASSERT_A; ///< clever macro A
 	Assert& _FEAL_ASSERT_B; ///< clever macro B
 
-	/// Check count of used FEAL_ASSERT_DBG macros (can't be greater than value of \p assert_dbg_limit)
-	static void check_assert_dbg_count();
-
 	/// Adds name and value of variable
 	template <typename T>
 	Assert& add_value(T var_current_val, const char* var_name) {
@@ -164,9 +161,8 @@ public:
 	void warning(std::string warning_msg = "");
 
 protected:
-	static const int assert_dbg_limit = 100;  ///< Limit of used FEAL_ASSERT_DBG macros
-    Exc_assert exception_;                    ///< Exception object
-	bool thrown_;                             ///< Flag marked if Assert thrown error, warning, ...
+    Exc_assert exception_;               ///< Exception object
+	bool thrown_;                        ///< Flag marked if Assert thrown error, warning, ...
 
 };
 
@@ -285,7 +281,6 @@ if ( !(expr) ) \
 /// Definition of assert for debug mode only
 #ifdef FLOW123D_DEBUG_ASSERTS
 #define FEAL_ASSERT_DBG( expr) \
-feal::Assert::check_assert_dbg_count(); \
 if ( !(expr) ) \
   feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
 #else
