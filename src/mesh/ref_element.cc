@@ -262,7 +262,7 @@ inline unsigned int RefElement<dim>::oposite_node(unsigned int sid)
 template<unsigned int dim>
 unsigned int RefElement<dim>::normal_orientation(unsigned int sid)
 {
-    ASSERT(sid < n_sides, "Side number is out of range!");
+    OLD_ASSERT(sid < n_sides, "Side number is out of range!");
 
     return sid % 2;
 }

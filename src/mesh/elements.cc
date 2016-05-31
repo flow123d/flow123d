@@ -114,7 +114,7 @@ double Element::measure() const {
 
 double Element::tetrahedron_jacobian() const
 {
-    ASSERT(dim_ == 3, "Cannot provide Jacobian for dimension other than 3.");
+    OLD_ASSERT(dim_ == 3, "Cannot provide Jacobian for dimension other than 3.");
     return arma::dot( arma::cross(*node[1] - *node[0], 
                                   *node[2] - *node[0]),
                     *node[3] - *node[0]
