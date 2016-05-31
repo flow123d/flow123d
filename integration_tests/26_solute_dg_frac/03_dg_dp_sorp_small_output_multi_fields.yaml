@@ -1,10 +1,9 @@
+# problem
 flow123d_version: 1.8.9
 problem: !Coupling_Sequential
-  description: 'Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption,
-    sources).'
+  description: Transport 1D-2D, (convection, dual porosity, sorption)
   mesh:
-    mesh_file: ./input/mesh_with_boundary.msh
-  # mesh
+    mesh_file: ../00_mesh/square_frac_boundary.msh
     regions:
       - !Union
         name: 1d_domain
@@ -12,20 +11,13 @@ problem: !Coupling_Sequential
           - 1d_upper
           - 1d_lower
           - 1d_left_branch
-  # mesh
   flow_equation: !Flow_Darcy_MH
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
-    # primary equation
     input_fields:
       - region: 1d_domain
-        conductivity: 1.0e-06
-        cross_section: 0.04
-        sigma: 0.9
+        conductivity: 10
+        sigma: 0.05
       - region: 2d
-        conductivity: 1.0e-07
+        conductivity: 1
       - region: BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
@@ -35,36 +27,38 @@ problem: !Coupling_Sequential
         file: flow.pvd
         format: !vtk
           variant: ascii
-      output_fields:
-        - pressure_p0
-        - pressure_p1
-        - velocity_p0
-    balance: false
+      output_fields: []
+    balance: true
+    nonlinear_solver:
+        linear_solver: !Petsc
+            a_tol: 1.0e-12
+            r_tol: 1.0e-12
   # primary equation
   solute_equation: !Coupling_OperatorSplitting
-    transport: !Solute_Advection_FV
+    transport: !Solute_AdvectionDiffusion_DG
+      output_fields:
+        - conc
+        - init_conc
+        - disp_l
+        - disp_t
+        - diff_m
       input_fields:
         - region: ALL
-          init_conc: 0
+          init_conc:
+          - 0
+          - 0.5
+          diff_m:
+          - 0
+          - 1e-2
           porosity: 0.25
-          sources_density:
-            - 0.25
-            - 0
-          # source is in the whole volume (l+s) -> times porosity
         - region: BOUNDARY
-          bc_conc:
-            - 0.0
-            - 1.0
+          bc_conc: 1.0
+      solver: !Petsc
+        a_tol: 1e-12
+        r_tol: 1e-12
     substances:
-      - name: age
-        molar_mass: 0.018
-      # water age
-      - name: U235
-        molar_mass: 0.235
-      # uranium 235
-    time:
-      end_time: 1000000.0
-    balance: false
+      - age
+      - U235
     reaction_term: !DualPorosity
       input_fields:
         - region: ALL
@@ -75,10 +69,12 @@ problem: !Coupling_Sequential
           init_conc_immobile:
             - 0.0
             - 0.0
-      output_fields: []
+      output_fields:
+        - diffusion_rate_immobile
+        - init_conc_immobile
+        - conc_immobile
       reaction_mobile: !SorptionMobile
-        solvent_density: 1000.0
-        # water
+        solvent_density: 1.0
         substances:
           - age
           - U235
@@ -87,21 +83,22 @@ problem: !Coupling_Sequential
           - 1.0
         input_fields: &anchor1
           - region: ALL
-            rock_density: 2800.0
-            # granit
+            rock_density: 1.0
             sorption_type:
-              - none
+              - linear
               - freundlich
-            isotherm_mult:
-              - 0
-              - 0.68
+            isotherm_mult: 0.02
             isotherm_other:
               - 0
-              - 1.0
-        output_fields: []
+              - 0.5
+        output_fields:
+          - sorption_type
+          - isotherm_mult
+          - isotherm_other
+          - init_conc_solid
+          - conc_solid
       reaction_immobile: !SorptionImmobile
-        solvent_density: 1000.0
-        # water
+        solvent_density: 1.0
         substances:
           - age
           - U235
@@ -109,11 +106,21 @@ problem: !Coupling_Sequential
           - 1.0
           - 1.0
         input_fields: *anchor1
-        output_fields: []
+        output_fields:
+          - sorption_type
+          - isotherm_mult
+          - isotherm_other
+          - init_conc_solid
+          - conc_immobile_solid
     output_stream:
       file: transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 500000.0
+      time_step: 0.1
+    time:
+      end_time: 1.0
+    
+    balance:
+      cumulative: true
   # solute_equation
 # problem

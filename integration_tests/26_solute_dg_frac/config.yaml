@@ -5,3 +5,5 @@ common_config:
 test_cases:
 - file: 01_vtk.yaml
 - file: 02_dg_dp.yaml
+- file: 03_dg_dp_sorp_small_output_multi_fields.yaml
+- file: 04_dg_dp_sorp_small.yaml

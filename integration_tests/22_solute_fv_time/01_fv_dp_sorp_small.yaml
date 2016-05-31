@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: 'Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption,
     sources).'
   mesh:
-    mesh_file: ./input/mesh_with_boundary.msh
+    mesh_file: ../00_mesh/square_frac_boundary.msh
   # mesh
     regions:
       - !Union

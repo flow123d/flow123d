@@ -5,3 +5,7 @@ common_config:
 test_cases:
 - file: 01_fv_dp_sorp_gmsh.yaml
 - file: 02_fv_dp_sorp_vtk.yaml
+- file: 03_fv_dp_sorp_small.yaml
+- file: 04_fv_dp_sorp_small_output_input_fields.yaml
+- file: 05_fv_dp_sorp_small_output_multi_fields.yaml
+- file: 06_fv_dp_sorp_small_nobalance.yaml
