@@ -103,6 +103,17 @@ class YamlConfig(object):
         self.include = []
         self.exclude = []
 
+    def update(self, **kwargs):
+        """
+        Updates all test_case values
+        :param kwargs:
+        :return:
+        """
+        for k,v in kwargs.items():
+            if v:
+                for test_case in self.test_cases:
+                    setattr(test_case, k, v)
+
     def parse(self):
         # update common config using global values
         self.common_config = self._get(('common_config', 'commons'), {})

@@ -6,7 +6,6 @@ from __future__ import absolute_import
 import pathfix
 # ----------------------------------------------
 from scripts.core.base import Paths
-from scripts.core.threads import BinExecutor
 from utils.argparser import ArgParser
 from utils.duration import Duration
 
@@ -83,12 +82,14 @@ parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder=
 # ----------------------------------------------
 
 if __name__ == '__main__':
+    from scripts.core.threads import BinExecutor
     from scripts.runtest_module import do_work
-
-    # for debug only set dir to where script should be
+    #
+    # # for debug only set dir to where script should be
     Paths.base_dir(__file__)
-    # Paths.base_dir('/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d/bin/python/foo')
-
+    Paths.base_dir('/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d/bin/python/foo')
+    # Paths.base_dir(r'c:\cygwin64\home\Jan\flow\bin\python\testrun.py')
+    #
     # run work
     BinExecutor.register_sigint()
     do_work(parser)

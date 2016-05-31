@@ -554,6 +554,36 @@ endif()
 # optionaly we use Python interface
 if (USE_PYTHON)
     message(STATUS "\n ======================================================= ")
+    
+    # find Python interpret
+    find_package(PythonInterp 2.7)
+    if (PYTHONINTERP_FOUND)
+        set(PYTHON_3RD_PARTY ${CMAKE_BINARY_DIR}/lib/flow123d/site-packages)
+        set(PYTHON_RUNTEST   ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
+        
+        # install pip libs if folder does not exists
+        # TODO: better check of installed libs
+        if (NOT EXISTS ${CMAKE_BINARY_DIR})
+            # Install 3rd party libs using pip
+            message(STATUS "Installing requirements.txt with pip")
+            execute_process(
+              COMMAND pip install --target=${PYTHON_3RD_PARTY} -r ${CMAKE_SOURCE_DIR}/bin/python/requirements.txt
+            )
+        endif()
+        
+        # create Python runtest wrapper in src/bin
+        message(STATUS "Creating python runtest wrapper")
+        set(PYTHON_RUNTEST_WRAPPER "${CMAKE_SOURCE_DIR}/bin/runtest.sh")
+        configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${PYTHON_RUNTEST_WRAPPER} @ONLY)
+        
+        # create symlink of python runtest wrapper in tests
+        message(STATUS "Creating runtest wrapper symlink")
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E create_symlink ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
+        )
+    endif()
+    
+    # find Python libs
     find_package(PythonLibs 2.7)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
@@ -572,18 +602,6 @@ if (USE_PYTHON)
 
         # set extra python module path in src directory, if case PYTHON_COPY if OFF
         set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
-        
-        # Install 3rd party libs using pip
-        message(STATUS "Installing requirements.txt with pip")
-        execute_process(
-          COMMAND pip install --target=${CMAKE_BINARY_DIR}/lib/flow123d/site-packages -r ${CMAKE_SOURCE_DIR}/bin/python/requirements.txt
-        )
-        
-        # create symlink in tests
-        execute_process(
-          COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/bin/python/runtest.py ${CMAKE_SOURCE_DIR}/tests/runtest.py
-        )
-        
         if (PYTHON_COPY)
             set(PY_BUILD_PREFIX "${CMAKE_BINARY_DIR}")
             set(PYTHON_EXTRA_MODULES_PATH "${PY_BUILD_PREFIX}/lib/flow123d")
@@ -971,7 +989,9 @@ if (CYGWIN)
     if(PY_WRAPPER_PATHS_WIN)
         set(PY_WRAPPER_PATHS_WIN "..${PY_WRAPPER_PATHS_WIN}")
     endif()
+    # configure wrapper files
     configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.bat @ONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_runtest_template ${CMAKE_BINARY_DIR}/bin/runtest.bat @ONLY)
 else()
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
     install(DIRECTORY build_tree/lib/            
@@ -979,8 +999,9 @@ else()
         PATTERN lib/python* EXCLUDE
         PATTERN *.a EXCLUDE
         )
-    # configure wrapper file
+    # configure wrapper files
     configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh @ONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_BINARY_DIR}/bin/runtest.sh @ONLY)
 endif()        
 
 # install python modules and system libs
@@ -998,16 +1019,18 @@ endif()
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
 if (CYGWIN)
-    install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin.exe"
+    install(PROGRAMS    build_tree/bin/flow123d             RENAME "flow123d.bin.exe"
             DESTINATION bin/)
     install(PROGRAMS    build_tree/bin/flow123d_wrapper.bat RENAME "flow123d.bat"
             DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/runtest.bat          DESTINATION bin/)
 else()
-    install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin"
+    install(PROGRAMS    build_tree/bin/flow123d             RENAME "flow123d.bin"
             DESTINATION bin/)
-    install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d"
+    install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh  RENAME "flow123d"
             DESTINATION bin/)
-    install(PROGRAMS    build_tree/bin/ld-linux-loader.so  DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/runtest.sh          DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/ld-linux-loader.so   DESTINATION bin/)
 endif()
 
 

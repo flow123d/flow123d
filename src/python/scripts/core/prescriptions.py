@@ -17,7 +17,7 @@ class TestPrescription(object):
         """
         self.test_case = test_case
         self.proc_value = proc_value
-        self.filename = filename
+        self.filename = Paths.join(filename)
         self.printer = Printer(Printer.LEVEL_KEY)
 
         if not self.filename:
