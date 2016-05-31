@@ -2,7 +2,7 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
   mesh:
-    mesh_file: ./input/compatible.msh
+    mesh_file: ../00_mesh/rectangle_frac_comp.msh
     regions:
       - !Union
         name: subset
@@ -31,22 +31,20 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
-    balance: true
+    balance:
+      format: gnuplot
     output:
       output_stream:
-        file: ./test2.pvd
-        format: !vtk
+        file: ./test2.msh
+        format: !gmsh
           variant: ascii
+        name: flow_output_stream
       output_fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-        - region_id
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
-      output_fields:
-        - conc
-        - region_id
       input_fields:
         - region: .sides
           bc_conc: !FieldFormula
@@ -55,10 +53,11 @@ problem: !Coupling_Sequential
           init_conc: 0
           porosity: 0.25
     output_stream:
-      file: ./transport.pvd
-      format: !vtk
+      file: ./transport.msh
+      format: !gmsh
         variant: ascii
       time_step: 0.5
+      name: transport_output_stream
     substances:
       - A
       - B
@@ -66,6 +65,7 @@ problem: !Coupling_Sequential
       end_time: 5.0
     balance:
       cumulative: true
+      format: gnuplot
     reaction_term: !DualPorosity
       input_fields:
         - region: subset
@@ -85,7 +85,7 @@ problem: !Coupling_Sequential
         solubility:
           - 1.0
           - 1.0
-        input_fields:
+        input_fields: &anchor1
           - region: subset
             rock_density: 1.0
             sorption_type:
@@ -104,14 +104,5 @@ problem: !Coupling_Sequential
         solubility:
           - 1.0
           - 1.0
-        input_fields:
-          - region: subset
-            rock_density: 1.0
-            sorption_type:
-              - linear
-              - freundlich
-            isotherm_mult: 0.02
-            isotherm_other:
-              - 0
-              - 0.5
+        input_fields: *anchor1
         output_fields: []

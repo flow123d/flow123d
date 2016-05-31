@@ -2,7 +2,7 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Test2 - Transport implicit 1D-2D (convection, dispersion)
   mesh:
-    mesh_file: ./input/compatible.msh
+    mesh_file: ../00_mesh/rectangle_frac_comp.msh
     regions:
       - !Union
         name: subset
