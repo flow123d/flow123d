@@ -226,11 +226,12 @@ public:
 	/// Destructor.
 	~Logger();
 
+    
     // treat manipulators
-	Logger & operator<<(Logger & (*pf) (Logger &) )
+/*	Logger & operator<<(Logger & (*pf) (Logger &) )
     {
         return pf(*this);
-    }
+    }*/
 
 private:
 	static const unsigned int cout_mask = 0b00000001;
@@ -269,7 +270,7 @@ private:
 
 	template <class T>
 	friend Logger &operator<<(Logger & log, const T & x);
-
+    friend Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) );
 	friend Logger &operator<<(Logger & log, StreamMask mask);
 };
 
@@ -283,6 +284,15 @@ inline Logger &operator<<(Logger & log, StreamMask mask)
 	return log;
 }
 
+// Necessary to deal with manipulators.
+inline Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) )
+{
+    if ( (log.streams_mask_ & StreamMask::cout_mask())() ) pf(log.cout_stream_);
+    if ( (log.streams_mask_ & StreamMask::cerr_mask())() ) pf(log.cerr_stream_);
+    if ( (log.streams_mask_ & StreamMask::file_mask())() ) pf(log.file_stream_);
+    return log;
+}
+
 
 template <class T>
 Logger &operator<<(Logger & log, const T & x)
@@ -292,6 +302,9 @@ Logger &operator<<(Logger & log, const T & x)
 	if ( (log.streams_mask_ & StreamMask::file_mask())() ) log.file_stream_ << x;
     return log;
 }
+
+
+
 
 
 
