@@ -48,6 +48,20 @@ std::string Exc_assert::what_type_msg() const {
 }
 
 
+std::ostringstream &Exc_assert::form_message(std::ostringstream &converter) const {
+
+	converter << std::endl << std::endl;
+    converter << "--------------------------------------------------------" << std::endl;
+    converter << this->what_type_msg();
+    print_info(converter);
+
+    print_stacktrace(converter);
+    converter << std::endl << "--------------------------------------------------------" << std::endl;
+
+    return converter;
+}
+
+
 /*******************************************************************
  * implementation of Assert
  */
