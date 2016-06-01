@@ -32,12 +32,12 @@ Exc_assert::Exc_assert()
 
 void Exc_assert::print_info(std::ostringstream &out) const
 {
-	out << "\n" << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << "\n";
+	out << std::endl << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << std::endl;
 	out << "> Expression: \'" << expression_ << "\'" << "\n";
 	if (current_val_.size()) {
-		out << "> Values:" << "\n";
+		out << "> Values:" << std::endl;
 		for (auto val : current_val_) {
-			out << "  " << val << "\n";
+			out << "  " << val << std::endl;
 		}
 	}
 }
