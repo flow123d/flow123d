@@ -61,6 +61,21 @@ public:
     /// Getter of singleton instance object
 	static LoggerOptions& get_instance();
 
+    /**
+     * Format double value to time-string in format HH:MM:SS.SSS
+     *
+     * Typical usage is formating of string from difference of two TimePoints.
+     * Example:
+	 @code
+	   TimePoint t1 = TimePoint(); // start time
+	   // ... execution of some code
+	   TimePoint t2 = TimePoint(); // end time
+	   double time_diff = t2-t1;
+	   string formatted_time = TimePoint::format_hh_mm_ss(time_diff);
+	 @endcode
+     */
+    static std::string format_hh_mm_ss(double seconds);
+
     /// Returns number of actual process, if MPI is not supported returns -1.
 	int get_mpi_rank();
 

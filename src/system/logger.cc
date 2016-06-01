@@ -40,6 +40,34 @@ LoggerOptions& LoggerOptions::get_instance() {
 }
 
 
+
+std::string LoggerOptions::format_hh_mm_ss(double seconds) {
+	ASSERT(seconds > -numeric_limits<double>::epsilon())(seconds).error("Formating of negative time.");
+
+	unsigned int h,m,s,ms;
+	unsigned int full_time = (int)(seconds * 1000); // in first step in miliseconds
+
+	ms = full_time % 1000;
+	full_time /= 1000;
+	s = full_time % 60;
+	full_time /= 60;
+	m = full_time % 60;
+	h = full_time / 60;
+
+	stringstream ss;
+	if (h<10) ss << "0";
+	ss << h << ":";
+	if (m<10) ss << "0";
+	ss << m << ":";
+	if (s<10) ss << "0";
+	ss << s << ".";
+	if (ms<100) ss << "0";
+	if (ms<10) ss << "0";
+	ss << ms;
+
+	return ss.str();
+}
+
 LoggerOptions* LoggerOptions::instance_ = new LoggerOptions();
 
 
@@ -135,7 +163,7 @@ Logger::Logger(MsgType type)
 {
 	// set actual time
 	TimePoint t = TimePoint();
-	date_time_ = TimePoint::format_hh_mm_ss(t-Logger::start_time);
+	date_time_ = LoggerOptions::format_hh_mm_ss(t-Logger::start_time);
 
     // set MPI rank
     mpi_rank_ = LoggerOptions::get_instance().get_mpi_rank();
