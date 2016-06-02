@@ -156,6 +156,7 @@ public:
 protected:
 
     void make_output_mesh(Mesh* mesh);
+    void compute_discontinuous_output_mesh();
     
     /**
      * Interpolate given @p field into output discrete @p space and store the values

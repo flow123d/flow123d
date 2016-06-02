@@ -347,6 +347,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     break;
     case CORNER_DATA: {
+        compute_discontinuous_output_mesh();
         unsigned int corner_index=0;
         FOR_ELEMENTS(this->_mesh, ele) {
             FOR_ELEMENT_NODES(ele, i_node) {

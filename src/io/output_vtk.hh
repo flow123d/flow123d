@@ -152,29 +152,9 @@ protected:
     void write_vtk_vtu_head(void);
 
     /**
-     * \brief Write geometry (position of nodes) to the VTK file (.vtu)
+     * \brief Fills the given vector with VTK element types indicators.
      */
-//     void write_vtk_geometry(void);
-
-    /**
-     * \brief Write topology (connection of nodes) to the VTK file (.vtu)
-     */
-//     void write_vtk_topology(void);
     void fill_element_types_vector(std::vector<unsigned int> &data);
-
-    /**
-     * \brief Write geometry (position of nodes) to the VTK file (.vtu)
-     *
-     * This method is used, when discontinuous data are saved to the .vtu file
-     */
-    void write_vtk_discont_geometry(void);
-
-    /**
-     * \brief Write topology (connection of nodes) to the VTK file (.vtu)
-     *
-     * This method is used, when discontinuous data are saved to the .vtu file
-     */
-    void write_vtk_discont_topology(void);
 
     /**
      * Write registered data to output stream using ascii format

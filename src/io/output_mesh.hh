@@ -67,6 +67,11 @@ public:
     std::shared_ptr<MeshData<unsigned int>> connectivity_;
     std::shared_ptr<MeshData<unsigned int>> offsets_;
     
+    void compute_discontinuous_data();
+    std::shared_ptr<MeshData<double>> discont_nodes_;
+    std::shared_ptr<MeshData<unsigned int>> discont_connectivity_;
 private:
-    void fill_vectors(Mesh *mesh);
+    void fill_vectors();
+    bool discont_data_computed_;
+    Mesh *orig_mesh_;
 };

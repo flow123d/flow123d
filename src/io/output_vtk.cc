@@ -183,103 +183,7 @@ void OutputVTK::write_vtk_vtu_head(void)
     file << "<UnstructuredGrid>" << endl;
 }
 
-// void OutputVTK::write_vtk_geometry(void)
-// {
-//     Mesh *mesh = this->_mesh;
-//     ofstream &file = this->_data_file;
-// 
-//     int tmp;
-// 
-//     /* Write Points begin*/
-//     file << "<Points>" << endl;
-//     /* Write DataArray begin */
-//     file << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
-//     /* Write own coordinates */
-//     tmp = 0;
-//     /* Set floating point precision */
-//     file.precision(std::numeric_limits<double>::digits10);
-//     FOR_NODES(mesh, node) {
-//         node->aux = tmp;   /* store index in the auxiliary variable */
-// 
-//         file << scientific << node->getX() << " ";
-//         file << scientific << node->getY() << " ";
-//         file << scientific << node->getZ() << " ";
-// 
-//         tmp++;
-//     }
-//     /* Write DataArray end */
-//     file << endl << "</DataArray>" << endl;
-//     /* Write Points end*/
-//     file << "</Points>" << endl;
-// }
 
-// void OutputVTK::write_vtk_topology(void)
-// {
-//     Mesh *mesh = this->_mesh;
-//     ofstream &file = this->_data_file;
-// 
-//     Node* node;
-//     //ElementIter ele;
-//     unsigned int li;
-//     int tmp;
-// 
-//     /* Write Cells begin*/
-//     file << "<Cells>" << endl;
-//     /* Write DataArray begin */
-//     file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << endl;
-//     /* Write own coordinates */
-//     FOR_ELEMENTS(mesh, ele) {
-//         FOR_ELEMENT_NODES(ele, li) {
-//             node = ele->node[li];
-//             file << node->aux << " ";   /* Write connectivity */
-//         }
-//     }
-//     /* Write DataArray end */
-//     file << endl << "</DataArray>" << endl;
-// 
-//     /* Write DataArray begin */
-//     file << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
-//     /* Write number of nodes for each element */
-//     tmp = 0;
-//     FOR_ELEMENTS(mesh, ele) {
-//         switch(ele->dim()) {
-//         case 1:
-//             tmp += VTK_LINE_SIZE;
-//             break;
-//         case 2:
-//             tmp += VTK_TRIANGLE_SIZE;
-//             break;
-//         case 3:
-//             tmp += VTK_TETRA_SIZE;
-//             break;
-//         }
-//         file << tmp << " ";
-//     }
-//     /* Write DataArray end */
-//     file << endl << "</DataArray>" << endl;
-// 
-//     /* Write DataArray begin */
-//     file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
-//     /* Write type of nodes for each element */
-//     FOR_ELEMENTS(mesh, ele) {
-//         switch(ele->dim()) {
-//         case 1:
-//             file << (int)VTK_LINE << " ";
-//             break;
-//         case 2:
-//             file << (int)VTK_TRIANGLE << " ";
-//             break;
-//         case 3:
-//             file << (int)VTK_TETRA << " ";
-//             break;
-//         }
-//     }
-//     /* Write DataArray end */
-//     file << endl << "</DataArray>" << endl;
-// 
-//     /* Write Cells end*/
-//     file << "</Cells>" << endl;
-// }
 
 void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
 {    
@@ -320,111 +224,16 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
 }
 
 
-void OutputVTK::write_vtk_discont_geometry(void)
-{
-    Mesh *mesh = this->_mesh;
-    ofstream &file = this->_data_file;
-
-    NodeIter node;
-    unsigned int li;
-
-    /* Write Points begin*/
-    file << "<Points>" << endl;
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
-    /* Set floating point precision */
-    file.precision(std::numeric_limits<double>::digits10);
-    FOR_ELEMENTS(mesh, ele) {
-        FOR_ELEMENT_NODES(ele, li) {
-            node = ele->node[li];
-
-            file << scientific << node->getX() << " ";
-            file << scientific << node->getY() << " ";
-            file << scientific << node->getZ() << " ";
-        }
-    }
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-    /* Write Points end*/
-    file << "</Points>" << endl;
-}
-
-void OutputVTK::write_vtk_discont_topology(void)
-{
-    Mesh *mesh = this->_mesh;
-    ofstream &file = this->_data_file;
-
-    //Node* node;
-    //ElementIter ele;
-    unsigned int li, tmp;
-
-    /* Write Cells begin*/
-    file << "<Cells>" << endl;
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << endl;
-    /* Write own coordinates */
-    tmp = 0;
-    FOR_ELEMENTS(mesh, ele) {
-        FOR_ELEMENT_NODES(ele, li) {
-            file << tmp << " ";   /* Write connectivity */
-            tmp++;
-        }
-    }
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
-    /* Write number of nodes for each element */
-    tmp = 0;
-    FOR_ELEMENTS(mesh, ele) {
-        switch(ele->dim()) {
-        case 1:
-            tmp += VTK_LINE_SIZE;
-            break;
-        case 2:
-            tmp += VTK_TRIANGLE_SIZE;
-            break;
-        case 3:
-            tmp += VTK_TETRA_SIZE;
-            break;
-        }
-        file << tmp << " ";
-    }
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-
-    /* Write DataArray begin */
-    file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
-    /* Write type of nodes for each element */
-    FOR_ELEMENTS(mesh, ele) {
-        switch(ele->dim()) {
-        case 1:
-            file << (int)VTK_LINE << " ";
-            break;
-        case 2:
-            file << (int)VTK_TRIANGLE << " ";
-            break;
-        case 3:
-            file << (int)VTK_TETRA << " ";
-            break;
-        }
-    }
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-
-    /* Write Cells end*/
-    file << "</Cells>" << endl;
-}
-
-
 
 void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKValueType type)
 {
     ofstream &file = this->_data_file;
 
-    file    << "<DataArray type=\"" << vtk_value_type_map(type) << "\" "
-            << "Name=\"" << output_data->output_field_name <<"\" ";
+    file    << "<DataArray type=\"" << vtk_value_type_map(type) << "\" ";
+    // possibly write name
+    if( ! output_data->output_field_name.empty()) 
+        file << "Name=\"" << output_data->output_field_name <<"\" ";
+    // write number of components
     if (output_data->n_elem_ > 1)
     {
         file
@@ -445,27 +254,8 @@ void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKV
 
 void OutputVTK::write_vtk_data_ascii(OutputDataFieldVec &output_data_vec)
 {
-    ofstream &file = this->_data_file;
-
     for(OutputDataPtr data :  output_data_vec)
-    {
-        file 	<< "<DataArray type=\"Float64\" "
-        		<< "Name=\"" << data->output_field_name <<"\" ";
-        if (data->n_elem_ > 1)
-        {
-        	file
-        		<< "NumberOfComponents=\"" << data->n_elem_ << "\" ";
-        }
-        file	<< "format=\"ascii\">"
-                << endl;
-
-        /* Set precision to max */
-        file.precision(std::numeric_limits<double>::digits10);
-
-        data->print_all(file);
-
-        file << "\n</DataArray>" << endl;
-    }
+        write_vtk_data_ascii(data, VTK_FLOAT64);
 }
 
 
@@ -563,7 +353,6 @@ void OutputVTK::write_vtk_vtu(void)
         /* Write Piece begin */
         file << "<Piece NumberOfPoints=\"" << mesh->n_nodes() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
-        DBGMSG("new write\n");
         /* Write VTK Geometry */
         file << "<Points>" << endl;
             write_vtk_data_ascii(output_mesh_->nodes_, VTK_FLOAT64 );
@@ -571,7 +360,6 @@ void OutputVTK::write_vtk_vtu(void)
     
         
         /* Write VTK Topology */
-//         this->write_vtk_topology();
         file << "<Cells>" << endl;
             write_vtk_data_ascii(output_mesh_->connectivity_, VTK_INT32 );
             write_vtk_data_ascii(output_mesh_->offsets_, VTK_INT32 );
@@ -594,10 +382,18 @@ void OutputVTK::write_vtk_vtu(void)
         file << "<Piece NumberOfPoints=\"" << mesh->n_corners() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
-        this->write_vtk_discont_geometry();
+        file << "<Points>" << endl;
+            write_vtk_data_ascii(output_mesh_->discont_nodes_, VTK_FLOAT64 );
+        file << "</Points>" << endl;
 
         /* Write VTK Topology */
-        this->write_vtk_discont_topology();
+        file << "<Cells>" << endl;
+            write_vtk_data_ascii(output_mesh_->discont_connectivity_, VTK_INT32 );
+            write_vtk_data_ascii(output_mesh_->offsets_, VTK_INT32 );
+            auto types = std::make_shared<MeshData<unsigned int>>("types");
+            fill_element_types_vector(types->data_);
+            write_vtk_data_ascii(types, VTK_UINT8 );
+        file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
         this->write_vtk_node_data();

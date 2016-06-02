@@ -103,6 +103,13 @@ void OutputTime::make_output_mesh(Mesh* mesh)
 }
 
 
+void OutputTime::compute_discontinuous_output_mesh()
+{
+    ASSERT(output_mesh_).error("Create output mesh first!");
+    output_mesh_->compute_discontinuous_data();
+}
+
+
 
 void OutputTime::fix_main_file_extension(std::string extension)
 {
