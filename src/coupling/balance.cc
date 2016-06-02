@@ -62,7 +62,8 @@ Balance::Balance(const std::string &file_prefix,
 	  	  last_time_(),
 	  	  initial_(true),
 	  	  allocation_done_(false),
-	  	  output_line_counter_(0)
+	  	  output_line_counter_(0),
+		  output_yaml_header_(false)
 {
     OLD_ASSERT_PTR(mesh);
 
@@ -73,7 +74,7 @@ Balance::Balance(const std::string &file_prefix,
 
 	if (rank_ == 0) {
 		// set default value by output_format_
-		std::string default_file_name;
+		std::string default_file_name, yaml_file_name;
 		switch (output_format_)
 		{
 		case txt:
@@ -86,8 +87,11 @@ Balance::Balance(const std::string &file_prefix,
 			default_file_name = file_prefix + "_balance.txt";
 			break;
 		}
+		// set file name of YAML output
+		yaml_file_name = file_prefix + "_balance.yaml";
 
 		output_.open(string(in_rec.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file))).c_str());
+		output_yaml_.open(string(FilePath(yaml_file_name, FilePath::output_file)).c_str());
 	}
 
 }
@@ -95,7 +99,10 @@ Balance::Balance(const std::string &file_prefix,
 
 Balance::~Balance()
 {
-	if (rank_ == 0) output_.close();
+	if (rank_ == 0) {
+		output_.close();
+		output_yaml_.close();
+	}
 	for (unsigned int c=0; c<quantities_.size(); ++c)
 	{
 		MatDestroy(&(region_mass_matrix_[c]));
@@ -753,6 +760,8 @@ void Balance::output(double time)
 		output_legacy(time);
 		break;
 	}
+	// output in YAML format
+	output_yaml(time);
 
 	if (rank_ == 0)
 	{
@@ -1063,13 +1072,14 @@ void Balance::output_yaml(double time)
 	const unsigned int n_quant = quantities_.size();
 
 	// print data header only once
-	if (output_line_counter_==0) {
-		output_ << "column_names: [ flux,  flux_in,  flux_out,  mass,  source,  source_in,  source_out,  flux_increment,  "
+	if (!output_yaml_header_) {
+		output_yaml_ << "column_names: [ flux,  flux_in,  flux_out,  mass,  source,  source_in,  source_out,  flux_increment,  "
 			<< "source_increment,  flux_cumulative,  source_cumulative,  error ]"  << endl;
-		output_ << "data:" << endl;
+		output_yaml_ << "data:" << endl;
+		output_yaml_header_ = true;
 	}
 
-	output_ << setfill(' ');
+	output_yaml_ << setfill(' ');
 
 	// print sources and masses over bulk regions
 	const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
@@ -1077,13 +1087,12 @@ void Balance::output_yaml(double time)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
-			output_ << "  - time: " << time << endl;
-			output_ << setw(4) << "" << "region: " << reg->label() << endl;
-			output_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
-			output_ << setw(4) << "" << "data: " << "[ 0, 0, 0, " << masses_[qi][reg->bulk_idx()] << ", "
-					<< sources_[qi][reg->bulk_idx()] << ", " << sources_in_[qi][reg->bulk_idx()] << ", "
-					<< sources_out_[qi][reg->bulk_idx()] << ", 0, 0, 0, 0, 0 ]" << endl;
-			++output_line_counter_;
+			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << setw(4) << "" << "region: " << reg->label() << endl;
+			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
+			output_yaml_ << setw(4) << "" << "data: " << "[ 0, 0, 0, " << masses_[qi][reg->bulk_idx()] << ", "
+						 << sources_[qi][reg->bulk_idx()] << ", " << sources_in_[qi][reg->bulk_idx()] << ", "
+						 << sources_out_[qi][reg->bulk_idx()] << ", 0, 0, 0, 0, 0 ]" << endl;
 		}
 	}
 
@@ -1092,13 +1101,12 @@ void Balance::output_yaml(double time)
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++) {
-			output_ << "  - time: " << time << endl;
-			output_ << setw(4) << "" << "region: " << reg->label() << endl;
-			output_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
-			output_ << setw(4) << "" << "data: " << "[ " << fluxes_[qi][reg->boundary_idx()] << ", "
-					<< fluxes_in_[qi][reg->boundary_idx()] << ", " << fluxes_out_[qi][reg->boundary_idx()]
-					<< ", 0, 0, 0, 0, 0, 0, 0, 0, 0 ]" << endl;
-			++output_line_counter_;
+			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << setw(4) << "" << "region: " << reg->label() << endl;
+			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
+			output_yaml_ << setw(4) << "" << "data: " << "[ " << fluxes_[qi][reg->boundary_idx()] << ", "
+					     << fluxes_in_[qi][reg->boundary_idx()] << ", " << fluxes_out_[qi][reg->boundary_idx()]
+					     << ", 0, 0, 0, 0, 0, 0, 0, 0, 0 ]" << endl;
 		}
 	}
 
@@ -1107,17 +1115,16 @@ void Balance::output_yaml(double time)
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
-			output_ << "  - time: " << time << endl;
-			output_ << setw(4) << "" << "region: ALL" << endl;
-			output_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
-			output_ << setw(4) << "" << "data: " << "[ " << sum_fluxes_[qi] << ", " <<
-					sum_fluxes_in_[qi] << ", " << sum_fluxes_out_[qi] << ", " <<
-					sum_masses_[qi] << ", " << sum_sources_[qi] << ", " <<
-					sum_sources_in_[qi] << ", " << sum_sources_out_[qi] << ", " <<
-					increment_fluxes_[qi] << ", " << increment_sources_[qi] << ", " <<
-					integrated_fluxes_[qi] << ", " << integrated_sources_[qi] << ", " <<
-					error << " ]" << endl;
-			++output_line_counter_;
+			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << setw(4) << "" << "region: ALL" << endl;
+			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
+			output_yaml_ << setw(4) << "" << "data: " << "[ " << sum_fluxes_[qi] << ", "
+					     << sum_fluxes_in_[qi] << ", " << sum_fluxes_out_[qi] << ", "
+						 << sum_masses_[qi] << ", " << sum_sources_[qi] << ", "
+						 << sum_sources_in_[qi] << ", " << sum_sources_out_[qi] << ", "
+						 << increment_fluxes_[qi] << ", " << increment_sources_[qi] << ", "
+						 << integrated_fluxes_[qi] << ", " << integrated_sources_[qi] << ", "
+						 << error << " ]" << endl;
 		}
 	}
 }
