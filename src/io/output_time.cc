@@ -23,6 +23,7 @@
 #include "output_time.impl.hh"
 #include "output_vtk.hh"
 #include "output_msh.hh"
+#include "output_mesh.hh"
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(vtk)
@@ -59,18 +60,17 @@ Abstract & OutputTime::get_input_format_type() {
 
 
 OutputTime::OutputTime()
-: _mesh(nullptr)
+: _mesh(nullptr), output_mesh_(nullptr)
 {}
 
 
 
 OutputTime::OutputTime(const Input::Record &in_rec)
-: input_record_(in_rec)
+: input_record_(in_rec), _mesh(nullptr), output_mesh_(nullptr)
 {
 
     this->_base_filename = in_rec.val<FilePath>("file");
     this->current_step = 0;
-    this->_mesh = NULL;
     this->time = -1.0;
     this->write_time = -1.0;
 
@@ -91,12 +91,16 @@ OutputTime::~OutputTime(void)
 
     if (this->_base_file.is_open()) this->_base_file.close();
 
-     xprintf(MsgLog, "O.K.\n");
+    if(output_mesh_ != nullptr) delete output_mesh_;
+    xprintf(MsgLog, "O.K.\n");
 }
 
 
 
-
+void OutputTime::make_output_mesh(Mesh* mesh)
+{
+    output_mesh_ = new OutputMesh(mesh);
+}
 
 
 

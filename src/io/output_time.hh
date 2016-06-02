@@ -31,6 +31,7 @@ class Field;
 template <int spacedim, class Value>
 class MultiField;
 class TimeGovernor;
+class OutputMesh;
 
 /**
  * \brief The class for outputting data during time.
@@ -92,7 +93,7 @@ public:
      * record in configuration file.
      */
     static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
-
+    
     /**
      * \brief Generic method for registering output data stored in MultiField
      *
@@ -154,6 +155,8 @@ public:
 
 protected:
 
+    void make_output_mesh(Mesh* mesh);
+    
     /**
      * Interpolate given @p field into output discrete @p space and store the values
      * into private storage for postponed output.
@@ -230,6 +233,8 @@ protected:
      * Cached pointer at mesh used by this output stream
      */
     Mesh *_mesh;
+    
+    OutputMesh *output_mesh_;
 };
 
 

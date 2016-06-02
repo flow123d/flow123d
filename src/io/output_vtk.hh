@@ -132,6 +132,17 @@ protected:
         VTK_TETRA_SIZE = 4
     } VTKElemSize;
 
+    typedef enum { VTK_INT8, VTK_UINT8, VTK_INT16, VTK_UINT16, VTK_INT32, VTK_UINT32, 
+                   VTK_FLOAT32, VTK_FLOAT64
+    } VTKValueType;
+
+    static const std::string vtk_value_type_map(VTKValueType t) {
+        static const std::vector<std::string> types = {
+            "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32",
+            "Float32","Float64"};
+        return types[t];
+    };
+
     /// Registrar of class to factory
     static const int registrar;
 
@@ -143,12 +154,13 @@ protected:
     /**
      * \brief Write geometry (position of nodes) to the VTK file (.vtu)
      */
-    void write_vtk_geometry(void);
+//     void write_vtk_geometry(void);
 
     /**
      * \brief Write topology (connection of nodes) to the VTK file (.vtu)
      */
-    void write_vtk_topology(void);
+//     void write_vtk_topology(void);
+    void fill_element_types_vector(std::vector<unsigned int> &data);
 
     /**
      * \brief Write geometry (position of nodes) to the VTK file (.vtu)
@@ -169,6 +181,11 @@ protected:
      */
     void write_vtk_data_ascii(OutputDataFieldVec &output_data_map);
 
+    /**
+     * Write registered data to output stream using ascii format
+     */
+    void write_vtk_data_ascii(OutputDataPtr output_data, VTKValueType type);
+    
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
      * Output is done into stream @p file.
