@@ -363,7 +363,7 @@ void Application::after_run() {
 
 Application::~Application() {
 	// remove balance output files in YAML format if "yaml_balance" option is not set
-	if (!yaml_balance_output_) {
+	if ( (sys_info.my_proc==0) && !yaml_balance_output_ ) {
 		boost::filesystem::path mass_file( string(FilePath("mass_balance.yaml", FilePath::output_file)) );
 		boost::filesystem::path water_file( string(FilePath("water_balance.yaml", FilePath::output_file)) );
 		boost::filesystem::path energy_file( string(FilePath("energy_balance.yaml", FilePath::output_file)) );
