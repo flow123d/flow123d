@@ -217,7 +217,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
                 	delete storage;
-                	storage = make_storage_from_default( it->default_, it->type_ );
+                	storage = make_storage_from_default( it->default_.value(), it->type_ );
                 }
                 storage_array->new_item( it->key_index, storage );
                 p.up();
@@ -228,7 +228,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
                             << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
                 } else if (it->default_.has_value_at_declaration() ) {
                    storage_array->new_item(it->key_index,
-                           make_storage_from_default( it->default_, it->type_ ) );
+                           make_storage_from_default( it->default_.value(), it->type_ ) );
                 } else { // defalut - optional or default at read time
                     // set null
                     storage_array->new_item(it->key_index, new StorageNull() );
@@ -263,7 +263,7 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 				} else if (it->default_.has_value_at_declaration() ) {
 					// other key from default values
 					storage_array->new_item(it->key_index,
-							make_storage_from_default( it->default_, it->type_ ) );
+							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
 					 FEAL_DEBUG_ASSERT(! it->default_.is_obligatory())(it->key_).error("Obligatory key in auto-convertible Record.");
 					 // set null
@@ -448,7 +448,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
                 	delete storage;
-                	storage = make_storage_from_default( it->default_, it->type_ );
+                	storage = make_storage_from_default( it->default_.value(), it->type_ );
                 }
                 storage_array->new_item( it->key_index, storage );
                 p.up();
@@ -464,7 +464,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
 							<< EI_InputType(tuple->desc()) );
                 } else if (it->default_.has_value_at_declaration() ) {
                    storage_array->new_item(it->key_index,
-                           make_storage_from_default( it->default_, it->type_ ) );
+                           make_storage_from_default( it->default_.value(), it->type_ ) );
                 } else { // default - optional or default at read time
                     // set null
                     storage_array->new_item(it->key_index, new StorageNull() );
@@ -625,9 +625,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 
 
 
-StorageBase * ReaderToStorage::make_storage_from_default(const Type::Default &dflt, std::shared_ptr<Type::TypeBase> type) {
+StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, std::shared_ptr<Type::TypeBase> type) {
     try {
     	// default strings must be valid JSON
+    	Type::Default dflt(dflt_str);
     	return dflt.get_storage(type);
 
     } catch (Input::Type::ExcWrongDefault & e) {
