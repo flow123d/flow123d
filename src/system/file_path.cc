@@ -109,9 +109,7 @@ void FilePath::substitute_value() {
     for (std::map<std::string,std::string>::const_iterator it = this->placeholder.begin(); it != this->placeholder.end(); ++it) {
         size_t i = abs_file_path_.find(it->first,0);
         if (i != std::string::npos) {
-            if (it->second == "" ) {
-            	WarningOut() << "Substituting placeholder " << it->first << " with empty value." << std::endl;
-            }
+            ASSERT(it->second != "")(it->first).warning("Substituting placeholder with empty value.");
             abs_file_path_.replace(i, it->first.size(), it->second);
         }
     }
