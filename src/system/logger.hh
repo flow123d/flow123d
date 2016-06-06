@@ -22,7 +22,9 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <vector>
 #include <mpi.h>
+#include "system/time_point.hh"
 
 
 
@@ -59,6 +61,21 @@ public:
     /// Getter of singleton instance object
 	static LoggerOptions& get_instance();
 
+    /**
+     * Format double value to time-string in format HH:MM:SS.SSS
+     *
+     * Typical usage is formating of string from difference of two TimePoints.
+     * Example:
+	 @code
+	   TimePoint t1 = TimePoint(); // start time
+	   // ... execution of some code
+	   TimePoint t2 = TimePoint(); // end time
+	   double time_diff = t2-t1;
+	   string formatted_time = TimePoint::format_hh_mm_ss(time_diff);
+	 @endcode
+     */
+    static std::string format_hh_mm_ss(double seconds);
+
     /// Returns number of actual process, if MPI is not supported returns -1.
 	int get_mpi_rank();
 
@@ -67,6 +84,9 @@ public:
 
     /// Initialize instance object in format 'log_file_base.process.log'.
 	void set_log_file(std::string log_file_base);
+
+    /// Reset MPI rank and log file name
+	void reset();
 
     /// Check if singleton instance object is initialize.
 	inline bool is_init()
@@ -84,7 +104,11 @@ private:
 	/// Stream for storing logger messages to file.
 	std::ofstream file_stream_;
 
-	/// Actual process number
+	/**
+	 * @brief Actual process number
+	 *
+	 * Default value is set to -1 and indicates that MPI is not set
+	 */
 	int mpi_rank_;
 
 	/// Turn off logger file output
@@ -93,57 +117,46 @@ private:
 	/// Flag sign if logger is initialized by set_log_file method
 	bool init_;
 
-	friend class MultiTargetBuf;
+	friend class Logger;
 };
 
 
 /**
- * Helper class
+ * @brief Helper class, store mask specifying streams
  *
- * Manage logger stream that is used for all logger outputs.
+ * Defines masks of all used streams as static methods and allows combining and comparing masks using
+ * the overloaded operators.
  */
-class MultiTargetBuf : public std::stringbuf
-{
+class StreamMask {
 public:
-	/// Enum of types of Logger messages.
-	enum MsgType {
-		warning, message, log, debug
-	};
+	/// Empty constructor
+	StreamMask()
+	: mask_(0) {}
 
-	/// Return string value of given MsgType
-	static const std::string msg_type_string(MsgType msg_type);
+	/// Constructor set \p mask_ value
+	StreamMask(int mask)
+	: mask_(mask) {}
 
-	/// Constructor
-	MultiTargetBuf(MsgType type);
+	/// Predefined mask of std::cout output
+	static StreamMask cout;
 
-	/// Stores values for printing out line number, function, etc
-	void set_context(const char* file_name, const char* function, const int line);
+	/// Predefined mask of std::cerr output
+	static StreamMask cerr;
 
-	/// Set flag every_process_ to true
-	void every_proc();
-protected:
-	virtual int sync();
+	/// Predefined mask of log file output
+	static StreamMask log;
+
+	// Overload & operator
+	StreamMask operator &(const StreamMask &other);
+
+	// Overload | operator
+	StreamMask operator |(const StreamMask &other);
+
+	// Overload () operator
+	int operator()(void);
+
 private:
-	static const unsigned int mask_cout = 0b00000001;
-	static const unsigned int mask_cerr = 0b00000010;
-	static const unsigned int mask_file = 0b00000100;
-
-	/// Set @p streams_mask_ according to the tzpe of message.
-	void set_mask();
-
-	/// Print formated message to given stream if mask corresponds with @p streams_mask_.
-	void print_to_stream(std::ostream& stream, unsigned int mask);
-
-	MsgType type_;                        ///< Type of message.
-	bool every_process_;                  ///< Flag marked if log message is printing for all processes or only for zero process.
-	std::string file_name_;               ///< Actual file.
-	std::string function_;                ///< Actual function.
-	int line_;                            ///< Actual line.
-	std::string date_time_;               ///< Actual date and time.
-	int mpi_rank_;                        ///< Actual process (if MPI is supported)
-	int streams_mask_;                    ///< Mask of logger, specifies streams
-	bool printed_header_;                 ///< Flag marked message header was printed (in first call of sync method)
-	std::ostringstream formated_output_;  ///< Helper stream, store message during printout to individual output
+	int mask_;
 };
 
 
@@ -182,57 +195,133 @@ private:
  * Examples of logger messages formating:
  *
  @code
-   MessageOut() << "End of simulation at time: " << secondary_eq->solved_time() << std::endl;
-   WarningOut() << "Unprocessed key '" << key_name << "' in Record '" << rec->type_name() << "'." << std::endl;
-   LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time << std::endl;
-   DebugOut() << "Calling 'initialize' of empty equation '" << typeid(*this).name() << "'." << std::endl;
+   MessageOut() << "End of simulation at time: " << secondary_eq->solved_time() << "\n";
+   WarningOut() << "Unprocessed key '" << key_name << "' in Record '" << rec->type_name() << "'." << "\n";
+   LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time << "\n";
+   DebugOut() << "Calling 'initialize' of empty equation '" << typeid(*this).name() << "'." << "\n";
  @endcode
  *
- * Logger message can be created by more than one separate message (std::endl
- * manipulator can be used multiple times):
+ * Logger message can be created by more than one line ("\n" can be used multiple
+ * times):
  *
  @code
-   MessageOut() << "Start time: " << this->start_time() << std::endl << "End time: " << this->end_time() << std::endl;
+   MessageOut() << "Start time: " << this->start_time() << "\n" << "End time: " << this->end_time() << "\n";
  @endcode
  *
  * In some cases message can be printed for all processes:
  *
  @code
-   MessageOut().every_proc() << "Size distributed at process: " << distr->lsize() << std::endl;
+   MessageOut().every_proc() << "Size distributed at process: " << distr->lsize() << "\n";
  @endcode
  *
+ * Implementation of Logger does not support manipulator std::endl. Please, use "\n" instead.
  */
 class Logger : public std::ostream {
 public:
+	/// Enum of types of Logger messages.
+	enum MsgType {
+		warning = 0,
+		message = 1,
+		log = 2,
+		debug = 3
+	};
+
+	/// Return string value of given MsgType in full or shorter format (e.g. "WARNING" of "Wrn")
+	static const std::string msg_type_string(MsgType msg_type, bool full_format = true);
+
 	/// Constructor.
-	Logger(MultiTargetBuf::MsgType type);
+	Logger(MsgType type);
 
 	/// Stores values for printing out line number, function, etc
 	Logger& set_context(const char* file_name, const char* function, const int line);
 
-	/// Set flag MultiTargetBuf::every_process_ to true
+	/// Set flag every_process_ to true
 	Logger& every_proc();
 
 	/// Destructor.
 	~Logger();
 
+    // treat manipulators
+	Logger & operator<<(Logger & (*pf) (Logger &) )
+    {
+        return pf(*this);
+    }
+
+private:
+	static TimePoint start_time;
+
+	/// Set @p streams_mask_ according to the type of message.
+	void set_mask();
+
+	/// Print formated message to given screen stream if mask corresponds with @p streams_mask_.
+	void print_to_screen(std::ostream& stream, std::stringstream& scr_stream, StreamMask mask);
+
+	/// Print formated message to given file stream if mask corresponds with @p streams_mask_.
+	void print_to_file(std::ofstream& stream, std::stringstream& file_stream, StreamMask mask);
+
+	/// Print header to screen stream, helper method called from \p print_to_screen.
+	bool print_screen_header(std::ostream& stream, std::stringstream& scr_stream);
+
+	/// Print header to file stream, helper method called from \p print_to_file.
+	void print_file_header(std::ofstream& stream, std::stringstream& file_stream);
+
+	std::stringstream cout_stream_;       ///< Store messages printed to cout output stream
+	std::stringstream cerr_stream_;       ///< Store messages printed to cerr output stream
+	std::stringstream file_stream_;       ///< Store messages printed to file
+
+	MsgType type_;                        ///< Type of message.
+	bool every_process_;                  ///< Flag marked if log message is printing for all processes or only for zero process.
+	std::string file_name_;               ///< Actual file.
+	std::string function_;                ///< Actual function.
+	int line_;                            ///< Actual line.
+	std::string date_time_;               ///< Actual date and time.
+	int mpi_rank_;                        ///< Actual process (if MPI is supported)
+	StreamMask streams_mask_;             ///< Mask of logger, specifies streams in actual time into which to be written
+	StreamMask full_streams_mask_;        ///< Mask of logger, specifies all streams into which to be written in logger message
+
+	template <class T>
+	friend Logger &operator<<(Logger & log, const T & x);
+
+	friend Logger &operator<<(Logger & log, StreamMask mask);
 };
+
+
+inline Logger &operator<<(Logger & log, StreamMask mask)
+{
+	// set mask
+	log.streams_mask_ = mask;
+	log.full_streams_mask_ = log.full_streams_mask_ | log.streams_mask_;
+
+	return log;
+}
+
+
+template <class T>
+Logger &operator<<(Logger & log, const T & x)
+{
+	if ( (log.streams_mask_ & StreamMask::cout)() ) log.cout_stream_ << x;
+	if ( (log.streams_mask_ & StreamMask::cerr)() ) log.cerr_stream_ << x;
+	if ( (log.streams_mask_ & StreamMask::log )() ) log.file_stream_ << x;
+    return log;
+}
+
+
 
 /// Internal macro defining universal record of log
 #define _LOG(type) \
 	Logger( type ).set_context( __FILE__, __func__, __LINE__)
 /// Macro defining 'message' record of log
 #define MessageOut() \
-	_LOG( MultiTargetBuf::MsgType::message ).set_context( __FILE__, __func__, __LINE__)
+	_LOG( Logger::MsgType::message )
 /// Macro defining 'warning' record of log
 #define WarningOut() \
-	_LOG( MultiTargetBuf::MsgType::warning ).set_context( __FILE__, __func__, __LINE__)
+	_LOG( Logger::MsgType::warning )
 /// Macro defining 'log' record of log
 #define LogOut() \
-	_LOG( MultiTargetBuf::MsgType::log ).set_context( __FILE__, __func__, __LINE__)
+	_LOG( Logger::MsgType::log )
 /// Macro defining 'debug' record of log
 #define DebugOut() \
-	_LOG( MultiTargetBuf::MsgType::debug ).set_context( __FILE__, __func__, __LINE__)
+	_LOG( Logger::MsgType::debug )
 
 
 

@@ -23,6 +23,8 @@
  *
  */
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <cppunit/config/SourcePrefix.h>
 #include <cppunit/extensions/HelperMacros.h>
 

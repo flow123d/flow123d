@@ -31,7 +31,7 @@ inline const Ret Record::val(const string &key) const {
     try {
         Type::Record::KeyIter key_it = get_type_key_iterator(key);
 
-        FEAL_DEBUG_ASSERT(key_it->default_.is_obligatory() || key_it->default_.has_value_at_declaration())(key)
+        ASSERT_DBG(key_it->default_.is_obligatory() || key_it->default_.has_value_at_declaration())(key)
         		.error("You have to use Record::find instead.");
 
         Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
@@ -60,7 +60,7 @@ inline const Ret Record::val(const string &key, const Ret default_val ) const {
     try {
         Type::Record::KeyIter key_it = get_type_key_iterator(key);
 
-        FEAL_DEBUG_ASSERT(key_it->default_.has_value_at_read_time())(key).error("You have to use Record::val or Record::find instead.");
+        ASSERT_DBG(key_it->default_.has_value_at_read_time())(key).error("You have to use Record::val or Record::find instead.");
 
         Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
         if (it)
@@ -228,7 +228,7 @@ inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 
     auto new_address =address_.down(index_);
 
-    FEAL_DEBUG_ASSERT(new_address->storage_head() != nullptr).error();
+    ASSERT_PTR(new_address->storage_head()).error();
 
     return internal::TypeDispatch < DispatchType > ::value(*new_address, type_);
 }

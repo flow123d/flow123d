@@ -25,6 +25,13 @@
 #include <iomanip>
 
 
+/// Helper function, use for shorten the code point path
+std::string cmn_prefix( std::string a, std::string b ) {
+    if( a.size() > b.size() ) std::swap(a,b) ;
+    return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
+}
+
+
 /*******************************************************************
  * implementation of LoggerOptions
  */
@@ -34,6 +41,34 @@ LoggerOptions& LoggerOptions::get_instance() {
 }
 
 
+
+std::string LoggerOptions::format_hh_mm_ss(double seconds) {
+	ASSERT(seconds > -numeric_limits<double>::epsilon())(seconds).error("Formating of negative time.");
+
+	unsigned int h,m,s,ms;
+	unsigned int full_time = (int)(seconds * 1000); // in first step in miliseconds
+
+	ms = full_time % 1000;
+	full_time /= 1000;
+	s = full_time % 60;
+	full_time /= 60;
+	m = full_time % 60;
+	h = full_time / 60;
+
+	stringstream ss;
+	if (h<10) ss << "0";
+	ss << h << ":";
+	if (m<10) ss << "0";
+	ss << m << ":";
+	if (s<10) ss << "0";
+	ss << s << ".";
+	if (ms<100) ss << "0";
+	if (ms<10) ss << "0";
+	ss << ms;
+
+	return ss.str();
+}
+
 LoggerOptions* LoggerOptions::instance_ = new LoggerOptions();
 
 
@@ -42,8 +77,10 @@ LoggerOptions::LoggerOptions()
 
 
 LoggerOptions::~LoggerOptions() {
-	file_stream_ << std::flush;
-	file_stream_.close();
+	if (file_stream_.is_open()) {
+		file_stream_ << std::flush;
+		file_stream_.close();
+	}
 }
 
 
@@ -71,7 +108,7 @@ void LoggerOptions::set_log_file(std::string log_file_base) {
 			std::mt19937 gen(rd());
 			std::uniform_int_distribution<int> dis(0, 999999);
 			mpi_rank = dis(gen);
-			WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used." << std::endl;
+			WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used.\n";
 		}
 		std::stringstream file_name;
 		file_name << log_file_base << "." << mpi_rank << ".log";
@@ -81,130 +118,39 @@ void LoggerOptions::set_log_file(std::string log_file_base) {
 }
 
 
+void LoggerOptions::reset() {
+	mpi_rank_ = -1;
+	no_log_ = false;
+	init_ = false;
+	if (file_stream_.is_open()) {
+		file_stream_ << std::flush;
+		file_stream_.close();
+	}
+}
+
+
 /*******************************************************************
- * implementation of MultiTargetBuf
+ * implementation of StreamMask
  */
 
+StreamMask StreamMask::cout = StreamMask(0b00000001);
+StreamMask StreamMask::cerr = StreamMask(0b00000010);
+StreamMask StreamMask::log  = StreamMask(0b00000100);
 
-const std::string MultiTargetBuf::msg_type_string(MsgType msg_type)
+
+StreamMask StreamMask::operator &(const StreamMask &other)
 {
-	switch (msg_type) {
-		case MsgType::warning: return "Warning";
-		case MsgType::message: return "Message";
-		case MsgType::log:     return "Log";
-		default:               return "Debug";
-	}
+   return StreamMask(this->mask_ & other.mask_);
 }
 
-
-MultiTargetBuf::MultiTargetBuf(MsgType type)
-: std::stringbuf(), type_(type), every_process_(false), streams_mask_(0), printed_header_(false)
+StreamMask StreamMask::operator |(const StreamMask &other)
 {
-	// set actual time
-	time_t     now = time(0);
-	char buf[80];
-    strftime(buf, sizeof(buf) - 1, "%b %d %Y %X", localtime(&now));
-    date_time_ = std::string(buf);
-
-    // set MPI rank
-    mpi_rank_ = LoggerOptions::get_instance().get_mpi_rank();
+   return StreamMask(this->mask_ | other.mask_);
 }
 
-
-int MultiTargetBuf::sync() {
-	if (!streams_mask_) return 0;
-
-	std::string segment;
-	bool first_segment = true;
-
-	formated_output_.str("");
-	formated_output_ << std::setfill(' ');
-	if (!printed_header_) {
-		formated_output_ << " -  -" << std::setw(8) << "";
-		formated_output_ << "{ type : \"" << MultiTargetBuf::msg_type_string(type_) << "\", ";
-		formated_output_ << "mpi_rank : \"" << mpi_rank_ << "\", ";
-		formated_output_ << "time : \"" << date_time_ << "\",\n";
-		formated_output_ << std::setw(15) << "" << "code_point : \"";
-		formated_output_ << file_name_ << "(" << line_ << "), " << function_ << "\" }\n";
-	}
-	std::istringstream istream(str());
-	while(std::getline(istream, segment)) {
-		if (first_segment) {
-			formated_output_ << std::setw(4) << "" << "- ";
-			first_segment = false;
-		} else {
-			formated_output_ << std::setw(6) << "";
-		}
-		formated_output_ << segment << "\n";
-	}
-
-	print_to_stream(std::cout, MultiTargetBuf::mask_cout);
-	print_to_stream(std::cerr, MultiTargetBuf::mask_cerr);
-	if (LoggerOptions::get_instance().is_init())
-		print_to_stream(LoggerOptions::get_instance().file_stream_, MultiTargetBuf::mask_file);
-
-	printed_header_ = true;
-	str("");
-	return 0;
-}
-
-
-void MultiTargetBuf::set_context(const char* file_name, const char* function, const int line)
+int StreamMask::operator()(void)
 {
-	this->set_mask();
-	file_name_ = std::string(file_name);
-	function_ = std::string(function);
-	line_ = line;
-}
-
-
-void MultiTargetBuf::every_proc()
-{
-	every_process_ = true;
-	this->set_mask();
-}
-
-
-void MultiTargetBuf::set_mask()
-{
-	if ( !every_process_ && (mpi_rank_ > 0) ) return;
-
-	switch (type_) {
-	case MsgType::warning:
-		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = MultiTargetBuf::mask_cerr;
-		else
-			streams_mask_ = MultiTargetBuf::mask_cerr | MultiTargetBuf::mask_file;
-		break;
-	case MsgType::message:
-		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = MultiTargetBuf::mask_cout;
-		else
-			streams_mask_ = MultiTargetBuf::mask_cout | MultiTargetBuf::mask_file;
-		break;
-#ifndef FLOW123D_DEBUG
-	case MsgType::debug: // for release build
-		streams_mask_ = 0;
-		break;
-#endif
-	default: //MsgType::log + MsgType::debug (only for debug build)
-		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = 0;
-		else if (LoggerOptions::get_instance().is_init())
-			streams_mask_ = MultiTargetBuf::mask_file;
-		else
-			streams_mask_ = MultiTargetBuf::mask_cerr;
-		break;
-	}
-
-}
-
-
-void MultiTargetBuf::print_to_stream(std::ostream& stream, unsigned int mask)
-{
-	if (streams_mask_ & mask) {
-		stream << formated_output_.str() << std::flush;
-	}
+	return mask_;
 }
 
 
@@ -213,34 +159,191 @@ void MultiTargetBuf::print_to_stream(std::ostream& stream, unsigned int mask)
  */
 
 
-Logger::Logger(MultiTargetBuf::MsgType type)
-: std::ostream( new MultiTargetBuf(type) )
-{}
+Logger::Logger(MsgType type)
+: type_(type), every_process_(false)
+{
+	// set actual time
+	TimePoint t = TimePoint();
+	date_time_ = LoggerOptions::format_hh_mm_ss(t-Logger::start_time);
+
+    // set MPI rank
+    mpi_rank_ = LoggerOptions::get_instance().get_mpi_rank();
+}
 
 
 Logger::~Logger()
 {
-	delete rdbuf();
-	rdbuf(NULL);
+	// print output to streams
+	print_to_screen(std::cout, cout_stream_, StreamMask::cout);
+	print_to_screen(std::cerr, cerr_stream_, StreamMask::cerr);
+	if (LoggerOptions::get_instance().is_init())
+		print_to_file(LoggerOptions::get_instance().file_stream_, this->file_stream_, StreamMask::log);
 }
+
+
+const std::string Logger::msg_type_string(MsgType msg_type, bool full_format)
+{
+	static std::vector<std::string> type_names = {"WARNING.", "MESSAGE.", "LOG.", "DEBUG.",
+			                                      "Wrn", "Msg", "Log", "Dbg"};
+	int type_idx = msg_type;
+
+	if (full_format) {
+		return type_names[type_idx];
+	} else {
+		return type_names[type_idx + 4];
+	}
+}
+
+
+TimePoint Logger::start_time = TimePoint();
 
 
 Logger& Logger::set_context(const char* file_name, const char* function, const int line)
 {
-	rdbuf()->pubsync();
-	dynamic_cast<MultiTargetBuf *>(rdbuf())->set_context(file_name, function, line);
+	file_name_ = std::string(file_name);
+	function_ = std::string(function);
+	line_ = line;
+	this->set_mask();
+
 	return *this;
 }
 
 
 Logger& Logger::every_proc()
 {
-	rdbuf()->pubsync();
-	dynamic_cast<MultiTargetBuf *>(rdbuf())->every_proc();
+	every_process_ = true;
+	this->set_mask();
+
 	return *this;
 }
 
-/**
- * Solving of output to multiple stream
- * http://www.cplusplus.com/forum/general/54588/
- */
+void Logger::set_mask()
+{
+	if ( !every_process_ && (mpi_rank_ > 0) ) return;
+
+	switch (type_) {
+	case MsgType::warning:
+		if (LoggerOptions::get_instance().no_log_)
+			streams_mask_ = StreamMask::cerr;
+		else
+			streams_mask_ = StreamMask::cerr | StreamMask::log;
+		break;
+	case MsgType::message:
+		if (LoggerOptions::get_instance().no_log_)
+			streams_mask_ = StreamMask::cout;
+		else
+			streams_mask_ = StreamMask::cout | StreamMask::log;
+		break;
+#ifndef FLOW123D_DEBUG
+	case MsgType::debug: // for release build
+		streams_mask_ = StreamMask();
+		break;
+#endif
+	default: //MsgType::log + MsgType::debug (only for debug build)
+		if (LoggerOptions::get_instance().no_log_)
+			streams_mask_ = StreamMask();
+		else if (LoggerOptions::get_instance().is_init())
+			streams_mask_ = StreamMask::log;
+		else
+			streams_mask_ = StreamMask::cerr;
+		break;
+	}
+
+	full_streams_mask_ = full_streams_mask_ | streams_mask_;
+
+}
+
+
+void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream, StreamMask mask)
+{
+	if ( full_streams_mask_() & mask() ) {
+		stream << setfill(' ');
+
+		// print header, if method returns true, message continues on the same line and first line of message
+		// doesn't need indentation in following while cycle
+		bool header_line = this->print_screen_header(stream, scr_stream);
+
+		// print message
+		std::string segment;
+		std::istringstream istream(scr_stream.str());
+		while(std::getline(istream, segment)) {
+			if (header_line) {
+				header_line = false;
+			} else {
+				stream << std::setw(18) << "";
+			}
+			stream << segment << "\n";
+		}
+
+		stream << std::flush;
+	}
+}
+
+
+void Logger::print_to_file(std::ofstream& stream, std::stringstream& file_stream, StreamMask mask)
+{
+	if ( full_streams_mask_() & mask() ) {
+		stream << setfill(' ');
+
+		// print header
+		this->print_file_header(stream, file_stream);
+
+		// print message
+		std::string segment;
+		std::vector<std::string> segments;
+		std::istringstream istream(file_stream.str());
+		while(std::getline(istream, segment)) {
+			segments.push_back(segment);
+		}
+		if (segments.size() > 1) {
+			stream << "  - |" << "\n";
+			for (auto seg : segments)
+				stream << std::setw(4) << "" << seg << "\n";
+		} else if (segments.size() == 1) {
+			stream << "  - " << segments[0] << "\n";
+		}
+
+		stream << std::flush;
+	}
+}
+
+bool Logger::print_screen_header(std::ostream& stream, std::stringstream& scr_stream)
+{
+	stream << date_time_ << " ";
+	if (every_process_) { // rank
+		stringstream rank;
+		rank << "[" << mpi_rank_ << "]";
+		stream << setiosflags(ios::left) << std::setw(5) << rank.str();
+	} else {
+		stream << std::setw(5) << "";
+	}
+
+	if (type_ != MsgType::message) { // type of message (besides Message)
+		stream << msg_type_string(type_) << "\n";
+		return false; // logger message starts at new line
+	} else {
+		return true; // logger message continues on the same line as header
+	}
+}
+
+
+void Logger::print_file_header(std::ofstream& stream, std::stringstream& file_stream)
+{
+	stream << "- -" << std::setw(13) << "" << "[ ";
+	stream << msg_type_string(type_, false);
+	if (every_process_) { // add 'E' (only for every_proc) + print rank
+		stream << "E, ";
+		if (mpi_rank_ >= 0) stream << setiosflags(ios::right) << std::setw(4) << mpi_rank_;
+		else stream << "null";
+	} else {
+		stream << " , null";
+	}
+	stream << ", \"" << date_time_ << "\"";
+    // if constant FLOW123D_SOURCE_DIR is defined, we try to erase it from beginning of each CodePoint's filepath
+    #ifdef FLOW123D_SOURCE_DIR
+        string common_path = cmn_prefix(string(FLOW123D_SOURCE_DIR), file_name_);
+        file_name_.erase (0, common_path.size());
+    #endif
+	stream << ", \"" << file_name_ << "\", " << line_ << ", \"" << function_ << "\"";
+	stream << " ]\n";
+}

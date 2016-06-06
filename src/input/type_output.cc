@@ -238,7 +238,7 @@ ostream& OutputText::print(ostream& stream) {
 }
 
 void OutputText::print_impl(ostream& stream, const Record *type) {
-	FEAL_ASSERT(type->is_finished())(type->type_name())(type->class_name()).warning("Printing documentation of unfinished type.");
+	ASSERT(type->is_finished())(type->type_name())(type->class_name()).warning("Printing documentation of unfinished type.");
 	switch (doc_type_) {
 	case key_record:
 		stream << "" << type->class_name() << " '" << type->type_name() << "' (" << type->size() << " keys).";
@@ -361,7 +361,7 @@ void OutputText::print_impl(ostream& stream, const AdHocAbstract *type) {
 	}
 }
 void OutputText::print_impl(ostream& stream, const Selection *type) {
-	FEAL_ASSERT(type->is_finished())(type->type_name()).warning("Printing documentation of unfinished Input::Type::Selection.");
+	ASSERT(type->is_finished())(type->type_name()).warning("Printing documentation of unfinished Input::Type::Selection.");
 	switch (doc_type_) {
 	case key_record:
 		stream << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
@@ -431,7 +431,7 @@ void OutputText::print_impl(ostream& stream, const FileName *type) {
 
 
 void OutputText::print_impl(ostream& stream, const Parameter *type) {
-	FEAL_DEBUG_ASSERT(false).error("Parameter appears in the IST. Check where Instance is missing.");
+	ASSERT_DBG(false).error("Parameter appears in the IST. Check where Instance is missing.");
 }
 
 

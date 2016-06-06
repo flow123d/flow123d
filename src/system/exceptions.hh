@@ -79,16 +79,21 @@ public:
     virtual void print_info(std::ostringstream &out) const=0;
     /**
      *  Overloaded method for output the exception message if it is not catched.
-     *  Implements composition of complex message including diagnostic informations and stack trace.
-     *  Should not be overloded in descendant classes. Use @p print_info instead.
+     *  Creates envelope of @p form_message method.
+     *  Should not be overloded in descendant classes. Use @p form_message instead.
      */
-    virtual const char * what () const throw ();
+    const char * what () const throw ();
     /// Destructor, possibly free stacktrace.
     virtual ~ExceptionBase() throw ();
 
 protected:
     /// Return type of message ("Program error" for this class). Can be override in descendants.
     virtual std::string what_type_msg() const;
+    /**
+     *  Method for output the exception message.
+     *  Implements composition of complex message including diagnostic informations and stack trace.
+     */
+    virtual std::ostringstream &form_message(std::ostringstream &) const;
     /// Stacktrace of exception.
     StackTrace stack_trace_;
     /// Stacktrace frames, which will be cut, see @p StackTrace::print method.
