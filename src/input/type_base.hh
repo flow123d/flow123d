@@ -56,10 +56,10 @@ TYPEDEF_ERR_INFO( EI_KeyName, const string );
 TYPEDEF_ERR_INFO( EI_DefaultStr, const string);
 TYPEDEF_ERR_INFO( EI_TypeName, const string);
 TYPEDEF_ERR_INFO( EI_Desc, const string);
-DECLARE_EXCEPTION( ExcWrongDefault, << EI_Desc::val << "Default value " << EI_DefaultStr::qval
+DECLARE_FATAL_EXCEPTION( ExcWrongDefault, << EI_Desc::val << "Default value " << EI_DefaultStr::qval
         << " do not match type: " << EI_TypeName::qval << ";\n"
         << "During declaration of the key: " << EI_KeyName::qval );
-DECLARE_EXCEPTION( ExcUnknownDescendant, << "Unknown descendant of TypeBase class, name: " << EI_TypeName::qval );
+DECLARE_FATAL_EXCEPTION( ExcUnknownDescendant, << "Unknown descendant of TypeBase class, name: " << EI_TypeName::qval );
 
 
 

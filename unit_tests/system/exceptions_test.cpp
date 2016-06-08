@@ -33,6 +33,7 @@ TYPEDEF_ERR_INFO( EI_SomeClass, SomeClass );
 DECLARE_EXCEPTION(ExcInt, << "Int exception value: "<< EI_IntValue::val );
 DECLARE_EXCEPTION(ExcString, << "Str exception :" << EI_StringValue::qval );
 DECLARE_EXCEPTION(ExcClass, << "Class exception :" << EI_SomeClass::qval );
+DECLARE_FATAL_EXCEPTION(ExcFatal, << "Test exception :" << EI_StringValue::qval );
 
 
 
@@ -91,6 +92,21 @@ TEST(Exceptions, Class) {
         EXPECT_EQ(std::string("Class exception :'Reporting SomeClass'\n"), ss.str());
 
         std::cout << e.what();
+    }
+}
+
+
+// Test EI_ for passing a fatal exception.
+TEST(Exceptions, Fatal) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    try {
+        THROW( ExcFatal() << EI_StringValue("ahoj") );
+    } catch (ExceptionBase &e) {
+        std::ostringstream ss;
+        e.print_info(ss);
+        EXPECT_EQ(std::string("Test exception :'ahoj'\n"), ss.str());
+
+        std::cerr << e.what();
     }
 }
 
