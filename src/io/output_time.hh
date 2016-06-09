@@ -28,6 +28,7 @@ class Mesh;
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
 class Field;
+class FieldSet;
 template <int spacedim, class Value>
 class MultiField;
 class TimeGovernor;
@@ -94,6 +95,8 @@ public:
      */
     static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
     
+    void make_output_mesh(Mesh* mesh, FieldSet* output_fields);
+    
     /**
      * \brief Generic method for registering output data stored in MultiField
      *
@@ -154,8 +157,7 @@ public:
     Input::AbstractRecord format_record_;
 
 protected:
-
-    void make_output_mesh(Mesh* mesh);
+    
     void compute_discontinuous_output_mesh();
     
     /**
@@ -236,6 +238,17 @@ protected:
     Mesh *_mesh;
     
     OutputMesh *output_mesh_;
+    
+    /** @brief Flag is set true when output mesh for the current write time has been created.
+     * Guarantees output mesh creation only once per write time, 
+     * assuming all fields are written on the same output mesh.
+     */
+    bool is_output_mesh_valid_;
+    
+    /** @brief Name of the output field according to which the output mesh is refined.
+     * When empty, the computational mesh is used for output.
+     */
+    std::string error_control_field_name;
 };
 
 

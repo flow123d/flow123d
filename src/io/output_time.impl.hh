@@ -294,10 +294,6 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     this->_mesh=field_mesh;
     OLD_ASSERT(this->_mesh, "Null mesh pointer.\n");
 
-    DBGMSG("compute_field_data \n");
-    if(output_mesh_ == nullptr)
-        make_output_mesh(_mesh);
-    DBGMSG("compute_field_data\n");
     
     // get possibly existing data for the same field, check both name and type
     std::vector<unsigned int> size(N_DISCRETE_SPACES);

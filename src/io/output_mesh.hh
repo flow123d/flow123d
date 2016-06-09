@@ -22,7 +22,9 @@
 
 #include "io/output_data_base.hh"
 
+#include "fields/field_values.hh"
 class Mesh;
+template<int, class Value> class Field;
 
 /// Class representing data vector of geometry and topology information (especially for VTK).
 /// Filling the vector is the users responsibility.
@@ -60,8 +62,14 @@ public:
 class OutputMesh
 {
 public:
-    OutputMesh(Mesh *mesh);
+    OutputMesh(Mesh* mesh);
     ~OutputMesh();
+    
+    void create_identical_mesh();
+    void create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field);
+    
+    std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
+    std::shared_ptr<std::vector<double>> local_nodes_;
     
     std::shared_ptr<MeshData<double>> nodes_;
     std::shared_ptr<MeshData<unsigned int>> connectivity_;
@@ -70,8 +78,22 @@ public:
     void compute_discontinuous_data();
     std::shared_ptr<MeshData<double>> discont_nodes_;
     std::shared_ptr<MeshData<unsigned int>> discont_connectivity_;
+    
 private:
+    
+    struct AuxElement{
+        std::vector<double> coords;
+        std::vector<unsigned int> connectivity;
+    };
+    
     void fill_vectors();
-    bool discont_data_computed_;
+    bool refinement_criterion();
+    
     Mesh *orig_mesh_;
+    bool discont_data_computed_;
+    
+    const unsigned int max_level = 2;
 };
+
+
+

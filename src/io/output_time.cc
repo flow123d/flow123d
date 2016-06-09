@@ -24,6 +24,7 @@
 #include "output_vtk.hh"
 #include "output_msh.hh"
 #include "output_mesh.hh"
+#include <fields/field_set.hh>
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(vtk)
@@ -49,6 +50,7 @@ const Record & OutputTime::get_input_type() {
 				"Explicit array of output time points (can be combined with 'time_step'.")
 		.declare_key("add_input_times", Bool(), Default("false"),
 				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
+        .declare_key("error_control_field",String(), Default::optional(), "Name of an output field, according to which the output mesh will be refined.")
 		.close();
 }
 
@@ -66,15 +68,24 @@ OutputTime::OutputTime()
 
 
 OutputTime::OutputTime(const Input::Record &in_rec)
-: input_record_(in_rec), _mesh(nullptr), output_mesh_(nullptr)
+: input_record_(in_rec), 
+    _mesh(nullptr), 
+    output_mesh_(nullptr),
+    is_output_mesh_valid_(false)
 {
 
     this->_base_filename = in_rec.val<FilePath>("file");
     this->current_step = 0;
     this->time = -1.0;
     this->write_time = -1.0;
+    
+    // Read optional error control field name for output mesh generation
+    auto it = in_rec.find<std::string>("error_control_field");
+    if(it) error_control_field_name = *it;
+    else error_control_field_name = "";
 
-
+    DBGMSG("error control field = '%s'\n", error_control_field_name.c_str());
+    
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
 
 }
@@ -97,9 +108,30 @@ OutputTime::~OutputTime(void)
 
 
 
-void OutputTime::make_output_mesh(Mesh* mesh)
+void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
 {
+    if(is_output_mesh_valid_) return;
+    
+    // possibly destroy previous output mesh
+    if(output_mesh_) delete output_mesh_;
+    
     output_mesh_ = new OutputMesh(mesh);
+    
+    FieldCommon* field =  output_fields->field(error_control_field_name);
+    if( field && (typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>)) ) {
+        Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+        DBGMSG("Output mesh will be refined according to field '%s'.\n", error_control_field_name.c_str());
+        // create refined output mesh according to the field
+        output_mesh_->create_refined_mesh(error_control_field);
+    }
+    else{
+        DBGMSG("Output mesh identical with the computational one.\n");
+        // create output mesh identical to computational mesh
+        output_mesh_->create_identical_mesh();
+    }
+    
+    // set validity of the output mesh for the current writing time
+    is_output_mesh_valid_ = true;
 }
 
 
@@ -223,6 +255,9 @@ void OutputTime::write_time_frame()
 			// Remember the last time of writing to output stream
 			write_time = time;
 			current_step++;
+            
+            // unset validity of the output mesh after data are written at the current write time
+            is_output_mesh_valid_ = false;
 		} else {
 			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
 			        this->_base_filename.c_str(), time);
