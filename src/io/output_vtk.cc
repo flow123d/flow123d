@@ -382,7 +382,7 @@ void OutputVTK::write_vtk_data_ascii(OutputDataPtr output_data, std::string type
 {
 	ofstream &file = this->_data_file;
 
-    file 	<< "<DataArray type=\"" << type << "\" ";
+    file 	<< std::setprecision(10) << "<DataArray type=\"" << type << "\" ";
     if (output_data->output_field_name!="")
     {
     	file
@@ -397,7 +397,7 @@ void OutputVTK::write_vtk_data_ascii(OutputDataPtr output_data, std::string type
             << endl;
 
     /* Set precision to max */
-    file.precision(std::numeric_limits<double>::digits10);
+    //file.precision(std::numeric_limits<double>::digits10);
 
     output_data->print_all(file);
 

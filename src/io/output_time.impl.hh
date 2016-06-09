@@ -148,12 +148,14 @@ public:
      * \note This method is used only by MSH file format.
      */
     void print(ostream &out_stream, unsigned int idx) override
-            {
+    {
     	OLD_ASSERT_LESS(idx, this->n_values);
+    	out_stream << std::fixed << std::setprecision(10);
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
-        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
-            out_stream << *ptr << " ";
-            }
+        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
+            out_stream << std::setprecision(10) << *ptr << " ";
+        }
+    }
 
     /**
      * \brief Print all data stored in output data
@@ -163,13 +165,15 @@ public:
      *       Class OutputData stores always in raw-first order.
      */
     void print_all(ostream &out_stream) override
-            {
-        for(unsigned int idx = 0; idx < this->n_values; idx++) {
+    {
+    	out_stream << std::fixed << std::setprecision(10);
+    	for(unsigned int idx = 0; idx < this->n_values; idx++) {
             ElemType *ptr_begin = this->data_ + n_elem_ * idx;
-            for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
+            for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
                 out_stream << *ptr << " ";
-        }
             }
+        }
+    }
 
     /**
      * Store data element of given data value under given index.
