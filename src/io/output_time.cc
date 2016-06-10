@@ -68,16 +68,16 @@ OutputTime::OutputTime()
 
 
 OutputTime::OutputTime(const Input::Record &in_rec)
-: input_record_(in_rec), 
+: current_step(0),
+    time(-1.0),
+    write_time(-1.0),
+    input_record_(in_rec),
     _mesh(nullptr), 
     output_mesh_(nullptr),
     is_output_mesh_valid_(false)
 {
-
+    // Read output base file name
     this->_base_filename = in_rec.val<FilePath>("file");
-    this->current_step = 0;
-    this->time = -1.0;
-    this->write_time = -1.0;
     
     // Read optional error control field name for output mesh generation
     auto it = in_rec.find<std::string>("error_control_field");
@@ -132,12 +132,13 @@ void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
     
     // set validity of the output mesh for the current writing time
     is_output_mesh_valid_ = true;
+    _mesh = mesh;
 }
 
 
 void OutputTime::compute_discontinuous_output_mesh()
 {
-    ASSERT(output_mesh_).error("Create output mesh first!");
+    ASSERT_PTR(output_mesh_).error("Create output mesh first!");
     output_mesh_->compute_discontinuous_data();
 }
 
