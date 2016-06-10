@@ -94,6 +94,10 @@ public:
     std::shared_ptr<MeshData<double>> discont_nodes_;
     std::shared_ptr<MeshData<unsigned int>> discont_connectivity_;
     
+    unsigned int n_nodes();
+    unsigned int n_nodes_disc();
+    unsigned int n_elements();
+    
 private:
     
     struct AuxElement{

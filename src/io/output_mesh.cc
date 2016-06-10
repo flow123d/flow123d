@@ -40,6 +40,27 @@ OutputElementIterator OutputMesh::end()
     return OutputElementIterator(OutputElement(offsets_->n_values, this));
 }
 
+unsigned int OutputMesh::n_elements()
+{
+    return offsets_->n_values;
+}
+
+unsigned int OutputMesh::n_nodes()
+{
+    return nodes_->n_values;
+}
+
+unsigned int OutputMesh::n_nodes_disc()
+{
+    //ASSERT_DBG(output_mesh_->discont_data_computed_);
+    if(discont_data_computed_)
+        return discont_nodes_->n_values;
+    else
+        return 0;
+}
+
+
+
 void OutputMesh::create_identical_mesh()
 {
 //     DBGMSG("create identical outputmesh\n");
