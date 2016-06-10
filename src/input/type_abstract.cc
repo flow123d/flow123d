@@ -146,6 +146,9 @@ bool Abstract::finish(bool is_generic) {
 			e << EI_Desc("Default value for TYPE key do not match any descendant of Abstract.")
 			  << EI_DefaultStr( child_data_->selection_default_.value() ) << EI_TypeName(this->type_name());
 			throw;
+		} catch (ExcWrongDefaultJSON & e) {
+			e << EI_DefaultStr( child_data_->selection_default_.value() ) << EI_TypeName(this->type_name());
+			throw;
 		}
     }
 

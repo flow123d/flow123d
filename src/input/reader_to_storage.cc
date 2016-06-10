@@ -639,6 +639,9 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
     	e << Type::EI_Desc("Wrong default value while reading an input stream:\n");
         e << EI_KeyName("UNKNOWN KEY");
         throw;
+    } catch (Input::Type::ExcWrongDefaultJSON & e) {
+        e << EI_KeyName("UNKNOWN KEY");
+        throw;
     }
 
     return NULL;
