@@ -206,7 +206,7 @@ void OutputVTK::write_vtk_topology(void)
     Node* node;
     //ElementIter ele;
     unsigned int li;
-    int tmp;
+    int val, tmp;
 
     /* Write Cells begin*/
     file << "<Cells>" << endl;
@@ -222,26 +222,30 @@ void OutputVTK::write_vtk_topology(void)
     /* Write DataArray end */
     file << endl << "</DataArray>" << endl;
 
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
-    /* Write number of nodes for each element */
+    /* Create OutputData object */
+    OutputDataPtr offset_data = std::make_shared< OutputData<FieldValue<1>::Integer> >("offsets", mesh->n_elements());
+    OutputData<FieldValue<1>::Integer> &offset_data_ref = (OutputData<FieldValue<1>::Integer> &)(*offset_data);
+    /* Fill OutputData */
     tmp = 0;
+    val = 0;
     FOR_ELEMENTS(mesh, ele) {
         switch(ele->dim()) {
         case 1:
-            tmp += VTK_LINE_SIZE;
+            val += VTK_LINE_SIZE;
             break;
         case 2:
-            tmp += VTK_TRIANGLE_SIZE;
+            val += VTK_TRIANGLE_SIZE;
             break;
         case 3:
-            tmp += VTK_TETRA_SIZE;
+            val += VTK_TETRA_SIZE;
             break;
         }
-        file << tmp << " ";
+        FieldValue_<1, 1, int> fv(val);
+        offset_data_ref.store_value(tmp, fv);
+        ++tmp;
     }
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
+    /* Write to file */
+    write_vtk_data_ascii(offset_data, "Int32");
 
     /* Write DataArray begin */
     file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
@@ -303,6 +307,7 @@ void OutputVTK::write_vtk_discont_topology(void)
     //Node* node;
     //ElementIter ele;
     unsigned int li, tmp;
+    int val;
 
     /* Write Cells begin*/
     file << "<Cells>" << endl;
@@ -319,26 +324,30 @@ void OutputVTK::write_vtk_discont_topology(void)
     /* Write DataArray end */
     file << endl << "</DataArray>" << endl;
 
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
-    /* Write number of nodes for each element */
+    /* Create OutputData object */
+    OutputDataPtr offset_data = std::make_shared< OutputData<FieldValue<1>::Integer> >("offsets", mesh->n_elements());
+    OutputData<FieldValue<1>::Integer> &offset_data_ref = (OutputData<FieldValue<1>::Integer> &)(*offset_data);
+    /* Fill OutputData */
     tmp = 0;
+    val = 0;
     FOR_ELEMENTS(mesh, ele) {
         switch(ele->dim()) {
         case 1:
-            tmp += VTK_LINE_SIZE;
+            val += VTK_LINE_SIZE;
             break;
         case 2:
-            tmp += VTK_TRIANGLE_SIZE;
+            val += VTK_TRIANGLE_SIZE;
             break;
         case 3:
-            tmp += VTK_TETRA_SIZE;
+            val += VTK_TETRA_SIZE;
             break;
         }
-        file << tmp << " ";
+        FieldValue_<1, 1, int> fv(val);
+        offset_data_ref.store_value(tmp, fv);
+        ++tmp;
     }
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
+    /* Write to file */
+    write_vtk_data_ascii(offset_data, "Int32");
 
     /* Write DataArray begin */
     file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
