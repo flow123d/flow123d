@@ -159,23 +159,6 @@ struct ExcName : public virtual ::ExceptionBase {                           \
 
 
 
-#define DECLARE_FATAL_EXCEPTION( ExcName, Format)                           \
-struct ExcName : public virtual ::ExceptionBase {                           \
-     virtual void print_info(std::ostringstream &out) const {               \
-         using namespace internal;                                          \
-         ::internal::ExcStream estream(out, *this);                         \
-         estream Format ;                                                   \
-         out << std::endl;                                                  \
-     }                                                                      \
-     virtual ~ExcName() throw () {}                                         \
-	protected:                                                              \
-	 std::string what_type_msg() const override {                           \
-		return "Fatal Error: ";                                             \
-	 }                                                                      \
-}
-
-
-
 /**
  * @brief Macro to simplify declaration of error_info types.
  *
