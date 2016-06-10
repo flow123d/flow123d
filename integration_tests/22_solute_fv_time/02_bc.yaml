@@ -1,8 +1,8 @@
 flow123d_version: 1.8.9
 problem: !Coupling_Sequential
-  description: Test14 - 2D transport with time variable boundarty
+  description: Test14 - 2D transport with time variable boundary
   mesh:
-    mesh_file: ./input/test14.msh
+    mesh_file: ../00_mesh/test14.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
@@ -10,7 +10,7 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-12
     input_fields:
       - region: BULK
-        conductivity: 0.1
+        anisotropy: 0.1
       - region: BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
@@ -28,7 +28,7 @@ problem: !Coupling_Sequential
         - velocity_p0
     balance: true
   solute_equation: !Coupling_OperatorSplitting
-    transport: !Solute_AdvectionDiffusion_DG
+    transport: !Solute_Advection_FV
       input_fields:
         - region: BULK
           init_conc: 0
@@ -44,11 +44,8 @@ problem: !Coupling_Sequential
         - region: BOUNDARY
           bc_conc: 0
           time: 7
-      solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
     output_stream: 
-      file: ./transport-implicit.pvd
+      file: ./transport.pvd
       format: !vtk
         variant: ascii
       time_step: 1.0
@@ -57,6 +54,5 @@ problem: !Coupling_Sequential
       - A
     time:
       end_time: 10.0
-      init_dt: 1.0
     balance:
       cumulative: true

@@ -4,3 +4,5 @@ common_config:
 
 test_cases:
 - file: 01_fv_dp_sorp_small.yaml
+- file: 02_bc.yaml
+- file: 03_bc_short_pulse.yaml
