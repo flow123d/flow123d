@@ -15,6 +15,9 @@
  * @brief   Classes for auxiliary output mesh.
  */
 
+#ifndef OUTPUT_MESH_HH_
+#define OUTPUT_MESH_HH_
+
 #include <string>
 
 #include "system/sys_profiler.hh"
@@ -23,8 +26,12 @@
 #include "io/output_data_base.hh"
 
 #include "fields/field_values.hh"
+
+
+
 class Mesh;
 template<int, class Value> class Field;
+class OutputElementIterator;
 
 /// Class representing data vector of geometry and topology information (especially for VTK).
 /// Filling the vector is the users responsibility.
@@ -53,6 +60,11 @@ public:
             out_stream << d << " ";
     }
     
+    T& operator[](unsigned int i){
+        ASSERT(i < data_.size());
+        return data_[i];
+    }
+    
     /// Data vector.
     std::vector<T> data_;
 };
@@ -67,6 +79,9 @@ public:
     
     void create_identical_mesh();
     void create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field);
+    
+    OutputElementIterator begin();
+    OutputElementIterator end();
     
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
     std::shared_ptr<std::vector<double>> local_nodes_;
@@ -93,7 +108,10 @@ private:
     bool discont_data_computed_;
     
     const unsigned int max_level = 2;
+    
+    friend class OutputElement;
 };
 
 
+#endif  // OUTPUT_MESH_HH_
 

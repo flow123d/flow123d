@@ -19,6 +19,7 @@
 #include "mesh/mesh.h"
 #include "fields/field.hh"
 
+#include "output_element.hh"
 
 OutputMesh::OutputMesh(Mesh* mesh)
 : orig_mesh_(mesh), discont_data_computed_(false)
@@ -29,6 +30,15 @@ OutputMesh::~OutputMesh()
 {
 }
 
+OutputElementIterator OutputMesh::begin()
+{
+    return OutputElementIterator(OutputElement(0, this));
+}
+
+OutputElementIterator OutputMesh::end()
+{
+    return OutputElementIterator(OutputElement(offsets_->n_values, this));
+}
 
 void OutputMesh::create_identical_mesh()
 {
@@ -60,7 +70,7 @@ void OutputMesh::fill_vectors()
         node_id++;
     }
     
-    
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elements);
     connectivity_->data_.reserve(4*n_elements);  //reserve - suppose all elements being tetrahedra (4 nodes)
     offsets_->data_.resize(n_elements);
     offsets_->n_values = n_elements;
@@ -79,6 +89,7 @@ void OutputMesh::fill_vectors()
         // increase offset by number of nodes of the simplicial element
         offset += ele->dim() + 1;
         offsets_->data_[ele_id] = offset;
+        (*orig_element_indices_)[ele_id] = ele_id;
         ele_id++;
     }
     connectivity_->data_.shrink_to_fit();

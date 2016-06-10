@@ -1,0 +1,188 @@
+/*
+ * output_vtk_test.cpp
+ *
+ *  Created on: June 9, 2016
+ *      Author: pe
+ */
+
+#define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
+#include <flow_gtest_mpi.hh>
+#include "io/output_time.hh"
+#include "io/output_vtk.hh"
+#include "mesh/mesh.h"
+#include "input/reader_to_storage.hh"
+#include "system/sys_profiler.hh"
+
+#include "fields/field_constant.hh"
+#include <fields/field.hh>
+#include <fields/field_set.hh>
+#include <fields/field_common.hh>
+#include "input/input_type.hh"
+
+#include "input/accessors.hh"
+
+#include "io/output_mesh.hh"
+#include "io/output_element.hh"
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+
+
+
+TEST(OutputMesh, create_identical)
+{
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    // read mesh - simplset cube from test1
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+    Mesh* mesh = new Mesh();
+    ifstream in(string(mesh_file).c_str());
+    mesh->read_gmsh_from_stream(in);
+    
+    OutputMesh* output_mesh = new OutputMesh(mesh);
+    output_mesh->create_identical_mesh();
+    
+    std::cout << "nodes: ";
+    output_mesh->nodes_->print_all(std::cout);
+    std::cout << endl;
+    std::cout << "connectivity: ";
+    output_mesh->connectivity_->print_all(std::cout);
+    std::cout << endl;
+    std::cout << "offsets: ";
+    output_mesh->offsets_->print_all(std::cout);
+    std::cout << endl;
+    
+    EXPECT_EQ(output_mesh->nodes_->n_values, mesh->n_nodes());
+    EXPECT_EQ(output_mesh->offsets_->n_values, mesh->n_elements());
+    
+    for(OutputElementIterator it = output_mesh->begin(); it != output_mesh->end(); ++it)
+    {
+        xprintf(Msg,"%d %dD n_%d |",it->idx(), it->dim(), it->n_nodes());
+        for(unsigned int i=0; i < it->n_nodes(); i++)
+        {
+            xprintf(Msg," %d",it->node_index(i));
+        }
+        xprintf(Msg," |");
+        for(auto& v : it->vertex_list())
+        {
+            xprintf(Msg," %f %f %f #",v[0], v[1], v[2]);
+        }
+        xprintf(Msg,"\n");
+        
+        ElementAccessor<3> ele_acc = it->element_accessor();
+        EXPECT_EQ(it->dim(), ele_acc.dim());
+        EXPECT_EQ(it->centre()[0], ele_acc.centre()[0]);
+        EXPECT_EQ(it->centre()[1], ele_acc.centre()[1]);
+        EXPECT_EQ(it->centre()[2], ele_acc.centre()[2]);
+    }
+    
+    output_mesh->compute_discontinuous_data();
+    xprintf(Msg,"DISCONTINUOUS\n");
+    for(OutputElementIterator it = output_mesh->begin(); it != output_mesh->end(); ++it)
+    {
+        xprintf(Msg,"%d %dD n_%d |",it->idx(), it->dim(), it->n_nodes());
+        for(unsigned int i=0; i < it->n_nodes(); i++)
+        {
+            xprintf(Msg," %d",it->node_index_disc(i));
+        }
+        xprintf(Msg," |");
+        for(auto& v : it->vertex_list())
+        {
+            xprintf(Msg," %f %f %f #",v[0], v[1], v[2]);
+        }
+        xprintf(Msg,"\n");
+        
+        ElementAccessor<3> ele_acc = it->element_accessor();
+        EXPECT_EQ(it->dim(), ele_acc.dim());
+        EXPECT_EQ(it->centre()[0], ele_acc.centre()[0]);
+        EXPECT_EQ(it->centre()[1], ele_acc.centre()[1]);
+        EXPECT_EQ(it->centre()[2], ele_acc.centre()[2]);
+    }
+    
+    delete output_mesh;
+    delete mesh;
+}
+
+
+
+
+
+
+
+
+const string input = R"INPUT(
+{   
+   conc={ // formula on 3d 
+       TYPE="FieldFormula",
+       //value="log((x^2+y^2+z^2)^0.5)"
+       value="x+y+z"
+   },
+   output_stream = {
+    file = "./test1.pvd", 
+    format = {
+        TYPE = "vtk", 
+        variant = "ascii"
+    },
+    error_control_field = "concXXXXXXXXXXXXXXX"
+  },
+  output_fields = ["conc"]
+}
+)INPUT";
+
+
+TEST(OutputMesh, write_on_output_mesh) {
+    
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > AlgScalarField;
+    typedef Field<3,FieldValue<3>::Scalar> ScalarField;
+  
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    // read mesh - simplset cube from test1
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+    Mesh* mesh = new Mesh();
+    ifstream in(string(mesh_file).c_str());
+    mesh->read_gmsh_from_stream(in);
+    
+    
+    // create scalar field out of FieldAlgorithmBase field
+    ScalarField scalar_field;
+    scalar_field.set_mesh(*mesh);
+    
+    // create field set of output fields
+    FieldSet output_fields;
+    output_fields += scalar_field.name("conc").units(UnitSI::dimensionless()).flags_add(FieldFlag::allow_output);
+    
+    // create input record
+    Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
+        .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
+        .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
+        .declare_key("output_fields", Input::Type::Array(output_fields.make_output_field_selection("output_fields", "output").close()), 
+                     Input::Type::Default::obligatory(), "")
+        .close();
+
+    // read input string
+    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
+    Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+    // create FieldAlgorithmBase field
+    auto alg_field = AlgScalarField::function_factory(in_rec.val<Input::AbstractRecord>("conc"), 1);
+    
+    // create field from FieldAlgorithmBase
+    scalar_field.set_field(mesh->region_db().get_region_set("ALL"), alg_field, 0);
+    scalar_field.output_type(OutputTime::NODE_DATA);
+    
+    // set time to all fields
+    output_fields.set_time(0.0, LimitSide::right);
+    
+    // create output
+    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>(in_rec.val<Input::Record>("output_stream"));
+    output->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+    
+    // register output fields, compute and write data
+    output_fields.output(output);
+    output->write_time_frame();
+
+    delete mesh;
+}
