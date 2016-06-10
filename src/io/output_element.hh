@@ -26,11 +26,14 @@ class ElementAccessor;
 
 #include "mesh/accessors.hh"
 #include "mesh/mesh.h"
+#include "mesh/point.hh"
 #include "output_mesh.hh"
 
 
 /** @brief Represents an element of the output mesh.
  * Provides element access on the data of the output mesh (nodes, connectivity, offsets etc.).
+ * 
+ * Vertex function suppose spacedim = 3 at the moment.
  */
 class OutputElement
 {
@@ -38,6 +41,9 @@ public:
     /// Element space dimension = 3.
     static const unsigned int spacedim = 3;
     
+    typedef Space<spacedim>::Point Point;
+    
+    /// Constructor.
     OutputElement(unsigned int ele_idx, OutputMesh* output_mesh);
     
     /// @name Output Mesh Getters.
@@ -48,8 +54,8 @@ public:
     
     /// Returns global index of the node.
     unsigned int node_index(unsigned int loc_idx) const;
-    arma::vec3 vertex(unsigned int loc_idx) const;  ///< Returns coordinates of node @p loc_idx.
-    std::vector<arma::vec3> vertex_list() const;    ///< Returns vector of nodes coordinates.
+    Point vertex(unsigned int loc_idx) const;  ///< Returns coordinates of node @p loc_idx.
+    std::vector<Point> vertex_list() const;    ///< Returns vector of nodes coordinates.
     
     /// Returns global index of the node. (DISCONTINOUS)
     unsigned int node_index_disc(unsigned int loc_idx) const;
@@ -57,17 +63,17 @@ public:
     //TODO: vertex_disc and vertex_list_disc return the same coordinates as vertex and vertex_list
     // It is meaningful only if we have ONLY discontinuous vectors for nodes and connectivity
     /// Returns coordinates of node @p loc_idx. (DISCONTINOUS)
-    arma::vec3 vertex_disc(unsigned int loc_idx) const;
+    Point vertex_disc(unsigned int loc_idx) const;
     /// Returns vector of nodes coordinates. (DISCONTINOUS)
-    std::vector<arma::vec3> vertex_list_disc() const;
+    std::vector<Point> vertex_list_disc() const;
     
-    arma::vec3 centre() const;                      ///< Computes the barycenter.
+    Point centre() const;                      ///< Computes the barycenter.
     //@}
     
-    /// @name Output Mesh Getters.
+    /// @name Original Mesh Getters.
     //@{ 
     /// Returns pointer to the computational mesh.
-    Mesh* orig_mesh();
+    Mesh* orig_mesh() const;
     /// Returns index of the master element in the computational mesh.
     unsigned int orig_element_idx() const;
     ///Gets ElementAccessor of this element
@@ -81,12 +87,12 @@ private:
     unsigned int node_index_internal(unsigned int loc_idx, 
                                      std::shared_ptr<MeshData<unsigned int>> connectivity) const;
     /// Returns coordinates of node @p loc_idx.  (DISCONTINUOUS)
-    arma::vec3 vertex_internal(unsigned int loc_idx,
+    Point vertex_internal(unsigned int loc_idx,
                                std::shared_ptr<MeshData<unsigned int>> connectivity,
                                std::shared_ptr<MeshData<double>> nodes) const;
     /// Returns vector of nodes coordinates.  (DISCONTINUOUS)
-    std::vector<arma::vec3> vertex_list_internal(std::shared_ptr<MeshData<unsigned int>> connectivity,
-                                                 std::shared_ptr<MeshData<double>> nodes) const;
+    std::vector<Point> vertex_list_internal(std::shared_ptr<MeshData<unsigned int>> connectivity,
+                                            std::shared_ptr<MeshData<double>> nodes) const;
     
 //     friend void OutputElementIterator::operator++();
     unsigned int ele_idx_;      ///< index of the output element
@@ -105,7 +111,7 @@ inline void OutputElement::inc()
 }
 
 
-inline Mesh* OutputElement::orig_mesh()
+inline Mesh* OutputElement::orig_mesh() const
 {
     return output_mesh_->orig_mesh_;
 }
@@ -148,7 +154,7 @@ inline unsigned int OutputElement::node_index_internal(unsigned int loc_idx,
     return (*connectivity)[con_off - n + loc_idx];
 }
 
-inline arma::vec3 OutputElement::vertex_internal(unsigned int loc_idx,
+inline OutputElement::Point OutputElement::vertex_internal(unsigned int loc_idx,
                                                  shared_ptr< MeshData< unsigned int > > connectivity,
                                                  shared_ptr< MeshData< double > > nodes) const
 {
@@ -157,15 +163,15 @@ inline arma::vec3 OutputElement::vertex_internal(unsigned int loc_idx,
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
     unsigned int off = spacedim * (*connectivity)[con_off - n + loc_idx];
     auto &d = nodes->data_;
-    arma::vec3 point({d[off], d[off+1], d[off+2]});
+    Point point({d[off], d[off+1], d[off+2]});
     return point;
 }
 
-inline std::vector< arma::vec3 > OutputElement::vertex_list_internal(shared_ptr< MeshData< unsigned int > > connectivity, 
-                                                                     shared_ptr< MeshData< double > > nodes) const
+inline std::vector< OutputElement::Point > OutputElement::vertex_list_internal(shared_ptr< MeshData< unsigned int > > connectivity, 
+                                                                               shared_ptr< MeshData< double > > nodes) const
 {
     const unsigned int n = n_nodes();
-    std::vector<arma::vec3> vertices(n);
+    std::vector<Point> vertices(n);
     
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
     auto &d = nodes->data_;
@@ -189,29 +195,29 @@ inline unsigned int OutputElement::node_index_disc(unsigned int loc_idx) const
     return node_index_internal(loc_idx, output_mesh_->discont_connectivity_);
 }
 
-inline arma::vec3 OutputElement::vertex(unsigned int loc_idx) const
+inline OutputElement::Point OutputElement::vertex(unsigned int loc_idx) const
 {
     return vertex_internal(loc_idx, output_mesh_->connectivity_, output_mesh_->nodes_);
 }
 
-inline arma::vec3 OutputElement::vertex_disc(unsigned int loc_idx) const
+inline OutputElement::Point OutputElement::vertex_disc(unsigned int loc_idx) const
 {
     return vertex_internal(loc_idx, output_mesh_->discont_connectivity_, output_mesh_->discont_nodes_);
 }
 
-inline std::vector< arma::vec3 > OutputElement::vertex_list() const
+inline std::vector< OutputElement::Point > OutputElement::vertex_list() const
 {
     return vertex_list_internal(output_mesh_->connectivity_, output_mesh_->nodes_);
 }
 
-inline std::vector< arma::vec3 > OutputElement::vertex_list_disc() const
+inline std::vector< OutputElement::Point > OutputElement::vertex_list_disc() const
 {
     return vertex_list_internal(output_mesh_->discont_connectivity_, output_mesh_->discont_nodes_);
 }
 
-inline arma::vec3 OutputElement::centre() const
+inline OutputElement::Point OutputElement::centre() const
 {
-    arma::vec3 res({0,0,0});
+    Point res({0,0,0});
     for(auto& v : vertex_list() ) res += v;
     return res/n_nodes();
 }
