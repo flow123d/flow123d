@@ -16,12 +16,12 @@
  */
 
 #include "output_vtk.hh"
-#include <limits.h>
-#include "mesh/mesh.h"
 #include "output_data_base.hh"
+#include "output_mesh.hh"
+
+#include <limits.h>
 #include "input/factory.hh"
 #include "input/accessors_forward.hh"
-#include "output_mesh.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
@@ -99,7 +99,7 @@ OutputVTK::~OutputVTK()
 
 int OutputVTK::write_data(void)
 {
-	OLD_ASSERT(_mesh != nullptr, "Null mesh.\n");
+    ASSERT_PTR(output_mesh_);
 
     /* It's possible now to do output to the file only in the first process */
     if(this->rank != 0) {
@@ -342,7 +342,6 @@ void OutputVTK::write_vtk_vtu_tail(void)
 void OutputVTK::write_vtk_vtu(void)
 {
     ofstream &file = this->_data_file;
-    Mesh *mesh = this->_mesh;
 
     /* Write header */
     this->write_vtk_vtu_head();
@@ -351,7 +350,8 @@ void OutputVTK::write_vtk_vtu(void)
     if ( this->output_data_vec_[CORNER_DATA].empty() )
     {
         /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << mesh->n_nodes() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+        file << "<Piece NumberOfPoints=\"" << output_mesh_->n_nodes()
+                  << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
@@ -379,7 +379,8 @@ void OutputVTK::write_vtk_vtu(void)
 
     } else {
         /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << mesh->n_corners() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+        file << "<Piece NumberOfPoints=\"" << output_mesh_->n_nodes_disc()
+                  << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;

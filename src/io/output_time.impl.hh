@@ -69,6 +69,8 @@
 #include "io/output_time.hh"
 
 #include "io/output_data_base.hh"
+#include "output_mesh.hh"
+#include "output_element.hh"
 
 
 /**
@@ -266,16 +268,16 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         Field<spacedim, Value> &field_ref)
 {
+    DBGMSG("register data\n");
 	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
     if (output_names.find(field_ref.name()) == output_names.end()) return;
-
+    
     DiscreteSpaceFlags flags = output_names[field_ref.name()];
     if (! flags) flags = 1 << type;
     for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
         if (flags & (1 << ids))
             this->compute_field_data( DiscreteSpace(ids), field_ref);
 }
-
 
 
 template<int spacedim, class Value>
@@ -287,19 +289,16 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
         return;
     }
 
+    DBGMSG("compute field data\n");
 
-    // TODO: remove const_cast after resolving problems with const Mesh.
-    Mesh *field_mesh = const_cast<Mesh *>(field.mesh());
-    OLD_ASSERT(!this->_mesh || this->_mesh==field_mesh, "Overwriting non-null mesh pointer.\n");
-    this->_mesh=field_mesh;
-    OLD_ASSERT(this->_mesh, "Null mesh pointer.\n");
-
+    if(space_type == CORNER_DATA)
+        compute_discontinuous_output_mesh();
     
     // get possibly existing data for the same field, check both name and type
     std::vector<unsigned int> size(N_DISCRETE_SPACES);
-    size[NODE_DATA]=this->_mesh->n_nodes();
-    size[ELEM_DATA]=this->_mesh->n_elements();
-    size[CORNER_DATA]=this->_mesh->n_corners();
+    size[NODE_DATA] = output_mesh_->n_nodes();
+    size[ELEM_DATA] = output_mesh_->n_elements();
+    size[CORNER_DATA] = output_mesh_->n_nodes_disc();
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
@@ -310,65 +309,67 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(*it));
 
-    unsigned int i_node;
 
     /* Copy data to array */
     switch(space_type) {
     case NODE_DATA: {
+        DBGMSG("compute field NODE data\n");
         // set output data to zero
         vector<unsigned int> count(output_data.n_values, 0);
         for(unsigned int idx=0; idx < output_data.n_values; idx++)
             output_data.zero(idx);
 
-        // sum values
-        FOR_ELEMENTS(this->_mesh, ele) {
-            FOR_ELEMENT_NODES(ele, i_node) {
-                Node * node = ele->node[i_node];
-                unsigned int ele_index = ele.index();
-                unsigned int node_index = this->_mesh->node_vector.index(ele->node[i_node]);
-
+        for(OutputElementIterator it = output_mesh_->begin(); it != output_mesh_->end(); ++it)
+        {
+            std::vector<Space<3>::Point> vertices = it->vertex_list();
+            for(unsigned int i=0; i < it->n_nodes(); i++)
+            {
+                unsigned int node_index = it->node_index(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
-                                field.value(node->point(),
-                                        ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
+                                field.value(vertices[i],
+                                            ElementAccessor<spacedim>(it->orig_mesh(), it->orig_element_idx(),false) ))
+                             );
                 output_data.add(node_index, node_value);
                 count[node_index]++;
-
             }
         }
-
+        
         // Compute mean values at nodes
         for(unsigned int idx=0; idx < output_data.n_values; idx++)
             output_data.normalize(idx, count[idx]);
     }
     break;
     case CORNER_DATA: {
-        compute_discontinuous_output_mesh();
-        unsigned int corner_index=0;
-        FOR_ELEMENTS(this->_mesh, ele) {
-            FOR_ELEMENT_NODES(ele, i_node) {
-                Node * node = ele->node[i_node];
-                unsigned int ele_index = ele.index();
-
+        DBGMSG("compute field CORNER data\n");
+        for(OutputElementIterator it = output_mesh_->begin(); it != output_mesh_->end(); ++it)
+        {
+            std::vector<Space<3>::Point> vertices = it->vertex_list_disc();
+            for(unsigned int i=0; i < it->n_nodes(); i++)
+            {
+                unsigned int node_index = it->node_index_disc(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
-                                field.value(node->point(),
-                                        ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
-                output_data.store_value(corner_index,  node_value);
-                corner_index++;
+                                field.value(vertices[i],
+                                            ElementAccessor<spacedim>(it->orig_mesh(), it->orig_element_idx(),false) ))
+                             );
+                output_data.store_value(node_index,  node_value);
             }
         }
     }
     break;
     case ELEM_DATA: {
-        FOR_ELEMENTS(this->_mesh, ele) {
-            unsigned int ele_index = ele.index();
+        DBGMSG("compute field ELEM data\n");
+        for(OutputElementIterator it = output_mesh_->begin(); it != output_mesh_->end(); ++it)
+        {
+            unsigned int ele_index = it->idx();
             const Value &ele_value =
-                    Value( const_cast<typename Value::return_type &>(
-                            field.value(ele->centre(),
-                                    ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
-            //std::cout << ele_index << " ele:" << typename Value::return_type(ele_value) << std::endl;
-            output_data.store_value(ele_index,  ele_value);
+                        Value( const_cast<typename Value::return_type &>(
+                                field.value(it->centre(),
+                                            ElementAccessor<spacedim>(it->orig_mesh(), it->orig_element_idx(),false))
+                                                                        )
+                             );
+                output_data.store_value(ele_index,  ele_value);
         }
     }
     break;
