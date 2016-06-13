@@ -251,6 +251,14 @@ OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
 	this->fix_main_file_extension(".msh");
     this->header_written = false;
 
+    // skip creation of output mesh (use computational one)
+    if( ! this->error_control_field_name.empty())
+    {
+        xprintf(Warn,"Ignoring error_control_field ('%s').\n Output in GMSH format available only on computational mesh!\n",
+                this->error_control_field_name.c_str() );
+        this->error_control_field_name = "";
+    }
+    
     if(this->rank == 0) {
         this->_base_file.open(this->_base_filename.c_str());
         INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
