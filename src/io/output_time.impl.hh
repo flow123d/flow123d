@@ -147,13 +147,13 @@ public:
      *
      * \note This method is used only by MSH file format.
      */
-    void print(ostream &out_stream, unsigned int idx) override
+    void print_ascii(ostream &out_stream, unsigned int idx, unsigned int precision = 10) override
     {
     	OLD_ASSERT_LESS(idx, this->n_values);
-    	out_stream << std::fixed << std::setprecision(10);
+    	out_stream << std::fixed << std::setprecision(precision);
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
-            out_stream << std::setprecision(10) << *ptr << " ";
+            out_stream << *ptr << " ";
         }
     }
 
@@ -164,9 +164,9 @@ public:
      *       and possibly implement transposition. Set such property for individual file formats.
      *       Class OutputData stores always in raw-first order.
      */
-    void print_all(ostream &out_stream) override
+    void print_ascii_all(ostream &out_stream, unsigned int precision = 10) override
     {
-    	out_stream << std::fixed << std::setprecision(10);
+    	out_stream << std::fixed << std::setprecision(precision);
     	for(unsigned int idx = 0; idx < this->n_values; idx++) {
             ElemType *ptr_begin = this->data_ + n_elem_ * idx;
             for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {

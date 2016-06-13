@@ -53,12 +53,12 @@ public:
     /**
      * Print one value at given index
      */
-    virtual void print(ostream &out_stream, unsigned int idx) = 0;
+    virtual void print_ascii(ostream &out_stream, unsigned int idx, unsigned int precision = 10) = 0;
 
     /**
      * Print all data at once stored in database
      */
-    virtual void print_all(ostream &out_stream) = 0;
+    virtual void print_ascii_all(ostream &out_stream, unsigned int precision = 10) = 0;
 
     /**
      * Data copied from Field.

@@ -95,7 +95,7 @@ void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDa
 
     for(unsigned int i=0; i < output_data->n_values; i ++) {
         file << vec(i).id() << " ";
-        output_data->print(file, i);
+        output_data->print_ascii(file, i);
         file << std::endl;
     }
 
@@ -117,7 +117,7 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataPtr output_data)
         file << ele.id() << " " << ele->n_nodes() << " ";
 
         FOR_ELEMENT_NODES(ele, i_node) {
-            output_data->print(file, i_corner++);
+            output_data->print_ascii(file, i_corner++);
         }
 
         file << std::endl;

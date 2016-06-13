@@ -408,7 +408,7 @@ void OutputVTK::write_vtk_data_ascii(OutputDataPtr output_data, std::string type
     /* Set precision to max */
     //file.precision(std::numeric_limits<double>::digits10);
 
-    output_data->print_all(file);
+    output_data->print_ascii_all(file);
 
     file << "\n</DataArray>" << endl;
 }
