@@ -74,6 +74,8 @@ public:
 class OutputMesh
 {
 public:
+    static const unsigned int spacedim = 3;
+    
     OutputMesh(Mesh* mesh);
     ~OutputMesh();
     

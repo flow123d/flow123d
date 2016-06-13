@@ -69,6 +69,8 @@ void OutputMesh::create_identical_mesh()
     offsets_ = std::make_shared<MeshData<unsigned int>>("offsets");
     
     fill_vectors();
+    // if output mesh computed, invalid the discontinuous data
+    discont_data_computed_ = false;
 }
 
 
@@ -78,7 +80,7 @@ void OutputMesh::fill_vectors()
     const unsigned int n_elements = orig_mesh_->n_elements(),
                        n_nodes = orig_mesh_->n_nodes();
 
-    nodes_->data_.resize(3*n_nodes);    // suppose 3D coordinates
+    nodes_->data_.resize(spacedim*n_nodes);    // suppose 3D coordinates
     nodes_->n_values = n_nodes;
     unsigned int coord_id = 0,  // coordinate id in vector
                  node_id = 0;   // node id
@@ -120,29 +122,40 @@ void OutputMesh::fill_vectors()
 
 void OutputMesh::compute_discontinuous_data()
 {
+    ASSERT_DBG(nodes_->n_values > 0);   //continuous data already computed
     if(discont_data_computed_) return;
     
     discont_nodes_ = std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR);
     discont_connectivity_ = std::make_shared<MeshData<unsigned int>>("connectivity");
     
-    const unsigned int n_corners = orig_mesh_->n_corners();
+    // connectivity = for every element list the nodes => its length corresponds to discontinuous data
+    const unsigned int n_corners = connectivity_->n_values;
 
-    discont_nodes_->data_.resize(3*n_corners);    // suppose 3D coordinates
+    discont_nodes_->data_.resize(spacedim*n_corners);
     discont_nodes_->n_values = n_corners;
  
-    discont_connectivity_->data_.resize(n_corners);  //reserve - suppose all elements being tetrahedra (4 nodes)
+    discont_connectivity_->data_.resize(n_corners);
     discont_connectivity_->n_values = n_corners;
-    Node* node;
+
     unsigned int coord_id = 0,  // coordinate id in vector
                  corner_id = 0, // corner index (discontinous node)
                  li;            // local node index
-    FOR_ELEMENTS(orig_mesh_, ele) {
-        FOR_ELEMENT_NODES(ele, li) {
-            node = ele->node[li];
+
+    for(OutputElementIterator it = begin(); it != end(); ++it)
+    {
+        unsigned int n = it->n_nodes(), 
+                     ele_idx = it->idx(),
+                     con_off = (*offsets_)[ele_idx];
+                     
+        for(li = 0; li < n; li++)
+        {
+            // offset of the first coordinate of the first node of the element in nodes_ vector
+            unsigned int off = spacedim * (*connectivity_)[con_off - n + li];
+            auto &d = nodes_->data_;
             
-            discont_nodes_->data_[coord_id] = node->getX();  coord_id++;
-            discont_nodes_->data_[coord_id] = node->getY();  coord_id++;
-            discont_nodes_->data_[coord_id] = node->getZ();  coord_id++;
+            discont_nodes_->data_[coord_id] = d[off];   ++coord_id;
+            discont_nodes_->data_[coord_id] = d[off+1]; ++coord_id;
+            discont_nodes_->data_[coord_id] = d[off+2]; ++coord_id;
             
             discont_connectivity_->data_[corner_id] = corner_id;
             corner_id++;
@@ -152,7 +165,7 @@ void OutputMesh::compute_discontinuous_data()
     discont_data_computed_ = true;
 }
 
-
+        
 void OutputMesh::create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field)
 {
     ASSERT(0).error("Not implemented yet.");
