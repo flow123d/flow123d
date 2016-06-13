@@ -49,13 +49,13 @@ public:
     {};
     
     /// Prints @p idx element of data vector into stream.
-    void print(std::ostream& out_stream, unsigned int idx) override {
+    void print_ascii(std::ostream& out_stream, unsigned int idx) override {
         ASSERT_LE(idx, this->n_values);
         out_stream << data_[idx] ;
     }
     
     /// Prints the whole data vector into stream.
-    void print_all(std::ostream& out_stream) override {
+    void print_ascii_all(std::ostream& out_stream) override {
         for(auto &d : data_)
             out_stream << d << " ";
     }

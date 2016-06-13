@@ -141,7 +141,7 @@ public:
      *
      * \note This method is used only by MSH file format.
      */
-    void print(ostream &out_stream, unsigned int idx) override
+    void print_ascii(ostream &out_stream, unsigned int idx) override
             {
     	OLD_ASSERT_LESS(idx, this->n_values);
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
@@ -156,7 +156,7 @@ public:
      *       and possibly implement transposition. Set such property for individual file formats.
      *       Class OutputData stores always in raw-first order.
      */
-    void print_all(ostream &out_stream) override
+    void print_ascii_all(ostream &out_stream) override
             {
         for(unsigned int idx = 0; idx < this->n_values; idx++) {
             ElemType *ptr_begin = this->data_ + n_elem_ * idx;
