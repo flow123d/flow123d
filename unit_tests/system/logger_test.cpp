@@ -11,6 +11,7 @@
 #include <flow_gtest_mpi.hh>
 
 #include "system/logger.hh"
+#include "system/logger_options.hh"
 #include "system/sys_profiler.hh"
 
 
@@ -78,7 +79,7 @@ TEST(MaskManipulator, full) {
 	LoggerOptions::get_instance().set_log_file("manip");
 
 	MessageOut() << "First message to cout and file.\n"
-				 << StreamMask::cout << "Second message only to cout.\n"
+				 << StreamMask::cout << "Second message only to cout." << std::endl
 				 << StreamMask::log << "Third message only to file.\n"
 				 << (StreamMask::cout | StreamMask::log) << "Fourth message to cout and file.\n";
 

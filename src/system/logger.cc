@@ -17,11 +17,11 @@
 
 
 #include "system/logger.hh"
+#include "system/logger_options.hh"
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "config.h"
 
-#include <time.h>
 #include <iomanip>
 
 
@@ -29,103 +29,6 @@
 std::string cmn_prefix( std::string a, std::string b ) {
     if( a.size() > b.size() ) std::swap(a,b) ;
     return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
-}
-
-
-/*******************************************************************
- * implementation of LoggerOptions
- */
-
-LoggerOptions& LoggerOptions::get_instance() {
-	return *instance_;
-}
-
-
-
-std::string LoggerOptions::format_hh_mm_ss(double seconds) {
-	ASSERT(seconds > -numeric_limits<double>::epsilon())(seconds).error("Formating of negative time.");
-
-	unsigned int h,m,s,ms;
-	unsigned int full_time = (int)(seconds * 1000); // in first step in miliseconds
-
-	ms = full_time % 1000;
-	full_time /= 1000;
-	s = full_time % 60;
-	full_time /= 60;
-	m = full_time % 60;
-	h = full_time / 60;
-
-	stringstream ss;
-	if (h<10) ss << "0";
-	ss << h << ":";
-	if (m<10) ss << "0";
-	ss << m << ":";
-	if (s<10) ss << "0";
-	ss << s << ".";
-	if (ms<100) ss << "0";
-	if (ms<10) ss << "0";
-	ss << ms;
-
-	return ss.str();
-}
-
-LoggerOptions* LoggerOptions::instance_ = new LoggerOptions();
-
-
-LoggerOptions::LoggerOptions()
-: mpi_rank_(-1), no_log_(false), init_(false) {}
-
-
-LoggerOptions::~LoggerOptions() {
-	if (file_stream_.is_open()) {
-		file_stream_ << std::flush;
-		file_stream_.close();
-	}
-}
-
-
-int LoggerOptions::get_mpi_rank() {
-	return mpi_rank_;
-}
-
-
-int LoggerOptions::setup_mpi(MPI_Comm comm) {
-	ASSERT(!init_).error("Setup MPI must be performed before setting logger file.");
-
-	return MPI_Comm_rank(comm, &mpi_rank_);
-}
-
-
-void LoggerOptions::set_log_file(std::string log_file_base) {
-	ASSERT(!init_).error("Recurrent initialization of logger file stream.");
-
-	if (log_file_base.size() == 0) { // empty string > no_log
-		no_log_ = true;
-	} else {
-		int mpi_rank = LoggerOptions::get_mpi_rank();
-		if (mpi_rank == -1) { // MPI is not set, random value is used
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_int_distribution<int> dis(0, 999999);
-			mpi_rank = dis(gen);
-			WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used.\n";
-		}
-		std::stringstream file_name;
-		file_name << log_file_base << "." << mpi_rank << ".log";
-		file_stream_.open( FilePath(file_name.str().c_str(), FilePath::output_file), std::ofstream::out );
-	}
-	init_ = true;
-}
-
-
-void LoggerOptions::reset() {
-	mpi_rank_ = -1;
-	no_log_ = false;
-	init_ = false;
-	if (file_stream_.is_open()) {
-		file_stream_ << std::flush;
-		file_stream_.close();
-	}
 }
 
 
@@ -163,8 +66,7 @@ Logger::Logger(MsgType type)
 : type_(type), every_process_(false)
 {
 	// set actual time
-	TimePoint t = TimePoint();
-	date_time_ = LoggerOptions::format_hh_mm_ss(t-Logger::start_time);
+	date_time_ = LoggerOptions::format_hh_mm_ss();
 
     // set MPI rank
     mpi_rank_ = LoggerOptions::get_instance().get_mpi_rank();
@@ -193,9 +95,6 @@ const std::string Logger::msg_type_string(MsgType msg_type, bool full_format)
 		return type_names[type_idx + 4];
 	}
 }
-
-
-TimePoint Logger::start_time = TimePoint();
 
 
 Logger& Logger::set_context(const char* file_name, const char* function, const int line)
@@ -346,4 +245,28 @@ void Logger::print_file_header(std::ofstream& stream, std::stringstream& file_st
     #endif
 	stream << ", \"" << file_name_ << "\", " << line_ << ", \"" << function_ << "\"";
 	stream << " ]\n";
+}
+
+
+
+/**
+ * implementation of operators
+ */
+
+Logger &operator<<(Logger & log, StreamMask mask)
+{
+	// set mask
+	log.streams_mask_ = mask;
+	log.full_streams_mask_ = log.full_streams_mask_ | log.streams_mask_;
+
+	return log;
+}
+
+
+Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) )
+{
+    if ( (log.streams_mask_ & StreamMask::cout)() ) pf(log.cout_stream_);
+    if ( (log.streams_mask_ & StreamMask::cerr)() ) pf(log.cerr_stream_);
+    if ( (log.streams_mask_ & StreamMask::log)() ) pf(log.file_stream_);
+    return log;
 }

@@ -17,6 +17,7 @@
 
 #include "system/application_base.hh"
 #include "system/sys_profiler.hh"
+#include "system/logger_options.hh"
 
 
 #ifdef FLOW123D_HAVE_PETSC
