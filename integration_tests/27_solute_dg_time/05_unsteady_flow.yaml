@@ -2,7 +2,7 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
-    mesh_file: ./input/channel_structured.msh
+    mesh_file: ../00_mesh/channel_structured.msh
   flow_equation: !Flow_Richards_LMH
     input_fields:
       - region: ALL
