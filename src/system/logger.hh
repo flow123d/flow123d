@@ -21,104 +21,8 @@
 
 #include <iostream>
 #include <sstream>
-#include <fstream>
 #include <vector>
-#include <mpi.h>
-#include "system/time_point.hh"
 
-
-
-/**
- * Helper class defined logger output file and flags for setting of logger.
- *
- * Use singleton design pattern.
- *
- * Setting of logger is ensured by two methods: setup_mpi and set_log_file. Both methods are
- * optional.
- *
- *  - setup_mpi sets actual rank of procces according to given MPI communicator. If setting
- *    is not performed, rank has default value -1. For correct functioning this method must
- *    be called before set_log_file.
- *
- *  - set_log_file allows set base name of logger output file (prefix). Name of logger file
- *    is created in format '<log_file_base>.<MPI_rank>.log'. If MPI rank is not set, it's
- *    generated random value (this option is not recommended). Method allows turn off logging
- *    if parameter log_file_base is set to empty string. If set_log_file method is not called,
- *    all logger messages are redirected to screen output.
- *
- * Example of complete initialization of logger:
- *
- @code
-   std::string log_file_prefix;
-   // ... set value of log_file_prefix
-   LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
-   LoggerOptions::get_instance().set_log_file(log_file_prefix);
- @endcode
- */
-class LoggerOptions
-{
-public:
-    /// Getter of singleton instance object
-	static LoggerOptions& get_instance();
-
-    /**
-     * Format double value to time-string in format HH:MM:SS.SSS
-     *
-     * Typical usage is formating of string from difference of two TimePoints.
-     * Example:
-	 @code
-	   TimePoint t1 = TimePoint(); // start time
-	   // ... execution of some code
-	   TimePoint t2 = TimePoint(); // end time
-	   double time_diff = t2-t1;
-	   string formatted_time = TimePoint::format_hh_mm_ss(time_diff);
-	 @endcode
-     */
-    static std::string format_hh_mm_ss(double seconds);
-
-    /// Returns number of actual process, if MPI is not supported returns -1.
-	int get_mpi_rank();
-
-	/// Set rank of actual process by MPI communicator.
-	int setup_mpi(MPI_Comm comm);
-
-    /// Initialize instance object in format 'log_file_base.process.log'.
-	void set_log_file(std::string log_file_base);
-
-    /// Reset MPI rank and log file name
-	void reset();
-
-    /// Check if singleton instance object is initialize.
-	inline bool is_init()
-	{ return init_; }
-
-	/// Destructor
-	~LoggerOptions();
-private:
-	/// Forbidden constructor
-	LoggerOptions();
-
-	/// Singleton instance
-	static LoggerOptions* instance_;
-
-	/// Stream for storing logger messages to file.
-	std::ofstream file_stream_;
-
-	/**
-	 * @brief Actual process number
-	 *
-	 * Default value is set to -1 and indicates that MPI is not set
-	 */
-	int mpi_rank_;
-
-	/// Turn off logger file output
-	bool no_log_;
-
-	/// Flag sign if logger is initialized by set_log_file method
-	bool init_;
-
-	friend class Logger;
-};
 
 
 /**
@@ -167,7 +71,7 @@ private:
  * for individual leves. These output streams are -
  *  - standard console output (std::cout)
  *  - standard error output (std::cerr)
- *  - file output (LoggerOptions class)
+ *  - file output (see \p LoggerOptions class)
  *
  * Logger distinguishes four type of levels -
  *  - warning: printed to standard error and file output
@@ -242,15 +146,7 @@ public:
 	~Logger();
 
     
-    // treat manipulators
-/*	Logger & operator<<(Logger & (*pf) (Logger &) )
-    {
-        return pf(*this);
-    }*/
-
 private:
-	static TimePoint start_time;
-
 	/// Set @p streams_mask_ according to the type of message.
 	void set_mask();
 
@@ -287,23 +183,10 @@ private:
 };
 
 
-inline Logger &operator<<(Logger & log, StreamMask mask)
-{
-	// set mask
-	log.streams_mask_ = mask;
-	log.full_streams_mask_ = log.full_streams_mask_ | log.streams_mask_;
+Logger &operator<<(Logger & log, StreamMask mask);
 
-	return log;
-}
 
-// Necessary to deal with manipulators.
-inline Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) )
-{
-    if ( (log.streams_mask_ & StreamMask::cout_mask())() ) pf(log.cout_stream_);
-    if ( (log.streams_mask_ & StreamMask::cerr_mask())() ) pf(log.cerr_stream_);
-    if ( (log.streams_mask_ & StreamMask::file_mask())() ) pf(log.file_stream_);
-    return log;
-}
+Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) );
 
 
 template <class T>

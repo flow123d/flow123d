@@ -90,6 +90,7 @@ add_library(system_lib
     system/tokenizer.cc
     system/application_base.cc
     system/logger.cc
+    system/logger_options.cc
 )
 target_link_libraries(system_lib 
     ${PETSC_LIBRARIES}  

@@ -11,6 +11,7 @@
 #include <flow_gtest_mpi.hh>
 
 #include "system/logger.hh"
+#include "system/logger_options.hh"
 #include "system/sys_profiler.hh"
 
 
