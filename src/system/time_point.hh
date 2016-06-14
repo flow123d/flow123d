@@ -88,21 +88,6 @@ class TimePoint {
         TimePoint ();
 
         /**
-         * Format double value to time-string in format HH:MM:SS.SSS
-         *
-         * Typical usage is formating of string from difference of two TimePoints.
-         * Example:
-		 @code
-		   TimePoint t1 = TimePoint(); // start time
-		   // ... execution of some code
-		   TimePoint t2 = TimePoint(); // end time
-		   double time_diff = t2-t1;
-		   string formatted_time = TimePoint::format_hh_mm_ss(time_diff);
-		 @endcode
-         */
-        static string format_hh_mm_ss(double seconds);
-
-        /**
          * Overloaded operator for subtraction. Allows subtracting TimerPoint objects using '-' sign
          * Used for determining interval between two TimerPoints
          *

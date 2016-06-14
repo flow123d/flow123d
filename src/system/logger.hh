@@ -61,6 +61,21 @@ public:
     /// Getter of singleton instance object
 	static LoggerOptions& get_instance();
 
+    /**
+     * Format double value to time-string in format HH:MM:SS.SSS
+     *
+     * Typical usage is formating of string from difference of two TimePoints.
+     * Example:
+	 @code
+	   TimePoint t1 = TimePoint(); // start time
+	   // ... execution of some code
+	   TimePoint t2 = TimePoint(); // end time
+	   double time_diff = t2-t1;
+	   string formatted_time = TimePoint::format_hh_mm_ss(time_diff);
+	 @endcode
+     */
+    static std::string format_hh_mm_ss(double seconds);
+
     /// Returns number of actual process, if MPI is not supported returns -1.
 	int get_mpi_rank();
 
@@ -123,13 +138,13 @@ public:
 	: mask_(mask) {}
 
 	/// Predefined mask of std::cout output
-	static StreamMask cout_mask();
+	static StreamMask cout;
 
 	/// Predefined mask of std::cerr output
-	static StreamMask cerr_mask();
+	static StreamMask cerr;
 
-	/// Predefined mask of std::file output
-	static StreamMask file_mask();
+	/// Predefined mask of log file output
+	static StreamMask log;
 
 	// Overload & operator
 	StreamMask operator &(const StreamMask &other);
@@ -234,9 +249,6 @@ public:
     }*/
 
 private:
-	static const unsigned int cout_mask = 0b00000001;
-	static const unsigned int cerr_mask = 0b00000010;
-	static const unsigned int file_mask = 0b00000100;
 	static TimePoint start_time;
 
 	/// Set @p streams_mask_ according to the type of message.
@@ -297,9 +309,9 @@ inline Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) )
 template <class T>
 Logger &operator<<(Logger & log, const T & x)
 {
-	if ( (log.streams_mask_ & StreamMask::cout_mask())() ) log.cout_stream_ << x;
-	if ( (log.streams_mask_ & StreamMask::cerr_mask())() ) log.cerr_stream_ << x;
-	if ( (log.streams_mask_ & StreamMask::file_mask())() ) log.file_stream_ << x;
+	if ( (log.streams_mask_ & StreamMask::cout)() ) log.cout_stream_ << x;
+	if ( (log.streams_mask_ & StreamMask::cerr)() ) log.cerr_stream_ << x;
+	if ( (log.streams_mask_ & StreamMask::log )() ) log.file_stream_ << x;
     return log;
 }
 
