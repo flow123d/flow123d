@@ -71,7 +71,7 @@ using namespace Input::Type;
    EXPECT_THROW_WHAT( { Record("yy","")
    	   	   	   				.declare_key("wrong_double", Double(), Default("1.23 4"),"")
 							.close();
-   	   	   	   	   	  }, ExcWrongDefault, "Default value .* do not match type: 'Double';");
+   	   	   	   	   	  }, ExcWrongDefaultJSON, "Not valid JSON of Default value '1.23 4' of type 'Double';");
 
 /*
    // test documentation of default_at_read_time
@@ -126,8 +126,8 @@ using namespace Input::Type;
     	.declare_key("array_of_str_1", Array( String() ), "Desc. of array")
     	// allow default values for an array
     	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
-    EXPECT_THROW_WHAT( { array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefault,
-                  "Default value 'ahoj' do not match type: 'array_of_Integer';"
+    EXPECT_THROW_WHAT( { array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefaultJSON,
+                  "Not valid JSON of Default value 'ahoj' of type 'array_of_Integer';"
                  );
     array_record.close();
 

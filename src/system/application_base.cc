@@ -55,6 +55,7 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
 
     ierr=MPI_Comm_rank(comm, &(sys_info.my_proc));
     ierr+=MPI_Comm_size(comm, &(sys_info.n_proc));
+    LoggerOptions::get_instance().setup_mpi(comm);
     OLD_ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
 
     // determine logfile name or switch it off
@@ -63,11 +64,13 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     if ( log_filename == "//" ) {
     	// -l option without given name -> turn logging off
     	sys_info.log=NULL;
+    	LoggerOptions::get_instance().set_log_file("");
     } else	{
     	// construct full log name
-    	log_name << log_filename <<  "." << sys_info.my_proc << ".log";
+    	log_name << log_filename <<  "." << sys_info.my_proc << ".old.log";
     	sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
     	sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
+    	LoggerOptions::get_instance().set_log_file(log_filename);
     }
 
     sys_info.verbosity=0;
@@ -111,7 +114,7 @@ void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
-    xprintf(Msg, "MPI size: %d\n", mpi_size);
+    MessageOut() << "MPI size: " << mpi_size << std::endl;
 #endif
 }
 

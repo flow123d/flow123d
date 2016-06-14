@@ -26,6 +26,7 @@
 #include "system/exc_common.hh"
 #include "config.h"
 #include "mpi.h"
+#include "logger.hh"
 
 /*! @brief Debugging macros.
  *
