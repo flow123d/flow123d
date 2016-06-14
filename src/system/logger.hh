@@ -242,10 +242,10 @@ public:
 	~Logger();
 
     // treat manipulators
-	Logger & operator<<(Logger & (*pf) (Logger &) )
+	/*Logger & operator<<(Logger & (*pf) (Logger &) )
     {
         return pf(*this);
-    }
+    }*/
 
 private:
 	static TimePoint start_time;
