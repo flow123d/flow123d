@@ -1,7 +1,36 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-import time, os
+import time, sys
+
+
+def check_modules(*modules):
+    """
+    Check whether all modules can be imported, return True if everything is ok
+    :param modules:
+    :return: bool
+    """
+    import imp
+
+    log = list()
+    error = False
+    for module in modules:
+        try:
+            imp.find_module(module)
+            log.append(' - found module "{module:s}"'.format(**locals()))
+        except ImportError:
+            log.append(' - missing module "{module:s}"'.format(**locals()))
+            error = True
+
+    # on error exit application
+    if error:
+        print('Could not find one of the modules!')
+        print('\n'.join(log))
+        print('\n')
+        print('Sys path:\n  ' + '\n  '.join(sys.path))
+        return False
+
+    return True
 
 
 def ensure_iterable(o):

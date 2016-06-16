@@ -1,21 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
+# ----------------------------------------------
 import threading
 import subprocess
-
 import sys
-
 import time
-
 import math
-
+# ----------------------------------------------
 from scripts import psutils
 from scripts.core import monitors
-from scripts.core.base import Printer, Paths, Command
+from scripts.core.base import Printer, Paths, Command, DynamicSleep
 from utils.counter import ProgressCounter
 from utils.events import Event
 from utils.globals import ensure_iterable, wait_for
+# ----------------------------------------------
 
 
 class ExtendedThread(threading.Thread):
@@ -26,7 +25,6 @@ class ExtendedThread(threading.Thread):
 
         self._is_over = True
         self._returncode = None
-        self.printer = Printer(Printer.LEVEL_KEY)
 
         # create event objects
         self.on_start = Event()
@@ -61,6 +59,10 @@ class ExtendedThread(threading.Thread):
 
     def is_running(self):
         return not self._is_over
+
+    def __repr__(self):
+        return "<{self.__class__.__name__}:{running} E:{self.returncode}>".format(
+            self=self, running="RUNNING" if self.is_alive() else "STOPPED")
 
 
 class BinExecutor(ExtendedThread):
@@ -113,8 +115,7 @@ class BinExecutor(ExtendedThread):
 
         # run command and block current thread
         try:
-            process = psutils.Process.popen(self.command, stdout=self.stdout, stderr=self.stderr)
-            self.process = psutils.Process(process.pid)
+            self.process = psutils.Process.popen(self.command, stdout=self.stdout, stderr=self.stderr)
         except Exception as e:
             # broken process
             process = BrokenProcess(e)
@@ -124,9 +125,10 @@ class BinExecutor(ExtendedThread):
             return
 
         # process successfully started to wait for result
+        # call wait on Popen process
         self.broken = False
-        process.wait()
-        self.returncode = getattr(process, 'returncode', None)
+        self.process.process.wait()
+        self.returncode = getattr(self.process, 'returncode', None)
 
 
 class BrokenProcess(object):
@@ -167,7 +169,7 @@ class MultiThreads(ExtendedThread):
 
         if self.counter:
             if self.separate:
-                self.printer.line()
+                Printer.separator()
             self.counter.next(locals())
 
         self.threads[self.index - 1].start()
@@ -244,7 +246,6 @@ class ParallelThreads(MultiThreads):
         super(ParallelThreads, self).__init__(name, progress)
         self.n = n if type(n) is int else 1
         self.counter = ProgressCounter('Case {:02d} of {self.total:02d}')
-        self.printer = Printer(Printer.LEVEL_KEY)
         self.stop_on_error = True
         self.separate = True
 
@@ -280,7 +281,6 @@ class ParallelThreads(MultiThreads):
 
 class PyPy(ExtendedThread):
     """
-    :type printer  : scripts.core.base.Printer
     :type executor : scripts.core.threads.BinExecutor
     :type case     : scripts.core.prescriptions.TestPrescription
     """
@@ -298,8 +298,6 @@ class PyPy(ExtendedThread):
         self.period = period
         self.case = None
         self._progress = None
-
-        self.printer = Printer(Printer.LEVEL_DBG)
 
         self.on_process_start = Event()
         self.on_process_complete = Event()
@@ -320,6 +318,9 @@ class PyPy(ExtendedThread):
 
         # different settings in batch mode
         self.progress = progress
+
+        # dynamic sleeper
+        self.sleeper = DynamicSleep()
 
     @property
     def progress(self):
@@ -349,7 +350,7 @@ class PyPy(ExtendedThread):
         wait_for(self.executor, 'process')
 
         if self.executor.broken:
-            self.printer.err('Could not start command {}: {}',
+            Printer.err('Could not start command {}: {}',
                              Command.to_string(self.executor.command),
                              getattr(self.executor, 'exception', 'Unknown error'))
             self.returncode = self.executor.returncode
@@ -359,7 +360,7 @@ class PyPy(ExtendedThread):
 
         while self.executor.process.is_running():
             self.on_process_update(self)
-            time.sleep(self.period)
+            self.sleeper.sleep()
 
         # get return code
         self.returncode = getattr(self.executor, 'returncode', None)

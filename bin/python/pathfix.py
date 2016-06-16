@@ -50,5 +50,5 @@ def append_to_path():
     add_path('..', '..', 'build_tree', 'lib', 'flow123d', 'site-packages')
 
 
-# append to path on import
-append_to_path()
+# alias
+init = append_to_path
