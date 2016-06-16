@@ -66,6 +66,8 @@ public:
      */
     static const Input::Type::Record & get_input_type();
 
+    static const Input::Type::Record & make_equation_output(string equation_name, Input::Type::Selection output_field_selection, string default_output_type);
+
     /**
      * \brief The specification of output file format
      */

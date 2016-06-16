@@ -31,6 +31,16 @@ FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 
 using namespace Input::Type;
 
+const Record & OutputTime::make_equation_output(string equation_name, Selection output_field_selection, string default_output_type) {
+    return Record("Output_"+equation_name, "Setting for the output of fields of the equation: " + equation_name )
+        .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+                        "Parameters of output stream.")
+        .declare_key("output_fields",
+                Array(output_field_selection),
+                Default::obligatory(), "List of fields that may be selected for output. These fields are automatically used also in observation.");
+}
+
+
 const Record & OutputTime::get_input_type() {
     return Record("OutputStream", "Parameters of output.")
 		// The stream
