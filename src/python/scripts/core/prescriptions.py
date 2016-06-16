@@ -1,35 +1,46 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-
+# ----------------------------------------------
 import shutil
+# ----------------------------------------------
 from scripts.core.base import Paths, Printer, PathFilters
 from scripts.core.threads import BinExecutor, SequentialThreads, ExtendedThread, PyPy
 from scripts.comparisons import file_comparison
+# ----------------------------------------------
 
 
 class TestPrescription(object):
     def __init__(self, test_case, proc_value, filename):
         """
-        :type filename: str
+        :type filename: str yaml test file
         :type proc_value: int
-        :type test_case: scripts.config.yaml_config.YamlConfigCase
+        :type test_case: scripts.config.yaml_config.YamlConfigCase or Map
         """
         self.test_case = test_case
         self.proc_value = proc_value
-        self.filename = Paths.join(filename)
-        self.printer = Printer(Printer.LEVEL_KEY)
 
-        if not self.filename:
+        # if no yaml file is present we greatly simplify all prescription
+        if not filename:
+            self.output_dir = Paths.join(Paths.temp_name('mpiexec-{rnd}'))
+
+            self.ndiff_log = Paths.join(self.output_dir, 'ndiff.log')
+            self.pbs_script = Paths.join(self.output_dir, 'pbs_script.qsub')
+            self.pbs_output = Paths.join(self.output_dir, 'pbs_output.log')
+            self.job_output = Paths.join(self.output_dir, 'job_output.log')
+            Paths.ensure_path(self.output_dir, is_file=False)
             return
 
+        self.filename = Paths.join(filename)
         self.shortname = Paths.basename(Paths.without_ext(self.filename))
         self.ref_output = Paths.join(test_case.config.ref_output, self.shortname)
         self.output_name = '_{}.{}'.format(self.shortname, self.proc_value)
         self.output_dir = Paths.join(test_case.config.test_results, self.output_name)
+
         self.ndiff_log = Paths.join(self.output_dir, 'ndiff.log')
         self.pbs_script = Paths.join(self.output_dir, 'pbs_script.qsub')
-        self.output_log = Paths.join(self.output_dir, 'pbs_job.log')
+        self.pbs_output = Paths.join(self.output_dir, 'pbs_output.log')
+        self.job_output = Paths.join(self.output_dir, 'job_output.log')
 
     def _get_command(self):
         return [
@@ -70,7 +81,6 @@ class TestPrescription(object):
     def create_clean_thread(self):
         def target():
             if Paths.exists(self.output_dir):
-                self.printer.dbg('Cleaning output dir {}'.format(self.output_dir))
                 shutil.rmtree(self.output_dir)
         return ExtendedThread(name='clean', target=target)
 
@@ -84,7 +94,7 @@ class TestPrescription(object):
             module = getattr(file_comparison, 'Compare{}'.format(method.capitalize()), None)
             comp_data = check_rule[method]
             if not module:
-                self.printer.dbg('Warning! No module for check_rule method "{}"', method)
+                Printer.err('Warning! No module for check_rule method "{}"', method)
                 continue
 
             pairs = self.get_ref_output_files(comp_data)
@@ -121,8 +131,8 @@ class MPIPrescription(TestPrescription):
 class PBSModule(TestPrescription):
     def _get_command(self):
         return [
-            'mpirun',
-            '-n', self.proc_value
+            Paths.mpiexec(),
+            '-np', self.proc_value
         ] + super(PBSModule, self)._get_command()
 
     def get_pbs_command(self, options, pbs_script_filename):

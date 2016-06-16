@@ -1,15 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-from __future__ import absolute_import
-
+# ----------------------------------------------
 import yaml
 import copy
 import itertools
-
+# ----------------------------------------------
 from scripts.core.base import Paths
 from utils.globals import ensure_iterable
-
+# ----------------------------------------------
 
 default_values = dict(
     proc=[1],

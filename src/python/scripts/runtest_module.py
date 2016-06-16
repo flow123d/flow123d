@@ -1,27 +1,26 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
+# ----------------------------------------------
+import os
 import subprocess
-
 import time
-
 import sys
-
+# ----------------------------------------------
 from scripts.core import prescriptions
 from scripts.core.base import Paths, PathFormat, PathFilters, Printer, Command, IO
 from scripts.config.yaml_config import YamlConfig
 from scripts.core.prescriptions import PBSModule
 from scripts.core.threads import BinExecutor, ParallelThreads, SequentialThreads, PyPy
+from scripts.pbs.common import get_pbs_module, job_ok_string
+from scripts.pbs.job import JobState, MultiJob, finish_pbs_job
+# ----------------------------------------------
+
 
 # global arguments
-from scripts.pbs.common import get_pbs_module, job_ok_string
-from scripts.pbs.job import JobState, MultiJob
-from utils.globals import apply_to_all
-
 arg_options = None
 arg_others = None
 arg_rest = None
-printer = Printer(Printer.LEVEL_KEY)
 
 
 def create_process(command, limits=None):
@@ -64,7 +63,7 @@ def create_process_from_case(case):
     return seq
 
 
-def create_pbs_job_content(module, command):
+def create_pbs_job_content(module, command, case):
     """
     :type module: scripts.pbs.modules.pbs_tarkil_cesnet_cz
     :rtype : str
@@ -73,9 +72,10 @@ def create_pbs_job_content(module, command):
     template = PBSModule.format(
         module.template,
         command=escaped_command,
-        root=Paths.base_dir()
+        root=Paths.base_dir(),
+        output=case.job_output,
+        status_ok=job_ok_string,
     )
-    template += '\n\n{:-<60s}\necho "{}"'.format('# ', job_ok_string)
 
     return template
 
@@ -87,9 +87,9 @@ def run_pbs_mode(all_yamls):
     """
     global arg_options, arg_others, arg_rest
     pbs_module = get_pbs_module(arg_options.host)
+    Printer.dyn_enabled = not arg_options.batch
+    Printer.dyn('Parsing yaml files')
 
-    if not arg_options.batch:
-        printer.dyn('Parsing yaml files')
     jobs = list()
     """ :type: list[(str, scripts.core.prescriptions.PBSModule)] """
     for yaml_file, config in all_yamls.items():
@@ -100,7 +100,7 @@ def run_pbs_mode(all_yamls):
             # create run command
             test_command = case.get_command()
             test_command.extend(arg_rest)
-            pbs_content = create_pbs_job_content(pbs_module, test_command)
+            pbs_content = create_pbs_job_content(pbs_module, test_command, case)
             IO.write(case.pbs_script, pbs_content)
 
             # create pbs file
@@ -108,95 +108,64 @@ def run_pbs_mode(all_yamls):
             jobs.append((qsub_command, case))
 
     # start jobs
-    if not arg_options.batch:
-        printer.dyn('Starting jobs')
+    Printer.dyn('Starting jobs')
 
-    exit(0)
     total = len(jobs)
     job_id = 0
     multijob = MultiJob(pbs_module.ModuleJob)
     for qsub_command, case in jobs:
         job_id += 1
-        if not arg_options.batch:
-            printer.dyn('Starting jobs {:02d} of {:02d}', job_id, total)
+
+        Printer.dyn('Starting jobs {:02d} of {:02d}', job_id, total)
 
         output = subprocess.check_output(qsub_command)
         job = pbs_module.ModuleJob.create(output, case)
-        job.case = case
+        job.full_name = "Case {}".format(format_case(case))
         multijob.add(job)
-    if not arg_options.batch:
-        printer.dyn('{} job/s inserted into queue', total)
-    else:
-        printer.key('{} job/s inserted into queue', total)
+
+    Printer.out('{} job/s inserted into queue', total)
 
     # first update to get more info about multijob jobs
-    printer.out()
-    printer.line()
-    if not arg_options.batch:
-        printer.dyn('Updating job status')
+    Printer.out()
+    Printer.separator()
+    Printer.dyn('Updating job status')
     multijob.update()
-    if not arg_options.batch:
-        printer.dyn(multijob.get_status_line())
 
     # print jobs statuses
-    printer.out()
+    Printer.out()
     if not arg_options.batch:
-        multijob.print_status(printer)
+        multijob.print_status()
 
+    Printer.separator()
+    Printer.dyn(multijob.get_status_line())
     returncodes = dict()
 
     # wait for finish
     while multijob.is_running():
-        if not arg_options.batch:
-            printer.dyn('Updating job status')
+        Printer.dyn('Updating job status')
         multijob.update()
-        if not arg_options.batch:
-            printer.dyn(multijob.get_status_line())
+        Printer.dyn(multijob.get_status_line())
 
         # if some jobs changed status add new line to dynamic output remains
-        jobs_changed = multijob.status_changed(JobState.COMPLETED)
+        jobs_changed = multijob.get_all(status=JobState.COMPLETED)
         if jobs_changed:
-            printer.out()
-            printer.line()
+            Printer.out()
+            Printer.separator()
 
         # get all jobs where was status update to COMPLETE state
         for job in jobs_changed:
-            # try to get more detailed job status
-            job.is_active = False
-            job_output = IO.read(job.case.output_log)
-            if job_output:
-                if job_output.find(job_ok_string) > 0:
-                    # we found the string
-                    job.status = JobState.EXIT_OK
-                    printer.key('OK: Job {} ended. Case: {}', job, format_case(job.case))
-                else:
-                    # we did not find the string :(
-                    job.status = JobState.EXIT_ERROR
-                    printer.key('ERROR: Job {} ended (wrong output). Case: {}', job, format_case(job.case))
+            returncodes[job] = finish_pbs_job(job, arg_options.batch)
 
-                # save return code
-                returncodes[job] = 0 if job.status == JobState.EXIT_OK else 1
-
-                # in batch mode print job output
-                # otherwise print output on error only
-                if arg_options.batch or job.status == JobState.EXIT_ERROR:
-                    printer.key('OUTPUT: ')
-                    printer.line()
-                    printer.key(job_output)
-                    printer.line()
-            else:
-                # no output file was generated assuming it went wrong
-                job.status = JobState.EXIT_ERROR
-                printer.key('ERROR: Job {} ended (no output file). Case: {}', job, format_case(job.case))
-            printer.line()
+        if jobs_changed:
+            Printer.separator()
+            Printer.out()
 
         # after printing update status lets sleep for a bit
         if multijob.is_running():
             time.sleep(5)
             
-    printer.line()
-    printer.key(multijob.get_status_line())
-    printer.key('All jobs finished')
+    Printer.out(multijob.get_status_line())
+    Printer.out('All jobs finished')
 
     # get max return code or number 2 if there are no returncodes
     returncode = max(returncodes.values()) if returncodes else 2
@@ -215,7 +184,7 @@ def run_local_mode(all_yamls):
     # turn on/off MPI mode
     if set(arg_options.cpu) == {1}:
         cls = prescriptions.TestPrescription
-        printer.key('Running WITHOUT MPI')
+        Printer.out('Running WITHOUT MPI')
     else:
         cls = prescriptions.MPIPrescription
 
@@ -232,16 +201,13 @@ def run_local_mode(all_yamls):
             multi_process.add(case.create_comparison_threads())
             runner.add(multi_process)
 
-    # now that we have everything prepared
-    printer.dbg('Executing tasks')
-
     # run!
     runner.start()
     while runner.is_running():
         time.sleep(1)
 
-    printer.line()
-    printer.key('Summary: ')
+    Printer.separator()
+    Printer.out('Summary: ')
     Printer.open()
     for thread in runner.threads:
         clean, pypy, comp = getattr(thread, 'threads', [None] * 3)
@@ -251,7 +217,7 @@ def run_local_mode(all_yamls):
             returncode = 1 if thread.returncode is None else thread.returncode
         returncode = str(returncode)
         if pypy:
-            printer.key('[{:^3s}] {:7s}: {}', returncode,
+            Printer.out('[{:^3s}] {:7s}: {}', returncode,
                         PyPy.returncode_map.get(returncode, 'ERROR'),
                         format_case(pypy.case))
 
@@ -282,13 +248,16 @@ def do_work(parser):
     global arg_options, arg_others, arg_rest
     arg_options, arg_others, arg_rest = parser.parse()
     Paths.format = PathFormat.ABSOLUTE
+    if arg_options.root:
+        Paths.base_dir(arg_options.root)
 
-    a = arg_options
+    # configure printer
+    Printer.batch_output = arg_options.batch
+    Printer.dynamic_output = not arg_options.batch
 
     # we need flow123d, mpiexec and ndiff to exists in LOCAL mode
     if not arg_options.queue and not Paths.test_paths('flow123d', 'mpiexec', 'ndiff'):
-        printer.err('Some files are not accessible! Exiting')
-        printer.dbg('Make sure correct --root is specified')
+        Printer.err('Missing obligatory files! Exiting')
         exit(1)
 
     # test yaml args
@@ -299,7 +268,7 @@ def do_work(parser):
     all_yamls = list()
     for path in arg_others:
         if not Paths.exists(path):
-            printer.wrn('Warning! given path does not exists, ignoring path "{}"', path)
+            Printer.wrn('Warning! given path does not exists, ignoring path "{}"', path)
             continue
 
         if Paths.is_dir(path):
@@ -311,16 +280,16 @@ def do_work(parser):
         else:
             all_yamls.append(path)
 
-    printer.key("Found {} .yaml file/s", len(all_yamls))
+    Printer.out("Found {} .yaml file/s", len(all_yamls))
     if not all_yamls:
-        printer.wrn('Warning! No yaml files found in locations: \n  {}', '\n  '.join(arg_others))
+        Printer.wrn('Warning! No yaml files found in locations: \n  {}', '\n  '.join(arg_others))
         exit(1)
 
     all_configs = read_configs(all_yamls)
 
     if arg_options.queue:
-        printer.key('Running in PBS mode')
+        Printer.out('Running in PBS mode')
         run_pbs_mode(all_configs)
     else:
-        printer.key('Running in LOCAL mode')
+        Printer.out('Running in LOCAL mode')
         run_local_mode(all_configs)

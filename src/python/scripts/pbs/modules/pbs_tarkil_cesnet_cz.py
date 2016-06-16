@@ -1,11 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-
-import math, re, datetime
+# ----------------------------------------------
+import math
+import re
+import datetime
+import getpass
+# ----------------------------------------------
+from scripts.core.base import Printer
 from scripts.core.prescriptions import PBSModule
 from scripts.pbs.job import Job, JobState
-import getpass
+# ----------------------------------------------
 
 
 class Module(PBSModule):
@@ -17,7 +22,7 @@ class Module(PBSModule):
         # number of physical machines to be reserved
         nodes = float(np) / ppn
         if int(nodes) != nodes:
-            self.printer.wrn('Warning: NP is not divisible by PPN')
+            Printer.wrn('Warning: NP is not divisible by PPN')
         nodes = int(math.ceil(nodes))
 
         # memory limit
@@ -39,7 +44,7 @@ class Module(PBSModule):
             '-l', 'walltime={walltime}'.format(**locals()),
             '-l', 'place=infiniband',
             '-q', '{queue}'.format(**locals()),
-            '-o', self.output_log,
+            '-o', self.pbs_output,
             pbs_script_filename
         ]
 
@@ -107,7 +112,8 @@ uname -a
 echo JOB START: `date`
 pwd
 
-echo "$$command$$"
-# $$command$$
+echo "$$command$$" > "$$output$$"
+$$command$$ >> "$$output$$" 2>&1
 
+echo "$$status_ok$$" >> "$$output$$"
 """.lstrip()

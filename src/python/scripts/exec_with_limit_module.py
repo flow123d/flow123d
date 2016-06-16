@@ -1,27 +1,30 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-from __future__ import absolute_import
+# ----------------------------------------------
+import sys
+# ----------------------------------------------
 from scripts.core.base import Printer, Paths
 from scripts.core.threads import BinExecutor, PyPy
+# ----------------------------------------------
 
 
-def do_work(parser):
+def do_work(parser, args=None):
     """
+    :type args: list
     :type parser: utils.argparser.ArgParser
     """
 
     # parse arguments
-    options, others, rest = parser.parse()
-    printer = Printer(Printer.LEVEL_KEY)
+    options, others, rest = parser.parse(args)
 
     # check commands
     if not rest:
-        parser.exit_usage('No command specified!')
+        parser.exit_usage('No command specified!', exit_code=1)
 
     # check limits (at least one limit must be set)
     if (options.time_limit, options.memory_limit) == (None, None):
-        parser.exit_usage('No limits specified!')
+        parser.exit_usage('No limits specified!', exit_code=2)
 
     # prepare executor
     executor = BinExecutor(rest)
@@ -39,5 +42,8 @@ def do_work(parser):
         pypy.info_monitor.stdout_stderr = Paths.temp_file('exec-limit.log')
 
     # start process
-    printer.line()
+    Printer.separator()
     pypy.start()
+    pypy.join()
+
+    return pypy.returncode

@@ -1,10 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-
+# ----------------------------------------------
 import subprocess
 import time
 import datetime
+# ----------------------------------------------
+from scripts.core.base import Printer, IO
+from scripts.pbs.common import job_ok_string
+from utils.strings import format_n_lines
+# ----------------------------------------------
 
 
 class JobState(object):
@@ -58,6 +63,7 @@ class Job(object):
         self.id = job_id
         self.case = case
 
+        self.full_name = 'Job'
         self.name = None
         self.queue = None
         self.status_changed = False
@@ -176,24 +182,31 @@ class MultiJob(object):
         status = status - {JobState.EXIT_OK, JobState.EXIT_ERROR}
         return bool(status)
 
-    def print_status(self, printer):
-        """
-        :type printer: scripts.core.base.Printer
-        """
+    def print_status(self):
         for item in self.items:
-            printer.key(str(item))
+            Printer.out(str(item))
 
     def status_changed(self, desired=JobState.COMPLETED):
         """
         :rtype : list[scripts.pbs.job.Job]
         """
+        # get all changed jobs if not specified
         if desired is None:
             return [item for item in self.items if item.status_changed]
+
+        # otherwise just desired status
         if type(desired) is not set:
             desired = set(desired)
 
         return [item for item in self.items if item.status_changed and item.status in desired]
 
+    def get_all(self, status=None):
+        if not status:
+            return [item for item in self.items]
+
+        # return all jobs having certain status
+        status = set(status) if type(status) is str else status
+        return [item for item in self.items if item.status in status]
 
     def get_status_line(self):
         status = self.status().values()
@@ -206,3 +219,39 @@ class MultiJob(object):
             delta=datetime.timedelta(seconds=int(time.time() - self.start_time)),
             status=', '.join(['{}: {:d}'.format(k, v) for k, v in result.items()])
         )
+
+
+def finish_pbs_job(job, batch):
+    """
+    :type job: scripts.pbs.job.Job
+    """
+    # try to get more detailed job status
+    job.is_active = False
+    job_output = IO.read(job.case.job_output)
+
+    if job_output:
+        if job_output.find(job_ok_string) > 0:
+            # we found the string
+            job.status = JobState.EXIT_OK
+            Printer.out('OK:    Job {} ended. {}', job, job.full_name)
+        else:
+            # we did not find the string :(
+            job.status = JobState.EXIT_ERROR
+            Printer.out('ERROR: Job {} ended. {}', job, job.full_name)
+
+        # in batch mode print job output
+        # otherwise print output on error only
+        if batch or job.status == JobState.EXIT_ERROR:
+            if batch:
+                Printer.out('       output: ')
+                Printer.out(format_n_lines(job_output, 0))
+            else:
+                Printer.out('       output (last 20 lines): ')
+                Printer.out(format_n_lines(job_output, -20))
+    else:
+        # no output file was generated assuming it went wrong
+        job.status = JobState.EXIT_ERROR
+        Printer.out('ERROR: Job {} ended (no output file found). Case: {}', job, job.full_name)
+        Printer.out('       pbs output: ')
+        Printer.out(format_n_lines(IO.read(job.case.pbs_output), 0))
+    return 0 if job.status == JobState.EXIT_OK else 1

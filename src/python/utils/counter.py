@@ -12,14 +12,13 @@ class ProgressCounter(object):
     def __init__(self, fmt):
         self.i = 0
         self.fmt = fmt
-        self.printer = Printer(Printer.LEVEL_DBG)
 
     def reset(self):
         self.i = 0
 
     def next(self, attributes):
         self.i += 1
-        self.printer.dbg(self.fmt.format(
+        Printer.out(self.fmt.format(
             self.i, **attributes
         ))
 
@@ -32,7 +31,6 @@ class ProgressTime(object):
         self.format = format
         self.period = period
 
-        self.printer = Printer(Printer.LEVEL_DBG)
         self.thread = None
         self.start_time = None
         self.running = False
@@ -49,9 +47,9 @@ class ProgressTime(object):
 
     def update(self):
         self.start_time = self.start_time or time.time()
-        self.printer.dyn(self.format, self.elapsed, **self.format_args)
+        Printer.dyn(self.format, self.elapsed, **self.format_args)
         if not self.dynamic:
-            self.printer.out()
+            Printer.out()
 
     def __enter__(self):
         if not self.active:
@@ -77,7 +75,7 @@ class ProgressTime(object):
 
         # print \n if in dynamic mode (ending)
         if self.dynamic:
-            self.printer.out()
+            Printer.out()
         return False
 
     stop = __exit__

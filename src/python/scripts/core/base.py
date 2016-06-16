@@ -1,72 +1,64 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-from __future__ import absolute_import
+# ----------------------------------------------
 import random
 import sys
 import os
 import re
 import platform
+import datetime
+import math
+import time
+# ----------------------------------------------
+
 
 is_linux = platform.system().lower().startswith('linux')
 
 flow123d_name = "flow123d" if is_linux else "flow123d.exe"
 mpiexec_name = "mpiexec" if is_linux else "mpiexec.hydra"
 
-import datetime
-
 
 class Printer(object):
-    LEVEL_DBG = 00
-    LEVEL_KEY = 10
-    LEVEL_WRN = 20
-    LEVEL_ERR = 30
     indent = 0
+    batch_output = True
+    dynamic_output = not batch_output
 
-    def __init__(self, level=LEVEL_DBG):
-        self.level = level
-
-    def dbg(self, *args, **kwargs):
-        if self.level <= self.LEVEL_DBG:
-            self.out(*args, **kwargs)
-
-    def key(self, *args, **kwargs):
-        if self.level <= self.LEVEL_KEY:
-            self.out(*args, **kwargs)
-
-    def line(self):
-        self.key('-' * 60)
-
-    def wrn(self, *args, **kwargs):
-        if self.level <= self.LEVEL_WRN:
-            self.out(*args, **kwargs)
-
-    def err(self, *args, **kwargs):
-        if self.level <= self.LEVEL_ERR:
-            self.out(*args, **kwargs)
-
-    def copy(self):
-        return Printer(self.level)
-    # ----------------------------------------------
-
-    def out(self, msg='', *args, **kwargs):
-        if self.indent:
-            sys.stdout.write('    ' * self.indent)
+    @classmethod
+    def style(cls, msg='', *args, **kwargs):
         sys.stdout.write(msg.format(*args, **kwargs))
         sys.stdout.write('\n')
 
-    def out_r(self, msg, *args, **kwargs):
-        sys.stdout.write(msg.format(*args, **kwargs))
+    @classmethod
+    def separator(cls):
+        cls.out('-' * 60)
 
-    def out_rr(self, msg, *args, **kwargs):
+    @classmethod
+    def wrn(cls, msg='', *args, **kwargs):
         sys.stdout.write(msg.format(*args, **kwargs))
-        sys.stderr.write('\r')
-        sys.stdout.flush()
+        sys.stdout.write('\n')
 
-    def dyn(self, msg, *args, **kwargs):
-        sys.stdout.write('\r' + ' ' * 60)
-        sys.stdout.write('\r' + msg.format(*args, **kwargs))
-        sys.stdout.flush()
+    @classmethod
+    def err(cls, msg='', *args, **kwargs):
+        sys.stdout.write(msg.format(*args, **kwargs))
+        sys.stdout.write('\n')
+
+    # ----------------------------------------------
+
+    @classmethod
+    def out(cls, msg='', *args, **kwargs):
+        if cls.indent:
+            sys.stdout.write('    ' * cls.indent)
+        sys.stdout.write(msg.format(*args, **kwargs))
+        sys.stdout.write('\n')
+
+    @classmethod
+    def dyn(cls, msg, *args, **kwargs):
+        if cls.dynamic_output:
+            sys.stdout.write('\r' + ' ' * 80)
+            sys.stdout.write('\r' + msg.format(*args, **kwargs))
+            sys.stdout.flush()
+
     # ----------------------------------------------
 
     @classmethod
@@ -133,13 +125,19 @@ class PathFormat(object):
 class Paths(object):
     _base_dir = ''
     format = PathFormat.ABSOLUTE
-    printer = Printer(Printer.LEVEL_WRN)
 
     @classmethod
     def base_dir(cls, v=None):
         if v is None:
             return cls._base_dir
-        cls._base_dir = os.path.dirname(os.path.realpath(v))
+
+        if os.path.isfile(v):
+            # if file is given, we assume file in bin/python was given
+            cls._base_dir = os.path.dirname(os.path.dirname(os.path.realpath(v)))
+        else:
+            # if dir was given we just convert it to real path and use it
+            cls._base_dir = os.path.realpath(v)
+        return cls._base_dir
 
     @classmethod
     def source_dir(cls):
@@ -151,7 +149,7 @@ class Paths(object):
         for path in paths:
             filename = getattr(cls, path)()
             if not cls.exists(filename):
-                cls.printer.err('Error: file {:10s} ({}) does not exists!', path, filename)
+                Printer.err('Error: file {:10s} ({}) does not exists!', path, filename)
                 status = False
 
         return status
@@ -176,7 +174,7 @@ class Paths(object):
     @classmethod
     @make_relative
     def bin_dir(cls):
-        return cls.join(cls.base_dir(), '..')
+        return cls.join(cls.base_dir(), 'bin')
 
     @classmethod
     @make_relative
@@ -366,3 +364,36 @@ class IO(object):
             Paths.unlink(name)
             return True
         return False
+
+    @classmethod
+    def delete_all(cls, folder):
+        import shutil
+        return shutil.rmtree(folder, ignore_errors=True)
+
+
+class DynamicSleep(object):
+    def __init__(self, min=100, max=5000, steps=13):
+        # -c * Math.cos(t/d * (Math.PI/2)) + c + b;
+        # t: current time, b: begInnIng value, c: change In value, d: duration
+        c = float(max - min)
+        d = float(steps)
+        b = float(min)
+        self.steps = list()
+        for t in range(steps+1):
+            self.steps.append(float(int(
+                -c * math.cos(t/d * (math.pi/2)) + c + b
+            ))/1000)
+        self.current = -1
+        self.total = len(self.steps)
+
+    def sleep(self):
+        sleep_duration = self.next()
+        time.sleep(sleep_duration)
+
+    def next(self):
+        self.current += 1
+
+        if self.current >= self.total:
+            return self.steps[-1]
+
+        return self.steps[self.current]
