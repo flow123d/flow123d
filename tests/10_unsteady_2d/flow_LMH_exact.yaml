@@ -30,7 +30,7 @@ problem: !Coupling_Sequential
         conductivity: 0.5
         cross_section: 1.0
         init_pressure: !FieldFormula
-            value: sin(4*atan(1)*x)
+            value: sin(Pi*x)
         # default
         #storativity: 1
         # default
