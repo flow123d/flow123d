@@ -364,8 +364,8 @@ void DarcyMH::zero_time_step()
 
     data_->set_time(time_->step(), LimitSide::right);
     // zero_time_term means steady case
-    bool zero_time_term_from_right
-        = data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    bool zero_time_term_from_right = zero_time_term();
+
 
     if (zero_time_term_from_right) {
         // steady case
@@ -393,9 +393,10 @@ void DarcyMH::update_solution()
 
     time_->next_time();
 
+    time_->view("DARCY"); //time governor information output
     data_->set_time(time_->step(), LimitSide::left);
-    bool zero_time_term_from_left
-        = data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    bool zero_time_term_from_left=zero_time_term();
+
     bool jump_time = data_->storativity.is_jump_time();
     if (! zero_time_term_from_left) {
         // time term not treated as zero
@@ -421,8 +422,7 @@ void DarcyMH::update_solution()
     }
 
     data_->set_time(time_->step(), LimitSide::right);
-    bool zero_time_term_from_right
-        = data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = true;
@@ -438,6 +438,9 @@ void DarcyMH::update_solution()
 
 }
 
+bool DarcyMH::zero_time_term() {
+    return data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+}
 
 
 void DarcyMH::solve_nonlinear()
@@ -538,7 +541,7 @@ void DarcyMH::postprocess()
 
 void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
-    time_->view("DARCY"); //time governor information output
+    //time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 
 
@@ -608,9 +611,6 @@ void DarcyMH::local_assembly_specific() {
 void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 {
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
-    is_linear_=true;
-    
-
 
     LinSys *ls = schur0;
 
@@ -1255,7 +1255,8 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-    bool is_steady = data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    is_linear_=true;
+    bool is_steady = zero_time_term();
 	//DBGMSG("Assembly linear system\n");
 	if (data_->changed()) {
 		//DBGMSG("  Data changed\n");

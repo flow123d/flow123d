@@ -54,7 +54,6 @@ public:
 
     void reset_soil_model(LocalElementAccessorBase<3> ele) {
         genuchten_on = (this->ad_->genuchten_p_head_scale.field_result({ele.region()}) != result_zeros);
-        //DBGMSG("g on: %d\n", genuchten_on);
         if (genuchten_on) {
             SoilData soil_data = {
                     this->ad_->genuchten_n_exponent.value(ele.centre(), ele.element_accessor()),
@@ -159,7 +158,8 @@ public:
     AssemblyDataPtr ad_;
     RichardsSystem system_;
 
-    SoilModel_VanGenuchten soil_model;
+    //SoilModel_VanGenuchten soil_model;
+    SoilModel_Irmay soil_model;
     bool genuchten_on;
     double cross_section;
 };

@@ -188,6 +188,123 @@ T SoilModel_VanGenuchten::water_content(const T& h) const
     else return soil_param_.Qs;
 }
 
+
+class SoilModel_Irmay {
+public:
+    SoilModel_Irmay();
+    SoilModel_Irmay(SoilData soil);
+
+    void reset(SoilData soil);
+
+    template <class T>
+    T conductivity(const T &h) const;
+
+    template <class T>
+    T water_content(const T &h) const;
+
+
+private:
+
+    template <class T>
+    inline T Q_non_cut(const T &h) const
+    {
+        if (h > 0.0) return soil_param_.Qs;
+        else return Qr_nc + (Qs_nc - Qr_nc) * pow( 1 + pow(-soil_param_.alpha * h, soil_param_.n), -m);
+    }
+
+    template <class T>
+    inline T Q_non_cut_inv(const T &q) const
+    {
+        return  -pow( pow( (q - Qr_nc) / (Qs_nc - Qr_nc), -1/m ) -1, 1/soil_param_.n)/soil_param_.alpha;
+    }
+
+
+    // input parameters
+    SoilData  soil_param_;
+
+    // conductivity parameters
+    const double Ppar;
+    const double K_lower_limit;
+
+    // aux values
+    double m;
+    //double arg_cap_max, cap_max_; // position of capacity maximum
+    double Qs_nc;       // saturated value of continuation of cut water content function
+    double Qr_nc;       // residual value of continuation of cut water content function
+
+    double FFQr, FFQs;
+    double Hs;
+
+};
+
+SoilModel_Irmay::SoilModel_Irmay()
+:  Ppar(3), K_lower_limit(1.0E-20)
+{
+
+}
+
+
+SoilModel_Irmay::SoilModel_Irmay(SoilData soil)
+:  SoilModel_Irmay()
+{
+    reset(soil);
+}
+
+
+void SoilModel_Irmay::reset(SoilData soil)
+{
+    soil_param_ = soil;
+
+    m = 1-1/soil_param_.n;
+    //arg_cap_max= -alpha * pow(m, 1.0/n);
+    //cap_max_ = 0;
+
+    Qs_nc = soil_param_.Qs / soil_param_.cut_fraction;
+    Qr_nc = soil_param_.Qr; // no cut on residual part
+
+    // conductivity internal scaling
+    FFQr = 1.0;   // pow(1 - pow(Qeer,1/m),m);
+    double Qs_unscaled = (soil_param_.Qs - Qr_nc) / (Qs_nc - Qr_nc );
+    FFQs = pow(1 - pow(Qs_unscaled,1/m),m);
+
+
+    Hs = Q_non_cut_inv(soil_param_.Qs);
+
+
+
+}
+
+
+
+template <class T>
+T SoilModel_Irmay::conductivity(const T& h) const
+{
+    T Kr,Q, Q_unscaled, Q_cut_unscaled, FFQ;
+
+    if (h < Hs) {
+        Q = water_content(h);
+        Q_unscaled = (Q - Qr_nc) / (Qs_nc - Qr_nc);
+        Q_cut_unscaled = (Q - soil_param_.Qr) / (soil_param_.Qs - soil_param_.Qr);
+
+        Kr = soil_param_.Ks * pow(Q_cut_unscaled,Ppar);
+    }
+    else Kr = soil_param_.Ks;
+
+    if (Kr < K_lower_limit) return K_lower_limit;
+    else return Kr;
+}
+
+
+template <class T>
+T SoilModel_Irmay::water_content(const T& h) const
+{
+    if (h < 0.0) return Q_non_cut(h);
+    else return soil_param_.Qs;
+}
+
+
+
+
 /*
 
 //FK-------------------------------------------------------------

@@ -253,7 +253,7 @@ public:
 
 protected:
 
-    
+    virtual bool zero_time_term();
 
 
     /// Solve method common to zero_time_step and update solution.
