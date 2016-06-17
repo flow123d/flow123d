@@ -97,6 +97,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             tmp_parser.AddConstant("Pi", 3.14159265358979323846);
             tmp_parser.AddConstant("E", 2.71828182845904523536);
 
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
             {
@@ -114,14 +115,18 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                             var_name.c_str(), row, col, formula_matrix_.at(row,col).c_str(),
                             value_input_address_.c_str() );
             }
+
+            // Seems that we can not just add 't' constant to tmp_parser, since it was already Parsed.
+            parser_matrix_[row][col].AddConstant("Pi", 3.14159265358979323846);
+            parser_matrix_[row][col].AddConstant("E", 2.71828182845904523536);
             if (time_dependent) {
-                tmp_parser.AddConstant("t", time.end());
+                parser_matrix_[row][col].AddConstant("t", time.end());
             }
 
             // TODO:
             // - possibly add user defined constants and units here ...
             // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
-            parser_matrix_[row][col] = tmp_parser;
+            //parser_matrix_[row][col] = tmp_parser;
             if (time_dependent || this->time_ == TimeStep() ) {
                 parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
 
