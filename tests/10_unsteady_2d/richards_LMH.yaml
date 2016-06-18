@@ -1,0 +1,73 @@
+flow123d_version: 1.8.9
+problem: !Coupling_Sequential
+  description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
+  mesh:
+    mesh_file: ./input/test10_bentonit_0.05.msh
+  flow_equation: !Flow_Richards_LMH
+    time: 
+        end_time: 100      # 6000
+        init_dt: 0.01
+        max_dt: 10
+        min_dt: 0.01
+
+    input_fields:
+      - region: plane
+        init_pressure: -6500
+        
+        # Knabner benchmark soil parameters
+#        water_content_saturated: 0.362
+#        water_content_residual: 0.084
+#        conductivity: 1.23E-5
+#        genuchten_n_exponent: 2.0
+#        genuchten_p_head_scale: 1.0
+
+        # Bentonit
+        water_content_saturated: 0.42
+        water_content_residual: 0.04
+        conductivity: 1.8e-10
+        genuchten_n_exponent: 1.24
+        genuchten_p_head_scale: 5e-3
+        
+        
+            
+            
+# hydro - academic porous media
+#set hydro_n = 1.14
+#set hydro_alfa = 0.1
+#set hydro_cut = 0.999
+#set hydro_qr = 0.01
+#set hydro_qs = 0.48
+#set hydro_ks = 2              # saturated conductivity  
+#set hydro_kk = 2              # conductivity at the cut point 
+
+## Knabner 1D
+#set hydro_n = 2.0
+#set hydro_alfa = 1.0
+#set hydro_cut = 1.0
+#set hydro_qr = 0.084
+#set hydro_qs = 0.362
+#set hydro_ks = 1.25E-5              # saturated conductivity  
+#set hydro_kk = 2              # conductivity at the cut point 
+            
+      - region: .bc_bottom
+        bc_type: dirichlet
+        bc_pressure: 0
+#      - region: .bc_top
+#        bc_type: dirichlet
+#        bc_pressure: -100
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    n_schurs: 2
+    output:
+      output_stream: 
+        file: ./flow.pvd
+        format: !vtk
+          variant: ascii
+        time_step: 10        
+      output_fields:
+        - pressure_p0        
+        - velocity_p0
+    balance:
+      cumulative: true
+    
