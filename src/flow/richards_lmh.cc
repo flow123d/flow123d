@@ -364,10 +364,10 @@ void RichardsLMH::postprocess() {
 
   // modify side fluxes in parallel
   // for every local edge take time term on digonal and add it to the corresponding flux
-    PetscScalar *loc_prev_sol;
+    //PetscScalar *loc_prev_sol;
     auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
 
-    VecGetArray(previous_solution, &loc_prev_sol);
+    //VecGetArray(previous_solution, &loc_prev_sol);
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
       auto ele_ac = mh_dh.accessor(i_loc);
@@ -389,7 +389,7 @@ void RichardsLMH::postprocess() {
       VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
     VecAssemblyBegin(schur0->get_solution());
-    VecRestoreArray(previous_solution, &loc_prev_sol);
+    //VecRestoreArray(previous_solution, &loc_prev_sol);
     VecAssemblyEnd(schur0->get_solution());
 }
 
