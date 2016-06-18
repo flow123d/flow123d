@@ -107,6 +107,8 @@ public:
      */
     int solve() override;
 
+    double compute_residual() override;
+
 protected:
     /// create IA matrix
     void create_inversion_matrix();

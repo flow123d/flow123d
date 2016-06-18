@@ -345,6 +345,13 @@ int SchurComplement::solve() {
 }
 
 
+double SchurComplement::compute_residual()
+{
+    return LinSys_PETSC::compute_residual();
+}
+
+
+
 /**
  * SCHUR COMPLEMENT destructor
  */
