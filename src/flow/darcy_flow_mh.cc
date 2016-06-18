@@ -486,7 +486,7 @@ void DarcyMH::solve_nonlinear()
 
 
         int convergedReason = schur0->solve();
-        this -> postprocess();
+
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
@@ -501,6 +501,7 @@ void DarcyMH::solve_nonlinear()
         residual_norm = schur0->compute_residual();
         xprintf(Msg, "  [nonlinear solver] it: %d lin. it:%d (reason: %d) residual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
     }
+    this -> postprocess();
 
     // adapt timestep
     if (nonlinear_iteration_ < 3) time_->set_upper_constraint(time_->step().length() * 1.3, "Darcy adaptivity.");
