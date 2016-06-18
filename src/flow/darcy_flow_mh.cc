@@ -483,10 +483,7 @@ void DarcyMH::solve_nonlinear()
                 THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
             }
         }
-
-
         int convergedReason = schur0->solve();
-
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
@@ -504,9 +501,12 @@ void DarcyMH::solve_nonlinear()
     this -> postprocess();
 
     // adapt timestep
-    if (nonlinear_iteration_ < 3) time_->set_upper_constraint(time_->step().length() * 1.3, "Darcy adaptivity.");
-    else if (nonlinear_iteration_ > 7) time_->set_upper_constraint(time_->step().length() * 0.7, "Darcy adaptivity.");
-    else time_->set_upper_constraint(time_->step().length(), "Darcy adaptivity.");
+    if (! this->zero_time_term()) {
+        if (nonlinear_iteration_ < 3) time_->set_upper_constraint(time_->step().length() * 1.3, "Darcy adaptivity.");
+        else if (nonlinear_iteration_ > 7) time_->set_upper_constraint(time_->step().length() * 0.7, "Darcy adaptivity.");
+        else time_->set_upper_constraint(time_->step().length(), "Darcy adaptivity.");
+        DBGMSG("time adaptivity, t: %f dt: %f et: %f\n", time_->t(), time_->dt(), time_->estimate_time());
+    }
 
     solution_changed_for_scatter=true;
 
