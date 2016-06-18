@@ -446,6 +446,7 @@ bool DarcyMH::zero_time_term() {
 void DarcyMH::solve_nonlinear()
 {
 
+    DBGMSG("dt: %g\n", time_->step().length());
     assembly_linear_system();
     double residual_norm = schur0->compute_residual();
     unsigned int l_it=0;
@@ -465,7 +466,6 @@ void DarcyMH::solve_nonlinear()
         schur0->set_tolerances(0.1, 0.1*this->tolerance_, 10);
     }
     vector<double> convergence_history;
-
 
     while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
@@ -500,9 +500,12 @@ void DarcyMH::solve_nonlinear()
 
         residual_norm = schur0->compute_residual();
         xprintf(Msg, "  [nonlinear solver] it: %d lin. it:%d (reason: %d) residual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
-
-
     }
+
+    // adapt timestep
+    if (nonlinear_iteration_ < 3) time_->set_upper_constraint(time_->step().length() * 1.3, "Darcy adaptivity.");
+    else if (nonlinear_iteration_ > 7) time_->set_upper_constraint(time_->step().length() * 0.7, "Darcy adaptivity.");
+    else time_->set_upper_constraint(time_->step().length(), "Darcy adaptivity.");
 
     solution_changed_for_scatter=true;
 
