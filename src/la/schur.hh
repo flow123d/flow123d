@@ -104,9 +104,23 @@ public:
 
     /**
      * Solve the system.
+     *
+     * - If matrix and/or rhs is changed the Schur complement is formed.
+     * - The inner linear solver is called for the Schur complement
+     * - Resolve is called to reconstruct eliminated part of the solution vector.
      */
     int solve() override;
 
+    /**
+     * Only resolve the system with current solution vector. This is necessary for nonlinear solvers.
+     * - If matrix and/or rhs is changed the Schur complement is formed.
+     * - Resolve is called to reconstruct eliminated part of the solution vector.
+     */
+    void resolve();
+
+    /**
+     * The solve or resolve must be called prior to computing the residual.
+     */
     double compute_residual() override;
 
 protected:
@@ -115,7 +129,7 @@ protected:
 
     void form_schur();
 
-    void resolve();
+
 
     Mat IA;                     // Inverse of block A
 
