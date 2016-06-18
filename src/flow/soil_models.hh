@@ -38,8 +38,7 @@ struct SoilData {
     double  alpha;           // pressure head scaling
     double  Qr;             // residual water content
     double  Qs;             // saturated water content
-    double  cut_fraction;   // fraction of Qs where to cut and rescale
-                        // water content and conductivity function
+    double  cut_fraction;   // in (0,1), fraction of relative Q where to cut and rescale the retention curve
     double  Ks;             // saturated conductivity
 //    double  Kk;             // conductivity at the cut point
 };
@@ -57,42 +56,18 @@ public:
     template <class T>
     T water_content(const T &h) const;
 
-    /// Maximum point of capacity.
-    //inline double cap_arg_max() const { return arg_cap_max; }
-
-    /*
-    // function of normalized capacity (with maximum 1.0)
-    inline double lambda(double cap) const {
-
-        if (cap < 1.0/8) return 1;
-        if (cap > 1.0/2) return 0.5;
-        cap = ( cap - 1.0/8 ) /  (1.0/2 - 1.0/8);
-        double lmb= //1-4*square(h/arg_cap_max);
-                    0.5+0.5/
-                            (1.0+square(
-                                       1.0/(1.0- square(cap)) - 1.0
-                                      )
-                             );
-        return lmb;
-
-    }
-*/
-
-private:
-  //  inline double square(const double x) const
-  //      {return x*x;}
+protected:
 
     template <class T>
-    inline T Q_non_cut(const T &h) const
+    inline T Q_rel(const T &h) const
     {
-        if (h > 0.0) return soil_param_.Qs;
-        else return Qr_nc + (Qs_nc - Qr_nc) * pow( 1 + pow(-soil_param_.alpha * h, soil_param_.n), -m);
+        return  pow( 1 + pow(-soil_param_.alpha * h, soil_param_.n), -m);
     }
 
     template <class T>
-    inline T Q_non_cut_inv(const T &q) const
+    inline T Q_rel_inv(const T &q) const
     {
-        return  -pow( pow( (q - Qr_nc) / (Qs_nc - Qr_nc), -1/m ) -1, 1/soil_param_.n)/soil_param_.alpha;
+        return  -pow( pow( q, -1/m ) -1, 1/soil_param_.n)/soil_param_.alpha;
     }
 
 
@@ -106,9 +81,8 @@ private:
 
     // aux values
     double m;
-    //double arg_cap_max, cap_max_; // position of capacity maximum
     double Qs_nc;       // saturated value of continuation of cut water content function
-    double Qr_nc;       // residual value of continuation of cut water content function
+
 
     double FFQr, FFQs;
     double Hs;
@@ -131,24 +105,23 @@ SoilModel_VanGenuchten::SoilModel_VanGenuchten(SoilData soil)
 
 void SoilModel_VanGenuchten::reset(SoilData soil)
 {
+    // check soil parameters
+    ASSERT_LT_DBG( soil.cut_fraction, 1.0);
+    ASSERT_GT_DBG( soil.cut_fraction, 0.0);
     soil_param_ = soil;
 
     m = 1-1/soil_param_.n;
-    //arg_cap_max= -alpha * pow(m, 1.0/n);
-    //cap_max_ = 0;
-
-    Qs_nc = soil_param_.Qs / soil_param_.cut_fraction;
-    Qr_nc = soil_param_.Qr; // no cut on residual part
+    // soil_param_.cut_fraction = (Qs -Qr)/(Qnc - Qr)
+    Qs_nc = (soil_param_.Qs - soil_param_.Qr)/soil_param_.cut_fraction  + soil_param_.Qr;
 
     // conductivity internal scaling
     FFQr = 1.0;   // pow(1 - pow(Qeer,1/m),m);
-    double Qs_unscaled = (soil_param_.Qs - Qr_nc) / (Qs_nc - Qr_nc );
-    FFQs = pow(1 - pow(Qs_unscaled,1/m),m);
+    double Qs_relative = soil_param_.cut_fraction;
+    FFQs = pow(1 - pow(Qs_relative, 1/m),m);
 
 
-    Hs = Q_non_cut_inv(soil_param_.Qs);
-
-
+    Hs = Q_rel_inv(soil_param_.cut_fraction);
+    //std::cout << "Hs : " << Hs << " qs: " << soil_param_.Qs << " qsnc: " << Qs_nc << std::endl;
 
 }
 
@@ -166,12 +139,9 @@ T SoilModel_VanGenuchten::conductivity(const T& h) const
     T Kr,Q, Q_unscaled, Q_cut_unscaled, FFQ;
 
       if (h < Hs) {
-            Q = water_content(h);
-            Q_unscaled = (Q - Qr_nc) / (Qs_nc - Qr_nc);
-            Q_cut_unscaled = (Q - soil_param_.Qr) / (soil_param_.Qs - soil_param_.Qr);
-
+            Q_unscaled = Q_rel(h);
+            Q_cut_unscaled = Q_unscaled / soil_param_.cut_fraction;
             FFQ = pow(1 - pow(Q_unscaled,1/m),m);
-
             Kr = soil_param_.Ks * pow(Q_cut_unscaled,Bpar)*pow((FFQr - FFQ)/(FFQr - FFQs),Ppar);
     }
     else Kr = soil_param_.Ks;
@@ -184,64 +154,28 @@ T SoilModel_VanGenuchten::conductivity(const T& h) const
 template <class T>
 T SoilModel_VanGenuchten::water_content(const T& h) const
 {
-    if (h < 0.0) return Q_non_cut(h);
+    if (h < Hs) return soil_param_.Qr + (Qs_nc - soil_param_.Qr) *Q_rel(h);
     else return soil_param_.Qs;
 }
 
 
-class SoilModel_Irmay {
+class SoilModel_Irmay : public SoilModel_VanGenuchten {
 public:
     SoilModel_Irmay();
     SoilModel_Irmay(SoilData soil);
 
-    void reset(SoilData soil);
-
     template <class T>
     T conductivity(const T &h) const;
 
-    template <class T>
-    T water_content(const T &h) const;
-
-
 private:
-
-    template <class T>
-    inline T Q_non_cut(const T &h) const
-    {
-        if (h > 0.0) return soil_param_.Qs;
-        else return Qr_nc + (Qs_nc - Qr_nc) * pow( 1 + pow(-soil_param_.alpha * h, soil_param_.n), -m);
-    }
-
-    template <class T>
-    inline T Q_non_cut_inv(const T &q) const
-    {
-        return  -pow( pow( (q - Qr_nc) / (Qs_nc - Qr_nc), -1/m ) -1, 1/soil_param_.n)/soil_param_.alpha;
-    }
-
-
-    // input parameters
-    SoilData  soil_param_;
-
     // conductivity parameters
     const double Ppar;
     const double K_lower_limit;
-
-    // aux values
-    double m;
-    //double arg_cap_max, cap_max_; // position of capacity maximum
-    double Qs_nc;       // saturated value of continuation of cut water content function
-    double Qr_nc;       // residual value of continuation of cut water content function
-
-    double FFQr, FFQs;
-    double Hs;
-
 };
 
 SoilModel_Irmay::SoilModel_Irmay()
 :  Ppar(3), K_lower_limit(1.0E-20)
-{
-
-}
+{}
 
 
 SoilModel_Irmay::SoilModel_Irmay(SoilData soil)
@@ -251,42 +185,16 @@ SoilModel_Irmay::SoilModel_Irmay(SoilData soil)
 }
 
 
-void SoilModel_Irmay::reset(SoilData soil)
-{
-    soil_param_ = soil;
-
-    m = 1-1/soil_param_.n;
-    //arg_cap_max= -alpha * pow(m, 1.0/n);
-    //cap_max_ = 0;
-
-    Qs_nc = soil_param_.Qs / soil_param_.cut_fraction;
-    Qr_nc = soil_param_.Qr; // no cut on residual part
-
-    // conductivity internal scaling
-    FFQr = 1.0;   // pow(1 - pow(Qeer,1/m),m);
-    double Qs_unscaled = (soil_param_.Qs - Qr_nc) / (Qs_nc - Qr_nc );
-    FFQs = pow(1 - pow(Qs_unscaled,1/m),m);
-
-
-    Hs = Q_non_cut_inv(soil_param_.Qs);
-
-
-
-}
-
 
 
 template <class T>
 T SoilModel_Irmay::conductivity(const T& h) const
 {
-    T Kr,Q, Q_unscaled, Q_cut_unscaled, FFQ;
+    T Kr;
 
     if (h < Hs) {
-        Q = water_content(h);
-        Q_unscaled = (Q - Qr_nc) / (Qs_nc - Qr_nc);
-        Q_cut_unscaled = (Q - soil_param_.Qr) / (soil_param_.Qs - soil_param_.Qr);
-
-        Kr = soil_param_.Ks * pow(Q_cut_unscaled,Ppar);
+        T Q = this->Q_rel(h);
+        Kr = soil_param_.Ks * pow(Q, 3);
     }
     else Kr = soil_param_.Ks;
 
@@ -295,12 +203,6 @@ T SoilModel_Irmay::conductivity(const T& h) const
 }
 
 
-template <class T>
-T SoilModel_Irmay::water_content(const T& h) const
-{
-    if (h < 0.0) return Q_non_cut(h);
-    else return soil_param_.Qs;
-}
 
 
 

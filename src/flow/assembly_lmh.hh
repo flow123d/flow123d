@@ -55,14 +55,13 @@ public:
     void reset_soil_model(LocalElementAccessorBase<3> ele) {
         genuchten_on = (this->ad_->genuchten_p_head_scale.field_result({ele.region()}) != result_zeros);
         if (genuchten_on) {
-            SoilData soil_data = {
-                    this->ad_->genuchten_n_exponent.value(ele.centre(), ele.element_accessor()),
-                    this->ad_->genuchten_p_head_scale.value(ele.centre(), ele.element_accessor()),
-                    this->ad_->water_content_residual.value(ele.centre(), ele.element_accessor()),
-                    this->ad_->water_content_saturated.value(ele.centre(), ele.element_accessor()),
-                    this->ad_->conductivity.value(ele.centre(), ele.element_accessor()),
-                    1.001, // cut fraction, todo: fix meaning
-            };
+            SoilData soil_data;
+            soil_data.n =  this->ad_->genuchten_n_exponent.value(ele.centre(), ele.element_accessor());
+            soil_data.alpha = this->ad_->genuchten_p_head_scale.value(ele.centre(), ele.element_accessor());
+            soil_data.Qr = this->ad_->water_content_residual.value(ele.centre(), ele.element_accessor());
+            soil_data.Qs = this->ad_->water_content_saturated.value(ele.centre(), ele.element_accessor());
+            soil_data.Ks = this->ad_->conductivity.value(ele.centre(), ele.element_accessor());
+            soil_data.cut_fraction = 0.999;
 
             soil_model.reset(soil_data);
         }
@@ -95,17 +94,24 @@ public:
         cross_section = this->ad_->cross_section.value(ele.centre(), ele.element_accessor());
 
 
-        double conductivity;
+        double conductivity, head;
         if (genuchten_on) {
             conductivity=0;
+            head=0;
             FOR_ELEMENT_SIDES(ele.full_iter(), i)
             {
                 uint local_edge = ele.edge_local_idx(i);
                 conductivity += soil_model.conductivity(ad_->phead_edge_[local_edge]);
+                head += ad_->phead_edge_[local_edge];
             }
+            conductivity /= ele.n_sides();
+            head /= ele.n_sides();
         } else {
             conductivity = this->ad_->conductivity.value(ele.centre(), ele.element_accessor());
         }
+        cout << "cond: " << conductivity
+             << " h: " << head
+             << " z:" << ele.centre()[2] << endl;
 
         double scale = 1 / cross_section / conductivity;
         *(system_.local_matrix) = scale * this->assembly_local_geometry_matrix(ele.full_iter());
@@ -124,7 +130,7 @@ public:
         //double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
         double diagonal_coef = ele.measure() * cross_section / ele.n_sides();
 
-        double water_content_diff = 0;
+
         double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.element_accessor());
 
         update_water_content(ele);
@@ -134,10 +140,18 @@ public:
             uint local_side = ele.side_local_idx(i);
             uint edge_row = ele.edge_row(i);
             double capacity = this->ad_->capacity[local_side];
-            water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
-
-
+            double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
             double mass_diagonal = diagonal_coef * capacity;
+
+            cout << "w diff: " << water_content_diff
+                 << " mass: " << mass_diagonal
+                 //<< "w prev: " << ad_->water_content_previous_it[local_side]
+                 //<< "w time: " << ad_->water_content_previous_time[local_side]
+                 << " c: " << capacity
+                 << " p: " << ad_->phead_edge_[local_edge]
+                 << " z:" << ele.centre()[2] << endl;
+
+
 
 
             //cout << "mesh edge: " << mesh_edge << "local: " << local_edge << endl;
