@@ -2,13 +2,14 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
-    mesh_file: ./input/test10_bentonit_0.05.msh
+    #mesh_file: ./input/test10_bentonit_0.001.msh
+    mesh_file: ./input/test10_bentonit_0.001.msh
   flow_equation: !Flow_Richards_LMH
     time: 
-        end_time: 100      # 6000
-        init_dt: 0.01
+        end_time: 6000      # 6000
+        init_dt: 1
         max_dt: 10
-        min_dt: 0.01
+        min_dt: 0.1
 
     input_fields:
       - region: plane
@@ -22,6 +23,7 @@ problem: !Coupling_Sequential
 #        genuchten_p_head_scale: 1.0
 
         # Bentonit
+        #storativity: 5.846e-5
         water_content_saturated: 0.42
         water_content_residual: 0.04
         conductivity: 1.8e-10
@@ -50,14 +52,18 @@ problem: !Coupling_Sequential
 #set hydro_kk = 2              # conductivity at the cut point 
             
       - region: .bc_bottom
-        bc_type: dirichlet
+        bc_type: total_flux
         bc_pressure: 0
+        bc_robin_sigma: 1e6
 #      - region: .bc_top
 #        bc_type: dirichlet
 #        bc_pressure: -100
     nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-07
+      tolerance: 1e-9
+      max_it: 20 # should stop after 5 iterations due to stagnation
+      converge_on_stagnation: false
+      linear_solver: !Petsc 
+        a_tol: 1e-11
     n_schurs: 2
     output:
       output_stream: 

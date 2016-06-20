@@ -109,9 +109,6 @@ public:
         } else {
             conductivity = this->ad_->conductivity.value(ele.centre(), ele.element_accessor());
         }
-        cout << "cond: " << conductivity
-             << " h: " << head
-             << " z:" << ele.centre()[2] << endl;
 
         double scale = 1 / cross_section / conductivity;
         *(system_.local_matrix) = scale * this->assembly_local_geometry_matrix(ele.full_iter());
@@ -126,8 +123,6 @@ public:
     void assembly_source_term(LocalElementAccessorBase<3> ele) {
 
         // set lumped source
-
-        //double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
         double diagonal_coef = ele.measure() * cross_section / ele.n_sides();
 
 
@@ -143,20 +138,19 @@ public:
             double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
             double mass_diagonal = diagonal_coef * capacity;
 
+            /*
             cout << "w diff: " << water_content_diff
-                 << " mass: " << mass_diagonal
-                 //<< "w prev: " << ad_->water_content_previous_it[local_side]
-                 //<< "w time: " << ad_->water_content_previous_time[local_side]
+                 << " mass: " << mass_diagonal * ad_->phead_edge_[local_edge]
+                 << " w prev: " << -ad_->water_content_previous_it[local_side]
+                 << " w time: " << ad_->water_content_previous_time[local_side]
                  << " c: " << capacity
                  << " p: " << ad_->phead_edge_[local_edge]
                  << " z:" << ele.centre()[2] << endl;
 
+            */
 
-
-
-            //cout << "mesh edge: " << mesh_edge << "local: " << local_edge << endl;
             double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] / this->ad_->time_step_
-                              + water_content_diff / this->ad_->time_step_;
+                              + diagonal_coef * water_content_diff / this->ad_->time_step_;
 
             system_.lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal/this->ad_->time_step_ );
             system_.lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);

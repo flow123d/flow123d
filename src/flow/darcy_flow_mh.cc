@@ -467,6 +467,8 @@ void DarcyMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
+    Vec save_solution;
+    VecDuplicate(schur0->get_solution(), &save_solution);
     while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
@@ -483,17 +485,23 @@ void DarcyMH::solve_nonlinear()
                 THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
             }
         }
+
+        if (! is_linear_common)
+            VecCopy( schur0->get_solution(), save_solution);
         int convergedReason = schur0->solve();
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common) break;
 
+        double alpha = 1; // how much of new solution
+        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
+
+
 
         //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
-
 
         residual_norm = schur0->compute_residual();
         xprintf(Msg, "  [nonlinear solver] it: %d lin. it:%d (reason: %d) residual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
@@ -502,10 +510,11 @@ void DarcyMH::solve_nonlinear()
 
     // adapt timestep
     if (! this->zero_time_term()) {
-        if (nonlinear_iteration_ < 3) time_->set_upper_constraint(time_->step().length() * 1.3, "Darcy adaptivity.");
-        else if (nonlinear_iteration_ > 7) time_->set_upper_constraint(time_->step().length() * 0.7, "Darcy adaptivity.");
-        else time_->set_upper_constraint(time_->step().length(), "Darcy adaptivity.");
-        DBGMSG("time adaptivity, t: %f dt: %f et: %f\n", time_->t(), time_->dt(), time_->estimate_time());
+        double mult = 1.0;
+        if (nonlinear_iteration_ < 3) mult = 1.6;
+        if (nonlinear_iteration_ > 7) mult = 0.7;
+        int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
+        //DBGMSG("time adaptivity, res: %d it: %d m: %f dt: %f edt: %f\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
 
     solution_changed_for_scatter=true;
