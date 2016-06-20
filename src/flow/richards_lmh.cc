@@ -358,6 +358,7 @@ void RichardsLMH::postprocess() {
     int side_rows[4];
     double values[4];
 
+
     VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
 
@@ -368,7 +369,6 @@ void RichardsLMH::postprocess() {
     auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
 
     //VecGetArray(previous_solution, &loc_prev_sol);
-
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
       auto ele_ac = mh_dh.accessor(i_loc);
       multidim_assembler[ele_ac.dim()]->update_water_content(ele_ac);
@@ -388,8 +388,25 @@ void RichardsLMH::postprocess() {
       }
       VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
+
+
     VecAssemblyBegin(schur0->get_solution());
     //VecRestoreArray(previous_solution, &loc_prev_sol);
     VecAssemblyEnd(schur0->get_solution());
+
+    /*
+    // 0.01
+    //vector<double> obs = {20, 15, 10, 5};
+    // 0.001
+
+    vector<double> obs = {200, 150, 100, 50};
+
+    cout << "obs: " << time_->t();
+    for(int i_el : obs) {
+        auto ele_ac = mh_dh.accessor(i_el);
+        cout << " " << ele_ac.centre()[2] << " " << schur0->get_solution_array()[ele_ac.ele_row()];
+    }
+    cout << endl;
+    */
 }
 
