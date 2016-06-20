@@ -58,7 +58,7 @@ void check_tensor_field(std::shared_ptr<TensorField> field,const  std::string& e
 TEST(FieldConst, read_from_input) {
 
     // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Input::Type::Record rec_type = Input::Type::Record("FieldConstTest","")
         .declare_key("tensor1", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )

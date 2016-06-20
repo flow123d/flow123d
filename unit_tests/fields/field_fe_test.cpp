@@ -38,7 +38,7 @@ public:
 
     virtual void SetUp() {
         // setup FilePath directories
-        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
         Profiler::initialize();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);

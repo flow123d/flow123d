@@ -361,7 +361,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
 
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
+    FilePath::set_io_dirs(".", string(UNIT_TESTS_SRC_DIR) + "/in.yaml", "", ".");
 
     Mesh mesh;
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
@@ -439,7 +439,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
 
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
+    FilePath::set_io_dirs(".", string(UNIT_TESTS_SRC_DIR) + "/in.yaml", "", ".");
 
     Mesh mesh;
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
@@ -534,7 +534,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
 
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
+    FilePath::set_io_dirs(".", string(UNIT_TESTS_SRC_DIR) + "/in.yaml", "", ".");
 
     Mesh mesh;
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());

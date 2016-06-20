@@ -103,7 +103,7 @@ regions:
 )YAML";
 
 TEST(Mesh, init_from_input) {
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Input::ReaderToStorage reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_YAML );
     auto rec = reader.get_root_interface<Input::Record>();
