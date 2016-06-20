@@ -87,6 +87,8 @@ std::ostringstream &ExceptionBase::form_message(std::ostringstream &converter) c
     converter << "\n** Diagnosting info **\n" ;
     converter << boost::diagnostic_information_what( *this );
     print_stacktrace(converter);
+    if ( boost::get_error_info<EI_Nested>(*this) ) DBGMSG("Nested: '%s'.\n", EI_Nested::val);
+    else DBGMSG("Not nested\n");
     converter << std::endl << "--------------------------------------------------------" << std::endl;
 
     return converter;

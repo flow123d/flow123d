@@ -320,6 +320,11 @@ TYPEDEF_ERR_INFO( EI_XprintfHeader, std::string);
 TYPEDEF_ERR_INFO( EI_XprintfMessage, std::string);
 DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfHeader::val << EI_XprintfMessage::val);
 
+/**
+ * Error info of previous exception
+ */
+TYPEDEF_ERR_INFO( EI_Nested, const ExceptionBase*);
+
 
 
 
