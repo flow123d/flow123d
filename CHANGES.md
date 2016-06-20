@@ -3,7 +3,7 @@ List of all changes in user interface and major internal changes.
 ***********************************************
 
 #Flow123d version 2.0.0_rc
-(2016-05-04)
+(2016-06-20)
 
 ### User interface
 * Adopt YAML (http://www.yaml.org/start.html) as the format for the principal input file.

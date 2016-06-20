@@ -1,5 +1,5 @@
 # problem
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Transport 1D-2D, (convection, dual porosity, sorption)
   mesh:
@@ -103,5 +103,5 @@ problem: !Coupling_Sequential
       end_time: 1.0
     balance:
       cumulative: true
-  # solute_equation
+  # secondary_equation
 # problem
