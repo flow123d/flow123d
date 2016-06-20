@@ -77,7 +77,6 @@ it::Record & Application::get_input_type() {
 
 Application::Application( int argc,  char ** argv)
 : ApplicationBase(argc, argv),
-  main_input_dir_("."),
   main_input_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
@@ -90,21 +89,6 @@ Application::Application( int argc,  char ** argv)
     PythonLoader::initialize(argv[0]);
 #endif
 
-}
-
-
-void Application::split_path(const string& path, string& directory, string& file_name) {
-
-    size_t delim_pos=path.find_last_of(DIR_DELIMITER);
-    if (delim_pos < string::npos) {
-
-        // It seems, that there is some path in fname ... separate it
-        directory =path.substr(0,delim_pos);
-        file_name =path.substr(delim_pos+1); // till the end
-    } else {
-        directory = ".";
-        file_name = path;
-    }
 }
 
 
@@ -249,9 +233,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // if there is "solve" option
+    string input_filename = ".";
     if (vm.count("solve")) {
-        string input_filename = vm["solve"].as<string>();
-        split_path(input_filename, main_input_dir_, main_input_filename_);
+        input_filename = vm["solve"].as<string>();
     }
 
     // possibly turn off profilling
@@ -270,7 +254,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // assumes working directory "."
-    FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
+    main_input_filename_ = FilePath::set_io_dirs(".", input_filename, input_dir, output_dir );
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();

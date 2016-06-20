@@ -57,9 +57,10 @@ FilePath::FilePath(string file_path, const  FileType ft)
 
 
 
-void FilePath::set_io_dirs(const string working_dir, const string root_input_dir,const string input,const string output) {
+string FilePath::set_io_dirs(const string working_dir, const string root_input, const string input, const string output) {
     // root directory
-    root_dir = root_input_dir;
+	boost::filesystem::path input_path(root_input);
+    root_dir = input_path.parent_path().string();
 
     // relative output dir is relative to working directory
     // this is possibly independent of position of the main input file
@@ -96,6 +97,8 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
 
     // the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);
+
+    return input_path.filename().string();
 }
 
 
