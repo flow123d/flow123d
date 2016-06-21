@@ -41,7 +41,7 @@ TEST(BoostFileSystem, base_methods) {
 		stringstream dir_with_actual;
 		dir_with_actual << boost::filesystem::current_path().string() << DIR_DELIMITER << "." << DIR_DELIMITER << "x";
 		if ( !boost::filesystem::is_directory(dir_with_actual.str()) ) {
-			boost::filesystem::create_directory(dir_dbl.str());
+			boost::filesystem::create_directory(dir_with_actual.str());
 			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
 			boost::filesystem::remove(dir_with_actual.str());
 			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
