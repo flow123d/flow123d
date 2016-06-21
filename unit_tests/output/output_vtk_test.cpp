@@ -10,6 +10,7 @@
 #include <flow_gtest_mpi.hh>
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
+#include "io/output_mesh.hh"
 #include "mesh/mesh.h"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
@@ -38,6 +39,12 @@ public:
         this->_mesh = new Mesh();
         ifstream in(string(mesh_file).c_str());
         this->_mesh->read_gmsh_from_stream(in);
+        
+        // create output mesh identical to computational mesh
+        this->output_mesh_ = new OutputMesh(this->_mesh);
+        this->output_mesh_->create_identical_mesh();
+        // set validity of the output mesh for the current writing time
+        this->is_output_mesh_valid_ = true;
     }
 
     ~TestOutputVTK()
