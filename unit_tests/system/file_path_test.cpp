@@ -34,7 +34,7 @@ TEST(BoostFileSystem, base_methods) {
 		}
 	}
 
-	// absolute path contains actual dir ('.') inside in path (e. g. "/x/./y")
+	// absolute path contains actual dir ('.'), format is current_path() + "/./x"
 	{
 		stringstream dir;
 		dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
@@ -48,7 +48,7 @@ TEST(BoostFileSystem, base_methods) {
 		}
 	}
 
-	// complicated absolute path
+	// complicated absolute path in format current_path() + "/x/../y"
 	{
 		stringstream dir_x;
 		dir_x << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
@@ -61,14 +61,41 @@ TEST(BoostFileSystem, base_methods) {
 		EXPECT_EQ( boost::filesystem::is_directory(dir_y.str()), boost::filesystem::is_directory(dir_y_full.str()));
 		if ( !boost::filesystem::is_directory(dir_y_full.str()) ) {
 			bool x_dir_exists = boost::filesystem::is_directory(dir_x.str());
+			if (!x_dir_exists) {
+				boost::filesystem::create_directory(dir_x.str());
+			}
 			boost::filesystem::create_directory(dir_y_full.str());
-			EXPECT_EQ( x_dir_exists, boost::filesystem::is_directory(dir_x.str()) );
 			EXPECT_TRUE( boost::filesystem::is_directory(dir_y.str()) );
 			EXPECT_TRUE( boost::filesystem::is_directory(dir_y_full.str()) );
 			boost::filesystem::remove(dir_y_full.str());
-			EXPECT_EQ( x_dir_exists, boost::filesystem::is_directory(dir_x.str()) );
+			if (!x_dir_exists) {
+				boost::filesystem::remove(dir_x.str());
+			}
 			EXPECT_FALSE( boost::filesystem::is_directory(dir_y.str()) );
 			EXPECT_FALSE( boost::filesystem::is_directory(dir_y_full.str()) );
+		}
+	}
+
+	// complicated absolute path in format current_path() + "/x/y"
+	{
+		stringstream dir_x;
+		dir_x << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
+		stringstream dir_y;
+		dir_y << boost::filesystem::current_path().string() << DIR_DELIMITER << "x" << DIR_DELIMITER << "y";
+
+		if ( !boost::filesystem::is_directory(dir_y.str()) ) {
+			bool x_dir_exists = boost::filesystem::is_directory(dir_x.str());
+			if (!x_dir_exists) {
+				boost::filesystem::create_directory(dir_x.str());
+			}
+			boost::filesystem::create_directory(dir_y.str());
+			EXPECT_TRUE( boost::filesystem::is_directory(dir_x.str()) );
+			EXPECT_TRUE( boost::filesystem::is_directory(dir_y.str()) );
+			boost::filesystem::remove(dir_y.str());
+			if (!x_dir_exists) {
+				boost::filesystem::remove(dir_x.str());
+			}
+			EXPECT_FALSE( boost::filesystem::is_directory(dir_y.str()) );
 		}
 	}
 
