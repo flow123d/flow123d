@@ -192,12 +192,12 @@ TEST(FilePath, input_relative) {
 
     { // relative input without substitution; conversion to string
 		string str = FilePath("subdir/init.in", FilePath::input_file);
-		EXPECT_EQ("./main_root/subdir/init.in", str);
+		EXPECT_EQ("././main_root/subdir/init.in", str);
     }
 
     { // relative input with substitution; conversion to string
 		string str = FilePath("subdir/${INPUT}/init.in", FilePath::input_file);
-		EXPECT_EQ("./main_root/subdir/variant_input/init.in", str);
+		EXPECT_EQ("././main_root/subdir/variant_input/init.in", str);
     }
 
     { // absolute input without substitution; conversion to string
@@ -219,18 +219,18 @@ TEST(FilePath, input_absolute) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     string abs_path = FilePath::get_absolute_working_dir();
-    FilePath::set_io_dirs("/main_root/in.yaml", "variant_input", abs_path+"output_root", "/work_dir/xx");
+    FilePath::set_io_dirs(abs_path+"main_root/in.yaml", "variant_input", abs_path+"output_root", "/work_dir/xx");
 
     {
         // relative input without substitution; conversion to string
         string str = FilePath("./subdir/init.in", FilePath::input_file);
-        EXPECT_EQ("/main_root/./subdir/init.in", str);
+        EXPECT_EQ(abs_path+"main_root/./subdir/init.in", str);
     }
 
     {
         // relative input with substitution; conversion to string
         string str = FilePath("./subdir/${INPUT}/init.in", FilePath::input_file);
-        EXPECT_EQ("/main_root/./subdir/variant_input/init.in", str);
+        EXPECT_EQ(abs_path+"main_root/./subdir/variant_input/init.in", str);
     }
 
     {
@@ -251,7 +251,7 @@ TEST(FilePath, input_absolute) {
 TEST(FilePath, create_output_dir) {
     //::testing::FLAGS_gtest_death_test_style = "threadsafe";
     boost::filesystem::remove_all("./work_dir");
-    FilePath::set_io_dirs("", "my_input", "my_output", "./work_dir");
+    FilePath::set_io_dirs("in.yaml", "my_input", "my_output", "./work_dir");
     EXPECT_TRUE(boost::filesystem::is_directory("./work_dir/my_output"));
     FilePath fp("subdir/some_file.xyz", FilePath::output_file);
     fp.create_output_dir();
