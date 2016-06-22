@@ -27,7 +27,7 @@ TEST(BoostFileSystem, base_methods) {
 		stringstream dir;
 		dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
 		if ( !boost::filesystem::is_directory(dir.str()) ) {
-			boost::filesystem::create_directory(dir.str());
+			boost::filesystem::create_directories(dir.str());
 			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
 			boost::filesystem::remove(dir.str());
 			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
@@ -41,7 +41,7 @@ TEST(BoostFileSystem, base_methods) {
 		stringstream dir_with_actual;
 		dir_with_actual << boost::filesystem::current_path().string() << DIR_DELIMITER << "." << DIR_DELIMITER << "x";
 		if ( !boost::filesystem::is_directory(dir_with_actual.str()) ) {
-			boost::filesystem::create_directory(dir_with_actual.str());
+			boost::filesystem::create_directories(dir_with_actual.str());
 			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
 			boost::filesystem::remove(dir_with_actual.str());
 			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
@@ -61,10 +61,7 @@ TEST(BoostFileSystem, base_methods) {
 		EXPECT_EQ( boost::filesystem::is_directory(dir_y.str()), boost::filesystem::is_directory(dir_y_full.str()));
 		if ( !boost::filesystem::is_directory(dir_y_full.str()) ) {
 			bool x_dir_exists = boost::filesystem::is_directory(dir_x.str());
-			if (!x_dir_exists) {
-				boost::filesystem::create_directory(dir_x.str());
-			}
-			boost::filesystem::create_directory(dir_y_full.str());
+			boost::filesystem::create_directories(dir_y_full.str());
 			EXPECT_TRUE( boost::filesystem::is_directory(dir_y.str()) );
 			EXPECT_TRUE( boost::filesystem::is_directory(dir_y_full.str()) );
 			boost::filesystem::remove(dir_y_full.str());
@@ -78,24 +75,20 @@ TEST(BoostFileSystem, base_methods) {
 
 	// complicated absolute path in format current_path() + "/x/y"
 	{
+		stringstream dir;
+		dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x" << DIR_DELIMITER << "y";
 		stringstream dir_x;
 		dir_x << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
-		stringstream dir_y;
-		dir_y << boost::filesystem::current_path().string() << DIR_DELIMITER << "x" << DIR_DELIMITER << "y";
 
-		if ( !boost::filesystem::is_directory(dir_y.str()) ) {
+		if ( !boost::filesystem::is_directory(dir.str()) ) {
 			bool x_dir_exists = boost::filesystem::is_directory(dir_x.str());
-			if (!x_dir_exists) {
-				boost::filesystem::create_directory(dir_x.str());
-			}
-			boost::filesystem::create_directory(dir_y.str());
-			EXPECT_TRUE( boost::filesystem::is_directory(dir_x.str()) );
-			EXPECT_TRUE( boost::filesystem::is_directory(dir_y.str()) );
-			boost::filesystem::remove(dir_y.str());
+			boost::filesystem::create_directories(dir.str());
+			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
+			boost::filesystem::remove(dir.str());
 			if (!x_dir_exists) {
 				boost::filesystem::remove(dir_x.str());
 			}
-			EXPECT_FALSE( boost::filesystem::is_directory(dir_y.str()) );
+			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
 		}
 	}
 
@@ -106,7 +99,7 @@ TEST(BoostFileSystem, base_methods) {
 		stringstream abs_dir;
 		abs_dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
 		if ( !boost::filesystem::is_directory(dir.str()) ) {
-			boost::filesystem::create_directory(dir.str());
+			boost::filesystem::create_directories(dir.str());
 			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
 			EXPECT_TRUE( boost::filesystem::is_directory(abs_dir.str()) );
 			boost::filesystem::remove(dir.str());
@@ -122,7 +115,7 @@ TEST(BoostFileSystem, base_methods) {
 		stringstream abs_dir;
 		abs_dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
 		if ( !boost::filesystem::is_directory(dir.str()) ) {
-			boost::filesystem::create_directory(dir.str());
+			boost::filesystem::create_directories(dir.str());
 			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
 			EXPECT_TRUE( boost::filesystem::is_directory(abs_dir.str()) );
 			boost::filesystem::remove(dir.str());
@@ -131,6 +124,7 @@ TEST(BoostFileSystem, base_methods) {
 		}
 	}
 }
+
 
 
 /**
