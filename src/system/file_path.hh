@@ -76,11 +76,11 @@ public:
     /**
      * Set:
      * - working directory (used only if the output directory is relative)
-     * - root directory (of the main input file)
+     * - input root directory (path of the main input file)
      * - input directory to replace ${INPUT} place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
-    static string set_io_dirs(const string root_input, const string input, const string output, const string working_dir=".");
+    static string set_io_dirs(const string main_input_file, const string input, const string output, const string working_dir=".");
 
     /**
      * This class is implicitly convertible to string.
@@ -133,18 +133,6 @@ private:
     static bool is_absolute_path(const string path);
 
 
-    /**
-     * Check if directory stored in output_dir doesn't exist and create its
-     */
-    static void create_dir(string dir);
-
-
-    /**
-     * Create canonical path of output directory given by relative path.
-     */
-    static void create_canonical_path(const string working_dir, const string output);
-
-
     /// Final absolute path to the file.
     string abs_file_path_;
 
@@ -158,7 +146,7 @@ private:
     static string output_dir;
 
     /// Prefix path for input files (directory of the main input file).
-    static string root_dir;
+    static string input_root_dir;
 };
 
 #endif /* FILE_NAME_HH_ */
