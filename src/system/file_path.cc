@@ -57,7 +57,7 @@ FilePath::FilePath(string file_path, const  FileType ft)
 
 
 
-string FilePath::set_io_dirs(const string working_dir, const string root_input, const string input, const string output) {
+string FilePath::set_io_dirs(const string root_input, const string input, const string output, const string working_dir) {
     // root directory
 	boost::filesystem::path input_path(root_input);
     root_dir = input_path.parent_path().string();

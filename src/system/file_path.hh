@@ -80,7 +80,7 @@ public:
      * - input directory to replace ${INPUT} place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
-    static string set_io_dirs(const string working_dir, const string root_input, const string input, const string output);
+    static string set_io_dirs(const string root_input, const string input, const string output, const string working_dir=".");
 
     /**
      * This class is implicitly convertible to string.

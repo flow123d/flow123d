@@ -77,7 +77,7 @@ string eq_data_input = R"JSON(
 TEST(Operators, assignment) {
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
     FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
     GmshMeshReader msh_reader(mesh_file);
     Mesh * mesh = new Mesh;

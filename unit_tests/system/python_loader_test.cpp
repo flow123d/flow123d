@@ -57,7 +57,7 @@ TEST(PythonLoader, function_error) {
 
 TEST(PythonLoader, file_error) {
     // setup FilePath directories
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
 
     EXPECT_THROW( { PythonLoader::load_module_from_file(FilePath::get_absolute_working_dir() + "/python_loader_script.py"); },
     		PythonLoader::ExcPythonError);

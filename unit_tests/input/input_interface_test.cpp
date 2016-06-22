@@ -57,7 +57,7 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
-        FilePath::set_io_dirs("./json_root_dir","/json_root_dir/in.yaml","variant_input","./output_root");
+        FilePath::set_io_dirs("/json_root_dir/in.yaml","variant_input","./output_root","./json_root_dir");
 
         abstr_rec_ptr = new Abstract("Abstract", "desc");
         abstr_rec_ptr->close();

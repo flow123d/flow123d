@@ -154,7 +154,7 @@ protected:
     virtual void SetUp() {
         Profiler::initialize();
         //data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
-        FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+        FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
 
         FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
         mesh= new Mesh;

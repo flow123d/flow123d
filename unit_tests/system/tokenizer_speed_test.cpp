@@ -32,7 +32,7 @@ static const std::string file_line_text = "\"some_text_line\"";
 TEST(TokenizerPosition, compare_speed) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	FilePath::set_io_dirs(".", string(UNIT_TESTS_SRC_DIR) + "/in.yaml", "", ".");
+	FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml", "", ".", ".");
 	std::vector<Tokenizer::Position> position_data;
 
 	// create file, fill vector of positions
