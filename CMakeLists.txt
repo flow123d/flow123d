@@ -661,6 +661,9 @@ if (USE_PYTHON)
               COMMAND python ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path_without_prefix --format cmake
               OUTPUT_VARIABLE PY_WRAPPER_PATHS
               OUTPUT_STRIP_TRAILING_WHITESPACE)
+              
+            # configure pythonenv.sh script (populates py wrapper path used in wrapper file)
+            configure_file(${CMAKE_SOURCE_DIR}/CMake/pythonenv_template ${CMAKE_SOURCE_DIR}/bin/pythonenv.sh @ONLY)
         endif()
     else()
         set(PYTHON_INCLUDE_DIRS "")
