@@ -5,59 +5,37 @@ problem: !Coupling_Sequential
     #mesh_file: ./input/test10_bentonit_0.001.msh
     mesh_file: ./input/test10_bentonit_0.001.msh
   flow_equation: !Flow_Richards_LMH
-    time: 
-        end_time: 6000      # 6000
+    
+    time: # time in hours (consistent with conductivity)
+        end_time: 1000     # original experiment from UGN up to time 6000 h
         init_dt: 1
-        max_dt: 10
+        # current time step enlargement logic do not allow to extent time step up to the output timestep
+        # maximum timestep wil be just 50.
+        max_dt: 100        
         min_dt: 0.1
 
     input_fields:
       - region: plane
-        init_pressure: -6500
+        # pressure -65 MPa; for g and density see conductivity below
+        init_pressure: -6619    
         
-        # Knabner benchmark soil parameters
-#        water_content_saturated: 0.362
-#        water_content_residual: 0.084
-#        conductivity: 1.23E-5
-#        genuchten_n_exponent: 2.0
-#        genuchten_p_head_scale: 1.0
 
         # Bentonit
         #storativity: 5.846e-5
         water_content_saturated: 0.42
         water_content_residual: 0.04
-        conductivity: 1.8e-10
+        
+        # permeability 5e-21 m^2; g 9.82 kg m s^{-2}; water density 988; viscosity 0.001 Pa.s
+        conductivity: 1.778e-10          # m/h 
         genuchten_n_exponent: 1.24
         genuchten_p_head_scale: 5e-3
         
-        
-            
-            
-# hydro - academic porous media
-#set hydro_n = 1.14
-#set hydro_alfa = 0.1
-#set hydro_cut = 0.999
-#set hydro_qr = 0.01
-#set hydro_qs = 0.48
-#set hydro_ks = 2              # saturated conductivity  
-#set hydro_kk = 2              # conductivity at the cut point 
-
-## Knabner 1D
-#set hydro_n = 2.0
-#set hydro_alfa = 1.0
-#set hydro_cut = 1.0
-#set hydro_qr = 0.084
-#set hydro_qs = 0.362
-#set hydro_ks = 1.25E-5              # saturated conductivity  
-#set hydro_kk = 2              # conductivity at the cut point 
-            
+        # effective Dirichlet BC
       - region: .bc_bottom
         bc_type: total_flux
         bc_pressure: 0
         bc_robin_sigma: 1e6
-#      - region: .bc_top
-#        bc_type: dirichlet
-#        bc_pressure: -100
+
     nonlinear_solver:
       tolerance: 1e-9
       max_it: 20 # should stop after 5 iterations due to stagnation
@@ -70,7 +48,7 @@ problem: !Coupling_Sequential
         file: ./flow.pvd
         format: !vtk
           variant: ascii
-        time_step: 10        
+        time_step: 100        
       output_fields:
         - pressure_p0        
         - velocity_p0
