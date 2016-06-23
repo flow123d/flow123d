@@ -40,7 +40,7 @@ class RegionDB;
  *
  * The mass, flux and source are calculated as follows:
  *
- * 	m(q,r) =  ( M'(q) * solution )[r]
+ * 	m(q,r) =  ( M'(q) * solution + mv(q) )[r]
  * 	f(q,r) = -( R' * ( F(q) * solution + fv(q) ) )[r]
  * 	s(q,r) =  ( S'(q) * solution + sv(q) )[r]
  *
@@ -56,6 +56,7 @@ class RegionDB;
  * 	F(q)...be_flux_matrix_			n_boundary_edges x n_dofs
  * 	S(q)...region_source_matrix_	n_dofs x n_bulk_regions
  * 	SV(q)..region_source_rhs_		n_dofs x n_bulk_regions
+ *  mv(q)..region_mass_vec_         n_bulk_regions
  * 	fv(q)..be_flux_vec_				n_boundary_edges
  * 	sv(q)..region_source_vec_    	n_bulk_regions
  * 	R......region_be_matrix_		n_boundary_edges x n_boundary_regions
@@ -251,6 +252,16 @@ public:
 			unsigned int region_idx,
 			const std::vector<int> &dof_indices,
 			const std::vector<double> &values);
+    
+    /**
+     * Adds element into vector for computing mass.
+     * @param quantity_idx  Index of quantity.
+     * @param region_idx    Index of bulk region.
+     * @param value         Value to be added.
+     */
+    void add_mass_vec_value(unsigned int quantity_idx,
+            unsigned int region_idx,
+            double value);
 
 	/**
 	 * Adds element into vector for computing (outgoing) flux.
@@ -428,6 +439,9 @@ private:
 
     /// Vectors for calculation of flux (n_boundary_edges).
     Vec *be_flux_vec_;
+    
+    /// Vectors for calculation of mass (n_bulk_regions).
+    Vec *region_mass_vec_;
 
     /// Vectors for calculation of source (n_bulk_regions).
     Vec *region_source_vec_;

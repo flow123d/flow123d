@@ -203,6 +203,7 @@ void Balance::allocate(unsigned int n_loc_dofs,
 	be_flux_matrix_ = new Mat[n_quant];
 	region_source_matrix_ = new Mat[n_quant];
 	region_source_rhs_ = new Mat[n_quant];
+    region_mass_vec_ = new Vec[n_quant];
 	be_flux_vec_ = new Vec[n_quant];
 	region_source_vec_ = new Vec[n_quant];
 
@@ -251,6 +252,11 @@ void Balance::allocate(unsigned int n_loc_dofs,
 				(rank_==0)?0:n_bulk_regs_per_dof,
 				0,
 				&(region_source_rhs_[c])));
+        
+        chkerr(VecCreateMPI(PETSC_COMM_WORLD,
+                (rank_==0)?mesh_->region_db().bulk_size():0,
+                PETSC_DECIDE,
+                &(region_mass_vec_[c])));
 
 		chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 				be_regions_.size(),
@@ -311,6 +317,7 @@ void Balance::start_mass_assembly(unsigned int quantity_idx)
 {
 	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	chkerr(MatZeroEntries(region_mass_matrix_[quantity_idx]));
+    chkerr(VecZeroEntries(region_mass_vec_[quantity_idx]));
 }
 
 
@@ -336,6 +343,8 @@ void Balance::finish_mass_assembly(unsigned int quantity_idx)
 	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 	chkerr(MatAssemblyBegin(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+    chkerr(VecAssemblyBegin(region_mass_vec_[quantity_idx]));
+    chkerr(VecAssemblyEnd(region_mass_vec_[quantity_idx]));
 }
 
 void Balance::finish_flux_assembly(unsigned int quantity_idx)
@@ -407,6 +416,17 @@ void Balance::add_source_matrix_values(unsigned int quantity_idx,
 			reg_array,
 			&(values[0]),
 			ADD_VALUES));
+}
+
+
+void Balance::add_mass_vec_value(unsigned int quantity_idx,
+        unsigned int region_idx,
+        double value)
+{
+  chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
+            region_idx,
+            value,
+            ADD_VALUES));
 }
 
 
@@ -524,7 +544,10 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 
 	// compute mass on regions: M'.u
 	chkerr(VecZeroEntries(bulk_vec));
-	chkerr(MatMultTranspose(region_mass_matrix_[quantity_idx], solution, bulk_vec));
+	chkerr(MatMultTransposeAdd(region_mass_matrix_[quantity_idx], 
+                               solution, 
+                               region_mass_vec_[quantity_idx], 
+                               bulk_vec));
 	VecDestroy(&bulk_vec);
 }
 
