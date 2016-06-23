@@ -138,21 +138,21 @@ TEST(FilePath, output_relative) {
     //EXPECT_DEATH( {FilePath("input/${INPUT}/init.in", FilePath::input_file);},
     //        "Creating FileName object before set_io_dirs is called.");
 
-    FilePath::set_io_dirs("./work_dir/xx", "/main_root", "variant_input", "../output_root");
+    FilePath::set_io_dirs("./work_dir/xx", "./main_root", "variant_input", "../output_root");
 
     { // relative output_dir x relative output substitution
 		FilePath fp = FilePath("output.vtk", FilePath::output_file);
 		string str_fp = fp;
 
 		// relative output substitution; conversion to string
-		EXPECT_EQ(FilePath::get_absolute_working_dir()+"work_dir/output_root/output.vtk", str_fp);
+		EXPECT_EQ(FilePath::get_absolute_working_dir()+"main_root/work_dir/output_root/output.vtk", str_fp);
 
 		// conversion to string
-		EXPECT_EQ(FilePath::get_absolute_working_dir()+"work_dir/output_root/output.vtk", string(fp));
+		EXPECT_EQ(FilePath::get_absolute_working_dir()+"main_root/work_dir/output_root/output.vtk", string(fp));
     }
 
     // relative output_dir x absolute output substitution, this case is not allowed
-    EXPECT_THROW_WHAT( { FilePath(FilePath::get_absolute_working_dir()+"work_dir/xx/output.vtk", FilePath::output_file); },
+    EXPECT_THROW_WHAT( { FilePath(FilePath::get_absolute_working_dir()+"main_root/work_dir/xx/output.vtk", FilePath::output_file); },
     		FilePath::ExcAbsOutputPath, "Can not set absolute path" );
 
 }

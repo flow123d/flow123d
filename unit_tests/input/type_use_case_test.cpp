@@ -80,7 +80,7 @@ private:
 TEST_F(Application, init) {
     using namespace Input;
 
-    FilePath::set_io_dirs("./root","/root","variant", "./output");
+    FilePath::set_io_dirs(".","./root","variant", "./output");
 
     Array eq_arr = input().val<Array>("equations");
 
@@ -157,7 +157,7 @@ EquationA::EquationA(Input::Record rec) {
     using namespace Input;
 
     string mesh_file = rec.val<FilePath>("mesh");
-    EXPECT_EQ("/root/some.msh", mesh_file);
+    EXPECT_EQ("./root/some.msh", mesh_file);
 
     Iterator<double> it = rec.find<double>("parameter_a");
     EXPECT_TRUE(it);
@@ -173,7 +173,7 @@ EquationB::EquationB(Input::Record rec) {
     using namespace Input;
 
     string mesh_file = rec.val<FilePath>("mesh");
-    EXPECT_EQ("/root/some.msh", mesh_file);
+    EXPECT_EQ("./root/some.msh", mesh_file);
     int param = rec.val<int>("parameter_b");
     EXPECT_EQ(314, param);
 

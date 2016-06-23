@@ -74,10 +74,15 @@ void FilePath::set_dirs(const string root, const string input, const string outp
 
 	// set output directory
 	boost::filesystem::path output_path = boost::filesystem::path(output);
-	boost::filesystem::create_directories(output_path);
     if ( !FilePath::is_absolute_path(output) ) {
-    	boost::filesystem::path full_path = boost::filesystem::canonical( boost::filesystem::current_path() / output_path );
-    	output_dir = full_path.string();
+    	boost::filesystem::path root_output_path = boost::filesystem::path(root) / output_path;
+    	boost::filesystem::create_directories(root_output_path);
+    	if ( !root_output_path.is_absolute() ) {
+        	boost::filesystem::path abs_full_path = boost::filesystem::canonical( boost::filesystem::current_path() / root_output_path );
+        	output_dir = abs_full_path.string();
+    	} else {
+    		output_dir = root_output_path.string();
+    	}
 #ifdef FLOW123D_HAVE_CYGWIN
     	boost::replace_all(output_dir, "\\", "/");
 #endif // FLOW123D_HAVE_CYGWIN
@@ -95,9 +100,7 @@ string FilePath::set_dirs_from_input(const string main_yaml, const string input,
 	if ( FilePath::is_absolute_path(main_yaml) ) {
     	input_path = boost::filesystem::path(main_yaml);
     } else {
-    	stringstream dir;
-    	dir << "." << DIR_DELIMITER << main_yaml;
-    	input_path = boost::filesystem::path(dir.str());
+    	input_path = boost::filesystem::path(".") / main_yaml;
     }
 	FilePath::set_dirs(input_path.parent_path().string(), input, output);
 
