@@ -151,30 +151,3 @@ void FilePath::create_output_dir() {
     }
 }
 
-
-
-void FilePath::create_dir(string dir) {
-    if (!boost::filesystem::is_directory(dir)) {
-    	boost::filesystem::create_directory(dir);
-    }
-}
-
-
-void FilePath::create_canonical_path(const string working_dir, const string output) {
-    boost::filesystem::path working_path = boost::filesystem::path(working_dir);
-    boost::filesystem::path output_path = boost::filesystem::path(output);
-
-    if (working_dir[0] != DIR_DELIMITER)
-    {
-    	boost::filesystem::path curr = boost::filesystem::current_path();
-    	working_path = boost::filesystem::canonical( curr / working_path );
-    }
-
-    boost::filesystem::path full_path = boost::filesystem::canonical( working_path / output_path );
-
-    boost::filesystem::path curr = boost::filesystem::current_path();
-	output_dir = full_path.string();
-#ifdef FLOW123D_HAVE_CYGWIN
-    boost::replace_all(output_dir, "\\", "/");
-#endif // FLOW123D_HAVE_CYGWIN
-}

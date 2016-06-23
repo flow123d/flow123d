@@ -159,18 +159,6 @@ private:
     static bool is_absolute_path(const string path);
 
 
-    /**
-     * Check if directory stored in output_dir doesn't exist and create its
-     */
-    static void create_dir(string dir);
-
-
-    /**
-     * Create canonical path of output directory given by relative path.
-     */
-    static void create_canonical_path(const string working_dir, const string output);
-
-
     /// Final absolute path to the file.
     string abs_file_path_;
 
