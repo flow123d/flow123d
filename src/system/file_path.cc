@@ -57,46 +57,49 @@ FilePath::FilePath(string file_path, const  FileType ft)
 
 
 
-string FilePath::set_io_dirs(const string working_dir, const string root_input, const string input, const string output) {
-    // root directory
-	boost::filesystem::path input_path(root_input);
-    root_dir = input_path.parent_path().string();
-
-    // relative output dir is relative to working directory
-    // this is possibly independent of position of the main input file
-	output_dir = "";
+void FilePath::set_io_dirs(const string working_dir, const string root, const string input, const string output) {
+	boost::filesystem::path full_output_path;
     if ( FilePath::is_absolute_path(output) ) {
-    	vector<string> dirs;
-    	boost::split(dirs, output,  boost::is_any_of("/"));
-    	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
-    	    if ( !(*it).size() ) continue;
-    	    if ( !output_dir.size() ) {
-#ifdef FLOW123D_HAVE_CYGWIN
-    	    	output_dir = (*it);
-#else
-    	    	output_dir = DIR_DELIMITER + *it;
-#endif // FLOW123D_HAVE_CYGWIN
-    	    } else {
-            	output_dir = output_dir + DIR_DELIMITER + *it;
-    	    }
-    	    FilePath::create_dir(output_dir);
-        }
+    	full_output_path = boost::filesystem::path(output);
     } else {
-    	vector<string> dirs;
-    	string full_output = working_dir + DIR_DELIMITER + output;
-    	boost::split(dirs, full_output, boost::is_any_of("/"));
-    	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
-    	    if ( !(*it).size() ) continue;
-    	    if ( !output_dir.size() ) output_dir = *it;
-    	    else output_dir = output_dir + DIR_DELIMITER + *it;
-    	    FilePath::create_dir(output_dir);
-        }
+    	full_output_path = boost::filesystem::path(working_dir + DIR_DELIMITER + output);
+    }
+    FilePath::set_dirs(root, input, full_output_path.string());
+}
 
-    	FilePath::create_canonical_path(working_dir, output);
+
+void FilePath::set_dirs(const string root, const string input, const string output) {
+    // root directory
+	root_dir = root;
+
+	// set output directory
+	boost::filesystem::path output_path = boost::filesystem::path(output);
+	boost::filesystem::create_directories(output_path);
+    if ( !FilePath::is_absolute_path(output) ) {
+    	boost::filesystem::path full_path = boost::filesystem::canonical( boost::filesystem::current_path() / output_path );
+    	output_dir = full_path.string();
+#ifdef FLOW123D_HAVE_CYGWIN
+    	boost::replace_all(output_dir, "\\", "/");
+#endif // FLOW123D_HAVE_CYGWIN
+    } else {
+    	output_dir = output;
     }
 
     // the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);
+}
+
+
+string FilePath::set_dirs_from_input(const string main_yaml, const string input, const string output) {
+	boost::filesystem::path input_path;
+	if ( FilePath::is_absolute_path(main_yaml) ) {
+    	input_path = boost::filesystem::path(main_yaml);
+    } else {
+    	stringstream dir;
+    	dir << "." << DIR_DELIMITER << main_yaml;
+    	input_path = boost::filesystem::path(dir.str());
+    }
+	FilePath::set_dirs(input_path.parent_path().string(), input, output);
 
     return input_path.filename().string();
 }

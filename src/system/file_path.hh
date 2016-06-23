@@ -74,13 +74,39 @@ public:
     FilePath(string file_path, const  FileType ft);
 
     /**
+     * @brief Obsolete method for set input and output directories.
+     *
+     * Ensures consistency of unit tests.
+     *
      * Set:
      * - working directory (used only if the output directory is relative)
      * - root directory (of the main input file)
      * - input directory to replace ${INPUT} place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
-    static string set_io_dirs(const string working_dir, const string root_input, const string input, const string output);
+    static void set_io_dirs(const string working_dir, const string root, const string input, const string output);
+
+    /**
+     * @brief Method for set input and output directories.
+     *
+     * Set:
+     * - root directory (of the main input file)
+     * - input directory to replace ${INPUT} place holder
+     * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
+     */
+    static void set_dirs(const string root, const string input, const string output);
+
+    /**
+     * @brief Method for set input and output directories.
+     *
+     * Same as previous, but in first argument accepts full path of yaml file and returns filename of this yaml file.
+     *
+     * Set:
+     * - root directory (of the main yaml input file)
+     * - input directory to replace ${INPUT} place holder
+     * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
+     */
+    static string set_dirs_from_input(const string main_yaml, const string input, const string output);
 
     /**
      * This class is implicitly convertible to string.
