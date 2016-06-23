@@ -17,12 +17,15 @@
 
 #include "output_mesh.hh"
 #include "mesh/mesh.h"
+#include <mesh/ref_element.hh>
 #include "fields/field.hh"
 
 #include "output_element.hh"
 
-OutputMesh::OutputMesh(Mesh* mesh)
-: orig_mesh_(mesh), discont_data_computed_(false)
+OutputMesh::OutputMesh(Mesh* mesh, unsigned int max_refinement_level)
+:   orig_mesh_(mesh),
+    discont_data_computed_(false),
+    max_refinement_level_(max_refinement_level)
 {
 }
 
@@ -185,31 +188,43 @@ void OutputMesh::create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_cont
         node_id++;
     }
     
+    unsigned int coord_id = 0,      // coordinate id in vector
+                 connect_id = 0;    // connectivity id
+                 
     FOR_ELEMENTS(orig_mesh_, ele) {
         arma::vec3 centre = ele->centre();
         
         AuxElement aux_ele;
         aux_ele.connectivity.resize(ele->n_nodes());
-        aux_ele.coords.resize(ele->n_nodes()*3);
+//         aux_ele.coords.resize(ele->n_nodes()*spacedim);
+        
         for(unsigned int i=0; i<ele->n_nodes(); i++)
         {
             Node* node = ele->node[i];
-            aux_ele.connectivity[i] = node->aux;
-            aux_ele.coords[i] = node->getX();
-            aux_ele.coords[i+1] = node->getY();
-            aux_ele.coords[i+2] = node->getZ();
+            
+//             aux_ele.coords[i] = node->getX();
+//             aux_ele.coords[i+1] = node->getY();
+//             aux_ele.coords[i+2] = node->getZ();
+            
+            nodes_->data_[coord_id] = node->getX();  coord_id++;
+            nodes_->data_[coord_id] = node->getY();  coord_id++;
+            nodes_->data_[coord_id] = node->getZ();  coord_id++;
+            aux_ele.connectivity[connect_id] = node->aux;     connect_id++;   
         }
         
+        //add centre
+        nodes_->data_[coord_id] = centre[0];  coord_id++;
+        nodes_->data_[coord_id] = centre[1];  coord_id++;
+        nodes_->data_[coord_id] = centre[2];  coord_id++;
+        aux_ele.connectivity[connect_id] = node_id;    node_id++;
+            
         //refinement refinement
         // if(refinement_criterion())
         {
+            
             // new element:
             // centre + combination of dim nodes from all nodes
-            static const std::vector<std::vector<std::vector<unsigned int>>> side_permutations = 
-                {   { {0},{1}}, // line
-                    { {0,1}, {0,2}, {1,2}}, //triangle
-                    { {0,1,2}, {0,1,3}, {0,2,3}, {1,2,3}}   //tetrahedron
-                };
+//             refine_aux_element(aux_ele, centre, , ele->dim());
             
         }
     }
@@ -218,8 +233,186 @@ void OutputMesh::create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_cont
     local_nodes_->shrink_to_fit();
 }
 
-
-bool OutputMesh::refinement_criterion()
+template<int dim>
+void OutputMesh::refine_aux_element(const OutputMesh::AuxElement& aux_element,
+                                    std::vector< OutputMesh::AuxElement >& refinement,
+                                    unsigned int& last_node_idx)
 {
+    static const unsigned int n_subelements = 1 << dim;  //2^dim
+    
+    // FIXME Use RefElement<>::interact<> from intersections
+    static const std::vector<std::vector<unsigned int>> line_nodes[] = {
+        {}, //0D
+        
+        {{0,1}},
+        
+        {{0,1},
+         {0,2},
+         {1,2}},
+        
+        {{0,1},
+         {0,2},
+         {1,2},
+         {0,3},
+         {1,3},
+         {2,3}}
+    };
+    
+    static const std::vector<unsigned int> conn[] = {
+        {}, //0D
+        
+        {0, 2,
+         2, 1},
+         
+        {0, 3, 4,
+         3, 1, 5,
+         4, 5, 2,
+         3, 5, 4},
+         
+        {0, 4, 5, 3,
+         4, 1, 6, 8,
+         5, 6, 2, 9,
+         7, 8, 9, 3,
+         4, 7, 8, 9,
+         4, 6, 8, 9,
+         4, 7, 5, 9,
+         4, 5, 6, 9}
+    }; 
+//     DBGMSG("level = %d, %d\n", aux_element.level, max_refinement_level_);
+ 
+    ASSERT_DBG(dim == aux_element.nodes.size()-1);
+    
+    if( ! refinement_criterion(aux_element)) {
+        refinement.push_back(aux_element);
+        return;
+    }
+    
+    std::vector<AuxElement> subelements(n_subelements);
+    
+    // FIXME Use RefElement<>::n_nodes and RefElement<>::n_lines from intersections
+    const unsigned int n_old_nodes = dim+1,
+                       n_new_nodes = (unsigned int)((dim * (dim + 1)) / 2); // new points are in the center of lines
+    
+    // auxiliary vectors
+    std::vector<Space<spacedim>::Point> nodes = aux_element.nodes;
+    std::vector<unsigned int> node_numbering = aux_element.connectivity;
+    nodes.reserve(n_old_nodes+n_new_nodes);
+    node_numbering.reserve(n_old_nodes+n_new_nodes);
 
+    // create new points in the element
+    for(unsigned int e=0; e < n_new_nodes; e++)
+    {
+        Space<spacedim>::Point p = nodes[line_nodes[dim][e][0]]+nodes[line_nodes[dim][e][1]];
+        nodes.push_back( p / 2.0);
+//         nodes.back().print();
+        
+        last_node_idx++;
+        node_numbering.push_back(last_node_idx);
+    }
+   
+    
+    for(unsigned int i=0; i < n_subelements; i++)
+    {
+        AuxElement& sub_ele = subelements[i];
+        sub_ele.nodes.resize(n_old_nodes);
+        sub_ele.connectivity.resize(n_old_nodes);
+        sub_ele.level = aux_element.level+1;
+        
+        // over nodes
+        for(unsigned int j=0; j < n_old_nodes; j++)
+        {
+            unsigned int conn_id = (n_old_nodes)*i + j;
+            sub_ele.nodes[j] = nodes[conn[dim][conn_id]];
+            sub_ele.connectivity[j] = node_numbering[conn[dim][conn_id]];
+        }
+        
+        refine_aux_element<dim>(sub_ele, refinement, last_node_idx);
+    }
+}
+
+template void OutputMesh::refine_aux_element<1>(const OutputMesh::AuxElement&,std::vector< OutputMesh::AuxElement >&, unsigned int&);
+template void OutputMesh::refine_aux_element<2>(const OutputMesh::AuxElement&,std::vector< OutputMesh::AuxElement >&, unsigned int&);
+template void OutputMesh::refine_aux_element<3>(const OutputMesh::AuxElement&,std::vector< OutputMesh::AuxElement >&, unsigned int&);
+    
+    
+    
+    
+    
+//     static
+//     std::vector<double> coords = { 0, 0, 0,     // 0
+//                                    1, 0, 0,     // 1
+//                                    0, 1, 0,     // 2
+//                                    0.5, 0, 0,   // 3
+//                                    0, 0.5, 0,   // 4
+//                                    0.5, 0.5, 0}; // 5
+//                                    
+//     static
+//     std::vector<unsigned int> conn = {0, 3, 4,
+//                                       3, 1, 5,
+//                                       4, 5, 2,
+//                                       3, 5, 4
+//     };
+    
+//     for(unsigned int i=0; i < n_subelements; i++)
+//     {
+//         AuxElement& sub_ele = subelements[i];
+//         
+//         // over nodes
+//         for(unsigned int j=0; j < 3; j++)   //dim+1
+//         {
+//             unsigned int conn_id = 3*i + j; //dim+1
+//             if(conn[conn_id] < 3) {
+//                 sub_ele.connectivity[j] = aux_element.connectivity[conn_id];
+//                 sub_ele.coords[j * spacedim] = aux_element.coords[conn_id * spacedim];
+//                 sub_ele.coords[j * spacedim +1] = aux_element.coords[conn_id * spacedim +1];
+//                 sub_ele.coords[j * spacedim +2] = aux_element.coords[conn_id * spacedim +2];
+//             }
+//             else {
+//                 last_node_idx++;
+//                 sub_ele.connectivity[j] = last_node_idx;
+//                 sub_ele.coords[j * spacedim] = aux_element.coords[0] + coords[conn_id * spacedim] * (1);
+//                 sub_ele.coords[j * spacedim +1] = aux_element.coords[conn_id * spacedim +1];
+//                 sub_ele.coords[j * spacedim +2] = aux_element.coords[conn_id * spacedim +2];
+//             }
+//             
+//         }
+//     }
+//     
+//     return subelements;
+// }
+
+
+// std::vector< OutputMesh::AuxElement > OutputMesh::refine_aux_element(OutputMesh::AuxElement& aux_element, 
+//                                                                      const Space< spacedim >::Point &centre,
+//                                                                      unsigned int centre_idx,
+//                                                                      unsigned int dim)
+// {
+// static const std::vector<std::vector<std::vector<unsigned int>>> side_permutations = 
+//                 {   { {0},{1}}, // line
+//                     { {0,1}, {0,2}, {1,2}}, //triangle
+//                     { {0,1,2}, {0,1,3}, {0,2,3}, {1,2,3}}   //tetrahedron
+//                 };
+//     
+//     unsigned int n_subelements = dim+1;
+//     std::vector<AuxElement> subelements(n_subelements);
+//     
+//     for(unsigned int i=0; i < n_subelements; i++)
+//     {
+//         AuxElement& sub_ele = subelements[i];
+//         
+//         for(unsigned int j=0; j < dim; j++)
+//         {
+//             sub_ele.connectivity[j] = aux_element.connectivity[side_permutations[dim][i][j]];
+//             sub_ele.coords[j] = aux_element.coords[side_permutations[dim][i][j]];
+//         }
+//         sub_ele.connectivity[dim] = centre_idx;
+//         sub_ele.coords[dim] = centre;
+//     }
+//     return subelements;
+// }
+
+
+bool OutputMesh::refinement_criterion(const OutputMesh::AuxElement& ele)
+{
+    return (ele.level < max_refinement_level_);
 }

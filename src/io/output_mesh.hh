@@ -26,7 +26,7 @@
 #include "io/output_data_base.hh"
 
 #include "fields/field_values.hh"
-
+#include "mesh/point.hh"
 
 
 class Mesh;
@@ -70,13 +70,12 @@ public:
 };
 
 
-
 class OutputMesh
 {
 public:
     static const unsigned int spacedim = 3;
     
-    OutputMesh(Mesh* mesh);
+    OutputMesh(Mesh* mesh, unsigned int max_refinement_level = 2);
     ~OutputMesh();
     
     void create_identical_mesh();
@@ -100,22 +99,29 @@ public:
     unsigned int n_nodes_disc();
     unsigned int n_elements();
     
-private:
+protected:
     
     struct AuxElement{
-        std::vector<double> coords;
+        std::vector<Space<spacedim>::Point> nodes;
         std::vector<unsigned int> connectivity;
+        unsigned int level;
     };
     
     void fill_vectors();
-    bool refinement_criterion();
+    bool refinement_criterion(const AuxElement& ele);
+    
+    template<int dim>
+    void refine_aux_element(const OutputMesh::AuxElement& aux_element,
+                            std::vector< OutputMesh::AuxElement >& refinement,
+                            unsigned int& last_node_idx);
     
     Mesh *orig_mesh_;
     bool discont_data_computed_;
     
-    const unsigned int max_level = 2;
-    
     friend class OutputElement;
+    
+    std::vector<std::vector<AuxElement>> unit_refinement_;
+    const unsigned int max_refinement_level_;
 };
 
 
