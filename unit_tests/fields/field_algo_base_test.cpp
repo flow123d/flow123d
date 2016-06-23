@@ -581,7 +581,7 @@ TEST(Field, init_from_input) {
 	Profiler::initialize();
 
 	Mesh mesh;
-	FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+	FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 	ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
 	mesh.read_gmsh_from_stream(in);
 
@@ -716,7 +716,7 @@ TEST(Field, field_result) {
     TimeGovernor tg(0.0, 1.0);
 
     Mesh mesh;
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
     mesh.read_gmsh_from_stream(in);
 
@@ -788,7 +788,7 @@ static const it::Selection &get_test_type_selection() {
 TEST(Field, init_from_default) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Profiler::initialize();
     
@@ -860,7 +860,7 @@ TEST(Field, disable_where) {
     Field<3, FieldValue<3>::Scalar > bc_sigma("bc_sigma", true);
     bc_sigma.disable_where( bc_type, {dirichlet, neumann} );
 
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Mesh mesh;
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());

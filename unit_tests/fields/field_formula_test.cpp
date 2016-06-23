@@ -39,7 +39,7 @@ TEST(FieldFormula, read_from_input) {
     typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
 
     // setup FilePath directories
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Input::Type::Record rec_type = Input::Type::Record("FieldFormulaTest","")
         .declare_key("conductivity_3d", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
@@ -130,7 +130,7 @@ TEST(FieldFormula, set_time) {
     typedef FieldAlgorithmBase<2, FieldValue<3>::Vector > VectorField;
 
     // setup FilePath directories
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Input::Type::Array  input_type(VectorField::get_input_type_instance());
     input_type.finish();

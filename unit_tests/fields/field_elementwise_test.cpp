@@ -60,7 +60,7 @@ public:
 
     virtual void SetUp() {
         // setup FilePath directories
-        FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+        FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
         Profiler::initialize();
         

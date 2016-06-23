@@ -80,7 +80,7 @@ private:
 TEST_F(Application, init) {
     using namespace Input;
 
-    FilePath::set_io_dirs("/root/in.yaml","variant", "./output","./root");
+    FilePath::set_io_dirs("./root","/root/in.yaml","variant", "./output");
 
     Array eq_arr = input().val<Array>("equations");
 

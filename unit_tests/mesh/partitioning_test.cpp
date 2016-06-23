@@ -31,7 +31,7 @@ const string mesh_input = R"JSON(
 TEST(Partitioning, all) {
     Profiler::initialize();
 
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Input::ReaderToStorage reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_JSON );
     auto rec = reader.get_root_interface<Input::Record>();

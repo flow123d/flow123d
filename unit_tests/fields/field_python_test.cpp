@@ -154,7 +154,7 @@ TEST(FieldPython, read_from_input) {
     double pi = 4.0 * atan(1);
 
     // setup FilePath directories
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Input::Type::Record rec_type = Input::Type::Record("FieldPythonTest","")
         .declare_key("field_string", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )

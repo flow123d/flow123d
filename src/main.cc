@@ -254,7 +254,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // assumes working directory "."
-    main_input_filename_ = FilePath::set_io_dirs(input_filename, input_dir, output_dir, ".");
+    main_input_filename_ = FilePath::set_io_dirs(".", input_filename, input_dir, output_dir );
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();

@@ -138,7 +138,7 @@ TEST(FilePath, output_relative) {
     //EXPECT_DEATH( {FilePath("input/${INPUT}/init.in", FilePath::input_file);},
     //        "Creating FileName object before set_io_dirs is called.");
 
-    FilePath::set_io_dirs("/main_root/in.yaml", "variant_input", "../output_root", "./work_dir/xx");
+    FilePath::set_io_dirs("./work_dir/xx", "/main_root/in.yaml", "variant_input", "../output_root");
 
     { // relative output_dir x relative output substitution
 		FilePath fp = FilePath("output.vtk", FilePath::output_file);
@@ -166,7 +166,7 @@ TEST(FilePath, output_absolute) {
 
     string abs_path = FilePath::get_absolute_working_dir();
 
-    FilePath::set_io_dirs("/main_root/in.yaml", "variant_input", abs_path+"output_root", "/work_dir/xx");
+    FilePath::set_io_dirs("/work_dir/xx", "/main_root/in.yaml", "variant_input", abs_path+"output_root");
 
     {
 		// relative output substitution; conversion to string
@@ -188,7 +188,7 @@ TEST(FilePath, output_absolute) {
 TEST(FilePath, input_relative) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    FilePath::set_io_dirs("./main_root/in.yaml", "variant_input", "../output_root", "./work_dir/xx");
+    FilePath::set_io_dirs("./work_dir/xx","./main_root/in.yaml", "variant_input", "../output_root");
 
     { // relative input without substitution; conversion to string
 		string str = FilePath("subdir/init.in", FilePath::input_file);
@@ -219,7 +219,7 @@ TEST(FilePath, input_absolute) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     string abs_path = FilePath::get_absolute_working_dir();
-    FilePath::set_io_dirs("/main_root/in.yaml", "variant_input", abs_path+"output_root", "/work_dir/xx");
+    FilePath::set_io_dirs("/work_dir/xx", "/main_root/in.yaml", "variant_input", abs_path+"output_root");
 
     {
         // relative input without substitution; conversion to string
@@ -251,7 +251,7 @@ TEST(FilePath, input_absolute) {
 TEST(FilePath, create_output_dir) {
     //::testing::FLAGS_gtest_death_test_style = "threadsafe";
     boost::filesystem::remove_all("./work_dir");
-    FilePath::set_io_dirs("", "my_input", "my_output", "./work_dir");
+    FilePath::set_io_dirs("./work_dir","", "my_input", "my_output");
     EXPECT_TRUE(boost::filesystem::is_directory("./work_dir/my_output"));
     FilePath fp("subdir/some_file.xyz", FilePath::output_file);
     fp.create_output_dir();

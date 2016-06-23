@@ -146,7 +146,7 @@ Input::Type::TypeBase::MakeInstanceReturnType get_instance(const Input::Type::Se
 
 TEST(FieldValue_, init_from_input) {
     // setup FilePath directories
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
     Input::Type::Selection aux_sel = Input::Type::Selection("AuxSel")
     	.add_value(0,"zero","")
     	.add_value(1,"one","")
@@ -293,7 +293,7 @@ double_fix_tensor_cdiag="x*y*z"
 
 TEST(FieldValue_, string_values_init_from_input) {
     // setup FilePath directories
-    FilePath::set_io_dirs(string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".",".");
+    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
 
     Input::Type::Record rec_type = Input::Type::Record("FieldValueTest","")
 		.declare_key("double_scalar", StringTensorInput<1,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
