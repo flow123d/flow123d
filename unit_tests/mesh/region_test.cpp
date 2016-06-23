@@ -236,7 +236,7 @@ const string read_regions_yaml = R"YAML(
 TEST(Region, read_regions_from_yaml) {
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     stringstream in(gmsh_mesh.c_str());
     GmshMeshReader reader(in);
@@ -326,7 +326,7 @@ const string invalid_input_3 = R"YAML(
 TEST(Region, read_regions_error_messages) {
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
     GmshMeshReader reader(mesh_file);

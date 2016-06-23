@@ -44,7 +44,7 @@ TEST(GMSHReader, read_mesh_from_file) {
     Profiler::initialize();
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
 
 
@@ -64,7 +64,7 @@ TEST(GMSHReader, get_element_data) {
 	unsigned int i, j;
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("fields/simplest_cube_data.msh", FilePath::input_file);
 
     Mesh mesh;
@@ -113,7 +113,7 @@ TEST(GMSHReader, find_header) {
     Profiler::initialize();
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("fields/simplest_cube_data.msh", FilePath::input_file);
 
     GmshMeshReader reader(mesh_file);
@@ -192,7 +192,7 @@ TEST(ReaderInstances, get_reader) {
 	Profiler::initialize();
 
 	// has to introduce some flag for passing absolute path to 'test_units' in source tree
-	FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","",".");
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	{
 		FilePath mesh1("mesh/test_input.msh", FilePath::input_file);

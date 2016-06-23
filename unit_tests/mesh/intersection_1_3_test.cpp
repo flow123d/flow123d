@@ -27,7 +27,7 @@
 TEST(intersections, 1d_3d){
         Profiler::initialize();
 	unsigned int elementLimit = 20;
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR) + "/in.yaml","", ".");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
 	FilePath mesh_file("mesh/line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
 	Mesh mesh_krychle;
 	GmshMeshReader reader(mesh_file);
