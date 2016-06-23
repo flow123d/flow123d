@@ -156,6 +156,9 @@ public:
             system_.lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
 
             if (system_.balance != nullptr) {
+                // check sign
+                //
+                // system_.balance->add_mass_vector_values(ad_->water_balance_idx_, ele.region().bulk_idx(), /*{edge_row},*/ {diagona_coef*ad_->water_content_previous_it[local_side]});
                 system_.balance->add_mass_matrix_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {mass_diagonal});
                 system_.balance->add_source_rhs_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {source_diagonal});
             }
