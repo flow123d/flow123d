@@ -899,7 +899,7 @@ void TransportDG<Model>::set_sources()
         			local_source_balance_rhs[i] += local_rhs[i];
         		}
         		Model::balance_->add_source_matrix_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_vector);
-        		Model::balance_->add_source_rhs_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_rhs);
+        		Model::balance_->add_source_vec_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_rhs);
         	}
         }
     }

@@ -269,7 +269,7 @@ public:
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
-	void add_source_rhs_values(unsigned int quantity_idx,
+	void add_source_vec_values(unsigned int quantity_idx,
 			unsigned int region_idx,
 			const std::vector<int> &dof_values,
 			const std::vector<double> &values);

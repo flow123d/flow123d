@@ -421,7 +421,7 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 }
 
 
-void Balance::add_source_rhs_values(unsigned int quantity_idx,
+void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
 		const vector<int> &dof_indices,
 		const vector<double> &values)
