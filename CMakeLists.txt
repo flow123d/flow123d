@@ -548,29 +548,48 @@ IF (PETSC_FOUND)
       ) 
 endif()
 
+
+
 ####################################################################################
 # PYTHON
-#
-# optionaly we use Python interface
-if (USE_PYTHON)
-    # where python build starts
+# ----------------- Part 1/3 - PythonLibs ------------------------------------------
+# always detect PythonLibs but set flag HAVE_PYTHON conditionally to user
+# embedded python in flow123d
+include(python/PythonLibs)
+if(USE_PYTHON)
+    flow_define(HAVE_PYTHON)
+endif()
+
+# ----------------- Part 2/3 - PythonCopy ------------------------------------------
+if(PYTHON_COPY)
+    # where python build starts for now we use build_tree 
     set(PY_BUILD_PREFIX ${CMAKE_BINARY_DIR})
-    
-    # install 3rd party packages and copy python runtest
-    include(python/PythonScripts)
-    # find PythonLibs and setup version variables
-    include(python/PythonLibs)
+    set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
     # copy python interpret files and 3rd party packages including
-    #   python utils files for flow123d
+    # python utils files for flow123d
     include(python/PythonCopy)
-    
-    # create list of paths
-    set(PY_WRAPPER_PATHS "/lib/python2.7")
-    foreach(PY_PATH ${PYTHON_SYSPATH})
-        list(APPEND PY_WRAPPER_PATHS "/lib/python2.7/${PY_PATH}")
-    endforeach()
-    list(APPEND PY_WRAPPER_PATHS "/lib/flow123d")
-endif()  
+else()
+    # if python copy is not set we do nothing but export
+    # variable PYTHON_EXTRA_MODULES_PATH so python_loader can add correct path
+    set(PYTHON_EXTRA_MODULES_PATH /src/python)
+endif()
+# define varible for storing this extra module path
+# this variable is used later to update search module path
+# if PYTHON_COPY is present it points to lib/flow123d dir in build tree
+# if not, default location is src/python dir in CMake_SOURCE_DIR location
+flow_define(PYTHON_EXTRA_MODULES_PATH ${PY_BUILD_PREFIX}/${PYTHON_EXTRA_MODULES_PATH})
+
+# ----------------- Part 3/3 - PythonScripts ----------------------------------------
+# install 3rd party packages and copy python runtest
+include(python/PythonScripts)
+# create list of path for wrappers
+set(PY_WRAPPER_PATHS "/lib/python2.7")
+list(APPEND PY_WRAPPER_PATHS ${PYTHON_EXTRA_MODULES_PATH})
+foreach(PY_PATH ${PYTHON_SYSPATH})
+    list(APPEND PY_WRAPPER_PATHS "/lib/python2.7/${PY_PATH}")
+endforeach()
+
+
 
 #################################################################################
 #  YAML_CPP_FOUND - set to true if the library is found
