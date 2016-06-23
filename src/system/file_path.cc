@@ -84,14 +84,7 @@ string FilePath::set_io_dirs(const string main_input_file, const string input, c
     add_placeholder("${INPUT}", input);
 
     // set input root directory
-	boost::filesystem::path input_path;
-	if ( FilePath::is_absolute_path(main_input_file) ) {
-    	input_path = boost::filesystem::path(main_input_file);
-    } else {
-    	stringstream dir;
-    	dir << "." << DIR_DELIMITER << main_input_file;
-    	input_path = boost::filesystem::path(dir.str());
-    }
+	boost::filesystem::path input_path(main_input_file);
 	input_root_dir = input_path.parent_path().string();
     return input_path.filename().string();
 }
