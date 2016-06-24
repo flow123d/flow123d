@@ -19,6 +19,7 @@
 #define FILE_NAME_HH_
 
 #include <string>
+#include <boost/filesystem.hpp>
 
 #include "system/exceptions.hh"
 
@@ -56,7 +57,7 @@ public:
      * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
      */
     FilePath()
-        : abs_file_path_("/__NO_FILE_NAME_GIVEN__"),
+        : abs_file_path_( boost::filesystem::path("/__NO_FILE_NAME_GIVEN__") ),
           file_type_(output_file)
     {}
 
@@ -111,8 +112,9 @@ public:
     /**
      * This class is implicitly convertible to string.
      */
-    inline operator string() const
-        {return abs_file_path_;}
+    inline operator string() const {
+    	return abs_file_path_.string();
+    }
 
     /*!
      * @brief Add new item to place holder.
@@ -137,7 +139,7 @@ public:
 
     /// Equality comparison operators for regions.
     inline bool operator ==(const FilePath &other) const
-        {return abs_file_path_ == string(other); }
+        {return abs_file_path_ == boost::filesystem::path( string(other) ); }
 
 
     /**
@@ -148,19 +150,13 @@ public:
 
 private:
     /**
-     * Substitutes placeholders in @p abs_file_path_.
+     * Substitutes placeholders in @p path.
      */
-    void substitute_value();
-
-
-    /**
-     * Test if get path is absolute for used operating system.
-     */
-    static bool is_absolute_path(const string path);
+    void substitute_value(string &path);
 
 
     /// Final absolute path to the file.
-    string abs_file_path_;
+    boost::filesystem::path abs_file_path_;
 
     /// File type
     FileType file_type_;
@@ -169,10 +165,10 @@ private:
     static std::map<string,string> placeholder;
 
     /// Prefix path for output files.
-    static string output_dir;
+    static boost::filesystem::path output_dir;
 
     /// Prefix path for input files (directory of the main input file).
-    static string root_dir;
+    static boost::filesystem::path root_dir;
 };
 
 #endif /* FILE_NAME_HH_ */
