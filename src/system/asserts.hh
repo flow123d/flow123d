@@ -47,6 +47,9 @@ protected:
     /// Override @p ExceptionBase::what_type_msg()
     std::string what_type_msg() const override;
 
+    /// Override @p ExceptionBase::form_message()
+    std::ostringstream &form_message(std::ostringstream &) const override;
+
     std::string expression_;                  ///< Assertion expression
 	std::string file_name_;                   ///< Actual file.
 	std::string function_;                    ///< Actual function.

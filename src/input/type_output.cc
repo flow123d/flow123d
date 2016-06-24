@@ -170,7 +170,7 @@ void OutputBase::print_base(ostream& stream, const TypeBase *type) {
         }
 
         // default -> error
-        xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
+        THROW( Type::ExcUnknownDescendant() << Type::EI_TypeName(typeid(type).name()) );
 	}
 }
 

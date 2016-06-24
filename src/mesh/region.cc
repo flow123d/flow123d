@@ -452,13 +452,12 @@ void RegionDB::print_region_table(ostream& stream) const {
 
 
 void RegionDB::check_regions() {
-	OLD_ASSERT(closed_, "RegionDB not closed yet.\n");
+	ASSERT(closed_).error("RegionDB not closed yet.");
 
 	for (RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().begin();
 			it!= region_table_.get<Index>().end();
 			++it) {
-		if (!it->used)
-			THROW(ExcUnusedRegion() << EI_Label(it->label) << EI_ID(it->get_id()) << Input::EI_Address(it->address) );
+		ASSERT(it->used)(it->label)(it->get_id()).warning("Region with given id and label is not used in any element.");
 	}
 }
 
