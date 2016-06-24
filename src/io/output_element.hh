@@ -54,6 +54,8 @@ public:
     
     /// Returns global index of the node.
     unsigned int node_index(unsigned int loc_idx) const;
+    /// Returns global indices of the nodes.
+    std::vector<unsigned int> node_indices() const;
     Point vertex(unsigned int loc_idx) const;  ///< Returns coordinates of node @p loc_idx.
     std::vector<Point> vertex_list() const;    ///< Returns vector of nodes coordinates.
     
@@ -83,14 +85,16 @@ public:
     void inc();
 private:
     
-    /// Returns global index of the node. (DISCONTINUOUS)
+    /// Returns global index of the node.
     unsigned int node_index_internal(unsigned int loc_idx, 
                                      std::shared_ptr<MeshData<unsigned int>> connectivity) const;
-    /// Returns coordinates of node @p loc_idx.  (DISCONTINUOUS)
+    /// Returns global indices of the nodes.
+    std::vector<unsigned int> node_indices_internal(shared_ptr< MeshData< unsigned int > > connectivity) const;
+    /// Returns coordinates of node @p loc_idx.
     Point vertex_internal(unsigned int loc_idx,
                                std::shared_ptr<MeshData<unsigned int>> connectivity,
                                std::shared_ptr<MeshData<double>> nodes) const;
-    /// Returns vector of nodes coordinates.  (DISCONTINUOUS)
+    /// Returns vector of nodes coordinates.
     std::vector<Point> vertex_list_internal(std::shared_ptr<MeshData<unsigned int>> connectivity,
                                             std::shared_ptr<MeshData<double>> nodes) const;
     
@@ -154,6 +158,19 @@ inline unsigned int OutputElement::node_index_internal(unsigned int loc_idx,
     return (*connectivity)[con_off - n + loc_idx];
 }
 
+inline std::vector< unsigned int > OutputElement::node_indices_internal(
+                                                shared_ptr< MeshData< unsigned int > > connectivity) const
+{
+    unsigned int n = n_nodes();
+    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
+    std::vector<unsigned int> indices(n);
+    for(unsigned int i=0; i<n; i++) {
+        indices[i] = (*connectivity)[con_off - n + i];
+    }
+    return indices;
+}
+
+
 inline OutputElement::Point OutputElement::vertex_internal(unsigned int loc_idx,
                                                  shared_ptr< MeshData< unsigned int > > connectivity,
                                                  shared_ptr< MeshData< double > > nodes) const
@@ -187,6 +204,11 @@ inline std::vector< OutputElement::Point > OutputElement::vertex_list_internal(s
 inline unsigned int OutputElement::node_index(unsigned int loc_idx) const
 {
     return node_index_internal(loc_idx, output_mesh_->connectivity_);
+}
+
+inline std::vector< unsigned int > OutputElement::node_indices() const
+{
+    return node_indices_internal(output_mesh_->connectivity_);
 }
 
 inline unsigned int OutputElement::node_index_disc(unsigned int loc_idx) const
