@@ -71,6 +71,9 @@ void FilePath::set_dirs(const string root, const string input, const string outp
 	root_dir = boost::filesystem::path(root);
 
 	// set output directory
+	// if param output is absolute output_dir = output
+	// else output_dir = root / output
+	// the resulting relative path is always completed to absulute path
 	boost::filesystem::path output_path = boost::filesystem::path(output);
     if ( !output_path.is_absolute() ) {
     	boost::filesystem::path root_output_path = boost::filesystem::path(root) / output_path;
@@ -82,7 +85,7 @@ void FilePath::set_dirs(const string root, const string input, const string outp
     		output_dir = root_output_path;
     	}
     } else {
-    	output_dir = boost::filesystem::path(output);
+    	output_dir = output_path;
     }
 
     // the relative input is relative to the directory of the main input file
