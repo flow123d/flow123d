@@ -14,115 +14,53 @@
 #include "system/system.hh"
 
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 
+
+/*
+ * Conversion function for correct result of tests under Cygwin.
+ * Replace double backslash with single slash.
+ */
+string convert_path(string path) {
+#ifdef FLOW123D_HAVE_CYGWIN
+    boost::replace_all(path, "\\", "/");
+#endif // FLOW123D_HAVE_CYGWIN
+	return path;
+}
 
 
 TEST(BoostFileSystem, base_methods) {
 	// current_path
 	std::cout << "Current path: " << boost::filesystem::current_path() << std::endl;
 
-	// simple absolute path
+	// simple path
 	{
-		stringstream dir;
-		dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
-		if ( !boost::filesystem::is_directory(dir.str()) ) {
-			boost::filesystem::create_directories(dir.str());
-			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
-			boost::filesystem::remove(dir.str());
-			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
-		}
+		boost::filesystem::path path = boost::filesystem::path(".") / "x";
+		string path_str = convert_path( path.string() );
+		EXPECT_EQ("./x", path_str);
 	}
 
-	// absolute path contains actual dir ('.'), format is current_path() + "/./x"
+	// path contains actual dir ('.'), format: "/./x/./y"
 	{
-		stringstream dir;
-		dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
-		stringstream dir_with_actual;
-		dir_with_actual << boost::filesystem::current_path().string() << DIR_DELIMITER << "." << DIR_DELIMITER << "x";
-		if ( !boost::filesystem::is_directory(dir_with_actual.str()) ) {
-			boost::filesystem::create_directories(dir_with_actual.str());
-			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
-			boost::filesystem::remove(dir_with_actual.str());
-			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
-		}
+		boost::filesystem::path path = boost::filesystem::path(".") / "x" / "." / "y";
+		string path_str = convert_path( path.string() );
+		EXPECT_EQ("./x/./y", path_str);
 	}
 
-	// complicated absolute path in format current_path() + "/x/../y"
+	// path contains parent dir ('..'), format: "/./x/../y"
 	{
-		stringstream dir_x;
-		dir_x << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
-		stringstream dir_y;
-		dir_y << boost::filesystem::current_path().string() << DIR_DELIMITER << "y";
-		stringstream dir_y_full;
-		dir_y_full << boost::filesystem::current_path().string()
-				<< DIR_DELIMITER << "x" << DIR_DELIMITER << ".." << DIR_DELIMITER << "y";
-
-		EXPECT_EQ( boost::filesystem::is_directory(dir_y.str()), boost::filesystem::is_directory(dir_y_full.str()));
-		if ( !boost::filesystem::is_directory(dir_y_full.str()) ) {
-			bool x_dir_exists = boost::filesystem::is_directory(dir_x.str());
-			boost::filesystem::create_directories(dir_y_full.str());
-			EXPECT_TRUE( boost::filesystem::is_directory(dir_y.str()) );
-			EXPECT_TRUE( boost::filesystem::is_directory(dir_y_full.str()) );
-			boost::filesystem::remove(dir_y_full.str());
-			if (!x_dir_exists) {
-				boost::filesystem::remove(dir_x.str());
-			}
-			EXPECT_FALSE( boost::filesystem::is_directory(dir_y.str()) );
-			EXPECT_FALSE( boost::filesystem::is_directory(dir_y_full.str()) );
-		}
-	}
-
-	// complicated absolute path in format current_path() + "/x/y"
-	{
-		stringstream dir;
-		dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x" << DIR_DELIMITER << "y";
-		stringstream dir_x;
-		dir_x << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
-
-		if ( !boost::filesystem::is_directory(dir.str()) ) {
-			bool x_dir_exists = boost::filesystem::is_directory(dir_x.str());
-			boost::filesystem::create_directories(dir.str());
-			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
-			boost::filesystem::remove(dir.str());
-			if (!x_dir_exists) {
-				boost::filesystem::remove(dir_x.str());
-			}
-			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
-		}
-	}
-
-	// relative path starts with '.'
-	{
-		stringstream dir;
-		dir << "." << DIR_DELIMITER << "x";
-		stringstream abs_dir;
-		abs_dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
-		if ( !boost::filesystem::is_directory(dir.str()) ) {
-			boost::filesystem::create_directories(dir.str());
-			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
-			EXPECT_TRUE( boost::filesystem::is_directory(abs_dir.str()) );
-			boost::filesystem::remove(dir.str());
-			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
-			EXPECT_FALSE( boost::filesystem::is_directory(abs_dir.str()) );
-		}
+		boost::filesystem::path path = boost::filesystem::path(".") / "x" / ".." / "y";
+		string path_str = convert_path( path.string() );
+		EXPECT_EQ("./x/../y", path_str);
 	}
 
 	// relative path starts without '.'
 	{
-		stringstream dir;
-		dir << "x";
-		stringstream abs_dir;
-		abs_dir << boost::filesystem::current_path().string() << DIR_DELIMITER << "x";
-		if ( !boost::filesystem::is_directory(dir.str()) ) {
-			boost::filesystem::create_directories(dir.str());
-			EXPECT_TRUE( boost::filesystem::is_directory(dir.str()) );
-			EXPECT_TRUE( boost::filesystem::is_directory(abs_dir.str()) );
-			boost::filesystem::remove(dir.str());
-			EXPECT_FALSE( boost::filesystem::is_directory(dir.str()) );
-			EXPECT_FALSE( boost::filesystem::is_directory(abs_dir.str()) );
-		}
+		boost::filesystem::path path = boost::filesystem::path("x") / "y";
+		string path_str = convert_path( path.string() );
+		EXPECT_EQ("x/y", path_str);
 	}
 }
 
