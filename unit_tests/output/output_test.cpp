@@ -248,7 +248,7 @@ public:
 			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i, 1);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -260,7 +260,7 @@ public:
 			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i, 1);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -272,7 +272,7 @@ public:
 			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i, 1);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -341,9 +341,9 @@ TEST_F(TestOutputTime, compute_field_data) {
 	        OutputTime::ExcOutputVariableVector);
 	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
 	test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
-	test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
-	test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3 4 5 6 7 8 9 ");
-	test_compute_field_data< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
+	test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0.0 ");
+	test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 ");
+	test_compute_field_data< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1.0 2.0 0.0 4.0 5.0 0.0 0.0 0.0 0.0 ");
 }
 
 
