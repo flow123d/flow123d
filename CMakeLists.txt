@@ -552,22 +552,13 @@ endif()
 
 ####################################################################################
 # PYTHON
-# ----------------- Part 1/3 - PythonLibs ------------------------------------------
-# always detect PythonLibs but set flag HAVE_PYTHON conditionally to user
-# embedded python in flow123d
-include(python/PythonLibs)
-if(USE_PYTHON)
-    flow_define(HAVE_PYTHON)
-endif()
-
-# ----------------- Part 2/3 - PythonCopy ------------------------------------------
+# ----------------- Part 0/3 - variables ------------------------------------------
+# where python build starts for now we use build_tree
+set(PY_BUILD_PREFIX ${CMAKE_BINARY_DIR})
 if(PYTHON_COPY)
-    # where python build starts for now we use build_tree 
-    set(PY_BUILD_PREFIX ${CMAKE_BINARY_DIR})
-    set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
     # copy python interpret files and 3rd party packages including
     # python utils files for flow123d
-    include(python/PythonCopy)
+    set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
 else()
     # if python copy is not set we do nothing but export
     # variable PYTHON_EXTRA_MODULES_PATH so python_loader can add correct path
@@ -578,16 +569,37 @@ endif()
 # if PYTHON_COPY is present it points to lib/flow123d dir in build tree
 # if not, default location is src/python dir in CMake_SOURCE_DIR location
 flow_define(PYTHON_EXTRA_MODULES_PATH ${PY_BUILD_PREFIX}/${PYTHON_EXTRA_MODULES_PATH})
+# check whether PYTHON_ROOT is set 
+if(NOT DEFINED PYTHON_ROOT)
+    message(STATUS "--------------------------------------------------")
+    message(STATUS "PYTHON_ROOT not set! Using default configuration which may not work on this system")
+    message(STATUS "--------------------------------------------------")
+    
+    set(PYTHON_ROOT /usr/lib/python2.7)
+    set(PYTHON_COPY_PACKAGES
+        bsddb compiler ctypes curses distutils email encodings hotshot importlib 
+        json lib-dynload lib-tk lib2to3 logging multiprocessing 
+        plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
+endif()
 
-# ----------------- Part 3/3 - PythonScripts ----------------------------------------
+# ----------------- Part 1/3 - PythonLibs ------------------------------------------
+# always detect PythonLibs but set flag HAVE_PYTHON conditionally to user
+# embedded python in flow123d
+include(python/PythonLibs)
+if(USE_PYTHON)
+    flow_define(HAVE_PYTHON)
+endif()
+
+# ----------------- Part 2/3 - PythonScripts ----------------------------------------
 # install 3rd party packages and copy python runtest
 include(python/PythonScripts)
-# create list of path for wrappers
-set(PY_WRAPPER_PATHS "/lib/python2.7")
-list(APPEND PY_WRAPPER_PATHS ${PYTHON_EXTRA_MODULES_PATH})
-foreach(PY_PATH ${PYTHON_SYSPATH})
-    list(APPEND PY_WRAPPER_PATHS "/lib/python2.7/${PY_PATH}")
-endforeach()
+message(FATAL_ERROR "PY_WRAPPER_PATHS = ${PY_WRAPPER_PATHS}")
+
+# ----------------- Part 3/3 - PythonCopy ------------------------------------------
+# Copy python libs to ${PY_BUILD_PREFIX}/lib/python2.7
+if(PYTHON_COPY)
+    include(python/PythonCopy)
+endif()
 
 
 

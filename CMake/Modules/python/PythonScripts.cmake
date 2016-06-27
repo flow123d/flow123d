@@ -4,9 +4,12 @@
 #    
 #    
 #  - Following variables MUST BE SET:
-#    - PYTHON_SYSPATH
+#    - PY_BUILD_PREFIX
 #           - list of all path which should be added to PYTHONPATH after python
 #             is copied out relative to CMAKE_BINARY_DIR
+#    - PY_BUILD_PREFIX
+#           - directory where 3rd party will be installed
+#             in ${PY_BUILD_PREFIX}/lib/python2.7/site-packages
 
 
 # check working python 2.7+
@@ -28,12 +31,37 @@ endmacro(install_python_lib)
 # setup some variables
 set(PYTHON_3RD_PARTY ${PY_BUILD_PREFIX}/lib/python2.7/site-packages)
 set(PYTHON_RUNTEST   ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
-set(PY_WRAPPER_PATHS ${PYTHON_SYSPATH})
+
 
 # install python dependencies
 install_python_lib(pyyaml yaml)
 install_python_lib(psutil psutil)
 install_python_lib(markdown markdown)
+
+
+# get current PYTHONPATH variable
+execute_process(COMMAND
+    ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path --format cmake
+    OUTPUT_VARIABLE PYTHON_PATHS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# prepare path for wrappers (variable PY_WRAPPER_PATHS)
+# everytime we use lib root and 3rd party directory
+set(PY_WRAPPER_PATHS
+    "/lib/python2.7"
+    "/lib/python2.7/site-packages"
+    ${PYTHON_EXTRA_MODULES_PATH})
+
+# go through all paths in python sys.path and those in PYTHON_ROOT "transfer" 
+# to our lib dir
+foreach(ITEM ${PYTHON_PATHS})
+    string(FIND ${ITEM} ${PYTHON_ROOT}/ _index)
+    if(${_index} EQUAL 0)
+        string(REPLACE "${PYTHON_ROOT}/" "" ITEM_NEWPATH ${ITEM})
+        list(APPEND PY_WRAPPER_PATHS "/lib/python2.7/${ITEM_NEWPATH}")
+    endif()
+endforeach()
+
 
 # create Python runtest wrapper in src/bin
 # also create symlink of python runtest wrapper in tests
