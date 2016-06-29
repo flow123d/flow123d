@@ -88,7 +88,6 @@ public:
     OutputElementIterator end();
     
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
-    std::shared_ptr<std::vector<double>> local_nodes_;
     
     std::shared_ptr<MeshData<double>> nodes_;
     std::shared_ptr<MeshData<unsigned int>> connectivity_;
@@ -108,7 +107,6 @@ private:
     bool refinement_criterion();
     
     Mesh *orig_mesh_;
-    bool discont_data_computed_;
     
     const unsigned int max_level = 2;
     

@@ -22,7 +22,7 @@
 #include "output_element.hh"
 
 OutputMesh::OutputMesh(Mesh* mesh)
-: orig_mesh_(mesh), discont_data_computed_(false)
+: orig_mesh_(mesh)
 {
 }
 
@@ -32,28 +32,31 @@ OutputMesh::~OutputMesh()
 
 OutputElementIterator OutputMesh::begin()
 {
+    ASSERT_PTR(offsets_);
     return OutputElementIterator(OutputElement(0, this));
 }
 
 OutputElementIterator OutputMesh::end()
 {
+    ASSERT_PTR(offsets_);
     return OutputElementIterator(OutputElement(offsets_->n_values, this));
 }
 
 unsigned int OutputMesh::n_elements()
 {
+    ASSERT_PTR(offsets_);
     return offsets_->n_values;
 }
 
 unsigned int OutputMesh::n_nodes()
 {
+    ASSERT_PTR(nodes_);
     return nodes_->n_values;
 }
 
 unsigned int OutputMesh::n_nodes_disc()
 {
-    //ASSERT_DBG(output_mesh_->discont_data_computed_);
-    if(discont_data_computed_)
+    if(discont_nodes_)
         return discont_nodes_->n_values;
     else
         return 0;
@@ -69,8 +72,9 @@ void OutputMesh::create_identical_mesh()
     offsets_ = std::make_shared<MeshData<unsigned int>>("offsets");
     
     fill_vectors();
-    // if output mesh computed, invalid the discontinuous data
-    discont_data_computed_ = false;
+    
+    discont_connectivity_.reset();
+    discont_nodes_.reset();
 }
 
 
@@ -123,7 +127,7 @@ void OutputMesh::fill_vectors()
 void OutputMesh::compute_discontinuous_data()
 {
     ASSERT_DBG(nodes_->n_values > 0);   //continuous data already computed
-    if(discont_data_computed_) return;
+    if(discont_nodes_) return;          //already computed
     
     discont_nodes_ = std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR);
     discont_connectivity_ = std::make_shared<MeshData<unsigned int>>("connectivity");
@@ -141,7 +145,7 @@ void OutputMesh::compute_discontinuous_data()
                  corner_id = 0, // corner index (discontinous node)
                  li;            // local node index
 
-    for(const auto & ele : *output_mesh_)
+    for(const auto & ele : *this)
     {
         unsigned int n = ele.n_nodes(), 
                      ele_idx = ele.idx(),
@@ -161,8 +165,6 @@ void OutputMesh::compute_discontinuous_data()
             corner_id++;
         }
     }
-    
-    discont_data_computed_ = true;
 }
 
         
@@ -174,5 +176,5 @@ void OutputMesh::create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_cont
 
 bool OutputMesh::refinement_criterion()
 {
-
+    ASSERT(0).error("Not implemented yet.");
 }

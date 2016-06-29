@@ -196,7 +196,7 @@ inline unsigned int OutputElement::node_index(unsigned int loc_idx) const
 
 inline unsigned int OutputElement::node_index_disc(unsigned int loc_idx) const
 {
-    ASSERT_DBG(output_mesh_->discont_data_computed_);
+    ASSERT_PTR(output_mesh_->discont_connectivity_);
     return node_index_internal(loc_idx, output_mesh_->discont_connectivity_);
 }
 
