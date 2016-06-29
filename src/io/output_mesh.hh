@@ -104,11 +104,6 @@ public:
     
 private:
     
-    struct AuxElement{
-        std::vector<double> coords;
-        std::vector<unsigned int> connectivity;
-    };
-    
     void fill_vectors();
     bool refinement_criterion();
     

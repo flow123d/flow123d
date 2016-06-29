@@ -169,53 +169,6 @@ void OutputMesh::compute_discontinuous_data()
 void OutputMesh::create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field)
 {
     ASSERT(0).error("Not implemented yet.");
-    
-    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>();
-    local_nodes_ = std::make_shared<std::vector<double>>();
-    
-    //FIXME: suggest required capacity
-    unsigned int capacity = 16*orig_mesh_->n_elements();
-    orig_element_indices_->reserve(capacity);
-    local_nodes_->reserve(3*capacity);
-    
-    // create node indices for connectivity
-    unsigned int node_id = 0;   // node id
-    FOR_NODES(orig_mesh_, node) {
-        node->aux = node_id;   // store node index in the auxiliary variable
-        node_id++;
-    }
-    
-    FOR_ELEMENTS(orig_mesh_, ele) {
-        arma::vec3 centre = ele->centre();
-        
-        AuxElement aux_ele;
-        aux_ele.connectivity.resize(ele->n_nodes());
-        aux_ele.coords.resize(ele->n_nodes()*3);
-        for(unsigned int i=0; i<ele->n_nodes(); i++)
-        {
-            Node* node = ele->node[i];
-            aux_ele.connectivity[i] = node->aux;
-            aux_ele.coords[i] = node->getX();
-            aux_ele.coords[i+1] = node->getY();
-            aux_ele.coords[i+2] = node->getZ();
-        }
-        
-        //refinement refinement
-        // if(refinement_criterion())
-        {
-            // new element:
-            // centre + combination of dim nodes from all nodes
-            static const std::vector<std::vector<std::vector<unsigned int>>> side_permutations = 
-                {   { {0},{1}}, // line
-                    { {0,1}, {0,2}, {1,2}}, //triangle
-                    { {0,1,2}, {0,1,3}, {0,2,3}, {1,2,3}}   //tetrahedron
-                };
-            
-        }
-    }
-    
-    orig_element_indices_->shrink_to_fit();
-    local_nodes_->shrink_to_fit();
 }
 
 
