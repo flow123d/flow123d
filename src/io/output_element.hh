@@ -29,7 +29,6 @@ class ElementAccessor;
 #include "mesh/point.hh"
 #include "output_mesh.hh"
 
-
 /** @brief Represents an element of the output mesh.
  * Provides element access on the data of the output mesh (nodes, connectivity, offsets etc.).
  * 
@@ -80,7 +79,8 @@ public:
     ElementAccessor<spacedim> element_accessor() const;
     //@}
     
-    void inc();
+    void operator++();
+    bool operator==(const OutputElement& other);
 private:
     
     /// Returns global index of the node. (DISCONTINUOUS)
@@ -105,9 +105,14 @@ inline OutputElement::OutputElement(unsigned int ele_idx, OutputMesh* output_mes
 : ele_idx_(ele_idx), output_mesh_(output_mesh)
 {}
 
-inline void OutputElement::inc()
+inline void OutputElement::operator++()
 {
     ele_idx_++;
+}
+
+inline bool OutputElement::operator==(const OutputElement& other)
+{
+    return ele_idx_ == other.ele_idx_;
 }
 
 
@@ -220,71 +225,6 @@ inline OutputElement::Point OutputElement::centre() const
     Point res({0,0,0});
     for(auto& v : vertex_list() ) res += v;
     return res/n_nodes();
-}
-
-// --------------------------------------------------- OutputElementIterator ---------------------------------
-/** @brief Output element iterator.
- * Provides iterator over elements of the output mesh.
- */
-class OutputElementIterator
-{
-public:
-//     OutputElementIterator();
-
-    OutputElementIterator(const OutputElement& output_element);
-
-    /// equal operator
-    bool operator==(const OutputElementIterator& other);
-    /// non-equal operator
-    bool operator!=(const OutputElementIterator& other);
-
-    ///  * dereference operator
-    const OutputElement& operator*() const;
-
-    /// -> dereference operator
-    const OutputElement* operator->() const;
-
-    /// prefix increment
-    OutputElementIterator& operator++();
-
-private:
-    /// Output element of the output mesh.
-    OutputElement element_; 
-};
-
-
-// --------------------------------------------------- OutputElementIterator INLINE implementation -----------
-// inline OutputElementIterator::OutputElementIterator()
-// {}
-
-inline OutputElementIterator::OutputElementIterator(const OutputElement& output_element)
-: element_(output_element)
-{}
-
-inline bool OutputElementIterator::operator==(const OutputElementIterator& other)
-{
-    return (element_.idx() == other.element_.idx());
-}
-
-inline bool OutputElementIterator::operator!=(const OutputElementIterator& other)
-{
-    return !( *this == other);
-}
-
-inline const OutputElement& OutputElementIterator::operator*() const
-{
-    return element_;
-}
-
-inline const OutputElement* OutputElementIterator::operator->() const
-{
-    return &element_;
-}
-
-inline OutputElementIterator& OutputElementIterator::operator++()
-{
-    element_.inc();
-    return (*this);
 }
 
 #endif // OUTPUT_ELEMENT_HH_

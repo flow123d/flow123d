@@ -27,11 +27,13 @@
 
 #include "fields/field_values.hh"
 
-
+#include "tools/general_iterator.hh"
 
 class Mesh;
 template<int, class Value> class Field;
-class OutputElementIterator;
+
+class OutputElement;
+typedef GeneralIterator<OutputElement> OutputElementIterator;
 
 /// Class representing data vector of geometry and topology information (especially for VTK).
 /// Filling the vector is the users responsibility.
