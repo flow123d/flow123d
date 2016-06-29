@@ -62,7 +62,7 @@ Abstract & OutputTime::get_input_format_type() {
 
 
 OutputTime::OutputTime()
-: _mesh(nullptr), output_mesh_(nullptr)
+: _mesh(nullptr)
 {}
 
 
@@ -73,7 +73,6 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     write_time(-1.0),
     input_record_(in_rec),
     _mesh(nullptr), 
-    output_mesh_(nullptr),
     is_output_mesh_valid_(false)
 {
     // Read output base file name
@@ -102,7 +101,6 @@ OutputTime::~OutputTime(void)
 
     if (this->_base_file.is_open()) this->_base_file.close();
 
-    if(output_mesh_ != nullptr) delete output_mesh_;
     xprintf(MsgLog, "O.K.\n");
 }
 
@@ -113,9 +111,8 @@ void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
     if(is_output_mesh_valid_) return;
     
     // possibly destroy previous output mesh
-    if(output_mesh_) delete output_mesh_;
-    
-    output_mesh_ = new OutputMesh(mesh);
+//     if(output_mesh_) output_mesh_.reset();
+    output_mesh_ = std::make_shared<OutputMesh>(mesh);
     
     FieldCommon* field =  output_fields->field(error_control_field_name);
     if( field && (typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>)) ) {

@@ -243,7 +243,7 @@ public:
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
         
         // create output mesh identical to computational mesh
-        this->output_mesh_ = new OutputMesh(my_mesh);
+        this->output_mesh_ = std::make_shared<OutputMesh>(my_mesh);
         this->output_mesh_->create_identical_mesh();
         // set validity of the output mesh for the current writing time
         this->is_output_mesh_valid_ = true;

@@ -237,7 +237,8 @@ protected:
      */
     Mesh *_mesh;
     
-    OutputMesh *output_mesh_;
+    /// Output mesh.
+    std::shared_ptr<OutputMesh> output_mesh_;
     
     /** @brief Flag is set true when output mesh for the current write time has been created.
      * Guarantees output mesh creation only once per write time, 
