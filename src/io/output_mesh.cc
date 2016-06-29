@@ -141,10 +141,10 @@ void OutputMesh::compute_discontinuous_data()
                  corner_id = 0, // corner index (discontinous node)
                  li;            // local node index
 
-    for(OutputElementIterator it = begin(); it != end(); ++it)
+    for(const auto & ele : *output_mesh_)
     {
-        unsigned int n = it->n_nodes(), 
-                     ele_idx = it->idx(),
+        unsigned int n = ele.n_nodes(), 
+                     ele_idx = ele.idx(),
                      con_off = (*offsets_)[ele_idx];
                      
         for(li = 0; li < n; li++)

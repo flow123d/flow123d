@@ -319,16 +319,16 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
         for(unsigned int idx=0; idx < output_data.n_values; idx++)
             output_data.zero(idx);
 
-        for(OutputElementIterator it = output_mesh_->begin(); it != output_mesh_->end(); ++it)
+        for(const auto & ele : *output_mesh_)
         {
-            std::vector<Space<3>::Point> vertices = it->vertex_list();
-            for(unsigned int i=0; i < it->n_nodes(); i++)
+            std::vector<Space<3>::Point> vertices = ele.vertex_list();
+            for(unsigned int i=0; i < ele.n_nodes(); i++)
             {
-                unsigned int node_index = it->node_index(i);
+                unsigned int node_index = ele.node_index(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
                                 field.value(vertices[i],
-                                            ElementAccessor<spacedim>(it->orig_mesh(), it->orig_element_idx(),false) ))
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
                              );
                 output_data.add(node_index, node_value);
                 count[node_index]++;
@@ -342,16 +342,16 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     break;
     case CORNER_DATA: {
         DBGMSG("compute field CORNER data\n");
-        for(OutputElementIterator it = output_mesh_->begin(); it != output_mesh_->end(); ++it)
+        for(const auto & ele : *output_mesh_)
         {
-            std::vector<Space<3>::Point> vertices = it->vertex_list_disc();
-            for(unsigned int i=0; i < it->n_nodes(); i++)
+            std::vector<Space<3>::Point> vertices = ele.vertex_list_disc();
+            for(unsigned int i=0; i < ele.n_nodes(); i++)
             {
-                unsigned int node_index = it->node_index_disc(i);
+                unsigned int node_index = ele.node_index_disc(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
                                 field.value(vertices[i],
-                                            ElementAccessor<spacedim>(it->orig_mesh(), it->orig_element_idx(),false) ))
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
                              );
                 output_data.store_value(node_index,  node_value);
             }
@@ -360,13 +360,13 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     break;
     case ELEM_DATA: {
         DBGMSG("compute field ELEM data\n");
-        for(OutputElementIterator it = output_mesh_->begin(); it != output_mesh_->end(); ++it)
+        for(const auto & ele : *output_mesh_)
         {
-            unsigned int ele_index = it->idx();
+            unsigned int ele_index = ele.idx();
             const Value &ele_value =
                         Value( const_cast<typename Value::return_type &>(
-                                field.value(it->centre(),
-                                            ElementAccessor<spacedim>(it->orig_mesh(), it->orig_element_idx(),false))
+                                field.value(ele.centre(),
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
                                                                         )
                              );
                 output_data.store_value(ele_index,  ele_value);
