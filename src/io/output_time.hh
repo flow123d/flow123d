@@ -242,12 +242,6 @@ protected:
     std::shared_ptr<OutputMesh> output_mesh_;
     std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
     
-    /** @brief Flag is set true when output mesh for the current write time has been created.
-     * Guarantees output mesh creation only once per write time, 
-     * assuming all fields are written on the same output mesh.
-     */
-    bool is_output_mesh_valid_;
-    
     /** @brief Name of the output field according to which the output mesh is refined.
      * When empty, the computational mesh is used for output.
      */

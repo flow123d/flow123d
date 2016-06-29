@@ -72,8 +72,7 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     time(-1.0),
     write_time(-1.0),
     input_record_(in_rec),
-    _mesh(nullptr), 
-    is_output_mesh_valid_(false)
+    _mesh(nullptr)
 {
     // Read output base file name
     this->_base_filename = in_rec.val<FilePath>("file");
@@ -108,10 +107,11 @@ OutputTime::~OutputTime(void)
 
 void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
 {
-    if(is_output_mesh_valid_) return;
+    // already computed
+    if(output_mesh_) return;
     
-    // possibly destroy previous output mesh
-//     if(output_mesh_) output_mesh_.reset();
+    _mesh = mesh;
+    
     output_mesh_ = std::make_shared<OutputMesh>(mesh);
     output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh);
     
@@ -127,10 +127,6 @@ void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
         // create output mesh identical to computational mesh
         output_mesh_->create_identical_mesh();
     }
-    
-    // set validity of the output mesh for the current writing time
-    is_output_mesh_valid_ = true;
-    _mesh = mesh;
 }
 
 
@@ -255,8 +251,9 @@ void OutputTime::write_time_frame()
 			write_time = time;
 			current_step++;
             
-            // unset validity of the output mesh after data are written at the current write time
-            is_output_mesh_valid_ = false;
+            // invalidate output meshes after the time frame written
+            output_mesh_.reset();
+            output_mesh_discont_.reset();
 		} else {
 			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
 			        this->_base_filename.c_str(), time);
