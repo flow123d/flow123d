@@ -113,6 +113,7 @@ void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
     // possibly destroy previous output mesh
 //     if(output_mesh_) output_mesh_.reset();
     output_mesh_ = std::make_shared<OutputMesh>(mesh);
+    output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh);
     
     FieldCommon* field =  output_fields->field(error_control_field_name);
     if( field && (typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>)) ) {
@@ -136,7 +137,7 @@ void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
 void OutputTime::compute_discontinuous_output_mesh()
 {
     ASSERT_PTR(output_mesh_).error("Create output mesh first!");
-    output_mesh_->compute_discontinuous_data();
+    output_mesh_discont_->create_mesh(output_mesh_);
 }
 
 

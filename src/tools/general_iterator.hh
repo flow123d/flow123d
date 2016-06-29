@@ -90,7 +90,7 @@ inline const Object* GeneralIterator<Object>::operator->() const
 template<class Object>
 inline GeneralIterator<Object>& GeneralIterator<Object>::operator++()
 {
-    ++object_;
+    object_.inc();
     return (*this);
 }
 

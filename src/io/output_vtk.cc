@@ -379,18 +379,18 @@ void OutputVTK::write_vtk_vtu(void)
 
     } else {
         /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << output_mesh_->n_nodes_disc()
+        file << "<Piece NumberOfPoints=\"" << output_mesh_discont_->n_nodes()
                   << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
-            write_vtk_data_ascii(output_mesh_->discont_nodes_, VTK_FLOAT64 );
+            write_vtk_data_ascii(output_mesh_discont_->nodes_, VTK_FLOAT64 );
         file << "</Points>" << endl;
 
         /* Write VTK Topology */
         file << "<Cells>" << endl;
-            write_vtk_data_ascii(output_mesh_->discont_connectivity_, VTK_INT32 );
-            write_vtk_data_ascii(output_mesh_->offsets_, VTK_INT32 );
+            write_vtk_data_ascii(output_mesh_discont_->connectivity_, VTK_INT32 );
+            write_vtk_data_ascii(output_mesh_discont_->offsets_, VTK_INT32 );
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
             write_vtk_data_ascii(types, VTK_UINT8 );

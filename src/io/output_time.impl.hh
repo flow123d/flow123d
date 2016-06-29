@@ -298,7 +298,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     std::vector<unsigned int> size(N_DISCRETE_SPACES);
     size[NODE_DATA] = output_mesh_->n_nodes();
     size[ELEM_DATA] = output_mesh_->n_elements();
-    size[CORNER_DATA] = output_mesh_->n_nodes_disc();
+    size[CORNER_DATA] = output_mesh_discont_->n_nodes();
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
@@ -342,12 +342,12 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     break;
     case CORNER_DATA: {
         DBGMSG("compute field CORNER data\n");
-        for(const auto & ele : *output_mesh_)
+        for(const auto & ele : *output_mesh_discont_)
         {
-            std::vector<Space<3>::Point> vertices = ele.vertex_list_disc();
+            std::vector<Space<3>::Point> vertices = ele.vertex_list();
             for(unsigned int i=0; i < ele.n_nodes(); i++)
             {
-                unsigned int node_index = ele.node_index_disc(i);
+                unsigned int node_index = ele.node_index(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
                                 field.value(vertices[i],

@@ -62,6 +62,7 @@ public:
             out_stream << d << " ";
     }
     
+    /// Access i-th element in the data vector.
     T& operator[](unsigned int i){
         ASSERT(i < data_.size());
         return data_[i];
@@ -72,47 +73,94 @@ public:
 };
 
 
+class OutputMeshBase;
+class OutputMesh;
+class OutputMeshDiscontinuous;
 
-class OutputMesh
+
+/// @brief Base class for Output mesh.
+/**
+ * Defines common members for OutputMesh classes.
+ */
+class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
 {
 public:
+    /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment. 
     static const unsigned int spacedim = 3;
     
-    OutputMesh(Mesh* mesh);
-    ~OutputMesh();
+    /// Constructor. Takes computational mesh as a parameter.
+    OutputMeshBase(Mesh* mesh);
+    virtual ~OutputMeshBase();
     
-    void create_identical_mesh();
-    void create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field);
-    
+    /// Gives iterator to the FIRST element of the output mesh.
     OutputElementIterator begin();
+    /// Gives iterator to the LAST element of the output mesh.
     OutputElementIterator end();
     
+    /// Vector of element indices in the computational mesh. (Important when refining.)
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
     
+    /// Vector of node coordinates. [spacedim x n_nodes]
     std::shared_ptr<MeshData<double>> nodes_;
+    /// Vector maps the nodes to their coordinates in vector @p nodes_.
     std::shared_ptr<MeshData<unsigned int>> connectivity_;
+    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
     std::shared_ptr<MeshData<unsigned int>> offsets_;
     
-    void compute_discontinuous_data();
-    std::shared_ptr<MeshData<double>> discont_nodes_;
-    std::shared_ptr<MeshData<unsigned int>> discont_connectivity_;
-    
+    /// Returns number of nodes.
     unsigned int n_nodes();
-    unsigned int n_nodes_disc();
+    /// Returns number of element.
     unsigned int n_elements();
     
-private:
-    
-    void fill_vectors();
-    bool refinement_criterion();
-    
+protected:
+    /// Pointer to the computational mesh.
     Mesh *orig_mesh_;
     
-    const unsigned int max_level = 2;
-    
+    /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
 };
 
+
+/// @brief Class represents output mesh with continuous elements.
+class OutputMesh : public OutputMeshBase
+{
+public:
+    OutputMesh(Mesh* mesh);
+    ~OutputMesh();
+    
+    /// Creates the output mesh identical to the computational one.
+    void create_identical_mesh();
+    
+    /// Creates refined mesh.
+    void create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field);
+    
+protected:
+    bool refinement_criterion();
+    
+    const unsigned int max_level = 2;
+    
+    /// Friend provides access to vectors for discontinous output mesh.
+    friend class OutputMeshDiscontinuous;
+};
+
+
+class OutputMeshDiscontinuous : public OutputMeshBase
+{
+public:
+    OutputMeshDiscontinuous(Mesh* mesh);
+    ~OutputMeshDiscontinuous();
+    
+    /// Creates output mesh from the given continuous one.
+    void create_mesh(std::shared_ptr<OutputMesh> output_mesh);
+    
+    /// Creates discontinuous refined mesh.
+    void create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field);
+    
+protected:
+    bool refinement_criterion();
+    
+    const unsigned int max_level = 2;
+};
 
 #endif  // OUTPUT_MESH_HH_
 

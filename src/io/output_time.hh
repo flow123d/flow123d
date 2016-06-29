@@ -33,6 +33,7 @@ template <int spacedim, class Value>
 class MultiField;
 class TimeGovernor;
 class OutputMesh;
+class OutputMeshDiscontinuous;
 
 /**
  * \brief The class for outputting data during time.
@@ -239,6 +240,7 @@ protected:
     
     /// Output mesh.
     std::shared_ptr<OutputMesh> output_mesh_;
+    std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
     
     /** @brief Flag is set true when output mesh for the current write time has been created.
      * Guarantees output mesh creation only once per write time, 

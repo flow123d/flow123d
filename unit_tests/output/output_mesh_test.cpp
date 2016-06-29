@@ -40,7 +40,7 @@ TEST(OutputMesh, create_identical)
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
     
-    OutputMesh* output_mesh = new OutputMesh(mesh);
+    auto output_mesh = std::make_shared<OutputMesh>(mesh);
     output_mesh->create_identical_mesh();
     
     std::cout << "nodes: ";
@@ -56,51 +56,52 @@ TEST(OutputMesh, create_identical)
     EXPECT_EQ(output_mesh->nodes_->n_values, mesh->n_nodes());
     EXPECT_EQ(output_mesh->offsets_->n_values, mesh->n_elements());
     
-    for(OutputElementIterator it = output_mesh->begin(); it != output_mesh->end(); ++it)
+    for(const auto &ele : *output_mesh)
     {
-        xprintf(Msg,"%d %dD n_%d |",it->idx(), it->dim(), it->n_nodes());
-        for(unsigned int i=0; i < it->n_nodes(); i++)
+        xprintf(Msg,"%d %dD n_%d |",ele.idx(), ele.dim(), ele.n_nodes());
+        for(unsigned int i=0; i < ele.n_nodes(); i++)
         {
-            xprintf(Msg," %d",it->node_index(i));
+            xprintf(Msg," %d",ele.node_index(i));
         }
         xprintf(Msg," |");
-        for(auto& v : it->vertex_list())
+        for(auto& v : ele.vertex_list())
         {
             xprintf(Msg," %f %f %f #",v[0], v[1], v[2]);
         }
         xprintf(Msg,"\n");
         
-        ElementAccessor<3> ele_acc = it->element_accessor();
-        EXPECT_EQ(it->dim(), ele_acc.dim());
-        EXPECT_EQ(it->centre()[0], ele_acc.centre()[0]);
-        EXPECT_EQ(it->centre()[1], ele_acc.centre()[1]);
-        EXPECT_EQ(it->centre()[2], ele_acc.centre()[2]);
+        ElementAccessor<3> ele_acc = ele.element_accessor();
+        EXPECT_EQ(ele.dim(), ele_acc.dim());
+        EXPECT_EQ(ele.centre()[0], ele_acc.centre()[0]);
+        EXPECT_EQ(ele.centre()[1], ele_acc.centre()[1]);
+        EXPECT_EQ(ele.centre()[2], ele_acc.centre()[2]);
     }
     
-    output_mesh->compute_discontinuous_data();
+    auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(mesh);
+    output_mesh_discont->create_mesh(output_mesh);
+    
     xprintf(Msg,"DISCONTINUOUS\n");
-    for(OutputElementIterator it = output_mesh->begin(); it != output_mesh->end(); ++it)
+    for(const auto &ele : *output_mesh_discont)
     {
-        xprintf(Msg,"%d %dD n_%d |",it->idx(), it->dim(), it->n_nodes());
-        for(unsigned int i=0; i < it->n_nodes(); i++)
+        xprintf(Msg,"%d %dD n_%d |",ele.idx(), ele.dim(), ele.n_nodes());
+        for(unsigned int i=0; i < ele.n_nodes(); i++)
         {
-            xprintf(Msg," %d",it->node_index_disc(i));
+            xprintf(Msg," %d",ele.node_index(i));
         }
         xprintf(Msg," |");
-        for(auto& v : it->vertex_list())
+        for(auto& v : ele.vertex_list())
         {
             xprintf(Msg," %f %f %f #",v[0], v[1], v[2]);
         }
         xprintf(Msg,"\n");
         
-        ElementAccessor<3> ele_acc = it->element_accessor();
-        EXPECT_EQ(it->dim(), ele_acc.dim());
-        EXPECT_EQ(it->centre()[0], ele_acc.centre()[0]);
-        EXPECT_EQ(it->centre()[1], ele_acc.centre()[1]);
-        EXPECT_EQ(it->centre()[2], ele_acc.centre()[2]);
+        ElementAccessor<3> ele_acc = ele.element_accessor();
+        EXPECT_EQ(ele.dim(), ele_acc.dim());
+        EXPECT_EQ(ele.centre()[0], ele_acc.centre()[0]);
+        EXPECT_EQ(ele.centre()[1], ele_acc.centre()[1]);
+        EXPECT_EQ(ele.centre()[2], ele_acc.centre()[2]);
     }
     
-    delete output_mesh;
     delete mesh;
 }
 

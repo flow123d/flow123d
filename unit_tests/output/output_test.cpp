@@ -248,6 +248,9 @@ public:
         // set validity of the output mesh for the current writing time
         this->is_output_mesh_valid_ = true;
         
+        this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(my_mesh);
+        this->output_mesh_discont_->create_mesh(this->output_mesh_);
+        
 		{
 			this->compute_field_data(ELEM_DATA, field);
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
