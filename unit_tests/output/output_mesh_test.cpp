@@ -124,8 +124,12 @@ const string input = R"INPUT(
     format = {
         TYPE = "vtk", 
         variant = "ascii"
-    },
-    error_control_field = "concXXXXXXXXXXXXXXX"
+    }/*,
+    output_mesh = {
+        max_level = 3,
+        refine_by_error = true,
+        error_control_field = "conc"
+    }*/
   },
   output_fields = ["conc"]
 }
@@ -186,4 +190,57 @@ TEST(OutputMesh, write_on_output_mesh) {
     output->write_time_frame();
 
     delete mesh;
+}
+
+
+
+
+
+
+
+
+
+const string input_om = R"INPUT(
+{   
+    max_level = 2,
+    refine_by_error = true,
+    error_control_field = "conc"
+}
+)INPUT";
+
+class TestOutputMesh : public testing::Test, public OutputMesh {
+public:
+    TestOutputMesh()
+    : OutputMesh(nullptr, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
+                            .get_root_interface<Input::Record>())
+    {
+    }
+    
+    ~TestOutputMesh()
+    {
+    }
+};
+
+
+TEST_F(TestOutputMesh, read_input) {
+    EXPECT_EQ(this->max_level_, 2);
+    EXPECT_EQ(this->orig_mesh_, nullptr);
+  
+    Field<3,FieldValue<3>::Scalar> scalar_field;
+    
+    // create field set of output fields
+    FieldSet output_fields;
+    output_fields += scalar_field.name("conc");
+    this->select_error_control_field(&output_fields);
+    
+    // no field 'conc' is to be found
+    output_fields.field("conc")->name("conc_error");
+    EXPECT_THROW( this->select_error_control_field(&output_fields); ,
+                  FieldSet::ExcUnknownField);
+    
+    // 'conc' field is now vector field
+    Field<3,FieldValue<3>::Vector> vector_field;
+    output_fields += vector_field.name("conc");
+    EXPECT_THROW( this->select_error_control_field(&output_fields); ,
+                  OutputMeshBase::ExcFieldNotScalar);
 }

@@ -240,12 +240,11 @@ protected:
     
     /// Output mesh.
     std::shared_ptr<OutputMesh> output_mesh_;
+    /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
     std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
     
-    /** @brief Name of the output field according to which the output mesh is refined.
-     * When empty, the computational mesh is used for output.
-     */
-    std::string error_control_field_name;
+    /// Auxliary flag for refinement enabling, due to gmsh format.
+    bool enable_refinement_;
 };
 
 

@@ -43,8 +43,6 @@ public:
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>(this->_mesh);
         this->output_mesh_->create_identical_mesh();
-        // set validity of the output mesh for the current writing time
-        this->is_output_mesh_valid_ = true;
     }
 
     ~TestOutputVTK()

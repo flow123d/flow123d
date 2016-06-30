@@ -19,14 +19,41 @@
 #include "output_element.hh"
 #include "mesh/mesh.h"
 #include "fields/field.hh"
+#include <fields/field_set.hh>
 
+namespace IT=Input::Type;
+
+const IT::Record & OutputMeshBase::get_input_type() {
+    return IT::Record("OutputStream", "Parameters of output.")
+        .declare_key("max_level", IT::Integer(1,20),IT::Default("3"),
+            "Maximal level of refinement of the output mesh.")
+        .declare_key("refine_by_error", IT::Bool(), IT::Default("false"),
+            "Set true for using error_control_field. Set false for global uniform refinement to max_level.")
+        .declare_key("error_control_field",IT::String(), IT::Default::optional(),
+            "Name of an output field, according to which the output mesh will be refined. The field must be a SCALAR one.")
+        .close();
+}
 
 OutputMeshBase::OutputMeshBase(Mesh* mesh)
-: orig_mesh_(mesh)
+: 
+    nodes_ (std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR)),
+    connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
+    offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
+    orig_mesh_(mesh),
+    max_level_(0)
 {
-    nodes_ = std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR);
-    connectivity_ = std::make_shared<MeshData<unsigned int>>("connectivity");
-    offsets_ = std::make_shared<MeshData<unsigned int>>("offsets");
+}
+
+
+OutputMeshBase::OutputMeshBase(Mesh* mesh, const Input::Record &in_rec)
+: 
+    nodes_ (std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR)),
+    connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
+    offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
+    input_record_(in_rec), 
+    orig_mesh_(mesh),
+    max_level_(input_record_.val<int>("max_level"))
+{
 }
 
 OutputMeshBase::~OutputMeshBase()
@@ -45,6 +72,44 @@ OutputElementIterator OutputMeshBase::end()
     return OutputElementIterator(OutputElement(offsets_->n_values, shared_from_this()));
 }
 
+void OutputMeshBase::select_error_control_field(FieldSet* output_fields)
+{
+    bool use_field = input_record_.val<bool>("refine_by_error");
+    
+    if(use_field)
+    {
+        std::string error_control_field_name = "";
+        // Read optional error control field name
+        auto it = input_record_.find<std::string>("error_control_field");
+        if(it) error_control_field_name = *it;
+
+        FieldCommon* field =  output_fields->field(error_control_field_name);
+        // throw input exception if the field is unknown
+        if(field == nullptr){
+            THROW(FieldSet::ExcUnknownField()
+                    << FieldCommon::EI_Field(error_control_field_name)
+                    << input_record_.ei_address());
+            return;
+        }
+        
+        // throw input exception if the field is not scalar
+        if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
+            
+            error_control_field_ = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+            DBGMSG("Output mesh will be refined according to field '%s'.\n", error_control_field_name.c_str());
+        }
+        else{
+            THROW(ExcFieldNotScalar()
+                    << FieldCommon::EI_Field(error_control_field_name)
+                    << input_record_.ei_address());
+        }
+    }
+    else
+    {
+        error_control_field_ = nullptr;
+    }
+}
+
 unsigned int OutputMeshBase::n_elements()
 {
     ASSERT_PTR(offsets_);
@@ -61,9 +126,16 @@ unsigned int OutputMeshBase::n_nodes()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-OutputMesh::OutputMesh(Mesh* mesh): OutputMeshBase(mesh)
+OutputMesh::OutputMesh(Mesh* mesh)
+: OutputMeshBase(mesh)
 {
 }
+
+OutputMesh::OutputMesh(Mesh* mesh, const Input::Record& in_rec)
+: OutputMeshBase(mesh, in_rec)
+{
+}
+
 
 OutputMesh::~OutputMesh()
 {
@@ -72,7 +144,7 @@ OutputMesh::~OutputMesh()
 
 void OutputMesh::create_identical_mesh()
 {
-//     DBGMSG("create identical outputmesh\n");
+    DBGMSG("Create outputmesh identical to computational one.\n");
 
     const unsigned int n_elements = orig_mesh_->n_elements(),
                        n_nodes = orig_mesh_->n_nodes();
@@ -116,7 +188,7 @@ void OutputMesh::create_identical_mesh()
     connectivity_->n_values = connect_id;
 }
 
-void OutputMesh::create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field)
+void OutputMesh::create_refined_mesh()
 {
     ASSERT(0).error("Not implemented yet.");
 }
@@ -132,9 +204,16 @@ bool OutputMesh::refinement_criterion()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh* mesh): OutputMeshBase(mesh)
+OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh* mesh)
+: OutputMeshBase(mesh)
 {
 }
+
+OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh* mesh, const Input::Record& in_rec)
+: OutputMeshBase(mesh, in_rec)
+{
+}
+
 
 OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
 {
@@ -146,6 +225,8 @@ void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
     ASSERT_DBG(output_mesh->nodes_->n_values > 0);   //continuous data already computed
     
     if(nodes_->data_.size() > 0) return;          //already computed
+    
+    DBGMSG("Create discontinuous outputmesh.\n");
     
     // connectivity = for every element list the nodes => its length corresponds to discontinuous data
     const unsigned int n_corners = output_mesh->connectivity_->n_values;
@@ -187,7 +268,7 @@ void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
 }
 
 
-void OutputMeshDiscontinuous::create_refined_mesh(Field<3, FieldValue<3>::Scalar>* error_control_field)
+void OutputMeshDiscontinuous::create_refined_mesh()
 {
     ASSERT(0).error("Not implemented yet.");
 }

@@ -50,7 +50,8 @@ const Record & OutputTime::get_input_type() {
 				"Explicit array of output time points (can be combined with 'time_step'.")
 		.declare_key("add_input_times", Bool(), Default("false"),
 				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
-        .declare_key("error_control_field",String(), Default::optional(), "Name of an output field, according to which the output mesh will be refined.")
+        .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
+                "Output mesh record enables output on a refined mesh.")
 		.close();
 }
 
@@ -76,13 +77,6 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 {
     // Read output base file name
     this->_base_filename = in_rec.val<FilePath>("file");
-    
-    // Read optional error control field name for output mesh generation
-    auto it = in_rec.find<std::string>("error_control_field");
-    if(it) error_control_field_name = *it;
-    else error_control_field_name = "";
-
-    DBGMSG("error control field = '%s'\n", error_control_field_name.c_str());
     
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
 
@@ -111,22 +105,33 @@ void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
     if(output_mesh_) return;
     
     _mesh = mesh;
+
+    // Read optional error control field name
+    auto it = input_record_.find<Input::Record>("output_mesh");
+    
+    if(enable_refinement_) {
+        if(it){
+            output_mesh_ = std::make_shared<OutputMesh>(mesh, *it);
+            output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh, *it);
+            output_mesh_->select_error_control_field(output_fields);
+            output_mesh_discont_->select_error_control_field(output_fields);
+            
+            output_mesh_->create_refined_mesh();
+            return;
+        }
+    }
+    else
+    {
+        // skip creation of output mesh (use computational one)
+        if(it)
+            xprintf(Warn,"Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!\n");
+    }
+    
     
     output_mesh_ = std::make_shared<OutputMesh>(mesh);
     output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh);
     
-    FieldCommon* field =  output_fields->field(error_control_field_name);
-    if( field && (typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>)) ) {
-        Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
-        DBGMSG("Output mesh will be refined according to field '%s'.\n", error_control_field_name.c_str());
-        // create refined output mesh according to the field
-        output_mesh_->create_refined_mesh(error_control_field);
-    }
-    else{
-        DBGMSG("Output mesh identical with the computational one.\n");
-        // create output mesh identical to computational mesh
-        output_mesh_->create_identical_mesh();
-    }
+    output_mesh_->create_identical_mesh();
 }
 
 

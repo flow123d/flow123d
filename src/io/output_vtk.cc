@@ -70,6 +70,7 @@ const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::
 
 OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
 {
+    this->enable_refinement_ = true;
     this->fix_main_file_extension(".pvd");
 
     if(this->rank == 0) {
