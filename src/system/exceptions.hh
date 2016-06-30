@@ -148,7 +148,7 @@ protected:
  */
 #define DECLARE_EXCEPTION( ExcName, Format)                                 \
 struct ExcName : public virtual ::ExceptionBase {                           \
-     virtual void print_info(std::ostringstream &out) const {               \
+     virtual void print_info(std::ostringstream &out) const override {      \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                         \
          estream Format ;                                                   \
