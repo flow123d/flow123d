@@ -77,21 +77,21 @@ TEST(FilePath, output_relative) {
     //EXPECT_DEATH( {FilePath("input/${INPUT}/init.in", FilePath::input_file);},
     //        "Creating FileName object before set_io_dirs is called.");
 
-    FilePath::set_io_dirs("./work_dir/xx", "./main_root", "variant_input", "../output_root");
+    FilePath::set_io_dirs(".", "./main_root", "variant_input", "../output_root");
 
     { // relative output_dir x relative output substitution
 		FilePath fp = FilePath("output.vtk", FilePath::output_file);
 		string str_fp = fp;
 
 		// relative output substitution; conversion to string
-		EXPECT_TRUE( (boost::filesystem::current_path() / "main_root/work_dir/output_root/output.vtk") == boost::filesystem::path(str_fp) );
+		EXPECT_TRUE( (boost::filesystem::current_path() / "output_root/output.vtk") == boost::filesystem::path(str_fp) );
 
 		// conversion to string
-		EXPECT_TRUE( (boost::filesystem::current_path() / "main_root/work_dir/output_root/output.vtk") == boost::filesystem::path(string(fp)) );
+		EXPECT_TRUE( (boost::filesystem::current_path() / "output_root/output.vtk") == boost::filesystem::path(string(fp)) );
     }
 
     // relative output_dir x absolute output substitution, this case is not allowed
-    EXPECT_THROW_WHAT( { FilePath(FilePath::get_absolute_working_dir()+"main_root/work_dir/xx/output.vtk", FilePath::output_file); },
+    EXPECT_THROW_WHAT( { FilePath(FilePath::get_absolute_working_dir()+"main_root/output.vtk", FilePath::output_file); },
     		FilePath::ExcAbsOutputPath, "Can not set absolute path" );
 
 }
@@ -105,7 +105,7 @@ TEST(FilePath, output_absolute) {
 
     string abs_path = FilePath::get_absolute_working_dir();
 
-    FilePath::set_io_dirs("/work_dir/xx", "/main_root", "variant_input", abs_path+"output_root");
+    FilePath::set_io_dirs(".", "/main_root", "variant_input", abs_path+"output_root");
 
     {
 		// relative output substitution; conversion to string
@@ -127,7 +127,7 @@ TEST(FilePath, output_absolute) {
 TEST(FilePath, input_relative) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    FilePath::set_io_dirs("./work_dir/xx","./main_root", "variant_input", "../output_root");
+    FilePath::set_io_dirs(".","./main_root", "variant_input", "../output_root");
 
     { // relative input without substitution; conversion to string
 		string str = FilePath("subdir/init.in", FilePath::input_file);
@@ -158,7 +158,7 @@ TEST(FilePath, input_absolute) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     string abs_path = FilePath::get_absolute_working_dir();
-    FilePath::set_io_dirs("/work_dir/xx", "/main_root", "variant_input", abs_path+"output_root");
+    FilePath::set_io_dirs(".", "/main_root", "variant_input", abs_path+"output_root");
 
     {
         // relative input without substitution; conversion to string
@@ -189,11 +189,11 @@ TEST(FilePath, input_absolute) {
 
 TEST(FilePath, create_output_dir) {
     //::testing::FLAGS_gtest_death_test_style = "threadsafe";
-    boost::filesystem::remove_all("./work_dir");
-    FilePath::set_io_dirs("./work_dir","", "my_input", "my_output");
-    EXPECT_TRUE(boost::filesystem::is_directory("./work_dir/my_output"));
+    boost::filesystem::remove_all("./my_output");
+    FilePath::set_io_dirs(".","", "my_input", "my_output");
+    EXPECT_TRUE(boost::filesystem::is_directory("./my_output"));
     FilePath fp("subdir/some_file.xyz", FilePath::output_file);
     fp.create_output_dir();
-    EXPECT_TRUE(boost::filesystem::is_directory("./work_dir/my_output/subdir"));
-    boost::filesystem::remove_all("./work_dir");
+    EXPECT_TRUE(boost::filesystem::is_directory("./my_output/subdir"));
+    boost::filesystem::remove_all("./my_output");
 }
