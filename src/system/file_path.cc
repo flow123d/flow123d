@@ -58,11 +58,8 @@ FilePath::FilePath(string file_path, const  FileType ft)
 
 
 void FilePath::set_io_dirs(const string working_dir, const string root, const string input, const string output) {
-	boost::filesystem::path full_output_path(output);
-    if ( !full_output_path.is_absolute() ) {
-    	full_output_path = boost::filesystem::path(working_dir) / output;
-    }
-    FilePath::set_dirs(root, input, full_output_path.string());
+	ASSERT_EQ(working_dir, ".").error();
+    FilePath::set_dirs(root, input, output);
 }
 
 
