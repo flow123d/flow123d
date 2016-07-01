@@ -129,7 +129,8 @@ public:
 		warning = 0,
 		message = 1,
 		log = 2,
-		debug = 3
+		debug = 3,
+		error = 4
 	};
 
 	/// Return string value of given MsgType in full or shorter format (e.g. "WARNING" of "Wrn")
