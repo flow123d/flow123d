@@ -23,6 +23,8 @@
 #include <sstream>
 #include <vector>
 
+#include "system/fmt/format.h"
+
 
 
 /**
@@ -141,6 +143,13 @@ public:
 
 	/// Set flag every_process_ to true
 	Logger& every_proc();
+
+	/// Allow use functionality of fmtlib for formating message.
+	template<class... T>
+	Logger& fmt(T&&... t)
+	{
+	    return *this << fmt::format(std::forward<T>(t)...);
+	}
 
 	/// Destructor.
 	~Logger();

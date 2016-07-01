@@ -43,7 +43,7 @@ void logger_messages() {
 }
 
 
-TEST(LoggerNoLog, full) {
+TEST(Logger, no_log) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("");
@@ -51,21 +51,21 @@ TEST(LoggerNoLog, full) {
 	logger_messages();
 }
 
-TEST(LoggerWithoutInitLogFile, full) {
+TEST(Logger, without_init_log_file) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 
 	logger_messages();
 }
 
-TEST(LoggerLogFileWithoutMPI, full) {
+TEST(Logger, log_file_without_mpi) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().set_log_file("without_mpi");
 
 	logger_messages();
 }
 
-TEST(LoggerLogFileWithMPI, full) {
+TEST(Logger, log_file_with_mpi) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("with_mpi");
@@ -73,7 +73,7 @@ TEST(LoggerLogFileWithMPI, full) {
 	logger_messages();
 }
 
-TEST(MaskManipulator, full) {
+TEST(Logger, mask_manipulator) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("manip");
@@ -82,6 +82,20 @@ TEST(MaskManipulator, full) {
 				 << StreamMask::cout << "Second message only to cout." << std::endl
 				 << StreamMask::log << "Third message only to file.\n"
 				 << (StreamMask::cout | StreamMask::log) << "Fourth message to cout and file.\n";
+
+	LoggerOptions::get_instance().reset();
+}
+
+TEST(Logger, fmt_lib) {
+	Profiler::initialize();
+	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_log_file("");
+
+	int i=1;
+	double f=0.2;
+	std::string s = "ahoj";
+	MessageOut() << fmt::format("int: {} double: {} string: {}\n", i, f, s);
+	MessageOut().fmt("int: {} double: {} string: {}\n", i, f, s);
 
 	LoggerOptions::get_instance().reset();
 }
