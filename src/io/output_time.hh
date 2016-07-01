@@ -33,6 +33,7 @@ template <int spacedim, class Value>
 class MultiField;
 class TimeGovernor;
 class OutputMesh;
+class OutputMeshDiscontinuous;
 
 /**
  * \brief The class for outputting data during time.
@@ -237,18 +238,13 @@ protected:
      */
     Mesh *_mesh;
     
-    OutputMesh *output_mesh_;
+    /// Output mesh.
+    std::shared_ptr<OutputMesh> output_mesh_;
+    /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
+    std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
     
-    /** @brief Flag is set true when output mesh for the current write time has been created.
-     * Guarantees output mesh creation only once per write time, 
-     * assuming all fields are written on the same output mesh.
-     */
-    bool is_output_mesh_valid_;
-    
-    /** @brief Name of the output field according to which the output mesh is refined.
-     * When empty, the computational mesh is used for output.
-     */
-    std::string error_control_field_name;
+    /// Auxliary flag for refinement enabling, due to gmsh format.
+    bool enable_refinement_;
 };
 
 

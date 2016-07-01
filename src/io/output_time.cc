@@ -50,7 +50,8 @@ const Record & OutputTime::get_input_type() {
 				"Explicit array of output time points (can be combined with 'time_step'.")
 		.declare_key("add_input_times", Bool(), Default("false"),
 				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
-        .declare_key("error_control_field",String(), Default::optional(), "Name of an output field, according to which the output mesh will be refined.")
+        .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
+                "Output mesh record enables output on a refined mesh.")
 		.close();
 }
 
@@ -62,7 +63,7 @@ Abstract & OutputTime::get_input_format_type() {
 
 
 OutputTime::OutputTime()
-: _mesh(nullptr), output_mesh_(nullptr)
+: _mesh(nullptr)
 {}
 
 
@@ -72,19 +73,10 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     time(-1.0),
     write_time(-1.0),
     input_record_(in_rec),
-    _mesh(nullptr), 
-    output_mesh_(nullptr),
-    is_output_mesh_valid_(false)
+    _mesh(nullptr)
 {
     // Read output base file name
     this->_base_filename = in_rec.val<FilePath>("file");
-    
-    // Read optional error control field name for output mesh generation
-    auto it = in_rec.find<std::string>("error_control_field");
-    if(it) error_control_field_name = *it;
-    else error_control_field_name = "";
-
-    DBGMSG("error control field = '%s'\n", error_control_field_name.c_str());
     
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
 
@@ -102,7 +94,6 @@ OutputTime::~OutputTime(void)
 
     if (this->_base_file.is_open()) this->_base_file.close();
 
-    if(output_mesh_ != nullptr) delete output_mesh_;
     xprintf(MsgLog, "O.K.\n");
 }
 
@@ -110,36 +101,45 @@ OutputTime::~OutputTime(void)
 
 void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
 {
-    if(is_output_mesh_valid_) return;
+    // already computed
+    if(output_mesh_) return;
     
-    // possibly destroy previous output mesh
-    if(output_mesh_) delete output_mesh_;
-    
-    output_mesh_ = new OutputMesh(mesh);
-    
-    FieldCommon* field =  output_fields->field(error_control_field_name);
-    if( field && (typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>)) ) {
-        Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
-        DBGMSG("Output mesh will be refined according to field '%s'.\n", error_control_field_name.c_str());
-        // create refined output mesh according to the field
-        output_mesh_->create_refined_mesh(error_control_field);
-    }
-    else{
-        DBGMSG("Output mesh identical with the computational one.\n");
-        // create output mesh identical to computational mesh
-        output_mesh_->create_identical_mesh();
-    }
-    
-    // set validity of the output mesh for the current writing time
-    is_output_mesh_valid_ = true;
     _mesh = mesh;
+
+    // Read optional error control field name
+    auto it = input_record_.find<Input::Record>("output_mesh");
+    
+    if(enable_refinement_) {
+        if(it){
+            output_mesh_ = std::make_shared<OutputMesh>(mesh, *it);
+            output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh, *it);
+            output_mesh_->select_error_control_field(output_fields);
+            output_mesh_discont_->select_error_control_field(output_fields);
+            
+//             output_mesh_->create_refined_mesh();
+            output_mesh_discont_->create_refined_mesh();
+            return;
+        }
+    }
+    else
+    {
+        // skip creation of output mesh (use computational one)
+        if(it)
+            xprintf(Warn,"Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!\n");
+    }
+    
+    
+    output_mesh_ = std::make_shared<OutputMesh>(mesh);
+    output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh);
+    
+    output_mesh_->create_identical_mesh();
 }
 
 
 void OutputTime::compute_discontinuous_output_mesh()
 {
     ASSERT_PTR(output_mesh_).error("Create output mesh first!");
-    output_mesh_->compute_discontinuous_data();
+    output_mesh_discont_->create_mesh(output_mesh_);
 }
 
 
@@ -257,8 +257,9 @@ void OutputTime::write_time_frame()
 			write_time = time;
 			current_step++;
             
-            // unset validity of the output mesh after data are written at the current write time
-            is_output_mesh_valid_ = false;
+            // invalidate output meshes after the time frame written
+            output_mesh_.reset();
+            output_mesh_discont_.reset();
 		} else {
 			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
 			        this->_base_filename.c_str(), time);

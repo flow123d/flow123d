@@ -16,70 +16,147 @@
  */
 
 #include "output_mesh.hh"
+#include "output_element.hh"
 #include "mesh/mesh.h"
 #include <mesh/ref_element.hh>
 #include "fields/field.hh"
+#include <fields/field_set.hh>
 
-#include "output_element.hh"
+namespace IT=Input::Type;
 
-OutputMesh::OutputMesh(Mesh* mesh, unsigned int max_refinement_level)
-:   orig_mesh_(mesh),
-    discont_data_computed_(false),
-    max_refinement_level_(max_refinement_level)
+const IT::Record & OutputMeshBase::get_input_type() {
+    return IT::Record("OutputStream", "Parameters of output.")
+        .declare_key("max_level", IT::Integer(1,20),IT::Default("3"),
+            "Maximal level of refinement of the output mesh.")
+        .declare_key("refine_by_error", IT::Bool(), IT::Default("false"),
+            "Set true for using error_control_field. Set false for global uniform refinement to max_level.")
+        .declare_key("error_control_field",IT::String(), IT::Default::optional(),
+            "Name of an output field, according to which the output mesh will be refined. The field must be a SCALAR one.")
+        .close();
+}
+
+OutputMeshBase::OutputMeshBase(Mesh* mesh)
+: 
+    nodes_ (std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR)),
+    connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
+    offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
+    orig_mesh_(mesh),
+    max_level_(0)
 {
 }
+
+
+OutputMeshBase::OutputMeshBase(Mesh* mesh, const Input::Record &in_rec)
+: 
+    nodes_ (std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR)),
+    connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
+    offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
+    input_record_(in_rec), 
+    orig_mesh_(mesh),
+    max_level_(input_record_.val<int>("max_level"))
+{
+}
+
+OutputMeshBase::~OutputMeshBase()
+{
+}
+
+OutputElementIterator OutputMeshBase::begin()
+{
+    ASSERT_PTR(offsets_);
+    ASSERT_DBG(offsets_->n_values > 0);
+    return OutputElementIterator(OutputElement(0, shared_from_this()));
+}
+
+OutputElementIterator OutputMeshBase::end()
+{
+    ASSERT_PTR_DBG(offsets_);
+    ASSERT_DBG(offsets_->n_values > 0);
+    return OutputElementIterator(OutputElement(offsets_->n_values, shared_from_this()));
+}
+
+void OutputMeshBase::select_error_control_field(FieldSet* output_fields)
+{
+    refine_by_error_ = input_record_.val<bool>("refine_by_error");
+    
+    if(refine_by_error_)
+    {
+        std::string error_control_field_name = "";
+        // Read optional error control field name
+        auto it = input_record_.find<std::string>("error_control_field");
+        if(it) error_control_field_name = *it;
+
+        FieldCommon* field =  output_fields->field(error_control_field_name);
+        // throw input exception if the field is unknown
+        if(field == nullptr){
+            THROW(FieldSet::ExcUnknownField()
+                    << FieldCommon::EI_Field(error_control_field_name)
+                    << input_record_.ei_address());
+            refine_by_error_ = false;
+            return;
+        }
+        
+        // throw input exception if the field is not scalar
+        if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
+            
+            error_control_field_ = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+            DBGMSG("Output mesh will be refined according to field '%s'.\n", error_control_field_name.c_str());
+        }
+        else{
+            THROW(ExcFieldNotScalar()
+                    << FieldCommon::EI_Field(error_control_field_name)
+                    << input_record_.ei_address());
+            refine_by_error_ = false;
+            return;
+        }
+    }
+    else
+    {
+        error_control_field_ = nullptr;
+    }
+}
+
+bool OutputMeshBase::is_refined()
+{
+    return is_refined_;
+}
+
+unsigned int OutputMeshBase::n_elements()
+{
+    ASSERT_PTR(offsets_);
+    return offsets_->n_values;
+}
+
+unsigned int OutputMeshBase::n_nodes()
+{
+    ASSERT_PTR(nodes_);
+    return nodes_->n_values;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+OutputMesh::OutputMesh(Mesh* mesh)
+: OutputMeshBase(mesh)
+{
+}
+
+OutputMesh::OutputMesh(Mesh* mesh, const Input::Record& in_rec)
+: OutputMeshBase(mesh, in_rec)
+{
+}
+
 
 OutputMesh::~OutputMesh()
 {
 }
 
-OutputElementIterator OutputMesh::begin()
-{
-    return OutputElementIterator(OutputElement(0, this));
-}
-
-OutputElementIterator OutputMesh::end()
-{
-    return OutputElementIterator(OutputElement(offsets_->n_values, this));
-}
-
-unsigned int OutputMesh::n_elements()
-{
-    return offsets_->n_values;
-}
-
-unsigned int OutputMesh::n_nodes()
-{
-    return nodes_->n_values;
-}
-
-unsigned int OutputMesh::n_nodes_disc()
-{
-    //ASSERT_DBG(output_mesh_->discont_data_computed_);
-    if(discont_data_computed_)
-        return discont_nodes_->n_values;
-    else
-        return 0;
-}
-
-
 
 void OutputMesh::create_identical_mesh()
 {
-//     DBGMSG("create identical outputmesh\n");
-    nodes_ = std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR);
-    connectivity_ = std::make_shared<MeshData<unsigned int>>("connectivity");
-    offsets_ = std::make_shared<MeshData<unsigned int>>("offsets");
-    
-    fill_vectors();
-    // if output mesh computed, invalid the discontinuous data
-    discont_data_computed_ = false;
-}
+    DBGMSG("Create outputmesh identical to computational one.\n");
 
-
-
-void OutputMesh::fill_vectors()
-{
     const unsigned int n_elements = orig_mesh_->n_elements(),
                        n_nodes = orig_mesh_->n_nodes();
 
@@ -122,121 +199,182 @@ void OutputMesh::fill_vectors()
     connectivity_->n_values = connect_id;
 }
 
-
-void OutputMesh::compute_discontinuous_data()
+void OutputMesh::create_refined_mesh()
 {
-    ASSERT_DBG(nodes_->n_values > 0);   //continuous data already computed
-    if(discont_data_computed_) return;
+    ASSERT(0).error("Not implemented yet.");
+}
+
+
+bool OutputMesh::refinement_criterion()
+{
+    ASSERT(0).error("Not implemented yet.");
+    return false;
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh* mesh)
+: OutputMeshBase(mesh)
+{
+}
+
+OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh* mesh, const Input::Record& in_rec)
+: OutputMeshBase(mesh, in_rec)
+{
+}
+
+
+OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
+{
+}
+
+
+void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
+{
+    ASSERT_DBG(output_mesh->nodes_->n_values > 0);   //continuous data already computed
     
-    discont_nodes_ = std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR);
-    discont_connectivity_ = std::make_shared<MeshData<unsigned int>>("connectivity");
+    if(nodes_->data_.size() > 0) return;          //already computed
+    
+    DBGMSG("Create discontinuous outputmesh.\n");
     
     // connectivity = for every element list the nodes => its length corresponds to discontinuous data
-    const unsigned int n_corners = connectivity_->n_values;
+    const unsigned int n_corners = output_mesh->connectivity_->n_values;
 
-    discont_nodes_->data_.resize(spacedim*n_corners);
-    discont_nodes_->n_values = n_corners;
+    // these are the same as in continuous case, so we copy the pointer.
+    offsets_ = output_mesh->offsets_;
+    orig_element_indices_ = output_mesh->orig_element_indices_;
+    
+    nodes_->data_.resize(spacedim*n_corners);
+    nodes_->n_values = n_corners;
  
-    discont_connectivity_->data_.resize(n_corners);
-    discont_connectivity_->n_values = n_corners;
+    connectivity_->data_.resize(n_corners);
+    connectivity_->n_values = n_corners;
 
     unsigned int coord_id = 0,  // coordinate id in vector
                  corner_id = 0, // corner index (discontinous node)
                  li;            // local node index
 
-    for(OutputElementIterator it = begin(); it != end(); ++it)
+    for(const auto & ele : *output_mesh)
     {
-        unsigned int n = it->n_nodes(), 
-                     ele_idx = it->idx(),
-                     con_off = (*offsets_)[ele_idx];
+        unsigned int n = ele.n_nodes(), 
+                     ele_idx = ele.idx(),
+                     con_off = (* offsets_)[ele_idx];
                      
         for(li = 0; li < n; li++)
         {
             // offset of the first coordinate of the first node of the element in nodes_ vector
-            unsigned int off = spacedim * (*connectivity_)[con_off - n + li];
-            auto &d = nodes_->data_;
+            unsigned int off = spacedim * (* output_mesh->connectivity_)[con_off - n + li];
+            auto &d = output_mesh->nodes_->data_;
             
-            discont_nodes_->data_[coord_id] = d[off];   ++coord_id;
-            discont_nodes_->data_[coord_id] = d[off+1]; ++coord_id;
-            discont_nodes_->data_[coord_id] = d[off+2]; ++coord_id;
+            nodes_->data_[coord_id] = d[off];   ++coord_id;
+            nodes_->data_[coord_id] = d[off+1]; ++coord_id;
+            nodes_->data_[coord_id] = d[off+2]; ++coord_id;
             
-            discont_connectivity_->data_[corner_id] = corner_id;
+            connectivity_->data_[corner_id] = corner_id;
             corner_id++;
         }
     }
-    
-    discont_data_computed_ = true;
 }
 
-        
-void OutputMesh::create_refined_mesh(Field<3, FieldValue<3>::Scalar> *error_control_field)
+
+bool OutputMeshDiscontinuous::refinement_criterion()
 {
     ASSERT(0).error("Not implemented yet.");
-    
+    return false;
+}
+
+void OutputMeshDiscontinuous::create_refined_mesh()
+{
+    nodes_ = std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR);
+    connectivity_ = std::make_shared<MeshData<unsigned int>>("connectivity");
+    offsets_ = std::make_shared<MeshData<unsigned int>>("offsets");
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>();
-    local_nodes_ = std::make_shared<std::vector<double>>();
     
-    //FIXME: suggest required capacity
-    unsigned int capacity = 16*orig_mesh_->n_elements();
-    orig_element_indices_->reserve(capacity);
-    local_nodes_->reserve(3*capacity);
+    // index of last node added; set at the end of original ones
+    unsigned int last_offset = 0;
     
-    // create node indices for connectivity
-    unsigned int node_id = 0;   // node id
-    FOR_NODES(orig_mesh_, node) {
-        node->aux = node_id;   // store node index in the auxiliary variable
-        node_id++;
-    }
-    
-    unsigned int coord_id = 0,      // coordinate id in vector
-                 connect_id = 0;    // connectivity id
-                 
+    DBGMSG("start refinement\n");
     FOR_ELEMENTS(orig_mesh_, ele) {
-        arma::vec3 centre = ele->centre();
+        const unsigned int 
+            dim = ele->dim(),
+            ele_idx = ele->index();
+        DBGMSG("ele index %d\n",ele_idx);
         
         AuxElement aux_ele;
-        aux_ele.connectivity.resize(ele->n_nodes());
-//         aux_ele.coords.resize(ele->n_nodes()*spacedim);
+        aux_ele.nodes.resize(ele->n_nodes());
+        aux_ele.level = 0;
         
-        for(unsigned int i=0; i<ele->n_nodes(); i++)
-        {
-            Node* node = ele->node[i];
-            
-//             aux_ele.coords[i] = node->getX();
-//             aux_ele.coords[i+1] = node->getY();
-//             aux_ele.coords[i+2] = node->getZ();
-            
-            nodes_->data_[coord_id] = node->getX();  coord_id++;
-            nodes_->data_[coord_id] = node->getY();  coord_id++;
-            nodes_->data_[coord_id] = node->getZ();  coord_id++;
-            aux_ele.connectivity[connect_id] = node->aux;     connect_id++;   
+        Node* node; unsigned int li;
+        FOR_ELEMENT_NODES(ele, li) {
+            node = ele->node[li];
+            aux_ele.nodes[li] = node->point();
         }
         
-        //add centre
-        nodes_->data_[coord_id] = centre[0];  coord_id++;
-        nodes_->data_[coord_id] = centre[1];  coord_id++;
-        nodes_->data_[coord_id] = centre[2];  coord_id++;
-        aux_ele.connectivity[connect_id] = node_id;    node_id++;
-            
-        //refinement refinement
-        // if(refinement_criterion())
+        std::vector<AuxElement> refinement;
+        
+        switch(dim){
+            case 1: this->refine_aux_element<1>(aux_ele, refinement, ele->element_accessor(), error_control_field_); break;
+            case 2: this->refine_aux_element<2>(aux_ele, refinement, ele->element_accessor(), error_control_field_); break;
+            case 3: this->refine_aux_element<3>(aux_ele, refinement, ele->element_accessor(), error_control_field_); break;
+            default: ASSERT(0 < dim && dim < 4);
+        }
+        
+        //skip unrefined element
+//         if(refinement.size() < 2) continue;
+        
+        unsigned int node_offset = nodes_->data_.size(),
+                     con_offset = connectivity_->data_.size();
+        nodes_->data_.resize(nodes_->data_.size() + (refinement.size() * (dim+1))*spacedim);
+        connectivity_->data_.resize(connectivity_->data_.size() + refinement.size()*(dim+1));
+//         orig_element_indices_->resize(orig_element_indices_->size() + refinement.size()*(dim+1));
+        
+        DBGMSG("ref size = %d\n", refinement.size());
+        //gather coords and connectivity (in a continous way inside element)
+        for(unsigned int i=0; i < refinement.size(); i++)
         {
-            
-            // new element:
-            // centre + combination of dim nodes from all nodes
-//             refine_aux_element(aux_ele, centre, , ele->dim());
-            
+            last_offset += dim+1;
+            offsets_->data_.push_back(last_offset);
+            (*orig_element_indices_).push_back(ele_idx);
+            for(unsigned int j=0; j < dim+1; j++)
+            {
+                unsigned int con = i*(dim+1) + j;
+                connectivity_->data_[con_offset + con] = con_offset + con;
+                               
+                for(unsigned int k=0; k < spacedim; k++) {
+                    nodes_->data_[node_offset + con*spacedim + k] = refinement[i].nodes[j][k];
+                }
+            }
         }
     }
     
-    orig_element_indices_->shrink_to_fit();
-    local_nodes_->shrink_to_fit();
+    connectivity_->n_values = connectivity_->data_.size();
+    nodes_->n_values = nodes_->data_.size() / spacedim;
+    offsets_->n_values = offsets_->data_.size();
+    
+    for(unsigned int i=0; i< nodes_->n_values; i++)
+    {
+        cout << i << "  "; 
+        for(unsigned int k=0; k<spacedim; k++){
+            nodes_->print(cout, i*spacedim+k); 
+            cout << " ";
+        }
+        cout << endl;
+    } 
+//     cout << "\n\n";
+// //     discont_nodes_->print_all(cout);
+// //     cout << "\n\n";
+    connectivity_->print_all(cout);
+    cout << "\n\n";
+    offsets_->print_all(cout);
 }
 
 template<int dim>
-void OutputMesh::refine_aux_element(const OutputMesh::AuxElement& aux_element,
-                                    std::vector< OutputMesh::AuxElement >& refinement,
-                                    unsigned int& last_node_idx)
+void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::AuxElement& aux_element,
+                                                 std::vector< OutputMeshDiscontinuous::AuxElement >& refinement,
+                                                 const ElementAccessor<spacedim> &ele_acc,
+                                                 Field<3, FieldValue<3>::Scalar> *error_control_field )
 {
     static const unsigned int n_subelements = 1 << dim;  //2^dim
     
@@ -282,7 +420,21 @@ void OutputMesh::refine_aux_element(const OutputMesh::AuxElement& aux_element,
  
     ASSERT_DBG(dim == aux_element.nodes.size()-1);
     
-    if( ! refinement_criterion(aux_element)) {
+    // check refinement criterion
+    bool is_refined_enough;
+    if(refine_by_error_)
+    {
+        // compute centre of aux element
+        Space<spacedim>::Point centre({0,0,0});
+        for(auto& v : aux_element.nodes ) centre += v;
+        centre = centre/aux_element.nodes.size();
+        is_refined_enough = ! refinement_criterion_error(aux_element, centre, ele_acc, error_control_field);
+    }   
+    else
+        is_refined_enough = ! refinement_criterion_uniform(aux_element);
+    
+    // if not refining any further, push into final vector
+    if( is_refined_enough ) {
         refinement.push_back(aux_element);
         return;
     }
@@ -295,9 +447,9 @@ void OutputMesh::refine_aux_element(const OutputMesh::AuxElement& aux_element,
     
     // auxiliary vectors
     std::vector<Space<spacedim>::Point> nodes = aux_element.nodes;
-    std::vector<unsigned int> node_numbering = aux_element.connectivity;
+//     std::vector<unsigned int> node_numbering = aux_element.connectivity;
     nodes.reserve(n_old_nodes+n_new_nodes);
-    node_numbering.reserve(n_old_nodes+n_new_nodes);
+//     node_numbering.reserve(n_old_nodes+n_new_nodes);
 
     // create new points in the element
     for(unsigned int e=0; e < n_new_nodes; e++)
@@ -306,8 +458,8 @@ void OutputMesh::refine_aux_element(const OutputMesh::AuxElement& aux_element,
         nodes.push_back( p / 2.0);
 //         nodes.back().print();
         
-        last_node_idx++;
-        node_numbering.push_back(last_node_idx);
+//         last_node_idx++;
+//         node_numbering.push_back(last_node_idx);
     }
    
     
@@ -315,7 +467,7 @@ void OutputMesh::refine_aux_element(const OutputMesh::AuxElement& aux_element,
     {
         AuxElement& sub_ele = subelements[i];
         sub_ele.nodes.resize(n_old_nodes);
-        sub_ele.connectivity.resize(n_old_nodes);
+//         sub_ele.connectivity.resize(n_old_nodes);
         sub_ele.level = aux_element.level+1;
         
         // over nodes
@@ -323,96 +475,43 @@ void OutputMesh::refine_aux_element(const OutputMesh::AuxElement& aux_element,
         {
             unsigned int conn_id = (n_old_nodes)*i + j;
             sub_ele.nodes[j] = nodes[conn[dim][conn_id]];
-            sub_ele.connectivity[j] = node_numbering[conn[dim][conn_id]];
+//             sub_ele.connectivity[j] = node_numbering[conn[dim][conn_id]];
         }
         
-        refine_aux_element<dim>(sub_ele, refinement, last_node_idx);
+        refine_aux_element<dim>(sub_ele, refinement, ele_acc, error_control_field);
     }
 }
 
-template void OutputMesh::refine_aux_element<1>(const OutputMesh::AuxElement&,std::vector< OutputMesh::AuxElement >&, unsigned int&);
-template void OutputMesh::refine_aux_element<2>(const OutputMesh::AuxElement&,std::vector< OutputMesh::AuxElement >&, unsigned int&);
-template void OutputMesh::refine_aux_element<3>(const OutputMesh::AuxElement&,std::vector< OutputMesh::AuxElement >&, unsigned int&);
-    
-    
-    
-    
-    
-//     static
-//     std::vector<double> coords = { 0, 0, 0,     // 0
-//                                    1, 0, 0,     // 1
-//                                    0, 1, 0,     // 2
-//                                    0.5, 0, 0,   // 3
-//                                    0, 0.5, 0,   // 4
-//                                    0.5, 0.5, 0}; // 5
-//                                    
-//     static
-//     std::vector<unsigned int> conn = {0, 3, 4,
-//                                       3, 1, 5,
-//                                       4, 5, 2,
-//                                       3, 5, 4
-//     };
-    
-//     for(unsigned int i=0; i < n_subelements; i++)
-//     {
-//         AuxElement& sub_ele = subelements[i];
-//         
-//         // over nodes
-//         for(unsigned int j=0; j < 3; j++)   //dim+1
-//         {
-//             unsigned int conn_id = 3*i + j; //dim+1
-//             if(conn[conn_id] < 3) {
-//                 sub_ele.connectivity[j] = aux_element.connectivity[conn_id];
-//                 sub_ele.coords[j * spacedim] = aux_element.coords[conn_id * spacedim];
-//                 sub_ele.coords[j * spacedim +1] = aux_element.coords[conn_id * spacedim +1];
-//                 sub_ele.coords[j * spacedim +2] = aux_element.coords[conn_id * spacedim +2];
-//             }
-//             else {
-//                 last_node_idx++;
-//                 sub_ele.connectivity[j] = last_node_idx;
-//                 sub_ele.coords[j * spacedim] = aux_element.coords[0] + coords[conn_id * spacedim] * (1);
-//                 sub_ele.coords[j * spacedim +1] = aux_element.coords[conn_id * spacedim +1];
-//                 sub_ele.coords[j * spacedim +2] = aux_element.coords[conn_id * spacedim +2];
-//             }
-//             
-//         }
-//     }
-//     
-//     return subelements;
-// }
+template void OutputMeshDiscontinuous::refine_aux_element<1>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &, Field<3, FieldValue<3>::Scalar> *);
+template void OutputMeshDiscontinuous::refine_aux_element<2>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &, Field<3, FieldValue<3>::Scalar> *);
+template void OutputMeshDiscontinuous::refine_aux_element<3>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &, Field<3, FieldValue<3>::Scalar> *);
 
-
-// std::vector< OutputMesh::AuxElement > OutputMesh::refine_aux_element(OutputMesh::AuxElement& aux_element, 
-//                                                                      const Space< spacedim >::Point &centre,
-//                                                                      unsigned int centre_idx,
-//                                                                      unsigned int dim)
-// {
-// static const std::vector<std::vector<std::vector<unsigned int>>> side_permutations = 
-//                 {   { {0},{1}}, // line
-//                     { {0,1}, {0,2}, {1,2}}, //triangle
-//                     { {0,1,2}, {0,1,3}, {0,2,3}, {1,2,3}}   //tetrahedron
-//                 };
-//     
-//     unsigned int n_subelements = dim+1;
-//     std::vector<AuxElement> subelements(n_subelements);
-//     
-//     for(unsigned int i=0; i < n_subelements; i++)
-//     {
-//         AuxElement& sub_ele = subelements[i];
-//         
-//         for(unsigned int j=0; j < dim; j++)
-//         {
-//             sub_ele.connectivity[j] = aux_element.connectivity[side_permutations[dim][i][j]];
-//             sub_ele.coords[j] = aux_element.coords[side_permutations[dim][i][j]];
-//         }
-//         sub_ele.connectivity[dim] = centre_idx;
-//         sub_ele.coords[dim] = centre;
-//     }
-//     return subelements;
-// }
-
-
-bool OutputMesh::refinement_criterion(const OutputMesh::AuxElement& ele)
+bool OutputMeshDiscontinuous::refinement_criterion_uniform(const OutputMeshDiscontinuous::AuxElement& ele)
 {
-    return (ele.level < max_refinement_level_);
+    return (ele.level < max_level_);
+}
+
+bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscontinuous::AuxElement& ele,
+                                            const Space<spacedim>::Point &centre,
+                                            const ElementAccessor<spacedim> &ele_acc,
+                                            Field<3, FieldValue<3>::Scalar> *error_control_field
+                                           )
+{
+    if(ele.level  < max_level_)
+    {
+        std::vector<double> nodes_val(ele.nodes.size());
+        error_control_field->value_list(ele.nodes, ele_acc, nodes_val);
+        
+        double average_val = 0.0;
+        for(double& v: nodes_val) 
+            average_val += v;
+        average_val = average_val / ele.nodes.size();
+        
+        double centre_val = error_control_field->value(centre,ele_acc);
+        double diff = std::abs((average_val - centre_val)/centre_val);
+        DBGMSG("diff: %f  %f  %f\n", diff, average_val, centre_val);
+        return ( diff > 0.01);
+    }
+    else
+        return false;
 }

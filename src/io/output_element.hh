@@ -29,11 +29,10 @@ class ElementAccessor;
 #include "mesh/point.hh"
 #include "output_mesh.hh"
 
-
 /** @brief Represents an element of the output mesh.
  * Provides element access on the data of the output mesh (nodes, connectivity, offsets etc.).
  * 
- * Vertex function suppose spacedim = 3 at the moment.
+ * Vertex function suppose spacedim = 3 at the moment, hard coded.
  */
 class OutputElement
 {
@@ -44,7 +43,7 @@ public:
     typedef Space<spacedim>::Point Point;
     
     /// Constructor.
-    OutputElement(unsigned int ele_idx, OutputMesh* output_mesh);
+    OutputElement(unsigned int ele_idx, std::shared_ptr<OutputMeshBase> output_mesh);
     
     /// @name Output Mesh Getters.
     //@{ 
@@ -55,19 +54,9 @@ public:
     /// Returns global index of the node.
     unsigned int node_index(unsigned int loc_idx) const;
     /// Returns global indices of the nodes.
-    std::vector<unsigned int> node_indices() const;
+    std::vector<unsigned int> node_list() const;
     Point vertex(unsigned int loc_idx) const;  ///< Returns coordinates of node @p loc_idx.
     std::vector<Point> vertex_list() const;    ///< Returns vector of nodes coordinates.
-    
-    /// Returns global index of the node. (DISCONTINOUS)
-    unsigned int node_index_disc(unsigned int loc_idx) const;
-    
-    //TODO: vertex_disc and vertex_list_disc return the same coordinates as vertex and vertex_list
-    // It is meaningful only if we have ONLY discontinuous vectors for nodes and connectivity
-    /// Returns coordinates of node @p loc_idx. (DISCONTINOUS)
-    Point vertex_disc(unsigned int loc_idx) const;
-    /// Returns vector of nodes coordinates. (DISCONTINOUS)
-    std::vector<Point> vertex_list_disc() const;
     
     Point centre() const;                      ///< Computes the barycenter.
     //@}
@@ -83,35 +72,29 @@ public:
     //@}
     
     void inc();
+    bool operator==(const OutputElement& other);
 private:
     
-    /// Returns global index of the node.
-    unsigned int node_index_internal(unsigned int loc_idx, 
-                                     std::shared_ptr<MeshData<unsigned int>> connectivity) const;
-    /// Returns global indices of the nodes.
-    std::vector<unsigned int> node_indices_internal(shared_ptr< MeshData< unsigned int > > connectivity) const;
-    /// Returns coordinates of node @p loc_idx.
-    Point vertex_internal(unsigned int loc_idx,
-                               std::shared_ptr<MeshData<unsigned int>> connectivity,
-                               std::shared_ptr<MeshData<double>> nodes) const;
-    /// Returns vector of nodes coordinates.
-    std::vector<Point> vertex_list_internal(std::shared_ptr<MeshData<unsigned int>> connectivity,
-                                            std::shared_ptr<MeshData<double>> nodes) const;
-    
-//     friend void OutputElementIterator::operator++();
-    unsigned int ele_idx_;      ///< index of the output element
-    OutputMesh* output_mesh_;   ///< pointer to the output mesh
+    /// index of the output element
+    unsigned int ele_idx_;
+    /// pointer to the output mesh
+    std::shared_ptr<OutputMeshBase> output_mesh_;
 };
 
 // --------------------------------------------------- OutputElement INLINE implementation -------------------
 
-inline OutputElement::OutputElement(unsigned int ele_idx, OutputMesh* output_mesh)
+inline OutputElement::OutputElement(unsigned int ele_idx, std::shared_ptr<OutputMeshBase> output_mesh)
 : ele_idx_(ele_idx), output_mesh_(output_mesh)
 {}
 
 inline void OutputElement::inc()
 {
     ele_idx_++;
+}
+
+inline bool OutputElement::operator==(const OutputElement& other)
+{
+    return ele_idx_ == other.ele_idx_;
 }
 
 
@@ -149,51 +132,37 @@ inline unsigned int OutputElement::dim() const
     return n_nodes()-1;
 }
 
-inline unsigned int OutputElement::node_index_internal(unsigned int loc_idx,
-                                                shared_ptr< MeshData< unsigned int > > connectivity) const
+
+inline unsigned int OutputElement::node_index(unsigned int loc_idx) const
 {
     unsigned int n = n_nodes();
     ASSERT_DBG(loc_idx < n);
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
-    return (*connectivity)[con_off - n + loc_idx];
-}
-
-inline std::vector< unsigned int > OutputElement::node_indices_internal(
-                                                shared_ptr< MeshData< unsigned int > > connectivity) const
-{
-    unsigned int n = n_nodes();
-    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
-    std::vector<unsigned int> indices(n);
-    for(unsigned int i=0; i<n; i++) {
-        indices[i] = (*connectivity)[con_off - n + i];
-    }
-    return indices;
+    return (* output_mesh_->connectivity_)[con_off - n + loc_idx];
 }
 
 
-inline OutputElement::Point OutputElement::vertex_internal(unsigned int loc_idx,
-                                                 shared_ptr< MeshData< unsigned int > > connectivity,
-                                                 shared_ptr< MeshData< double > > nodes) const
+inline OutputElement::Point OutputElement::vertex(unsigned int loc_idx) const
 {
     unsigned int n = n_nodes();
     ASSERT_DBG(loc_idx < n);
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
-    unsigned int off = spacedim * (*connectivity)[con_off - n + loc_idx];
-    auto &d = nodes->data_;
+    unsigned int off = spacedim * (* output_mesh_->connectivity_)[con_off - n + loc_idx];
+    auto &d = output_mesh_->nodes_->data_;
     Point point({d[off], d[off+1], d[off+2]});
     return point;
 }
 
-inline std::vector< OutputElement::Point > OutputElement::vertex_list_internal(shared_ptr< MeshData< unsigned int > > connectivity, 
-                                                                               shared_ptr< MeshData< double > > nodes) const
+
+inline std::vector< OutputElement::Point > OutputElement::vertex_list() const
 {
     const unsigned int n = n_nodes();
     std::vector<Point> vertices(n);
     
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
-    auto &d = nodes->data_;
+    auto &d = output_mesh_->nodes_->data_;
     for(unsigned int i=0; i<n; i++) {
-        unsigned int off = spacedim * (*connectivity)[con_off - n + i];
+        unsigned int off = spacedim * (* output_mesh_->connectivity_)[con_off - n + i];
         vertices[i] = {d[off], d[off+1], d[off+2]};
         off += spacedim;
     }
@@ -201,112 +170,23 @@ inline std::vector< OutputElement::Point > OutputElement::vertex_list_internal(s
 }
 
 
-inline unsigned int OutputElement::node_index(unsigned int loc_idx) const
+inline std::vector< unsigned int > OutputElement::node_list() const
 {
-    return node_index_internal(loc_idx, output_mesh_->connectivity_);
+    unsigned int n = n_nodes();
+    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
+    std::vector<unsigned int> indices(n);
+    for(unsigned int i=0; i<n; i++) {
+        indices[i] = (* output_mesh_->connectivity_)[con_off - n + i];
+    }
+    return indices;
 }
 
-inline std::vector< unsigned int > OutputElement::node_indices() const
-{
-    return node_indices_internal(output_mesh_->connectivity_);
-}
-
-inline unsigned int OutputElement::node_index_disc(unsigned int loc_idx) const
-{
-    ASSERT_DBG(output_mesh_->discont_data_computed_);
-    return node_index_internal(loc_idx, output_mesh_->discont_connectivity_);
-}
-
-inline OutputElement::Point OutputElement::vertex(unsigned int loc_idx) const
-{
-    return vertex_internal(loc_idx, output_mesh_->connectivity_, output_mesh_->nodes_);
-}
-
-inline OutputElement::Point OutputElement::vertex_disc(unsigned int loc_idx) const
-{
-    return vertex_internal(loc_idx, output_mesh_->discont_connectivity_, output_mesh_->discont_nodes_);
-}
-
-inline std::vector< OutputElement::Point > OutputElement::vertex_list() const
-{
-    return vertex_list_internal(output_mesh_->connectivity_, output_mesh_->nodes_);
-}
-
-inline std::vector< OutputElement::Point > OutputElement::vertex_list_disc() const
-{
-    return vertex_list_internal(output_mesh_->discont_connectivity_, output_mesh_->discont_nodes_);
-}
 
 inline OutputElement::Point OutputElement::centre() const
 {
     Point res({0,0,0});
     for(auto& v : vertex_list() ) res += v;
     return res/n_nodes();
-}
-
-// --------------------------------------------------- OutputElementIterator ---------------------------------
-/** @brief Output element iterator.
- * Provides iterator over elements of the output mesh.
- */
-class OutputElementIterator
-{
-public:
-//     OutputElementIterator();
-
-    OutputElementIterator(const OutputElement& output_element);
-
-    /// equal operator
-    bool operator==(const OutputElementIterator& other);
-    /// non-equal operator
-    bool operator!=(const OutputElementIterator& other);
-
-    ///  * dereference operator
-    const OutputElement& operator*() const;
-
-    /// -> dereference operator
-    const OutputElement* operator->() const;
-
-    /// prefix increment
-    OutputElementIterator& operator++();
-
-private:
-    /// Output element of the output mesh.
-    OutputElement element_; 
-};
-
-
-// --------------------------------------------------- OutputElementIterator INLINE implementation -----------
-// inline OutputElementIterator::OutputElementIterator()
-// {}
-
-inline OutputElementIterator::OutputElementIterator(const OutputElement& output_element)
-: element_(output_element)
-{}
-
-inline bool OutputElementIterator::operator==(const OutputElementIterator& other)
-{
-    return (element_.idx() == other.element_.idx());
-}
-
-inline bool OutputElementIterator::operator!=(const OutputElementIterator& other)
-{
-    return !( *this == other);
-}
-
-inline const OutputElement& OutputElementIterator::operator*() const
-{
-    return element_;
-}
-
-inline const OutputElement* OutputElementIterator::operator->() const
-{
-    return &element_;
-}
-
-inline OutputElementIterator& OutputElementIterator::operator++()
-{
-    element_.inc();
-    return (*this);
 }
 
 #endif // OUTPUT_ELEMENT_HH_
