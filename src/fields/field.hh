@@ -31,8 +31,9 @@ using namespace std;
 #include "fields/field_common.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field_flag.hh"
-#include "io/output_time.hh"
+//#include "io/output_time.hh"
 
+class OutputTime;
 
 namespace IT=Input::Type;
 

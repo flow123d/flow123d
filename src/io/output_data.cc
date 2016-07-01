@@ -1,0 +1,141 @@
+/*
+ * output_data.cc
+ *
+ *  Created on: Jun 28, 2016
+ *      Author: jb
+ */
+
+#include "io/output_data.hh"
+#include "fields/field_values.hh"
+#include "fields/field_common.hh"
+#include "io/output_time.hh"
+
+
+template <class Value>
+OutputData<Value>::OutputData(const FieldCommon &field, unsigned int size)
+: val_aux(aux)
+{
+    this->field_name = field.name();
+    this->field_units = field.units();
+    this->output_field_name = this->field_name;
+
+    this->n_values = size;
+
+    if (val_aux.NCols_ == 1) {
+        if (val_aux.NRows_ == 1) {
+            this->n_elem_ = N_SCALAR;
+            this->n_rows = 1;
+            this->n_cols = 1;
+        } else {
+            if (val_aux.NRows_ > 1) {
+                if (val_aux.NRows_ > 3) {
+                    xprintf(PrgErr,
+                            "Do not support output of vectors with fixed size >3. Field: %s\n",
+                            this->field_name.c_str());
+                } else {
+                    this->n_elem_ = N_VECTOR;
+                    this->n_rows = 3;
+                    this->n_cols = 1;
+                }
+            } else {
+                THROW(OutputTime::ExcOutputVariableVector() << OutputTime::EI_FieldName(this->field_name));
+            }
+        }
+    } else {
+        this->n_elem_ = N_TENSOR;
+        this->n_rows = 3;
+        this->n_cols = 3;
+    }
+
+    data_ = new ElemType[this->n_values * this->n_elem_];
+}
+
+/**
+ * \brief Destructor of OutputData
+ */
+template <class Value>
+OutputData<Value>::~OutputData()
+{
+    delete[] this->data_;
+}
+
+
+/**
+ * Output data element on given index @p idx. Method for writing data
+ * to output stream.
+ *
+ * \note This method is used only by MSH file format.
+ */
+template <class Value>
+void OutputData<Value>::print(ostream &out_stream, unsigned int idx)
+{
+    OLD_ASSERT_LESS(idx, this->n_values);
+    ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+    for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
+        out_stream << *ptr << " ";
+}
+
+/**
+ * \brief Print all data stored in output data
+ *
+ * TODO: indicate if the tensor data are output in column-first or raw-first order
+ *       and possibly implement transposition. Set such property for individual file formats.
+ *       Class OutputData stores always in raw-first order.
+ */
+template <class Value>
+void OutputData<Value>::print_all(ostream &out_stream)
+{
+    for(unsigned int idx = 0; idx < this->n_values; idx++) {
+        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
+            out_stream << *ptr << " ";
+    }
+}
+
+/**
+ * Store data element of given data value under given index.
+ */
+template <class Value>
+void OutputData<Value>::store_value(unsigned int idx, const Value& value) {
+    operate(idx, value,  [](ElemType& raw, ElemType val) {raw = val;});
+};
+
+/**
+ * Add value to given index
+ */
+template <class Value>
+void OutputData<Value>::add(unsigned int idx, const Value& value) {
+    operate(idx, value,   [](ElemType& raw, ElemType val) {raw += val;});
+};
+
+/**
+ * Reset values at given index
+ */
+template <class Value>
+void OutputData<Value>::zero(unsigned int idx) {
+    operate(idx, val_aux,   [](ElemType& raw, ElemType val) {raw = 0;});
+};
+
+/**
+ * Normalize values at given index
+ */
+template <class Value>
+void OutputData<Value>::normalize(unsigned int idx, unsigned int divisor) {
+    operate(idx, val_aux,   [divisor](ElemType& raw, ElemType val) {raw /= divisor;});
+};
+
+
+
+// Instantiation of OutputData template.
+template class OutputData< FieldValue<0>::Enum >;
+template class OutputData< FieldValue<0>::EnumVector >;
+template class OutputData< FieldValue<0>::Integer >;
+template class OutputData< FieldValue<0>::Scalar >;
+template class OutputData< FieldValue<0>::Vector >;
+
+template class OutputData< FieldValue<2>::VectorFixed >;
+template class OutputData< FieldValue<2>::TensorFixed >;
+
+template class OutputData< FieldValue<3>::VectorFixed >;
+template class OutputData< FieldValue<3>::TensorFixed >;
+
