@@ -15,6 +15,11 @@
 #include "system/sys_profiler.hh"
 
 
+/// Simple exception for tests that accepts string message.
+TYPEDEF_ERR_INFO( EI_Text, std::string);
+DECLARE_EXCEPTION(ExcLoggerTest, << EI_Text::val );
+
+
 // Calls various types of logger messages, allow check logger with different settings.
 void logger_messages() {
 	unsigned int mesh_size = 150;
@@ -34,7 +39,14 @@ void logger_messages() {
 	DebugOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << "\n";
 	DebugOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
-	// flush screen streams for better but not perfect output
+    // print error message
+	try {
+        THROW(ExcLoggerTest() << EI_Text("The field has set non-unique names of components.\nPlease set unique names.") );
+    } catch (ExcLoggerTest & e) {
+    	_LOG( Logger::MsgType::error ) << e.what();
+    }
+
+    // flush screen streams for better but not perfect output
 	std::cout << std::flush;
 	std::cerr << std::flush;
 
