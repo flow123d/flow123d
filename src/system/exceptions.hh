@@ -22,6 +22,7 @@
 #include <boost/exception/all.hpp>
 #include <iostream>
 #include <string>
+#include <memory>
 #include "system/stack_trace.hh"
 
 
@@ -320,12 +321,38 @@ TYPEDEF_ERR_INFO( EI_XprintfHeader, std::string);
 TYPEDEF_ERR_INFO( EI_XprintfMessage, std::string);
 DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfHeader::val << EI_XprintfMessage::val);
 
+
 /**
- * Error info of previous exception
+ * @brief Error info of previous exception.
+ *
+ * Allows keep and propagate message when one exception is catched and other exception is thrown.
+ * Catched exception is stored to EI_Nested and is printed out to message of thrown exception.
+ *
+ * Example of usage:
+ *
+ @code
+	try {
+		// method next() throws ExcA
+		obj.next();
+	} catch ( ExcA &e ) {
+	    // add ExcA to EI tags of ExcB
+		THROW( ExcB() << EI_Nested(make_exception_ei<ExcA>(e)) );
+	}
+ @endcode
+ *
  */
-TYPEDEF_ERR_INFO( EI_Nested, const ExceptionBase*);
+TYPEDEF_ERR_INFO( EI_Nested, std::shared_ptr<ExceptionBase>);
 
 
+/**
+ * Create shared pointer of given exception.
+ *
+ * Used for propagation exception message.
+ */
+template <class Exc>
+std::shared_ptr<Exc> make_exception_ei(Exc &e) {
+    return std::make_shared<Exc>(e);
+}
 
 
 /***********************************************************************

@@ -52,12 +52,20 @@ const char * ExceptionBase::what() const throw () {
     // Be sure that this function do not throw.
     try {
         std::ostringstream converter;
-        const ExceptionBase *exc_ptr = this;
-        do {
-            exc_ptr->form_message(converter);
-            exc_ptr = *( EI_Nested::ptr(*exc_ptr) );
-        } while (exc_ptr!=nullptr);
-
+        this->form_message(converter);
+        if (EI_Nested::ptr(*this)) {
+            std::shared_ptr<ExceptionBase> exc_ptr = *EI_Nested::ptr(*this);
+            while (exc_ptr) {
+            	converter << "--------------------------------------------------------" << std::endl;
+            	converter << "Nested exception:" << std::endl;
+            	exc_ptr->form_message(converter);
+            	if (EI_Nested::ptr(*exc_ptr)) {
+            		exc_ptr = *EI_Nested::ptr(*exc_ptr);
+            	} else {
+            		exc_ptr.reset();
+            	}
+            }
+        }
         message = converter.str();
         return message.c_str();
 
