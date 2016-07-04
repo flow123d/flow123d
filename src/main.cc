@@ -407,10 +407,10 @@ int main(int argc, char **argv) {
         Application app(argc, argv);
         app.init(argc, argv);
     } catch (std::exception & e) {
-        std::cerr << e.what();
+        _LOG( Logger::MsgType::error ) << e.what();
         return ApplicationBase::exit_failure;
     } catch (...) {
-        std::cerr << "Unknown exception" << endl;
+        _LOG( Logger::MsgType::error ) << "Unknown exception" << endl;
         return ApplicationBase::exit_failure;
     }
 

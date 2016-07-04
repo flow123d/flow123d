@@ -85,14 +85,14 @@ Logger::~Logger()
 
 const std::string Logger::msg_type_string(MsgType msg_type, bool full_format)
 {
-	static std::vector<std::string> type_names = {"WARNING.", "MESSAGE.", "LOG.", "DEBUG.",
-			                                      "Wrn", "Msg", "Log", "Dbg"};
+	static std::vector<std::string> type_names = {"WARNING.", "MESSAGE.", "LOG.", "DEBUG.", "ERROR",
+			                                      "Wrn", "Msg", "Log", "Dbg", "Err"};
 	int type_idx = msg_type;
 
 	if (full_format) {
 		return type_names[type_idx];
 	} else {
-		return type_names[type_idx + 4];
+		return type_names[type_idx + 5];
 	}
 }
 
@@ -122,6 +122,7 @@ void Logger::set_mask()
 
 	switch (type_) {
 	case MsgType::warning:
+	case MsgType::error:
 		if (LoggerOptions::get_instance().no_log_)
 			streams_mask_ = StreamMask::cerr;
 		else
