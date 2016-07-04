@@ -90,7 +90,7 @@ inline Plucker::Plucker(const Plucker &p)
     computed_ = p.is_computed(); }
 
 inline double Plucker::operator[](const unsigned int index) const
-{   ASSERT(computed_, "Plucker coordinates not computed yet.");
+{   OLD_ASSERT(computed_, "Plucker coordinates not computed yet.");
     return coordinates_[index]; }
 
 inline void Plucker::clear()
@@ -100,15 +100,15 @@ inline bool Plucker::is_computed() const
 {   return computed_; }
 
 inline arma::vec3 Plucker::get_u_vector() const
-{   ASSERT(computed_, "Plucker coordinates not computed yet.");
+{   OLD_ASSERT(computed_, "Plucker coordinates not computed yet.");
     return coordinates_(arma::span(0,2)); }
 
 inline arma::vec3 Plucker::get_ua_vector() const
-{   ASSERT(computed_, "Plucker coordinates not computed yet.");
+{   OLD_ASSERT(computed_, "Plucker coordinates not computed yet.");
     return coordinates_(arma::span(3,5)); }
 
 inline arma::vec6 Plucker::get_plucker_coords() const
-{   ASSERT(computed_, "Plucker coordinates not computed yet.");
+{   OLD_ASSERT(computed_, "Plucker coordinates not computed yet.");
     return coordinates_; }
 
 #endif

@@ -29,7 +29,7 @@ void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, Inter
 void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
 
     START_TIMER("CI trace opt");
-    ASSERT(!p.is_pathologic(), "Cannot call this polygonal tracing in pathologic case.");
+    OLD_ASSERT(!p.is_pathologic(), "Cannot call this polygonal tracing in pathologic case.");
     
     prolongation_table.clear();
     
@@ -131,7 +131,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                 DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",row, object_index, i);
             } break;
             default:
-                ASSERT(0,"Unsupported dimension of intersection object A.");
+                OLD_ASSERT(0,"Unsupported dimension of intersection object A.");
                 row = object_index = 0; // suppress compilation warnings
               break;
         }
@@ -150,7 +150,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
 //             std::cout << trace_table_x[i][j] << "  ";
 //         cout << endl;
 //     }
-    ASSERT_LESS(first_row_index,tt_size);
+    ASSERT_LT_DBG(first_row_index, tt_size);
     
     
     // traced IPs (reordered)
@@ -172,7 +172,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     while(next_row != first_row_index){
 //         DBGMSG("next_row = %d\n",next_row);
         unsigned int i_ip_orig = (unsigned int)trace_table_x[next_row][1];
-        ASSERT_LESS(i_ip_orig, p.points().size());
+        ASSERT_LT_DBG(i_ip_orig, p.points().size());
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // one ugly awful HACK:

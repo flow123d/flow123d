@@ -86,7 +86,7 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
                                                          (*triangle_)[side][1].point_coordinates());
 		}
 		
-		ASSERT(plucker_products_[side],"Undefined plucker product.");
+        ASSERT(plucker_products_[side]).error("Undefined plucker product.");
         if(*plucker_products_[side] == plucker_empty){
            *plucker_products_[side] = (*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]);
         }
@@ -118,7 +118,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(comput
 //     DBGMSG("Plucker product sum = %f\n",w[0]+w[1]+w[2]);
 //     local_triangle = local_triangle / (w[0]+w[1]+w[2]);
     
-    ASSERT(1-rounding_epsilonX < local[0]+local[1]+local[2] && 
+    OLD_ASSERT(1-rounding_epsilonX < local[0]+local[1]+local[2] &&
            local[0]+local[1]+local[2] < 1+rounding_epsilonX, "Inaccurate barycentric coordinates.");
     
     arma::vec3 local_triangle({local[2],local[1],local[0]});
@@ -784,7 +784,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 		}
 	}
     
-    ASSERT_LE(pocet_pruniku,2);
+    ASSERT_LE(pocet_pruniku, 2);
     
 	// in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
 	if(pocet_pruniku == 1){
@@ -1035,7 +1035,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	for(unsigned int triangle_line = 0; triangle_line < RefElement<2>::n_lines; triangle_line++){    // go through triangle lines
 // 		DBGMSG("2d-3d triangle side %d\n",triangle_line);
         pocet_13_pruniku = CI13[triangle_line].compute(IP13s);
-        ASSERT(pocet_13_pruniku < 3, "Impossible number of intersection.");
+        OLD_ASSERT(pocet_13_pruniku < 3, "Impossible number of intersection.");
 //         DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
         
         for(unsigned int n=pocet_13_pruniku; n >= 1; n--){

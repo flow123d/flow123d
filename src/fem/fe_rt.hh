@@ -20,7 +20,7 @@
 #define FE_RT_HH_
 
 #include "fem/finite_element.hh"
-
+#include "system/logger.hh"
 
 
 /**
@@ -131,7 +131,7 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 FE_RT0<dim,spacedim>::FE_RT0()
 {
-	arma::vec::fixed<dim> sp;
+    arma::vec::fixed<dim> sp;
 
     this->init();
 
@@ -142,7 +142,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
     {
     	sp.fill(0);
     	for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; ++i)
-    		sp += RefElement<dim>::node_coords(RefElement<dim>::side_nodes[sid][i]);
+    		sp += RefElement<dim>::node_coords(RefElement<dim>::template interact<0,dim-1>(sid)[i]);
     	sp /= RefElement<dim>::n_nodes_per_side;
     	generalized_support_points.push_back(sp);
     }
