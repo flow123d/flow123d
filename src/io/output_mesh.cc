@@ -18,9 +18,9 @@
 #include "output_mesh.hh"
 #include "output_element.hh"
 #include "mesh/mesh.h"
-#include <mesh/ref_element.hh>
+#include "mesh/ref_element.hh"
 #include "fields/field.hh"
-#include <fields/field_set.hh>
+#include "fields/field_set.hh"
 
 namespace IT=Input::Type;
 
@@ -353,21 +353,21 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     nodes_->n_values = nodes_->data_.size() / spacedim;
     offsets_->n_values = offsets_->data_.size();
     
-    for(unsigned int i=0; i< nodes_->n_values; i++)
-    {
-        cout << i << "  "; 
-        for(unsigned int k=0; k<spacedim; k++){
-            nodes_->print(cout, i*spacedim+k); 
-            cout << " ";
-        }
-        cout << endl;
-    } 
+//     for(unsigned int i=0; i< nodes_->n_values; i++)
+//     {
+//         cout << i << "  "; 
+//         for(unsigned int k=0; k<spacedim; k++){
+//             nodes_->print(cout, i*spacedim+k); 
+//             cout << " ";
+//         }
+//         cout << endl;
+//     } 
 //     cout << "\n\n";
-// //     discont_nodes_->print_all(cout);
+// //     nodes_->print_all(cout);
 // //     cout << "\n\n";
-    connectivity_->print_all(cout);
-    cout << "\n\n";
-    offsets_->print_all(cout);
+//     connectivity_->print_all(cout);
+//     cout << "\n\n";
+//     offsets_->print_all(cout);
 }
 
 template<int dim>
@@ -407,7 +407,7 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
          4, 5, 2,
          3, 5, 4},
          
-        {0, 4, 5, 3,
+        {0, 4, 5, 7,
          4, 1, 6, 8,
          5, 6, 2, 9,
          7, 8, 9, 3,
@@ -456,7 +456,7 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
     {
         Space<spacedim>::Point p = nodes[line_nodes[dim][e][0]]+nodes[line_nodes[dim][e][1]];
         nodes.push_back( p / 2.0);
-//         nodes.back().print();
+        //nodes.back().print();
         
 //         last_node_idx++;
 //         node_numbering.push_back(last_node_idx);
@@ -475,7 +475,6 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
         {
             unsigned int conn_id = (n_old_nodes)*i + j;
             sub_ele.nodes[j] = nodes[conn[dim][conn_id]];
-//             sub_ele.connectivity[j] = node_numbering[conn[dim][conn_id]];
         }
         
         refine_aux_element<dim>(sub_ele, refinement, ele_acc, error_control_field);
