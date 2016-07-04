@@ -35,7 +35,6 @@
 
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
-#include "boost/shared_ptr.hpp"
 #include "system/exceptions.hh"
 
 // Forward declarations
@@ -278,6 +277,7 @@ public:
      */
     void check_and_finish();
     
+    const BIHTree &get_bih_tree();
 
 
 protected:
@@ -370,7 +370,12 @@ protected:
     /**
      * Mesh partitioning. Created in setup_topology.
      */
-    boost::shared_ptr<Partitioning> part_;
+    std::shared_ptr<Partitioning> part_;
+
+    /**
+     * BIH Tree for intersection and observe points lookup.
+     */
+    std::shared_ptr<BIHTree> bih_tree_;
     /**
      * Accessor to the input record for the mesh.
      */

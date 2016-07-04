@@ -273,7 +273,7 @@ void Mesh::setup_topology() {
     make_edge_permutations();
     count_side_types();
 
-    part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
+    part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
     int *id_4_old = new int[element.size()];
@@ -666,7 +666,7 @@ void Mesh::make_intersec_elements() {
 	 * 3) compute intersections for 1d, store it to master_elements
 	 *
 	 */
-	BIHTree bih_tree( this );
+	BIHTree &bih_tree =get_bih_tree();
 	master_elements.resize(n_elements());
 
 	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
@@ -758,6 +758,13 @@ void Mesh::check_and_finish()
 	if ( in_record_.val<bool>("print_regions") ) {
 		region_db_.print_region_table(cout);
 	}
+}
+
+
+const BIHTree &Mesh::get_bih_tree() {
+    if (! this->bih_tree_)
+        bih_tree_ = std::make_shared<BIHTree>(this);
+    return bih_tree_;
 }
 
 //-----------------------------------------------------------------------------
