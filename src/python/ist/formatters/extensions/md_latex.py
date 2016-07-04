@@ -1,22 +1,21 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 
-'''
-MdLatex Extension for Python-Markdown
+"""
+MDLatex Extension for Python-Markdown
 ======================================
 
-Converts [[type_value]] to relative links.
-'''
+Converts (($latex-expression$)) to span which is later converted using katex to latex expression
+"""
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-import cgi
+import re, cgi
 from markdown.extensions import Extension
-from markdown.inlinepatterns import Pattern, SimpleTagPattern, BacktickPattern
+from markdown.inlinepatterns import Pattern
 from markdown.util import etree
-import re
-from ist.globals import Globals
 
 
 class MdLatexExtension (Extension):
@@ -61,13 +60,6 @@ def makeExtension (*args, **kwargs):
     return MdLatexExtension (*args, **kwargs)
 
 
-# from markdown.treeprocessors import Treeprocessor
-#
-# class FootnoteTreeprocessor(Treeprocessor):
-# def run(self, root):
-# root.text = '!!!!!!!!!!!!!!!'
-
-
 class MdLatexSupport (object):
     def __init__ (self):
         self.latex = []
@@ -82,7 +74,7 @@ class MdLatexSupport (object):
         return '<span class="md-expression">{{{}}}</span>'.format (latex)
 
     def prepare (self, html):
-        regex = r'\(\(([\w\d\s{}\[\]\\\?;$^?_/+!&=*<>~ ()-]*?)\)\)'
+        regex = r'\(\(([\w\d\s{}\[\]\\\?;$^?_/+!&=*<>~ (),-]*?)\)\)'
 
         secured_html = re.sub (regex, self._match_prepare, html, re.S | re.M | re.UNICODE)
         return secured_html

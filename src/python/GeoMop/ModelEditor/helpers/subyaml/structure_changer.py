@@ -81,7 +81,7 @@ class StructureChanger:
                     lines.insert(line, add[i])
                     
     @staticmethod
-    def copy_absent_path(root, lines, source_node,  dest_path):
+    def copy_absent_path(root, lines, dest_path):
         """
         Return different path (it is not existing path in  dest_path constracted 
         from source_node ) in array of NodeDescription. This structure is suitable 
@@ -103,20 +103,29 @@ class StructureChanger:
                     path_exist = True
                     break
         node_struct = []
-        for i in range(1, len(dest)+1): 
-            if source_node is None:
-                return [], None            
-            if source_node.parent is not None:
-                na = NodeAnalyzer(lines, source_node.parent)
-                node_type = na. get_node_structure_type()
-            else:
-                # root element is dictionary
-                node_type =  DataNode.StructureType.dict
-            if source_node.key is None:
-                node_struct.insert(0, NodeDescription(node_type))
-            else:
-                node_struct.insert(0, NodeDescription(node_type, dest[len(dest)-i]))
-            source_node = source_node.parent
+        #first node accoding source
+        na = NodeAnalyzer(lines, node)
+        node_type = na. get_node_structure_type()
+        try:
+            int(dest[0]) 
+            # array
+            if node_type != DataNode.StructureType.array and \
+                node_type != DataNode.StructureType.json_array:
+                return [], None
+        except ValueError:
+            if node_type != DataNode.StructureType.dict and \
+                node_type != DataNode.StructureType.json_dict:
+                return [], None
+        node_struct.append(NodeDescription(node_type, dest[0]))
+        # next nodes accoding syntax (array have number)
+        for i in range(1, len(dest)): 
+            try:
+                int(dest[i]) 
+                # array
+                node_struct.append(NodeDescription(DataNode.StructureType.array))
+            except ValueError:
+                #struct
+                node_struct.append(NodeDescription(DataNode.StructureType.dict, dest[i]))
         if known_path == "":
             known_path = "/"
         return node_struct, known_path
@@ -173,12 +182,12 @@ class StructureChanger:
         # add indentation to origin add variable
         for i in range( prepend_len,  prepend_len + add_len):
             if add_dash:
-                if len(add[prepend_len]) >  prepend_ident:
-                    add[prepend_len] =  (add_ident + prepend_ident)  * " " + "- " + add[i][add_ident:]
+                if len(add[i]) >  prepend_ident:
+                    add[i] =  (add_ident + prepend_ident)  * " " + "- " + add[i][add_ident:]
                     prepend_ident += 2
                     add_dash = False
             else:
-                add[prepend_len] =  prepend_ident * " " +add[prepend_len]        
+                add[i] =  prepend_ident * " " +add[i]        
         return add
     
     @classmethod
@@ -282,11 +291,11 @@ class StructureChanger:
         if tag is not None:
             add += " !" + tag
         if value is not None:
-            add += " " + value
+            add += " " + str(value)
         return add
 
     @staticmethod
-    def copy_structure(lines, l1, c1, l2, c2, indent):
+    def copy_structure(lines, l1, c1, l2, c2, indent, parent=True):
         """
         Copy structure from lines to separate array. Structure is
         move by indentation. 
@@ -300,8 +309,9 @@ class StructureChanger:
             if c1 > 0:
                 add.append(indent*" " + lines[l1][c1:])
                 from_line += 1
-                
-            indentation2 = re.search(r'^(\s*- )(\S.*)$', lines[l1])
+            indentation2 = None
+            if parent:    
+                indentation2 = re.search(r'^(\s*- )(\S.*)$', lines[l1])
             if indentation2 is None:
                 indentation2 = re.search(r'^(\s*)(\S.*)$', lines[l1])
             if indentation2 is None:

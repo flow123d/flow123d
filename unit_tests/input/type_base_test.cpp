@@ -6,9 +6,13 @@
  */
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 
 #include <input/input_type.hh>
+#include <input/attribute_lib.hh>
+
 
 
 
@@ -65,31 +69,31 @@ TEST(InputTypeScalar, all_types) {
 
     // Default::check_validity methods
     // Bool
-    EXPECT_TRUE( Default("true").check_validity( boost::make_shared<Bool>() ) );
-    EXPECT_TRUE( Default("false").check_validity( boost::make_shared<Bool>() ) );
-    EXPECT_FALSE( Default::obligatory().check_validity( boost::make_shared<Bool>()) );
-    EXPECT_THROW_WHAT( { Default("yes").check_validity( boost::make_shared<Bool>() ); }, ExcWrongDefault,
-            "Default value 'yes' do not match type: 'Bool';" );
+    EXPECT_TRUE( Default("true").check_validity( std::make_shared<Bool>() ) );
+    EXPECT_TRUE( Default("false").check_validity( std::make_shared<Bool>() ) );
+    EXPECT_FALSE( Default::obligatory().check_validity( std::make_shared<Bool>()) );
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Bool>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'yes' of type 'Bool';" );
 
     // Integer
-    EXPECT_TRUE( Default("10").check_validity( boost::make_shared<Integer>() ) );
-    EXPECT_THROW_WHAT( { Default("10").check_validity( boost::make_shared<Integer>(0,4) ); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("10").check_validity( std::make_shared<Integer>() ) );
+    EXPECT_THROW_WHAT( { Default("10").check_validity( std::make_shared<Integer>(0,4) ); }, ExcWrongDefault,
             "Default value '10' do not match type: 'Integer';" );
-    EXPECT_THROW_WHAT( { Default("yes").check_validity( boost::make_shared<Integer>() ); }, ExcWrongDefault,
-            "Default value 'yes' do not match type: 'Integer';" );
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Integer>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'yes' of type 'Integer';" );
 
     // Double
-    EXPECT_TRUE( Default("3.14").check_validity( boost::make_shared<Double>() ) );
-    EXPECT_TRUE( Default("-5.67E-23").check_validity( boost::make_shared<Double>() ) );
-    EXPECT_THROW_WHAT( { Default("-1e-10").check_validity( boost::make_shared<Double>(0,4.4) ); }, ExcWrongDefault,
+    EXPECT_TRUE( Default("3.14").check_validity( std::make_shared<Double>() ) );
+    EXPECT_TRUE( Default("-5.67E-23").check_validity( std::make_shared<Double>() ) );
+    EXPECT_THROW_WHAT( { Default("-1e-10").check_validity( std::make_shared<Double>(0,4.4) ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
-    EXPECT_THROW_WHAT( { Default("-3.6t5").check_validity( boost::make_shared<Double>() ); }, ExcWrongDefault,
-            "Default value .* do not match type: 'Double';" );
+    EXPECT_THROW_WHAT( { Default("-3.6t5").check_validity( std::make_shared<Double>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value '-3.6t5' of type 'Double';" );
 
     // String
-    EXPECT_TRUE( Default("\"ahoj\"").check_validity( boost::make_shared<String>() ) );
-    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( boost::make_shared<String>() ); }, ExcWrongDefault,
-            "Default value .* do not match type: 'String';" );
+    EXPECT_TRUE( Default("\"ahoj\"").check_validity( std::make_shared<String>() ) );
+    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( std::make_shared<String>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'ahoj' of type 'String';" );
 
 
     // test equivalence operator
@@ -111,7 +115,7 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     // construction
-    boost::shared_ptr<Array> arr_int = boost::make_shared<Array>(Integer(), 1, 8);
+    std::shared_ptr<Array> arr_int = std::make_shared<Array>(Integer(), 1, 8);
     Array arr_arr_dbl( Array( Double() ));
 
     Record rec_2("record_type_2", "desc");
@@ -127,7 +131,7 @@ using namespace Input::Type;
     Input::Type::TypeBase::lazy_finish();
 
     // get_sub_type
-    EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // boost::smart_ptr assert fails
+    EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // std::smart_ptr assert fails
 
     // operator ==
     EXPECT_NE( *arr_int, Array( Double() ) );
@@ -148,7 +152,7 @@ using namespace Input::Type;
     Default("100").check_validity( arr_int );
     EXPECT_THROW_WHAT( {Default("1.5").check_validity( arr_int );}, ExcWrongDefault,
             "Default value '1.5' do not match type:" );
-    boost::shared_ptr<Array> arr_double = boost::make_shared<Array>(Double(), 2);
+    std::shared_ptr<Array> arr_double = std::make_shared<Array>(Double(), 2);
     EXPECT_THROW_WHAT( { Default("3.2").check_validity( arr_double ); }, ExcWrongDefault,
                   "Default value '3.2' do not match type: 'array_of_Double';"
                  );
@@ -181,20 +185,20 @@ using namespace Input::Type;
     sel2.add_value(white,"white","White color");
     sel1->add_value(black,"black");
     sel2.add_value(red,"red");
-    EXPECT_THROW_WHAT( {sel1->add_value(green,"red");}, ExcXprintfMsg, "already exists in Selection:");
-    EXPECT_THROW_WHAT( {sel2.add_value(green,"red");}, ExcXprintfMsg, "already exists in Selection:");
-    EXPECT_THROW_WHAT( {sel1->add_value(blue,"blue1");}, ExcXprintfMsg, "conflicts with value");
-    EXPECT_THROW_WHAT( {sel2.add_value(blue,"blue1");}, ExcXprintfMsg, "conflicts with value");
+    EXPECT_THROW_WHAT( {sel1->add_value(green,"red");}, feal::Exc_assert, "already exists in Selection");
+    EXPECT_THROW_WHAT( {sel2.add_value(green,"red");}, feal::Exc_assert, "already exists in Selection");
+    EXPECT_THROW_WHAT( {sel1->add_value(blue,"blue1");}, feal::Exc_assert, "conflicts with value");
+    EXPECT_THROW_WHAT( {sel2.add_value(blue,"blue1");}, feal::Exc_assert, "conflicts with value");
 
 
     sel2.add_value(green,"green");
     sel2.close();
-    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, ExcXprintfMsg, "in finished Selection type:");
+    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, feal::Exc_assert, "in finished Selection.");
 
     Selection sel3;
     EXPECT_TRUE( sel3.is_finished());
     EXPECT_EQ("EmptySelection", sel3.type_name());
-    EXPECT_THROW_WHAT( {sel3.add_value(1,"one");}, ExcXprintfMsg, "in finished Selection type:");
+    EXPECT_THROW_WHAT( {sel3.add_value(1,"one");}, feal::Exc_assert, "in finished Selection.");
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
     EXPECT_FALSE( sel2.has_name("xblue") );
@@ -211,7 +215,7 @@ using namespace Input::Type;
     	.add_value(10, "ten")
     	.add_value(0,"zero")
     	.close();
-    boost::shared_ptr<Selection> sel_ptr = boost::make_shared<Selection>(int_sel);
+    std::shared_ptr<Selection> sel_ptr = std::make_shared<Selection>(int_sel);
 
 
     // Selection defaults
@@ -325,11 +329,13 @@ protected:
 TEST_F(InputTypeAttributesTest, base_test) {
 	std::map<std::string, json_string>::iterator it;
 
-	this->add_attribute("attr_1", "\"some attribute\"");
-	this->add_attribute("attr_2", "\"other attribute\"");
-	this->add_attribute("numeric", "\"10\"");
-	this->add_attribute("pair", "[\"0\", \"50\"]");
-	this->add_attribute("float_point", "\"0.5\"");
+	this->add_attribute_("attr_1", "\"some attribute\"");
+	this->add_attribute_("attr_2", "\"other attribute\"");
+	this->add_attribute_("numeric", "\"10\"");
+	this->add_attribute_("pair", "[\"0\", \"50\"]");
+	this->add_attribute_("float_point", "\"0.5\"");
+	//this->add_attribute_(FlowAttribute::parameters(), "[\"a\", \"b\", \"c\"]");
+	this->add_attribute_(Input::Type::Attribute::obsolete(), "\"true\"");
 
 	EXPECT_TRUE( (it=attributes_->find("attr_1")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"some attribute\"" );
@@ -339,13 +345,17 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	EXPECT_STREQ( it->second.c_str(), "[\"0\", \"50\"]" );
 	EXPECT_TRUE( (it=attributes_->find("float_point")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"0.5\"" );
+	//EXPECT_TRUE( (it=attributes_->find("parameters")) != attributes_->end() );
+	//EXPECT_STREQ( it->second.c_str(), "[\"a\", \"b\", \"c\"]" );
+	EXPECT_TRUE( (it=attributes_->find("_obsolete")) != attributes_->end() );
+	EXPECT_STREQ( it->second.c_str(), "\"true\"" );
 
-	this->add_attribute("numeric", "\"5\"");
+	this->add_attribute_("numeric", "\"5\"");
 	EXPECT_TRUE( (it=attributes_->find("numeric")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"5\"" );
 
-    EXPECT_THROW_WHAT( { this->add_attribute("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
-            "Invalid JSON format of attribute 'invalid_attr'." );
+    EXPECT_THROW_WHAT( { this->add_attribute_("invalid_attr", "non quotation attribute"); }, feal::Exc_assert,
+            "Invalid JSON format of attribute" );
 }
 
 /*TEST(InputTypeAttributes, complete_test) {

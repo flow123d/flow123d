@@ -30,7 +30,6 @@ const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
 const double TimeGovernor::time_step_precision = 16*numeric_limits<double>::epsilon();
 
 
-
 using namespace Input::Type;
 
 
@@ -135,11 +134,9 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
             // set first time step suggested by user
             //time_step_=min(init_dt, time_step_);
             lower_constraint_=init_dt;
+            lower_constraint_message_ = "Initial time step set by user.";
             upper_constraint_=init_dt;
-        } else {
-            // apply constraints
-            //time_step_=min(time_step_, upper_constraint_);
-            //time_step_=max(time_step_, lower_constraint_);
+            upper_constraint_message_ = "Initial time step set by user.";
         }
 
 
@@ -162,8 +159,11 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
     time_step_changed_=true;
     end_of_fixed_dt_interval_ = inf_time;
 
-    upper_constraint_=max_time_step_=dt;
     lower_constraint_=min_time_step_=dt;
+    lower_constraint_message_ = "Initial time step set by user.";
+    upper_constraint_=max_time_step_=dt;
+    upper_constraint_message_ = "Initial time step set by user.";
+    
     //time_step_=dt;
 }
 
@@ -192,7 +192,7 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 				);
     }
 
-    recent_steps_.set_capacity(2);
+    recent_steps_.set_capacity(size_of_recent_steps_);
     recent_steps_.push_front(TimeStep(init_time));
     init_time_=init_time;
 
@@ -210,11 +210,13 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
     	end_of_fixed_dt_interval_ = init_time_;
 
     	min_time_step_=lower_constraint_=time_step_precision;
+        lower_constraint_message_ = "Permanent minimal constraing, default, time_step_precision.";
     	if (end_time_ == inf_time) {
         	max_time_step_=upper_constraint_=inf_time;
     	} else {
     		max_time_step_=upper_constraint_= end_time - init_time_;
     	}
+    	upper_constraint_message_ = "Permanent maximal constraint, default, total simulation time.";
     	// choose maximum possible time step
     	//time_step_=max_time_step_;
     /*} else {
@@ -255,7 +257,10 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
     }
 
     lower_constraint_ = min_time_step_ = max(min_dt, time_step_precision);
+    lower_constraint_message_ = "Permanent minimal constraint, custom.";
     upper_constraint_ = max_time_step_ = min(max_dt, end_time_-t());
+    upper_constraint_message_ = "Permanent maximal constraint, custom.";
+    
 }
 
 
@@ -265,54 +270,43 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
 // +1 mensi
 // 0 OK
 
-int TimeGovernor::set_upper_constraint (double upper)
+int TimeGovernor::set_upper_constraint (double upper, std::string message)
 {
-    if (upper_constraint_ < upper) 
-    {
+    if (upper_constraint_ < upper) {
         //do not change upper_constraint_
         return -1;
-    }
-    
-    if (lower_constraint_ <= upper) 
-    {
-        //change upper_constraint_ to upper
-        upper_constraint_ = upper;
-        return 0;
-    }
-    
-    if (lower_constraint_ > upper) 
-    {
-        //do not change upper_constraint_
-        return 1;
-    }
-
-    return 0;
+    } else
+        if (lower_constraint_ > upper) {
+            // set upper constraint to the lower constraint
+            upper_constraint_ = lower_constraint_;
+			upper_constraint_message_ = "Forced lower constraint. " + message;
+            return 1;
+        } else {
+            //change upper_constraint_ to upper
+            upper_constraint_ = upper;
+            upper_constraint_message_ = message;
+            return 0;
+        }
 }
 
 
 
-int TimeGovernor::set_lower_constraint (double lower)
+int TimeGovernor::set_lower_constraint (double lower, std::string message)
 {   
-    if (upper_constraint_ < lower) 
-    {
-        //do not change lower_constraint_
+    if (upper_constraint_ < lower) {
+        // set lower constraint to the upper constraint
+        lower_constraint_ = upper_constraint_;
         return -1;
-    }
-    
-    if (min_time_step_ <= lower)
-    {
-        //change lower_constraint_ to lower
-        lower_constraint_ = lower;
-        return 0;
-    }
-    
-    if (min_time_step_ > lower)
-    {
-        //do not change lower_constraint_
-        return 1;
-    }
-
-    return 0;
+    } else
+        if (lower_constraint_ > lower) {
+            //do not change lower_constraint_
+            return 1;
+        } else {
+            //change lower_constraint_ to lower
+            lower_constraint_ = lower;
+	        lower_constraint_message_ = message;
+            return 0;
+        }
 }
 
 
@@ -386,7 +380,7 @@ double TimeGovernor::estimate_dt() const {
 
 void TimeGovernor::next_time()
 {
-    ASSERT_LE(0.0, t());
+    OLD_ASSERT_LE(0.0, t());
     if (is_end()) return;
     
 
@@ -423,10 +417,37 @@ void TimeGovernor::next_time()
         time_step_changed_= (step(-2).length() != step().length());
     }
 
+    last_lower_constraint_ = lower_constraint_;
+    last_upper_constraint_ = upper_constraint_;
     // refreshing the upper_constraint_
     upper_constraint_ = min(end_time_ - t(), max_time_step_);
     lower_constraint_ = min_time_step_;
+    lower_constraint_message_ = "Permanent minimal constraint, in next time.";
+    upper_constraint_message_ = "Permanent maximal constraint, in next time.";
+}
 
+
+double TimeGovernor::reduce_timestep(double factor) {
+    double prior_dt = dt();
+    double new_upper_constraint = factor * dt();
+
+    // Revert time.
+//    DBGMSG("tg idx: %d\n", recent_steps_.front().index());
+    recent_steps_.pop_front();
+//    DBGMSG("tg idx: %d\n", recent_steps_.back().index());
+    upper_constraint_ = last_upper_constraint_;
+    lower_constraint_ = last_lower_constraint_;
+
+    // Set constraint.
+    int current_minus_new = set_upper_constraint(new_upper_constraint, "Reduce time step.");
+    if (current_minus_new < 0)
+        // current constraint < reduced dt, should not happen
+        THROW(ExcMessage() << EI_Message("Internal error."));
+
+    next_time();
+
+    // Return false if we hit lower time step constraint.
+    return dt() / prior_dt;
 }
 
 
@@ -456,6 +477,9 @@ void TimeGovernor::view(const char *name) const
 #else
     xprintf(Msg,"\n");
 #endif
+    xprintf(Msg, "Lower time step constraint [%f]: %s \nUpper time step constraint [%f]: %s \n",
+            lower_constraint_, lower_constraint_message_.c_str(), 
+            upper_constraint_, upper_constraint_message_.c_str() );
 }
 
 

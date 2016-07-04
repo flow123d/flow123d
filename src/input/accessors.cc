@@ -19,7 +19,6 @@
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include "input/accessors.hh"
-#include "input/storage_transpose.hh"
 
 
 namespace Input {
@@ -30,42 +29,20 @@ namespace Input {
  */
 
 
-const char * Exception::what() const throw () {
-    // have preallocated some space for error message we want to return
-    // Is there any difference, if we move this into ExceptionBase ??
-    static std::string message(1024,' ');
+std::ostringstream &Exception::form_message(std::ostringstream &converter) const {
 
-
-    // Be sure that this function do not throw.
-    try {
-        std::ostringstream converter;
-
-        converter << std::endl << std::endl;
-        converter << "--------------------------------------------------------" << std::endl;
-        converter << "User Error: ";
-        print_info(converter);
+	converter << std::endl << std::endl;
+    converter << "--------------------------------------------------------" << std::endl;
+    converter << "User Error: ";
+    print_info(converter);
 #ifdef FLOW123D_DEBUG_MESSAGES
-        converter << "\n** Diagnosting info **\n" ;
-        converter << boost::diagnostic_information_what( *this );
-        print_stacktrace(converter);
+    converter << "\n** Diagnosting info **\n" ;
+    converter << boost::diagnostic_information_what( *this );
+    print_stacktrace(converter);
 #endif
-        converter << "--------------------------------------------------------" << std::endl;
+    converter << std::endl << "--------------------------------------------------------" << std::endl;
 
-        message = converter.str();
-        return message.c_str();
-
-    } catch (std::exception &exc) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Message is " << std::endl
-                << exc.what() << std::endl << "*** Aborting! ***" << std::endl;
-
-        std::abort();
-    } catch (...) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Aborting! ***"
-                << std::endl;
-
-        std::abort();
-    }
-    return 0;
+    return converter;
 }
 
 
@@ -301,27 +278,6 @@ Input::EI_Address AbstractRecord::ei_address() const
 string AbstractRecord::address_string() const
 {
 	return address_.make_full_address();
-}
-
-void AbstractRecord::transpose_to(Input::Record &target_rec, string target_key, unsigned int vec_size) {
-	Input::Iterator<Array> it = target_rec.find<Array>(target_key);
-	if (it) { // target_key is set by user
-		return;
-	}
-
-	Type::Record::KeyIter key_it = target_rec.record_type_.key_iterator(target_key);
-	const Type::Array *in_arr = static_cast<const Type::Array *>(key_it->type_.get());
-	const Type::TypeBase *target_type = &(in_arr->get_sub_type());
-
-	StorageTranspose trans(target_type, &(this->abstract_type_), this->address_.storage_head(), vec_size);
-    StorageArray* result_storage = new StorageArray(vec_size);
-    for(unsigned int i=0; i<vec_size; i++) {
-    	result_storage->new_item(i, trans.get_item(i));
-    }
-    StorageArray* storage_arr =
-            const_cast<StorageArray *>(
-            static_cast<const StorageArray *>(target_rec.address_.storage_head()));
-    storage_arr->set_item(target_rec.record_type_.key_index(target_key), result_storage);
 }
 
 

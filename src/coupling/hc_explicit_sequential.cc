@@ -44,13 +44,13 @@ FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh);
 namespace it = Input::Type;
 
 it::Abstract & CouplingBase::get_input_type() {
-	return it::Abstract("Problem", "The root record of description of particular the problem to solve.")
+	return it::Abstract("Coupling_Base", "The root record of description of particular the problem to solve.")
 		.close();
 }
 
 
 const it::Record & HC_ExplicitSequential::get_input_type() {
-    return it::Record("SequentialCoupling",
+    return it::Record("Coupling_Sequential",
             "Record with data for a general sequential coupling.\n")
 		.derive_from( CouplingBase::get_input_type() )
 		.declare_key("description",it::String(),
@@ -60,11 +60,13 @@ const it::Record & HC_ExplicitSequential::get_input_type() {
 				"Computational mesh common to all equations.")
 		.declare_key("time", TimeGovernor::get_input_type(), it::Default::optional(),
 				"Simulation time frame and time step.")
-		.declare_key("primary_equation", DarcyFlowInterface::get_input_type(),
+		.declare_key("flow_equation", DarcyFlowInterface::get_input_type(),
 		        it::Default::obligatory(),
-				"Primary equation, have all data given.")
-		.declare_key("secondary_equation", AdvectionProcessBase::get_input_type(),
-				"The equation that depends (the velocity field) on the result of the primary equation.")
+				"Flow equation, provides the velocity field as a result.")
+		.declare_key("solute_equation", AdvectionProcessBase::get_input_type(),
+				"Transport of soluted substances, depends on the velocity field from a Flow equation.")
+		.declare_key("heat_equation", AdvectionProcessBase::get_input_type(),
+		        "Heat transfer, depends on the velocity field from a Flow equation.")
 		.close();
 }
 
@@ -99,14 +101,14 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     }
 
     // setup primary equation - water flow object
-    AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
+    AbstractRecord prim_eq = in_record.val<AbstractRecord>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
     water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
 
 
 
     // TODO: optionally setup transport objects
-    Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
+    Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("solute_equation");
     if (it) {
     	secondary_eq = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record >(*mesh, *it);
 
@@ -116,7 +118,17 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         secondary_eq->initialize();
 
     } else {
-        secondary_eq = std::make_shared<TransportNothing>(*mesh);
+        it = in_record.find<AbstractRecord>("heat_equation");
+        if (it) {
+            secondary_eq = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record >(*mesh, *it);
+
+            // setup fields
+            secondary_eq->data()["cross_section"]
+                    .copy_from(water->data()["cross_section"]);
+            secondary_eq->initialize();
+        } else {
+            secondary_eq = std::make_shared<TransportNothing>(*mesh);
+        }
     }
 }
 
@@ -168,7 +180,11 @@ void HC_ExplicitSequential::run_simulation()
 
     while (! (water->time().is_end() && secondary_eq->time().is_end() ) ) {
 
-        secondary_eq->set_time_upper_constraint(water->time().estimate_dt());
+        if (! water->time().is_end()) {
+            double water_dt=water->time().estimate_dt();
+            secondary_eq->set_time_upper_constraint(water_dt, "Time discretisation of flow.");
+        }
+
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but

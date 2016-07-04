@@ -147,8 +147,6 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 {
 	unsigned int region_id;
 	string region_label = rec.val<string>("name");
-	Region reg = mesh->region_db().find_label(region_label);
-
 	Input::Iterator<unsigned int> it = rec.find<unsigned int>("id");
 
 	if (it) {
@@ -156,7 +154,7 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 	} else {
 		region_id = this->get_max_region_id();
 	}
-	stringstream ss;
+
 	try {
 		region_db_.add_region(region_id, region_label, RegionDB::undefined_dim, rec.address_string() );
 	} catch (RegionDB::ExcNonuniqueLabel &e) {
@@ -238,7 +236,7 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 	std::vector<string> set_names;
 
 	if (regions) {
-		set_names = mesh->region_db().get_and_check_operands(*regions);
+		set_names = region_db_.get_and_check_operands(*regions);
 	}
 	if (region_ids) {
 		for (Input::Iterator<unsigned int> it_ids = region_ids->begin<unsigned int>();
@@ -251,11 +249,11 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 				e << region_ids->ei_address();
 				throw;
 			}
-			if (reg.is_valid()) {
-				set_names.push_back( reg.label() );
-			} else {
-				xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
+			if (!reg.is_valid()) {
+				std::string label = region_db_.create_label_from_id(*it_ids);
+				reg = region_db_.add_region(*it_ids, label, RegionDB::undefined_dim, rec.address_string() );
 			}
+			set_names.push_back( reg.label() );
 		}
 
 	}
@@ -302,7 +300,7 @@ RegionSetDifference::RegionSetDifference(const Input::Record &rec, Mesh *mesh)
 	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("regions");
 
 	std::vector<string> set_names = mesh->region_db().get_and_check_operands(*labels);
-	ASSERT( set_names.size() == 2, "Wrong number of operands. Expect 2.\n" );
+	OLD_ASSERT( set_names.size() == 2, "Wrong number of operands. Expect 2.\n" );
 
 	RegionSet set_1 = region_db_.get_region_set( set_names[0] );
 	RegionSet set_2 = region_db_.get_region_set( set_names[1] );

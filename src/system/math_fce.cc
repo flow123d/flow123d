@@ -48,7 +48,7 @@ void normalize_vector( double u[] )
 	double l;
 
 	if ((l = vector_length( u )) < NUM_ZERO ) {
-        xprintf(Warn,"Normalization of nearly zero vector.\n");
+        WarningOut() << "Normalization of nearly zero vector." << std::endl;
 	}
 	u[0] /= l; u[1] /= l; u[2] /= l;
 }
@@ -351,7 +351,7 @@ void matrix_x_matrix(double *A,int ra, int ca,
                      double *B, int rb, int cb, double *X)
 {
   int i,j,k;
-  ASSERT(!(ca != rb),"Matrix A has different number of columns than matrix B rows in the function matrix_x_matrix()\n");
+  OLD_ASSERT(!(ca != rb),"Matrix A has different number of columns than matrix B rows in the function matrix_x_matrix()\n");
   for (i = 0; i < ra; i++)
     for (j = 0; j < cb; j++)
     {

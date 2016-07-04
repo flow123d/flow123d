@@ -5,6 +5,8 @@
  *      Author: viktor
  */
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include "system/system.hh"
 #include "system/file_path.hh"

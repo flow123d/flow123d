@@ -1,3 +1,5 @@
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 
 #include "mesh/bounding_box.hh"

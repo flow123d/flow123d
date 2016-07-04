@@ -1,4 +1,5 @@
 #define TEST_USE_MPI
+#define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest_mpi.hh>
 #include "fields/vec_seq_double.hh"

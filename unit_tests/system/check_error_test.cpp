@@ -7,6 +7,8 @@
 
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include "system/exceptions.hh"
 #include "system/global_defs.h"
@@ -30,7 +32,14 @@ TEST(CheckError, assert_message) {
 	chkerr_assert( err_code );
 
 #ifdef FLOW123D_DEBUG_ASSERTS
-	err_code = 1;
-	EXPECT_THROW_WHAT( { chkerr_assert( err_code ); }, ExcChkErrAssert, "1" );
+    err_code = 1;
+    EXPECT_THROW_WHAT( { chkerr_assert( err_code ); }, ExcChkErr, "1" );
 #endif
 }
+
+#ifdef FLOW123D_DEBUG_ASSERTS
+TEST(ASSERTS, assert_ptr) {
+    void * test_ptr = nullptr;
+    EXPECT_THROW_WHAT( {OLD_ASSERT_PTR(test_ptr);}, ExcAssertMsg, "test_ptr");
+}
+#endif

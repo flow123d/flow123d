@@ -6,6 +6,8 @@
  */
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 #include <fields/field_values.hh>
 
@@ -132,9 +134,9 @@ template <class Value>
 Input::Type::TypeBase::MakeInstanceReturnType get_instance(const Input::Type::Selection *sel = NULL) {
 	std::vector<Input::Type::TypeBase::ParameterPair> param_vec;
 	if (sel) {
-		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<Input::Type::Selection>(*sel)) );
+		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<Input::Type::Selection>(*sel)) );
 	} else {
-		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
+		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<typename Value::ElementInputType>()) );
 	}
 
 	static auto value_type = Value::get_input_type();

@@ -204,10 +204,14 @@ PythonRunning::PythonRunning(const std::string& program_name)
         PY_STRING full_program_name = Py_GetProgramFullPath();
         // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
 
+        // try to find string "flow123d" from right side of program_name
+        // if such a string is not present, we are most likely unit-testing
+        // in that case, full_flow_prefix is current dir '.'
         size_t pos = full_program_name.rfind( to_py_string("flow123d") );
-        DBGMSG("pos: %d\n", pos);
-        ASSERT(pos != PY_STRING::npos, "non flow123d binary");
-        PY_STRING full_flow_prefix=full_program_name.substr(0,pos-string("/bin/").size() );
+        PY_STRING full_flow_prefix = ".";
+        if (pos != PY_STRING::npos) {
+            full_flow_prefix = full_program_name.substr(0,pos-string("/bin/").size() );
+        }
         // cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
         PY_STRING default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
         // cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;

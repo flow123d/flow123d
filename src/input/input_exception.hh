@@ -34,13 +34,15 @@ namespace Input {
 class Exception : public virtual ExceptionBase
 {
 public:
-    const char * what () const throw ();
     virtual ~Exception() throw () {};
+protected:
+    std::ostringstream &form_message(std::ostringstream &) const override;
 };
 
 
 /**
- *  Declaration of error info class for passing Input::Address through exceptions.
+ *  @brief Declaration of error info class for passing Input::Address through exceptions.
+ *
  *  Is returned by input accessors : Input::Record, Input::Array, etc.
  *
  *  Use case example:
@@ -77,9 +79,7 @@ struct ExcName : public virtual ::Input::Exception {                          \
      virtual ~ExcName() throw () {}                                         \
 }
 
-/**
- * Simple input exception that accepts just string message.
- */
+/// Simple input exception that accepts just string message.
 DECLARE_INPUT_EXCEPTION(ExcInputMessage, << EI_Message::val );
 
 

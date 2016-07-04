@@ -38,10 +38,12 @@ add_test_directory("${libs}")
     define_test(flag_array)
     define_test(check_error)
     define_test(python_loader)
+    define_mpi_test(logger 1)
+    define_mpi_test(logger 2)
     
     # reqires raw strings  
     define_test(tokenizer)
-    define_mpi_test(tokenizer_speed 1)
+    define_test(tokenizer_speed)
 
 
 

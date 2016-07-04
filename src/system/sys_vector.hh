@@ -88,7 +88,7 @@ public:
     inline FullIterator & operator =(const FullIterator &orig)
     {
       //  container.storage.begin() == orig.container.storage.begin()
-      ASSERT( (&(this->cont) == &(orig.cont)),"Can not change container of FulIter.\n");
+      OLD_ASSERT( (&(this->cont) == &(orig.cont)),"Can not change container of FulIter.\n");
       this->iter=orig.iter;
       return (*this);
     }
@@ -121,7 +121,7 @@ public:
     /// Prefix. Advance operator.
     inline FullIterator &operator ++ ()
     {
-        ASSERT( iter != cont.storage.end(), "Can not advance iterator at the end.\n");
+    	OLD_ASSERT( iter != cont.storage.end(), "Can not advance iterator at the end.\n");
         ++(this->iter); return *this;
     }
 
@@ -131,7 +131,7 @@ public:
     /// Prefix. Advance to previous operator.
     inline FullIterator &operator -- ()
     {
-        ASSERT( iter != cont.storage.begin(), "Can not advance iterator to previous of begin().\n");
+    	OLD_ASSERT( iter != cont.storage.begin(), "Can not advance iterator to previous of begin().\n");
         this->iter--; return *this;
     }
 
@@ -238,7 +238,7 @@ public:
      */
     inline unsigned int index(Iter pointer) const
         {
-          ASSERT( pointer >= &(storage.front()) && pointer <= &(storage.back()),
+          OLD_ASSERT( pointer >= &(storage.front()) && pointer <= &(storage.back()),
                   "Wrong pointer %d to obtain its index (%d, %d).\n",pointer, &(storage.front()), &(storage.back()));
           return ( pointer - &(storage.front()) );
         }
@@ -263,14 +263,14 @@ public:
      /// Gets reference to the element specified by index.
      inline T & operator[](unsigned int idx)
      {
-         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+    	 OLD_ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return storage[idx];
      }
 
      /// Gets reference to the element specified by index.
      inline const T & operator[](unsigned int idx) const
      {
-         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+    	 OLD_ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return storage[idx];
      }
 
@@ -278,7 +278,7 @@ public:
      /// Gets iterator of the element specified by index.
      inline FullIter operator()(unsigned int idx)
      {
-         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+    	 OLD_ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return FullIter( *this, begin()+idx );
      }
 
@@ -286,7 +286,7 @@ public:
      /// Reallocates the container space.
      inline void reserve(unsigned int size)
       {
-         ASSERT( size >= this->size(), "Vector can not be reallocated into space %d smaller then its size %d\n",size,this->size());
+    	 OLD_ASSERT( size >= this->size(), "Vector can not be reallocated into space %d smaller then its size %d\n",size,this->size());
          storage.reserve(size);
       }
 
@@ -358,7 +358,7 @@ public:
      */
     FullIter add_item(int id)
     {
-        ASSERT( id_map.find(id) == id_map.end(), "Can not add item with id number %d since it already exists.", id);
+    	OLD_ASSERT( id_map.find(id) == id_map.end(), "Can not add item with id number %d since it already exists.", id);
         id_storage.push_back(id);
         id_map[id]=this->size();
 
@@ -372,7 +372,7 @@ public:
      */
     inline unsigned int index(const T * pointer) const
         {
-          ASSERT( pointer >= &(storage.front()) && pointer <= &(storage.back()),
+          OLD_ASSERT( pointer >= &(storage.front()) && pointer <= &(storage.back()),
                 "Wrong pointer %p to obtain its index (%p, %p).\n",pointer, &(storage.front()), &(storage.back()));
           return ( pointer - &(storage.front()) );
         }
@@ -394,7 +394,7 @@ public:
      /// Gets reference to the element specified by index.
      inline T & operator[](unsigned int idx)
      {
-         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+    	 OLD_ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return storage[idx];
      }
 
@@ -402,7 +402,7 @@ public:
      /// Gets reference to the element specified by index.
      inline const T & operator[](unsigned int idx) const
      {
-         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+    	 OLD_ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return storage[idx];
      }
 
@@ -410,14 +410,14 @@ public:
      /// Gets iterator of the element specified by index.
      inline FullIter operator()(unsigned int idx)
      {
-         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+    	 OLD_ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return FullIter( *this, begin()+idx );
      }
 
      /// Gets iterator of the element specified by index.
      inline const Iter operator()(unsigned int idx) const
      {
-         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+    	 OLD_ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return Iter( &(storage[idx]) );
      }
 
@@ -468,7 +468,7 @@ public:
     /// Reallocates the container space.
     inline void reserve(unsigned int size)
      {
-        ASSERT( size >= this->size(), "Vector can not be reallocated into space %d smaller then its size %d\n",size,this->size());
+    	OLD_ASSERT( size >= this->size(), "Vector can not be reallocated into space %d smaller then its size %d\n",size,this->size());
         storage.reserve(size);
         id_storage.reserve(size);
      }

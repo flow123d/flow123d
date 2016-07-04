@@ -6,6 +6,8 @@
  */
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 
 #include <input/input_type.hh>
@@ -49,10 +51,10 @@ using namespace Input::Type;
    // errors during declaration
 #ifdef FLOW123D_DEBUG_ASSERTS
    Record rec_empty;
-   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcAssertMsg, ".*into closed record 'EmptyRecord'.");
+   EXPECT_THROW( {rec_empty.declare_key("xx", Integer(), "");}, feal::Exc_assert);
 
    Record rec_fin = Record("xx","").close();
-   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcAssertMsg, "Can not add .* into closed record");
+   EXPECT_THROW( {rec_fin.declare_key("xx", String(),"");}, feal::Exc_assert);
 #endif
 
 
@@ -64,12 +66,12 @@ using namespace Input::Type;
 							.declare_key("data_description", String(), Default::optional(),"")
 							.declare_key("data_description", String(),"")
 							.close();
-   	   	   	   	   	  }, ExcXprintfMsg, "Re-declaration of the key:");
+   	   	   	   	   	  }, feal::Exc_assert, "Re-declaration of the key");
 
    EXPECT_THROW_WHAT( { Record("yy","")
    	   	   	   				.declare_key("wrong_double", Double(), Default("1.23 4"),"")
 							.close();
-   	   	   	   	   	  }, ExcWrongDefault, "Default value .* do not match type: 'Double';");
+   	   	   	   	   	  }, ExcWrongDefaultJSON, "Not valid JSON of Default value '1.23 4' of type 'Double';");
 
 /*
    // test documentation of default_at_read_time
@@ -124,8 +126,8 @@ using namespace Input::Type;
     	.declare_key("array_of_str_1", Array( String() ), "Desc. of array")
     	// allow default values for an array
     	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
-    EXPECT_THROW_WHAT( { array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefault,
-                  "Default value 'ahoj' do not match type: 'array_of_Integer';"
+    EXPECT_THROW_WHAT( { array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefaultJSON,
+                  "Not valid JSON of Default value 'ahoj' of type 'array_of_Integer';"
                  );
     array_record.close();
 
@@ -159,8 +161,8 @@ using namespace Input::Type;
     	.declare_key("int_key", Integer(),  "")
     	.allow_auto_conversion("int_key")
 		.close();
-    EXPECT_THROW_WHAT( {sub_rec.finish();}, ExcXprintfMsg,
-    		"Finishing Record auto convertible from the key 'int_key', but other obligatory key: 'obligatory_int' has no default value.");
+    EXPECT_THROW_WHAT( {sub_rec.finish();}, feal::Exc_assert,
+    		"other_key : 'obligatory_int'");
     }
 
     {
@@ -259,13 +261,13 @@ using namespace Input::Type;
     Record output_record("OutputRecord",
             "Information about one file for field data.");
     EXPECT_THROW_WHAT( {output_record.declare_key("a b",Bool(),"desc."); },
-    		ExcXprintfMsg, "Invalid key identifier"
+    		feal::Exc_assert, "Invalid key identifier"
             );
     EXPECT_THROW_WHAT( {output_record.declare_key("AB",Bool(),"desc."); },
-    		ExcXprintfMsg, "Invalid key identifier"
+    		feal::Exc_assert, "Invalid key identifier"
             );
     EXPECT_THROW_WHAT( {output_record.declare_key("%$a",Bool(),"desc."); },
-    		ExcXprintfMsg, "Invalid key identifier"
+    		feal::Exc_assert, "Invalid key identifier"
             );
 
 }

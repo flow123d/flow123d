@@ -1,11 +1,15 @@
 flow123d_version: 1.8.9
-problem: !SequentialCoupling
+problem: !Coupling_Sequential
   description: Zero flow + transport with source. Substance A - increase of concentration,
     B - decrease of concentration, C - rapid increase of concentration with high sigma,
     such that it determines CFL condition (t equals 1/(10/0.9)).
   mesh:
     mesh_file: ./input/test16_small.msh
-  primary_equation: !SteadyDarcy_MH
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     n_schurs: 2
     input_fields:
       - region: ALL
@@ -25,11 +29,8 @@ problem: !SequentialCoupling
         - velocity_p0
     balance:
       cumulative: true
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
-  secondary_equation: !Transport_OS
-    transport: !Convection_FV
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
       input_fields:
         - region: .boundary
           bc_conc: 0

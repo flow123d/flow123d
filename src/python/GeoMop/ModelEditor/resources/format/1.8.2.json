@@ -1,9 +1,11 @@
+{
+"ist_nodes" : 
 [
   {
     "id": "b5e714fb8a6dbf66",
     "input_type": "Record",
-    "type_name": "Root",
-    "type_full_name": "Root",
+    "name": "Root",
+    "full_name": "Root",
     "attributes": {},
     "description": "Root record of JSON input for Flow123d.",
     "keys": [
@@ -29,7 +31,7 @@
   },
   {
     "id": "50fc8b890e3fd90b",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "Problem",
     "full_name": "Problem",
     "attributes": {},
@@ -41,8 +43,8 @@
   {
     "id": "41a3f60e518e2ef0",
     "input_type": "Record",
-    "type_name": "SequentialCoupling",
-    "type_full_name": "SequentialCoupling:Problem",
+    "name": "SequentialCoupling",
+    "full_name": "SequentialCoupling:Problem",
     "attributes": {},
     "description": "Record with data for a general sequential coupling.\n",
     "implements": [
@@ -129,8 +131,8 @@
   {
     "id": "28b2c76bafdd0909",
     "input_type": "Record",
-    "type_name": "Mesh",
-    "type_full_name": "Mesh",
+    "name": "Mesh",
+    "full_name": "Mesh",
     "attributes": {},
     "description": "Record with mesh related data.",
     "keys": [
@@ -193,8 +195,8 @@
   {
     "id": "b9614d55a6c3462e",
     "input_type": "Record",
-    "type_name": "Region",
-    "type_full_name": "Region",
+    "name": "Region",
+    "full_name": "Region",
     "attributes": {},
     "description": "Definition of region of elements.",
     "keys": [
@@ -261,8 +263,8 @@
   {
     "id": "b9f7de6b7bbc0cdb",
     "input_type": "Record",
-    "type_name": "RegionSet",
-    "type_full_name": "RegionSet",
+    "name": "RegionSet",
+    "full_name": "RegionSet",
     "attributes": {},
     "description": "Definition of one region set.",
     "keys": [
@@ -345,8 +347,8 @@
   {
     "id": "61e56a6c5dbf2445",
     "input_type": "Record",
-    "type_name": "Partition",
-    "type_full_name": "Partition",
+    "name": "Partition",
+    "full_name": "Partition",
     "attributes": {},
     "description": "Setting for various types of mesh partitioning.",
     "reducible_to_key": "graph_type",
@@ -414,8 +416,8 @@
   {
     "id": "d8574f6af69c7e1f",
     "input_type": "Record",
-    "type_name": "TimeGovernor",
-    "type_full_name": "TimeGovernor",
+    "name": "TimeGovernor",
+    "full_name": "TimeGovernor",
     "attributes": {},
     "description": "Setting of the simulation time. (can be specific to one equation)",
     "reducible_to_key": "max_dt",
@@ -491,7 +493,7 @@
   },
   {
     "id": "94d92dd10ef81d04",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "DarcyFlowMH",
     "full_name": "DarcyFlowMH",
     "attributes": {},
@@ -505,8 +507,8 @@
   {
     "id": "1663bedc13c9c135",
     "input_type": "Record",
-    "type_name": "Steady_MH",
-    "type_full_name": "Steady_MH:DarcyFlowMH",
+    "name": "Steady_MH",
+    "full_name": "Steady_MH:DarcyFlowMH",
     "attributes": {},
     "description": "Mixed-Hybrid  solver for STEADY saturated Darcy flow.",
     "implements": [
@@ -640,7 +642,7 @@
   },
   {
     "id": "c1a4c8dc7000af80",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "LinSys",
     "full_name": "LinSys",
     "attributes": {},
@@ -653,8 +655,8 @@
   {
     "id": "1463dae0754ff1d5",
     "input_type": "Record",
-    "type_name": "Petsc",
-    "type_full_name": "Petsc:LinSys",
+    "name": "Petsc",
+    "full_name": "Petsc:LinSys",
     "attributes": {},
     "description": "Solver setting.",
     "implements": [
@@ -740,8 +742,8 @@
   {
     "id": "18cbaa6d264d2006",
     "input_type": "Record",
-    "type_name": "Bddc",
-    "type_full_name": "Bddc:LinSys",
+    "name": "Bddc",
+    "full_name": "Bddc:LinSys",
     "attributes": {},
     "description": "Solver setting.",
     "implements": [
@@ -823,8 +825,8 @@
   {
     "id": "7ca0afc78a994c0d",
     "input_type": "Record",
-    "type_name": "DarcyMHOutput",
-    "type_full_name": "DarcyMHOutput",
+    "name": "DarcyMHOutput",
+    "full_name": "DarcyMHOutput",
     "attributes": {},
     "description": "Parameters of MH output.",
     "keys": [
@@ -869,8 +871,8 @@
   {
     "id": "7f7b2caffb3e4eb6",
     "input_type": "Record",
-    "type_name": "OutputStream",
-    "type_full_name": "OutputStream",
+    "name": "OutputStream",
+    "full_name": "OutputStream",
     "attributes": {},
     "description": "Parameters of output.",
     "keys": [
@@ -931,7 +933,7 @@
   },
   {
     "id": "b5bab0602a8c014a",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "OutputTime",
     "full_name": "OutputTime",
     "attributes": {},
@@ -944,8 +946,8 @@
   {
     "id": "8b2c1acfa60e1347",
     "input_type": "Record",
-    "type_name": "vtk",
-    "type_full_name": "vtk:OutputTime",
+    "name": "vtk",
+    "full_name": "vtk:OutputTime",
     "attributes": {},
     "description": "Parameters of vtk output format.",
     "implements": [
@@ -1047,8 +1049,8 @@
   {
     "id": "16dc0497b993cc8",
     "input_type": "Record",
-    "type_name": "gmsh",
-    "type_full_name": "gmsh:OutputTime",
+    "name": "gmsh",
+    "full_name": "gmsh:OutputTime",
     "attributes": {},
     "description": "Parameters of gmsh output format.",
     "implements": [
@@ -1185,8 +1187,8 @@
   {
     "id": "d280bda6d317af17",
     "input_type": "Record",
-    "type_name": "Balance",
-    "type_full_name": "Balance",
+    "name": "Balance",
+    "full_name": "Balance",
     "attributes": {},
     "description": "Balance of a conservative quantity, boundary fluxes and sources.",
     "reducible_to_key": "balance_on",
@@ -1253,7 +1255,7 @@
   },
   {
     "id": "4d9a871c85eba0a0",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "Field:R3 -> Real",
     "full_name": "Field:R3 -> Real",
     "attributes": {},
@@ -1270,8 +1272,8 @@
   {
     "id": "3488c7125e9c9692",
     "input_type": "Record",
-    "type_name": "FieldConstant",
-    "type_full_name": "FieldConstant:Field:R3 -> Real",
+    "name": "FieldConstant",
+    "full_name": "FieldConstant:Field:R3 -> Real",
     "attributes": {},
     "description": "R3 -> Real Field constant in space.",
     "implements": [
@@ -1332,8 +1334,8 @@
   {
     "id": "ff3ba94c05b97be9",
     "input_type": "Record",
-    "type_name": "FieldFormula",
-    "type_full_name": "FieldFormula:Field:R3 -> Real",
+    "name": "FieldFormula",
+    "full_name": "FieldFormula:Field:R3 -> Real",
     "attributes": {},
     "description": "R3 -> Real Field given by runtime interpreted formula.",
     "implements": [
@@ -1363,8 +1365,8 @@
   {
     "id": "3b20f59df89f0d37",
     "input_type": "Record",
-    "type_name": "FieldPython",
-    "type_full_name": "FieldPython:Field:R3 -> Real",
+    "name": "FieldPython",
+    "full_name": "FieldPython:Field:R3 -> Real",
     "attributes": {},
     "description": "R3 -> Real Field given by a Python script.",
     "implements": [
@@ -1412,8 +1414,8 @@
   {
     "id": "7cf4f0384e8f4ce3",
     "input_type": "Record",
-    "type_name": "FieldInterpolatedP0",
-    "type_full_name": "FieldInterpolatedP0:Field:R3 -> Real",
+    "name": "FieldInterpolatedP0",
+    "full_name": "FieldInterpolatedP0:Field:R3 -> Real",
     "attributes": {},
     "description": "R3 -> Real Field constant in space.",
     "implements": [
@@ -1452,8 +1454,8 @@
   {
     "id": "fcd5d1733c4d1373",
     "input_type": "Record",
-    "type_name": "FieldElementwise",
-    "type_full_name": "FieldElementwise:Field:R3 -> Real",
+    "name": "FieldElementwise",
+    "full_name": "FieldElementwise:Field:R3 -> Real",
     "attributes": {},
     "description": "R3 -> Real Field constant in space.",
     "implements": [
@@ -1502,8 +1504,8 @@
   {
     "id": "aec9c1a9565e8acc",
     "input_type": "Record",
-    "type_name": "DarcyFlowMH_Data",
-    "type_full_name": "DarcyFlowMH_Data",
+    "name": "DarcyFlowMH_Data",
+    "full_name": "DarcyFlowMH_Data",
     "attributes": {},
     "description": "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any DarcyFlowMH_Data record that comes later in the boundary data array.",
     "keys": [
@@ -1673,7 +1675,7 @@
   },
   {
     "id": "b275cd3f99f25d36",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "Field:R3 -> Real[3,3]",
     "full_name": "Field:R3 -> Real[3,3]",
     "attributes": {},
@@ -1690,8 +1692,8 @@
   {
     "id": "777309a4d9f5f95d",
     "input_type": "Record",
-    "type_name": "FieldConstant",
-    "type_full_name": "FieldConstant:Field:R3 -> Real[3,3]",
+    "name": "FieldConstant",
+    "full_name": "FieldConstant:Field:R3 -> Real[3,3]",
     "attributes": {},
     "description": "R3 -> Real[3,3] Field constant in space.",
     "implements": [
@@ -1772,8 +1774,8 @@
   {
     "id": "df0e33dc361dd07a",
     "input_type": "Record",
-    "type_name": "FieldFormula",
-    "type_full_name": "FieldFormula:Field:R3 -> Real[3,3]",
+    "name": "FieldFormula",
+    "full_name": "FieldFormula:Field:R3 -> Real[3,3]",
     "attributes": {},
     "description": "R3 -> Real[3,3] Field given by runtime interpreted formula.",
     "implements": [
@@ -1823,8 +1825,8 @@
   {
     "id": "354cb1f5628f5498",
     "input_type": "Record",
-    "type_name": "FieldPython",
-    "type_full_name": "FieldPython:Field:R3 -> Real[3,3]",
+    "name": "FieldPython",
+    "full_name": "FieldPython:Field:R3 -> Real[3,3]",
     "attributes": {},
     "description": "R3 -> Real[3,3] Field given by a Python script.",
     "implements": [
@@ -1872,8 +1874,8 @@
   {
     "id": "9396cc97278df9ad",
     "input_type": "Record",
-    "type_name": "FieldInterpolatedP0",
-    "type_full_name": "FieldInterpolatedP0:Field:R3 -> Real[3,3]",
+    "name": "FieldInterpolatedP0",
+    "full_name": "FieldInterpolatedP0:Field:R3 -> Real[3,3]",
     "attributes": {},
     "description": "R3 -> Real[3,3] Field constant in space.",
     "implements": [
@@ -1912,8 +1914,8 @@
   {
     "id": "c860d4bf57e7f506",
     "input_type": "Record",
-    "type_name": "FieldElementwise",
-    "type_full_name": "FieldElementwise:Field:R3 -> Real[3,3]",
+    "name": "FieldElementwise",
+    "full_name": "FieldElementwise:Field:R3 -> Real[3,3]",
     "attributes": {},
     "description": "R3 -> Real[3,3] Field constant in space.",
     "implements": [
@@ -1951,7 +1953,7 @@
   },
   {
     "id": "75c7c14a6a15f412",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "Field:R3 -> Enum",
     "full_name": "Field:R3 -> Enum",
     "attributes": {},
@@ -1968,8 +1970,8 @@
   {
     "id": "9da13e0dc6768bd5",
     "input_type": "Record",
-    "type_name": "FieldConstant",
-    "type_full_name": "FieldConstant:Field:R3 -> Enum",
+    "name": "FieldConstant",
+    "full_name": "FieldConstant:Field:R3 -> Enum",
     "attributes": {},
     "description": "R3 -> Enum Field constant in space.",
     "implements": [
@@ -2056,8 +2058,8 @@
   {
     "id": "3eac7ee589d8e9ff",
     "input_type": "Record",
-    "type_name": "FieldFormula",
-    "type_full_name": "FieldFormula:Field:R3 -> Enum",
+    "name": "FieldFormula",
+    "full_name": "FieldFormula:Field:R3 -> Enum",
     "attributes": {},
     "description": "R3 -> Enum Field given by runtime interpreted formula.",
     "implements": [
@@ -2087,8 +2089,8 @@
   {
     "id": "6ecce6d8e6981d34",
     "input_type": "Record",
-    "type_name": "FieldPython",
-    "type_full_name": "FieldPython:Field:R3 -> Enum",
+    "name": "FieldPython",
+    "full_name": "FieldPython:Field:R3 -> Enum",
     "attributes": {},
     "description": "R3 -> Enum Field given by a Python script.",
     "implements": [
@@ -2136,8 +2138,8 @@
   {
     "id": "b45175d68455ed41",
     "input_type": "Record",
-    "type_name": "FieldInterpolatedP0",
-    "type_full_name": "FieldInterpolatedP0:Field:R3 -> Enum",
+    "name": "FieldInterpolatedP0",
+    "full_name": "FieldInterpolatedP0:Field:R3 -> Enum",
     "attributes": {},
     "description": "R3 -> Enum Field constant in space.",
     "implements": [
@@ -2176,8 +2178,8 @@
   {
     "id": "5efdfb4895930788",
     "input_type": "Record",
-    "type_name": "FieldElementwise",
-    "type_full_name": "FieldElementwise:Field:R3 -> Enum",
+    "name": "FieldElementwise",
+    "full_name": "FieldElementwise:Field:R3 -> Enum",
     "attributes": {},
     "description": "R3 -> Enum Field constant in space.",
     "implements": [
@@ -2216,8 +2218,8 @@
   {
     "id": "345d8a735a3be818",
     "input_type": "Record",
-    "type_name": "Unsteady_MH",
-    "type_full_name": "Unsteady_MH:DarcyFlowMH",
+    "name": "Unsteady_MH",
+    "full_name": "Unsteady_MH:DarcyFlowMH",
     "attributes": {},
     "description": "Mixed-Hybrid solver for unsteady saturated Darcy flow.",
     "implements": [
@@ -2328,8 +2330,8 @@
   {
     "id": "543b9083e4d2ef0f",
     "input_type": "Record",
-    "type_name": "Unsteady_LMH",
-    "type_full_name": "Unsteady_LMH:DarcyFlowMH",
+    "name": "Unsteady_LMH",
+    "full_name": "Unsteady_LMH:DarcyFlowMH",
     "attributes": {},
     "description": "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.",
     "implements": [
@@ -2439,7 +2441,7 @@
   },
   {
     "id": "e131158c7fdddc1b",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "Transport",
     "full_name": "Transport",
     "attributes": {},
@@ -2453,8 +2455,8 @@
   {
     "id": "13ca1eb3f7d2227f",
     "input_type": "Record",
-    "type_name": "TransportOperatorSplitting",
-    "type_full_name": "TransportOperatorSplitting:Transport",
+    "name": "TransportOperatorSplitting",
+    "full_name": "TransportOperatorSplitting:Transport",
     "attributes": {},
     "description": "Explicit FVM transport (no diffusion)\ncoupled with reaction and adsorption model (ODE per element)\n via operator splitting.",
     "implements": [
@@ -2570,8 +2572,8 @@
   {
     "id": "bb8ed616e3e5a7f6",
     "input_type": "Record",
-    "type_name": "Substance",
-    "type_full_name": "Substance",
+    "name": "Substance",
+    "full_name": "Substance",
     "attributes": {},
     "description": "Chemical substance.",
     "reducible_to_key": "name",
@@ -2598,7 +2600,7 @@
   },
   {
     "id": "5572a5ae3e4d7aa6",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "ReactionTerm",
     "full_name": "ReactionTerm",
     "attributes": {},
@@ -2615,8 +2617,8 @@
   {
     "id": "e66343c6a78bd3e2",
     "input_type": "Record",
-    "type_name": "FirstOrderReaction",
-    "type_full_name": "FirstOrderReaction:ReactionTerm",
+    "name": "FirstOrderReaction",
+    "full_name": "FirstOrderReaction:ReactionTerm",
     "attributes": {},
     "description": "A model of first order chemical reactions (decompositions of a reactant into products).",
     "implements": [
@@ -2699,8 +2701,8 @@
   {
     "id": "6bf77257be7e7f51",
     "input_type": "Record",
-    "type_name": "Reaction",
-    "type_full_name": "Reaction",
+    "name": "Reaction",
+    "full_name": "Reaction",
     "attributes": {},
     "description": "Describes a single first order chemical reaction.",
     "keys": [
@@ -2746,8 +2748,8 @@
   {
     "id": "b6874fe828cdc89a",
     "input_type": "Record",
-    "type_name": "FirstOrderReactionReactant",
-    "type_full_name": "FirstOrderReactionReactant",
+    "name": "FirstOrderReactionReactant",
+    "full_name": "FirstOrderReactionReactant",
     "attributes": {},
     "description": "A record describing a reactant of a reaction.",
     "reducible_to_key": "name",
@@ -2776,8 +2778,8 @@
   {
     "id": "d8ee3f89fd5f6db",
     "input_type": "Record",
-    "type_name": "FirstOrderReactionProduct",
-    "type_full_name": "FirstOrderReactionProduct",
+    "name": "FirstOrderReactionProduct",
+    "full_name": "FirstOrderReactionProduct",
     "attributes": {},
     "description": "A record describing a product of a reaction.",
     "reducible_to_key": "name",
@@ -2804,7 +2806,7 @@
   },
   {
     "id": "324a5673fc661f69",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "LinearODESolver",
     "full_name": "LinearODESolver",
     "attributes": {},
@@ -2817,8 +2819,8 @@
   {
     "id": "7cd7adbc9a7a426f",
     "input_type": "Record",
-    "type_name": "PadeApproximant",
-    "type_full_name": "PadeApproximant:LinearODESolver",
+    "name": "PadeApproximant",
+    "full_name": "PadeApproximant:LinearODESolver",
     "attributes": {},
     "description": "Record with an information about pade approximant parameters.",
     "implements": [
@@ -2886,8 +2888,8 @@
   {
     "id": "8b96c6f566108a52",
     "input_type": "Record",
-    "type_name": "LinearODEAnalytic",
-    "type_full_name": "LinearODEAnalytic:LinearODESolver",
+    "name": "LinearODEAnalytic",
+    "full_name": "LinearODEAnalytic:LinearODESolver",
     "attributes": {},
     "description": "Evaluate analytic solution of the system of ODEs.",
     "implements": [
@@ -2908,8 +2910,8 @@
   {
     "id": "1014f29c9035958d",
     "input_type": "Record",
-    "type_name": "RadioactiveDecay",
-    "type_full_name": "RadioactiveDecay:ReactionTerm",
+    "name": "RadioactiveDecay",
+    "full_name": "RadioactiveDecay:ReactionTerm",
     "attributes": {},
     "description": "A model of a radioactive decay and possibly of a decay chain.",
     "implements": [
@@ -2958,8 +2960,8 @@
   {
     "id": "3cf35a4e737f77ef",
     "input_type": "Record",
-    "type_name": "Decay",
-    "type_full_name": "Decay",
+    "name": "Decay",
+    "full_name": "Decay",
     "attributes": {},
     "description": "A model of a radioactive decay.",
     "keys": [
@@ -3005,8 +3007,8 @@
   {
     "id": "1758ff64a5e09a45",
     "input_type": "Record",
-    "type_name": "RadioactiveDecayProduct",
-    "type_full_name": "RadioactiveDecayProduct",
+    "name": "RadioactiveDecayProduct",
+    "full_name": "RadioactiveDecayProduct",
     "attributes": {},
     "description": "A record describing a product of a radioactive decay.",
     "reducible_to_key": "name",
@@ -3043,8 +3045,8 @@
   {
     "id": "87c573778ec86804",
     "input_type": "Record",
-    "type_name": "Sorption",
-    "type_full_name": "Sorption:ReactionTerm",
+    "name": "Sorption",
+    "full_name": "Sorption:ReactionTerm",
     "attributes": {},
     "description": "Sorption model in the reaction term of transport.",
     "implements": [
@@ -3156,8 +3158,8 @@
   {
     "id": "a625e39dfb10752e",
     "input_type": "Record",
-    "type_name": "Sorption_Data",
-    "type_full_name": "Sorption_Data",
+    "name": "Sorption_Data",
+    "full_name": "Sorption_Data",
     "attributes": {},
     "description": "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any Sorption_Data record that comes later in the boundary data array.",
     "keys": [
@@ -3246,7 +3248,7 @@
   },
   {
     "id": "67b6f22f93595724",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "Field:R3 -> Enum[n]",
     "full_name": "Field:R3 -> Enum[n]",
     "attributes": {},
@@ -3263,8 +3265,8 @@
   {
     "id": "7f68d3723adde0cc",
     "input_type": "Record",
-    "type_name": "FieldConstant",
-    "type_full_name": "FieldConstant:Field:R3 -> Enum[n]",
+    "name": "FieldConstant",
+    "full_name": "FieldConstant:Field:R3 -> Enum[n]",
     "attributes": {},
     "description": "R3 -> Enum[n] Field constant in space.",
     "implements": [
@@ -3361,8 +3363,8 @@
   {
     "id": "8f63c5d6c9218277",
     "input_type": "Record",
-    "type_name": "FieldFormula",
-    "type_full_name": "FieldFormula:Field:R3 -> Enum[n]",
+    "name": "FieldFormula",
+    "full_name": "FieldFormula:Field:R3 -> Enum[n]",
     "attributes": {},
     "description": "R3 -> Enum[n] Field given by runtime interpreted formula.",
     "implements": [
@@ -3392,8 +3394,8 @@
   {
     "id": "ab44ec205b802bf1",
     "input_type": "Record",
-    "type_name": "FieldPython",
-    "type_full_name": "FieldPython:Field:R3 -> Enum[n]",
+    "name": "FieldPython",
+    "full_name": "FieldPython:Field:R3 -> Enum[n]",
     "attributes": {},
     "description": "R3 -> Enum[n] Field given by a Python script.",
     "implements": [
@@ -3441,8 +3443,8 @@
   {
     "id": "f96124fcd82e876b",
     "input_type": "Record",
-    "type_name": "FieldInterpolatedP0",
-    "type_full_name": "FieldInterpolatedP0:Field:R3 -> Enum[n]",
+    "name": "FieldInterpolatedP0",
+    "full_name": "FieldInterpolatedP0:Field:R3 -> Enum[n]",
     "attributes": {},
     "description": "R3 -> Enum[n] Field constant in space.",
     "implements": [
@@ -3481,8 +3483,8 @@
   {
     "id": "62b1ce8fde7245cf",
     "input_type": "Record",
-    "type_name": "FieldElementwise",
-    "type_full_name": "FieldElementwise:Field:R3 -> Enum[n]",
+    "name": "FieldElementwise",
+    "full_name": "FieldElementwise:Field:R3 -> Enum[n]",
     "attributes": {},
     "description": "R3 -> Enum[n] Field constant in space.",
     "implements": [
@@ -3520,7 +3522,7 @@
   },
   {
     "id": "eaf6855f08ce5db",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "Field:R3 -> Real[n]",
     "full_name": "Field:R3 -> Real[n]",
     "attributes": {},
@@ -3537,8 +3539,8 @@
   {
     "id": "ee62fca541185d36",
     "input_type": "Record",
-    "type_name": "FieldConstant",
-    "type_full_name": "FieldConstant:Field:R3 -> Real[n]",
+    "name": "FieldConstant",
+    "full_name": "FieldConstant:Field:R3 -> Real[n]",
     "attributes": {},
     "description": "R3 -> Real[n] Field constant in space.",
     "implements": [
@@ -3599,8 +3601,8 @@
   {
     "id": "a7ca64dd61e3d8de",
     "input_type": "Record",
-    "type_name": "FieldFormula",
-    "type_full_name": "FieldFormula:Field:R3 -> Real[n]",
+    "name": "FieldFormula",
+    "full_name": "FieldFormula:Field:R3 -> Real[n]",
     "attributes": {},
     "description": "R3 -> Real[n] Field given by runtime interpreted formula.",
     "implements": [
@@ -3630,8 +3632,8 @@
   {
     "id": "f67ec07c3d4e8ea",
     "input_type": "Record",
-    "type_name": "FieldPython",
-    "type_full_name": "FieldPython:Field:R3 -> Real[n]",
+    "name": "FieldPython",
+    "full_name": "FieldPython:Field:R3 -> Real[n]",
     "attributes": {},
     "description": "R3 -> Real[n] Field given by a Python script.",
     "implements": [
@@ -3679,8 +3681,8 @@
   {
     "id": "68183556fd0be83f",
     "input_type": "Record",
-    "type_name": "FieldInterpolatedP0",
-    "type_full_name": "FieldInterpolatedP0:Field:R3 -> Real[n]",
+    "name": "FieldInterpolatedP0",
+    "full_name": "FieldInterpolatedP0:Field:R3 -> Real[n]",
     "attributes": {},
     "description": "R3 -> Real[n] Field constant in space.",
     "implements": [
@@ -3719,8 +3721,8 @@
   {
     "id": "31c0c7431a62c93",
     "input_type": "Record",
-    "type_name": "FieldElementwise",
-    "type_full_name": "FieldElementwise:Field:R3 -> Real[n]",
+    "name": "FieldElementwise",
+    "full_name": "FieldElementwise:Field:R3 -> Real[n]",
     "attributes": {},
     "description": "R3 -> Real[n] Field constant in space.",
     "implements": [
@@ -3803,8 +3805,8 @@
   {
     "id": "739885f8e4a946d8",
     "input_type": "Record",
-    "type_name": "SorptionMobile",
-    "type_full_name": "SorptionMobile:ReactionTerm",
+    "name": "SorptionMobile",
+    "full_name": "SorptionMobile:ReactionTerm",
     "attributes": {},
     "description": "Sorption model in the mobile zone, following the dual porosity model.",
     "implements": [
@@ -3950,8 +3952,8 @@
   {
     "id": "645647630dc2eeee",
     "input_type": "Record",
-    "type_name": "SorptionImmobile",
-    "type_full_name": "SorptionImmobile:ReactionTerm",
+    "name": "SorptionImmobile",
+    "full_name": "SorptionImmobile:ReactionTerm",
     "attributes": {},
     "description": "Sorption model in the immobile zone, following the dual porosity model.",
     "implements": [
@@ -4097,8 +4099,8 @@
   {
     "id": "c8cdf9fe1b9ad50d",
     "input_type": "Record",
-    "type_name": "DualPorosity",
-    "type_full_name": "DualPorosity:ReactionTerm",
+    "name": "DualPorosity",
+    "full_name": "DualPorosity:ReactionTerm",
     "attributes": {},
     "description": "Dual porosity model in transport problems.\nProvides computing the concentration of substances in mobile and immobile zone.\n",
     "implements": [
@@ -4174,8 +4176,8 @@
   {
     "id": "6274d13780abe53c",
     "input_type": "Record",
-    "type_name": "DualPorosity_Data",
-    "type_full_name": "DualPorosity_Data",
+    "name": "DualPorosity_Data",
+    "full_name": "DualPorosity_Data",
     "attributes": {},
     "description": "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any DualPorosity_Data record that comes later in the boundary data array.",
     "keys": [
@@ -4293,8 +4295,8 @@
   {
     "id": "9ee3d1947806bb62",
     "input_type": "Record",
-    "type_name": "TransportOperatorSplitting_Data",
-    "type_full_name": "TransportOperatorSplitting_Data",
+    "name": "TransportOperatorSplitting_Data",
+    "full_name": "TransportOperatorSplitting_Data",
     "attributes": {},
     "description": "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any TransportOperatorSplitting_Data record that comes later in the boundary data array.",
     "keys": [
@@ -4450,8 +4452,8 @@
   {
     "id": "296c1ebb3e657aa5",
     "input_type": "Record",
-    "type_name": "SoluteTransport_DG",
-    "type_full_name": "SoluteTransport_DG:Transport",
+    "name": "SoluteTransport_DG",
+    "full_name": "SoluteTransport_DG:Transport",
     "attributes": {},
     "description": "DG solver for solute transport.",
     "implements": [
@@ -4563,8 +4565,8 @@
   {
     "id": "d8bfb90cf73a2ee9",
     "input_type": "Record",
-    "type_name": "SoluteTransport_DG_Data",
-    "type_full_name": "SoluteTransport_DG_Data",
+    "name": "SoluteTransport_DG_Data",
+    "full_name": "SoluteTransport_DG_Data",
     "attributes": {},
     "description": "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any SoluteTransport_DG_Data record that comes later in the boundary data array.",
     "keys": [
@@ -4734,7 +4736,7 @@
   },
   {
     "id": "617c5634f103458d",
-    "input_type": "AbstractRecord",
+    "input_type": "Abstract",
     "name": "Field:R3 -> Enum[n]",
     "full_name": "Field:R3 -> Enum[n]",
     "attributes": {},
@@ -4751,8 +4753,8 @@
   {
     "id": "63f248f5a6ee5bfb",
     "input_type": "Record",
-    "type_name": "FieldConstant",
-    "type_full_name": "FieldConstant:Field:R3 -> Enum[n]",
+    "name": "FieldConstant",
+    "full_name": "FieldConstant:Field:R3 -> Enum[n]",
     "attributes": {},
     "description": "R3 -> Enum[n] Field constant in space.",
     "implements": [
@@ -4924,8 +4926,8 @@
   {
     "id": "442b95e830363ca8",
     "input_type": "Record",
-    "type_name": "HeatTransfer_DG",
-    "type_full_name": "HeatTransfer_DG:Transport",
+    "name": "HeatTransfer_DG",
+    "full_name": "HeatTransfer_DG:Transport",
     "attributes": {},
     "description": "DG solver for heat transfer.",
     "implements": [
@@ -5028,8 +5030,8 @@
   {
     "id": "27498d4719d965fb",
     "input_type": "Record",
-    "type_name": "HeatTransfer_DG_Data",
-    "type_full_name": "HeatTransfer_DG_Data",
+    "name": "HeatTransfer_DG_Data",
+    "full_name": "HeatTransfer_DG_Data",
     "attributes": {},
     "description": "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any HeatTransfer_DG_Data record that comes later in the boundary data array.",
     "keys": [
@@ -5371,3 +5373,4 @@
   },
   {}
 ]
+}

@@ -42,54 +42,59 @@ public:
 
 
     /**
+     * @brief Constructor.
+     *
      * Call JSON parser for given stream and create PathJSON for the root
      * of parsed data tree.
      */
     PathJSON(std::istream &in);
 
     /**
-     * Destructor. Have to cleanup nodes_.
+     * @brief Destructor.
+     *
+     * Have to cleanup nodes_.
      */
     ~PathJSON() override;
 
     /**
-     * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
+     * @brief Dive into json_spirit hierarchy.
+     *
+     * Implements @p PathBase::down(unsigned int)
      */
     bool down(unsigned int index) override;
+
+    /**
+     * @brief Dive into json_spirit hierarchy.
+     *
+     * Implements @p PathBase::down(const std::string&)
+     */
     bool down(const std::string& key) override;
 
-    /**
-     * Return one level up in the hierarchy.
-     */
+    /// Return one level up in the hierarchy.
     void up() override;
 
-    /**
-     * Returns level of actual path. Root has level == 0.
-     */
+    /// Implements @p PathBase::level
     inline int level() const
     { return nodes_.size() - 1; }
 
     // These methods are derived from PathBase
-    bool is_null_type() const override;
-    bool get_bool_value() const override;
-    std::int64_t get_int_value() const override;
-    double get_double_value() const override;
-    std::string get_string_value() const override;
-    unsigned int get_node_type_index() const override;
-    bool get_record_key_set(std::set<std::string> &) const override;
-    int get_array_size() const override;
-    bool is_record_type() const override;
-    bool is_array_type() const override;
-    PathJSON * clone() const override;
-    std::string get_descendant_name() const override;
+    bool is_null_type() const override;                               ///< Implements @p PathBase::is_null_type
+    bool get_bool_value() const override;                             ///< Implements @p PathBase::get_bool_value
+    std::int64_t get_int_value() const override;                      ///< Implements @p PathBase::get_int_value
+    double get_double_value() const override;                         ///< Implements @p PathBase::get_double_value
+    std::string get_string_value() const override;                    ///< Implements @p PathBase::get_string_value
+    unsigned int get_node_type_index() const override;                ///< Implements @p PathBase::get_node_type_index
+    bool get_record_key_set(std::set<std::string> &) const override;  ///< Implements @p PathBase::get_record_key_set
+    int get_array_size() const override;                              ///< Implements @p PathBase::get_array_size
+    bool is_record_type() const override;                             ///< Implements @p PathBase::is_record_type
+    bool is_array_type() const override;                              ///< Implements @p PathBase::is_array_type
+    PathJSON * clone() const override;                                ///< Implements @p PathBase::clone
+    std::string get_descendant_name() const override;                 ///< Implements @p PathBase::get_descendant_name
 
-    // Implements reading of reference keys, and check of
-    // cyclic references.
+    /// Implements reading of reference keys, and check of cyclic references.
     PathBase * find_ref_node() override;
 
-    /**
-     * Put address of actual reference to previous_references_ set
-     */
+    /// Put address of actual reference to previous_references_ set
     void remember_reference();
 
 
@@ -97,21 +102,24 @@ public:
 protected:
 
     /**
-     * Default constructor.
+     * @brief Default constructor.
+     *
      * Provides common initialization for public constructors.
      */
     PathJSON();
 
+    /// Definition of JSON Spirit node.
     typedef json_spirit::mValue Node;
 
-    /**
-     * Pointer to JSON Value object at current path.
-     */
+    /// Pointer to JSON Value object at current path.
     inline const Node * head() const
     { return nodes_.back(); }
 
-    // Remember used references in order to avoid detect cyclic references.
-    // In JSON we allow usage of references using special key 'REF'.
+    /**
+     * @brief Remember used references in order to avoid detect cyclic references.
+     *
+     * In JSON we allow usage of references using special key 'REF'.
+     */
     std::set<std::string> previous_references_;
 
     // Root node has to be automatically deleted.
@@ -123,7 +131,9 @@ protected:
 };
 
 /**
- * Output operator for PathJSON. Mainly for debugging purposes and error messages.
+ * @brief Output operator for PathJSON.
+ *
+ * Mainly for debugging purposes and error messages.
  */
 std::ostream& operator<<(std::ostream& stream, const PathJSON& path);
 

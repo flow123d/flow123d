@@ -31,7 +31,7 @@ const double BIHTree::size_reduce_factor = 0.8;
 BIHTree::BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit)
 : mesh_(mesh), leaf_size_limit(soft_leaf_size_limit), r_gen(123)
 {
-	ASSERT(mesh != nullptr, " ");
+	OLD_ASSERT(mesh != nullptr, " ");
 	max_n_levels = 2*log(mesh->n_elements())/log(2);
 
 	nodes_.reserve(2*mesh_->n_elements() / leaf_size_limit);
@@ -61,7 +61,7 @@ BIHTree::~BIHTree() {
 
 void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	BIHNode &node = nodes_[node_idx];
-	ASSERT(node.is_leaf(), " ");
+	OLD_ASSERT(node.is_leaf(), " ");
 	unsigned int axis = node_box.longest_axis();
 	double median = estimate_median(axis, node);
 
@@ -213,7 +213,7 @@ const BoundingBox &BIHTree::tree_box() {
 void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list)
 {
 	std::stack<unsigned int, std::vector<unsigned int> > node_stack;
-	ASSERT_EQUAL(result_list.size() , 0);
+	OLD_ASSERT_EQUAL(result_list.size() , 0);
 
     unsigned int counter = 0;
 	node_stack.push(0);
@@ -250,11 +250,12 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 
 // 	xprintf(Msg,"leaves: %d\n",counter);
 
-#ifdef DEBUG_ASSERT
+#ifdef FLOW123D_DEBUG_ASSERTS
 	// check uniqueness of element indexes
-	sort(result_list.begin(), result_list.end());
-	it = unique(result_list.begin(), result_list.end());
-	ASSERT_EQUAL(searsearchedElements.size() , it - result_list.begin());
+	std::vector<unsigned int> cpy(result_list);
+	sort(cpy.begin(), cpy.end());
+	std::vector<unsigned int>::iterator it = unique(cpy.begin(), cpy.end());
+	OLD_ASSERT_EQUAL(cpy.size() , it - cpy.begin());
 #endif
 }
 

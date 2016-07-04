@@ -88,7 +88,7 @@ ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_
 
 void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
-    ASSERT(storage_==nullptr," ");
+	ASSERT(storage_==nullptr).error();
 
     PathBase * root_path;
 	if (format == FileFormat::format_JSON) {
@@ -112,7 +112,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 		throw;
 	}
 
-    ASSERT(  storage_ != nullptr, "Internal error in Input reader, the storage pointer is NULL after reading the stream.\n");
+	ASSERT_PTR(storage_).error();
 }
 
 
@@ -127,7 +127,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *type)
 {
-    ASSERT(type != NULL, "Can not dispatch, NULL pointer to TypeBase.\n");
+	ASSERT_PTR(type).error("Can not dispatch, NULL pointer to TypeBase.");
 
     // find reference node, if doesn't exist return NULL
     PathBase * ref_path = p.find_ref_node();
@@ -173,7 +173,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         if (string_type != NULL ) return make_storage(p, string_type );
 
         // default -> error
-        ASSERT(false, "Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
+        THROW( Type::ExcUnknownDescendant() << Type::EI_TypeName(typeid(type).name()) );
     }
 
     return new StorageNull();
@@ -191,9 +191,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
             PathBase *type_path = p->clone();
             if ( type_path.down( "TYPE" ) ) {
                 try {
-                	if ( type_path.get_string_value() != record->type_name() ) {
-                		xprintf(UsrErr, "Invalid value of TYPE key of record %s.", record->type_name().c_str());
-                	}
+                	ASSERT( type_path.get_string_value() == record->type_name() )(type_path.get_string_value())(record->type_name())
+                		.error("Invalid value of TYPE key of record");
                     make_storage(type_path, key_it->type_.get() )->get_int();
                 } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
                 	return record_automatic_conversion(p, record);
@@ -238,7 +237,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         }
 
         for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
-        	xprintf(Warn, "Unprocessed key '%s' in %s '%s'.\n", (*set_it).c_str(), record->class_name().c_str(), p.as_string().c_str() );
+        	WarningOut() << "Unprocessed key '" << (*set_it) << "' in " << record->class_name()
+        			<< " '" << p.as_string() << "'." << std::endl;
         }
 
         return storage_array;
@@ -265,9 +265,7 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 					storage_array->new_item(it->key_index,
 							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
-					 ASSERT( ! it->default_.is_obligatory() ,
-							 "Obligatory key: '%s' in auto-convertible %s, wrong check during finish().",
-							 it->key_.c_str(), record->class_name().c_str() );
+					 ASSERT(! it->default_.is_obligatory())(it->key_).error("Obligatory key in auto-convertible Record.");
 					 // set null
 					 storage_array->new_item(it->key_index, new StorageNull() );
 				 }
@@ -474,10 +472,10 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
         	}
         }
 
-        if ( arr_size > (int)tuple->size() ) {
+		if ( arr_size > (int)tuple->size() ) {
             xprintf(Warn, "Unprocessed keys in tuple '%s', tuple has %d keys but the input is specified by %d values.\n",
                     p.as_string().c_str(), tuple->size(), arr_size );
-        }
+		}
 
         return storage_array;
 
@@ -630,7 +628,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 
 
 
-StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, boost::shared_ptr<Type::TypeBase> type) {
+StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, std::shared_ptr<Type::TypeBase> type) {
     try {
     	// default strings must be valid JSON
     	Type::Default dflt(dflt_str);
@@ -638,7 +636,10 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
 
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration
-        xprintf(Msg, "Wrong default value while reading an input stream:\n");
+    	e << Type::EI_Desc("Wrong default value while reading an input stream:\n");
+        e << EI_KeyName("UNKNOWN KEY");
+        throw;
+    } catch (Input::Type::ExcWrongDefaultJSON & e) {
         e << EI_KeyName("UNKNOWN KEY");
         throw;
     }
@@ -649,8 +650,8 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
 
 
 StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::TypeBase *type) {
-	ASSERT(try_transpose_read_, "Unset flag try_transpose_read_!\n");
-	ASSERT(p.is_array_type(), "Head node of path must be of type array!\n");
+	ASSERT(try_transpose_read_).error();
+	ASSERT(p.is_array_type()).error();
 
 	int arr_size = p.get_array_size();
 	if ( arr_size == 0 ) {
@@ -694,7 +695,7 @@ StorageBase * ReaderToStorage::make_autoconversion_array_storage(PathBase &p, co
 template <class T>
 T ReaderToStorage::get_root_interface() const
 {
-    ASSERT(storage_, "NULL pointer to storage !!! \n");
+	ASSERT_PTR(storage_).error();
 
     Address addr(storage_, root_type_);
     // try to create an iterator just to check type

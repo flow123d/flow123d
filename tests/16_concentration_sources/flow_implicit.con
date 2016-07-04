@@ -38,12 +38,7 @@
         TYPE = "Petsc", 
         a_tol = 1e-12,
         r_tol = 1e-12
-      }, 
-      time = {
-        end_time = 5.7,
-        max_dt = 1e0,
-        min_dt = 1e0
-      }
+      } 
     }, 
     secondary_equation = {
       TYPE = "SoluteTransport_DG", 

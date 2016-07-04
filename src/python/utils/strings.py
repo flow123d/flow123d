@@ -1,12 +1,15 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
 """
 Simple module which provides string/list utilities
 """
 
+from __future__ import absolute_import
 
-def join_iterable (iterable, prefix="", suffix="", separator=",", padding=None, extra_space=2):
+
+def join_iterable(iterable, prefix="", suffix="", separator=",", padding=None, extra_space=2):
     """
     Joins given iterable object with extra surrounding options
     :param iterable: iterable object
@@ -18,18 +21,18 @@ def join_iterable (iterable, prefix="", suffix="", separator=",", padding=None, 
     :param extra_space: number of chars to be extra added to padding
     :return:
     """
-    size = len (iterable)
+    size = len(iterable)
     if not size:
         return ""
 
     result = ""
     result += prefix
 
-    for i in range (size):
+    for i in range(size):
         if padding is None:
-            result += str (iterable[i])
+            result += str(iterable[i])
         else:
-            result += str (iterable[i]).center (padding[i] + extra_space)
+            result += str(iterable[i]).center(padding[i] + extra_space)
         if i < size - 1:
             result += (suffix + separator + prefix)
     result += suffix

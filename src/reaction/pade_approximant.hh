@@ -52,6 +52,8 @@ public:
     
     void update_solution(arma::vec &init_vector, arma::vec &output_vec) override;
     
+    bool evaluate_time_constraint(double &time_constraint) override { return false; }
+    
 protected:
     ///Hide default constructor.
     PadeApproximant(){};

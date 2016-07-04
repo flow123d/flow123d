@@ -17,6 +17,7 @@
 
 #include <input/type_generic.hh>
 #include <input/type_repository.hh>
+#include <input/attribute_lib.hh>
 
 #include <boost/functional/hash.hpp>
 
@@ -53,16 +54,19 @@ TypeBase::TypeHash Parameter::content_hash() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterPair> vec) const {
-	ParameterMap parameter_map;
-	for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
-		if ( (*vec_it).first == this->name_ ) {
-			parameter_map[(*vec_it).first] = (*vec_it).second->content_hash();
-			return std::make_pair( (*vec_it).second, parameter_map );
-		}
+TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterPair> vec) {
+
+    // Find the parameter value in the incoming vector.
+	auto parameter_iter = std::find_if(vec.begin(), vec.end(),
+	                                   [this](const ParameterPair & item) -> bool { return item.first == this->name_; });
+	if (parameter_iter != vec.end()) {
+	    ParameterMap parameter_map;
+		parameter_map[parameter_iter->first] = parameter_iter->second->content_hash();
+		return std::make_pair( parameter_iter->second, parameter_map );
+	} else {
+	    // throw if the parameter value is missing
+	    THROW( ExcParamaterNotSubsituted() << EI_Object(this->name_));
 	}
-    THROW( ExcParamaterNotSubsituted() << EI_Object(this->name_));
-	return std::make_pair( boost::make_shared<Parameter>(*this), parameter_map );
 }
 
 
@@ -103,19 +107,11 @@ bool Instance::finish(bool is_generic) {
 }
 
 
-std::string print_parameter_vec(std::vector<TypeBase::ParameterPair> vec) {
-	stringstream ss;
-	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = vec.begin(); vec_it!=vec.end(); vec_it++) {
-		if (vec_it != vec.begin()) ss << ", ";
-		ss << "\"" << vec_it->first << "\"";
-	}
-
-	return ss.str();
-}
+/// Print parameter vector to formatted string.
 
 
 // Implements @p TypeBase::make_instance.
-TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPair> vec) {
 	// check if instance is created
 	if (created_instance_.first) {
 		return created_instance_;
@@ -124,22 +120,24 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
 	try {
 		created_instance_ = generic_type_.make_instance(parameters_);
 	} catch (ExcParamaterNotSubsituted &e) {
-        e << EI_ParameterList( print_parameter_vec(parameters_) );
+	    ParameterMap aux_map;
+	    for(auto &item : vec) aux_map[item.first]=0;
+        e << EI_ParameterList( TypeBase::print_parameter_map_keys_to_json(aux_map) );
         throw;
 	}
 
-	// add array of parameters to attributes of generic type
-	if (attributes_->find("parameters") == attributes_->end() ) {
-		stringstream ss;
-		ss << "[ " << print_parameter_vec(parameters_) << " ]";
-		generic_type_.add_attribute( "parameters", ss.str() );
-	}
+
+
 
 #ifdef FLOW123D_DEBUG_ASSERTS
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = parameters_.begin(); vec_it!=parameters_.end(); vec_it++) {
 		ParameterMap::iterator map_it = created_instance_.second.find( vec_it->first );
-		ASSERT(map_it != created_instance_.second.end(), "Unused parameter '%s' in input type instance with parameters: %s.\n",
-				vec_it->first.c_str(), print_parameter_vec(parameters_).c_str());
+
+        ParameterMap aux_map;
+        for(auto &item : vec) aux_map[item.first]=0;
+
+		ASSERT_DBG(map_it != created_instance_.second.end())(vec_it->first)(TypeBase::print_parameter_map_keys_to_json(aux_map))
+				.error("Unused parameter in input type instance");
 	}
 #endif
 	return created_instance_;

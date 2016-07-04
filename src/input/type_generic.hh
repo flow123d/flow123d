@@ -32,37 +32,45 @@ namespace Type {
 // Declaration of exception
 TYPEDEF_ERR_INFO(EI_Object, std::string);
 TYPEDEF_ERR_INFO(EI_ParameterList, std::string);
-DECLARE_INPUT_EXCEPTION(ExcParamaterNotSubsituted,
+
+DECLARE_EXCEPTION(ExcParamaterNotSubsituted,
         << "No input type substitution for input type parameter " << EI_Object::qval
 		<< " found during creation of instance with parameter list: " << EI_ParameterList::val << ".");
-DECLARE_INPUT_EXCEPTION(ExcParamaterInIst,
+DECLARE_EXCEPTION(ExcParamaterInIst,
 		<< "Parameter " << EI_Object::qval << " appears in the IST. Check where Instance is missing.");
-DECLARE_INPUT_EXCEPTION(ExcGenericWithoutInstance,
-		<< "Root of generic subtree " << EI_Object::qval << " used without Instance.");
+DECLARE_EXCEPTION(ExcGenericWithoutInstance,
+		<< "Root of generic subtree " << EI_Object::qval << " used without Instance.\n Used in type: " << EI_TypeName::qval);
 
 
 
 /**
- * Class for representing parametric types in IST.
+ * @brief Class for representing parametric types in IST.
  *
  * Instances of this class are used only in generic types and during generation
  * of Record are replaced by types of IST (Integer, String, Selection etc.)
  */
 class Parameter : public TypeBase {
 public:
+	/// Constructor.
 	Parameter(const string & parameter_name);
 
+	/// Copy constructor.
 	Parameter(const Parameter & other);
 
-    /// Parameter type name getter.
+    /**
+     * @brief Implements @p Type::TypeBase::type_name.
+     *
+     * Parameter type name getter.
+     */
     string type_name() const override;
+    /// Override @p Type::TypeBase::class_name.
     string class_name() const override { return "Parameter"; }
 
     /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const  override;
 
     /// Implements @p TypeBase::make_instance.
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
     /// Implements @p TypeBase::finish.
     bool finish(bool is_generic = false) override;
@@ -75,14 +83,15 @@ protected:
 
 
 /**
- * Helper class that stores data of generic types.
+ * @brief Helper class that stores data of generic types.
  */
 class Instance : public TypeBase {
 public:
+	/// Constructor.
 	Instance(TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters);
 
 	/**
-	 * Implements @p TypeBase::content_hash.
+	 * @brief Implements @p TypeBase::content_hash.
 	 *
 	 * Hash is calculated by hash of generic type and hash of parameters.
 	 */
@@ -95,13 +104,13 @@ public:
     bool finish(bool is_generic = false) override;
 
     /**
-     * Implements @p TypeBase::make_instance.
+     * @brief Implements @p TypeBase::make_instance.
      *
      * In first call creates instance and stores its to @p created_instance_.
      *
      * At each successive call returns this stored type.
      */
-    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
 protected:
     /// Reference to generic types (contains some descendants of type @p Parameter).
@@ -111,7 +120,7 @@ protected:
 	std::vector<TypeBase::ParameterPair> parameters_;
 
 	/**
-	 * Stores returned type created in first call of @p make_instance method.
+	 * @brief Stores returned type created in first call of @p make_instance method.
 	 *
 	 * At each successive call of make_instance returns this stored type.
 	 */

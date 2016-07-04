@@ -6,9 +6,10 @@
  */
 
 #define FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
+#define FEAL_OVERRIDE_ASSERTS
 
-#include "system/exceptions.hh"
 #include <flow_gtest.hh>
+#include "system/exceptions.hh"
 
 #include <string>
 #include <iostream>
@@ -183,7 +184,49 @@ TEST(Exceptions, assert_msg) {
 
     int zero=1;
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
+    EXPECT_THROW_WHAT( {OLD_ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
 #endif
+
+}
+
+
+// Empty class. used for ASSERT_PTR test
+class EmptyObj {};
+
+
+// Test of new asserts.
+TEST(FealAssert, assert) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    std::string s1 = "feal";
+    std::string s2 = "assert";
+
+    try {
+        FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+    } catch (feal::Exc_assert &e) {
+        std::cout << e.what();
+    }
+
+    EXPECT_DEATH( {FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2);}, ".*");
+
+    // only in debug mode
+    try {
+        FEAL_ASSERT_DBG(s1.empty() && s2.empty())(s1)(s2).error();
+    } catch (feal::Exc_assert &e) {
+        std::cout << e.what();
+    }
+
+    // comparative asserts
+    {
+    	int i=5, j=4;
+    	EmptyObj *empty = nullptr;
+
+    	EXPECT_THROW_WHAT( { ASSERT_LT(i, j).error(); }, feal::Exc_assert, "Expression: 'i < j'" );
+    	EXPECT_THROW_WHAT( { ASSERT_LE(i, j).error(); }, feal::Exc_assert, "Expression: 'i <= j'" );
+    	EXPECT_THROW_WHAT( { ASSERT_GT(j, i).error(); }, feal::Exc_assert, "Expression: 'j > i'" );
+    	EXPECT_THROW_WHAT( { ASSERT_GE(j, i).error(); }, feal::Exc_assert, "Expression: 'j >= i'" );
+    	EXPECT_THROW_WHAT( { ASSERT_EQ(i, j).error(); }, feal::Exc_assert, "Expression: 'i == j'" );
+    	EXPECT_THROW( { ASSERT_PTR(empty).error(); }, feal::Exc_assert );
+    }
 
 }
