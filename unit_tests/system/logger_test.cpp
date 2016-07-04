@@ -20,23 +20,37 @@ void logger_messages() {
 	unsigned int mesh_size = 150;
 	double start_time = 0.5;
 
+	std::cout << "MessageOut: Start of simulation at time ..." << std::endl;
 	MessageOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements.\n"
 			<< "... next line" << "\n" << "... next line" << "\n";
+
+	std::cout << "MessageOut: Output of process: ..." << std::endl;
 	MessageOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
+
+	std::cout << "WarningOut: Start of simulation at time ..." << std::endl;
 	WarningOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << "\n"
 			<< "... next line" << "\n";
+
+	std::cout << "WarningOut: Output of process: ..." << std::endl;
 	WarningOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
+    std::cout << "LogOut: Start of simulation at time ..." << std::endl;
 	LogOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << "\n";
+
+	std::cout << "LogOut: Output of process: ..." << std::endl;
 	LogOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
+    std::cout << "DebugOut: Start of simulation at time ..." << std::endl;
 	DebugOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << "\n";
+
+	std::cout << "DebugOut: Output of process: ..." << std::endl;
 	DebugOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
+	std::cout << "=================================================\n" <<std::endl;
 	// flush screen streams for better but not perfect output
-	std::cout << std::flush;
-	std::cerr << std::flush;
+	//std::cout << std::flush;
+	//std::cerr << std::flush;
 
 	// necessary for setting next test
 	LoggerOptions::get_instance().reset();
