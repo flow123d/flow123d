@@ -72,11 +72,6 @@ TEST(InputTypeScalar, all_types) {
     EXPECT_TRUE( Default("true").check_validity( std::make_shared<Bool>() ) );
     EXPECT_TRUE( Default("false").check_validity( std::make_shared<Bool>() ) );
     EXPECT_FALSE( Default::obligatory().check_validity( std::make_shared<Bool>()) );
-    /*try {
-    	Default("yes").check_validity( std::make_shared<Bool>() );
-    } catch (ExcWrongDefaultJSON &exc) {
-    	std::cout << exc.what() << std::endl;
-    }*/
     EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Bool>() ); }, ExcWrongDefaultJSON,
             "Not valid JSON of Default value 'yes' of type 'Bool';" );
 
