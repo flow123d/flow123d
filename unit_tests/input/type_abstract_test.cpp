@@ -88,7 +88,7 @@ using namespace Input::Type;
     Abstract x = Abstract("AR","")
     	.allow_auto_conversion("BR")
 		.close();
-    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value '\"BR\"' for TYPE key do not match any descendant of Abstract 'AR'.");
+    EXPECT_THROW_WHAT({ x.finish(); }, ExcWrongDefault, "Default value for TYPE key do not match any descendant of Abstract.");
 
 }
 

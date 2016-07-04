@@ -29,42 +29,20 @@ namespace Input {
  */
 
 
-const char * Exception::what() const throw () {
-    // have preallocated some space for error message we want to return
-    // Is there any difference, if we move this into ExceptionBase ??
-    static std::string message(1024,' ');
+std::ostringstream &Exception::form_message(std::ostringstream &converter) const {
 
-
-    // Be sure that this function do not throw.
-    try {
-        std::ostringstream converter;
-
-        converter << std::endl << std::endl;
-        converter << "--------------------------------------------------------" << std::endl;
-        converter << "User Error: ";
-        print_info(converter);
+	converter << std::endl << std::endl;
+    converter << "--------------------------------------------------------" << std::endl;
+    converter << "User Error: ";
+    print_info(converter);
 #ifdef FLOW123D_DEBUG_MESSAGES
-        converter << "\n** Diagnosting info **\n" ;
-        converter << boost::diagnostic_information_what( *this );
-        print_stacktrace(converter);
+    converter << "\n** Diagnosting info **\n" ;
+    converter << boost::diagnostic_information_what( *this );
+    print_stacktrace(converter);
 #endif
-        converter << "--------------------------------------------------------" << std::endl;
+    converter << std::endl << "--------------------------------------------------------" << std::endl;
 
-        message = converter.str();
-        return message.c_str();
-
-    } catch (std::exception &exc) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Message is " << std::endl
-                << exc.what() << std::endl << "*** Aborting! ***" << std::endl;
-
-        std::abort();
-    } catch (...) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Aborting! ***"
-                << std::endl;
-
-        std::abort();
-    }
-    return 0;
+    return converter;
 }
 
 
