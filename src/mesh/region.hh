@@ -179,6 +179,8 @@ public:
         return *db_;
     }
 
+    bool is_in_region_set(const RegionSet &set) const;
+
 protected:
     /**
      * Create accessor from the index. Should be private since implementation specific.
