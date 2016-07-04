@@ -114,6 +114,13 @@ private:
    MessageOut() << "Start time: " << this->start_time() << "\n" << "End time: " << this->end_time() << "\n";
  @endcode
  *
+ * Or Logger allow using fmtlib functionality for simpler formatting of message:
+ *
+ @code
+   MessageOut() << fmt::format("Start time: {}\nEnd time: {}\n", this->start_time(), this->end_time());
+   MessageOut().fmt("Start time: {}\nEnd time: {}\n", this->start_time(), this->end_time());
+ @endcode
+ *
  * In some cases message can be printed for all processes:
  *
  @code
@@ -145,7 +152,11 @@ public:
 	/// Set flag every_process_ to true
 	Logger& every_proc();
 
-	/// Allow use functionality of fmtlib for formating message.
+	/**
+	 * @brief Allow use functionality of fmtlib for formating message.
+	 *
+	 * See examples in description of Logger class.
+	 */
 	template<class... T>
 	Logger& fmt(T&&... t)
 	{
