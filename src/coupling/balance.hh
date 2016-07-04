@@ -390,6 +390,9 @@ private:
 	/// Perform output in csv format
 	void output_csv(double time, char delimiter, const std::string& comment_string, unsigned int repeat = 0);
 
+	/// Perform output in yaml format
+	void output_yaml(double time);
+
 	/// Return part of output represented by zero values. Count of zero values is given by cnt parameter.
 	std::string csv_zero_vals(unsigned int cnt, char delimiter);
 
@@ -403,8 +406,11 @@ private:
 	std::string format_csv_val(double val, char delimiter, bool initial = false);
 
 
-    /// Handle for file for output of balance and total fluxes over individual regions and region sets.
+    /// Handle for file for output in given OutputFormat of balance and total fluxes over individual regions and region sets.
     ofstream output_;
+
+    // The same as the previous case, but for output in YAML format.
+    ofstream output_yaml_;
 
     /// Format of output file.
     OutputFormat output_format_;
@@ -498,6 +504,9 @@ private:
 
 	/// hold count of line printed into output_
 	unsigned int output_line_counter_;
+
+	/// marks whether YAML output has printed header
+	bool output_yaml_header_;
 
 };
 

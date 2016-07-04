@@ -76,7 +76,7 @@ bool Default::check_validity(std::shared_ptr<TypeBase> type) const
 		storage_ = reader.get_storage()->get_item(0);
 		return true;
 	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
-		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
+		THROW( ExcWrongDefaultJSON() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
 	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
 		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
 	}
@@ -419,6 +419,9 @@ void Record::RecordData::declare_key(const string &key,
     // validity test of default value
     try {
     	default_value.check_validity(type);
+    } catch (ExcWrongDefaultJSON & e) {
+        e << EI_KeyName(key);
+        throw;
     } catch (ExcWrongDefault & e) {
         e << EI_KeyName(key);
         throw;

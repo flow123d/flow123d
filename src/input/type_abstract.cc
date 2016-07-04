@@ -143,7 +143,12 @@ bool Abstract::finish(bool is_generic) {
 		try {
 			child_data_->selection_default_.check_validity(child_data_->selection_of_childs);
 		} catch (ExcWrongDefault & e) {
-			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of Abstract '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
+			e << EI_Desc("Default value for TYPE key do not match any descendant of Abstract.")
+			  << EI_DefaultStr( child_data_->selection_default_.value() ) << EI_TypeName(this->type_name());
+			throw;
+		} catch (ExcWrongDefaultJSON & e) {
+			e << EI_DefaultStr( child_data_->selection_default_.value() ) << EI_TypeName(this->type_name());
+			throw;
 		}
     }
 

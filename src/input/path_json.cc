@@ -184,7 +184,7 @@ PathBase * PathJSON::find_ref_node()
         pos = new_pos+1;
     }
     if (relative_ref) {
-    	xprintf(Msg, "Referencing '%s' to '%s'.\n", this->as_string().c_str(), ref_path->as_string().c_str());
+    	MessageOut() << "Referencing '" << this->as_string() << "' to '" << ref_path->as_string() << "'." << std::endl;
     }
     return ref_path;
 }
