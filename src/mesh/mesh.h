@@ -24,8 +24,8 @@
 #include "mesh/mesh_types.hh"
 
 #include "mesh/nodes.hh"
-#include "mesh/elements.h"
-#include "mesh/sides.h"
+//#include "mesh/elements.h"
+//#include "mesh/sides.h"
 #include "mesh/edges.h"
 #include "mesh/neighbours.h"
 #include "mesh/boundaries.h"
@@ -33,14 +33,11 @@
 #include "mesh/partitioning.hh"
 #include "mesh/region_set.hh"
 
+
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
 #include "system/exceptions.hh"
 
-// Forward declarations
-template <int spacedim>
-class ElementAccessor;
-class GmshMeshReader;
 
 
 

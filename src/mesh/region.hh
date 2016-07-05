@@ -120,6 +120,16 @@ protected:
     friend class Region;
 };
 
+/**
+ * Type representing a set of regions.
+ * CAn be used  to set function(field) on more regions at once, possibly across meshes
+ *
+ * Regions stored in region set are always unique
+ */
+typedef std::vector<Region> RegionSet;
+/// Type representing a map of RegionSets.
+typedef std::map<std::string, RegionSet > RegionSetTable;
+
 
 
 /**
@@ -201,15 +211,7 @@ protected:
 
 
 
-/**
- * Type representing a set of regions.
- * CAn be used  to set function(field) on more regions at once, possibly across meshes
- *
- * Regions stored in region set are always unique
- */
-typedef std::vector<Region> RegionSet;
-/// Type representing a map of RegionSets.
-typedef std::map<std::string, RegionSet > RegionSetTable;
+
 
 
 /**

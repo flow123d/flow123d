@@ -21,6 +21,7 @@
 #include "mesh/nodes.hh"
 #include "mesh/region.hh"
 #include "mesh/bounding_box.hh"
+#include "mesh/ref_element.hh"
 
 template <int spacedim>
 class ElementAccessor;

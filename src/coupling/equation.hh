@@ -30,7 +30,7 @@
 class Mesh;
 class Region;
 class FieldSet;
-typedef std::vector<Region> RegionSet;
+//typedef std::vector<Region> RegionSet;
 class Balance;
 
 

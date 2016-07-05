@@ -666,7 +666,7 @@ void Mesh::make_intersec_elements() {
 	 * 3) compute intersections for 1d, store it to master_elements
 	 *
 	 */
-	BIHTree &bih_tree =get_bih_tree();
+	const BIHTree &bih_tree =get_bih_tree();
 	master_elements.resize(n_elements());
 
 	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
@@ -764,7 +764,7 @@ void Mesh::check_and_finish()
 const BIHTree &Mesh::get_bih_tree() {
     if (! this->bih_tree_)
         bih_tree_ = std::make_shared<BIHTree>(this);
-    return bih_tree_;
+    return *bih_tree_;
 }
 
 //-----------------------------------------------------------------------------
