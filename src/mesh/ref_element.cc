@@ -25,6 +25,15 @@
 using namespace arma;
 using namespace std;
 
+template<unsigned int n>
+std::vector< std::vector<unsigned int> > _array_to_vec( const unsigned int array[][n], unsigned int m) {
+    std::vector< std::vector<unsigned int> > vec(m);
+    for(unsigned int i=0; i<m; i++)
+        for(unsigned int j=0;j<n; j++)
+            vec[i].push_back(array[i][j]);
+    return vec;
+}
+
 template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side] = { { 0 } };
 
 template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side] = { { 0, 1 }, { 1, 0 } };
@@ -75,6 +84,25 @@ template<> const unsigned int RefElement<3>::line_nodes[][2] = {
         {0,3},
         {1,3},
         {2,3}
+};
+
+
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<1>::nodes_of_subelements = {
+        _array_to_vec(side_nodes, n_sides),
+        { {0,1} }
+};
+
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<2>::nodes_of_subelements = {
+        { {0}, {1}, {2} },
+        _array_to_vec(side_nodes, n_sides),
+        { {0,1,2} }
+};
+
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<3>::nodes_of_subelements = {
+        { {0}, {1}, {2}, {3} },
+        _array_to_vec(line_nodes, n_lines),
+        _array_to_vec(side_nodes, n_sides),
+        { {0,1,2,3} }
 };
 
 
@@ -165,10 +193,10 @@ vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
 
 
 template<unsigned int dim>
-arma::vec RefElement<dim>::barycentric_on_face(const arma::vec &barycentric, unsigned int i_face)
+auto RefElement<dim>::barycentric_on_face(const BaryPoint &barycentric, unsigned int i_face) -> FaceBaryPoint
 {
     ASSERT_EQ_DBG(barycentric.n_rows, dim+1);
-    arma::vec face_barycentric(dim);
+    FaceBaryPoint face_barycentric;
     for(unsigned int i=0; i < dim; i++) {
         unsigned int i_sub_node = (i+1)%dim;
         unsigned int i_bary = (dim + side_nodes[i_face][i_sub_node])%(dim+1);
@@ -179,10 +207,11 @@ arma::vec RefElement<dim>::barycentric_on_face(const arma::vec &barycentric, uns
 
 
 template<unsigned int dim>
-arma::vec RefElement<dim>::barycentric_from_face(const arma::vec &face_barycentric, unsigned int i_face)
+auto RefElement<dim>::barycentric_from_face(const FaceBaryPoint &face_barycentric, unsigned int i_face) -> BaryPoint
 {
     ASSERT_EQ_DBG(face_barycentric.n_rows, dim);
-    arma::vec barycentric=arma::zeros(dim+1);
+    BaryPoint barycentric;
+    barycentric.zeros();
     for(unsigned int i_sub_coord=0; i_sub_coord<dim; i_sub_coord++) {
         unsigned int i_sub_node = (i_sub_coord+1)%dim;
         barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( side_nodes[i_face][i_sub_node]);
@@ -191,7 +220,7 @@ arma::vec RefElement<dim>::barycentric_from_face(const arma::vec &face_barycentr
 }
 
 template<>
-arma::vec RefElement<0>::clip(const arma::vec &barycentric)
+auto RefElement<0>::clip(const BaryPoint &barycentric) -> BaryPoint
 {
     return barycentric;
 }
@@ -211,7 +240,7 @@ auto  RefElement<dim>::make_bary_unit_vec()->BarycentricUnitVec
 
 
 template<unsigned int dim>
-arma::vec RefElement<dim>::clip(const arma::vec &barycentric)
+auto RefElement<dim>::clip(const BaryPoint &barycentric) -> BaryPoint
 {
     static BarycentricUnitVec bary_unit_vec = make_bary_unit_vec();
     ASSERT_EQ_DBG(barycentric.n_rows, dim+1);
@@ -240,6 +269,35 @@ arma::vec RefElement<dim>::clip(const arma::vec &barycentric)
     }
     return barycentric;
 
+}
+
+
+
+template<unsigned int dim>
+auto RefElement<dim>::centers_of_subelements(unsigned int sub_dim)->CentersList
+{
+    static std::vector< std::vector<LocalPoint> > list;
+    if (list.size() == 0) {
+        list.resize(dim+1);
+        for(unsigned int sdim=0; sdim < dim+1; sdim++) {
+            // Temporary solution until we have unified interface to
+            // the internal indexing.
+            // We use the fact that numbering of subelements goes as numbering of
+            // k combinations over nodes.
+            std::vector<unsigned int> subel_comb(sdim+2);
+            for(auto &sub_el_nodes : nodes_of_subelements[sdim]) {
+                ASSERT_EQ_DBG(sub_el_nodes.size(), sdim+1);
+                LocalPoint center = arma::zeros(dim);
+                for( unsigned int i_node : sub_el_nodes)
+                    center+=node_coords( i_node );
+                center/=(sdim+1);
+                list[sdim].push_back(center);
+            }
+        }
+    }
+
+    ASSERT_LE_DBG(sub_dim, dim);
+    return list[sub_dim];
 }
 
 

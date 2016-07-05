@@ -111,6 +111,46 @@ TEST(RefElement, barycentric_from_face) {
             RefElement<3>::barycentric_from_face( arma::vec("0 1 0"), 3));
 }
 
+TEST(RefElement, centers_of_subelements) {
+    armadillo_setup();
+
+    // dim = 1
+    {
+    auto list = RefElement<1>::centers_of_subelements(0);
+    EXPECT_EQ( 2, list.size());
+    EXPECT_ARMA_EQ( arma::vec("0"), list[0]);
+    EXPECT_ARMA_EQ( arma::vec("1"), list[1]);
+    }
+    {
+    auto list = RefElement<1>::centers_of_subelements(1);
+    EXPECT_EQ( 1, list.size());
+    EXPECT_ARMA_EQ( arma::vec("0.5"), list[0]);
+    }
+
+    // dim = 2
+    {
+    auto list = RefElement<2>::centers_of_subelements(0);
+    EXPECT_EQ( 3, list.size());
+    EXPECT_ARMA_EQ( arma::vec("0 0"), list[0]);
+    EXPECT_ARMA_EQ( arma::vec("1 0"), list[1]);
+    EXPECT_ARMA_EQ( arma::vec("0 1"), list[2]);
+    }
+    {
+    auto list = RefElement<2>::centers_of_subelements(1);
+    EXPECT_EQ( 3, list.size());
+    EXPECT_ARMA_EQ( arma::vec("0.5 0"), list[0]);
+    EXPECT_ARMA_EQ( arma::vec("0 0.5"), list[1]);
+    EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), list[2]);
+    }
+    {
+    auto list = RefElement<2>::centers_of_subelements(2);
+    EXPECT_EQ( 1, list.size());
+    EXPECT_ARMA_EQ( arma::vec({ 1/3.0, 1/3.0 }), list[0]);
+    }
+
+}
+
+
 TEST(RefElement, clip_1d) {
     armadillo_setup();
 
@@ -144,3 +184,4 @@ TEST(RefElement, clip_2d) {
     EXPECT_ARMA_EQ( arma::vec("0 0.5 0.5"), RefElement<2>::clip( arma::vec("-0.3 0.5 0.8")));
     EXPECT_ARMA_EQ( arma::vec("0.5 0.5 0"), RefElement<2>::clip( arma::vec("1 1 -1")));
 }
+
