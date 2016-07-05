@@ -83,20 +83,19 @@ void FilePath::set_dirs(const string root, const string input, const string outp
 	// else output_dir = root / output
 	// the resulting relative path is always completed to absulute path
 	boost::filesystem::path output_path = boost::filesystem::path(output);
+	boost::filesystem::path full_output_path;
     if ( !output_path.is_absolute() ) {
-    	boost::filesystem::path root_output_path = boost::filesystem::path(root) / output_path;
-    	boost::filesystem::create_directories(root_output_path);
-    	if ( !root_output_path.is_absolute() ) {
-        	boost::filesystem::path abs_full_path = boost::filesystem::canonical( boost::filesystem::current_path() / root_output_path );
-        	output_dir = std::make_shared<boost::filesystem::path>(abs_full_path);
-    	} else {
-    		output_dir = std::make_shared<boost::filesystem::path>(root_output_path);
-    	}
+    	full_output_path = boost::filesystem::path(root) / output_path;
     } else {
-    	output_dir = std::make_shared<boost::filesystem::path>(output_path);
+    	full_output_path = output_path;
     }
+    boost::filesystem::create_directories(full_output_path);
+	if ( !full_output_path.is_absolute() ) {
+    	full_output_path = boost::filesystem::canonical( boost::filesystem::current_path() / full_output_path );
+	}
+	output_dir = std::make_shared<boost::filesystem::path>(full_output_path);
 
-    // the relative input is relative to the directory of the main input file
+	// the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);
 }
 
