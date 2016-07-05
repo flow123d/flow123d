@@ -19,6 +19,7 @@
 #define SIDE_IMPL_HH_
 
 #include "mesh/elements.h"
+#include "mesh/mesh.h"
 #include "mesh/edges.h"
 
 
