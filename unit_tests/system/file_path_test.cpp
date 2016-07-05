@@ -159,18 +159,18 @@ TEST(FilePath, input_absolute) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     string abs_path = FilePath::get_absolute_working_dir();
-    FilePath::set_io_dirs(".", "/main_root", "variant_input", abs_path+"output_root");
+    FilePath::set_io_dirs(".", abs_path+"main_root", "variant_input", abs_path+"output_root");
 
     {
         // relative input without substitution; conversion to string
         string str = FilePath("./subdir/init.in", FilePath::input_file);
-		EXPECT_TRUE( (boost::filesystem::current_path() / "/main_root/./subdir/init.in") == boost::filesystem::path(str) );
+		EXPECT_TRUE( (boost::filesystem::current_path() / "main_root/./subdir/init.in") == boost::filesystem::path(str) );
     }
 
     {
         // relative input with substitution; conversion to string
         string str = FilePath("./subdir/${INPUT}/init.in", FilePath::input_file);
-		EXPECT_TRUE( (boost::filesystem::current_path() / "/main_root/./subdir/variant_input/init.in") == boost::filesystem::path(str) );
+		EXPECT_TRUE( (boost::filesystem::current_path() / "main_root/./subdir/variant_input/init.in") == boost::filesystem::path(str) );
     }
 
     {
