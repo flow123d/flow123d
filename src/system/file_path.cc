@@ -23,37 +23,43 @@
 
 // static data members
 map<string,string> FilePath::placeholder;
-boost::filesystem::path FilePath::output_dir=boost::filesystem::path(".");
-boost::filesystem::path FilePath::root_dir=boost::filesystem::path(".");
+std::shared_ptr<boost::filesystem::path> FilePath::output_dir=std::make_shared<boost::filesystem::path>(".");
+std::shared_ptr<boost::filesystem::path> FilePath::root_dir=std::make_shared<boost::filesystem::path>(".");
 
 FilePath::FilePath(string file_path, const  FileType ft)
 : file_type_(ft)
 {
-    if (output_dir == boost::filesystem::path(".")) {
+    if (*output_dir == boost::filesystem::path(".")) {
     	WarningOut() << "Creating FileName object before set_io_dirs is called. No file path resolving." << std::endl;
-    	abs_file_path_ = boost::filesystem::path(file_path);
+    	abs_file_path_ = std::make_shared<boost::filesystem::path>(file_path);
         return;
     }
 
     substitute_value(file_path);
-	abs_file_path_ = boost::filesystem::path(file_path);
+	abs_file_path_ = std::make_shared<boost::filesystem::path>(file_path);
     if (ft == input_file) {
-    	if ( abs_file_path_.is_absolute() ) {
+    	if ( abs_file_path_->is_absolute() ) {
     	} else {
-            abs_file_path_ = root_dir / file_path;
+            abs_file_path_ = std::make_shared<boost::filesystem::path>(*root_dir / file_path);
     	}
     } else if (ft == output_file) {
-        if ( abs_file_path_.is_absolute() ) {
-            if (abs_file_path_.string().substr(0, output_dir.string().size()) == output_dir.string()) {
-            	abs_file_path_ = boost::filesystem::path( abs_file_path_.string().substr(output_dir.string().size()+1) );
+        if ( abs_file_path_->is_absolute() ) {
+            if (abs_file_path_->string().substr(0, output_dir->string().size()) == output_dir->string()) {
+            	abs_file_path_ = std::make_shared<boost::filesystem::path>( abs_file_path_->string().substr(output_dir->string().size()+1) );
             } else {
-                THROW( ExcAbsOutputPath() << EI_Path( abs_file_path_.string() ) );
+                THROW( ExcAbsOutputPath() << EI_Path( abs_file_path_->string() ) );
             }
         }
-        abs_file_path_ = output_dir / abs_file_path_;
+        abs_file_path_ = std::make_shared<boost::filesystem::path>(*output_dir / *abs_file_path_);
     }
 
 }
+
+
+FilePath::FilePath()
+    : abs_file_path_( std::make_shared<boost::filesystem::path>("/__NO_FILE_NAME_GIVEN__") ),
+      file_type_(output_file)
+{}
 
 
 
@@ -65,7 +71,7 @@ void FilePath::set_io_dirs(const string working_dir, const string root, const st
 
 void FilePath::set_dirs(const string root, const string input, const string output) {
     // root directory
-	root_dir = boost::filesystem::path(root);
+	root_dir = std::make_shared<boost::filesystem::path>(root);
 
 	// set output directory
 	// if param output is absolute output_dir = output
@@ -77,12 +83,12 @@ void FilePath::set_dirs(const string root, const string input, const string outp
     	boost::filesystem::create_directories(root_output_path);
     	if ( !root_output_path.is_absolute() ) {
         	boost::filesystem::path abs_full_path = boost::filesystem::canonical( boost::filesystem::current_path() / root_output_path );
-        	output_dir = abs_full_path;
+        	output_dir = std::make_shared<boost::filesystem::path>(abs_full_path);
     	} else {
-    		output_dir = root_output_path;
+    		output_dir = std::make_shared<boost::filesystem::path>(root_output_path);
     	}
     } else {
-    	output_dir = output_path;
+    	output_dir = std::make_shared<boost::filesystem::path>(output_path);
     }
 
     // the relative input is relative to the directory of the main input file
@@ -127,8 +133,16 @@ const string FilePath::get_absolute_working_dir() {
 void FilePath::create_output_dir() {
     if (file_type_ == output_file) {
         boost::filesystem::create_directories(
-                boost::filesystem::path(abs_file_path_).parent_path()
+                abs_file_path_->parent_path()
                 );
     }
 }
 
+
+FilePath::operator string() const {
+	return abs_file_path_->string();
+}
+
+
+bool FilePath::operator ==(const FilePath &other) const
+    {return *abs_file_path_ == boost::filesystem::path( string(other) ); }

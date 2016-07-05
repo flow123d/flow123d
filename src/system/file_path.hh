@@ -19,11 +19,16 @@
 #define FILE_NAME_HH_
 
 #include <string>
-#include <boost/filesystem.hpp>
 
 #include "system/exceptions.hh"
 
 using namespace std;
+
+
+namespace boost {
+    namespace filesystem  {
+        class path;
+}}
 
 
 
@@ -56,10 +61,7 @@ public:
     /**
      * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
      */
-    FilePath()
-        : abs_file_path_( boost::filesystem::path("/__NO_FILE_NAME_GIVEN__") ),
-          file_type_(output_file)
-    {}
+    FilePath();
 
     /**
      * Translates the given absolute or relative path to a file @p file_path depending on the file type @p ft.
@@ -112,9 +114,7 @@ public:
     /**
      * This class is implicitly convertible to string.
      */
-    inline operator string() const {
-    	return abs_file_path_.string();
-    }
+    operator string() const;
 
     /*!
      * @brief Add new item to place holder.
@@ -137,9 +137,8 @@ public:
      */
     static const string get_absolute_working_dir();
 
-    /// Equality comparison operators for regions.
-    inline bool operator ==(const FilePath &other) const
-        {return abs_file_path_ == boost::filesystem::path( string(other) ); }
+    /// Equality comparison operators for FilePaths.
+    bool operator ==(const FilePath &other) const;
 
 
     /**
@@ -156,7 +155,7 @@ private:
 
 
     /// Final absolute path to the file.
-    boost::filesystem::path abs_file_path_;
+    std::shared_ptr<boost::filesystem::path> abs_file_path_;
 
     /// File type
     FileType file_type_;
@@ -165,10 +164,10 @@ private:
     static std::map<string,string> placeholder;
 
     /// Prefix path for output files.
-    static boost::filesystem::path output_dir;
+    static std::shared_ptr<boost::filesystem::path> output_dir;
 
     /// Prefix path for input files (directory of the main input file).
-    static boost::filesystem::path root_dir;
+    static std::shared_ptr<boost::filesystem::path> root_dir;
 };
 
 #endif /* FILE_NAME_HH_ */
