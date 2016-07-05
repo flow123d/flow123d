@@ -71,7 +71,12 @@ void FilePath::set_io_dirs(const string working_dir, const string root, const st
 
 void FilePath::set_dirs(const string root, const string input, const string output) {
     // root directory
-	root_dir = std::make_shared<boost::filesystem::path>(root);
+	if (boost::filesystem::path(root).is_absolute()) {
+		root_dir = std::make_shared<boost::filesystem::path>(root);
+	} else {
+		boost::filesystem::path abs_root_path = boost::filesystem::canonical( boost::filesystem::current_path() / root );
+		root_dir = std::make_shared<boost::filesystem::path>(abs_root_path);
+	}
 
 	// set output directory
 	// if param output is absolute output_dir = output

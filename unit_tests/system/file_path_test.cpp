@@ -131,12 +131,12 @@ TEST(FilePath, input_relative) {
 
     { // relative input without substitution; conversion to string
 		string str = FilePath("subdir/init.in", FilePath::input_file);
-		EXPECT_TRUE( boost::filesystem::path("./main_root/subdir/init.in") == boost::filesystem::path(str) );
+		EXPECT_TRUE( (boost::filesystem::current_path() / "main_root/subdir/init.in") == boost::filesystem::path(str) );
     }
 
     { // relative input with substitution; conversion to string
 		string str = FilePath("subdir/${INPUT}/init.in", FilePath::input_file);
-		EXPECT_TRUE( boost::filesystem::path("./main_root/subdir/variant_input/init.in") == boost::filesystem::path(str) );
+		EXPECT_TRUE( (boost::filesystem::current_path() / "main_root/subdir/variant_input/init.in") == boost::filesystem::path(str) );
     }
 
     { // absolute input without substitution; conversion to string
@@ -163,13 +163,13 @@ TEST(FilePath, input_absolute) {
     {
         // relative input without substitution; conversion to string
         string str = FilePath("./subdir/init.in", FilePath::input_file);
-		EXPECT_TRUE( boost::filesystem::path("/main_root/./subdir/init.in") == boost::filesystem::path(str) );
+		EXPECT_TRUE( (boost::filesystem::current_path() / "/main_root/./subdir/init.in") == boost::filesystem::path(str) );
     }
 
     {
         // relative input with substitution; conversion to string
         string str = FilePath("./subdir/${INPUT}/init.in", FilePath::input_file);
-		EXPECT_TRUE( boost::filesystem::path("/main_root/./subdir/variant_input/init.in") == boost::filesystem::path(str) );
+		EXPECT_TRUE( (boost::filesystem::current_path() / "/main_root/./subdir/variant_input/init.in") == boost::filesystem::path(str) );
     }
 
     {
