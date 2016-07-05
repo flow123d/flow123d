@@ -71,6 +71,7 @@
 
 #include <armadillo>
 
+
 /*
  * Ordering of nodes and sides in reference elements
  * =================================================
@@ -130,6 +131,14 @@ public:
 	 * @param sid Side number.
 	 */
 	static arma::vec::fixed<dim> normal_vector(unsigned int sid);
+
+
+	/**
+	 * If the given barycentric coordinate is in the ref. element, return unchanged.
+	 * If the given barycentric coordinate is out of the ref. element,
+	 * project it on the surface of the ref. element.
+	 */
+	static arma::vec clip(const arma::vec &barycentric);
 
 	static double side_measure(unsigned int sid);
     
@@ -203,6 +212,27 @@ public:
 	 * @param p Permutation of nodes.
 	 */
 	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
+
+	typedef std::vector<arma::vec::fixed<dim+1> > BarycentricUnitVec;
+
+	/**
+	 * Used in the clip method.
+	 */
+	static BarycentricUnitVec make_bary_unit_vec();
+
+    /**
+     * For given barycentric coordinates on the ref element returns barycentric coordinates
+     * on the ref. element of given face. Assumes that the input point is on the face.
+     * Barycentric order: (local_coords, complanatory)
+     */
+    static arma::vec barycentric_on_face(const arma::vec &barycentric, unsigned int i_face);
+
+    /**
+     * For given barycentric coordinates on the face returns barycentric coordinates
+     * on the ref. element.
+     * Barycentric order: (local_coords, complanatory)
+     */
+    static arma::vec barycentric_from_face(const arma::vec &face_barycentric, unsigned int i_face);
 
 };
 

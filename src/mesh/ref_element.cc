@@ -20,6 +20,8 @@
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
 
+
+
 using namespace arma;
 using namespace std;
 
@@ -158,6 +160,86 @@ vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
 	if (dot(n,bar_side) < 0) n = -n;
 
 	return n;
+}
+
+
+
+template<unsigned int dim>
+arma::vec RefElement<dim>::barycentric_on_face(const arma::vec &barycentric, unsigned int i_face)
+{
+    ASSERT_EQ_DBG(barycentric.n_rows, dim+1);
+    arma::vec face_barycentric(dim);
+    for(unsigned int i=0; i < dim; i++) {
+        unsigned int i_sub_node = (i+1)%dim;
+        unsigned int i_bary = (dim + side_nodes[i_face][i_sub_node])%(dim+1);
+        face_barycentric[i] = barycentric[ i_bary ];
+    }
+    return face_barycentric;
+}
+
+
+template<unsigned int dim>
+arma::vec RefElement<dim>::barycentric_from_face(const arma::vec &face_barycentric, unsigned int i_face)
+{
+    ASSERT_EQ_DBG(face_barycentric.n_rows, dim);
+    arma::vec barycentric=arma::zeros(dim+1);
+    for(unsigned int i_sub_coord=0; i_sub_coord<dim; i_sub_coord++) {
+        unsigned int i_sub_node = (i_sub_coord+1)%dim;
+        barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( side_nodes[i_face][i_sub_node]);
+    }
+    return barycentric;
+}
+
+template<>
+arma::vec RefElement<0>::clip(const arma::vec &barycentric)
+{
+    return barycentric;
+}
+
+template<unsigned int dim>
+auto  RefElement<dim>::make_bary_unit_vec()->BarycentricUnitVec
+{
+    std::vector<arma::vec::fixed<dim+1> > bary_unit_vec(dim+1, arma::zeros(dim+1));
+    for(unsigned int i=0; i<dim; i++) {
+        bary_unit_vec[i][i] = 1.0;
+        bary_unit_vec[i][dim] = -1.0;
+        bary_unit_vec[dim][i] = -1.0 / dim;
+    }
+    bary_unit_vec[dim][dim] = 1.0;
+    return bary_unit_vec;
+}
+
+
+template<unsigned int dim>
+arma::vec RefElement<dim>::clip(const arma::vec &barycentric)
+{
+    static BarycentricUnitVec bary_unit_vec = make_bary_unit_vec();
+    ASSERT_EQ_DBG(barycentric.n_rows, dim+1);
+    for(unsigned int i_bary=0; i_bary < dim +1; i_bary ++) {
+        if (barycentric[i_bary] < 0.0) {
+            // index of barycentric coord that is constant on the face i_side
+            // as we use barycentric coords starting with local coordinates:
+            // TODO: rather work only with local coords and/or with canonical barycentric coords
+            unsigned int i_side = (2*dim - i_bary)%(dim +1);
+            // project to face
+            arma::vec projection_to_face(dim+1);
+            //barycentric.print(cout, "input");
+            //cout << "is: " << i_side << endl;
+            //cout << "ibary: " << i_bary << endl;
+            //bary_unit_vec[i_bary].print(cout, "normal");
+            //barycentric.subvec(0, dim-1).print(cout, "bary sub");
+            projection_to_face = barycentric - barycentric[i_bary]*bary_unit_vec[i_bary];
+            //projection_to_face(dim) = 1.0 - arma::sum(projection_to_face.subvec(0, dim-1));
+            //projection_to_face.print(cout, "projection");
+            auto bary_on_face = barycentric_on_face(projection_to_face, i_side);
+            //bary_on_face.print(cout, "b on f");
+            auto sub_clip = RefElement<dim-1>::clip(bary_on_face);
+            //sub_clip.print(cout, "sub clip");
+            return barycentric_from_face(sub_clip, i_side);
+        }
+    }
+    return barycentric;
+
 }
 
 
