@@ -32,6 +32,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
+#include <boost/filesystem.hpp>
 
 #include "main.h"
 
@@ -80,7 +81,8 @@ Application::Application( int argc,  char ** argv)
   main_input_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
-  use_profiler(true)
+  use_profiler(true),
+  yaml_balance_output_(false)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
@@ -179,7 +181,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
         ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
-        ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
+		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
+		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");
 
     ;
 
@@ -253,6 +256,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;
+
+    // preserves output of balance in YAML format
+    if (vm.count("yaml_balance")) yaml_balance_output_=true;
 
     string input_dir;
     string output_dir;
@@ -356,6 +362,23 @@ void Application::after_run() {
 
 
 Application::~Application() {
+	// remove balance output files in YAML format if "yaml_balance" option is not set
+	if ( (sys_info.my_proc==0) && !yaml_balance_output_ ) {
+		boost::filesystem::path mass_file( string(FilePath("mass_balance.yaml", FilePath::output_file)) );
+		boost::filesystem::path water_file( string(FilePath("water_balance.yaml", FilePath::output_file)) );
+		boost::filesystem::path energy_file( string(FilePath("energy_balance.yaml", FilePath::output_file)) );
+
+		if (boost::filesystem::exists(mass_file)) {
+		    boost::filesystem::remove(mass_file);
+		}
+		if (boost::filesystem::exists(water_file)) {
+		    boost::filesystem::remove(water_file);
+		}
+		if (boost::filesystem::exists(energy_file)) {
+		    boost::filesystem::remove(energy_file);
+		}
+	}
+
     if (use_profiler) {
         if (petsc_initialized) {
             // log profiler data to this stream

@@ -443,7 +443,7 @@ template<> template<> inline const IdxVector<3> RefElement<3>::interact<1,2>(uns
     
 template<unsigned int dim> template<unsigned int OutDim, unsigned int InDim> 
 inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact(unsigned int i)
-{   OLD_ASSERT_LESS(OutDim, dim);
-    OLD_ASSERT_LESS(InDim, dim);}
+{   ASSERT_LT_DBG(OutDim, dim);
+    ASSERT_LT_DBG(InDim, dim);}
 
 #endif /* REF_ELEMENT_HH_ */

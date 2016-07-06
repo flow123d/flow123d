@@ -8,7 +8,7 @@ namespace computeintersection {
 
 template<unsigned int N> void Simplex<N>::set_simplices(arma::vec3 **field_of_pointers_to_coordinates)
 {
-    ASSERT(field_of_pointers_to_coordinates !=nullptr, "Null pointer given in the constructor.");
+    OLD_ASSERT(field_of_pointers_to_coordinates !=nullptr, "Null pointer given in the constructor.");
     arma::vec3 *temporary_pointers[N];
 
     // filling temporary array of size N from array of size (N+1)
@@ -25,7 +25,7 @@ template<unsigned int N> void Simplex<N>::set_simplices(arma::vec3 **field_of_po
 
 
 template<> Simplex<1> &Simplex<3>::abscissa(unsigned int idx) {
-    ASSERT(idx < 6, "Index out of bounds (number of abscissas).");
+    OLD_ASSERT(idx < 6, "Index out of bounds (number of abscissas).");
 	/* we need the first sub-simplex for getting first three abscissas
 	*  the second sub-simplex for other two abscissas
 	*  the third sub-simplex for the last abscissa
@@ -41,7 +41,7 @@ template<> Simplex<1> &Simplex<3>::abscissa(unsigned int idx) {
 
 
 template<> Simplex<1> &Simplex<2>::abscissa(unsigned int idx) {
-    ASSERT(idx < 3, "Index out of bounds (number of abscissas).");
+    OLD_ASSERT(idx < 3, "Index out of bounds (number of abscissas).");
 	return simplices_[idx];
 }
 
@@ -49,7 +49,7 @@ template<> Simplex<1> &Simplex<2>::abscissa(unsigned int idx) {
 
 template<> ostream& operator<< <0>(ostream& os, const Simplex< 0 >& s)
 {
-    ASSERT(s.coords_ != nullptr, "Coordinates of the point have not been set yet.");
+    OLD_ASSERT(s.coords_ != nullptr, "Coordinates of the point have not been set yet.");
     os << "Simplex<0>(" << (*(s.coords_))[0] << "," << (*(s.coords_))[1] << "," << (*(s.coords_))[2] << ")";
     return os;
 }

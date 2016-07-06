@@ -106,17 +106,17 @@ inline Simplex< 0 >::Simplex()
 {   coords_ = nullptr; }
 
 inline Simplex< 0  >::Simplex(arma::vec3** field)
-{   ASSERT(field != nullptr, "Null pointer given in the constructor.");
+{   OLD_ASSERT(field != nullptr, "Null pointer given in the constructor.");
     coords_ = field[0]; }
 
 inline Simplex< 0  >::~Simplex(){}
 
 inline void Simplex< 0  >::set_simplices(arma::vec3** field)
-{   ASSERT(field != nullptr, "Null pointer given in the setter.");
+{   OLD_ASSERT(field != nullptr, "Null pointer given in the setter.");
     coords_ = field[0]; }
 
 inline arma::vec3& Simplex< 0  >::point_coordinates()
-{   ASSERT(coords_ != nullptr, "Null pointer given in the constructor.");
+{   OLD_ASSERT(coords_ != nullptr, "Null pointer given in the constructor.");
     return *coords_; }
 
 
@@ -129,7 +129,7 @@ template<unsigned int N> Simplex<N>::Simplex(arma::vec3 **field_of_pointers_to_c
 template<unsigned int N> Simplex<N>::~Simplex(){}
 
 template<unsigned int N> Simplex<N-1>& Simplex<N>::operator[](unsigned int idx)
-{   ASSERT(idx < N+1, "Index out of bounds (number of subsimplices.)");
+{   OLD_ASSERT(idx < N+1, "Index out of bounds (number of subsimplices.)");
     return simplices_[idx]; }
 
 } // END namespace_close

@@ -348,6 +348,8 @@ double RefElement<3>::side_measure(unsigned int sid)
             node_coords(side_nodes_[sid][2]) - node_coords(side_nodes_[sid][0])),2);
 }
 
+
+
 template <>
 unsigned int RefElement<3>::line_between_faces(unsigned int f1, unsigned int f2) {
     unsigned int i,j;
