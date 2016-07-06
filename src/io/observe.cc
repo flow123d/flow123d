@@ -6,12 +6,16 @@
  */
 
 #include <string>
+#include <unordered_set>
+#include <numeric>
+
 #include "system/global_defs.h"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
 
+#include "mesh/mesh.h"
+#include "mesh/bih_tree.hh"
 #include "mesh/region.hh"
-
 #include "io/observe.hh"
 #include "io/output_data.hh"
 
@@ -19,42 +23,191 @@
 namespace IT = Input::Type;
 
 
-ObservePoint::ObservePoint(const string &name, const arma::vec3 &coords, unsigned int snap_dim, const std::string &snap_region_name)
-: name_(name), input_point_(coords), snap_dim_(snap_dim), snap_region_name_(snap_region_name)
-{}
-
-
-
-
 const Input::Type::Record & ObservePoint::get_input_type() {
-    return IT::Record("ObservePoint", "Specification of the observation point.")
+    return IT::Record("ObservePoint", "Specification of the observation point. The actual observe element and the observe point on it is determined as follows:\n\n"
+            "1. Find an initial element containing the initial point. If no such element exists we report the error.\n"
+            "2. Use BFS starting from the inital element to find the 'observe element'. The observe element is the closest element "
+            "3. Find the closest projection of the inital point on the observe element and snap this projection according to the 'snap_dim'.\n")
         .declare_key("name", IT::String(),
                 IT::Default::read_time(
-                        "Default label have form 'obs_<id>', where 'id' "
-                        "is the rank of the point at input."),
+                        "Default name have the form 'obs_<id>', where 'id' "
+                        "is the rank of the point on the input."),
                 "Optional point name. Has to be unique. Any string that is valid YAML key in record without any quoting can be used however"
                 "using just alpha-numerical characters and underscore instead of the space is recommended. "
                 )
         .declare_key("point", IT::Array( IT::Double(), 3, 3 ), IT::Default::obligatory(),
-                "Position of the observation point before snapping (see snap_to_center_dim below).")
+                "Initial point for the observe point search.")
         .declare_key("snap_dim", IT::Integer(0, 4), IT::Default("4"),
                 "The dimension of the sub-element to which center we snap. For value 4 no snapping is done. "
                 "For values 0 up to 3 the element containing the initial point is found and then the observe"
                 "point is snapped to the nearest center of the sub-element of the given dimension. "
                 "E.g. for dimension 2 we snap to the nearest center of the face of the initial element."
-                "Let us note that we do not search for the nearest center in larger neighborhood of the initial element,"
-                "in particular for snap_to_center_dim=0 there could be a node which is closer "
-                "to the initial point then the snapped observe point.")
+                )
         .declare_key("snap_region", IT::String(), IT::Default("\"ALL\""),
                 "The region of the initial element for snapping. Without snapping we make a projection to the initial element.")
-        .declare_key("snapping_levels", IT::Integer(1), IT::Default("1"),
-                "Maximum number of levels of the breath first search used to find initial element from the element containing the given point.")
+        .declare_key("n_search_levels", IT::Integer(0), IT::Default("1"),
+                "Maximum number of levels of the breadth first search used to find the observe element from the initial element. Value zero means to search only the initial element itself.")
         .close();
 }
 
+ObservePoint::ObservePoint()
+{}
+
+
+ObservePoint::ObservePoint(Input::Record in_rec, unsigned int point_idx)
+:  distance_(numeric_limits<double>::infinity())
+{
+    in_rec_ = in_rec;
+
+    string default_label = string("obs_") + std::to_string(point_idx);
+    name_ = in_rec.val<string>("name", default_label );
+
+    vector<double> tmp_coords;
+    in_rec.val<Input::Array>("point").copy_to(tmp_coords);
+    input_point_= arma::vec(tmp_coords);
+
+    snap_dim_ = in_rec.val<unsigned int>("snap_dim");
+
+    snap_region_name_ = in_rec.val<string>("snap_region");
+
+    max_levels_ =  in_rec_.val<unsigned int>("n_search_levels");
+}
+
+
+
+void ObservePoint::update_projection(unsigned int i_elm, arma::vec local_coords, arma::vec3 global_coords)
+{
+    double dist = arma::norm(global_coords - input_point_, 2);
+    //cout << "dist: " << dist << endl;
+    if (dist < distance_) {
+        distance_ = dist;
+        element_idx_ = i_elm;
+        local_coords_ = local_coords;
+        global_coords_ = global_coords;
+    }
+}
+
+
+
+bool ObservePoint::have_observe_element() {
+    return distance_ < numeric_limits<double>::infinity();
+}
+
+
+
+template <int ele_dim>
+void ObservePoint::snap_to_subelement()
+{
+    if (this->snap_dim_ >  ele_dim) return;
+
+    double min_dist = 2.0; // on the ref element the max distance should be about 1.0, smaler then 2.0
+    arma::vec min_center;
+    for(auto &center : RefElement<ele_dim>::centers_of_subelements(this->snap_dim_))
+    {
+        double dist = arma::norm(center-local_coords_, 2);
+        if ( dist < min_dist) {
+            min_dist = dist;
+            min_center = center;
+        }
+    }
+    this->local_coords_ = min_center;
+}
+
+
+void ObservePoint::snap(Mesh &mesh)
+{
+    Element & elm = mesh.element[element_idx_];
+    switch (elm.dim()) {
+             case 1: snap_to_subelement<1>(); break;
+             case 2: snap_to_subelement<2>(); break;
+             case 3: snap_to_subelement<3>(); break;
+             default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
+    }
+    this->global_coords_ =  elm.element_map() * arma::join_cols(this->local_coords_, arma::ones(1));
+}
+
+
+
+void ObservePoint::find_observe_point(Mesh &mesh) {
+    RegionSet region_set = mesh.region_db().get_region_set(snap_region_name_);
+    if (region_set.size() == 0)
+        THROW( RegionDB::ExcUnknownSet() << RegionDB::EI_Label(snap_region_name_) << in_rec_.ei_address() );
+
+
+    const BIHTree &bih_tree=mesh.get_bih_tree();
+    vector<unsigned int> candidate_list, process_list;
+    std::unordered_set<unsigned int> closed_elements(1023);
+
+    // search for the initial element
+    bih_tree.find_point(input_point_, candidate_list);
+    process_list.swap(candidate_list);
+    candidate_list.clear();
+    for(unsigned int i_elm : process_list) {
+        Element & elm = mesh.element[i_elm];
+        arma::mat map = elm.element_map();
+        arma::vec projection = elm.project_point(input_point_, map);
+
+        // check that point is on the element
+        if (projection.min() >=0.0) {
+            // This is initial element.
+            //input_point_.print(cout, "input_point");
+            //cout << "i_el: " << i_elm << endl;
+            //projection.print(cout, "projection");
+
+            // if element match region filter store it as observe element to the obs. point
+            if (elm.region().is_in_region_set(region_set)) {
+                projection[elm.dim()] = 1.0; // use last coordinates for translation
+                arma::vec global_coord = map*projection;
+                update_projection(i_elm, projection.rows(0, elm.dim()-1), global_coord);
+            }
+
+            closed_elements.insert(i_elm);
+            // add all node neighbours to the next level list
+            for (unsigned int n=0; n < elm.n_nodes(); n++) {
+                for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+                    candidate_list.push_back(i_node_ele);
+            }
+        }
+    }
+
+    if (candidate_list.size() == 0) THROW( ExcNoInitialPoint() << in_rec_.ei_address() );
+
+    for(unsigned int i_level=0; i_level < max_levels_; i_level++) {
+        if (have_observe_element()) break;
+        process_list.swap(candidate_list);
+        candidate_list.clear();
+        for(unsigned int i_elm : process_list) {
+            if (closed_elements.find(i_elm) != closed_elements.end()) continue;
+            Element & elm = mesh.element[i_elm];
+
+            // if element match region filter, update the obs. point
+            if (elm.region().is_in_region_set(region_set)) {
+                arma::mat map = elm.element_map();
+                arma::vec projection = elm.project_point(input_point_, map);
+                arma::vec point_on_element = elm.clip_to_element(projection);
+
+                point_on_element[elm.dim()] = 1.0; // use last coordinates for translation
+                arma::vec global_coord = map*point_on_element;
+                update_projection(i_elm, point_on_element.rows(0, elm.dim()-1), global_coord);
+             }
+            // add all node neighbours to the next level list
+            for (unsigned int n=0; n < elm.n_nodes(); n++) {
+                for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+                    candidate_list.push_back(i_node_ele);
+            }
+        }
+    }
+    snap( mesh );
+}
+
+
+
+
+
 
 Observe::Observe(string observe_name, Mesh &mesh, Input::Record in_rec)
-: mesh_(&mesh)
+: mesh_(&mesh),
+  in_rec_(in_rec)
 {
     // in_rec is Output input record.
 
@@ -65,27 +218,11 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Record in_rec)
     }
 
     auto op_input_array = in_rec.val<Input::Array>("observe_points");
-    for(auto it = op_input_array.begin<Input::Record>(); it != op_input_array.end(); ++it ) {
-
-        string default_label = string("obs_") + std::to_string(points_.size());
-        string label = it->val<string>("name", default_label );
-
-        vector<double> tmp_coords;
-        it->val<Input::Array>("point").copy_to(tmp_coords);
-        arma::vec3 coords= arma::vec(tmp_coords);
-
-        string region_name = it->val<string>("snap_region");
-        RegionSet snap_region = mesh_->region_db().get_region_set(region_name);
-        if (snap_region.size() == 0)
-            THROW( RegionDB::ExcUnknownSet() << RegionDB::EI_Label(region_name) << it->ei_address() );
-
-        points_.push_back(ObservePoint(
-                label,
-                coords,
-                it->val<unsigned int>("snap_dim"),
-                region_name));
+    for(auto it = op_input_array.begin<Input::Record>(); it != op_input_array.end(); ++it) {
+        ObservePoint point(*it, points_.size());
+        point.find_observe_point(*mesh_);
+        points_.push_back( point );
     }
-    find_observe_points();
 
     observe_file_.open((observe_name + "_observe.yaml").c_str());
 }
@@ -94,9 +231,6 @@ Observe::~Observe() {
     observe_file_.close();
 }
 
-void Observe::find_observe_points() {
-
-}
 
 template<int spacedim, class Value>
 void Observe::compute_field_values(Field<spacedim, Value> &field) {

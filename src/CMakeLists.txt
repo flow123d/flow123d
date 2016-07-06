@@ -224,6 +224,8 @@ add_library(coupling_lib
     io/output_time.cc
     io/output_vtk.cc
     io/output_msh.cc
+    io/observe.cc
+    
     
     fields/field_values.cc
     fields/field_common.cc

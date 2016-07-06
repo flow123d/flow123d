@@ -276,6 +276,9 @@ public:
     
     const BIHTree &get_bih_tree();
 
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements;
+
 
 protected:
 
@@ -352,9 +355,6 @@ protected:
     mutable vector<int> bulk_elements_id_, boundary_elements_id_;
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
-
-    // For each node the vector contains a list of elements that use this node
-    vector<vector<unsigned int> > node_elements;
 
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
     unsigned int max_edge_sides_[3];

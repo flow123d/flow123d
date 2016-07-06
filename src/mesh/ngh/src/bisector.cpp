@@ -18,7 +18,7 @@
 #include <iostream>
 
 #include "system/global_defs.h"
-#include "mesh/elements.h"
+#include "mesh/element_impls.hh"
 
 #include "mesh/ngh/include/bisector.h"
 #include "mesh/ngh/include/mathfce.h"

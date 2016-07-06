@@ -24,13 +24,60 @@
  */
 class ObservePoint {
 public:
+    DECLARE_INPUT_EXCEPTION(ExcNoInitialPoint,
+            << "Failed to find the element containing the initial observe point.\n");
     static const Input::Type::Record & get_input_type();
 
-
-    ObservePoint(const string &name, const arma::vec3 &coords, unsigned int snap_dim, const std::string &snap_region_name);
-
-
 protected:
+    /// Default constructor just for testing.
+    ObservePoint();
+
+    /**
+     * Constructor. Read from input.
+     */
+    ObservePoint(Input::Record in_rec, unsigned int point_idx);
+
+    /**
+     * Update the observe element and the projection of the initial point on it.
+     */
+    void update_projection(unsigned int i_elm, arma::vec local_coords, arma::vec3 global_coords);
+
+    /**
+     * Returns true if we have already found any observe element.
+     */
+    bool have_observe_element();
+
+    /**
+     * Snap local coords to the subelement. Called by the snap method.
+     */
+    template <int ele_dim>
+    void snap_to_subelement();
+
+    /**
+     *  Snap to the center of closest subelement with dimension snap_dim_.
+     *  This makes final adjustment of global_coords_ and local_coords_.
+     */
+    void snap(Mesh &mesh);
+
+
+    /**
+     * Find the observe element and the definitive observe point.
+     *
+     * Algorithm:
+     * 1. find element containing the point (initial element)
+     * 2. check initial element for region match possibly set it as (observe element)
+     * 3. add neighbours into processing_list for the next level
+     * 4. while we have no observe element: pass through the processing list of the current level
+     * 5.   if element match the region, project and clip the init point, update observe element.
+     * 6. snapping on the observe element
+     *
+     */
+    void find_observe_point(Mesh &mesh);
+
+
+    /// Index in the input array.
+    Input::Record in_rec_;
+
     /// Observation point name.
     std::string name_;
 
@@ -48,6 +95,11 @@ protected:
      */
     string snap_region_name_;
 
+    /**
+     * Maximal number of observe element search levels.
+     */
+    unsigned int max_levels_;
+
     /// Final element of the observe point. The index in the mesh.
     unsigned int element_idx_;
 
@@ -55,7 +107,13 @@ protected:
     arma::vec3 global_coords_;
 
     /// Local (barycentric) coordinates on the element.
-    arma::vec3 local_coords_;
+    arma::vec local_coords_;
+
+    /// Distance of found projection from the initial point.
+    /// If we find more candidates we pass in the closest one.
+    double distance_;
+
+
 
     /// Only Observe should use this class directly.
     friend class Observe;
@@ -79,10 +137,6 @@ public:
     /// Destructor, must close the file.
     ~Observe();
 
-    /**
-     * Search the mesh for
-     */
-    void find_observe_points();
 
     /**
      * Evaluates and store values of the given field in the observe points.
@@ -107,6 +161,7 @@ public:
 
 protected:
     Mesh *mesh_;
+    Input::Record in_rec_;
 
 
     /// Full information about observe points.
