@@ -15,6 +15,11 @@
 #include "system/sys_profiler.hh"
 
 
+/// Simple exception for tests that accepts string message.
+TYPEDEF_ERR_INFO( EI_Text, std::string);
+DECLARE_EXCEPTION(ExcLoggerTest, << EI_Text::val );
+
+
 // Calls various types of logger messages, allow check logger with different settings.
 void logger_messages() {
 	unsigned int mesh_size = 150;
@@ -34,7 +39,14 @@ void logger_messages() {
 	DebugOut() << "Start of simulation at time " << start_time << ", mesh has " << mesh_size << " elements." << "\n";
 	DebugOut().every_proc() << "Output of process: " << LoggerOptions::get_instance().get_mpi_rank() << "\n";
 
-	// flush screen streams for better but not perfect output
+    // print error message
+	try {
+        THROW(ExcLoggerTest() << EI_Text("The field has set non-unique names of components.\nPlease set unique names.") );
+    } catch (ExcLoggerTest & e) {
+    	_LOG( Logger::MsgType::error ) << e.what();
+    }
+
+    // flush screen streams for better but not perfect output
 	std::cout << std::flush;
 	std::cerr << std::flush;
 
@@ -43,7 +55,7 @@ void logger_messages() {
 }
 
 
-TEST(LoggerNoLog, full) {
+TEST(Logger, no_log) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("");
@@ -51,21 +63,21 @@ TEST(LoggerNoLog, full) {
 	logger_messages();
 }
 
-TEST(LoggerWithoutInitLogFile, full) {
+TEST(Logger, without_init_log_file) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 
 	logger_messages();
 }
 
-TEST(LoggerLogFileWithoutMPI, full) {
+TEST(Logger, log_file_without_mpi) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().set_log_file("without_mpi");
 
 	logger_messages();
 }
 
-TEST(LoggerLogFileWithMPI, full) {
+TEST(Logger, log_file_with_mpi) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("with_mpi");
@@ -73,7 +85,7 @@ TEST(LoggerLogFileWithMPI, full) {
 	logger_messages();
 }
 
-TEST(MaskManipulator, full) {
+TEST(Logger, mask_manipulator) {
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("manip");
@@ -82,6 +94,20 @@ TEST(MaskManipulator, full) {
 				 << StreamMask::cout << "Second message only to cout." << std::endl
 				 << StreamMask::log << "Third message only to file.\n"
 				 << (StreamMask::cout | StreamMask::log) << "Fourth message to cout and file.\n";
+
+	LoggerOptions::get_instance().reset();
+}
+
+TEST(Logger, fmt_lib) {
+	Profiler::initialize();
+	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_log_file("");
+
+	int i=1;
+	double f=0.2;
+	std::string s = "ahoj";
+	MessageOut() << fmt::format("int: {} double: {} string: {}\n", i, f, s);
+	MessageOut().fmt("int: {} double: {} string: {}\n", i, f, s);
 
 	LoggerOptions::get_instance().reset();
 }
