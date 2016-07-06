@@ -31,7 +31,6 @@ namespace Input {
 
 std::ostringstream &Exception::form_message(std::ostringstream &converter) const {
 
-	converter << std::endl << std::endl;
     converter << "--------------------------------------------------------" << std::endl;
     converter << "User Error: ";
     print_info(converter);

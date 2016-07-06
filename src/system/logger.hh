@@ -23,6 +23,8 @@
 #include <sstream>
 #include <vector>
 
+#include "system/fmt/format.h"
+
 
 
 /**
@@ -112,6 +114,13 @@ private:
    MessageOut() << "Start time: " << this->start_time() << "\n" << "End time: " << this->end_time() << "\n";
  @endcode
  *
+ * Or Logger allow using fmtlib functionality for simpler formatting of message:
+ *
+ @code
+   MessageOut() << fmt::format("Start time: {}\nEnd time: {}\n", this->start_time(), this->end_time());
+   MessageOut().fmt("Start time: {}\nEnd time: {}\n", this->start_time(), this->end_time());
+ @endcode
+ *
  * In some cases message can be printed for all processes:
  *
  @code
@@ -127,7 +136,8 @@ public:
 		warning = 0,
 		message = 1,
 		log = 2,
-		debug = 3
+		debug = 3,
+		error = 4
 	};
 
 	/// Return string value of given MsgType in full or shorter format (e.g. "WARNING" of "Wrn")
@@ -141,6 +151,17 @@ public:
 
 	/// Set flag every_process_ to true
 	Logger& every_proc();
+
+	/**
+	 * @brief Allow use functionality of fmtlib for formating message.
+	 *
+	 * See examples in description of Logger class.
+	 */
+	template<class... T>
+	Logger& fmt(T&&... t)
+	{
+	    return *this << fmt::format(std::forward<T>(t)...);
+	}
 
 	/// Destructor.
 	~Logger();
