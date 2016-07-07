@@ -53,7 +53,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA
 
 template<unsigned int N, unsigned int M>
 IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-1> &IP, unsigned int idx_B){
-    OLD_ASSERT(M>1 && M<4,"Wrong the second dimension in an IntersectionPointAux (allowed 2 and 3 only)");
+    ASSERT_DBG(M>1 && M<4);
     
     local_bcoords_A_ = IP.local_bcoords_A();
     local_bcoords_B_ = RefElement<M>::template interpolate<M-1>(IP.local_bcoords_B(), idx_B);
@@ -67,7 +67,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-1> &IP,
 
 template<unsigned int N, unsigned int M>
 IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-2> &IP, unsigned int idx_B){
-    OLD_ASSERT(M == 3,"Wrong the second dimension in an IntersectionPointAux (allowed 3 only)");
+    ASSERT_DBG(M == 3);
 
     local_bcoords_A_ = IP.local_bcoords_A();
     local_bcoords_B_ = RefElement<3>::interpolate<1>(IP.local_bcoords_B(), idx_B);
@@ -92,7 +92,7 @@ IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects()
 template<unsigned int N, unsigned int M>
 arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementFullIter ele) const
 {
-    OLD_ASSERT(N == ele->dim(), "Element vs intersection point dimension mismatch.");
+    ASSERT_DBG(N == ele->dim());
     
     arma::vec::fixed< 3  > c;
     c.zeros();

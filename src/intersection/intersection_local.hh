@@ -137,7 +137,7 @@ inline const std::vector< IntersectionPoint< dimA, dimB > >& IntersectionLocal<d
 
 template<unsigned int dimA, unsigned int dimB>
 inline const IntersectionPoint< dimA, dimB >& IntersectionLocal<dimA,dimB>::operator[](unsigned int index) const
-{   OLD_ASSERT(index < i_points_.size(), "Index out of bounds.");
+{   ASSERT_DBG(index < i_points_.size());
     return i_points_[index]; }
 
 template<unsigned int dimA, unsigned int dimB>

@@ -97,7 +97,7 @@ inline const std::vector< IntersectionPointAux< dimA, dimB > >& IntersectionAux<
 
 template<unsigned int dimA, unsigned int dimB>
 inline const IntersectionPointAux< dimA, dimB >& IntersectionAux<dimA,dimB>::operator[](unsigned int index) const
-{   OLD_ASSERT(index < i_points_.size(), "Index out of bounds.");
+{   ASSERT_DBG(index < i_points_.size());
     return i_points_[index]; }
 
 template<unsigned int dimA, unsigned int dimB>

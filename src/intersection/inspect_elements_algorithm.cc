@@ -166,9 +166,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    OLD_ASSERT(ele_3D->tetrahedron_jacobian() > 0,
-                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).",
-                           ele_3D->index());
+                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D->index(),"element index").error(
+                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
                         // - if found, prolongate and possibly fill both prolongation queues
@@ -295,9 +294,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree()
                 if (ele_3D->dim() == 3
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    OLD_ASSERT(ele_3D->tetrahedron_jacobian() > 0,
-                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).",
-                           ele_3D->index());
+                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D->index(),"element index").error(
+                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     std::vector<unsigned int> prolongation_table;
@@ -361,9 +359,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ){
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    OLD_ASSERT(ele_3D->tetrahedron_jacobian() > 0,
-                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).",
-                           ele_3D->index());
+                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D->index(),"element index").error(
+                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
                         // - if found, prolongate and possibly fill both prolongation queues
@@ -640,7 +637,7 @@ void InspectElementsAlgorithm<2>::assert_same_intersection(unsigned int comp_ele
         if(intersection_list_[comp_ele_idx][i].bulk_ele_idx() == bulk_ele_idx)
         {
             DBGMSG("intersection comp-bulk: %d %d\n", comp_ele_idx, bulk_ele_idx);
-            OLD_ASSERT(0, "Want to add the same intersection!");
+            ASSERT_DBG(0).add_value(bulk_ele_idx,"bulk_ele_idx").error("Want to add the same intersection!");
         }
     }
 }
@@ -836,9 +833,9 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
 void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIter& eleA,
                                                              const ElementFullIter& eleB)
 {
-    OLD_ASSERT(eleA->dim() == 2, "Wrong element dimension.");
-    OLD_ASSERT(eleB->dim() == 2, "Wrong element dimension.");
-    OLD_ASSERT(eleA->index() != eleB->index(), "Cannot compute intersection of the same elements.");
+    ASSERT_DBG(eleA->dim() == 2);
+    ASSERT_DBG(eleB->dim() == 2);
+    ASSERT_DBG(eleA->index() != eleB->index());
     
     update_simplex(eleA, triaA_);
     update_simplex(eleB, triaB_);

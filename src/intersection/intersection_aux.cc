@@ -34,7 +34,6 @@ IntersectionAux<dimA,dimB>::~IntersectionAux()
 template<>
 double IntersectionAux<1,3>::compute_measure()
 {
-    //ASSERT(i_points_.size() > 1, "Not enough intersetion points to define a line.");
     double length = 0;
     
     if(i_points_.size() > 1)

@@ -101,7 +101,7 @@ IntersectionPoint<dimA,dimB>::IntersectionPoint(const arma::vec::fixed< dimA  >&
 template<unsigned int dimA, unsigned int dimB>
 arma::vec3 IntersectionPoint<dimA,dimB>::coords(ElementFullIter comp_ele) const
 {
-    OLD_ASSERT(dimA == comp_ele->dim(), "Element vs intersection point dimension mismatch.");
+    ASSERT_DBG(dimA == comp_ele->dim());
     
     arma::vec3 c;
     c.zeros();

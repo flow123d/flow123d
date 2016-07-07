@@ -33,6 +33,9 @@ void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, Inter
 //     for(IntersectionPointAux<2,3> &ip : p.points())
 //         cout << ip;
     
+    // avoid tracing (none is needed) if the intersection is just single point
+    if(p.points().size() < 2) return;
+    
     if(p.is_pathologic()) trace_polygon_convex_hull(prolongation_table, p);
     else trace_polygon_opt(prolongation_table, p);
 };
@@ -40,13 +43,9 @@ void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, Inter
 void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
 
     START_TIMER("CI trace opt");
-    OLD_ASSERT(!p.is_pathologic(), "Cannot call this polygonal tracing in pathologic case.");
+    ASSERT_DBG(!p.is_pathologic());
     
     prolongation_table.clear();
-    
-    //TODO: this is checked outside in inspect_elements; assert??
-    // avoid tracing (none is needed) if the intersection is just single point
-    if(p.points().size() < 2) return;
 
     const unsigned int tt_size = 7;
     // Tracing table - 7 (4 sides of tetrahedron + 3 edges of triangle) X 2
@@ -142,7 +141,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                 DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",row, object_index, i);
             } break;
             default:
-                OLD_ASSERT(0,"Unsupported dimension of intersection object A.");
+                ASSERT_DBG(0).error("Unsupported dimension of intersection object A.");
                 row = object_index = 0; // suppress compilation warnings
               break;
         }
@@ -209,9 +208,6 @@ void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_
 
     START_TIMER("CI trace convex hull");
     DBGMSG("convex hull tracing\n");
-    //TODO: this is checked outside in inspect_elements; assert??
-    // skip tracing if not enough IPs
-    if(p.points().size() <= 1) return;
 
     prolongation_table.clear();
     
