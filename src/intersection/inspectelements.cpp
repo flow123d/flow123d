@@ -67,8 +67,8 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
                                             std::vector< IntersectionLocal<dim,3>>& storage)
 {
     START_TIMER("Intersection algorithm");
-//     iea.compute_intersections();
-    iea.compute_intersections_BIHtree();
+    iea.compute_intersections();
+//     iea.compute_intersections_BIHtree();
 //     iea.compute_intersections_BB();
     END_TIMER("Intersection algorithm");
     

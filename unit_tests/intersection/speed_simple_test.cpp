@@ -33,7 +33,7 @@
 using namespace std;
 
 static const unsigned int profiler_loop = 100;
-static const unsigned int n_meshes = 100000;
+static const unsigned int n_meshes = 100;
 
 // results - number of cases with number of ips 0-7
 static unsigned int n_intersection[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -129,8 +129,8 @@ void print_mesh(Mesh *mesh, string t_name = "random_mesh")
 template<unsigned int dimA, unsigned int dimB>
 void generate_mesh(Mesh *mesh)
 {
-    ASSERT(dimA <= dimB, "Unsupported dimensions.");
-    ASSERT(dimA != 3, "Unsupported dimensions.");
+    ASSERT(dimA <= dimB).error("Unsupported dimensions.");
+    ASSERT(dimA != 3).error("Unsupported dimensions.");
     
     mesh->node_vector.reserve(10);
     unsigned int nA = RefElement<dimA>::n_nodes, 

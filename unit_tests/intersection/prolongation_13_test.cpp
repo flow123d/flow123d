@@ -213,7 +213,7 @@ TEST(intersection_prolongation_13d, all) {
         }
         closedir (dir);
     } else {
-        ASSERT(0,"Could not open directory with testing meshes.");
+        ASSERT(0).error("Could not open directory with testing meshes.");
     }
     
     std::sort(filenames.begin(), filenames.end(), less<string>());
@@ -223,7 +223,7 @@ TEST(intersection_prolongation_13d, all) {
     fill_13d_solution(solution, lengths);
     
     // for each mesh, compute intersection area and compare with old NGH
-    for(unsigned int s=0; s< filenames.size(); s++)
+    for(unsigned int s=0; s<filenames.size(); s++)
     {
 //         const unsigned int np = 24;
 //         unsigned int permutations[np][4] = {{0,1,2,3},

@@ -88,7 +88,7 @@ std::vector<string> read_filenames(string dir_name)
         }
         closedir (dir);
     } else {
-        ASSERT(0,"Could not open directory with testing meshes.");
+        ASSERT(0).error("Could not open directory with testing meshes.");
     }
     
     std::sort(filenames.begin(), filenames.end(), less<string>());
@@ -98,12 +98,18 @@ std::vector<string> read_filenames(string dir_name)
 TEST(benchmark_meshes, all) {
     Profiler::initialize();
     
-    DBGMSG("tolerances: %e\t%e\n", rounding_epsilon, geometry_epsilon);
-    
     // directory with testing meshes
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/benchmarks/";
     std::vector<string> filenames = read_filenames(dir_name);
     
+    if(filenames.size() == 0)
+    {
+        xprintf(Msg,"No benchmark meshes were found in directory: '%s'\n", dir_name.c_str());
+        EXPECT_EQ(1,1);
+        return;
+    }
+    
+    DBGMSG("tolerances: %e\t%e\n", rounding_epsilon, geometry_epsilon);
     Profiler::instance()->set_task_info("Speed test Inspect Elements Algorithm. "+filenames[0],2);
 
     // for each mesh, compute intersection area and compare with old NGH

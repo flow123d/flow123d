@@ -104,7 +104,7 @@ TEST(area_intersections, all) {
         }
         closedir (dir);
     } else {
-        ASSERT(0,"Could not open directory with testing meshes.");
+        ASSERT(0).error("Could not open directory with testing meshes.");
     }
     
     std::sort(filenames.begin(), filenames.end(), less<string>());
