@@ -1,8 +1,19 @@
-/*
- * IntersectionPolygon.cpp
+/*!
  *
- *  Created on: 8.4.2015
- *      Author: viktor
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    tracing_algorithm.cc
+ * @ingroup intersection
+ * @brief   Implementation of tracing algorithms for polygonal intersections.
  */
 
 #include "trace_algorithm.h"
@@ -278,6 +289,7 @@ int Tracing::side_content_prolongation(IntersectionAux<2,3> &p){
 
     vector<unsigned int> side_field(4,0);
 
+    // compute number of IPs lying on each tetrahedron face
     for(unsigned int i = 0; i < p.points().size();i++){
 
         for(unsigned int j = 0; j < 4;j++){
@@ -287,6 +299,7 @@ int Tracing::side_content_prolongation(IntersectionAux<2,3> &p){
         }
     }
 
+    
     for(unsigned int i = 0;i< 4;i++){
         if(side_field[i] > 2){
             return i;
