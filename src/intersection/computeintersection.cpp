@@ -516,7 +516,9 @@ void ComputeIntersection<Simplex<2>, Simplex<2>>::set_data(computeintersection::
 unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAux< 2, 2 >& intersection,
                                                                   std::vector<unsigned int> &prolongation_table)
 {
+    // final intersection points
     std::vector<IntersectionPointAux<2,2>> &IP22s = intersection.points();
+    // temporary vector for lower dimensional IPs
     std::vector<IntersectionPointAux<1,2>> IP12s;
     IP12s.reserve(2);
     unsigned int local_ip_counter, ip_coutner = 0;
