@@ -1,6 +1,20 @@
-/*
- *  Created on: 14.3.2016
- *  Author: pex
+/*!
+ *
+﻿* Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    intersection_aux.hh
+ * @brief   Internal class representing intersection object.
+ * @author  Pavel Exner
+ *
  */
 
 #ifndef INTERSECTIONAUX_H_
@@ -14,17 +28,24 @@ namespace computeintersection{
 template<unsigned int, unsigned int> class IntersectionPointAux;
 template<typename U, typename V> class ComputeIntersection;
 
-/** @brief Internal auxiliary class representing intersecion object of of simplex<dimA> and simplex<dimB>.
+/** @brief Internal auxiliary class representing intersection object of simplex<dimA> and simplex<dimB>.
  * 
  * It contains topology information and auxiliary intersection points.
+ * Used in ComputeIntersection classes.
  */
 template<unsigned int dimA, unsigned int dimB>
 class IntersectionAux{
 
+    /// Vector of internal intersection points.
     std::vector<IntersectionPointAux<dimA,dimB>> i_points_;
+
+    /// Index of intersecting element in the component.
     unsigned int component_element_idx_;
+    /// Index of intersecting element in the bulk.
     unsigned int bulk_element_idx_;
+    /// Index of the intersecting component.
     unsigned int component_idx_;
+    /// Flag for pathologic case.
     bool pathologic_;
     
 public:

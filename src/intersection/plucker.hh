@@ -1,3 +1,22 @@
+/*!
+ *
+﻿* Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    plucker.hh
+ * @brief   Plucker coordinates class.
+ * @author  Viktor Fris, Pavel Exner
+ *
+ */
+
 #include <armadillo>
 #include <iostream>
 #include "system/system.hh"
@@ -7,7 +26,8 @@ namespace computeintersection{
 #ifndef _PLUCKER_H
 #define _PLUCKER_H
 
-/**
+/** @brief Plucker coordinates representing line given by points A,B.
+ * 
  * Plucker class represents a line by 6 dimensional vector.
  * After inserting a three-dimensional points A and B, which represents the line,
  * class creates plucker coordinates of the line.
@@ -21,8 +41,8 @@ namespace computeintersection{
  * coordinates data are filled after calling method "compute"
  * a flag "computed" is for comparison if coordinates data are filled
  *
- * TODO: 
- * - is compute() used from outside ? Yes
+ * question: is compute() used from outside ? 
+ * answer: Yes
  */
 class Plucker{
 private:
@@ -35,8 +55,7 @@ public:
      * Plucker coordinates are not computed.
      */
 	Plucker();
-	/**
-     * Creates Plucker coordinates of a line AB.
+	/** @brief Creates Plucker coordinates of a line AB.
 	 * @param a - A point from AB line
 	 * @param b - B point from AB line
 	 */
@@ -58,7 +77,10 @@ public:
     /// Return true if Plucker coordinates have been computed already.
 	bool is_computed() const;
 
-	/// Compute Plucker coordinates and set computed to true.
+    /** @brief Compute Plucker coordinates and set computed to true.
+     * @param a A point from AB line
+     * @param b B point from AB line (order of points determines orientation!)
+     */
 	void compute(const arma::vec3 &a, const arma::vec3 &b);
 
 	/// Gets directional vector U.
@@ -90,7 +112,7 @@ inline Plucker::Plucker(const Plucker &p)
     computed_ = p.is_computed(); }
 
 inline double Plucker::operator[](const unsigned int index) const
-{   OLD_ASSERT(computed_, "Plucker coordinates not computed yet.");
+{   ASSERT_DBG(computed_);
     return coordinates_[index]; }
 
 inline void Plucker::clear()
@@ -100,15 +122,15 @@ inline bool Plucker::is_computed() const
 {   return computed_; }
 
 inline arma::vec3 Plucker::get_u_vector() const
-{   OLD_ASSERT(computed_, "Plucker coordinates not computed yet.");
+{   ASSERT_DBG(computed_);
     return coordinates_(arma::span(0,2)); }
 
 inline arma::vec3 Plucker::get_ua_vector() const
-{   OLD_ASSERT(computed_, "Plucker coordinates not computed yet.");
+{   ASSERT_DBG(computed_);
     return coordinates_(arma::span(3,5)); }
 
 inline arma::vec6 Plucker::get_plucker_coords() const
-{   OLD_ASSERT(computed_, "Plucker coordinates not computed yet.");
+{   ASSERT_DBG(computed_);
     return coordinates_; }
 
 #endif

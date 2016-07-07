@@ -1,3 +1,22 @@
+/*!
+ *
+﻿* Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    intersection_local.hh
+ * @brief   Classes with algorithms for computation of intersections of meshes.
+ * @author  Pavel Exner
+ *
+ */
+
 #ifndef INSPECT_ELEMENTS_ALGORITHM_H_
 #define INSPECT_ELEMENTS_ALGORITHM_H_
 
@@ -29,7 +48,11 @@ typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
  * 
  * Implements the initialization routine, that finds the first candidate for intersection.
  * It uses bounding boxes to fastly resolve intersection candidates. 
- * The lookup is done using BIH tree algorithm.
+ * We call elements whose bounding boxes are intersecting 'candidates'.
+ * 
+ * Finding first candidate:
+ *      - BIH search algorithm - build BIH and use it to find first candidates of components
+ *      - BB search algorithm - compute only bounding boxes and search through till finding candidates
  * 
  * Implements prolongation algorithm that recursively searches neighbouring elements for next intersection candidates.
  * The candidates -- neighbouring component elements and bulk elements -- are pushed into separate queues.
@@ -41,8 +64,16 @@ typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
  * Function @p prolongate computes intersection for a candidate pair and calls @p prolongation_decide again.
  * This is done in an infinite cycle, until both queues are empty.
  * 
+ * Three algorithms are implemented:
+ * 
+ *      - BIH only: creates BIH, uses BIH to search through all elements to find candidates
+ *      - BIH search: creates BIH, uses BIH to find only first candidates of components; then uses prolongation
+ *      - BB search: does not create BIH, uses bounding boxes to search through all elements to find candidates
+ * 
  * Due to optimal tracing algorithm for 2d-3d, we consider tetrahedron only with positive Jacobian.
  * This is checked in assert.
+ * 
+ * TODO: check unit test prolongation 13d, because it has different results for BIH only and BB search
  */
 template<unsigned int dim>
 class InspectElementsAlgorithm{
@@ -142,7 +173,11 @@ private:
     friend class InspectElementsAlgorithm22;
 };
 
-
+/** @brief Implements algorithm for finding 2D-2D intersections.
+ * 
+ * It uses previously computed 2D-3D intersections and find candidates
+ * which have intersection in the same bulk (3D) element.
+ */
 class InspectElementsAlgorithm22
 {
 public:
@@ -161,6 +196,7 @@ private:
     /// Object representing a triangle element B.
     Simplex<2> triaB_;
     
+    /// Computes fundamental intersection of two 2D elements.
     void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB);
     
     /// Auxiliary function that translates @p ElementFullIter to @p Simplex<2>.

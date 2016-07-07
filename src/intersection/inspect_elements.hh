@@ -1,8 +1,20 @@
-/*
- * inspectelements.h
+/*!
  *
- *  Created on: 13.4.2014
- *      Author: viktor, pe, jb
+﻿* Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    inspect_elements.hh
+ * @brief   Main class InspectElements for governing intersection algorithm on meshes of combined dimensions.
+ * @author  Pavel Exner
+ *
  */
 #ifndef INSPECT_ELEMENTS_H_
 #define INSPECT_ELEMENTS_H_
@@ -18,7 +30,7 @@ class InspectElementsAlgorithm22;
 class IntersectionLocalBase;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
 
-
+/// Selection of intersections of different dimensions.
 enum IntersectionType
 {
     none = 0,
@@ -29,7 +41,28 @@ enum IntersectionType
     all = 0xFFFF
 };
 
-    
+/** @brief Main class for computation of intersection of meshes of combined dimensions.
+ *
+ * Controls different algorithms for computation of intersection.
+ * Computes intersection in the order:
+ *      - 1D-3D
+ *      - 2D-3D
+ *      - 2D-2D (uses results from 2D-3D)
+ * After computation, it transforms the internal intersection objects into proper output structure
+ * for further usage.
+ * The objects of different intersection types are stored in different vectors:
+ * @p intersection_storage13_
+ * @p intersection_storage23_
+ * @p intersection_storage22_
+ * When we are on an element, we use @p intersection_map_ to get to all intersections.
+ * @p intersection_map_ has number of rows same as number of all elements.
+ * On every row there is vector of @p ILpair types which consists of index of the other element and pointer
+ * to the intersection object (to the storage). E.g. let us be on element with index 'element_index'
+ * and go through (index 'i') all the intersections which this elements is part of:
+ * 
+ * intersection_map_[element_index][i].first ... other element index
+ * intersection_map_[element_index][i].second ... pointer to intersection object in storage
+ */
 class InspectElements
 {   
 public:

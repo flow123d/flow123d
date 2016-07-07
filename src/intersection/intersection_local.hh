@@ -1,6 +1,20 @@
-/*
- *  Created on: 14.3.2016
- *  Author: pex
+/*!
+ *
+﻿* Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    intersection_local.hh
+ * @brief   Classes representing final intersection objects.
+ * @author  Viktor Fris, Pavel Exner
+ *
  */
 
 #ifndef INTERSECTION_LOCAL_H_
@@ -35,8 +49,11 @@ template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ost
 class IntersectionLocalBase
 {
 protected:
+    /// Index of intersecting element in the component.
     unsigned int component_element_idx_;
+    /// Index of intersecting element in the bulk.
     unsigned int bulk_element_idx_;
+    /// Index of the intersecting component.
     unsigned int component_idx_;
 
 public:
@@ -73,7 +90,7 @@ inline unsigned int IntersectionLocalBase::component_idx() const
 template<unsigned int dimA, unsigned int dimB>
 class IntersectionLocal : public IntersectionLocalBase
 {
-    /// Vector of intersectio points.
+    /// Vector of intersection points.
     std::vector<IntersectionPoint<dimA,dimB>> i_points_;
     
 public:
@@ -82,6 +99,7 @@ public:
     IntersectionLocal();
     /// Constructor taking in element indices.
     IntersectionLocal(unsigned int component_element_idx, unsigned int bulk_element_idx);
+    /// Copy constructor.
     IntersectionLocal(const IntersectionAux<dimA, dimB> &iaux);
     /// Destructor.
     ~IntersectionLocal();
@@ -129,8 +147,7 @@ inline unsigned int IntersectionLocal<dimA,dimB>::size() const
 
 
 
-/**
- * Class represents an intersection point of simplex<N> and simplex<M>.
+/** @brief Class represents an intersection point of simplex<N> and simplex<M>.
  * It contains barycentric coordinates of the point on both simplices.
  */
 template<unsigned int dimA, unsigned int dimB> class IntersectionPoint {
@@ -143,6 +160,7 @@ public:
     IntersectionPoint();  ///< Default constructor.
     ~IntersectionPoint(); ///< Destructor.
     
+    /// Constructs IP from the auxiliary one coming from computation.
     IntersectionPoint(const IntersectionPointAux<dimA,dimB> &p);
     /**
      * Constructor taking local coordinates on simplices as input parameters.
