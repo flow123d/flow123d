@@ -7,7 +7,7 @@
 #ifndef INSPECT_ELEMENTS_H_
 #define INSPECT_ELEMENTS_H_
 
-#include "inspect_elements_algorithm.h"
+#include "inspect_elements_algorithm.hh"
 
 class Mesh; // forward declare
 

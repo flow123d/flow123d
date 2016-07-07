@@ -2,14 +2,14 @@
  *      Author: viktor
  */
 
-#include "computeintersection.h"
+#include "compute_intersection.hh"
 #include "mesh/ref_element.hh"
 #include "system/system.hh"
 
-#include "plucker.h"
-#include "intersectionpoint.h"
-#include "intersectionaux.h"
-#include "trace_algorithm.h"
+#include "plucker.hh"
+#include "intersection_point_aux.hh"
+#include "intersection_aux.hh"
+#include "tracing_algorithm.hh"
 
 using namespace std;
 namespace computeintersection{

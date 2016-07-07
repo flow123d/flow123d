@@ -18,12 +18,12 @@
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
 
-#include "intersection/simplex.h"
-#include "intersection/computeintersection.h"
+#include "intersection/simplex.hh"
+#include "intersection/compute_intersection.hh"
 
-#include "intersection/intersectionpoint.h"
-#include "intersection/intersectionaux.h"
-#include "intersection/intersection_local.h"
+#include "intersection/intersection_point_aux.hh"
+#include "intersection/intersection_aux.hh"
+#include "intersection/intersection_local.hh"
 
 #include <dirent.h>
 

@@ -200,15 +200,15 @@ target_link_libraries(mesh_lib
 
 # intersections_lib    
 add_library(intersections_lib 
-    intersection/plucker.cpp
-    intersection/simplex.cpp
-    intersection/intersectionpoint.cpp
-    intersection/intersectionaux.cpp
-    intersection/intersection_local.cpp
-    intersection/trace_algorithm.cpp
-    intersection/computeintersection.cpp
-    intersection/inspect_elements_algorithm.cpp
-    intersection/inspectelements.cpp
+    intersection/plucker.cc
+    intersection/simplex.cc
+    intersection/intersection_point_aux.cc
+    intersection/intersection_aux.cc
+    intersection/intersection_local.cc
+    intersection/tracing_algorithm.cc
+    intersection/compute_intersection.cc
+    intersection/inspect_elements_algorithm.cc
+    intersection/inspect_elements.cc
 )
 target_link_libraries(intersections_lib
     mesh_lib system_lib armadillo ${Boost_LIBRARIES})

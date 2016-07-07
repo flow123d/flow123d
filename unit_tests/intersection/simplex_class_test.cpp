@@ -3,8 +3,8 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#include "intersection/simplex.h"
-#include "intersection/plucker.h"
+#include "intersection/simplex.hh"
+#include "intersection/plucker.hh"
 
 using namespace std;
 using namespace computeintersection;

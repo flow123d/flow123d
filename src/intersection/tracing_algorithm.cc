@@ -16,9 +16,9 @@
  * @brief   Implementation of tracing algorithms for polygonal intersections.
  */
 
-#include "trace_algorithm.h"
-#include "intersectionpoint.h"
-#include "intersectionaux.h"
+#include "tracing_algorithm.hh"
+#include "intersection_point_aux.hh"
+#include "intersection_aux.hh"
 
 #include "mesh/ref_element.hh"
 #include <algorithm>

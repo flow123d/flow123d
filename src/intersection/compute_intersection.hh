@@ -35,7 +35,7 @@
 #ifndef COMPUTE_INTERSECTION_H_
 #define COMPUTE_INTERSECTION_H_
 
-#include "simplex.h"
+#include "simplex.hh"
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
 

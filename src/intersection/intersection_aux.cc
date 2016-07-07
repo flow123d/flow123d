@@ -3,8 +3,8 @@
  *  Author: pex
  */
 
-#include "intersectionaux.h"
-#include "intersectionpoint.h"
+#include "intersection_aux.hh"
+#include "intersection_point_aux.hh"
 
 
 namespace computeintersection{

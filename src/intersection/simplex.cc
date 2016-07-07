@@ -1,4 +1,4 @@
-#include "simplex.h"
+#include "simplex.hh"
 #include <iostream>
 #include <armadillo>
 #include "system/system.hh"

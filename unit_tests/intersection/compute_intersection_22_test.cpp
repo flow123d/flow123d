@@ -13,12 +13,12 @@
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
-#include "intersection/inspectelements.h"
-#include "intersection/intersectionpoint.h"
-#include "intersection/intersection_local.h"
+#include "intersection/inspect_elements.hh"
+#include "intersection/intersection_point_aux.hh"
+#include "intersection/intersection_local.hh"
 
-#include "intersection/computeintersection.h"
-#include "intersection/intersectionaux.h"
+#include "intersection/compute_intersection.hh"
+#include "intersection/intersection_aux.hh"
 
 #include <dirent.h>
 

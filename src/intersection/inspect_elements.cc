@@ -5,11 +5,11 @@
  *      Author: viktor, pe, jb
  */
 
-#include "inspectelements.h"
-#include "inspect_elements_algorithm.h"
-#include "intersectionpoint.h"
-#include "intersectionaux.h"
-#include "intersection_local.h"
+#include "inspect_elements.hh"
+#include "inspect_elements_algorithm.hh"
+#include "intersection_point_aux.hh"
+#include "intersection_aux.hh"
+#include "intersection_local.hh"
 
 #include "system/sys_profiler.hh"
 

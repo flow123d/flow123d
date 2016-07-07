@@ -4,7 +4,7 @@
 #include "mesh/bounding_box.hh"
 #include "mesh/mesh_types.hh"
 
-#include "simplex.h"
+#include "simplex.hh"
 
 #include <queue>
 

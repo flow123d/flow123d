@@ -18,10 +18,10 @@
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
 
-#include "intersection/inspectelements.h"
-#include "intersection/intersectionpoint.h"
-#include "intersection/intersectionaux.h"
-#include "intersection/intersection_local.h"
+#include "intersection/inspect_elements.hh"
+#include "intersection/intersection_point_aux.hh"
+#include "intersection/intersection_aux.hh"
+#include "intersection/intersection_local.hh"
 
 #include <dirent.h>
 

@@ -1,4 +1,4 @@
-#include "plucker.h"
+#include "plucker.hh"
 
 using namespace std;
 namespace computeintersection{
