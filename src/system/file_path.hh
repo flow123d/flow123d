@@ -25,6 +25,12 @@
 using namespace std;
 
 
+namespace boost {
+    namespace filesystem  {
+        class path;
+}}
+
+
 
 
 /**
@@ -55,10 +61,7 @@ public:
     /**
      * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
      */
-    FilePath()
-        : abs_file_path_("/__NO_FILE_NAME_GIVEN__"),
-          file_type_(output_file)
-    {}
+    FilePath();
 
     /**
      * Translates the given absolute or relative path to a file @p file_path depending on the file type @p ft.
@@ -74,19 +77,44 @@ public:
     FilePath(string file_path, const  FileType ft);
 
     /**
+     * @brief Obsolete method for set input and output directories.
+     *
+     * Ensures consistency of unit tests.
+     *
      * Set:
      * - working directory (used only if the output directory is relative)
      * - root directory (of the main input file)
      * - input directory to replace ${INPUT} place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
-    static void set_io_dirs(const string working_dir, const string root_input,const string input,const string output);
+    static void set_io_dirs(const string working_dir, const string root, const string input, const string output);
+
+    /**
+     * @brief Method for set input and output directories.
+     *
+     * Set:
+     * - root directory (of the main input file)
+     * - input directory to replace ${INPUT} place holder
+     * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
+     */
+    static void set_dirs(const string root, const string input, const string output);
+
+    /**
+     * @brief Method for set input and output directories.
+     *
+     * Same as previous, but in first argument accepts full path of yaml file and returns filename of this yaml file.
+     *
+     * Set:
+     * - root directory (of the main yaml input file)
+     * - input directory to replace ${INPUT} place holder
+     * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
+     */
+    static string set_dirs_from_input(const string main_yaml, const string input, const string output);
 
     /**
      * This class is implicitly convertible to string.
      */
-    inline operator string() const
-        {return abs_file_path_;}
+    operator string() const;
 
     /*!
      * @brief Add new item to place holder.
@@ -109,9 +137,8 @@ public:
      */
     static const string get_absolute_working_dir();
 
-    /// Equality comparison operators for regions.
-    inline bool operator ==(const FilePath &other) const
-        {return abs_file_path_ == string(other); }
+    /// Equality comparison operators for FilePaths.
+    bool operator ==(const FilePath &other) const;
 
 
     /**
@@ -122,31 +149,13 @@ public:
 
 private:
     /**
-     * Substitutes placeholders in @p abs_file_path_.
+     * Substitutes placeholders in @p path.
      */
-    void substitute_value();
-
-
-    /**
-     * Test if get path is absolute for used operating system.
-     */
-    static bool is_absolute_path(const string path);
-
-
-    /**
-     * Check if directory stored in output_dir doesn't exist and create its
-     */
-    static void create_dir(string dir);
-
-
-    /**
-     * Create canonical path of output directory given by relative path.
-     */
-    static void create_canonical_path(const string working_dir, const string output);
+    void substitute_value(string &path);
 
 
     /// Final absolute path to the file.
-    string abs_file_path_;
+    std::shared_ptr<boost::filesystem::path> abs_file_path_;
 
     /// File type
     FileType file_type_;
@@ -155,10 +164,10 @@ private:
     static std::map<string,string> placeholder;
 
     /// Prefix path for output files.
-    static string output_dir;
+    static std::shared_ptr<boost::filesystem::path> output_dir;
 
     /// Prefix path for input files (directory of the main input file).
-    static string root_dir;
+    static std::shared_ptr<boost::filesystem::path> root_dir;
 };
 
 #endif /* FILE_NAME_HH_ */

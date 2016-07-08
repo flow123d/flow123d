@@ -14,6 +14,7 @@
 
 #include "io/output_time.hh"
 #include "io/output_data_base.hh"
+#include "io/output_mesh.hh"
 #include "tools/time_governor.hh"
 
 #include "mesh/mesh.h"
@@ -240,7 +241,14 @@ public:
 
 		field.set_mesh(*my_mesh);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
-
+        
+        // create output mesh identical to computational mesh
+        this->output_mesh_ = std::make_shared<OutputMesh>(my_mesh);
+        this->output_mesh_->create_identical_mesh();
+        
+        this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(my_mesh);
+        this->output_mesh_discont_->create_mesh(this->output_mesh_);
+        
 		{
 			this->compute_field_data(ELEM_DATA, field);
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
