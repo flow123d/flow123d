@@ -290,7 +290,7 @@ void Observe::output_header(string observe_name) {
     observe_file_ << "time_unit_in_secodns: " << time_unit_seconds_ << endl;
     observe_file_ << "points:" << endl;
     for(auto &point : points_)
-        point.output(observe_file_, 2);
+        point.output(observe_file_, indent);
     observe_file_ << "data:" << endl;
 
 }

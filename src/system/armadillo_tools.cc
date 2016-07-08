@@ -131,7 +131,6 @@ struct field_value_scalar_resolution<std::false_type> {
 };
 
 
-
 template <class T>
 inline string field_value_to_yaml(const T &mat) {
     return field_value_scalar_resolution< typename std::is_scalar<T>::type >::print(mat);
@@ -158,17 +157,5 @@ template string field_value_to_yaml(const int &mat);
 template string field_value_to_yaml(const unsigned int &mat);
 
 
-/*
-void test_instance() {
-    arma::vec3 v3("1.1 2.2 3.3");
-    arma::vec2 v2("1.1 2.2");
-    arma::vec v("1.1 2.2 3.3 4.4");
-    arma::Col<int>  vi("1 2 3 4");
 
-    cout << field_value_to_yaml(v3) << endl;
-    cout << field_value_to_yaml(v2) << endl;
-    cout << field_value_to_yaml(v) << endl;
-    cout << field_value_to_yaml(vi) << endl;
-}
-*/
 

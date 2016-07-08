@@ -228,6 +228,7 @@ add_library(coupling_lib
     io/output_vtk.cc
     io/output_msh.cc
     io/observe.cc
+    io/output_mesh_data.cc
     io/output_mesh.cc
     
     

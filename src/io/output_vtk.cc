@@ -17,6 +17,7 @@
 
 #include "output_vtk.hh"
 #include "output_data_base.hh"
+#include "output_mesh_data.hh"
 #include "output_mesh.hh"
 
 #include <limits.h>
