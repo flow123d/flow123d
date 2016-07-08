@@ -190,7 +190,6 @@ void DarcyFlowMHOutput::output()
 
       make_node_scalar_param();
 
-//      water_balance();
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
@@ -400,105 +399,6 @@ void DarcyFlowMHOutput::make_node_scalar_param() {
     delete [] sum_side_dist;
 
     make_corner_scalar(scalars);
-}
-
-
-//=============================================================================
-//
-//=============================================================================
-
-void DarcyFlowMHOutput::water_balance() {
-    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
-    if (balance_output_file == NULL) return;
-
-    //BOUNDARY
-    //struct Boundary *bcd;
-    std::vector<double> bcd_balance( mesh_->region_db().boundary_size(), 0.0 );
-    std::vector<double> bcd_plus_balance( mesh_->region_db().boundary_size(), 0.0 );
-    std::vector<double> bcd_minus_balance( mesh_->region_db().boundary_size(), 0.0 );
-
-    using namespace std;
-    //printing the head of water balance file
-    unsigned int c = 5; //column number without label
-    unsigned int w = 14;  //column width
-    unsigned int wl = 2*(w-5)+7;  //label column width
-    stringstream s; //helpful stringstream
-    string bc_head_format = "# %-*s%-*s%-*s%-*s%-*s%-*s\n",
-           bc_format = "%*s%-*d%-*s  %-*g%-*g%-*g%-*g\n",
-           bc_total_format = "# %-*s%-*g%-*g%-*g\n\n\n";
-    s << setw((w*c+wl-15)/2) << setfill('-') << "-"; //drawing half line
-    fprintf(balance_output_file,"# %s WATER BALANCE %s\n",s.str().c_str(), s.str().c_str());
-    fprintf(balance_output_file,"# Time of computed water balance: %f\n\n\n",darcy_flow->time().t());
-    
-    fprintf(balance_output_file,"# Boundary water balance:\n");
-    fprintf(balance_output_file,bc_head_format.c_str(),w,"[boundary_id]",wl,"[label]",
-                            w,"[total_balance]",w,"[total_outflow]",w,"[total_inflow]",w,"[time]");
-    s.clear();
-    s.str(std::string());
-    s << setw(w*c+wl) << setfill('-') << "-"; 
-    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
-    
-    //computing water balance over boundaries
-    FOR_BOUNDARIES(mesh_, bcd) {
-        // !! there can be more sides per one boundary
-        double flux = dh.side_flux( *(bcd->side()) );
-
-        Region r = bcd->region();
-        if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
-        unsigned int bc_region_idx = r.boundary_idx();
-        bcd_balance[bc_region_idx] += flux;
-
-        if (flux > 0) bcd_plus_balance[bc_region_idx] += flux;
-        else bcd_minus_balance[bc_region_idx] += flux;
-    }
-    //printing water balance over boundaries
-    const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
-    double total_balance = 0, // for computing total balance on boundary
-           total_inflow = 0,
-           total_outflow = 0; 
-    for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
-        total_balance += bcd_balance[reg->boundary_idx()];
-        total_outflow += bcd_plus_balance[reg->boundary_idx()];
-        total_inflow += bcd_minus_balance[reg->boundary_idx()];
-        fprintf(balance_output_file, bc_format.c_str(),2,"",w,reg->id(),wl,reg->label().c_str(),
-                w, bcd_balance[reg->boundary_idx()], w, bcd_plus_balance[reg->boundary_idx()],
-                w, bcd_minus_balance[reg->boundary_idx()], w, darcy_flow->time().t());
-    }
-    //total boundary balance
-    fprintf(balance_output_file,"# %s\n",s.str().c_str());  // drawing long line
-    fprintf(balance_output_file, bc_total_format.c_str(),w+wl+2,"total boundary balance",
-                w,total_balance, w, total_outflow, w, total_inflow);
-
-    //SOURCES
-    string src_head_format = "# %-*s%-*s%-*s%-*s%-*s\n",
-           src_format = "%*s%-*d%-*s  %-*g%-*s%-*g\n",
-           src_total_format = "# %-*s%-*g\n\n\n";
-    //computing water balance of sources
-    fprintf(balance_output_file,"# Source fluxes over material subdomains:\n");   //head
-    fprintf(balance_output_file,src_head_format.c_str(),w,"[region_id]",wl,"[label]", 
-                            w,"[total_balance]",2*w,"",w,"[time]");
-    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //long line
-    std::vector<double> src_balance( mesh_->region_db().bulk_size(), 0.0 ); // initialize by zero
-    FOR_ELEMENTS(mesh_, elm) {
-      src_balance[elm->element_accessor().region().bulk_idx()] += elm->measure() * 
-            darcy_flow->data_.cross_section.value(elm->centre(), elm->element_accessor()) *
-            darcy_flow->data_.water_source_density.value(elm->centre(), elm->element_accessor());
-    }
-  
-    total_balance = 0;
-    //printing water balance of sources
-    const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
-    for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
-      {
-        total_balance += src_balance[reg->bulk_idx()];
-        //"%*s%-*d%-*s  %-*g%-*s%-*g\n";
-        fprintf(balance_output_file, src_format.c_str(), 2,"", w, reg->id(), wl,
-                reg->label().c_str(), w, src_balance[reg->bulk_idx()],2*w,"", w,darcy_flow->time().t());
-      }
-    //total sources balance
-    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
-    fprintf(balance_output_file, src_total_format.c_str(),w+wl+2,"total sources balance",
-                w,total_balance);
 }
 
 
