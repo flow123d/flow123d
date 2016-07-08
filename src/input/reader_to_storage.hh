@@ -22,6 +22,7 @@
 #include <sstream>
 
 #include "input/input_type_forward.hh"
+#include "input/type_record.hh"
 
 #include "input/input_exception.hh"
 #include "input/storage.hh"
@@ -181,6 +182,21 @@ protected:
 
     /// Dispatch according to @p type and create corresponding storage from the given string.
     StorageBase * make_storage_from_default( const string &dflt_str, std::shared_ptr<Type::TypeBase> type);
+
+    /**
+     * Create and return storage of Record key.
+     *
+     * Key must have Default value optional, has value at declaration or default at read time.
+     * For obligatory key throw ExcInputError.
+     */
+    StorageBase * create_key_storage( Type::Record::KeyIter it );
+
+    /**
+     * Create storage of empty Type::Record type.
+     *
+     * Use only for YAML input, if Record has declared no key. See @p PathBase::is_effectively_null()
+     */
+    StorageBase * make_storage_empty_record( PathBase &p, const Type::Record *record );
 
 
     /// Storage of the read and checked input data
