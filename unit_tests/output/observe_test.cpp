@@ -9,6 +9,9 @@
 
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
+
+
+
 #include "flow_gtest_mpi.hh"
 #include "io/observe.hh"
 #include "mesh/mesh.h"
@@ -19,6 +22,9 @@
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "../arma_expect.hh"
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 /**
@@ -53,6 +59,15 @@ const string test_input = R"JSON(
     { name: "s_1d_el2", point: [-0.5, -0.5, 0], snap_region: "1D diagonal", snap_dim: 0}
   ],
   observe_fields: [
+  ],
+  input_fields: [
+       {
+         region: "ALL",
+         scalar_field: {TYPE: "FieldFormula", value: "x+y+2*z"}, 
+         enum_field: "one",
+         vector_field: [0,2,3],
+         tensor_field: [1, 2, 3, 4, 5, 6]
+       }
   ]
 }
 )JSON";
@@ -168,11 +183,20 @@ public:
     typedef Field<3, FieldValue<3>::Scalar > ScalarField;
     typedef Field<3, FieldValue<3>::Enum > EnumField;
     typedef Field<3, FieldValue<3>::VectorFixed > VectorField;
-    typedef Field<3, FieldValue<2>::TensorFixed > TensorField;
+    typedef Field<3, FieldValue<3>::TensorFixed > TensorField;
 
     EqData() {
+        static Input::Type::Selection  selection =
+                Input::Type::Selection("test_enum")
+                     .add_value(0, "zero")
+                     .add_value(1, "one")
+                     .close();
+
+
         ADD_FIELD(scalar_field, "").units(UnitSI::one());
-        ADD_FIELD(enum_field, "").units(UnitSI::one());
+        ADD_FIELD(enum_field, "")
+            .units(UnitSI::one())
+            .input_selection(&selection);
         ADD_FIELD(vector_field, "").units(UnitSI::one());
         ADD_FIELD(tensor_field, "").units(UnitSI::one());
     }
@@ -208,6 +232,10 @@ TEST(Observe, all) {
     auto output_type = Input::Type::Record("Output", "")
         .declare_key("observe_fields", Input::Type::Array(field_selection), Input::Type::Default::obligatory(), "" )
         .declare_key("observe_points", Input::Type::Array(ObservePoint::get_input_type()), Input::Type::Default::obligatory(), "")
+        .declare_key("input_fields", Input::Type::Array(
+                EqData()
+                .make_field_descriptor_type("SomeEquation")
+                .close() ), Input::Type::Default::obligatory(), "")
         .close();
     auto in_rec = Input::ReaderToStorage(test_input, output_type, Input::FileFormat::format_JSON)
         .get_root_interface<Input::Record>();
@@ -220,5 +248,20 @@ TEST(Observe, all) {
     TestObserve obs(*mesh, in_rec);
     obs.check_points_input();
     obs.check_observe_points();
+
+    // read fiels
+    TimeGovernor tg(0.0, 1.0);
+    field_set.set_mesh(*mesh);
+    field_set.set_input_list( in_rec.val<Input::Array>("input_fields") );
+    field_set.set_time(tg.step(), LimitSide::right);
+
+    obs.compute_field_values(field_set.scalar_field);
+    obs.compute_field_values(field_set.enum_field);
+    obs.compute_field_values(field_set.vector_field);
+    obs.compute_field_values(field_set.tensor_field);
+
+    obs.output_time_frame( tg.step() );
+    tg.next_time();
+    obs.output_time_frame( tg.step() );
 }
 

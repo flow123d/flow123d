@@ -60,6 +60,8 @@ public:
      */
     virtual void print_all(ostream &out_stream) = 0;
 
+    virtual void print_all_yaml(ostream &out_stream) = 0;
+
     /**
      * Data copied from Field.
      */

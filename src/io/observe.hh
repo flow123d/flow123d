@@ -13,6 +13,7 @@
 #include "input/input_type.hh"
 #include "fields/field.hh"
 #include "io/output_data.hh"
+#include "tools/time_governor.hh"
 #include <armadillo>
 
 
@@ -74,6 +75,11 @@ protected:
      */
     void find_observe_point(Mesh &mesh);
 
+    /**
+     * Output the observe point information into a YAML formated stream, indent by
+     * given number of spaces + "- ".
+     */
+    void output(ostream &out, unsigned int indent_spaces);
 
     /// Index in the input array.
     Input::Record in_rec_;
@@ -153,9 +159,14 @@ public:
             { return observed_element_indices_;}
 
     /**
+     * Output file header.
+     */
+    void output_header(string observe_name);
+
+    /**
      * Write field values to the output file. Using the YAML format.
      */
-    void output_time_frame();
+    void output_time_frame(TimeStep step);
 
 
 
@@ -181,6 +192,10 @@ protected:
     /// Output file stream.
     std::ofstream observe_file_;
 
+    /// String representation of the time unit.
+    std::string time_unit_str_;
+    /// Time unit in seconds.
+    double time_unit_seconds_;
 
 
 };

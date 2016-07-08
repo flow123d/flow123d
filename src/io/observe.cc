@@ -203,6 +203,15 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
 
 
+void ObservePoint::output(ostream &out, unsigned int indent_spaces)
+{
+    out << setw(indent_spaces) << "" << "- name: " << name_ << endl;
+    out << setw(indent_spaces) << "" << "  init_point: " << field_value_to_yaml(input_point_) << endl;
+    out << setw(indent_spaces) << "" << "  snap_dim: " << snap_dim_ << endl;
+    out << setw(indent_spaces) << "" << "  snap_region: " << snap_region_name_ << endl;
+    out << setw(indent_spaces) << "" << "  observe_point: " << field_value_to_yaml(global_coords_) << endl;
+}
+
 
 
 
@@ -225,7 +234,12 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Record in_rec)
         points_.push_back( point );
     }
 
+    time_unit_str_ = "s";
+    time_unit_seconds_ = 1.0;
+
     observe_file_.open((observe_name + "_observe.yaml").c_str());
+    output_header(observe_name);
+
 }
 
 Observe::~Observe() {
@@ -269,8 +283,25 @@ INSTANCE_DIM(2)
 INSTANCE_DIM(3)
 
 
+void Observe::output_header(string observe_name) {
+    unsigned int indent = 2;
+    observe_file_ << "# Observation file: " << observe_name << endl;
+    observe_file_ << "time_unit: " << time_unit_str_ << endl;
+    observe_file_ << "time_unit_in_secodns: " << time_unit_seconds_ << endl;
+    observe_file_ << "points:" << endl;
+    for(auto &point : points_)
+        point.output(observe_file_, 2);
+    observe_file_ << "data:" << endl;
 
+}
 
-void Observe::output_time_frame() {
+void Observe::output_time_frame(TimeStep step) {
+    unsigned int indent = 2;
+    observe_file_ << setw(indent) << "" << "- time: " << step.end() << endl;
+    for(auto &field_data : observe_field_values_) {
+        observe_file_ << setw(indent) << "" << "  " << field_data.second->field_name << ": ";
+        field_data.second->print_all_yaml(observe_file_);
+        observe_file_ << endl;
+    }
 
 }

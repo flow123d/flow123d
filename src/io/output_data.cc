@@ -9,7 +9,7 @@
 #include "fields/field_values.hh"
 #include "fields/field_common.hh"
 #include "io/output_time.hh"
-
+#include "system/armadillo_tools.hh"
 
 template <class Value>
 OutputData<Value>::OutputData(const FieldCommon &field, unsigned int size)
@@ -91,6 +91,22 @@ void OutputData<Value>::print_all(ostream &out_stream)
             out_stream << *ptr << " ";
     }
 }
+
+
+template <class Value>
+void OutputData<Value>::print_all_yaml(ostream &out_stream)
+{
+    out_stream << "[ ";
+    for(unsigned int idx = 0; idx < this->n_values; idx++) {
+        if (idx != 0) out_stream << ", ";
+        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+        typename Value::return_type value;
+        Value::from_raw(value, ptr_begin);
+        out_stream << field_value_to_yaml(value);
+    }
+    out_stream << " ]";
+}
+
 
 /**
  * Store data element of given data value under given index.
