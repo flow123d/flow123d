@@ -91,7 +91,7 @@ add_library(system_lib
     system/application_base.cc
     system/logger.cc
     system/logger_options.cc
-    system/armadillo_setup.cc
+    system/armadillo_tools.cc
 )
 target_link_libraries(system_lib 
     ${PETSC_LIBRARIES}  
@@ -243,7 +243,7 @@ add_library(coupling_lib
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
-    system_lib input_lib mesh_lib tools_lib
+    system_lib input_lib mesh_lib tools_lib fem_lib
     fparser     
     armadillo
     ${Boost_LIBRARIES})

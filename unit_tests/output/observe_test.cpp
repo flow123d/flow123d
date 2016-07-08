@@ -17,7 +17,7 @@
 #include "system/sys_profiler.hh"
 #include "fields/field_set.hh"
 #include "armadillo"
-#include "system/armadillo_setup.hh"
+#include "system/armadillo_tools.hh"
 #include "../arma_expect.hh"
 
 

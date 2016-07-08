@@ -6,8 +6,8 @@
  */
 
 #include <flow_gtest.hh>
+#include "../../src/system/armadillo_tools.hh"
 
-#include "system/armadillo_setup.hh"
 #include "arma_expect.hh"
 #include "system/sys_profiler.hh"
 #include "armadillo"

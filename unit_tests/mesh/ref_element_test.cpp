@@ -10,7 +10,7 @@
 #include <flow_gtest.hh>
 #include "mesh/ref_element.hh"
 
-#include "system/armadillo_setup.hh"
+#include "../../src/system/armadillo_tools.hh"
 #include "arma_expect.hh"
 #include "system/sys_profiler.hh"
 #include "armadillo"

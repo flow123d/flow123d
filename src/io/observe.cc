@@ -12,6 +12,7 @@
 #include "system/global_defs.h"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
+#include "system/armadillo_tools.hh"
 
 #include "mesh/mesh.h"
 #include "mesh/bih_tree.hh"

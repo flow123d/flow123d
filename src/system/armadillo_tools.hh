@@ -5,9 +5,11 @@
  *      Author: jb
  */
 
-#ifndef SRC_SYSTEM_ARMADILLO_SETUP_HH_
-#define SRC_SYSTEM_ARMADILLO_SETUP_HH_
+#ifndef SRC_SYSTEM_ARMADILLO_TOOLS_HH_
+#define SRC_SYSTEM_ARMADILLO_TOOLS_HH_
 
+#include <string>
+#include <armadillo>
 
 /**
  * This method sets particular ostream to armadillo which catch
@@ -19,5 +21,11 @@
 void armadillo_setup();
 
 
+/**
+ * Format field_value (i.e. matrix, vector scalar of double or int) into YAML string.
+ */
+template<class T>
+std::string field_value_to_yaml(const T &mat);
 
-#endif /* SRC_SYSTEM_ARMADILLO_SETUP_HH_ */
+
+#endif /* SRC_SYSTEM_ARMADILLO_TOOLS_HH_ */
