@@ -71,7 +71,7 @@ TimeMark::Type TimeMarks::new_mark_type() {
     return current_type;
 }
 
-void TimeMarks::add(const TimeMark &mark) {
+TimeMark TimeMarks::add(const TimeMark &mark) {
     // find first mark with time greater or equal to the new mark
     vector<TimeMark>::iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), mark);
 
@@ -79,7 +79,7 @@ void TimeMarks::add(const TimeMark &mark) {
     if (fabs(first_ge->time() - mark.time()) < TimeGovernor::time_step_precision) {
 	//if "equal" does bitwise OR with the mark type at the first_ge iterator position
         first_ge->add_to_type(mark.mark_type());
-        return;
+        return *first_ge;
     }
     // possibly check equivalence with previous mark
     if (first_ge != marks_.begin()) {
@@ -87,11 +87,12 @@ void TimeMarks::add(const TimeMark &mark) {
         --previous;
         if (fabs(previous->time() - mark.time()) < TimeGovernor::time_step_precision) {
             previous->add_to_type(mark.mark_type());
-            return;
+            return *previous;
         }
     }
 
     marks_.insert(first_ge, mark);
+    return mark;
 }
 
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
@@ -104,6 +105,14 @@ void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark
 		add(mark);
 	}
 }
+
+
+void  TimeMarks::add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_type) {
+    for(auto it = begin(filter_type); it != end(filter_type); ++it)
+        it->add_to_type(add_type);
+
+}
+
 
 bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {

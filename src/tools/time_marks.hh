@@ -200,7 +200,7 @@ public:
      * Basic method for inserting TimeMarks.
      * @param mark    Reference to TimeMark object.
      */
-    void add(const TimeMark &mark);
+    TimeMark add(const TimeMark &mark);
 
     /**
      * Method for creating and inserting equally spaced TimeMarks.
@@ -213,6 +213,8 @@ public:
      * TODO: O(n+m) implementation
      */
     void add_time_marks(double time, double dt, double end_time, TimeMark::Type type);
+
+    void add_mark_type_all(TimeMark::Type filter_type, TimeMark::Type add_type);
 
     /**
      * Find the last time mark matching given mask, and returns true if it is in the time interval of

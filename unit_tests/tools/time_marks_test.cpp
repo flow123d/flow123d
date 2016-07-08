@@ -56,5 +56,12 @@ TEST(TimeMarks, add_time_marks) {
 
     EXPECT_FLOAT_EQ(1.0, (++tm.begin(mark_type))->time());
     EXPECT_FLOAT_EQ(2.0, tm.last(mark_type)->time());
+
+    auto mark_type_2 = tm.new_mark_type();
+    tm.add_to_type_all(mark_type, mark_type_2);
+
+    TimeMark time_mark = *(tm.begin(mark_type));
+    EXPECT_TRUE( time_mark.match(mark_type_2) );
+    EXPECT_FLOAT_EQ(time_mark.time(), tm.begin(mark_type_2)->time());
     }
 }
