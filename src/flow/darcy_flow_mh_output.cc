@@ -65,13 +65,16 @@ const it::Record & DarcyFlowMHOutput::get_input_type() {
 		.declare_key("output_fields",
 		        it::Array(OutputFields::get_output_selection()),
 				it::Default::obligatory(), "List of fields to write to output file.")
-//        .declare_key("balance_output", it::FileName::output(), it::Default("\"water_balance.txt\""),
-//                        "Output file for water balance table.")
-		.declare_key("compute_errors", it::Bool(), it::Default("false"),
-						"SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
-		.declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
-						"Output file with raw data form MH module.")
 		.close();
+}
+
+const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
+    return it::Record("Output_DarcyMHSpecific", "Specific Darcy flow MH output.")
+        .declare_key("compute_errors", it::Bool(), it::Default("false"),
+                        "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
+        .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
+                        "Output file with raw data form MH module.")
+        .close();
 }
 
 
@@ -97,14 +100,13 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 }
 
 
-DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec)
+DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
-  in_rec_(in_rec),
-  balance_output_file(NULL),
+  compute_errors_(false),
   raw_output_file(NULL)
 {
-    
+    Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
 
 	// we need to add data from the flow equation at this point, not in constructor of OutputFields
@@ -138,32 +140,33 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec)
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream"));
-	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+	output_stream = OutputTime::create_output_stream(in_rec_output.val<Input::Record>("output_stream"));
+	output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("output_fields"));
 	output_stream->mark_output_times(darcy_flow->time());
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	if (rank == 0) {
-        // temporary solution for balance output
-//        balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
+    auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
+    if (in_rec_specific) {
+        in_rec_specific->opt_val("compute_errors", compute_errors_);
+        if (rank == 0) {
+            // optionally open raw output file
+            FilePath raw_output_file_path;
+            if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
+                xprintf(Msg, "Opening raw output: %s\n", string(raw_output_file_path).c_str() );
+                raw_output_file = xfopen(raw_output_file_path, "wt");
+            }
 
-        // optionally open raw output file
-        FilePath raw_output_file_path;
-        if (in_rec.opt_val("raw_flow_output", raw_output_file_path)) {
-            xprintf(Msg, "Opening raw output: %s\n", string(raw_output_file_path).c_str() );
-            raw_output_file = xfopen(raw_output_file_path, "wt");
         }
-
     }
 }
 
 
 
-DarcyFlowMHOutput::~DarcyFlowMHOutput(){
+DarcyFlowMHOutput::~DarcyFlowMHOutput()
+{
 
-    if (balance_output_file != NULL) xfclose(balance_output_file);
     if (raw_output_file != NULL) xfclose(raw_output_file);
     VecDestroy(&vec_corner_pressure);
 
@@ -191,7 +194,7 @@ void DarcyFlowMHOutput::output()
       make_node_scalar_param();
 
 
-      if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
+      if (compute_errors_) compute_l2_difference();
 
       {
           START_TIMER("evaluate output fields");
@@ -423,15 +426,25 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     int cit = 0;
     FOR_ELEMENTS( mesh_,  ele ) {
         xfprintf( raw_output_file, "%d ", ele.id());
+        // pressure and velocity in barycenter
         xfprintf( raw_output_file, dbl_fmt, ele_pressure[cit]);
         for (i = 0; i < 3; i++)
             xfprintf( raw_output_file, dbl_fmt, ele_flux[3*cit+i]);
 
         xfprintf( raw_output_file, " %d ", ele->n_sides());
-        for (i = 0; i < ele->n_sides(); i++)
-            xfprintf( raw_output_file, dbl_fmt, dh.side_scalar( *(ele->side(i) ) ) );
-        for (i = 0; i < ele->n_sides(); i++)
-            xfprintf( raw_output_file, dbl_fmt, dh.side_flux( *(ele->side(i) ) ) );
+        std::vector< std::vector<unsigned int > > old_to_new_side =
+        { {0, 1},
+          {0, 1, 2},
+          {0, 1, 2, 3}
+        };
+        for (i = 0; i < ele->n_sides(); i++) {
+            unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
+            xfprintf( raw_output_file, dbl_fmt, dh.side_scalar( *(ele->side(i_new_side) ) ) );
+        }
+        for (i = 0; i < ele->n_sides(); i++) {
+            unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
+            xfprintf( raw_output_file, dbl_fmt, dh.side_flux( *(ele->side(i_new_side) ) ) );
+        }
 
         xfprintf( raw_output_file, "\n" );
         cit ++;

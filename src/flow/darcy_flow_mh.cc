@@ -141,8 +141,9 @@ const it::Record & DarcyMH::get_input_type() {
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
                 "Non-linear solver for MH problem.")
-
         .declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
+                "Parameters of output form MH module.")
+        .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Parameters of output form MH module.")
         .declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
                 "Settings for computing mass balance.")
@@ -289,7 +290,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
         data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
         data_.mark_input_times(*time_);
     }
-    output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
+    output_object = new DarcyFlowMHOutput(this, in_rec);
 
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();

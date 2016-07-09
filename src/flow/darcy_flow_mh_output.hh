@@ -84,12 +84,13 @@ public:
     ~DarcyFlowMHOutput();
 
     static const Input::Type::Record & get_input_type();
-
+    static const Input::Type::Record & get_input_type_specific();
 
     /** \brief Calculate values for output.  **/
     void output();
 
     const OutputFields &get_output_fields() { return output_fields; }
+
 
 
 private:
@@ -134,8 +135,8 @@ private:
     DarcyMH *darcy_flow;
     Mesh *mesh_;
 
-    /// Accessor to the input record for the DarcyFlow output.
-    Input::Record   in_rec_;
+    /// Specific experimental error computing.
+    bool compute_errors_;
 
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
@@ -167,7 +168,7 @@ private:
     std::shared_ptr<OutputTime> output_stream;
 
     /// Temporary solution for writing balance into separate file.
-    FILE *balance_output_file;
+    //FILE *balance_output_file;
     /// Raw data output file.
     FILE *raw_output_file;
 };

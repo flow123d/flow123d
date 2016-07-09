@@ -1,8 +1,8 @@
 {
 "name": "Main transformation file",
 "description": "Template for creating transformation file",
-"old_format": "",
-"new_format": "",
+"old_format": "1.8.2",
+"new_format": "2.0.0",
 "actions":
   [
 
@@ -599,7 +599,33 @@
         "destination_path": "/problem/heat_equation",
         "type-filter": "Heat_AdvectionDiffusion_DG"
       }
+    },
+    {
+      "NAME": "Make output-specific key.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/flow_equation",
+        "key": "output_specific"
+      }
+    },
+    {
+      "NAME": "Move to output specific.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/raw_flow_output",
+        "destination_path": "/problem/flow_equation/output_specific/raw_flow_output",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move to output specific.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/compute_errors",
+        "destination_path": "/problem/flow_equation/output_specific/compute_errors",
+        "create_path":true
+      }
     }
-      
+     
   ]
 }

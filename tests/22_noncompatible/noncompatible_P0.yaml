@@ -4,6 +4,8 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: input/noncompatible_r_1.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
+      compute_errors: true
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -23,7 +25,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 10
     output:
-      compute_errors: true
       output_stream: 
         file: ./square.pvd
         format: !vtk

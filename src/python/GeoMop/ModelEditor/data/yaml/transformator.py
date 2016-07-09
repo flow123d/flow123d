@@ -740,8 +740,8 @@ class Transformator:
             # source after dest, first delete
             action['parameters']['path'] = action['parameters']['source_path']
             action['parameters']['deep'] = True
-            self._delete_key(root, lines, action)
             indentation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
+            self._delete_key(root, lines, action)
             StructureChanger.paste_structure(lines, dl2, add, len(indentation2.group(1)) < dc2)        
         return True
         
