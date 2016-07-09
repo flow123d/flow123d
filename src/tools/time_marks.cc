@@ -108,8 +108,8 @@ void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark
 
 
 void  TimeMarks::add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_type) {
-    for(auto it = begin(filter_type); it != end(filter_type); ++it)
-        it->add_to_type(add_type);
+    for(auto &mark : marks_)
+        if (mark.match_mask(filter_type)) mark.add_to_type(add_type);
 
 }
 

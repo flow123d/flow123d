@@ -61,7 +61,7 @@ TEST(TimeMarks, add_time_marks) {
     tm.add_to_type_all(mark_type, mark_type_2);
 
     TimeMark time_mark = *(tm.begin(mark_type));
-    EXPECT_TRUE( time_mark.match(mark_type_2) );
+    EXPECT_TRUE( time_mark.match_mask(mark_type_2) );
     EXPECT_FLOAT_EQ(time_mark.time(), tm.begin(mark_type_2)->time());
     }
 }

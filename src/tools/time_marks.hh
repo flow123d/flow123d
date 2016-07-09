@@ -214,9 +214,12 @@ public:
      */
     void add_time_marks(double time, double dt, double end_time, TimeMark::Type type);
 
-    void add_mark_type_all(TimeMark::Type filter_type, TimeMark::Type add_type);
-
     /**
+     * Apply TimeMark::add_to_type (|=) to all time marks matching the filter type.
+     */
+    void add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_type);
+
+    /*
      * Find the last time mark matching given mask, and returns true if it is in the time interval of
      * current time step.
      */
