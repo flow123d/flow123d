@@ -33,7 +33,9 @@ using namespace std;
 #include "io/output_time.hh"
 
 
+class Mesh;
 class Region;
+class Observe;
 
 namespace IT=Input::Type;
 
@@ -326,7 +328,7 @@ public:
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
     virtual void output(std::shared_ptr<OutputTime> stream) =0;
-
+    virtual void observe_output(std::shared_ptr<Observe> observe) =0;
 
 
     /**

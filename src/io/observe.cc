@@ -275,8 +275,8 @@ void Observe::compute_field_values(Field<spacedim, Value> &field) {
 template void Observe::compute_field_values(Field<dim, FieldValue<0>::Enum> &); \
 template void Observe::compute_field_values(Field<dim, FieldValue<0>::Integer> &); \
 template void Observe::compute_field_values(Field<dim, FieldValue<0>::Scalar> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<3>::VectorFixed> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<3>::TensorFixed> &);
+template void Observe::compute_field_values(Field<dim, FieldValue<dim>::VectorFixed> &); \
+template void Observe::compute_field_values(Field<dim, FieldValue<dim>::TensorFixed> &);
 
 // Make all instances for both dimensions.
 INSTANCE_DIM(2)

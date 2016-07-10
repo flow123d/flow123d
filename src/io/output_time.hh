@@ -23,6 +23,7 @@
 #include <fstream>
 #include "input/accessors.hh"
 
+class Observe;
 class OutputDataBase;
 class Mesh;
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
@@ -122,6 +123,8 @@ public:
      * Write all data registered as a new time frame.
      */
     void write_time_frame();
+
+    std::shared_ptr<Observe> observe();
 
     /**
      * \brief Registers names of output fields that can be written using this stream.
@@ -243,6 +246,8 @@ protected:
     /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
     std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
     
+    std::shared_ptr<Observe> observe_;
+
     /// Auxliary flag for refinement enabling, due to gmsh format.
     bool enable_refinement_;
 };

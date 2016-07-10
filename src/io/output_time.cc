@@ -267,6 +267,10 @@ void OutputTime::write_time_frame()
     clear_data();
 }
 
+std::shared_ptr<Observe> OutputTime::observe()
+{ return observe_; }
+
+
 void OutputTime::clear_data(void)
 {
     for(auto &map : output_data_vec_)  map.clear();

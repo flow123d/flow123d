@@ -216,7 +216,7 @@ public:
      * Implementation of FieldCommonBase::output().
      */
     void output(std::shared_ptr<OutputTime> stream) override;
-
+    void observe_output(std::shared_ptr<Observe> observe) override;
 
     /**
      * Returns true, if field is currently set to a time in which it is discontinuous.
