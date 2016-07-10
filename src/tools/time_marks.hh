@@ -120,6 +120,7 @@ std::ostream& operator<<(std::ostream& stream, const TimeMark &marks);
 
 
 /***************************************************************************************/
+class TimeStep;
 class TimeGovernor;
 class TimeMarksIterator;
 
@@ -219,11 +220,13 @@ public:
      */
     void add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_type);
 
+    //bool is_current(const TimeStep &time_step, const TimeMark::Type &mask) const;
+
     /*
-     * Find the last time mark matching given mask, and returns true if it is in the time interval of
-     * current time step.
+     * Find the last time mark matching given mask, and returns its iterator if it is in the time interval of
+     * the current time step. Returns end(mask) otherwise.
      */
-    bool is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const;
+    TimeMarks::iterator current(const TimeStep &time_step, const TimeMark::Type &mask) const;
 
     /**
      * Return the first TimeMark with time strictly greater then tg.time() that match the mask.
@@ -243,6 +246,7 @@ public:
      * @param tg    the time governor
      * @param mask  mask of marks to iterate on
      */
+    TimeMarks::iterator last(const TimeStep &time_step, const TimeMark::Type &mask) const;
     TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
     /**

@@ -113,13 +113,25 @@ void  TimeMarks::add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_
 
 }
 
-
-bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const
+/*
+bool TimeMarks::is_current(const TimeStep &time_step, const TimeMark::Type &mask) const
 {
+    return ( current(time_step, mask) != this->end(mask) );
+
     if (tg.t() == TimeGovernor::inf_time) return tg.is_end();
     const TimeMark &tm = *last(tg, mask);
 
     return tg.step().lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
+
+}*/
+
+
+TimeMarks::iterator TimeMarks::current(const TimeStep &time_step, const TimeMark::Type &mask) const
+{
+    //if (time_step.end() == TimeGovernor::inf_time) return tg.is_end();
+    auto it = last(time_step, mask);
+    if ( time_step.contains(it->time()) ) return it;
+    else return this->end(mask);
 }
 
 TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type &mask) const
@@ -133,17 +145,21 @@ TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type
     return TimeMarksIterator(marks_, first_ge, mask);
 }
 
-TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type &mask) const
+TimeMarks::iterator TimeMarks::last(const TimeStep &time_step, const TimeMark::Type &mask) const
 {
     // first time mark which does compare strictly greater then actual tg time
     vector<TimeMark>::const_iterator first_ge =
-            std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t()+0.01*tg.dt(),mask));
-    while ( ! tg.step().ge(first_ge->time()) || ! first_ge->match_mask(mask) ) {
+            std::lower_bound(marks_.begin(), marks_.end(), TimeMark(time_step.end()+0.01*time_step.length(),mask));
+    while ( ! time_step.ge(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         --first_ge;
     }
     return TimeMarksIterator(marks_, first_ge, mask);
 }
 
+TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type &mask) const
+{
+    return last(tg.step(), mask);
+}
 
 
 TimeMarks::iterator TimeMarks::last(const TimeMark::Type &mask) const
