@@ -230,6 +230,7 @@ add_library(coupling_lib
     io/observe.cc
     io/output_mesh_data.cc
     io/output_mesh.cc
+    io/equation_output.cc
     
     
     fields/field_values.cc
