@@ -81,7 +81,8 @@ bool Tokenizer::skip_to(const std::string& pattern, const std::string &end_searc
 bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
     // input assert about remaining tokens
     if (assert_for_remaining_tokens && (! eol() )) {
-        xprintf(Warn, "Remaining tokens, file '%s', line '%d', after token #%d.\n", f_name_.c_str(), line_num(), position_.line_position_);
+    	WarningOut() << "Remaining tokens, file '" << f_name_ << "', line '" << line_num()
+    			<< "', after token #" << position_.line_position_ << "." << std::endl;
     }
 
     if (eof()) return false; // we are sure that at least one getline will occur

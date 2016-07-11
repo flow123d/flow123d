@@ -57,7 +57,7 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
-        FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
+        FilePath::set_io_dirs(".",".","variant_input","./output_root");
 
         abstr_rec_ptr = new Abstract("Abstract", "desc");
         abstr_rec_ptr->close();
@@ -230,9 +230,8 @@ TEST_F(InputInterfaceTest, RecordVal) {
 
     EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ(FilePath::get_absolute_working_dir()+"json_root_dir/output_root/output_subdir/output.vtk",
-    			(string) record.val<FilePath>("file_output") );
-    EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
+    EXPECT_TRUE( ((string)record.val<FilePath>("file_output")).find("output_subdir/output.vtk") != string::npos);
+    EXPECT_TRUE( ((string)record.val<FilePath>("file_input")).find("input/variant_input/input_subdir/input.in") != string::npos);
 
     // read enum from selection
     EXPECT_EQ( value_b, record.val<SelectionToRead>("selection") );
@@ -251,7 +250,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, ExcStorageTypeMismatch, "You want value of type 'int'" );
+    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, feal::Exc_assert, "You have to use Record::find instead." );
 #endif
 
 }

@@ -32,6 +32,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
+#include <boost/filesystem.hpp>
 
 #include "main.h"
 
@@ -76,11 +77,11 @@ it::Record & Application::get_input_type() {
 
 Application::Application( int argc,  char ** argv)
 : ApplicationBase(argc, argv),
-  main_input_dir_("."),
   main_input_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
-  use_profiler(true)
+  use_profiler(true),
+  yaml_balance_output_(false)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
@@ -88,21 +89,6 @@ Application::Application( int argc,  char ** argv)
     PythonLoader::initialize(argv[0]);
 #endif
 
-}
-
-
-void Application::split_path(const string& path, string& directory, string& file_name) {
-
-    size_t delim_pos=path.find_last_of(DIR_DELIMITER);
-    if (delim_pos < string::npos) {
-
-        // It seems, that there is some path in fname ... separate it
-        directory =path.substr(0,delim_pos);
-        file_name =path.substr(delim_pos+1); // till the end
-    } else {
-        directory = ".";
-        file_name = path;
-    }
 }
 
 
@@ -179,7 +165,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
         ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
-        ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
+		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
+		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");
 
     ;
 
@@ -246,13 +233,16 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // if there is "solve" option
+    string input_filename = ".";
     if (vm.count("solve")) {
-        string input_filename = vm["solve"].as<string>();
-        split_path(input_filename, main_input_dir_, main_input_filename_);
+        input_filename = vm["solve"].as<string>();
     }
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;
+
+    // preserves output of balance in YAML format
+    if (vm.count("yaml_balance")) yaml_balance_output_=true;
 
     string input_dir;
     string output_dir;
@@ -264,7 +254,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // assumes working directory "."
-    FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
+    main_input_filename_ = FilePath::set_dirs_from_input(input_filename, input_dir, output_dir );
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();
@@ -356,6 +346,23 @@ void Application::after_run() {
 
 
 Application::~Application() {
+	// remove balance output files in YAML format if "yaml_balance" option is not set
+	if ( (sys_info.my_proc==0) && !yaml_balance_output_ ) {
+		boost::filesystem::path mass_file( string(FilePath("mass_balance.yaml", FilePath::output_file)) );
+		boost::filesystem::path water_file( string(FilePath("water_balance.yaml", FilePath::output_file)) );
+		boost::filesystem::path energy_file( string(FilePath("energy_balance.yaml", FilePath::output_file)) );
+
+		if (boost::filesystem::exists(mass_file)) {
+		    boost::filesystem::remove(mass_file);
+		}
+		if (boost::filesystem::exists(water_file)) {
+		    boost::filesystem::remove(water_file);
+		}
+		if (boost::filesystem::exists(energy_file)) {
+		    boost::filesystem::remove(energy_file);
+		}
+	}
+
     if (use_profiler) {
         if (petsc_initialized) {
             // log profiler data to this stream
@@ -384,10 +391,10 @@ int main(int argc, char **argv) {
         Application app(argc, argv);
         app.init(argc, argv);
     } catch (std::exception & e) {
-        std::cerr << e.what();
+        _LOG( Logger::MsgType::error ) << e.what();
         return ApplicationBase::exit_failure;
     } catch (...) {
-        std::cerr << "Unknown exception" << endl;
+        _LOG( Logger::MsgType::error ) << "Unknown exception" << endl;
         return ApplicationBase::exit_failure;
     }
 
