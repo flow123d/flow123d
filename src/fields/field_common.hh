@@ -205,7 +205,10 @@ public:
     { return shared_->input_default_;}
 
     const UnitSI &units() const
-    { return shared_->units_;}
+    {
+        ASSERT(shared_->units_.is_def())(name()).error("Getting undefined unit.\n");
+        return shared_->units_;
+    }
 
     OutputTime::DiscreteSpace output_type() const
     { return type_of_output_data_; }
