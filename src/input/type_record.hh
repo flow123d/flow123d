@@ -313,7 +313,7 @@ public:
      * as descendant of parent if Record is derived (for mechanism of set parent and
      * descendant see \p derive_from)
      */
-    const Record &close() const;
+    Record &close() const;
 
 
     /// Implements @p TypeBase::is_finished.
