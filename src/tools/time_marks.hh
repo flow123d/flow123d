@@ -97,6 +97,11 @@ public:
     bool operator<(const TimeMark& another) const
       { return time_ < another.time(); }
 
+    /// For unordered maps and sets, hashing.
+    bool operator==(const TimeMark & other_mark) const {
+        return (time_ == other_mark.time_) && ( mark_type_ == other_mark.mark_type_);
+    }
+
 
 private:
     /// The marked time.
@@ -356,5 +361,13 @@ private:
     /// Mask type.
     TimeMark::Type mask_;
 };
+
+
+
+struct TimeMarkHash : std::unary_function<TimeMark, std::size_t>
+{
+    std::size_t operator()(TimeMark const& mark) const;
+};
+
 
 #endif /* TIME_MARKS_HH_ */

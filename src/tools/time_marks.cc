@@ -22,6 +22,7 @@
 #include "system/global_defs.h"
 #include "time_governor.hh"
 #include "time_marks.hh"
+#include <boost/functional/hash.hpp>
 
 // ------------------------------------------------------
 // implementation of members of class TimeMark
@@ -191,4 +192,13 @@ ostream& operator<<(ostream& stream, const TimeMarks &marks)
     for(vector<TimeMark>::const_iterator it = marks.marks_.begin(); it != marks.marks_.end(); ++it)
         stream << *it << endl;
     return stream;
+}
+
+
+std::size_t TimeMarkHash::operator()(TimeMark const& mark) const
+{
+    std::size_t seed = 0;
+    boost::hash_combine(seed, mark.time());
+    boost::hash_combine(seed, mark.mark_type());
+    return seed;
 }
