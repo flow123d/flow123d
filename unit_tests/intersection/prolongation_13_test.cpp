@@ -10,13 +10,9 @@
 #include <armadillo>
 
 #include "system/system.hh"
-#include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
-
-#include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/intersection.h"
 
 #include "intersection/inspect_elements.hh"
 #include "intersection/intersection_point_aux.hh"
@@ -25,19 +21,9 @@
 
 #include <dirent.h>
 
-
-
 using namespace std;
-using namespace computeintersection;
 
-static const std::string profiler_file = "prolongation_13d_profiler.log";
-static const unsigned int profiler_loop = 1;
-
-//*
-
-// ******************************************************************************************* TEST 1d-3d ****
-
-/// Create results for the meshes in directory 'site_13d'.
+/// Create results for the meshes in directory 'prolong_meshes_13d'.
 void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, std::vector<double> &lengths)
 {
     unsigned int n_files=7;
@@ -58,8 +44,8 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     lengths[6] = 2*0.25*sqrt(3) + 2*0.1*sqrt(9+1+1);
     
     ils[0].resize(9);
-    ils[0][0] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
-    ils[0][1] = {arma::vec3({1,1,1})/4,arma::vec3({1,0,1})*0.3};
+    ils[0][0] = {arma::vec3({1,1,1})/4,arma::vec3({1,0,1})*0.3};
+    ils[0][1] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
     ils[0][2] = {arma::vec3({1,1,1})/4,arma::vec3({0.2,0.5,0.2})};
     ils[0][3] = {arma::vec3({35,-25,35})*0.01,arma::vec3({0,-25,35})*0.01};
     ils[0][4] = {arma::vec3({0.2,0.5,0.2}),arma::vec3({0,5,2})*0.1};
@@ -89,8 +75,8 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     ils[2][6] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
     
     ils[2][7] = {arma::vec3({1,-1,1})*0.2,arma::vec3({0,-5,3})*0.1};
-    ils[2][8] = {arma::vec3({1,0,3.5})*0.1,arma::vec3({1,-1,1})*0.2};
-    ils[2][9] = {arma::vec3({0,2,5})*0.1,arma::vec3({1,0,3.5})*0.1};
+    ils[2][8] = {arma::vec3({0,2,5})*0.1,arma::vec3({1,0,3.5})*0.1};
+    ils[2][9] = {arma::vec3({1,0,3.5})*0.1,arma::vec3({1,-1,1})*0.2};
     ils[2][10] = {arma::vec3({1./3,0,2./3})};
     ils[2][11] = {arma::vec3({0,-5,5})*0.1,arma::vec3({1./3,0,2./3})};
     
@@ -106,17 +92,17 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     
     ils[4][3] = {arma::vec3({0,-0.25,0.25}),arma::vec3({0,0,0.25})};
     ils[4][2] = {arma::vec3({0,0,0.25}),arma::vec3({0,0.25,0.25})};
-        
+    
+    ils[4][4] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};    
     ils[4][5] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};
-    ils[4][4] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};
     
     ils[5].resize(2);
     ils[5][0] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
     ils[5][1] = {arma::vec3({-0.25,-0.25,-0.25}),arma::vec3({0,0,0})};
     
     ils[6].resize(9);
-    ils[6][0] = {arma::vec3({0,0,0})};
-    ils[6][1] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
+    ils[6][0] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
+    ils[6][1] = {arma::vec3({0,0,0})};
     ils[6][2] = {arma::vec3({-0.25,-0.25,-0.25}),arma::vec3({0,0,0})};
     
     ils[6][3] = {arma::vec3({0,0,0})};
@@ -127,6 +113,16 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     ils[6][8] = {arma::vec3({0,0,0})};
     
 
+}
+
+/// auxiliary function for sorting intersection storage 13d
+bool compare_is13(const computeintersection::IntersectionLocal<1,3>& a,
+                  const computeintersection::IntersectionLocal<1,3>& b)
+{
+    if (a.component_ele_idx() == b.component_ele_idx())
+        return a.bulk_ele_idx() <= b.bulk_ele_idx();
+    else
+        return a.component_ele_idx() < b.component_ele_idx();
 }
 
 void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il, const double &length)
@@ -142,7 +138,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     
     DBGMSG("N intersections %d\n",ie.intersection_storage13_.size());
     
-//    // write computed intersections
+   // write computed intersections
 //     for(unsigned int i = 0; i < ie.intersection_storage13_.size(); i++)
 //     {
 //         cout << &ie.intersection_storage13_[i] << ie.intersection_storage13_[i];
@@ -166,6 +162,11 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     
     //test solution
     std::vector<computeintersection::IntersectionLocal<1,3>> ilc = ie.intersection_storage13_;
+    
+    // sort the storage, so it is the same for every algorithm (BIH, BB ...)
+    // and we avoid creating the intersection map for exact IPs
+    std::sort(ilc.begin(), ilc.end(),compare_is13);
+    
     EXPECT_EQ(ilc.size(), il.size());
     
     for(unsigned int i=0; i < ilc.size(); i++)
@@ -186,8 +187,6 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
 
 
 TEST(intersection_prolongation_13d, all) {
-    Profiler::initialize();
-    
 //     // directory with testing meshes
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_13d/";
     std::vector<string> filenames;
@@ -225,73 +224,19 @@ TEST(intersection_prolongation_13d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s<filenames.size(); s++)
     {
-//         const unsigned int np = 24;
-//         unsigned int permutations[np][4] = {{0,1,2,3},
-//                                                 {0,1,3,2},  // the tab means permutation with negative jacobian
-//                                             {0,3,1,2},
-//                                                 {0,3,2,1},
-//                                             {0,2,3,1},
-//                                                 {0,2,1,3},
-//                                                 {1,0,2,3},
-//                                             {1,0,3,2},
-//                                                 {1,3,0,2},
-//                                             {1,3,2,0},
-//                                                 {1,2,3,0},
-//                                             {1,2,0,3},
-//                                                 {2,1,0,3},
-//                                             {2,1,3,0},
-//                                                 {2,3,1,0},
-//                                             {2,3,0,1},
-//                                                 {2,0,3,1},
-//                                             {2,0,1,3},
-//                                                 {3,1,2,0},
-//                                             {3,1,0,2},
-//                                                 {3,0,1,2},
-//                                             {3,0,2,1},
-//                                                 {3,2,0,1},
-//                                             {3,2,1,0}};
-//         for(unsigned int p=0; p<np; p++)
-//         {
-            xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
-            FilePath::set_io_dirs(".","","",".");
-            FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
-            
-            Mesh mesh;
-            // read mesh with gmshreader
-            GmshMeshReader reader(mesh_file);
-            reader.read_mesh(&mesh);
+        xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
+        FilePath::set_io_dirs(".","","",".");
+        FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
-//             // permute nodes:
-//             FOR_ELEMENTS(&mesh,ele)
-//             {
-//                 if(ele->dim() == 3)
-//                 {
-//                     Node* tmp[4];
-//                     for(unsigned int i=0; i<ele->n_nodes(); i++)
-//                     {
-//                         tmp[i] = ele->node[permutations[p][i]];
-//                     }
-//                     for(unsigned int i=0; i<ele->n_nodes(); i++)
-//                     {
-//                         ele->node[i] = tmp[i];
-// //                         ele->node[i]->point().print(cout);
-//                     }
-// //                     cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
-//                 }
-//             }
-            
-            mesh.setup_topology();
-            
-            xprintf(Msg, "==============\n");
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-                compute_intersection_13d(&mesh, solution[s], lengths[s]); //permute_coords(solution[s], permutations[p]));
-            xprintf(Msg, "==============\n");
-//         }
+        Mesh mesh;
+        // read mesh with gmshreader
+        GmshMeshReader reader(mesh_file);
+        reader.read_mesh(&mesh);
+        
+        mesh.setup_topology();
+        
+        compute_intersection_13d(&mesh, solution[s], lengths[s]);
     }
-    std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
-    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
 }
 
 //*/
