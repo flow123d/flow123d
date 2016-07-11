@@ -145,17 +145,22 @@ template<unsigned int dimA, unsigned int dimB> ostream& operator<<(ostream& os, 
 }
 
 
+template class IntersectionPoint<1,2>;
 template class IntersectionPoint<2,2>;
 template class IntersectionPoint<1,3>;
 template class IntersectionPoint<2,3>;
 
+template class IntersectionLocal<1,2>;
 template class IntersectionLocal<2,2>;
 template class IntersectionLocal<1,3>;
 template class IntersectionLocal<2,3>;
 
+template ostream& operator<< <1,2>(ostream &os, const IntersectionPoint<1,2>& s);
 template ostream& operator<< <2,2>(ostream &os, const IntersectionPoint<2,2>& s);
 template ostream& operator<< <1,3>(ostream &os, const IntersectionPoint<1,3>& s); 
-template ostream& operator<< <2,3>(ostream &os, const IntersectionPoint<2,3>& s); 
+template ostream& operator<< <2,3>(ostream &os, const IntersectionPoint<2,3>& s);
+
+template ostream& operator<< <1,2>(ostream &os, const IntersectionLocal<1,2>& s);
 template ostream& operator<< <2,2>(ostream &os, const IntersectionLocal<2,2>& s);
 template ostream& operator<< <1,3>(ostream &os, const IntersectionLocal<1,3>& s); 
 template ostream& operator<< <2,3>(ostream &os, const IntersectionLocal<2,3>& s); 

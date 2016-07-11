@@ -90,7 +90,7 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
         if(*plucker_products_[side] == plucker_empty){
            *plucker_products_[side] = (*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]);
         }
-//      DBGMSG("Plucker product = %f\n", *(plucker_products_[side]));
+//      DBGMSG("Plucker product = %e\n", *(plucker_products_[side]));
 	}
 };
 
@@ -117,10 +117,12 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(comput
 //     arma::vec3 local_triangle({w[2],w[1],w[0]});
 //     DBGMSG("Plucker product sum = %f\n",w[0]+w[1]+w[2]);
 //     local_triangle = local_triangle / (w[0]+w[1]+w[2]);
+//     double w_sum = local[0] + local[1] + local[2];
+//     DBGMSG("Plucker product sum = %e %e %e\n",w_sum, 1-rounding_epsilonX, 1+rounding_epsilonX);
     
     //assert inaccurate barycentric coordinates
-    ASSERT_DBG(1-rounding_epsilonX < local[0]+local[1]+local[2] &&
-           local[0]+local[1]+local[2] < 1+rounding_epsilonX);
+    ASSERT_DBG(1-rounding_epsilonX <= local[0]+local[1]+local[2] &&
+           local[0]+local[1]+local[2] <= 1+rounding_epsilonX);
     
     arma::vec3 local_triangle({local[2],local[1],local[0]});
     // local coordinate T on the line
@@ -289,7 +291,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
     arma::vec3 w = {signed_plucker_product(0),
                     signed_plucker_product(1),
                     signed_plucker_product(2)};
-    double w_sum = w[0] + w[1] + w[2];
+    double w_sum = w[0] + w[1] + w[2];// + rounding_epsilonX;
     w = w / w_sum;
     
     // test whether all plucker products have the same sign
@@ -336,9 +338,9 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     arma::vec3 w = {signed_plucker_product(0),
                     signed_plucker_product(1),
                     signed_plucker_product(2)};
-    double w_sum = w[0] + w[1] + w[2];
+    double w_sum = w[0] + w[1] + w[2] + rounding_epsilonX/2;
     w = w / w_sum;
-    
+//     DBGMSG("Plucker product sum = %e\n",w_sum);
     // test whether all local coords (plucker products) have the same sign
     if(((w[0] > rounding_epsilon) && (w[1] > rounding_epsilon) && (w[2] > rounding_epsilon)) ||
        ((w[0] < -rounding_epsilon) && (w[1] < -rounding_epsilon) && (w[2] < -rounding_epsilon)))
@@ -369,10 +371,13 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
         unsigned int n_found = 0;
         
         for(unsigned int i = 0; i < 3;i++){
+//             DBGMSG("w[%d] = %e  %e  %d\n",i, w[i], rounding_epsilon,std::abs(w[i]) <= rounding_epsilon);
             if( std::abs(w[i]) <= rounding_epsilon ){
+//                 DBGMSG("zero product [%d]\n",i);
                 IntersectionPointAux<1,2> IP;
                 if (compute_pathologic(i,IP))
                 {
+//                     DBGMSG("found\n");
                     double t = IP.local_bcoords_A()[1];
                     if(t >= -geometry_epsilon && t <= 1+geometry_epsilon)
                     {
