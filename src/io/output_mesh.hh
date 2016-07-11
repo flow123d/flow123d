@@ -146,6 +146,7 @@ protected:
     
     bool is_refined_;
     bool refine_by_error_;
+    double refinement_error_tolerance_;
     
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;

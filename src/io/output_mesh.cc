@@ -32,6 +32,8 @@ const IT::Record & OutputMeshBase::get_input_type() {
             "Set true for using error_control_field. Set false for global uniform refinement to max_level.")
         .declare_key("error_control_field",IT::String(), IT::Default::optional(),
             "Name of an output field, according to which the output mesh will be refined. The field must be a SCALAR one.")
+        .declare_key("refinement_error_tolerance",IT::Double(0.0), IT::Default("0.01"),
+            "Tolerance for refinement by error.")
         .close();
 }
 
@@ -41,7 +43,10 @@ OutputMeshBase::OutputMeshBase(Mesh* mesh)
     connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
     offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
     orig_mesh_(mesh),
-    max_level_(0)
+    max_level_(0),
+    is_refined_(false),
+    refine_by_error_(false),
+    refinement_error_tolerance_(0.0)
 {
 }
 
@@ -53,7 +58,10 @@ OutputMeshBase::OutputMeshBase(Mesh* mesh, const Input::Record &in_rec)
     offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
     input_record_(in_rec), 
     orig_mesh_(mesh),
-    max_level_(input_record_.val<int>("max_level"))
+    max_level_(input_record_.val<int>("max_level")),
+    is_refined_(false),
+    refine_by_error_(input_record_.val<bool>("refine_by_error")),
+    refinement_error_tolerance_(input_record_.val<double>("refinement_error_tolerance"))
 {
 }
 
@@ -77,8 +85,6 @@ OutputElementIterator OutputMeshBase::end()
 
 void OutputMeshBase::select_error_control_field(FieldSet* output_fields)
 {
-    refine_by_error_ = input_record_.val<bool>("refine_by_error");
-    
     if(refine_by_error_)
     {
         std::string error_control_field_name = "";
@@ -509,7 +515,7 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
         double centre_val = error_control_field->value(centre,ele_acc);
         double diff = std::abs((average_val - centre_val)/centre_val);
         DBGMSG("diff: %f  %f  %f\n", diff, average_val, centre_val);
-        return ( diff > 0.01);
+        return ( diff > refinement_error_tolerance_);
     }
     else
         return false;
