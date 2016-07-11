@@ -111,9 +111,9 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
     }
     END_TIMER("Intersection into storage");
     
-    for(IntersectionLocal<2,3> &is : intersection_storage23_) {
-        xprintf(Msg, "comp-bulk: %4d %4d\n", is.component_ele_idx(), is.bulk_ele_idx());
-    }
+//     for(IntersectionLocal<2,3> &is : intersection_storage23_) {
+//         xprintf(Msg, "comp-bulk: %4d %4d\n", is.component_ele_idx(), is.bulk_ele_idx());
+//     }
 }
 
 void InspectElements::compute_intersections_22(vector< IntersectionLocal< 2, 2 > >& storage)

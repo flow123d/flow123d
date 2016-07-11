@@ -22,6 +22,7 @@
 #include <dirent.h>
 
 using namespace std;
+using namespace computeintersection;
 
 /// Create results for the meshes in directory 'prolong_meshes_13d'.
 void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, std::vector<double> &lengths)

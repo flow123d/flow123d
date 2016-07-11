@@ -8,13 +8,9 @@
 #include <flow_gtest_mpi.hh>
 
 #include "system/system.hh"
-#include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
-
-#include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/intersection.h"
 
 #include "intersection/inspect_elements.hh"
 #include "intersection/intersection_point_aux.hh"
@@ -26,70 +22,77 @@
 using namespace std;
 using namespace computeintersection;
 
-//static const std::string profiler_file = "intersection_profiler.log";
-//static const unsigned int profiler_loop = 10000;
 
-//*
+/// Create results for the meshes in directory 'prolong_meshes_23d'.
+void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils)
+{
+    unsigned int n_files=1;
+    ils.clear();
+    ils.resize(n_files);
+    
+    ils[0].resize(4);
+    ils[0][0] = {   {0.475, 0.325, 0}, 
+                    {0.25, 0.25, 0},
+                    {0, 0.05, 0.05},
+                    {0.2, 0, 0.1},
+                    {0.41, 0, 0.13}};
+    ils[0][1] = {   {0.2, 0, 0.1},
+                    {0.4, -0.05, 0.15},
+                    {0.41, 0, 0.13}};
+    ils[0][2] = {   {0, 0.05, 0.05},
+                    {0.2, 0, 0.1},
+                    {0.04, 0, 0.08}};
+    ils[0][3] = {   {0.2, 0, 0.1},
+                    {0.4, -0.05, 0.15},
+                    {0.2, -0.2 ,0.2},
+                    {0.04, 0, 0.08}};
+    
 
-// ******************************************************************************************* TEST 2d-3d ****
+}
 
-/// Create results for the meshes in directory 'site_13d'.
-// void fill_23d_solution(std::vector<computeintersection::IntersectionAux<2,3>> &ils)
-// {
-//     ils.clear();
-//     ils.resize(1);
-//     
-//     ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,0,0}),arma::vec::fixed<4>({1,1,1,1})/4));
-//     ils[0].points().push_back(computeintersection::IntersectionPoint<2,3>(arma::vec::fixed<3>({1,1,1})/3,arma::vec::fixed<4>({4,3,0,3})*0.1));
-// }
+/// auxiliary function for sorting intersection storage 13d
+bool compare_is23(const computeintersection::IntersectionLocal<2,3>& a,
+                  const computeintersection::IntersectionLocal<2,3>& b)
+{
+    if (a.component_ele_idx() == b.component_ele_idx())
+        return a.bulk_ele_idx() <= b.bulk_ele_idx();
+    else
+        return a.component_ele_idx() < b.component_ele_idx();
+}
 
-
-//Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
-// computeintersection::IntersectionLine permute_coords(computeintersection::IntersectionLine il, unsigned int permute[4])
-// {
-//     computeintersection::IntersectionLine new_il = il;
-//     std::vector<computeintersection::IntersectionPoint<1,3>> & points = il.points();
-//     for(unsigned int i = 0; i < points.size(); i++)
-//     {
-//         arma::vec::fixed<4> new_coords;
-//         for(unsigned int j = 0; j < 4; j++)
-//             new_coords[j] = points[i].local_bcoords_B()[permute[j]];
-//         
-//         new_il.points()[i].set_coordinates(points[i].local_bcoords_A(), new_coords);
-//     }
-//     return new_il;
-// }
-
-void compute_intersection_23d(Mesh *mesh, const computeintersection::IntersectionAux<2,3> &ip)
+void compute_intersection_23d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il)
 {
     double area = 0;
 
     // compute intersection
     DBGMSG("Computing intersection area by NEW algorithm\n");
-//     InspectElements ie(mesh);
-//     ie.compute_intersections<2,3>();
     InspectElements ie(mesh);
-    ie.compute_intersections();
-//     //test solution
-//     std::vector<computeintersection::IntersectionLine> pp = ie.list_intersection_lines(1);
-//     computeintersection::IntersectionLine ilc;
-//     // component = element index == 1
-//     if(pp.size() > 0)
+    ie.compute_intersections(computeintersection::IntersectionType::d23);
+    
+    // write computed intersections
+//     for(unsigned int i = 0; i < ie.intersection_storage23_.size(); i++)
 //     {
-//         ilc = pp[0];
-//         EXPECT_EQ(ilc.size(), il.size());
+//         cout << &ie.intersection_storage23_[i] << ie.intersection_storage23_[i];
 //     }
-//     
-//     for(unsigned int i=0; i < ilc.size(); i++)
-//     {
-//         DBGMSG("---------- check IP[%d] ----------\n",i);
-//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_A()[0], il[i].local_bcoords_A()[0]);
-//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_A()[1], il[i].local_bcoords_A()[1]);
-//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[0], il[i].local_bcoords_B()[0]);
-//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[1], il[i].local_bcoords_B()[1]);
-//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[2], il[i].local_bcoords_B()[2]);
-//         EXPECT_DOUBLE_EQ(ilc[i].local_bcoords_B()[3], il[i].local_bcoords_B()[3]);
-//     }
+    
+    //test solution
+    std::vector<computeintersection::IntersectionLocal<2,3>> ilc = ie.intersection_storage23_;
+    
+    // sort the storage, so it is the same for every algorithm (BIH, BB ...)
+    // and we avoid creating the intersection map for exact IPs
+    std::sort(ilc.begin(), ilc.end(),compare_is23);
+    
+    EXPECT_EQ(ilc.size(), il.size());
+    
+    for(unsigned int i=0; i < ilc.size(); i++)
+        for(unsigned int j=0; j < ilc[i].size(); j++)
+    {
+        DBGMSG("---------- check IP[%d] ----------\n",i);
+        arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
+        EXPECT_NEAR(ip[0], il[i][j][0], 1e-14);
+        EXPECT_NEAR(ip[1], il[i][j][1], 1e-14);
+        EXPECT_NEAR(ip[2], il[i][j][2], 1e-14);
+    }
     
     area = ie.measure_23();
     ie.print_mesh_to_file_23("output_intersection_23");
@@ -101,7 +104,6 @@ void compute_intersection_23d(Mesh *mesh, const computeintersection::Intersectio
 
 
 TEST(intersection_prolongation_23d, all) {
-    Profiler::initialize();
     
 //     // directory with testing meshes
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_23d/";
@@ -133,79 +135,25 @@ TEST(intersection_prolongation_23d, all) {
     
     std::sort(filenames.begin(), filenames.end(), less<string>());
         
-    std::vector<IntersectionAux<2,3>> solution;
-//     fill_23d_solution(solution);
+    std::vector<std::vector<std::vector<arma::vec3>>> solution;
+    fill_23d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-//         const unsigned int np = 24;
-//         unsigned int permutations[np][4] = {{0,1,2,3},
-//                                                 {0,1,3,2},  // the tab means permutation with negative jacobian
-//                                             {0,3,1,2},
-//                                                 {0,3,2,1},
-//                                             {0,2,3,1},
-//                                                 {0,2,1,3},
-//                                                 {1,0,2,3},
-//                                             {1,0,3,2},
-//                                                 {1,3,0,2},
-//                                             {1,3,2,0},
-//                                                 {1,2,3,0},
-//                                             {1,2,0,3},
-//                                                 {2,1,0,3},
-//                                             {2,1,3,0},
-//                                                 {2,3,1,0},
-//                                             {2,3,0,1},
-//                                                 {2,0,3,1},
-//                                             {2,0,1,3},
-//                                                 {3,1,2,0},
-//                                             {3,1,0,2},
-//                                                 {3,0,1,2},
-//                                             {3,0,2,1},
-//                                                 {3,2,0,1},
-//                                             {3,2,1,0}};
-//         for(unsigned int p=0; p<np; p++)
-//         {
-            xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
-            FilePath::set_io_dirs(".","","",".");
-            FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
-            
-            Mesh mesh;
-            // read mesh with gmshreader
-            GmshMeshReader reader(mesh_file);
-            reader.read_mesh(&mesh);
+        xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
+        FilePath::set_io_dirs(".","","",".");
+        FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
-//             // permute nodes:
-//             FOR_ELEMENTS(&mesh,ele)
-//             {
-//                 if(ele->dim() == 3)
-//                 {
-//                     Node* tmp[4];
-//                     for(unsigned int i=0; i<ele->n_nodes(); i++)
-//                     {
-//                         tmp[i] = ele->node[permutations[p][i]];
-//                     }
-//                     for(unsigned int i=0; i<ele->n_nodes(); i++)
-//                     {
-//                         ele->node[i] = tmp[i];
-// //                         ele->node[i]->point().print(cout);
-//                     }
-// //                     cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
-//                 }
-//             }
-            
-            mesh.setup_topology();
-            
-            xprintf(Msg, "==============\n");
-//             for(unsigned int loop = 0; loop < profiler_loop; loop++)
-                compute_intersection_23d(&mesh, solution[s]); //permute_coords(solution[s], permutations[p]));
-            xprintf(Msg, "==============\n");
-//         }
+        Mesh mesh;
+        // read mesh with gmshreader
+        GmshMeshReader reader(mesh_file);
+        reader.read_mesh(&mesh);
+        
+        mesh.setup_topology();
+        
+        compute_intersection_23d(&mesh, solution[s]);
     }
-//     std::fstream fs;
-//     fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
-//     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
 }
 
 //*/
