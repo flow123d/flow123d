@@ -359,6 +359,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     nodes_->n_values = nodes_->data_.size() / spacedim;
     offsets_->n_values = offsets_->data_.size();
     
+    is_refined_ = true;
 //     for(unsigned int i=0; i< nodes_->n_values; i++)
 //     {
 //         cout << i << "  "; 

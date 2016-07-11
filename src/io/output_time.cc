@@ -139,7 +139,8 @@ void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
 void OutputTime::compute_discontinuous_output_mesh()
 {
     ASSERT_PTR(output_mesh_).error("Create output mesh first!");
-    output_mesh_discont_->create_mesh(output_mesh_);
+    if( ! output_mesh_discont_->is_refined())
+        output_mesh_discont_->create_mesh(output_mesh_);
 }
 
 
