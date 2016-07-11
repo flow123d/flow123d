@@ -23,6 +23,8 @@
 #include "output_time.impl.hh"
 #include "output_vtk.hh"
 #include "output_msh.hh"
+#include "output_mesh.hh"
+#include <fields/field_set.hh>
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(vtk)
@@ -48,6 +50,8 @@ const Record & OutputTime::get_input_type() {
 				"Explicit array of output time points (can be combined with 'time_step'.")
 		.declare_key("add_input_times", Bool(), Default("false"),
 				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
+        .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
+                "Output mesh record enables output on a refined mesh.")
 		.close();
 }
 
@@ -65,16 +69,15 @@ OutputTime::OutputTime()
 
 
 OutputTime::OutputTime(const Input::Record &in_rec)
-: input_record_(in_rec)
+: current_step(0),
+    time(-1.0),
+    write_time(-1.0),
+    input_record_(in_rec),
+    _mesh(nullptr)
 {
-
+    // Read output base file name
     this->_base_filename = in_rec.val<FilePath>("file");
-    this->current_step = 0;
-    this->_mesh = NULL;
-    this->time = -1.0;
-    this->write_time = -1.0;
-
-
+    
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
 
 }
@@ -91,12 +94,52 @@ OutputTime::~OutputTime(void)
 
     if (this->_base_file.is_open()) this->_base_file.close();
 
-     xprintf(MsgLog, "O.K.\n");
+    xprintf(MsgLog, "O.K.\n");
 }
 
 
 
+void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
+{
+    // already computed
+    if(output_mesh_) return;
+    
+    _mesh = mesh;
 
+    // Read optional error control field name
+    auto it = input_record_.find<Input::Record>("output_mesh");
+    
+    if(enable_refinement_) {
+        if(it){
+            output_mesh_ = std::make_shared<OutputMesh>(mesh, *it);
+            output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh, *it);
+            output_mesh_->select_error_control_field(output_fields);
+            output_mesh_discont_->select_error_control_field(output_fields);
+            
+            output_mesh_->create_refined_mesh();
+            return;
+        }
+    }
+    else
+    {
+        // skip creation of output mesh (use computational one)
+        if(it)
+            xprintf(Warn,"Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!\n");
+    }
+    
+    
+    output_mesh_ = std::make_shared<OutputMesh>(mesh);
+    output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh);
+    
+    output_mesh_->create_identical_mesh();
+}
+
+
+void OutputTime::compute_discontinuous_output_mesh()
+{
+    ASSERT_PTR(output_mesh_).error("Create output mesh first!");
+    output_mesh_discont_->create_mesh(output_mesh_);
+}
 
 
 
@@ -212,6 +255,10 @@ void OutputTime::write_time_frame()
 			// Remember the last time of writing to output stream
 			write_time = time;
 			current_step++;
+            
+            // invalidate output meshes after the time frame written
+            output_mesh_.reset();
+            output_mesh_discont_.reset();
 		} else {
 			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
 			        this->_base_filename.c_str(), time);
