@@ -13,6 +13,9 @@
 #include "tools/time_marks.hh"
 #include <set>
 
+class TimeGovernor;
+
+
 class OutputTimeSet {
 public:
 
@@ -25,7 +28,7 @@ public:
     /**
      *
      */
-    void read_from_input(Input::Array in_array, TimeMark::Type mark_type);
+    void read_from_input(Input::Array in_array, const TimeGovernor &tg);
     /**
      *
      */

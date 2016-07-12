@@ -35,7 +35,7 @@ public:
     const Input::Type::Instance &make_output_type(const string &equation_name, const string &aditional_description = "");
 
 
-    void set_stream(std::shared_ptr<OutputTime> stream, TimeMark::Type equation_mark_type);
+    void initialize(std::shared_ptr<OutputTime> stream, Input::Record in_rec, const TimeGovernor & tg);
     /**
      * Collective interface to @p FieldCommonBase::output_type().
      * @param rt   Discrete function space (element, node or corner data).
@@ -45,24 +45,28 @@ public:
         for(FieldCommon *field : field_list) field->output_type(rt);
     }*/
 
-    /**
-     * Read from the input, set output times and time marks. Must be called after set_stream.
-     * TODO: add output_stream times. Optional or always?
-     */
-    void read_from_input(Input::Record in_rec);
 
     bool is_field_output_time(const FieldCommon &field, TimeStep step) const;
 
     void output(TimeStep step);
 
-    void add_output_time(double begin);
-    void add_output_times(double begin, double step, double end);
 
 private:
     static Input::Type::Record &get_input_type();
 
+    /**
+     * Read from the input, set output times and time marks. Must be called after set_stream.
+     * TODO: add output_stream times. Optional or always?
+     */
+    void read_from_input(Input::Record in_rec, const TimeGovernor & tg);
+
+    //void add_output_time(double begin);
+    void add_output_times(double begin, double step, double end);
+
+
     std::shared_ptr<OutputTime> stream_;
     TimeMark::Type equation_type_;
+    TimeMark::Type equation_fixed_type_;
     OutputTimeSet common_output_times_;
     std::unordered_map<string, OutputTimeSet> field_output_times_;
     std::unordered_set<string> observe_fields_;

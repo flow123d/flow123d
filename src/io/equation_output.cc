@@ -54,7 +54,7 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
     // add value for each field excluding boundary fields
     for( FieldCommon * field : field_list)
     {
-        DBGMSG("type for field: %s\n",field->name().c_str());
+        //DBGMSG("type for field: %s\n",field->name().c_str());
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
         {
             string desc = "Output of the field " + field->name() + " (($[" + field->units().format_latex()+"]$))";
@@ -67,7 +67,7 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
         }
     }
 
-    static const IT::Selection &output_field_selection = sel.close();
+    const IT::Selection &output_field_selection = sel.close();
 
     std::vector<IT::TypeBase::ParameterPair> param_vec;
     param_vec.push_back( std::make_pair("output_field_selection", std::make_shared< IT::Selection >(output_field_selection) ) );
@@ -76,31 +76,33 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
 }
 
 
-void EquationOutput::set_stream(std::shared_ptr<OutputTime> stream, TimeMark::Type mark_type)
+void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Input::Record in_rec, const TimeGovernor & tg)
 {
     stream_ = stream;
-    equation_type_ = mark_type;
+    equation_type_ = tg.equation_mark_type();
+    equation_fixed_type_ = tg.equation_fixed_mark_type();
+    read_from_input(in_rec, tg);
 }
 
 
 
-void EquationOutput::read_from_input(Input::Record in_rec)
+void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & tg)
 {
     ASSERT(stream_).error("The 'set_stream' method must be called before the 'read_from_input'.");
     auto marks = TimeGovernor::marks();
 
     Input::Array times_array;
     if (in_rec.opt_val("times", times_array) ) {
-        common_output_times_.read_from_input(times_array, equation_type_ );
+        common_output_times_.read_from_input(times_array, tg);
     } else {
         auto times_array_it = stream_->get_time_set_array();
         if (times_array_it) {
-            common_output_times_.read_from_input(*times_array_it, equation_type_);
+            common_output_times_.read_from_input(*times_array_it,  tg);
         }
     }
 
     if (in_rec.val<bool>("add_input_times")) {
-        marks.add_to_type_all( equation_type_ | marks.type_input(), equation_type_ | marks.type_output() );
+        marks.add_to_type_all( equation_type_ | marks.type_input(), equation_fixed_type_ | marks.type_output() );
     }
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
@@ -108,11 +110,13 @@ void EquationOutput::read_from_input(Input::Record in_rec)
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
-            field_times.read_from_input(field_times_array, equation_type_);
+            field_times.read_from_input(field_times_array, tg);
             field_output_times_[field_name] = field_times;
         } else {
             field_output_times_[field_name] = common_output_times_;
         }
+        // Add init time as the output time for every output field.
+        field_output_times_[field_name].add(tg.init_time(),1.0, tg.init_time(), equation_fixed_type_);
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
@@ -135,7 +139,7 @@ void EquationOutput::output(TimeStep step)
 {
     // TODO: remove const_cast after resolving problems with const Mesh.
     Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
-    DBGMSG("call make output stream\n");
+    //DBGMSG("call make output stream\n");
     stream_->make_output_mesh(field_mesh, this);
 
     for(FieldCommon * field : this->field_list) {
@@ -148,14 +152,14 @@ void EquationOutput::output(TimeStep step)
     }
 }
 
-
+/*
 void EquationOutput::add_output_time(double begin)
 {
-    common_output_times_.add(begin, 1.0, begin, equation_type_);
+    common_output_times_.add(begin, 1.0, begin, equation_fixed_type_ );
 }
-
+*/
 
 void EquationOutput::add_output_times(double begin, double step, double end)
 {
-    common_output_times_.add(begin,step, end, equation_type_);
+    common_output_times_.add(begin,step, end, equation_fixed_type_ );
 }
