@@ -25,12 +25,7 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 10
     output:
-      output_stream: 
-        file: ./test1.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
@@ -39,3 +34,8 @@ problem: !Coupling_Sequential
         - pressure_diff
         - div_diff
     balance: true
+    output_stream: 
+      file: ./test1.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

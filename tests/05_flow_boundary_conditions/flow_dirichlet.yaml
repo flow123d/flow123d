@@ -4,6 +4,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ${INPUT}/square_xy.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -26,14 +27,14 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 0
     output:
-      output_stream: 
-        file: ./test05.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
         - velocity_p0
     balance: true
+    output_stream: 
+      file: ./test05.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

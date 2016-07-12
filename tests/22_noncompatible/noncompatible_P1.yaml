@@ -26,12 +26,7 @@ problem: !Coupling_Sequential
         bc_pressure: 10
     output:
       balance_output: balance.out
-      output_stream: 
-        file: ./square.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
@@ -40,3 +35,8 @@ problem: !Coupling_Sequential
         - pressure_diff
         - div_diff
     balance: true
+    output_stream: 
+      file: ./square.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

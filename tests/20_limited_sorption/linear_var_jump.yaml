@@ -16,6 +16,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: input/test_20.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -26,15 +27,15 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 0
     output:
-      output_stream: 
-        file: test_20.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - velocity_p0
     balance: true
+    output_stream: 
+      file: test_20.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -49,8 +50,9 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.5
       name: transport_output_stream
+      times:
+        - step: 0.5
     time:
       end_time: 5.0
     reaction_term: !Sorption
@@ -70,6 +72,7 @@ problem: !Coupling_Sequential
           rock_density: 1.0
           sorption_type: linear
           isotherm_mult: 100.0
-      output_fields: []
+      output:
+        fields: []
     balance:
       cumulative: true

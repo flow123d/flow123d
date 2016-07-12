@@ -4,6 +4,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ./input/sit_decay.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -12,16 +13,16 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_piezo_head: 0
     output:
-      output_stream: 
-        file: ./flow.msh
-        format: !gmsh
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
     balance: true
+    output_stream: 
+      file: ./flow.msh
+      format: !gmsh
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -100,7 +101,8 @@ problem: !Coupling_Sequential
       file: ./transport.msh
       format: !gmsh
         variant: ascii
-      time_step: 0.5
       name: transport_output_stream
+      times:
+        - step: 0.5
     balance:
       cumulative: true

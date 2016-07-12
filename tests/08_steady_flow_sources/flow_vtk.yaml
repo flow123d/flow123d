@@ -4,6 +4,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ${INPUT}/test08.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -18,12 +19,12 @@ problem: !Coupling_Sequential
         bc_pressure: 0
     balance: true
     output:
-      output_stream: 
-        file: ./flow.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
+    output_stream: 
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

@@ -625,7 +625,76 @@
         "destination_path": "/problem/flow_equation/output_specific/compute_errors",
         "create_path":true
       }
-    }
-     
+    },
+    {
+      "NAME": "Move DarcyFlow output_stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/output_stream",
+        "destination_path": "/problem/flow_equation/output_stream",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Rename DarcyFlow output_fields.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/output_fields",
+        "destination_path": "/problem/flow_equation/output/fields"
+      }
+    },
+    {
+      "NAME": "Rename DarcyFlow output_fields.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/output_fields",
+        "destination_path": "/problem/solute_equation/transport/fields"
+      }
+    },
+    {
+      "NAME": "Make output_fields in transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/transport/output_fields",
+        "destination_path": "/problem/solute_equation/transport/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in dual porosity.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in mobile reaction.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/reaction_mobile/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_mobile/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in immobile reaction.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/reaction_immobile/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make time step for transport output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/time_step",
+        "destination_path": "/problem/solute_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    }  
   ]
 }

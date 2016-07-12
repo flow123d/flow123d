@@ -5,6 +5,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ./input/narrow_2d_chanel.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -18,15 +19,15 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 0
     output:
-      output_stream:
-        file: ./flow.pvd
-        format: !vtk
-          variant: ascii
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
     balance: true
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -139,5 +140,6 @@ problem: !Coupling_Sequential
       file: transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 1.0
 # problem
+      times:
+        - step: 1.0
