@@ -41,13 +41,19 @@ TEST (TimeMark, time_mark)
 }
 
 TEST(TimeMarks, add_time_marks) {
-    auto tm = TimeMarks();
+     TimeMarks tm;
 
     {
     auto mark_type = tm.new_mark_type();
     tm.add_time_marks(0.0, 0.1, 1.0E3, mark_type);
     auto mark_it = tm.last(mark_type);
     EXPECT_FLOAT_EQ(1.0E3, mark_it->time());
+    EXPECT_EQ(mark_type, mark_it->mark_type());
+    TimeMark changed_tm = tm.add(TimeMark(0.0, tm.type_output()));
+    EXPECT_EQ(mark_type | tm.type_output(), changed_tm.mark_type());
+    mark_it = tm.begin(mark_type); ++mark_it;
+
+    EXPECT_EQ(mark_type | tm.type_output(), mark_it->mark_type());
     }
 
     {

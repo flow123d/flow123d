@@ -78,7 +78,7 @@ TimeMark TimeMarks::add(const TimeMark &mark) {
 
     // check equivalence with found mark
     if (fabs(first_ge->time() - mark.time()) < TimeGovernor::time_step_precision) {
-	//if "equal" does bitwise OR with the mark type at the first_ge iterator position
+	//if times are "equal" do bitwise OR with the mark type at the first_ge iterator position
         first_ge->add_to_type(mark.mark_type());
         return *first_ge;
     }

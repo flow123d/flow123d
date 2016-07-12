@@ -149,6 +149,8 @@ private:
     double end_;
 };
 
+std::ostream& operator<<(std::ostream& out, const TimeStep& t_step);
+
 
 
 /**
@@ -365,8 +367,8 @@ public:
     /**
      * Simpler interface to TimeMarks::is_current().
      */
-    inline bool is_current(const TimeMark::Type &mask) const
-        {return time_marks_.current(step(), equation_mark_type() | mask) != time_marks_.end(); }
+    bool is_current(const TimeMark::Type &mask) const;
+
 
     /**
      * Simpler interface to TimeMarks::next().
@@ -575,7 +577,8 @@ private:
  * streams for various log targets.
  *
  */
-ostream& operator<<(ostream& out, const TimeGovernor& tg);
+std::ostream& operator<<(std::ostream& out, const TimeGovernor& tg);
+
 
 
 #endif /* TIME_HH_ */
