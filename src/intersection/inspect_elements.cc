@@ -18,7 +18,7 @@
 namespace computeintersection {
 
 InspectElements::InspectElements(Mesh* mesh)
-: mesh(mesh), algorithm13_(mesh), algorithm23_(mesh), algorithm22_(mesh)
+: mesh(mesh), algorithm13_(mesh), algorithm23_(mesh), algorithm22_(mesh), algorithm12_(mesh)
 {}
 
 InspectElements::~InspectElements()
@@ -129,15 +129,72 @@ void InspectElements::compute_intersections_22(vector< IntersectionLocal< 2, 2 >
         unsigned int triaA_idx = is.component_ele_idx();
         unsigned int triaB_idx = is.bulk_ele_idx();
 
-        storage.push_back(IntersectionLocal<2,2>(is));
-        intersection_map_[triaA_idx].push_back(std::make_pair(
-                                                    triaB_idx,
-                                                    &(storage.back())
-                                                ));
-        intersection_map_[triaB_idx].push_back(std::make_pair(
-                                                    triaA_idx,
-                                                    &(storage.back())
-                                                ));
+        //HACK: 'skip flag' move this check into algorithm12_.compute_intersections()
+        bool skip = false;
+        for(unsigned int i=0; i<intersection_map_[triaA_idx].size(); i++)
+        {
+            if(intersection_map_[triaA_idx][i].first == triaB_idx)
+                skip = true;
+        }
+        if(! skip) {
+            storage.push_back(IntersectionLocal<2,2>(is));
+            intersection_map_[triaA_idx].push_back(std::make_pair(
+                                                        triaB_idx,
+                                                        &(storage.back())
+                                                    ));
+            intersection_map_[triaB_idx].push_back(std::make_pair(
+                                                        triaA_idx,
+                                                        &(storage.back())
+                                                    ));
+        
+            DBGMSG("2D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+            for(const IntersectionPointAux<2,2>& ip : is.points()) {
+                //cout << ip;
+                auto p = ip.coords(mesh->element(is.component_ele_idx()));
+                cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+            }
+        }
+    }
+    END_TIMER("Intersection into storage");
+}
+
+void InspectElements::compute_intersections_12(vector< IntersectionLocal< 1, 2 > >& storage)
+{
+    START_TIMER("Intersection algorithm");
+    algorithm12_.compute_intersections(intersection_map_);
+    END_TIMER("Intersection algorithm");
+    
+    START_TIMER("Intersection into storage");
+    storage.reserve(algorithm12_.intersectionaux_storage12_.size());
+    
+    for(IntersectionAux<1,2> &is : algorithm12_.intersectionaux_storage12_) {
+        unsigned int abscissa_idx = is.component_ele_idx();
+        unsigned int triangle_idx = is.bulk_ele_idx();
+
+        //HACK: 'skip flag' move this check into algorithm12_.compute_intersections()
+        bool skip = false;
+        for(unsigned int i=0; i<intersection_map_[abscissa_idx].size(); i++)
+        {
+            if(intersection_map_[abscissa_idx][i].first == triangle_idx)
+                skip = true;
+        }
+        if(! skip) {
+            storage.push_back(IntersectionLocal<1,2>(is));
+            intersection_map_[abscissa_idx].push_back(std::make_pair(
+                                                        triangle_idx,
+                                                        &(storage.back())
+                                                    ));
+            intersection_map_[triangle_idx].push_back(std::make_pair(
+                                                        abscissa_idx,
+                                                        &(storage.back())
+                                                    ));
+            DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+            for(const IntersectionPointAux<1,2>& ip : is.points()) {
+                //cout << ip;
+                auto p = ip.coords(mesh->element(is.component_ele_idx()));
+                cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+            }
+        }
     }
     END_TIMER("Intersection into storage");
 }
@@ -146,13 +203,17 @@ void InspectElements::compute_intersections(computeintersection::IntersectionTyp
 {
     intersection_map_.resize(mesh->n_elements());
     
-    if(d & IntersectionType::d13){
+    if(d & (IntersectionType::d12 | IntersectionType::d12_1 | IntersectionType::d12_2)){
+        ASSERT(0).error("NOT IMPLEMENTED.");
+    }
+    
+    if(d & (IntersectionType::d13 | IntersectionType::d12_3)){
         START_TIMER("Intersections 1D-3D");
         compute_intersections<1>(algorithm13_,intersection_storage13_);
         END_TIMER("Intersections 1D-3D");
     }
     
-    if(d & (IntersectionType::d23 | IntersectionType::d22)){
+    if(d & (IntersectionType::d23 | IntersectionType::d22 | IntersectionType::d12_3)){
         START_TIMER("Intersections 2D-3D");
         compute_intersections<2>(algorithm23_,intersection_storage23_);
         END_TIMER("Intersections 2D-3D");
@@ -162,6 +223,12 @@ void InspectElements::compute_intersections(computeintersection::IntersectionTyp
         START_TIMER("Intersections 2D-2D");
         compute_intersections_22(intersection_storage22_);
         END_TIMER("Intersections 2D-2D");
+    }
+    
+    if(d & IntersectionType::d12_3){
+        START_TIMER("Intersections 1D-2D (3)");
+        compute_intersections_12(intersection_storage12_);
+        END_TIMER("Intersections 1D-2D (3)");
     }
 }
 

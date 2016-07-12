@@ -19,6 +19,16 @@
 
 namespace computeintersection {
 
+template<unsigned int simplex_dim>
+void update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
+{
+    arma::vec3 *field_of_points[simplex_dim+1];
+    for(unsigned int i=0; i < simplex_dim+1; i++)
+        field_of_points[i]= &(element->node[i]->point());
+    simplex.set_simplices(field_of_points);
+}
+
+
 template<unsigned int dim>    
 InspectElementsAlgorithm<dim>::InspectElementsAlgorithm(Mesh* _mesh)
 : mesh(_mesh)
@@ -60,16 +70,6 @@ void InspectElementsAlgorithm<dim>::init()
         }
     }
     END_TIMER("Intersection initialization");
-}
-
-template<unsigned int dim>
-template<unsigned int simplex_dim>
-void InspectElementsAlgorithm<dim>::update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
-{
-    arma::vec3 *field_of_points[simplex_dim+1];
-    for(unsigned int i=0; i < simplex_dim+1; i++)
-        field_of_points[i]= &(element->node[i]->point());
-    simplex.set_simplices(field_of_points);
 }
 
  
@@ -821,7 +821,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
                 if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
                 // this also skips the compatible connections (it is still a single component in this case)
                 
-                DBGMSG("compute intersection 2d-2d\n");
+                DBGMSG("compute intersection 2d-2d: e_%d e_%d c_%d c_%d\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
                 compute_single_intersection(eleA,
                                             eleB);
             }
@@ -851,14 +851,75 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
         intersectionaux_storage22_.push_back(is);
 }
 
-void InspectElementsAlgorithm22::update_simplex(const ElementFullIter& element, Simplex< 2 >& simplex)
+
+
+
+
+InspectElementsAlgorithm12::InspectElementsAlgorithm12(Mesh* input_mesh)
+: mesh(input_mesh)
+{}
+
+
+void InspectElementsAlgorithm12::compute_intersections(const std::vector< std::vector<ILpair>>& intersection_map_)
 {
-    arma::vec3 *field_of_points[3];
-    for(unsigned int i=0; i < 3; i++)
-        field_of_points[i]= &(element->node[i]->point());
-    simplex.set_simplices(field_of_points);
+    DBGMSG("Intersections 1d-2d\n");
+    
+    FOR_ELEMENTS(mesh, ele) {
+    if (ele->dim() == 3)
+    {
+        unsigned int ele_idx = ele->index();
+        // if there are not at least 2 elements intersecting 3D element; continue
+        if(intersection_map_[ele_idx].size() < 2) continue;
+        
+        const std::vector<ILpair> &local_map = intersection_map_[ele_idx];
+        
+        //DBGMSG("more than 2 intersections in tetrahedron found\n");
+        for(unsigned int i=0; i < local_map.size(); i++)
+        {
+            //TODO: 1] compute all plucker coords at once
+            //TODO: 2] pass plucker coords from 1d-3d
+            
+            ElementFullIter eleA = mesh->element(local_map[i].first);
+            if(eleA->dim() !=1 ) continue;  //skip other dimension intersection
+            
+//             IntersectionLocalBase * ilb = local_map[i].second;
+//             DBGMSG("1d-2d ILB: %d %d %d\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), ilb->component_idx());
+            
+            for(unsigned int j=0; j < local_map.size(); j++)
+            {
+                ElementFullIter eleB = mesh->element(local_map[j].first);
+                if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
+                
+                DBGMSG("compute intersection 1d-2d: %d %d\n",eleA.index(), eleB.index());
+                compute_single_intersection(eleA,
+                                            eleB);
+            }
+        }
+    }
+    }
 }
 
+void InspectElementsAlgorithm12::compute_single_intersection(const ElementFullIter& eleA,
+                                                             const ElementFullIter& eleB)
+{
+    ASSERT_DBG(eleA->dim() == 1);
+    ASSERT_DBG(eleB->dim() == 2);
+    
+    update_simplex(eleA, abscissa_);
+    update_simplex(eleB, triangle_);
+    
+    IntersectionAux<1,2> is(eleA->index(), eleB->index(), 0);
+//     std::vector<unsigned int> prolongation_table;
+    
+    ComputeIntersection< Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
+    unsigned int n_local_intersection = CI.compute_final(is.points());
+    
+    if(n_local_intersection > 0)
+    {
+        DBGMSG("found: %d\n",n_local_intersection);
+        intersectionaux_storage12_.push_back(is);
+    }
+}
 
 
 // Declaration of specializations implemented in cpp:

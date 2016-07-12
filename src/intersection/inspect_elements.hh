@@ -15,6 +15,11 @@
  * @brief   Main class InspectElements for governing intersection algorithm on meshes of combined dimensions.
  * @author  Pavel Exner
  *
+ * TODO: in 2d-2d and 1d-2d check that the intersection candidate has been already computed
+ *      during algorithm, not when moving to storage..
+ * TODO: fix component numbering - component number is increasing weirdly...we get more components than expected
+ *      then it does not work in 2d-2d
+ *
  */
 #ifndef INSPECT_ELEMENTS_H_
 #define INSPECT_ELEMENTS_H_
@@ -38,6 +43,9 @@ enum IntersectionType
     d13 = 0x0002,
     d23 = 0x0004,
     d22 = 0x0008,
+    d12_1 = 0x0010, // different algorithms for 12
+    d12_2 = 0x0020,
+    d12_3 = 0x0040,
     all = 0xFFFF
 };
 
@@ -72,6 +80,8 @@ public:
     std::vector<IntersectionLocal<2,3>> intersection_storage23_;
     /// Stores 2D-2D intersections.
     std::vector<IntersectionLocal<2,2>> intersection_storage22_;
+    /// Stores 1D-2D intersections.
+    std::vector<IntersectionLocal<1,2>> intersection_storage12_;
     
     /// Maps between elements and their intersections.
     /// i.e.: 
@@ -103,11 +113,13 @@ private:
     InspectElementsAlgorithm<1> algorithm13_;
     InspectElementsAlgorithm<2> algorithm23_;
     InspectElementsAlgorithm22 algorithm22_;
+    InspectElementsAlgorithm12 algorithm12_;
     
     /// Auxiliary function that calls InspectElementsAlgorithm<dim>.
     template<unsigned int dim> void compute_intersections(InspectElementsAlgorithm<dim> &iea,
                                                           std::vector<IntersectionLocal<dim,3>> &storage);
     void compute_intersections_22(std::vector<IntersectionLocal<2,2>> &storage);
+    void compute_intersections_12(std::vector<IntersectionLocal<1,2>> &storage);
 };
 
     

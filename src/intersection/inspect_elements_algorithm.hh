@@ -41,6 +41,10 @@ class InspectElementsAlgorithm22;
 /// First = element index, Second = pointer to intersection object.
 typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
 
+/// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
+template<unsigned int simplex_dim>
+void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
+    
 /** @brief Class implements algorithm for dim-dimensional intersections with 3D elements.
  * 
  * @p dim-D elements that are continuously neighbouring are called component elements.
@@ -142,10 +146,6 @@ private:
     
     void assert_same_intersection(unsigned int comp_ele_idx, unsigned int bulk_ele_idx);
     
-    /// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
-    template<unsigned int simplex_dim>
-    void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
-    
     /// A hard way to find whether the intersection of two elements has already been computed, or not.
     bool intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
     
@@ -199,8 +199,52 @@ private:
     /// Computes fundamental intersection of two 2D elements.
     void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB);
     
-    /// Auxiliary function that translates @p ElementFullIter to @p Simplex<2>.
-    void update_simplex(const ElementFullIter &element, Simplex<2> & simplex);
+    friend InspectElements;
+};
+
+
+/** @brief Implements algorithm for finding 1D-2D intersections.
+ * 
+ * There are 3 possibilities of computation:
+ * 
+ * 1) 2D problem with 1D fractures
+ *  2D mesh is a plane and 1D mesh is the same plane; then we can solve the intersection only in 2D,
+ *  probably not using Plucker; we can apply some prolongation algorithm like in 1D-3D..
+ * 
+ * 2) 1D-2D intersection on 3D space
+ *  1D and 2D meshes are arbitrarily placed in 3D space; then we need to compute intersections using Plucker
+ *  coordinates and we cannot rely on prolongation algorithm (only if there are 2 IPs
+ *  -> both lie in the same plane)
+ *  - assuming that a 2D mesh component is mostly a plane in our applications (not an arbitrarily curved surface)
+ * 
+ * 3) 1D-2D intersection inside 3D mesh
+ *  1D and 2D mesh is inside a bulk mesh (3D); if 2D-3D and 1D-3D has been computed,
+ *  we can iterate over 3D intersection and get candidates if there is both 1D-3D and 2D-3D
+ *  at the same time.
+ *  We might need to deal with intersections outside 3D mesh, using partially algorithm (2)
+ */
+class InspectElementsAlgorithm12
+{
+public:
+    InspectElementsAlgorithm12(Mesh *input_mesh);
+    
+    /** @brief Runs the algorithm (3): compute 1D-2D intersection inside 3D mesh.
+     * @param intersection_map_ map of intersections where 1D-3D and 2D-3D must be already computed
+     */
+    void compute_intersections(const std::vector<std::vector<ILpair>> &intersection_map_);
+private:
+    Mesh *mesh;
+    
+    /// Stores temporarily 1D-2D intersections.
+    std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
+    
+    /// Object representing a line element.
+    Simplex<1> abscissa_;
+    /// Object representing a triangle element.
+    Simplex<2> triangle_;
+    
+    /// Computes fundamental 1D-2D intersection of candidate pair.
+    void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
     
     friend InspectElements;
 };
