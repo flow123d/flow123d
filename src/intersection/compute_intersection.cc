@@ -291,8 +291,10 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
     arma::vec3 w = {signed_plucker_product(0),
                     signed_plucker_product(1),
                     signed_plucker_product(2)};
-    double w_sum = w[0] + w[1] + w[2];// + rounding_epsilonX;
-    w = w / w_sum;
+    double w_sum = w[0] + w[1] + w[2];
+    // if all products 0, we need avoiding zero division
+    if(std::abs(w_sum) > rounding_epsilonX)
+        w = w / w_sum;
     
     // test whether all plucker products have the same sign
     if(((w[0] > rounding_epsilon) && (w[1] > rounding_epsilon) && (w[2] > rounding_epsilon)) ||
@@ -338,9 +340,12 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     arma::vec3 w = {signed_plucker_product(0),
                     signed_plucker_product(1),
                     signed_plucker_product(2)};
-    double w_sum = w[0] + w[1] + w[2] + rounding_epsilonX/2;
-    w = w / w_sum;
+    double w_sum = w[0] + w[1] + w[2];
+    // if all products 0, we need avoiding zero division
+    if(std::abs(w_sum) > rounding_epsilonX)
+        w = w / w_sum;
 //     DBGMSG("Plucker product sum = %e\n",w_sum);
+    
     // test whether all local coords (plucker products) have the same sign
     if(((w[0] > rounding_epsilon) && (w[1] > rounding_epsilon) && (w[2] > rounding_epsilon)) ||
        ((w[0] < -rounding_epsilon) && (w[1] < -rounding_epsilon) && (w[2] < -rounding_epsilon)))
@@ -483,7 +488,7 @@ void ComputeIntersection< Simplex<2>, Simplex<2>>::clear_all()
 
 void ComputeIntersection<Simplex<2>, Simplex<2>>::init(){
 
-    DBGMSG("init\n");
+//     DBGMSG("init\n");
     for(unsigned int i = 0; i <  RefElement<2>::n_sides; i++){
         // set side A vs triangle B
         for(unsigned int j = 0; j <  RefElement<2>::n_sides; j++)
@@ -588,7 +593,7 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                     for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
                         CI12[3 + RefElement<2>::interact<1,0>(node)[s]].set_computed();
                 }
-                cout << IP22;
+//                 cout << IP22;
                 IP22s.push_back(IP22);
             }
             IP12s.clear();
