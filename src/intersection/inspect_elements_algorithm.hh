@@ -33,6 +33,7 @@ namespace computeintersection {
 
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> class IntersectionAux;
+template<unsigned int N, unsigned int M> class IntersectionLocal;
 class IntersectionLocalBase;
 
 class InspectElements;
@@ -229,14 +230,18 @@ public:
     InspectElementsAlgorithm12(Mesh *input_mesh);
     
     /** @brief Runs the algorithm (3): compute 1D-2D intersection inside 3D mesh.
+     * It directly fills the intersection map and intersection storage.
+     * The intersection map is then also used to avoid duplicit intersections.
      * @param intersection_map_ map of intersections where 1D-3D and 2D-3D must be already computed
+     * @param storage vector of intersection objects 1D-2D
      */
-    void compute_intersections(const std::vector<std::vector<ILpair>> &intersection_map_);
+    void compute_intersections(std::vector<std::vector<ILpair>> &intersection_map,
+                               std::vector<IntersectionLocal<1,2>> &storage);
 private:
     Mesh *mesh;
     
     /// Stores temporarily 1D-2D intersections.
-    std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
+//     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
     
     /// Object representing a line element.
     Simplex<1> abscissa_;
@@ -244,7 +249,7 @@ private:
     Simplex<2> triangle_;
     
     /// Computes fundamental 1D-2D intersection of candidate pair.
-    void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
+//     void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
     
     friend InspectElements;
 };

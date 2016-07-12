@@ -880,7 +880,8 @@ InspectElementsAlgorithm12::InspectElementsAlgorithm12(Mesh* input_mesh)
 {}
 
 
-void InspectElementsAlgorithm12::compute_intersections(const std::vector< std::vector<ILpair>>& intersection_map_)
+void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<ILpair>>& intersection_map,
+                                                       std::vector<IntersectionLocal<1,2>> &storage)
 {
     DBGMSG("Intersections 1d-2d\n");
     
@@ -889,9 +890,9 @@ void InspectElementsAlgorithm12::compute_intersections(const std::vector< std::v
     {
         unsigned int ele_idx = ele->index();
         // if there are not at least 2 elements intersecting 3D element; continue
-        if(intersection_map_[ele_idx].size() < 2) continue;
+        if(intersection_map[ele_idx].size() < 2) continue;
         
-        const std::vector<ILpair> &local_map = intersection_map_[ele_idx];
+        const std::vector<ILpair> &local_map = intersection_map[ele_idx];
         
         //DBGMSG("more than 2 intersections in tetrahedron found\n");
         for(unsigned int i=0; i < local_map.size(); i++)
@@ -899,47 +900,93 @@ void InspectElementsAlgorithm12::compute_intersections(const std::vector< std::v
             //TODO: 1] compute all plucker coords at once
             //TODO: 2] pass plucker coords from 1d-3d
             
-            ElementFullIter eleA = mesh->element(local_map[i].first);
-            if(eleA->dim() !=1 ) continue;  //skip other dimension intersection
+            unsigned int eleA_idx = local_map[i].first;
+            ElementFullIter eleA = mesh->element(eleA_idx);
             
-//             IntersectionLocalBase * ilb = local_map[i].second;
-//             DBGMSG("1d-2d ILB: %d %d %d\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), ilb->component_idx());
+            if(eleA->dim() !=1 ) continue;  //skip other dimension intersection
             
             for(unsigned int j=0; j < local_map.size(); j++)
             {
+                unsigned int eleB_idx = local_map[j].first;
                 ElementFullIter eleB = mesh->element(local_map[j].first);
                 if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
                 
+                //skip candidates already computed
+                bool skip = false;
+                for(unsigned int i=0; i<intersection_map[eleA_idx].size(); i++)
+                {
+                    if(intersection_map[eleA_idx][i].first == eleB_idx) {
+                        skip = true;
+                        break;
+                    }
+                }
+                
+                if(skip) continue;
+                
                 DBGMSG("compute intersection 1d-2d: %d %d\n",eleA.index(), eleB.index());
-                compute_single_intersection(eleA,
-                                            eleB);
+//                 compute_single_intersection(eleA,
+//                                             eleB);
+                
+                update_simplex(eleA, abscissa_);
+                update_simplex(eleB, triangle_);
+                
+                IntersectionAux<1,2> is(eleA_idx, eleB_idx, 0);
+                
+                ComputeIntersection< Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
+                unsigned int n_local_intersection = CI.compute_final(is.points());
+    
+                if(n_local_intersection > 0)
+                {
+                    storage.push_back(IntersectionLocal<1,2>(is));
+                    intersection_map[eleA_idx].push_back(std::make_pair(
+                                                         eleB_idx,
+                                                         &(storage.back())
+                                                         ));
+                    intersection_map[eleB_idx].push_back(std::make_pair(
+                                                         eleA_idx,
+                                                         &(storage.back())
+                                                         ));
+                    
+                    DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+                }
             }
         }
     }
     }
-}
-
-void InspectElementsAlgorithm12::compute_single_intersection(const ElementFullIter& eleA,
-                                                             const ElementFullIter& eleB)
-{
-    ASSERT_DBG(eleA->dim() == 1);
-    ASSERT_DBG(eleB->dim() == 2);
     
-    update_simplex(eleA, abscissa_);
-    update_simplex(eleB, triangle_);
-    
-    IntersectionAux<1,2> is(eleA->index(), eleB->index(), 0);
-//     std::vector<unsigned int> prolongation_table;
-    
-    ComputeIntersection< Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
-    unsigned int n_local_intersection = CI.compute_final(is.points());
-    
-    if(n_local_intersection > 0)
+    // just dbg output
+    for(IntersectionLocal<1,2> &is : storage)
     {
-        DBGMSG("found: %d\n",n_local_intersection);
-        intersectionaux_storage12_.push_back(is);
+        DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+        for(const IntersectionPoint<1,2>& ip : is.points()) {
+            //cout << ip;
+            auto p = ip.coords(mesh->element(is.component_ele_idx()));
+            cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+        }
     }
 }
+
+// void InspectElementsAlgorithm12::compute_single_intersection(const ElementFullIter& eleA,
+//                                                              const ElementFullIter& eleB)
+// {
+//     ASSERT_DBG(eleA->dim() == 1);
+//     ASSERT_DBG(eleB->dim() == 2);
+//     
+//     update_simplex(eleA, abscissa_);
+//     update_simplex(eleB, triangle_);
+//     
+//     IntersectionAux<1,2> is(eleA->index(), eleB->index(), 0);
+// //     std::vector<unsigned int> prolongation_table;
+//     
+//     ComputeIntersection< Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
+//     unsigned int n_local_intersection = CI.compute_final(is.points());
+//     
+//     if(n_local_intersection > 0)
+//     {
+//         DBGMSG("found: %d\n",n_local_intersection);
+//         intersectionaux_storage12_.push_back(is);
+//     }
+// }
 
 
 // Declaration of specializations implemented in cpp:
