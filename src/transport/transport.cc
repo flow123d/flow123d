@@ -65,29 +65,13 @@ const IT::Record &ConvectionTransport::get_input_type()
 			        EqData().make_field_descriptor_type(_equation_name)),
 			        IT::Default::obligatory(),
 			        "")
-
-            .declare_key("output_fields",
-			                IT::Array(
-			                        ConvectionTransport::EqData().output_fields
-			                            .make_output_field_selection(
-			                                    _equation_name + "_output_fields",
-			                                "Selection of output fields for Advective Solute Transport model.")
-			                            .close()),
-			                IT::Default("\"conc\""),
-			                "List of fields to write to output file.")
+            .declare_key("output",
+                    ConvectionTransport::EqData().output_fields.make_output_type(_equation_name, ""),
+                    IT::Default("{ fields: [ \"conc\" ] }"),
+                    "Setting of the fields output.")
 			.close();
 }
 
-/*
-const IT::Selection & ConvectionTransport::get_output_selection() {
-	return  ConvectionTransport::EqData().output_fields
-            .make_output_field_selection(
-                "ConvectionTransport_output_fields",
-                "Selection of output fields for Convection Solute Transport model.")
-            .close();
-
-}
-*/
 
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
@@ -97,7 +81,9 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
     	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
-    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
+    output_fields += conc_mobile.name("conc")
+            .units( UnitSI().kg().m(-3) )
+            .flags(FieldFlag::equation_result);
 	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
@@ -146,8 +132,13 @@ void ConvectionTransport::initialize()
 		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(n_substances());
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
-	output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
-    output_stream_->mark_output_times(*time_);
+	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
+    //output_stream_->mark_output_times(*time_);
+
+	data_.output_fields.initialize(output_stream_, input_rec.val<Input::Record>("output"), time() );
+	//cout << "Transport." << endl;
+	//cout << time().marks();
+
 
     if (balance_ != nullptr)
     	balance_->allocate(el_ds->lsize(), 1);
@@ -886,13 +877,12 @@ void ConvectionTransport::calculate_instant_balance()
 
 void ConvectionTransport::output_data() {
 
-    if (time_->is_current( time_->marks().type_output() )) {
+    if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
         output_vector_gather();
-
-		data_.output_fields.set_time(time_->step(), LimitSide::right);
-		data_.output_fields.output(output_stream_);
-
     }
+
+	data_.output_fields.set_time(time().step(), LimitSide::right);
+	data_.output_fields.output(time().step());
 }
 
 void ConvectionTransport::set_balance_object(boost::shared_ptr<Balance> balance)

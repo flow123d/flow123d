@@ -35,13 +35,14 @@
 #include "fields/field_values.hh"
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
-
+#include "io/equation_output.hh"
 
 class SorptionImmob;
 class OutputTime;
 class Mesh;
 class Distribution;
 class ConvectionTransport;
+
 
 //=============================================================================
 // TRANSPORT
@@ -89,7 +90,7 @@ public:
 
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
-        FieldSet output_fields;
+        EquationOutput output_fields;
     };
 
 
