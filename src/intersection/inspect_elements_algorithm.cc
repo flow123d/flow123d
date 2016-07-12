@@ -146,8 +146,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
             bt.find_bounding_box(elements_bb[component_ele_idx], searchedElements);
             END_TIMER("BIHtree find");
 
-            component_counter_++;
-            DBGMSG("comp: %d\n", component_counter_);
+//             component_counter_++;
+//             DBGMSG("comp: %d\n", component_counter_);
             
             START_TIMER("Bounding box element iteration");
             
@@ -199,6 +199,9 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
                     unsigned int current_component_element_idx = component_ele_idx;
                     
                     if(found){
+                        component_counter_++;
+                        DBGMSG("comp: %d\n", component_counter_);
+                        
                         DBGMSG("start component with elements %d %d\n",component_ele_idx, bulk_ele_idx);
                         
                         prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back(), prolongation_table);
@@ -338,8 +341,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
             !closed_elements[component_ele_idx] &&                    // is not closed yet
             elements_bb[component_ele_idx].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
         {    
-            component_counter_++;
-            DBGMSG("comp: %d\n", component_counter_);
             
             START_TIMER("Bounding box element iteration");
             
@@ -392,6 +393,9 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                     unsigned int current_component_element_idx = component_ele_idx;
                     
                     if(found){
+                        component_counter_++;
+                        DBGMSG("comp: %d\n", component_counter_);
+                        
                         DBGMSG("start component with elements %d %d\n",component_ele_idx, bulk_ele_idx);
                         
                         prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back(), prolongation_table);
@@ -649,6 +653,8 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                                                       const std::vector<unsigned int> &prolongation_table
                                                      )
 {
+    DBGMSG("DECIDE\n");
+    // in case there are more than 2 IPs, the prolongation table is filled
     for(unsigned int i = 0; i < prolongation_table.size();i++){
 
         unsigned int side;
@@ -661,7 +667,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
             is_triangle_side = false;
         }
 
-//         DBGMSG("prolongation table: %d %d\n", side, is_triangle_side);
+        DBGMSG("prolongation table: %d %d\n", side, is_triangle_side);
 
         if(is_triangle_side){
             // prolongation through the triangle side
@@ -739,10 +745,10 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                     }
                 }
             }
-
         }
-
     }
+    // otherwise, we need to be able to prolongate over 1 or 2 IPs; if we want to find components properly
+    // TODO: ...
 }
 
 template<unsigned int dim>
@@ -817,9 +823,23 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
                 ElementFullIter eleB = mesh->element(local_map[j].first);
                 if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
                 
+                // component check not working, until prolongation will be done also over vertices..
                 unsigned int componentB_idx = local_map[j].second->component_idx();
                 if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
                 // this also skips the compatible connections (it is still a single component in this case)
+                
+//                 //does not solve 'vertex neighbors' (common only one node)
+//                 bool is_not_neighbor = true;
+//                 for(unsigned int k=0; k < eleA->n_sides(); k++)
+//                 {
+//                     Edge * edge = eleA->side(k)->edge();
+//                     for(unsigned int s=0; s < edge->n_sides; s++)
+//                     {
+//                         if(eleA->side(k) != edge->side(s))
+//                             if(edge->side(s)->element()->index() == eleB.index()) is_not_neighbor = false;
+//                     }
+//                 }
+//                 if(is_not_neighbor) continue;
                 
                 DBGMSG("compute intersection 2d-2d: e_%d e_%d c_%d c_%d\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
                 compute_single_intersection(eleA,
