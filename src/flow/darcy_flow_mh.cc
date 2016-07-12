@@ -141,8 +141,11 @@ const it::Record & DarcyMH::get_input_type() {
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
                 "Non-linear solver for MH problem.")
+        .declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
+                "Parameters of output stream.")
+
         .declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
-                "Parameters of output form MH module.")
+                "Parameters of output from MH module.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Parameters of output form MH module.")
         .declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
@@ -1757,31 +1760,6 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 
 
 
-// ========================
-// unsteady
-/*
-DarcyFlowMH_Steady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec)
-{
-
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-	data_.mark_input_times(this->mark_type());
-	data_.set_time(time_->step(), LimitSide::right);
-
-	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
-	//balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
-
-	//time_->fix_dt_until_mark();
-	create_linear_system();
-
-
-
-    assembly_linear_system();
-	read_init_condition();
-
-    output_data();
-}
-*/
 
 void DarcyMH::read_initial_condition()
 {

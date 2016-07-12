@@ -46,6 +46,7 @@
 
 namespace it = Input::Type;
 
+/*
 const it::Selection & DarcyFlowMHOutput::OutputFields::get_output_selection() {
     // Since result output fields are in the separate fieldset OutputFields,
     // we have to merge two selections.
@@ -57,15 +58,13 @@ const it::Selection & DarcyFlowMHOutput::OutputFields::get_output_selection() {
 		        "Auxiliary selection.").close())
 		.close();
 }
+*/
 
-const it::Record & DarcyFlowMHOutput::get_input_type() {
-	return it::Record("DarcyMHOutput", "Parameters of MH output.")
-		.declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
-						"Parameters of output stream.")
-		.declare_key("output_fields",
-		        it::Array(OutputFields::get_output_selection()),
-				it::Default::obligatory(), "List of fields to write to output file.")
-		.close();
+const it::Instance & DarcyFlowMHOutput::get_input_type() {
+	OutputFields output_fields;
+	DarcyMH::EqData eq_data;
+	output_fields += eq_data;
+	return output_fields.make_output_type("Flow_Darcy_MH", "");
 }
 
 const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
@@ -79,7 +78,9 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
 
 
 DarcyFlowMHOutput::OutputFields::OutputFields()
+: EquationOutput()
 {
+
     *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m());
     *this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
 	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
@@ -91,11 +92,9 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
 
-	fields_for_output += *this;
-
-	*this += pressure_diff.name("pressure_diff").units(UnitSI().m());
-	*this += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
-	*this += div_diff.name("div_diff").units(UnitSI().s(-1));
+	error_fields_for_output += pressure_diff.name("pressure_diff").units(UnitSI().m());
+	error_fields_for_output += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
+	error_fields_for_output += div_diff.name("div_diff").units(UnitSI().s(-1));
 
 }
 
@@ -110,7 +109,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
     
 
 	// we need to add data from the flow equation at this point, not in constructor of OutputFields
-	output_fields.fields_for_output += darcy_flow->data();
+	output_fields += darcy_flow->data();
 	output_fields.set_mesh(*mesh_);
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
@@ -140,9 +139,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream(in_rec_output.val<Input::Record>("output_stream"));
-	output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("output_fields"));
-	output_stream->mark_output_times(darcy_flow->time());
+	output_stream = OutputTime::create_output_stream(main_mh_in_rec.val<Input::Record>("output_stream"));
+	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
+	//output_stream->mark_output_times(darcy_flow->time());
+    output_fields.initialize(output_stream, in_rec_output, darcy_flow->time() );
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -186,30 +186,36 @@ void DarcyFlowMHOutput::output()
 {
     START_TIMER("Darcy fields output");
 
+    cout << darcy_flow->time().step();
+    cout << hex << TimeGovernor::marks().type_output();
     if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {
 
-      make_element_scalar();
-      make_element_vector();
+      //if ( output_fields.is_field_output_time(output_fields.field_ele_pressure) ||
+      //     output_fields.is_field_output_time(output_fields.field_ele_piezo_head) )
+              make_element_scalar();
 
-      make_node_scalar_param();
+      //if ( output_fields.is_field_output_time(output_fields.field_ele_flux) )
+              make_element_vector();
 
+      //if ( output_fields.is_field_output_time(output_fields.field_node_pressure) )
+              make_node_scalar_param();
 
-      if (compute_errors_) compute_l2_difference();
-
-      {
-          START_TIMER("evaluate output fields");
-          output_fields.fields_for_output.set_time(darcy_flow->time().step(), LimitSide::right);
-          output_fields.fields_for_output.output(output_stream);
-      }
-
-      {
-          START_TIMER("write time frame");
-          output_stream->write_time_frame();
-      }
-
+      // need better control over this
       output_internal_flow_data();
 
+      if (compute_errors_) compute_l2_difference();
     }
+    {
+        START_TIMER("evaluate output fields");
+        output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+        output_fields.output(darcy_flow->time().step());
+    }
+
+    {
+        START_TIMER("write time frame");
+        output_stream->write_time_frame();
+    }
+
     
 }
 
@@ -651,7 +657,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
 
-    output_fields.fields_for_output += output_fields;
+    output_fields += output_fields.error_fields_for_output;
 
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);

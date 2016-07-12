@@ -31,6 +31,7 @@
 #include "fem/fe_p.hh"
 
 #include "fields/vec_seq_double.hh"
+#include "io/equation_output.hh"
 
 
 class DarcyMH;
@@ -56,7 +57,7 @@ class DOFHandlerMultiDim;
 class DarcyFlowMHOutput {
 public:
 
-	class OutputFields : public FieldSet {
+	class OutputFields : public EquationOutput {
 	public:
 
 		OutputFields();
@@ -72,24 +73,19 @@ public:
 	    Field<3, FieldValue<3>::Scalar> pressure_diff;
 	    Field<3, FieldValue<3>::Scalar> div_diff;
 
-	    // List fields, we have initialized for output
-	    // In case of error fields, we have to add them to the main field set
-	    // but perform output only if user set compute_errors flag.
-	    FieldSet fields_for_output;
-
-	    static const Input::Type::Selection & get_output_selection();
+	    FieldSet error_fields_for_output;
 	};
 
     DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
-    static const Input::Type::Record & get_input_type();
+    static const Input::Type::Instance & get_input_type();
     static const Input::Type::Record & get_input_type_specific();
 
     /** \brief Calculate values for output.  **/
     void output();
 
-    const OutputFields &get_output_fields() { return output_fields; }
+    //const OutputFields &get_output_fields() { return output_fields; }
 
 
 
