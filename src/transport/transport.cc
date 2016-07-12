@@ -66,7 +66,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 			        IT::Default::obligatory(),
 			        "")
             .declare_key("output",
-                    ConvectionTransport::EqData().output_fields.make_output_type(_equation_name, ""),
+                    EqData().output_fields.make_output_type(_equation_name, ""),
                     IT::Default("{ fields: [ \"conc\" ] }"),
                     "Setting of the fields output.")
 			.close();

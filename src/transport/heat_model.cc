@@ -246,7 +246,7 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 	substances_.initialize({""});
 
     output_stream_ = OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream"));
-    output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+    //output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     // initialization of balance object
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");

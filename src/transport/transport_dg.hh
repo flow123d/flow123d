@@ -25,6 +25,7 @@
 #include "fields/multi_field.hh"
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
+#include "io/equation_output.hh"
 
 class Distribution;
 class OutputTime;
@@ -138,6 +139,8 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
         Field<3, FieldValue<3>::Integer> region_id;
+
+        EquationOutput output_fields;
 
 	};
 
