@@ -190,19 +190,19 @@ void DarcyFlowMHOutput::output()
     //cout << hex << TimeGovernor::marks().type_output();
     if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {
 
-      if ( output_fields.is_field_output_time(output_fields.field_ele_pressure) ||
-           output_fields.is_field_output_time(output_fields.field_ele_piezo_head) )
+      if ( output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) ||
+           output_fields.is_field_output_time(output_fields.field_ele_piezo_head,darcy_flow->time().step()) )
               make_element_scalar();
 
-      if ( output_fields.is_field_output_time(output_fields.field_ele_flux) )
+      if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) )
               make_element_vector();
 
-      if ( output_fields.is_field_output_time(output_fields.field_node_pressure) )
+      if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
               make_node_scalar_param();
 
       // Internal output only if both ele_pressure and ele_flux are output.
-      if (output_fields.is_field_output_time(output_fields.field_ele_flux) &&
-          output_fields.is_field_output_time(output_fields.field_ele_pressure) )
+      if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
+          output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
           output_internal_flow_data();
 
       if (compute_errors_) compute_l2_difference();
