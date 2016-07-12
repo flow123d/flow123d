@@ -9,78 +9,15 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "io/equation_output.hh"
+#include "io/output_time_set.hh"
+#include <memory>
 
 
 namespace IT = Input::Type;
 
-TimeMark OutputTimeSet::from_time_mark_storage(TimeMarkStorage tm_storage)
-{
-    return TimeMark(tm_storage.first, tm_storage.second);
-}
-auto OutputTimeSet::to_time_mark_storage(TimeMark mark) -> TimeMarkStorage
-{
-    return TimeMarkStorage(mark.time(), mark.mark_type());
-}
 
 
-
-const IT::Array OutputTimeSet::get_input_type()
-{
-    static const IT::Record &time_grid =
-        IT::Record("TimeGrid", "Equally spaced grid of time points.")
-            .allow_auto_conversion("begin")
-            .declare_key("begin", IT::Double(0.0), IT::Default::obligatory(),
-                    "The start time of the grid.")
-            .declare_key("step", IT::Double(0.0), IT::Default::optional(),
-                    "The step of the grid. If not specified, the grid consists only of the start time.")
-            .declare_key("end", IT::Double(0.0), IT::Default::read_time("The end time of the simulation."),
-                    "The time greater or equal to the last time in the grid.")
-            .close();
-    return IT::Array(time_grid);
-}
-
-
-void OutputTimeSet::read_from_input(Input::Array in_array, TimeMark::Type mark_type)
-{
-    auto marks = TimeGovernor::marks();
-
-    for(auto it =in_array.begin<Input::Record>(); it != in_array.end(); ++it) {
-        double t_begin = it->val<double>("begin");
-        double simulation_end_time = marks.end(TimeMark::every_type)->time();
-        double t_end = it->val<double>("end", simulation_end_time );
-        double t_step;
-        if (! it->opt_val("step", t_step) ) {
-            t_end = t_begin;
-            t_step = 1.0;
-        }
-        if ( t_begin > t_end) {
-            WarningOut().fmt("Ignoring output time grid. Time begin {}  > time end {}. {}",
-                    t_begin, t_end, it->address_string());
-            continue;
-        }
-        if ( t_step < 2*numeric_limits<double>::epsilon()) {
-            WarningOut().fmt("Ignoring output time grid. Time step {} < two times machine epsilon {}. {}",
-                    t_step, 2*numeric_limits<double>::epsilon(),it->address_string());
-            continue;
-        }
-
-        TimeMark::Type output_mark_type = mark_type | marks.type_output();
-
-        unsigned int n_steps=((t_end - t_begin) / t_step + TimeGovernor::time_step_precision);
-        for(unsigned int i = 0; i <= n_steps; i++) {
-            auto mark = TimeMark(t_begin + i * t_step, output_mark_type);
-            time_marks_.insert( to_time_mark_storage( marks.add(mark) ) );
-        }
-    }
-}
-
-
-bool OutputTimeSet::contains(TimeMark mark) {
-    return time_marks_.find(to_time_mark_storage(mark)) != time_marks_.end();
-}
-
-
-const IT::Record &EquationOutput::get_input_type() {
+IT::Record &EquationOutput::get_input_type() {
 
     static const IT::Record &field_output_setting =
         IT::Record("FieldOutputSetting", "Setting of the field output. The field name, output times, output interpolation (future).")
@@ -107,7 +44,39 @@ const IT::Record &EquationOutput::get_input_type() {
 }
 
 
-EquationOutput::EquationOutput(std::shared_ptr<OutputTime> stream, TimeMark::Type mark_type)
+
+const IT::Instance &EquationOutput::make_output_type(const string &equation_name, const string &additional_description)
+{
+    string selection_name = equation_name + "_output_fields";
+    string description = "Selection of output fields for the " + equation_name + " model.\n" + additional_description;
+    IT::Selection sel(selection_name, description );
+    int i=0;
+    // add value for each field excluding boundary fields
+    for( FieldCommon * field : field_list)
+    {
+        DBGMSG("type for field: %s\n",field->name().c_str());
+        if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
+        {
+            string desc = "Output of the field " + field->name() + " (($[" + field->units().format_latex()+"]$))";
+            if (field->description().length() > 0)
+                desc += " (" + field->description() + ").";
+            else
+                desc += ".";
+            sel.add_value(i, field->name(), desc);
+            i++;
+        }
+    }
+
+    static const IT::Selection &output_field_selection = sel.close();
+
+    std::vector<IT::TypeBase::ParameterPair> param_vec;
+    param_vec.push_back( std::make_pair("output_field_selection", std::make_shared< IT::Selection >(output_field_selection) ) );
+    return IT::Instance(get_input_type(), param_vec).close();
+
+}
+
+
+void EquationOutput::set_stream(std::shared_ptr<OutputTime> stream, TimeMark::Type mark_type)
 {
     stream_ = stream;
     equation_type_ = mark_type;
@@ -117,12 +86,19 @@ EquationOutput::EquationOutput(std::shared_ptr<OutputTime> stream, TimeMark::Typ
 
 void EquationOutput::read_from_input(Input::Record in_rec)
 {
+    ASSERT(stream_).error("The 'set_stream' method must be called before the 'read_from_input'.");
     auto marks = TimeGovernor::marks();
 
     Input::Array times_array;
     if (in_rec.opt_val("times", times_array) ) {
         common_output_times_.read_from_input(times_array, equation_type_ );
+    } else {
+        auto times_array_it = stream_->get_time_set_array();
+        if (times_array_it) {
+            common_output_times_.read_from_input(*times_array_it, equation_type_);
+        }
     }
+
     if (in_rec.val<bool>("add_input_times")) {
         marks.add_to_type_all( equation_type_ | marks.type_input(), equation_type_ | marks.type_output() );
     }
@@ -139,31 +115,47 @@ void EquationOutput::read_from_input(Input::Record in_rec)
         }
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
-    for(auto it = fields_array.begin<Input::FullEnum>(); it != fields_array.end(); ++it) {
+    for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
         observe_fields_.insert(string(*it));
     }
 }
 
+bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep step) const
+{
+    auto &marks = TimeGovernor::marks();
+    auto field_times_it = field_output_times_.find(field.name());
+    if (field_times_it == field_output_times_.end()) return false;
+    ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
+    auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
+    if (current_mark_it == marks.end(equation_type_ | marks.type_output()) ) return false;
+    return (field_times_it->second.contains(*current_mark_it) );
+}
 
 void EquationOutput::output(TimeStep step)
 {
+    // TODO: remove const_cast after resolving problems with const Mesh.
+    Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
+    DBGMSG("call make output stream\n");
+    stream_->make_output_mesh(field_mesh, this);
 
-    auto &marks = TimeGovernor::marks();
     for(FieldCommon * field : this->field_list) {
-        // stream output
-        auto field_times_it = field_output_times_.find(field->name());
-        if (field_times_it != field_output_times_.end()) {
-            ASSERT( step.eq(field->time()) )(step.end())(field->time())(field->name()).error("Field is not set to the output time.");
-            auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
-            if (current_mark_it != marks.end(equation_type_ | marks.type_output()) ) {
-                if (field_times_it->second.contains(*current_mark_it) ) {
-                    field->output(stream_);
-                }
-            }
-        }
+        if (is_field_output_time(*field, step))
+            field->output(stream_);
         // observe output
         if (observe_fields_.find(field->name()) != observe_fields_.end()) {
             field->observe_output(stream_->observe());
         }
     }
+}
+
+
+void EquationOutput::add_output_time(double begin)
+{
+    common_output_times_.add(begin, 1.0, begin, equation_type_);
+}
+
+
+void EquationOutput::add_output_times(double begin, double step, double end)
+{
+    common_output_times_.add(begin,step, end, equation_type_);
 }

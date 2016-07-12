@@ -9,39 +9,15 @@
 #define SRC_IO_EQUATION_OUTPUT_HH_
 
 #include <memory>
-#include  <unordered_map>
-#include  "boost/unordered_set.hpp"
+#include <unordered_map>
+#include <unordered_set>
+
 #include "tools/time_marks.hh"
 #include "fields/field_set.hh"
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
-
+#include "io/output_time_set.hh"
 class TimeStep;
-
-class OutputTimeSet {
-public:
-    /**
-     *
-     */
-    static const Input::Type::Array get_input_type();
-    /**
-     *
-     */
-    void read_from_input(Input::Array in_array, TimeMark::Type mark_type);
-    /**
-     *
-     */
-    bool contains(TimeMark mark);
-
-private:
-    typedef std::pair<double, TimeMark::Type> TimeMarkStorage;
-
-    TimeMark from_time_mark_storage(TimeMarkStorage tm_storage);
-    TimeMarkStorage to_time_mark_storage(TimeMark mark);
-
-    TimeMark::Type type_;
-    boost::unordered::unordered_set<TimeMarkStorage> time_marks_;
-};
 
 
 /**
@@ -50,17 +26,46 @@ private:
  */
 class EquationOutput : public FieldSet {
 public:
-    EquationOutput(std::shared_ptr<OutputTime> stream, TimeMark::Type equation_mark_type);
-    const Input::Type::Record &get_input_type();
+
+
+    /**
+     * Make Input::Type for the output record. Particular selection of output fields is created
+     * from the contents of *this FeildSet using provided equation name and additional description.
+     */
+    const Input::Type::Instance &make_output_type(const string &equation_name, const string &aditional_description = "");
+
+
+    void set_stream(std::shared_ptr<OutputTime> stream, TimeMark::Type equation_mark_type);
+    /**
+     * Collective interface to @p FieldCommonBase::output_type().
+     * @param rt   Discrete function space (element, node or corner data).
+     */
+    void set_output_type(OutputTime::DiscreteSpace rt);
+    /*{
+        for(FieldCommon *field : field_list) field->output_type(rt);
+    }*/
+
+    /**
+     * Read from the input, set output times and time marks. Must be called after set_stream.
+     * TODO: add output_stream times. Optional or always?
+     */
     void read_from_input(Input::Record in_rec);
+
+    bool is_field_output_time(const FieldCommon &field, TimeStep step) const;
+
     void output(TimeStep step);
 
+    void add_output_time(double begin);
+    void add_output_times(double begin, double step, double end);
+
 private:
+    static Input::Type::Record &get_input_type();
+
     std::shared_ptr<OutputTime> stream_;
     TimeMark::Type equation_type_;
     OutputTimeSet common_output_times_;
     std::unordered_map<string, OutputTimeSet> field_output_times_;
-    boost::unordered::unordered_set<string> observe_fields_;
+    std::unordered_set<string> observe_fields_;
 };
 
 
