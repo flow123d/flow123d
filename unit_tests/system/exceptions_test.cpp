@@ -151,7 +151,7 @@ public:
         try {
         	third_level();
         } catch (ExcThirdLevel &e) {
-        	THROW( ExcSecondLevel() << EI_Step(1) << EI_Nested(make_exception_ei<ExcThirdLevel>(e)) );
+        	THROW( ExcSecondLevel() << EI_Step(1) << make_nested_ei(e) );
         }
     }
 
@@ -159,7 +159,7 @@ public:
         try {
         	second_level();
         } catch (ExcSecondLevel &e) {
-        	THROW( ExcFirstLevel() << EI_Name("Test") << EI_Nested(make_exception_ei<ExcSecondLevel>(e)) );
+        	THROW( ExcFirstLevel() << EI_Name("Test") << make_nested_ei(e) );
         }
     }
 

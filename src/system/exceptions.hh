@@ -336,7 +336,7 @@ DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfHeader::val << EI_XprintfMessage:
 		obj.next();
 	} catch ( ExcA &e ) {
 	    // add ExcA to EI tags of ExcB
-		THROW( ExcB() << EI_Nested(make_exception_ei<ExcA>(e)) );
+		THROW( ExcB() << make_nested_ei(e)) );
 	}
  @endcode
  *
@@ -345,13 +345,18 @@ TYPEDEF_ERR_INFO( EI_Nested, std::shared_ptr<ExceptionBase>);
 
 
 /**
- * Create shared pointer of given exception.
+ * Create EI_Nested error info with given exception.
  *
  * Used for propagation exception message.
  */
 template <class Exc>
-std::shared_ptr<Exc> make_exception_ei(Exc &e) {
-    return std::make_shared<Exc>(e);
+EI_Nested make_nested_ei(Exc &e) {
+	// Template parameter can be only descendant of ExceptionBase
+	static_assert(std::is_base_of<ExceptionBase, Exc>::value,
+	        "Exc must be a descendant of ExceptionBase"
+	    );
+
+    return EI_Nested( std::make_shared<Exc>(e) );
 }
 
 

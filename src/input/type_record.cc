@@ -77,10 +77,10 @@ bool Default::check_validity(std::shared_ptr<TypeBase> type) const
 		return true;
 	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
 		THROW( ExcWrongDefaultJSON() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name())
-				<< EI_Nested(make_exception_ei<Input::ReaderToStorage::ExcNotJSONFormat>(e)) );
+				<< make_nested_ei(e) );
 	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
 		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name())
-				<< EI_Nested(make_exception_ei<Input::ReaderToStorage::ExcInputError>(e)) );
+				<< make_nested_ei(e) );
 	}
 }
 
