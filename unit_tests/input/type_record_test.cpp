@@ -231,6 +231,57 @@ using namespace Input::Type;
 				"Default value '2.3' do not match type: 'OtherRecord';" );
 	}
 
+	{ // generic record - passed default value
+		Record generic_rec = Record("VariableRecord1","")
+			.root_of_generic_subtree()
+			.declare_key("key", Array(Parameter("param")), Default("[]"),"")
+			.close();
+
+		std::vector<TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("param", std::make_shared<Integer>()) );
+		Record rec = Record("RecordWithGeneric1", "")
+			.declare_key("int_array", Instance(generic_rec, param_vec).close(), "key desc")
+			.close();
+
+		// simulate order and is_finished parameter of calling finish methods in lazy_finish
+		generic_rec.finish(true);
+		rec.finish();
+	}
+
+	{ // generic record - wrong size of default array
+		Record generic_rec = Record("VariableRecord2","")
+			.root_of_generic_subtree()
+			.declare_key("key", Array(Parameter("param"), 2), Default("[]"),"")
+			.close();
+
+		std::vector<TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("param", std::make_shared<Integer>()) );
+		Record rec = Record("RecordWithGeneric2", "")
+			.declare_key("int_array2", Instance(generic_rec, param_vec).close(), "key desc")
+			.close();
+
+		generic_rec.finish(true);
+		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
+				"do not match type: 'array_of_Integer';" );
+	}
+
+	{ // generic record - wrong type of default array
+		Record generic_rec = Record("VariableRecord3","")
+			.root_of_generic_subtree()
+			.declare_key("key", Array(Parameter("param")), Default("[ 0.5 ]"),"")
+			.close();
+
+		std::vector<TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("param", std::make_shared<Integer>()) );
+		Record rec = Record("RecordWithGeneric3", "")
+			.declare_key("int_array3", Instance(generic_rec, param_vec).close(), "key desc")
+			.close();
+
+		generic_rec.finish(true);
+		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
+				"do not match type: 'array_of_Integer'" );
+	}
+
 }
 
 TEST(InputTypeRecord, iterating) {
