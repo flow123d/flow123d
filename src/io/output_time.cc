@@ -24,6 +24,7 @@
 #include "output_vtk.hh"
 #include "output_msh.hh"
 #include "output_mesh.hh"
+#include "io/output_time_set.hh"
 #include <fields/field_set.hh>
 
 
@@ -41,6 +42,8 @@ const Record & OutputTime::get_input_type() {
 				// The format
 		.declare_key("format", OutputTime::get_input_format_type(), Default::optional(),
 				"Format of output stream and possible parameters.")
+		.declare_key("times", OutputTimeSet::get_input_type(), Default::optional(),
+		        "Output times used for equations without is own output times key.")
 		.declare_key("time_step", Double(0.0),
 				"Time interval between outputs.\n"
 				"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
@@ -97,6 +100,10 @@ OutputTime::~OutputTime(void)
     xprintf(MsgLog, "O.K.\n");
 }
 
+
+Input::Iterator<Input::Array> OutputTime::get_time_set_array() {
+    return input_record_.find<Input::Array>("times");
+}
 
 
 void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)

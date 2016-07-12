@@ -86,7 +86,7 @@ void OutputTime::register_data(const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
 	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
-    if (output_names.find(multi_field.name()) == output_names.end()) return;
+    //if (output_names.find(multi_field.name()) == output_names.end()) return;
 
     DiscreteSpaceFlags flags = output_names[multi_field.name()];
     if (! flags) flags = 1 << type;
@@ -104,7 +104,7 @@ void OutputTime::register_data(const DiscreteSpace type,
 {
     DBGMSG("register data\n");
 	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
-    if (output_names.find(field_ref.name()) == output_names.end()) return;
+    //if (output_names.find(field_ref.name()) == output_names.end()) return;
     
     DiscreteSpaceFlags flags = output_names[field_ref.name()];
     if (! flags) flags = 1 << type;

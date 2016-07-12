@@ -36,6 +36,7 @@ class TimeGovernor;
 class OutputMesh;
 class OutputMeshDiscontinuous;
 
+
 /**
  * \brief The class for outputting data during time.
  *
@@ -62,6 +63,11 @@ public:
      * necessary destructors will be called in destructor of Output
      */
     virtual ~OutputTime();
+
+    /**
+     *
+     */
+    Input::Iterator<Input::Array> get_time_set_array();
 
     /**
      * \brief The specification of output stream
