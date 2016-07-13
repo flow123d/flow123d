@@ -94,6 +94,8 @@ public:
 	/// Get simplex of abscissa from different simplices - if it has own implementation in .cpp file
 	Simplex<1> &abscissa(unsigned int idx);
     
+    Simplex<0> &node(unsigned int idx);
+    
     /// Friend output operator.
     friend std::ostream& operator<< <>(std::ostream& os, const Simplex<N>& s);
 };

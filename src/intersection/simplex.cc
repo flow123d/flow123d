@@ -45,7 +45,22 @@ template<> Simplex<1> &Simplex<2>::abscissa(unsigned int idx) {
 	return simplices_[idx];
 }
 
+template<> Simplex<0> &Simplex<1>::node(unsigned int idx) {
+    ASSERT_DBG(idx < 2);
+    return simplices_[idx];
+}
 
+template<> Simplex<0> &Simplex<2>::node(unsigned int idx) {
+    ASSERT_DBG(idx < 3);
+    if(idx == 2) return simplices_[1][1];
+    else return simplices_[0][idx];
+}
+
+template<> Simplex<0> &Simplex<3>::node(unsigned int idx) {
+    ASSERT_DBG(idx < 4);
+    if(idx == 3) return simplices_[1][1][1];
+    else return simplices_[0].node(idx);
+}
 
 template<> ostream& operator<< <0>(ostream& os, const Simplex< 0 >& s)
 {

@@ -127,104 +127,109 @@ void print_mesh(Mesh *mesh, string t_name = "random_mesh")
 
 // generates triangle vs tetrahedron mesh
 template<unsigned int dimA, unsigned int dimB>
-void generate_mesh(Mesh *mesh)
+void generate_meshes(unsigned int N,
+                     vector<computeintersection::Simplex<dimA>>& eleA,
+                     vector<computeintersection::Simplex<dimB>>& eleB,
+                     vector<Space<3>::Point*>& nodes)
 {
     ASSERT(dimA <= dimB).error("Unsupported dimensions.");
     ASSERT(dimA != 3).error("Unsupported dimensions.");
     
-    mesh->node_vector.reserve(10);
     unsigned int nA = RefElement<dimA>::n_nodes, 
-                 nB = RefElement<dimB>::n_nodes;
-    
-    for (unsigned int i = 0; i < nA+nB; ++i) {
-        NodeFullIter node = mesh->node_vector.add_item(i);
+                 nB = RefElement<dimB>::n_nodes,
+                 n_nodes = (nA+nB)*N;
 
-        node->point()(0) = unif();
-        node->point()(1) = unif();
-        node->point()(2) = unif();
+    eleA.resize(N);
+    eleB.resize(N);
+    nodes.reserve(n_nodes);
+    
+    //generate random nodes
+    for (unsigned int i = 0; i < n_nodes; ++i) {
+        //generate random node
+        nodes.push_back( new Space<3>::Point({unif(), unif(), unif()}) );
     }
-    
-    mesh->element.reserve(2);
-    unsigned int ele_id = 0;
 
-    // element A
-    Element *ele = mesh->element.add_item(ele_id);
-    RegionIdx reg_idx;
-    ele->init(dimA, mesh, reg_idx);
-    ele->pid = 0;
-
-    for (unsigned int ni = 0; ni < nA; ++ni) {
-        unsigned int node_id = ni;
-        NodeIter node = mesh->node_vector.find_id( node_id );
-        INPUT_CHECK( node!=mesh->node_vector.end() ,
-                "Unknown node id %d in specification of element.\n",
-                node_id);
-        ele->node[ni] = node;
-    }
-    
-    // element B
-    ele_id++;
-    ele = mesh->element.add_item(ele_id);
-    ele->init(dimB, mesh, reg_idx);
-    ele->pid = 0;
-
-    for (unsigned int ni = 0; ni < nB; ++ni) {
-        unsigned int node_id = nA + ni;
-        NodeIter node = mesh->node_vector.find_id( node_id );
-        INPUT_CHECK( node!=mesh->node_vector.end() ,
-                "Unknown node id %d in specification of element.\n",
-                node_id);
-        ele->node[ni] = node;
-    }
-    
-    if(dimB == 3) {
-        double jac = ele->tetrahedron_jacobian();
-        if( jac < 0)
-        {
-            DBGMSG("swap nodes: J = %f\n",jac);
-            std::swap(*ele->node[2], *ele->node[3]);
+    // set nodes to simplices: [eleA nodes; eleB nodes]
+    for (unsigned int i = 0; i < N; ++i) {
+        unsigned int offsetA = i*nA;           //first part of nodes
+        unsigned int offsetB = N*nA + i*nB;    //second part of nodes
+        
+        eleA[i].set_simplices(nodes.data() + offsetA);
+        eleB[i].set_simplices(nodes.data() + offsetB);
+        
+        if(dimB == 3) {
+            double jac = arma::dot( arma::cross(*nodes[offsetB+1] - *nodes[offsetB], 
+                                                *nodes[offsetB+2] - *nodes[offsetB]),
+                                    *nodes[offsetB+3] - *nodes[offsetB]);
+            if( jac < 0)
+            {
+//                 DBGMSG("swap nodes: J = %f\n",jac);
+                std::swap(*nodes[offsetB+2], *nodes[offsetB+3]);
+            }
+//             DBGMSG("J = %f\n",jac);
         }
-        DBGMSG("J = %f\n",ele->tetrahedron_jacobian());
     }
-    
-    mesh->setup_topology();
 }
 
 
-/// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
-template<unsigned int simplex_dim>
-void update_simplex(const ElementFullIter &element, computeintersection::Simplex<simplex_dim> & simplex)
+template<unsigned int dimA, unsigned int dimB>
+void compute_intersection(computeintersection::Simplex<dimA>& eleA,
+                          computeintersection::Simplex<dimB>& eleB);
+
+template<>
+void compute_intersection<1,2>(computeintersection::Simplex<1>& eleA,
+                               computeintersection::Simplex<2>& eleB)
 {
-    arma::vec3 *field_of_points[simplex_dim+1];
-    for(unsigned int i=0; i < simplex_dim+1; i++)
-        field_of_points[i]= &(element->node[i]->point());
-    simplex.set_simplices(field_of_points);
+    // compute intersection
+    
+    START_TIMER("Compute intersection");
+   
+    vector<Space<3>::Point> verticesA(2);
+    vector<Space<3>::Point> verticesB(3);
+    
+    for(unsigned int i=0; i<2; i++) verticesA[i]=eleA.node(i).point_coordinates();
+    for(unsigned int i=0; i<3; i++) verticesB[i]=eleB.node(i).point_coordinates();
+     
+    BoundingBox bbA(verticesA);
+    BoundingBox bbB(verticesB);
+    
+    if(bbA.intersect(bbB)) {   
+        START_TIMER("CI create");
+        computeintersection::IntersectionAux<1,2> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
+        computeintersection::ComputeIntersection<computeintersection::Simplex<1>, computeintersection::Simplex<2>> CI(eleA, eleB);
+        END_TIMER("CI create");
+        START_TIMER("CI compute");
+        CI.compute_final(is.points());
+        END_TIMER("CI compute");
+        
+        n_intersection[is.size()]++;
+        if(is.is_pathologic()) n_intersection_p[is.size()]++;
+    }
+    END_TIMER("Compute intersection");
 }
 
 template<unsigned int dimA, unsigned int dimB>
-void compute_intersection(Mesh *mesh)
+void compute_intersection(computeintersection::Simplex<dimA>& eleA,
+                          computeintersection::Simplex<dimB>& eleB)
 {
     // compute intersection
     std::vector< unsigned int > prolongation_table;
     
-    ElementFullIter elmA = mesh->element(0);
-    ElementFullIter elmB = mesh->element(1);
-    
     START_TIMER("Compute intersection");
    
-    BoundingBox bbA = elmA->bounding_box();
-    BoundingBox bbB = elmB->bounding_box();
+    vector<Space<3>::Point> verticesA(dimA+1);
+    vector<Space<3>::Point> verticesB(dimB+1);
     
-    if(bbA.intersect(bbB)) {
+    for(unsigned int i=0; i<dimA+1; i++) verticesA[i]=eleA.node(i).point_coordinates();
+    for(unsigned int i=0; i<dimB+1; i++) verticesB[i]=eleB.node(i).point_coordinates();
+     
+    BoundingBox bbA(verticesA);
+    BoundingBox bbB(verticesB);
     
-        computeintersection::Simplex<dimA> comp_simplex;
-        computeintersection::Simplex<dimB> bulk_simplex;
-        update_simplex(elmA, comp_simplex);
-        update_simplex(elmB, bulk_simplex);
-    
+    if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
         computeintersection::IntersectionAux<dimA,dimB> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
-        computeintersection::ComputeIntersection<computeintersection::Simplex<dimA>, computeintersection::Simplex<dimB>> CI(comp_simplex, bulk_simplex);
+        computeintersection::ComputeIntersection<computeintersection::Simplex<dimA>, computeintersection::Simplex<dimB>> CI(eleA, eleB);
         CI.init();
         END_TIMER("CI create");
         START_TIMER("CI compute");
@@ -238,65 +243,60 @@ void compute_intersection(Mesh *mesh)
 }
 
 
-void compute_intersection_ngh_12(Mesh *mesh)
+void compute_intersection_ngh_12(computeintersection::Simplex<1>& eleA,
+                                 computeintersection::Simplex<2>& eleB)
 {
     TAbscissa tabs;
     TTriangle ttr;
     IntersectionLocal* is;
-    
-    ElementFullIter elmA = mesh->element(0);
-    ElementFullIter elmB = mesh->element(1);
 
     START_TIMER("Compute intersection NGH");
 
-    tabs.SetPoints(TPoint(elmA->node[0]->point()(0), elmA->node[0]->point()(1), elmA->node[0]->point()(2)),
-                   TPoint(elmA->node[1]->point()(0), elmA->node[1]->point()(1), elmA->node[1]->point()(2)));
+    tabs.SetPoints(TPoint(eleA.node(0).point_coordinates()(0), eleA.node(0).point_coordinates()(1), eleA.node(0).point_coordinates()(2)),
+                   TPoint(eleA.node(1).point_coordinates()(0), eleA.node(1).point_coordinates()(1), eleA.node(1).point_coordinates()(2)));
 
-    ttr.SetPoints(TPoint(elmB->node[0]->point()(0), elmB->node[0]->point()(1), elmB->node[0]->point()(2)),
-                  TPoint(elmB->node[1]->point()(0), elmB->node[1]->point()(1), elmB->node[1]->point()(2)),
-                  TPoint(elmB->node[2]->point()(0), elmB->node[2]->point()(1), elmB->node[2]->point()(2)) );
+    ttr.SetPoints(TPoint(eleB.node(0).point_coordinates()(0), eleB.node(0).point_coordinates()(1), eleB.node(0).point_coordinates()(2)),
+                  TPoint(eleB.node(1).point_coordinates()(0), eleB.node(1).point_coordinates()(1), eleB.node(1).point_coordinates()(2)),
+                  TPoint(eleB.node(2).point_coordinates()(0), eleB.node(2).point_coordinates()(1), eleB.node(2).point_coordinates()(2)) );
 
     GetIntersection(tabs, ttr, is);
     END_TIMER("Compute intersection NGH");
 }
 
-void compute_intersection_ngh_22(Mesh *mesh)
+void compute_intersection_ngh_22(computeintersection::Simplex<2>& eleA,
+                                 computeintersection::Simplex<2>& eleB)
 {
     TTriangle ttrA, ttrB;
     TIntersectionType it = unknown;
     double area;
-    
-    ElementFullIter elmA = mesh->element(0);
-    ElementFullIter elmB = mesh->element(1);
 
     START_TIMER("Compute intersection NGH");
 
-    ttrA.SetPoints(TPoint(elmA->node[0]->point()(0), elmA->node[0]->point()(1), elmA->node[0]->point()(2)),
-                   TPoint(elmA->node[1]->point()(0), elmA->node[1]->point()(1), elmA->node[1]->point()(2)),
-                   TPoint(elmA->node[2]->point()(0), elmA->node[2]->point()(1), elmA->node[2]->point()(2)) );
+    ttrA.SetPoints(TPoint(eleA.node(0).point_coordinates()(0), eleA.node(0).point_coordinates()(1), eleA.node(0).point_coordinates()(2)),
+                   TPoint(eleA.node(1).point_coordinates()(0), eleA.node(1).point_coordinates()(1), eleA.node(1).point_coordinates()(2)),
+                   TPoint(eleA.node(2).point_coordinates()(0), eleA.node(2).point_coordinates()(1), eleA.node(2).point_coordinates()(2)) );
 
-    ttrB.SetPoints(TPoint(elmB->node[0]->point()(0), elmB->node[0]->point()(1), elmB->node[0]->point()(2)),
-                   TPoint(elmB->node[1]->point()(0), elmB->node[1]->point()(1), elmB->node[1]->point()(2)),
-                   TPoint(elmB->node[2]->point()(0), elmB->node[2]->point()(1), elmB->node[2]->point()(2)) );
+    ttrB.SetPoints(TPoint(eleB.node(0).point_coordinates()(0), eleB.node(0).point_coordinates()(1), eleB.node(0).point_coordinates()(2)),
+                   TPoint(eleB.node(1).point_coordinates()(0), eleB.node(1).point_coordinates()(1), eleB.node(1).point_coordinates()(2)),
+                   TPoint(eleB.node(2).point_coordinates()(0), eleB.node(2).point_coordinates()(1), eleB.node(2).point_coordinates()(2)) );
 
     GetIntersection(ttrA, ttrB, it, area);
     END_TIMER("Compute intersection NGH");
 } 
 
-void compute_intersection_ngh_13(Mesh *mesh)
+void compute_intersection_ngh_13(computeintersection::Simplex<1>& eleA,
+                                 computeintersection::Simplex<3>& eleB)
 {
     double length;
-    ElementFullIter elmA = mesh->element(0);
-    ElementFullIter elmB = mesh->element(1);
     
     { START_TIMER("Compute intersection NGH");
         
-    TPoint p1 = TPoint(elmA->node[0]->point()(0), elmA->node[0]->point()(1), elmA->node[0]->point()(2)),
-           p2 = TPoint(elmA->node[1]->point()(0), elmA->node[1]->point()(1), elmA->node[1]->point()(2)),
-           p3 = TPoint(elmB->node[0]->point()(0), elmB->node[0]->point()(1), elmB->node[0]->point()(2)),
-           p4 = TPoint(elmB->node[1]->point()(0), elmB->node[1]->point()(1), elmB->node[1]->point()(2)),
-           p5 = TPoint(elmB->node[2]->point()(0), elmB->node[2]->point()(1), elmB->node[2]->point()(2)),
-           p6 = TPoint(elmB->node[3]->point()(0), elmB->node[3]->point()(1), elmB->node[3]->point()(2));
+    TPoint p1 = TPoint(eleA.node(0).point_coordinates()(0), eleA.node(0).point_coordinates()(1), eleA.node(0).point_coordinates()(2)),
+           p2 = TPoint(eleA.node(1).point_coordinates()(0), eleA.node(1).point_coordinates()(1), eleA.node(1).point_coordinates()(2)),
+           p3 = TPoint(eleB.node(0).point_coordinates()(0), eleB.node(0).point_coordinates()(1), eleB.node(0).point_coordinates()(2)),
+           p4 = TPoint(eleB.node(1).point_coordinates()(0), eleB.node(1).point_coordinates()(1), eleB.node(1).point_coordinates()(2)),
+           p5 = TPoint(eleB.node(2).point_coordinates()(0), eleB.node(2).point_coordinates()(1), eleB.node(2).point_coordinates()(2)),
+           p6 = TPoint(eleB.node(3).point_coordinates()(0), eleB.node(3).point_coordinates()(1), eleB.node(3).point_coordinates()(2));
 
     TAbscissa tabs(p1,p2);
     TTetrahedron tte(p3, p4, p5, p6);
@@ -306,21 +306,20 @@ void compute_intersection_ngh_13(Mesh *mesh)
     END_TIMER("Compute intersection NGH"); }
 } 
 
-void compute_intersection_ngh_23(Mesh *mesh)
+void compute_intersection_ngh_23(computeintersection::Simplex<2>& eleA,
+                                 computeintersection::Simplex<3>& eleB)
 {
     double area;
-    ElementFullIter elmA = mesh->element(0);
-    ElementFullIter elmB = mesh->element(1);
     
     {START_TIMER("Compute intersection NGH");
         
-    TPoint p1 = TPoint(elmA->node[0]->point()(0), elmA->node[0]->point()(1), elmA->node[0]->point()(2)),
-           p2 = TPoint(elmA->node[1]->point()(0), elmA->node[1]->point()(1), elmA->node[1]->point()(2)),
-           p3 = TPoint(elmA->node[2]->point()(0), elmA->node[2]->point()(1), elmA->node[2]->point()(2)),
-           p4 = TPoint(elmB->node[0]->point()(0), elmB->node[0]->point()(1), elmB->node[0]->point()(2)),
-           p5 = TPoint(elmB->node[1]->point()(0), elmB->node[1]->point()(1), elmB->node[1]->point()(2)),
-           p6 = TPoint(elmB->node[2]->point()(0), elmB->node[2]->point()(1), elmB->node[2]->point()(2)),
-           p7 = TPoint(elmB->node[3]->point()(0), elmB->node[3]->point()(1), elmB->node[3]->point()(2));
+    TPoint p1 = TPoint(eleA.node(0).point_coordinates()(0), eleA.node(0).point_coordinates()(1), eleA.node(0).point_coordinates()(2)),
+           p2 = TPoint(eleA.node(1).point_coordinates()(0), eleA.node(1).point_coordinates()(1), eleA.node(1).point_coordinates()(2)),
+           p3 = TPoint(eleA.node(2).point_coordinates()(0), eleA.node(2).point_coordinates()(1), eleA.node(2).point_coordinates()(2)),
+           p4 = TPoint(eleB.node(0).point_coordinates()(0), eleB.node(0).point_coordinates()(1), eleB.node(0).point_coordinates()(2)),
+           p5 = TPoint(eleB.node(1).point_coordinates()(0), eleB.node(1).point_coordinates()(1), eleB.node(1).point_coordinates()(2)),
+           p6 = TPoint(eleB.node(2).point_coordinates()(0), eleB.node(2).point_coordinates()(1), eleB.node(2).point_coordinates()(2)),
+           p7 = TPoint(eleB.node(3).point_coordinates()(0), eleB.node(3).point_coordinates()(1), eleB.node(3).point_coordinates()(2));
            
         
     TTriangle ttr(p1,p2,p3);
@@ -334,29 +333,23 @@ void compute_intersection_ngh_23(Mesh *mesh)
 
 
 
+// ***************************************************************************************************   1D-2D
 
-
-// ***************************************************************************************************   1D-3D
-
-TEST(speed_simple_13, all) {
+TEST(speed_simple_12, all) {
     Profiler::initialize();
-    Profiler::instance()->set_task_info("Speed test for 1d-3d ComputeIntersection class.",2);
+    Profiler::instance()->set_task_info("Speed test for 1d-2d ComputeIntersection class.",2);
     
     reset_statistics();
     
     // create n random meshes triangle-tetrahedron in unit cube
     const unsigned int n = n_meshes;
-    Mesh meshes[n];
     
     //seed_rand();
-    for(unsigned int i=0; i<n; i++)
-    {
-        generate_mesh<1,3>(&meshes[i]);
-        
-//         stringstream stream;
-//         stream << "random_meshes/rand_mesh_" << i << ".msh";
-//         print_mesh(&meshes[i], stream.str());
-    }
+    vector<computeintersection::Simplex<1>> eleA;
+    vector<computeintersection::Simplex<2>> eleB;
+    vector<Space<3>::Point*> nodes;
+    generate_meshes<1,2>(n,eleA, eleB, nodes);
+    
     
     { START_TIMER("Speed test NGH");
     // for each mesh, compute intersection area and compare with old NGH
@@ -366,7 +359,7 @@ TEST(speed_simple_13, all) {
             //xprintf(Msg, "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
-                compute_intersection_ngh_13(&meshes[i]);
+                compute_intersection_ngh_12(eleA[i], eleB[i]);
             }
             //xprintf(Msg, "================================================\n");
     }
@@ -381,7 +374,124 @@ TEST(speed_simple_13, all) {
             //xprintf(Msg, "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
-                compute_intersection<1,3>(&meshes[i]);
+                compute_intersection<1,2>(eleA[i], eleB[i]);
+            }
+            //xprintf(Msg, "================================================\n");
+    }
+    xprintf(Msg, "======== NEW end ========\n");
+    END_TIMER("Speed test"); }
+    
+    print_statistics();
+    
+    std::string profiler_file = "speed_simple_profiler_12.log";
+    
+    std::fstream fs;
+    fs.open(profiler_file.c_str(), std::fstream::out);
+    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
+    Profiler::uninitialize();
+}
+
+// ***************************************************************************************************   2D-2D
+
+TEST(speed_simple_22, all) {
+    Profiler::initialize();
+    Profiler::instance()->set_task_info("Speed test for 2d-2d ComputeIntersection class.",2);
+    
+    reset_statistics();
+    
+    // create n random meshes triangle-tetrahedron in unit cube
+    const unsigned int n = n_meshes;
+    
+    //seed_rand();
+    vector<computeintersection::Simplex<2>> eleA;
+    vector<computeintersection::Simplex<2>> eleB;
+    vector<Space<3>::Point*> nodes;
+    generate_meshes<2,2>(n,eleA, eleB, nodes);
+    
+    
+    { START_TIMER("Speed test NGH");
+    // for each mesh, compute intersection area and compare with old NGH
+    xprintf(Msg, "======== NGH ========\n");
+    for(unsigned int i=0; i<n; i++)
+    {       
+            //xprintf(Msg, "================================================ %d\n",i);
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
+            {
+                compute_intersection_ngh_22(eleA[i], eleB[i]);
+            }
+            //xprintf(Msg, "================================================\n");
+    }
+    xprintf(Msg, "======== NGH end ========\n");
+    END_TIMER("Speed test NGH"); }
+    
+    { START_TIMER("Speed test");
+    // for each mesh, compute intersection area and compare with old NGH
+    xprintf(Msg, "======== NEW ========\n");
+    for(unsigned int i=0; i<n; i++)
+    {       
+            //xprintf(Msg, "================================================ %d\n",i);
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
+            {
+                compute_intersection<2,2>(eleA[i], eleB[i]);
+            }
+            //xprintf(Msg, "================================================\n");
+    }
+    xprintf(Msg, "======== NEW end ========\n");
+    END_TIMER("Speed test"); }
+    
+    print_statistics();
+    
+    std::string profiler_file = "speed_simple_profiler_22.log";
+    
+    std::fstream fs;
+    fs.open(profiler_file.c_str(), std::fstream::out);
+    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
+    Profiler::uninitialize();
+}
+
+
+
+// ***************************************************************************************************   1D-3D
+
+TEST(speed_simple_13, all) {
+    Profiler::initialize();
+    Profiler::instance()->set_task_info("Speed test for 1d-3d ComputeIntersection class.",2);
+    
+    reset_statistics();
+    
+    const unsigned int n = n_meshes;
+    
+    //seed_rand();
+    vector<computeintersection::Simplex<1>> eleA;
+    vector<computeintersection::Simplex<3>> eleB;
+    vector<Space<3>::Point*> nodes;
+    generate_meshes<1,3>(n,eleA, eleB, nodes);
+
+    
+    { START_TIMER("Speed test NGH");
+    // for each mesh, compute intersection area and compare with old NGH
+    xprintf(Msg, "======== NGH ========\n");
+    for(unsigned int i=0; i<n; i++)
+    {       
+            //xprintf(Msg, "================================================ %d\n",i);
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
+            {
+                compute_intersection_ngh_13(eleA[i], eleB[i]);
+            }
+            //xprintf(Msg, "================================================\n");
+    }
+    xprintf(Msg, "======== NGH end ========\n");
+    END_TIMER("Speed test NGH"); }
+    
+    { START_TIMER("Speed test");
+    // for each mesh, compute intersection area and compare with old NGH
+    xprintf(Msg, "======== NEW ========\n");
+    for(unsigned int i=0; i<n; i++)
+    {       
+            //xprintf(Msg, "================================================ %d\n",i);
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
+            {
+                compute_intersection(eleA[i], eleB[i]);
             }
             //xprintf(Msg, "================================================\n");
     }
@@ -393,7 +503,7 @@ TEST(speed_simple_13, all) {
     std::string profiler_file = "speed_simple_profiler_13.log";
     
     std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    fs.open(profiler_file.c_str(), std::fstream::out);
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }
@@ -410,17 +520,13 @@ TEST(speed_simple_23, all) {
     
     // create n random meshes triangle-tetrahedron in unit cube
     const unsigned int n = n_meshes;
-    Mesh meshes[n];
     
     //seed_rand();
-    for(unsigned int i=0; i<n; i++)
-    {
-        generate_mesh<2,3>(&meshes[i]);
-        
-//         stringstream stream;
-//         stream << "random_meshes/rand_mesh_" << i << ".msh";
-//         print_mesh(&meshes[i], stream.str());
-    }
+    vector<computeintersection::Simplex<2>> eleA;
+    vector<computeintersection::Simplex<3>> eleB;
+    vector<Space<3>::Point*> nodes;
+    generate_meshes<2,3>(n,eleA, eleB, nodes);
+    
     
     { START_TIMER("Speed test NGH");
     // for each mesh, compute intersection area and compare with old NGH
@@ -430,7 +536,7 @@ TEST(speed_simple_23, all) {
             //xprintf(Msg, "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
-                compute_intersection_ngh_23(&meshes[i]);
+                compute_intersection_ngh_23(eleA[i], eleB[i]);
             }
             //xprintf(Msg, "================================================\n");
     }
@@ -445,7 +551,7 @@ TEST(speed_simple_23, all) {
             //xprintf(Msg, "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
-                compute_intersection<2,3>(&meshes[i]);
+                compute_intersection<2,3>(eleA[i], eleB[i]);
             }
             //xprintf(Msg, "================================================\n");
     }
@@ -457,7 +563,7 @@ TEST(speed_simple_23, all) {
     std::string profiler_file = "speed_simple_profiler_23.log";
     
     std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    fs.open(profiler_file.c_str(), std::fstream::out);
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }
