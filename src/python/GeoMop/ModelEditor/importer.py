@@ -48,7 +48,7 @@ if __name__ == "__main__":
         parser.add_argument('--yaml_file', help='YAML input file', nargs='?')
         args = parser.parse_args()
 
-        print(args.con_file, args.yaml_file )
+        #print(args.con_file, args.yaml_file )
         # read input file
         cfg.init(None)        
         if args.con_file:

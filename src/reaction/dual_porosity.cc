@@ -93,7 +93,13 @@ DualPorosity::EqData::EqData()
         .units( UnitSI::dimensionless() )
         .flags( FieldFlag::input_copy );
 
-  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
+  *this += conc_immobile
+          .name("conc_immobile")
+          .units( UnitSI().kg().m(-3) )
+          .flags(FieldFlag::equation_result);
+
+  output_fields += *this;
+
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
@@ -244,6 +250,7 @@ void DualPorosity::zero_time_step()
   //data_.output_fields.set_time(time_->step(0), LimitSide::right);
   //data_.output_fields.output(output_stream_);
 
+  output_data();
   
   if(reaction_mobile)
     reaction_mobile->zero_time_step();
@@ -251,7 +258,6 @@ void DualPorosity::zero_time_step()
   if(reaction_immobile)
     reaction_immobile->zero_time_step();
 
-  output_data();
 }
 
 void DualPorosity::set_initial_condition()
@@ -394,12 +400,15 @@ void DualPorosity::output_data(void )
         output_vector_gather();
     }
 
+    DBGMSG(" time: %f tlevel: %d\n", time_->t(), time_->tlevel());
     // Register fresh output data
     data_.output_fields.set_time(time_->step(), LimitSide::right);
     data_.output_fields.output(time_->step());
-    
-    if (reaction_mobile) reaction_mobile->output_data();
-    if (reaction_immobile) reaction_immobile->output_data();
+
+    if (time_->tlevel() !=0) {
+        if (reaction_mobile) reaction_mobile->output_data();
+        if (reaction_immobile) reaction_immobile->output_data();
+    }
 }
 
 
