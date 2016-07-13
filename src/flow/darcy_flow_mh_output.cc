@@ -64,6 +64,7 @@ const it::Instance & DarcyFlowMHOutput::get_input_type() {
 	OutputFields output_fields;
 	DarcyMH::EqData eq_data;
 	output_fields += eq_data;
+	output_fields += output_fields.error_fields_for_output;
 	return output_fields.make_output_type("Flow_Darcy_MH", "");
 }
 
@@ -653,6 +654,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     //result.ele_flux = &( ele_flux );
 
+    output_fields.error_fields_for_output.set_mesh(*mesh_);
+
     auto vel_diff_ptr =	result.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
     auto pressure_diff_ptr = result.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
@@ -660,7 +663,9 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
 
+    output_fields.error_fields_for_output.set_time(darcy_flow->time().step(), LimitSide::right);
     output_fields += output_fields.error_fields_for_output;
+
 
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
