@@ -186,30 +186,31 @@ void DarcyFlowMHOutput::output()
 {
     START_TIMER("Darcy fields output");
 
-    //cout << darcy_flow->time().step();
-    //cout << hex << TimeGovernor::marks().type_output();
-    if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {
+    {
+        START_TIMER("post-process output fields");
 
-      if ( output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) ||
-           output_fields.is_field_output_time(output_fields.field_ele_piezo_head,darcy_flow->time().step()) )
-              make_element_scalar();
+        output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
 
-      if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) )
-              make_element_vector();
+        if ( output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) ||
+             output_fields.is_field_output_time(output_fields.field_ele_piezo_head,darcy_flow->time().step()) )
+                  make_element_scalar();
 
-      if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
-              make_node_scalar_param();
+        if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) )
+                  make_element_vector();
 
-      // Internal output only if both ele_pressure and ele_flux are output.
-      if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
-          output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
-          output_internal_flow_data();
+        if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
+                  make_node_scalar_param();
 
-      if (compute_errors_) compute_l2_difference();
+        // Internal output only if both ele_pressure and ele_flux are output.
+        if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
+            output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
+                  output_internal_flow_data();
+
+        if (compute_errors_) compute_l2_difference();
     }
+
     {
         START_TIMER("evaluate output fields");
-        output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
         output_fields.output(darcy_flow->time().step());
     }
 

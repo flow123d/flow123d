@@ -877,11 +877,11 @@ void ConvectionTransport::calculate_instant_balance()
 
 void ConvectionTransport::output_data() {
 
+    data_.output_fields.set_time(time().step(), LimitSide::right);
     if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
         output_vector_gather();
     }
 
-	data_.output_fields.set_time(time().step(), LimitSide::right);
 	data_.output_fields.output(time().step());
 }
 

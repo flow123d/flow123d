@@ -512,11 +512,11 @@ void SorptionBase::output_vector_gather()
 
 void SorptionBase::output_data(void )
 {
+    data_->output_fields.set_time(time().step(), LimitSide::right);
     if ( data_->output_fields.is_field_output_time(data_->conc_solid, time().step()) ) {
         output_vector_gather();
     }
 
     // Register fresh output data
-    data_->output_fields.set_time(time().step(), LimitSide::right);
     data_->output_fields.output(time().step());
 }

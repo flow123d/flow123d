@@ -649,9 +649,9 @@ void TransportDG<Model>::output_data()
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
+    data_.output_fields.set_time( this->time().step(), LimitSide::left);
     if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
         output_vector_gather();
-    data_.output_fields.set_time( this->time().step(), LimitSide::left);
     data_.output_fields.output(this->time().step());
 
 	Model::output_data();

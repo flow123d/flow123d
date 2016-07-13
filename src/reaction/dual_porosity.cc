@@ -396,16 +396,16 @@ void DualPorosity::output_vector_gather()
 
 void DualPorosity::output_data(void )
 {
+    data_.output_fields.set_time(time_->step(), LimitSide::right);
     if ( data_.output_fields.is_field_output_time(data_.conc_immobile, time().step()) ) {
         output_vector_gather();
     }
 
-    DBGMSG(" time: %f tlevel: %d\n", time_->t(), time_->tlevel());
     // Register fresh output data
-    data_.output_fields.set_time(time_->step(), LimitSide::right);
     data_.output_fields.output(time_->step());
 
     if (time_->tlevel() !=0) {
+        // zero_time_step call zero_time_Step of subreactions which performs its own output
         if (reaction_mobile) reaction_mobile->output_data();
         if (reaction_immobile) reaction_immobile->output_data();
     }
