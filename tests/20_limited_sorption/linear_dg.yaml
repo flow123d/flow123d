@@ -17,6 +17,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: input/test_20.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     input_fields:
     - region: rectangle
       conductivity: 0.125
@@ -25,11 +26,7 @@ problem: !Coupling_Sequential
       bc_pressure: !FieldFormula
         value: x
     output:
-      output_stream: 
-        file: test_20.pvd
-        format: !vtk
-          variant: ascii
-      output_fields:
+      fields:
       - pressure_p0
       - pressure_p1
       - velocity_p0
@@ -37,6 +34,10 @@ problem: !Coupling_Sequential
     nonlinear_solver: 
       linear_solver: !Petsc
         a_tol: 1.0e-07
+    output_stream: 
+      file: test_20.pvd
+      format: !vtk
+        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     substances:
     - A
@@ -54,8 +55,9 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.5
       name: transport_output_stream
+      times:
+        - step: 0.5
     time:
       end_time: 15.0
     reaction_term: !Sorption
@@ -69,6 +71,7 @@ problem: !Coupling_Sequential
         sorption_type: linear
         isotherm_mult: 0.6
         isotherm_other: 0.4
-      output_fields: []
+      output:
+        fields: []
     balance:
       cumulative: true

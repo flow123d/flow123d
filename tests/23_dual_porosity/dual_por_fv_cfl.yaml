@@ -4,6 +4,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: input/dual_por.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     input_fields:
       - region: ALL
         conductivity: 1.0e-15
@@ -11,12 +12,7 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 0
     output:
-      output_stream: 
-        file: dual_por.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
@@ -24,6 +20,11 @@ problem: !Coupling_Sequential
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
+    output_stream: 
+      file: dual_por.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -37,8 +38,9 @@ problem: !Coupling_Sequential
       file: dual_por_transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.25
       name: transport_output_stream
+      times:
+        - step: 0.25
     time:
       end_time: 2
     reaction_term: !DualPorosity
@@ -48,7 +50,8 @@ problem: !Coupling_Sequential
           porosity_immobile: 0.25
           init_conc_immobile: 0.0
       scheme_tolerance: 1e3
-      output_fields:
-        - conc_immobile
+      output:
+        fields:
+          - conc_immobile
     balance:
       cumulative: true

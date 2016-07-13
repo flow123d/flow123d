@@ -14,6 +14,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ${INPUT}/square_xz.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     n_schurs: 2
     input_fields:
       - region: plane
@@ -42,13 +43,7 @@ problem: !Coupling_Sequential
       #           bc_type:"dirichlet",
       #           bc_piezo_head:0.75
       #         }
-      output_stream: 
-        file: ./test05.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-        add_input_times: true
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
@@ -60,3 +55,21 @@ problem: !Coupling_Sequential
       max_it: 4
       linear_solver: !Petsc {}
         
+    # 
+    #         { region:".bottom",
+    #           bc_type:"neumann" // zero flux
+    #         },
+    #         { region:".right",
+    #           bc_type:"dirichlet",
+    #           bc_piezo_head:1.25
+    #         },
+    #         { region:".left",
+    #           bc_type:"dirichlet",
+    #           bc_piezo_head:0.75
+    #         }
+    output_stream: 
+      file: ./test05.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+      add_input_times: true
