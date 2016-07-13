@@ -732,7 +732,12 @@ class Transformator:
         if sl1 < dl2:
             # source before dest, first copy
             indentation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
-            StructureChanger.paste_structure(lines, dl2, add, len(indentation2.group(1)) < dc2)
+            #if indentation2 == None:
+            if not indentation2:
+                non_space_size = 0
+            else:    
+                non_space_size = len(indentation2.group(1))
+            StructureChanger.paste_structure(lines, dl2, add, non_space_size < dc2)
             action['parameters']['path'] = action['parameters']['source_path']
             action['parameters']['deep'] = True
             self._delete_key(root, lines, action)
