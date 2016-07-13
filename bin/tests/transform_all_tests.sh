@@ -25,6 +25,6 @@ do
     continue
   fi
 
-  echo $f
-  #"${0%/*}/transform_test.sh" $f
+  #echo $f
+  "${0%/*}/transform_test.sh" $f
 done

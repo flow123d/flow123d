@@ -13,7 +13,6 @@ problem: !Coupling_Sequential
   # mesh
   flow_equation: !Steady_MH
     output_specific:
-    output_specific:
     balance: true
     input_fields:
     - conductivity: 1.0e-06

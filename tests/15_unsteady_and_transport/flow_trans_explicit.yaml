@@ -39,8 +39,9 @@ problem: !Coupling_Sequential
       file: ./test15.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.1
       name: flow_output_stream
+      times:
+        - step: 0.1
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:

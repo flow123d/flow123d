@@ -652,6 +652,15 @@
       }
     },
     {
+      "NAME": "Move time step for DarcyFloe output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output_stream/time_step",
+        "destination_path": "/problem/flow_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    },
+    {
       "NAME": "Make output_fields in transport.",
       "action": "move-key",
       "parameters": {
