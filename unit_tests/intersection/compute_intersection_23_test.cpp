@@ -20,7 +20,7 @@
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_local.hh"
 
-#include <dirent.h>
+#include "compute_intersection_test.hh"
 
 using namespace std;
 using namespace computeintersection;
@@ -28,7 +28,7 @@ using namespace computeintersection;
 static const std::string profiler_file = "intersection_profiler_23.log";
 static const unsigned int profiler_loop = 1;//10000;
 
-// ******************************************************************************************* TEST 2d-3d ****
+
 void compute_intersection_area_23d(Mesh *mesh)
 {
     double area1, area2 = 0;
@@ -83,37 +83,13 @@ TEST(area_intersections, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d/";
     std::vector<string> filenames;
     
-    // read mesh file names
-    DIR *dir;
-    struct dirent *ent;
-    if ((dir = opendir (dir_name.c_str())) != NULL) {
-        // print all the files and directories within directory 
-        xprintf(Msg,"Testing mesh files: \n");
-        while ((ent = readdir (dir)) != NULL) {
-            string fname = ent->d_name;
-            // test extension ".msh"
-            if(fname.size() >= 4)
-            {
-                string ext = fname.substr(fname.size()-4);
-//                 xprintf(Msg,"%s\n",ext.c_str());
-                if(ext == ".msh"){
-                    filenames.push_back(ent->d_name);
-                    xprintf(Msg,"%s\n",ent->d_name);
-                }
-            }
-        }
-        closedir (dir);
-    } else {
-        ASSERT(0).error("Could not open directory with testing meshes.");
-    }
-    
-    std::sort(filenames.begin(), filenames.end(), less<string>());
+    read_files_form_dir(dir_name, "msh", filenames);
 
     // for each mesh, compute intersection area and compare with old NGH
     for(auto &fname : filenames)
     {
-        unsigned int permutations[6][3] = {{0,1,2},{0,2,1},{1,0,2},{1,2,0},{2,0,1},{2,1,0}};
-        for(unsigned int p=0; p<6; p++)
+        const unsigned int np = permutations_triangle.size();
+        for(unsigned int p=0; p<np; p++)
         {
             xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
             FilePath::set_io_dirs(".","","",".");
@@ -128,18 +104,7 @@ TEST(area_intersections, all) {
             FOR_ELEMENTS(&mesh,ele)
             {
                 if(ele->dim() == 2)
-                {
-                    Node* tmp[3];
-                    for(unsigned int i=0; i<ele->n_nodes(); i++)
-                    {
-                        tmp[i] = ele->node[permutations[p][i]];
-                    }
-                    for(unsigned int i=0; i<ele->n_nodes(); i++)
-                    {
-                        ele->node[i] = tmp[i];
-//                         ele->node[i]->point().print(cout);
-                    }
-                }
+                    permute_triangle(ele,p);
             }
             mesh.setup_topology();
             
@@ -151,7 +116,7 @@ TEST(area_intersections, all) {
     }
     
     std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    fs.open(profiler_file.c_str(), std::fstream::out);
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }

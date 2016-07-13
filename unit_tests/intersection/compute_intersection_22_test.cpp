@@ -20,18 +20,13 @@
 #include "intersection/compute_intersection.hh"
 #include "intersection/intersection_aux.hh"
 
-#include <dirent.h>
+#include "compute_intersection_test.hh"
 
 using namespace std;
 using namespace computeintersection;
 
 static const std::string profiler_file = "compute_intersection_22d_profiler.log";
 static const unsigned int profiler_loop = 1;
-
-
-//*
-
-// ******************************************************************************************* TEST 2d-2d ****
 
 /// Create results for the meshes in directory 'simple_meshes_22d'.
 void fill_22d_solution(std::vector<computeintersection::IntersectionLocal<2,2>> &ils)
@@ -133,31 +128,7 @@ TEST(intersections_22d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_22d/";
     std::vector<string> filenames;
     
-    // read mesh file names
-    DIR *dir;
-    struct dirent *ent;
-    if ((dir = opendir (dir_name.c_str())) != NULL) {
-        // print all the files and directories within directory 
-        xprintf(Msg,"Testing mesh files: \n");
-        while ((ent = readdir (dir)) != NULL) {
-            string fname = ent->d_name;
-            // test extension ".msh"
-            if(fname.size() >= 4)
-            {
-                string ext = fname.substr(fname.size()-4);
-//                 xprintf(Msg,"%s\n",ext.c_str());
-                if(ext == ".msh"){
-                    filenames.push_back(ent->d_name);
-                    xprintf(Msg,"%s\n",ent->d_name);
-                }
-            }
-        }
-        closedir (dir);
-    } else {
-        ASSERT(0).error("Could not open directory with testing meshes.");
-    }
-    
-    std::sort(filenames.begin(), filenames.end(), less<string>());
+    read_files_form_dir(dir_name, "msh", filenames);
     
     std::vector<computeintersection::IntersectionLocal<2,2>> solution;
     fill_22d_solution(solution);
@@ -165,31 +136,6 @@ TEST(intersections_22d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-//         const unsigned int np = 24;
-//         unsigned int permutations[np][4] = {{0,1,2,3},
-//                                                 {0,1,3,2},  // the tab means permutation with negative jacobian
-//                                             {0,3,1,2},
-//                                                 {0,3,2,1},
-//                                             {0,2,3,1},
-//                                                 {0,2,1,3},
-//                                                 {1,0,2,3},
-//                                             {1,0,3,2},
-//                                                 {1,3,0,2},
-//                                             {1,3,2,0},
-//                                                 {1,2,3,0},
-//                                             {1,2,0,3},
-//                                                 {2,1,0,3},
-//                                             {2,1,3,0},
-//                                                 {2,3,1,0},
-//                                             {2,3,0,1},
-//                                                 {2,0,3,1},
-//                                             {2,0,1,3},
-//                                                 {3,1,2,0},
-//                                             {3,1,0,2},
-//                                                 {3,0,1,2},
-//                                             {3,0,2,1},
-//                                                 {3,2,0,1},
-//                                             {3,2,1,0}};
 //         for(unsigned int p=0; p<np; p++)
         {
             xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
@@ -229,7 +175,7 @@ TEST(intersections_22d, all) {
         }
     }
     std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    fs.open(profiler_file.c_str(), std::fstream::out);
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }

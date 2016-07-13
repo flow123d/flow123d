@@ -21,7 +21,7 @@
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_local.hh"
 
-#include <dirent.h>
+#include "compute_intersection_test.hh"
 
 using namespace std;
 using namespace computeintersection;
@@ -70,7 +70,8 @@ void fill_13d_solution(std::vector<computeintersection::IntersectionLocal<1,3>> 
 
 
 //Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
-computeintersection::IntersectionLocal<1,3> permute_coords(computeintersection::IntersectionLocal<1,3> il, unsigned int permute[4])
+computeintersection::IntersectionLocal<1,3> permute_coords(computeintersection::IntersectionLocal<1,3> il,
+                                                           const std::vector<unsigned int> &permute)
 {
     computeintersection::IntersectionLocal<1,3> new_il = il;
     std::vector<computeintersection::IntersectionPoint<1,3>> & points = il.points();
@@ -160,31 +161,7 @@ TEST(intersections_13d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_13d/";
     std::vector<string> filenames;
     
-    // read mesh file names
-    DIR *dir;
-    struct dirent *ent;
-    if ((dir = opendir (dir_name.c_str())) != NULL) {
-        // print all the files and directories within directory 
-        xprintf(Msg,"Testing mesh files: \n");
-        while ((ent = readdir (dir)) != NULL) {
-            string fname = ent->d_name;
-            // test extension ".msh"
-            if(fname.size() >= 4)
-            {
-                string ext = fname.substr(fname.size()-4);
-//                 xprintf(Msg,"%s\n",ext.c_str());
-                if(ext == ".msh"){
-                    filenames.push_back(ent->d_name);
-                    xprintf(Msg,"%s\n",ent->d_name);
-                }
-            }
-        }
-        closedir (dir);
-    } else {
-        ASSERT(0).error("Could not open directory with testing meshes.");
-    }
-    
-    std::sort(filenames.begin(), filenames.end(), less<string>());
+    read_files_form_dir(dir_name, "msh", filenames);
     
     std::vector<computeintersection::IntersectionLocal<1,3>> solution;
     fill_13d_solution(solution);
@@ -192,31 +169,7 @@ TEST(intersections_13d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-        const unsigned int np = 12;
-        unsigned int permutations[np][4] = {{0,1,2,3},
-//                                                 {0,1,3,2},  // the tab means permutation with negative jacobian
-                                            {0,3,1,2},
-//                                                 {0,3,2,1},
-                                            {0,2,3,1},
-//                                                 {0,2,1,3},
-//                                                 {1,0,2,3},
-                                            {1,0,3,2},
-//                                                 {1,3,0,2},
-                                            {1,3,2,0},
-//                                                 {1,2,3,0},
-                                            {1,2,0,3},
-//                                                 {2,1,0,3},
-                                            {2,1,3,0},
-//                                                 {2,3,1,0},
-                                            {2,3,0,1},
-//                                                 {2,0,3,1},
-                                            {2,0,1,3},
-//                                                 {3,1,2,0},
-                                            {3,1,0,2},
-//                                                 {3,0,1,2},
-                                            {3,0,2,1},
-//                                                 {3,2,0,1},
-                                            {3,2,1,0}};
+        const unsigned int np = permutations_tetrahedron.size();
         for(unsigned int p=0; p<np; p++)
         {
             xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
@@ -232,31 +185,19 @@ TEST(intersections_13d, all) {
             FOR_ELEMENTS(&mesh,ele)
             {
                 if(ele->dim() == 3)
-                {
-                    Node* tmp[4];
-                    for(unsigned int i=0; i<ele->n_nodes(); i++)
-                    {
-                        tmp[i] = ele->node[permutations[p][i]];
-                    }
-                    for(unsigned int i=0; i<ele->n_nodes(); i++)
-                    {
-                        ele->node[i] = tmp[i];
-//                         ele->node[i]->point().print(cout);
-                    }
-//                     cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
-                }
+                    permute_tetrahedron(ele,p);
             }
             
             mesh.setup_topology();
             
             xprintf(Msg, "==============\n");
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
-                compute_intersection_13d(&mesh, permute_coords(solution[s], permutations[p]));
+                compute_intersection_13d(&mesh, permute_coords(solution[s], permutations_tetrahedron[p]));
             xprintf(Msg, "==============\n");
         }
     }
     std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out | std::fstream::app);
+    fs.open(profiler_file.c_str(), std::fstream::out);
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }

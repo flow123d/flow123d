@@ -17,7 +17,7 @@
 #include <intersection/intersection_aux.hh>
 #include <intersection/intersection_local.hh>
 
-#include <dirent.h>
+#include "compute_intersection_test.hh"
 
 using namespace std;
 using namespace computeintersection;
@@ -44,17 +44,23 @@ void fill_12d_solution(std::vector<computeintersection::IntersectionLocal<1,2>> 
 
 ///Permutes triangle coordinates of IP<1,2> according to given permutation.
 std::vector<computeintersection::IntersectionPoint<1,2>> permute_coords(std::vector<computeintersection::IntersectionPoint<1,2>> ips, 
-                                                                        unsigned int permute[3])
+                                                                        const std::vector<unsigned int> &permute)
 {
     std::vector<computeintersection::IntersectionPoint<1,2>> new_points(ips.size());
     for(unsigned int i = 0; i < ips.size(); i++)
     {
-        arma::vec::fixed<2> new_coords;
-        for(unsigned int j = 0; j < 2; j++)
-            new_coords[j] = ips[i].bulk_coords()[permute[j]];
+        arma::vec3 new_coords;
+        arma::vec3 old_coords = {1,1,1};
+        for(unsigned int j = 0; j < 2; j++){
+            old_coords[j+1] = ips[i].bulk_coords()[j];
+            old_coords[0] = old_coords[0] - ips[i].bulk_coords()[j];
+        }
+        if(old_coords[0] < 1e-15) old_coords[0] = 0;
         
-//         new_points[i].set_coordinates(ips[i].bulk_coords(), new_coords);
-        new_points[i] = computeintersection::IntersectionPoint<1,2>(ips[i].comp_coords(), new_coords);
+        for(unsigned int j = 0; j < 3; j++)
+            new_coords[j] = old_coords[permute[j]];
+        
+        new_points[i] = computeintersection::IntersectionPoint<1,2>(ips[i].comp_coords(), new_coords.subvec(1,2));
     }
     return new_points;
 }
@@ -107,31 +113,7 @@ TEST(intersections_12d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_12d/";
     std::vector<string> filenames;
     
-    // read mesh file names
-    DIR *dir;
-    struct dirent *ent;
-    if ((dir = opendir (dir_name.c_str())) != NULL) {
-        // print all the files and directories within directory 
-        xprintf(Msg,"Testing mesh files: \n");
-        while ((ent = readdir (dir)) != NULL) {
-            string fname = ent->d_name;
-            // test extension ".msh"
-            if(fname.size() >= 4)
-            {
-                string ext = fname.substr(fname.size()-4);
-//                 xprintf(Msg,"%s\n",ext.c_str());
-                if(ext == ".msh"){
-                    filenames.push_back(ent->d_name);
-                    xprintf(Msg,"%s\n",ent->d_name);
-                }
-            }
-        }
-        closedir (dir);
-    } else {
-        ASSERT(0).error("Could not open directory with testing meshes.");
-    }
-    
-    std::sort(filenames.begin(), filenames.end(), less<string>());
+    read_files_form_dir(dir_name, "msh", filenames);
     
     std::vector<computeintersection::IntersectionLocal<1,2>> solution;
     fill_12d_solution(solution);
@@ -139,14 +121,9 @@ TEST(intersections_12d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-        const unsigned int np = 6;
-        unsigned int permutations[np][3] = {{0,1,2},
-                                            {1,0,2},
-                                            {1,2,0},
-                                            {0,2,1},
-                                            {2,0,1},
-                                            {2,1,0}};
-        for(unsigned int p=0; p<1; p++)
+        const unsigned int np = permutations_triangle.size();
+        
+        for(unsigned int p=0; p<np; p++)
         {
             xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
             FilePath::set_io_dirs(".","","",".");
@@ -161,24 +138,12 @@ TEST(intersections_12d, all) {
             FOR_ELEMENTS(&mesh,ele)
             {
                 if(ele->dim() == 2)
-                {
-                    Node* tmp[3];
-                    for(unsigned int i=0; i<ele->n_nodes(); i++)
-                    {
-                        tmp[i] = ele->node[permutations[p][i]];
-                    }
-                    for(unsigned int i=0; i<ele->n_nodes(); i++)
-                    {
-                        ele->node[i] = tmp[i];
-//                         ele->node[i]->point().print(cout);
-                    }
-//                     cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
-                }
+                    permute_triangle(ele, p);
             }
             
             mesh.setup_topology();
             
-            compute_intersection_12d(&mesh, permute_coords(solution[s].points(), permutations[p]));
+            compute_intersection_12d(&mesh, permute_coords(solution[s].points(), permutations_triangle[p]));
         }
     }
 }
