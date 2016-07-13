@@ -654,6 +654,15 @@
       }
     },
     {
+      "NAME": "Move time_list for Darcy.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output_stream/time_list",
+        "addition_path": "/problem/flow_equation/output_stream/times",        
+        "destination_path": "/problem/flow_equation/output_stream/times"
+      }
+    },    
+    {
       "NAME": "Move time step for DarcyFlow output stream.",
       "action": "move-key",
       "parameters": {
@@ -662,6 +671,8 @@
         "create_path":true
       }
     },
+
+
 
 
     {
@@ -710,6 +721,15 @@
       }
     },
     {
+      "NAME": "Move time_list for transport.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/time_list",
+        "addition_path": "/problem/solute_equation/output_stream/times",        
+        "destination_path": "/problem/solute_equation/output_stream/times"
+      }
+    },    
+    {
       "NAME": "Move add_input_times for transport.",
       "action": "move-key",
       "parameters": {
@@ -723,7 +743,7 @@
       "NAME": "Move add_input_times for transport.",
       "action": "move-key",
       "parameters": {
-        "source_path": "/problem/flow_equation/output_stream/add_input_times",
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
         "destination_path": "/problem/solute_equation/reaction_term/output/add_input_times",
         "keep_source":true,
         "create_path":true
@@ -733,7 +753,7 @@
       "NAME": "Move add_input_times for transport.",
       "action": "move-key",
       "parameters": {
-        "source_path": "/problem/flow_equation/output_stream/add_input_times",
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
         "destination_path": "/problem/solute_equation/reaction_term/reaction_mobile/output/add_input_times",
         "keep_source":true,
         "create_path":true
@@ -743,11 +763,14 @@
       "NAME": "Move add_input_times for transport.",
       "action": "move-key",
       "parameters": {
-        "source_path": "/problem/flow_equation/output_stream/add_input_times",
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
         "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/add_input_times",        
         "create_path":true
       }
     },    
+      
+
+
 
 
     {
@@ -768,6 +791,15 @@
         "create_path":true
       }
     },
+    {
+      "NAME": "Move time_list for Heat.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/time_list",
+        "addition_path": "/problem/heat_equation/output_stream/times",        
+        "destination_path": "/problem/heat_equation/output_stream/times"
+      }
+    },    
     {
       "NAME": "Move time step for Heat output stream.",
       "action": "move-key",

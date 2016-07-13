@@ -37,7 +37,7 @@ problem: !Coupling_Sequential
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      time_list:
+      times:
         - 0
         - 0.25
         - 0.5
