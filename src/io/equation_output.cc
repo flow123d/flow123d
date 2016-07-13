@@ -29,8 +29,15 @@ IT::Record &EquationOutput::get_input_type() {
             //.declare_key("interpolation", ...)
             .close();
 
-    return IT::Record("EquationOutput", "Configuration of fields output. "
-            "The output is done through the output stream of the associated balance law equation.")
+    return IT::Record("EquationOutput",
+            "Output of the equation's fields."
+            "The output is done through the output stream of the associated balance law equation."
+            "The stream defines output format for the full space information in selected times and "
+            "observe points for the full time information. The key 'fields' select the fields for the full spatial output."
+            "The set of output times may be specified  per field otherwise common time set 'times' is used. If even this is not provided"
+            "the time set of the output_stream is used. The initial time of the equation is automatically added "
+            "to the time set of every selected field. The end time of the equation is automatically added "
+            "to the common output time set.")
         .root_of_generic_subtree()
         .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                 "Output times used for the output fields without is own time series specification.")
@@ -95,11 +102,14 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     if (in_rec.opt_val("times", times_array) ) {
         common_output_times_.read_from_input(times_array, tg);
     } else {
+        // take times from the output_stream if key times is missing
         auto times_array_it = stream_->get_time_set_array();
         if (times_array_it) {
             common_output_times_.read_from_input(*times_array_it,  tg);
         }
     }
+    // always add the end time
+    common_output_times_.add(tg.end_time(), equation_fixed_type_);
 
     if (in_rec.val<bool>("add_input_times")) {
         // copy time marks in order to prevent invalidation of the iterator
@@ -109,9 +119,6 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
                 ++time_mark_it) {
             common_output_times_.add(time_mark_it->time(), equation_fixed_type_);
         }
-        //marks.add_to_type_all( equation_type_ | marks.type_input(), equation_fixed_type_ | marks.type_output() );
-
-        cout << "marks: " << marks << endl;
     }
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
@@ -125,7 +132,7 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
             field_output_times_[field_name] = common_output_times_;
         }
         // Add init time as the output time for every output field.
-        field_output_times_[field_name].add(tg.init_time(),1.0, tg.init_time(), equation_fixed_type_);
+        field_output_times_[field_name].add(tg.init_time(), equation_fixed_type_);
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
