@@ -65,6 +65,15 @@ bool OutputTimeSet::contains(TimeMark mark) const {
 }
 
 
+void OutputTimeSet::add(double time, TimeMark::Type mark_type)
+{
+    TimeMark::Type output_mark_type = mark_type | TimeGovernor::marks().type_output();
+    auto mark = TimeMark(time, output_mark_type);
+    double mark_time = TimeGovernor::marks().add(mark).time();
+    times_.insert( mark_time );
+}
+
+
 
 void OutputTimeSet::add(double begin, double step, double end, TimeMark::Type mark_type)
 {

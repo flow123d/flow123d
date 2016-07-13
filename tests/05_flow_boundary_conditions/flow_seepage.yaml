@@ -49,6 +49,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
 #        - subdomain
+      add_input_times: true
     balance: true          
     nonlinear_solver:  
       tolerance: 1e-5
@@ -72,4 +73,3 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
       name: flow_output_stream
-      add_input_times: true

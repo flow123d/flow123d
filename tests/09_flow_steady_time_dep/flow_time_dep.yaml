@@ -32,9 +32,9 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
+      add_input_times: true
     balance: true
     output_stream:
-      add_input_times: true
       file: ./test09.pvd
       format: !vtk
         variant: ascii

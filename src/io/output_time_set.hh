@@ -34,6 +34,7 @@ public:
      */
     bool contains(TimeMark mark) const;
 
+    void add(double begin, TimeMark::Type mark_type);
     void add(double begin, double step, double end, TimeMark::Type mark_type);
 
 

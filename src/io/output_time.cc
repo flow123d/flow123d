@@ -44,15 +44,19 @@ const Record & OutputTime::get_input_type() {
 				"Format of output stream and possible parameters.")
 		.declare_key("times", OutputTimeSet::get_input_type(), Default::optional(),
 		        "Output times used for equations without is own output times key.")
+		/*
 		.declare_key("time_step", Double(0.0),
 				"Time interval between outputs.\n"
 				"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
-				"The start time and the end time are always added. ")
+				"The start time and the end time are always added. ")*/
+
 		.declare_key("time_list", Array(Double(0.0)),
 				Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
 				"Explicit array of output time points (can be combined with 'time_step'.")
+		/*
 		.declare_key("add_input_times", Bool(), Default("false"),
 				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
+		*/
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
                 "Output mesh record enables output on a refined mesh.")
 		.close();

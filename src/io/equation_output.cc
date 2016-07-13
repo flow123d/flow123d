@@ -89,7 +89,7 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Input::Recor
 void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & tg)
 {
     ASSERT(stream_).error("The 'set_stream' method must be called before the 'read_from_input'.");
-    auto marks = TimeGovernor::marks();
+    auto &marks = TimeGovernor::marks();
 
     Input::Array times_array;
     if (in_rec.opt_val("times", times_array) ) {
@@ -102,7 +102,16 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     }
 
     if (in_rec.val<bool>("add_input_times")) {
-        marks.add_to_type_all( equation_type_ | marks.type_input(), equation_fixed_type_ | marks.type_output() );
+        // copy time marks in order to prevent invalidation of the iterator
+        TimeMarks marks_copy = TimeGovernor::marks();
+        for(auto time_mark_it = marks_copy.begin(equation_type_ | marks.type_input());
+                time_mark_it != marks_copy.end(equation_type_ | marks.type_input());
+                ++time_mark_it) {
+            common_output_times_.add(time_mark_it->time(), equation_fixed_type_);
+        }
+        //marks.add_to_type_all( equation_type_ | marks.type_input(), equation_fixed_type_ | marks.type_output() );
+
+        cout << "marks: " << marks << endl;
     }
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
