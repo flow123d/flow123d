@@ -69,16 +69,8 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
 {
     DBGMSG("Computing 1d-2d intersections.\n");
     
-    Simplex<1> line;
-    Simplex<2> tria;
-    arma::vec3 *points_tria[3], *points_line[2];
-    for(unsigned int i=0; i < 3; i++)
-        points_tria[i]= &(mesh->element(0)->node[i]->point());
-    for(unsigned int i=0; i < 2; i++)
-        points_line[i]= &(mesh->element(1)->node[i]->point());
-    
-    tria.set_simplices(points_tria);
-    line.set_simplices(points_line);
+    Simplex<1> line = create_simplex<1>(mesh->element(1));
+    Simplex<2> tria = create_simplex<2>(mesh->element(0));
     
     IntersectionAux<1,2> is(1, 0, 0);
     ComputeIntersection< Simplex<1>, Simplex<2>> CI(line, tria);

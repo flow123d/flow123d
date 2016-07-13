@@ -9,15 +9,12 @@
 #include <flow_gtest_mpi.hh>
 
 #include "system/system.hh"
-#include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
-#include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/intersection.h"
-
-#include "intersection/inspect_elements.hh"
+#include "intersection/compute_intersection.hh"
+#include "intersection/intersection_aux.hh"
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_local.hh"
 
@@ -26,8 +23,6 @@
 using namespace std;
 using namespace computeintersection;
 
-static const std::string profiler_file = "compute_intersection_13d_profiler.log";
-static const unsigned int profiler_loop = 1;
 
 /// Create results for the meshes in directory 'simple_meshes_13d'.
 void fill_13d_solution(std::vector<computeintersection::IntersectionLocal<1,3>> &ils)
@@ -64,8 +59,6 @@ void fill_13d_solution(std::vector<computeintersection::IntersectionLocal<1,3>> 
     
     ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.25}),arma::vec3({2,1,0})/4));
     ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({2,0,1})/4));
-
-    DBGMSG("fill solution\n");
 }
 
 
@@ -95,22 +88,25 @@ computeintersection::IntersectionLocal<1,3> permute_coords(computeintersection::
 
 void compute_intersection_13d(Mesh *mesh, const computeintersection::IntersectionLocal<1,3> &il)
 {
-    double length1, length2 = 0;
-
     // compute intersection
-    DBGMSG("Computing intersection length by NEW algorithm\n");
-    InspectElements ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d13);
+    DBGMSG("Computing intersection\n");
+    Simplex<1> line = create_simplex<1>(mesh->element(1));
+    Simplex<3> tetra = create_simplex<3>(mesh->element(0));
     
-    //test solution
-    std::vector<computeintersection::IntersectionLocal<1,3>> pp = ie.intersection_storage13_;
-    computeintersection::IntersectionLocal<1,3> ilc;
-    // component = element index == 1
-    if(pp.size() > 0)
-    {
-        ilc = pp[0];
-        EXPECT_EQ(ilc.size(), il.size());
-    }
+    IntersectionAux<1,3> is;
+    std::vector<unsigned int> prolong_table;
+    ComputeIntersection< Simplex<1>, Simplex<3>> CI(line, tetra);
+    CI.init();
+    CI.compute(is, prolong_table);
+    
+//     cout << is;
+//     for(IntersectionPointAux<1,3> &ip: is.points())
+//     {
+//         ip.coords(mesh->element(0)).print();
+//     }
+
+    computeintersection::IntersectionLocal<1,3> ilc(is);
+    EXPECT_EQ(ilc.size(), il.size());
     
     for(unsigned int i=0; i < ilc.size(); i++)
     {
@@ -120,42 +116,10 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
         EXPECT_DOUBLE_EQ(ilc[i].bulk_coords()[1], il[i].bulk_coords()[1]);
         EXPECT_DOUBLE_EQ(ilc[i].bulk_coords()[2], il[i].bulk_coords()[2]);
     }
-    
-    length1 = ie.measure_13();
-        ie.print_mesh_to_file_13("output_intersection_13");
-    
-    //TODO: delete comparison with NGH
-    // compute intersection by NGH
-    DBGMSG("Computing intersection length by NGH algorithm\n");
-    START_TIMER("OLD intersections 1D-3D");
-    TAbscissa tabs;
-    TTetrahedron tte;
-    TIntersectionType it = line;
-
-    FOR_ELEMENTS(mesh, elm) {
-        if (elm->dim() == 1) {
-        tabs.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                       TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)));
-        }
-        else if(elm->dim() == 3){
-        tte.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
-                     TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
-        }
-    }
-    GetIntersection(tabs, tte, it, length2); // get only relative length of the intersection to the abscissa
-    length2 *= tabs.Length(); 
-    END_TIMER("OLD intersections 1D-3D");
-    
-    DBGMSG("Length of intersection line: (intersections) %.16e,\t(NGH) %.16e\n", length1, length2);
-//     EXPECT_NEAR(length1, length2, 1e-12);
-    EXPECT_DOUBLE_EQ(length1,length2);
 }
 
 
 TEST(intersections_13d, all) {
-    Profiler::initialize();
     
     // directory with testing meshes
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_13d/";
@@ -190,14 +154,7 @@ TEST(intersections_13d, all) {
             
             mesh.setup_topology();
             
-            xprintf(Msg, "==============\n");
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-                compute_intersection_13d(&mesh, permute_coords(solution[s], permutations_tetrahedron[p]));
-            xprintf(Msg, "==============\n");
+            compute_intersection_13d(&mesh, permute_coords(solution[s], permutations_tetrahedron[p]));
         }
     }
-    std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out);
-    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
 }

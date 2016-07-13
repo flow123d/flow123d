@@ -6,7 +6,11 @@
 #include "system/system.hh"
 #include "mesh/mesh_types.hh"
 #include "mesh/nodes.hh"
-#include <mesh/elements.h>
+#include "mesh/elements.h"
+
+#include "intersection/simplex.hh"
+
+using namespace computeintersection;
 
 static const std::vector<std::vector<unsigned int>> permutations_triangle = {
     {0,1,2},
@@ -78,6 +82,7 @@ void read_files_form_dir(const string &dir_name,
 void permute_tetrahedron(ElementFullIter ele, unsigned int p)
 {
     ASSERT_DBG(ele->dim() == 3);
+    ASSERT_DBG(p < permutations_tetrahedron.size());
     Node* tmp[4];
     for(unsigned int i=0; i<ele->n_nodes(); i++)
     {
@@ -94,6 +99,7 @@ void permute_tetrahedron(ElementFullIter ele, unsigned int p)
 void permute_triangle(ElementFullIter ele, unsigned int p)
 {
     ASSERT_DBG(ele->dim() == 2);
+    ASSERT_DBG(p < permutations_triangle.size());
     Node* tmp[3];
     for(unsigned int i=0; i<ele->n_nodes(); i++)
     {
@@ -106,5 +112,19 @@ void permute_triangle(ElementFullIter ele, unsigned int p)
     }
 //  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
 }
+
+template<int dim>
+Simplex<dim> create_simplex(ElementFullIter ele)
+{
+    ASSERT_DBG(dim == ele->dim());
+    Simplex<dim> s;
+    arma::vec3 *points_tetra[dim+1];
+    for(unsigned int i=0; i < dim+1; i++)
+        points_tetra[i]= &(ele->node[i]->point());
+    
+    s.set_simplices(points_tetra);
+    return s;
+}
+
 
 #endif // COMPUTE_INTERSECTION_TEST_H_

@@ -8,7 +8,6 @@
 #include <flow_gtest_mpi.hh>
 
 #include "system/system.hh"
-#include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -24,9 +23,6 @@
 
 using namespace std;
 using namespace computeintersection;
-
-static const std::string profiler_file = "intersection_profiler_23.log";
-static const unsigned int profiler_loop = 1;//10000;
 
 
 void compute_intersection_area_23d(Mesh *mesh)
@@ -77,8 +73,6 @@ void compute_intersection_area_23d(Mesh *mesh)
 
 
 TEST(area_intersections, all) {
-    Profiler::initialize();
-    
     // directory with testing meshes
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d/";
     std::vector<string> filenames;
@@ -108,17 +102,7 @@ TEST(area_intersections, all) {
             }
             mesh.setup_topology();
             
-            xprintf(Msg, "==============\n");
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-                compute_intersection_area_23d(&mesh);
-            xprintf(Msg, "==============\n");
+            compute_intersection_area_23d(&mesh);
         }
     }
-    
-    std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out);
-    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
 }
-
-//*/
