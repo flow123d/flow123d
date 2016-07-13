@@ -891,6 +891,13 @@ format: !RecordA
   #int_key: 10
 )YAML";
 
+const string input_yaml_rec_with_empty_scalar = R"YAML(
+format: 
+  int_key:
+  str_key:
+)YAML";
+
+
 
 TEST_F(InputReaderToStorageTest, EmptyRecord) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -973,6 +980,17 @@ TEST_F(InputReaderToStorageTest, EmptyRecord) {
         EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "RecordA");
         EXPECT_TRUE(storage_->get_item(0)->get_item(1)->is_null() );
         EXPECT_TRUE(storage_->get_item(0)->get_item(2)->is_null() );
+    }
+
+    { // YAML format, read record with empty keys
+        stringstream ss(input_yaml_rec_with_empty_scalar);
+        read_stream(ss, root_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_TRUE(storage_->get_item(0)->get_item(0)->is_null() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(1)->is_null() );
     }
 
 }
