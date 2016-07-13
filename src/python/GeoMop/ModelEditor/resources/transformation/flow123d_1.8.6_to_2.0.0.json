@@ -600,6 +600,7 @@
         "type-filter": "Heat_AdvectionDiffusion_DG"
       }
     },
+
     {
       "NAME": "Make output-specific key.",
       "action": "add-key",
@@ -644,14 +645,6 @@
       }
     },
     {
-      "NAME": "Rename DarcyFlow output_fields.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/flow_equation/output/output_fields",
-        "destination_path": "/problem/solute_equation/transport/fields"
-      }
-    },
-    {
       "NAME": "Move time step for DarcyFlow output stream.",
       "action": "move-key",
       "parameters": {
@@ -669,6 +662,8 @@
         "create_path":true
       }
     },
+
+
     {
       "NAME": "Make output_fields in transport.",
       "action": "move-key",
@@ -752,7 +747,37 @@
         "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/add_input_times",        
         "create_path":true
       }
-    }    
+    },    
+
+
+    {
+      "NAME": "Rename Heat output_fields.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output/output_fields",
+        "destination_path": "/problem/heat_equation/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time step for Heat output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/time_step",
+        "destination_path": "/problem/heat_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time step for Heat output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/add_input_times",
+        "destination_path": "/problem/heat_equation/output/add_input_times",
+        "create_path":true
+      }
+    }
+
       
   ]
 }
