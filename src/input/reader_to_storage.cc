@@ -140,33 +140,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         return storage;
     }
 
-    // create storage if Record is empty
-	if (typeid(*type) == typeid(Type::Record) && p.is_effectively_null()) {
-		return make_storage_empty_record(p, static_cast<const Type::Record *>(type));
-	} else {
-		// create storage of Abstract if Record is empty
-    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
-    	if (abstract_record_type != NULL && p.is_effectively_null()) {
-    		string descendant_name = p.get_descendant_name();
-    		if (descendant_name == "") {
-    			if ( ! abstract_record_type->get_selection_default().has_value_at_declaration() ) {
-    				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in Abstract.")
-    						<< EI_ErrorAddress(p.as_string()) << EI_InputType(abstract_record_type->desc()) );
-    			} else { // auto conversion
-    				return make_storage_empty_record(p, abstract_record_type->get_default_descendant());
-    			}
-    		} else {
-    			return make_storage_empty_record(p, &( abstract_record_type->get_descendant(descendant_name) ));
-    		}
-    	}
-
-    	// return Null storage if there is null on the current location
-		if (p.is_null_type()) {
-			return new StorageNull();
-		}
-	}
-
-    // dispatch types
+    // dispatch types - complex types
     if (typeid(*type) == typeid(Type::Tuple)) {
         return make_storage(p, static_cast<const Type::Tuple *>(type) );
     } else
@@ -175,7 +149,17 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
     } else
     if (typeid(*type) == typeid(Type::Array)) {
         return make_storage(p, static_cast<const Type::Array *>(type) );
-    } else
+    } else {
+    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
+    	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
+    }
+
+    // return Null storage if there is null on the current location
+	if (p.is_null_type()) {
+		return new StorageNull();
+	}
+
+    // dispatch types - scalar types
     if (typeid(*type) == typeid(Type::Integer)) {
         return make_storage(p, static_cast<const Type::Integer *>(type) );
     } else
@@ -188,9 +172,6 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
     if (typeid(*type) == typeid(Type::Selection)) {
         return make_storage(p, static_cast<const Type::Selection *>(type) );
     } else {
-    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
-    	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
-
         const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) return make_storage(p, string_type );
 
@@ -205,7 +186,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *record)
 {
 	std::set<string> keys_to_process;
-	if ( p.get_record_key_set(keys_to_process) ) {
+	bool effectively_null = p.is_effectively_null();
+	if ( p.get_record_key_set(keys_to_process) || effectively_null ) {
         std::set<string>::iterator set_it;
 
         /*Type::Record::KeyIter key_it;
@@ -234,7 +216,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         		keys_to_process.erase(set_it);
         	}
 
-            if ( p.down(it->key_) ) {
+            if ( !effectively_null && p.down(it->key_) ) {
                 // key on input => check & use it
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
@@ -245,12 +227,16 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
                 p.up();
             } else {
                 // key not on input
-            	try {
-            		storage_array->new_item( it->key_index, create_key_storage(it) );
-            	} catch (ExcInputError &e) {
-            		e << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc());
-            		throw;
-            	}
+                if (it->default_.is_obligatory() ) {
+                    THROW( ExcInputError() << EI_Specification("Missing obligatory key '"+ it->key_ +"'.")
+                            << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
+                } else if (it->default_.has_value_at_declaration() ) {
+                   storage_array->new_item(it->key_index,
+                           make_storage_from_default( it->default_.value(), it->type_ ) );
+                } else { // defalut - optional or default at read time
+                    // set null
+                    storage_array->new_item(it->key_index, new StorageNull() );
+                }
             }
         }
 
@@ -702,38 +688,6 @@ StorageBase * ReaderToStorage::make_autoconversion_array_storage(PathBase &p, co
 	}
 
 	return NULL;
-}
-
-
-
-StorageBase * ReaderToStorage::create_key_storage( Type::Record::KeyIter it)
-{
-    if (it->default_.is_obligatory() ) {
-        THROW( ExcInputError() << EI_Specification("Missing obligatory key '"+ it->key_ +"'.") );
-    } else if (it->default_.has_value_at_declaration() ) {
-        return make_storage_from_default( it->default_.value(), it->type_ );
-    } else { // default - optional or default at read time
-        // set null
-        return new StorageNull();
-    }
-
-    return NULL;
-}
-
-
-
-StorageBase * ReaderToStorage::make_storage_empty_record( PathBase &p, const Type::Record *record )
-{
-    StorageArray *storage_array = new StorageArray(record->size());
-    for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-    	try {
-    		storage_array->new_item( it->key_index, create_key_storage(it) );
-    	} catch (ExcInputError &e) {
-    		e << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc());
-    		throw;
-    	}
-    }
-    return storage_array;
 }
 
 
