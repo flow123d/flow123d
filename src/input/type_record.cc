@@ -242,6 +242,18 @@ bool Record::finish(bool is_generic)
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
+        if (!is_generic) {
+            try {
+                it->default_.check_validity(it->type_);
+            } catch (ExcWrongDefaultJSON & e) {
+                e << EI_KeyName(it->key_);
+                throw;
+            } catch (ExcWrongDefault & e) {
+                e << EI_KeyName(it->key_);
+                throw;
+            }
+        }
+
     	if (it->key_ != "TYPE") {
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
 			if (!is_generic && it->type_->is_root_of_generic_subtree())
@@ -270,9 +282,9 @@ bool Record::finish(bool is_generic)
 
 
 
-const Record &Record::close() const {
+Record &Record::close() const {
     data_->closed_=true;
-    const Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
+    Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
     for (auto &parent : data_->parent_vec_) {
     	parent->add_child(rec);
     }
@@ -419,15 +431,6 @@ void Record::RecordData::declare_key(const string &key,
 {
 	ASSERT(!closed_)(key)(this->type_name_).error();
     // validity test of default value
-    try {
-    	default_value.check_validity(type);
-    } catch (ExcWrongDefaultJSON & e) {
-        e << EI_KeyName(key);
-        throw;
-    } catch (ExcWrongDefault & e) {
-        e << EI_KeyName(key);
-        throw;
-    }
 
     ASSERT( !finished )(key)(type_name_).error("Declaration of key in finished Record");
     ASSERT( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
