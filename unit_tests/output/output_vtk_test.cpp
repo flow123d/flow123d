@@ -53,7 +53,7 @@ public:
 
 
 TEST_F(TestOutputVTK, write_data) {
-    EXPECT_EQ("./test1.pvd", this->_base_filename);
+    EXPECT_EQ("./test1.pvd", string(this->_base_filename));
     EXPECT_EQ("test1", this->main_output_basename_);
     EXPECT_EQ(".", this->main_output_dir_);
     this->current_step=1;
