@@ -239,8 +239,10 @@ TEST_F(TestOutputMesh, read_input) {
                   FieldSet::ExcUnknownField);
     
     // 'conc' field is now vector field
+    /*
     Field<3,FieldValue<3>::Vector> vector_field;
     output_fields += vector_field.name("conc");
     EXPECT_THROW( this->select_error_control_field(&output_fields); ,
                   OutputMeshBase::ExcFieldNotScalar);
+    */
 }
