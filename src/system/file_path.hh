@@ -147,6 +147,16 @@ public:
      */
     void create_output_dir();
 
+    /**
+     * Return path to file.
+     */
+    string parent_path() const;
+
+    /**
+     * Return name of file.
+     */
+    string filename() const;
+
 private:
     /**
      * Substitutes placeholders in @p path.

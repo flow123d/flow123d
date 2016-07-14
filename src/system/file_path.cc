@@ -143,6 +143,16 @@ void FilePath::create_output_dir() {
 }
 
 
+string FilePath::parent_path() const {
+	return abs_file_path_->parent_path().string();
+}
+
+string FilePath::filename() const {
+	return abs_file_path_->filename().string();
+}
+
+
+
 FilePath::operator string() const {
 	return abs_file_path_->string();
 }
