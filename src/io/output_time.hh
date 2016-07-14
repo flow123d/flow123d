@@ -23,6 +23,7 @@
 #include <fstream>
 #include "input/accessors.hh"
 
+class FilePath;
 class OutputDataBase;
 class Mesh;
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
@@ -231,7 +232,7 @@ protected:
     /**
      * Name of base output file
      */
-    string _base_filename;
+    FilePath _base_filename;
 
     /**
      * Cached pointer at mesh used by this output stream

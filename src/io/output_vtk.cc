@@ -22,6 +22,7 @@
 #include <limits.h>
 #include "input/factory.hh"
 #include "input/accessors_forward.hh"
+#include "system/file_path.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
@@ -74,9 +75,9 @@ OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
     this->fix_main_file_extension(".pvd");
 
     if(this->rank == 0) {
-        this->_base_file.open(this->_base_filename.c_str());
-        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
-        xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
+        this->_base_file.open(string(this->_base_filename).c_str());
+        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
+        xprintf(MsgLog, "Writing flow output file: %s ... \n", string(this->_base_filename).c_str());
     }
 
     this->make_subdirectory();
@@ -125,7 +126,7 @@ int OutputVTK::write_data(void)
         /* Set up data file */
 
         xprintf(MsgLog, "%s: Writing output file %s ... ",
-                __func__, this->_base_filename.c_str());
+                __func__, string(this->_base_filename).c_str());
 
 
         /* Set floating point precision to max */
@@ -159,11 +160,9 @@ int OutputVTK::write_data(void)
 
 void OutputVTK::make_subdirectory()
 {
-    string main_file="./" + this->_base_filename; // guarantee that find_last_of succeeds
-    OLD_ASSERT( main_file.substr( main_file.size() - 4) == ".pvd" , "none");
-    unsigned int last_sep_pos=main_file.find_last_of(DIR_DELIMITER);
-    main_output_dir_=main_file.substr(2, last_sep_pos-2);
-    main_output_basename_=main_file.substr(last_sep_pos+1);
+	OLD_ASSERT( string(this->_base_filename).substr( string(this->_base_filename).size() - 4) == ".pvd" , "none");
+	main_output_dir_ = this->_base_filename.parent_path();
+	main_output_basename_ = this->_base_filename.filename();
     main_output_basename_=main_output_basename_.substr(0, main_output_basename_.size() - 4); // 5 = ".pvd".size() +1
 
     FilePath fp(main_output_dir_ + DIR_DELIMITER + main_output_basename_ + DIR_DELIMITER + "__tmp__", FilePath::output_file);
@@ -422,7 +421,7 @@ int OutputVTK::write_head(void)
     }
 
     xprintf(MsgLog, "%s: Writing output file (head) %s ... ", __func__,
-            this->_base_filename.c_str() );
+    		string(this->_base_filename).c_str() );
 
     this->_base_file << "<?xml version=\"1.0\"?>" << endl;
     this->_base_file << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
@@ -443,7 +442,7 @@ int OutputVTK::write_tail(void)
     }
 
     xprintf(MsgLog, "%s: Writing output file (tail) %s ... ", __func__,
-            this->_base_filename.c_str() );
+    		string(this->_base_filename).c_str() );
 
     this->_base_file << "</Collection>" << endl;
     this->_base_file << "</VTKFile>" << endl;

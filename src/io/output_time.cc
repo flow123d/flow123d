@@ -145,11 +145,11 @@ void OutputTime::compute_discontinuous_output_mesh()
 
 void OutputTime::fix_main_file_extension(std::string extension)
 {
-    if(this->_base_filename.compare(this->_base_filename.size()-extension.size(), extension.size(), extension) != 0) {
-        string new_name = this->_base_filename + extension;
+    if(string(this->_base_filename).compare(string(this->_base_filename).size()-extension.size(), extension.size(), extension) != 0) {
+        string new_name = string(this->_base_filename) + extension;
         xprintf(Warn, "Renaming output file: %s to %s\n",
-                this->_base_filename.c_str(), new_name.c_str());
-        this->_base_filename = new_name;
+        		string(this->_base_filename).c_str(), new_name.c_str());
+        this->_base_filename = FilePath(new_name, FilePath::output_file);
     }
 }
 
@@ -250,7 +250,7 @@ void OutputTime::write_time_frame()
 		// streams were changed
 		if(write_time < time) {
 			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n",
-			        this->_base_filename.c_str(), time);
+					string(this->_base_filename).c_str(), time);
 			write_data();
 			// Remember the last time of writing to output stream
 			write_time = time;
@@ -261,7 +261,7 @@ void OutputTime::write_time_frame()
             output_mesh_discont_.reset();
 		} else {
 			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
-			        this->_base_filename.c_str(), time);
+					string(this->_base_filename).c_str(), time);
 		}
     }
     clear_data();

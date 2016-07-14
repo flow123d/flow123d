@@ -202,7 +202,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 int OutputMSH::write_head(void)
 {
     xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
-            this->_base_filename.c_str());
+            string(this->_base_filename).c_str());
 
     this->write_msh_header();
 
@@ -218,7 +218,7 @@ int OutputMSH::write_head(void)
 int OutputMSH::write_data(void)
 {
     xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
-            this->_base_filename.c_str());
+            string(this->_base_filename).c_str());
 
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
@@ -253,9 +253,9 @@ OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
     this->header_written = false;
     
     if(this->rank == 0) {
-        this->_base_file.open(this->_base_filename.c_str());
-        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
-        xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
+        this->_base_file.open(string(this->_base_filename).c_str());
+        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
+        xprintf(MsgLog, "Writing flow output file: %s ... \n", string(this->_base_filename).c_str());
     }
 }
 
