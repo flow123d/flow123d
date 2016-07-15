@@ -76,9 +76,11 @@ bool Default::check_validity(std::shared_ptr<TypeBase> type) const
 		storage_ = reader.get_storage()->get_item(0);
 		return true;
 	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
-		THROW( ExcWrongDefaultJSON() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
+		THROW( ExcWrongDefaultJSON() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name())
+				<< make_nested_ei(e) );
 	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
-		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name()));
+		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name())
+				<< make_nested_ei(e) );
 	}
 }
 
@@ -239,6 +241,17 @@ bool Record::finish(bool is_generic)
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
+
+            try {
+                it->default_.check_validity(it->type_);
+            } catch (ExcWrongDefaultJSON & e) {
+                e << EI_KeyName(it->key_);
+                throw;
+            } catch (ExcWrongDefault & e) {
+                e << EI_KeyName(it->key_);
+                throw;
+            }
+        }
 
     	if (it->key_ != "TYPE") {
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
