@@ -242,18 +242,7 @@ bool Record::finish(bool is_generic)
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
 
-            try {
-                it->default_.check_validity(it->type_);
-            } catch (ExcWrongDefaultJSON & e) {
-                e << EI_KeyName(it->key_);
-                throw;
-            } catch (ExcWrongDefault & e) {
-                e << EI_KeyName(it->key_);
-                throw;
-            }
-        }
-
-    	if (it->key_ != "TYPE") {
+      	if (it->key_ != "TYPE") {
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
 			if (!is_generic && it->type_->is_root_of_generic_subtree())
 			    THROW( ExcGenericWithoutInstance()
