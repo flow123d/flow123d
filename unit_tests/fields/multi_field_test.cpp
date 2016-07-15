@@ -107,6 +107,7 @@ TEST(Operators, assignment) {
 	mf_assignment
 	    .name("b")
 	    .flags(FieldFlag::input_copy);
+	    .units( UnitSI::dimensionless() );
 	std::vector<string> component_names_2 = { "comp_a", "comp_b", "comp_c" };
 	mf_assignment.set_components(component_names_2);
 	mf_base.set_mesh( *mesh );
@@ -147,6 +148,7 @@ TEST(Operators, assignment) {
 		mf_assignment_error
 		    .name("d")
 		    .flags(FieldFlag::input_copy);
+		    .units( UnitSI::dimensionless() );
 		mf_assignment_error.set_components(component_names);
 		mf_assignment_error.set_mesh( *mesh );
 		mf_assignment_error.setup_components();
