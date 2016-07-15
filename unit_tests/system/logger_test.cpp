@@ -46,16 +46,13 @@ void logger_messages() {
     	_LOG( Logger::MsgType::error ) << e.what();
     }
 
-    // flush screen streams for better but not perfect output
-	std::cout << std::flush;
-	std::cerr << std::flush;
-
 	// necessary for setting next test
 	LoggerOptions::get_instance().reset();
 }
 
 
-TEST(Logger, no_log) {
+TEST(Logger, no_log_file) {
+	// log file is set to empty
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("");
@@ -64,6 +61,7 @@ TEST(Logger, no_log) {
 }
 
 TEST(Logger, without_init_log_file) {
+	// log file is not set > Log and Debug messages are redirect to screen output
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 
@@ -71,6 +69,7 @@ TEST(Logger, without_init_log_file) {
 }
 
 TEST(Logger, log_file_without_mpi) {
+	// MPI is not set > random rank of process is generated
 	Profiler::initialize();
 	LoggerOptions::get_instance().set_log_file("without_mpi");
 
@@ -78,6 +77,7 @@ TEST(Logger, log_file_without_mpi) {
 }
 
 TEST(Logger, log_file_with_mpi) {
+	// full usage of log
 	Profiler::initialize();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("with_mpi");
