@@ -1006,6 +1006,28 @@ $ElementData
 $EndElementData
 $ElementData
 1
+"age_init_conc"
+1
+100000
+3
+1
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+100000
+3
+1
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
 "age_conc"
 1
 100000
@@ -1274,6 +1296,39 @@ $ElementData
 $EndElementData
 $ElementData
 1
+"porosity"
+1
+200000
+3
+2
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+200000
+3
+2
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+200000
+3
+2
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
 "age_conc"
 1
 200000
@@ -1539,6 +1594,39 @@ $ElementData
 149 0.000107601116461621 
 150 9.16460931673503e-05 
 151 5.80421445050176e-05 
+$EndElementData
+$ElementData
+1
+"porosity"
+1
+300000
+3
+3
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+300000
+3
+3
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+300000
+3
+3
+1
+1
+4 0 
 $EndElementData
 $ElementData
 1
@@ -1944,6 +2032,28 @@ $ElementData
 $EndElementData
 $ElementData
 1
+"age_init_conc"
+1
+400000
+3
+4
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+400000
+3
+4
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
 "age_conc"
 1
 400000
@@ -2209,6 +2319,39 @@ $ElementData
 149 0.0224688270286035 
 150 0.0204850537679796 
 151 0.0215189566522755 
+$EndElementData
+$ElementData
+1
+"porosity"
+1
+500000
+3
+5
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+500000
+3
+5
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+500000
+3
+5
+1
+1
+4 0 
 $EndElementData
 $ElementData
 1
@@ -2480,6 +2623,39 @@ $ElementData
 $EndElementData
 $ElementData
 1
+"porosity"
+1
+600000
+3
+6
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+600000
+3
+6
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+600000
+3
+6
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
 "age_conc"
 1
 600000
@@ -2745,6 +2921,39 @@ $ElementData
 149 0.0904538930204486 
 150 0.0879349427095656 
 151 0.102787563630428 
+$EndElementData
+$ElementData
+1
+"porosity"
+1
+700000
+3
+7
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+700000
+3
+7
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+700000
+3
+7
+1
+1
+4 0 
 $EndElementData
 $ElementData
 1
@@ -3016,6 +3225,39 @@ $ElementData
 $EndElementData
 $ElementData
 1
+"porosity"
+1
+800000
+3
+8
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+800000
+3
+8
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+800000
+3
+8
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
 "age_conc"
 1
 800000
@@ -3284,6 +3526,39 @@ $ElementData
 $EndElementData
 $ElementData
 1
+"porosity"
+1
+900000
+3
+9
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+900000
+3
+9
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+900000
+3
+9
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
 "age_conc"
 1
 900000
@@ -3549,6 +3824,39 @@ $ElementData
 149 0.237955505569081 
 150 0.243493907598798 
 151 0.277096991640295 
+$EndElementData
+$ElementData
+1
+"porosity"
+1
+1000000
+3
+10
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+1000000
+3
+10
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+1000000
+3
+10
+1
+1
+4 0 
 $EndElementData
 $ElementData
 1
