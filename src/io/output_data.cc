@@ -101,8 +101,7 @@ void OutputData<Value>::print_all_yaml(ostream &out_stream)
         if (idx != 0) out_stream << ", ";
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         typename Value::return_type value;
-        Value::from_raw(value, ptr_begin);
-        out_stream << field_value_to_yaml(value);
+        out_stream << field_value_to_yaml( Value::from_raw(value, ptr_begin) );
     }
     out_stream << " ]";
 }

@@ -29,6 +29,7 @@ const Input::Type::Record & ObservePoint::get_input_type() {
             "1. Find an initial element containing the initial point. If no such element exists we report the error.\n"
             "2. Use BFS starting from the inital element to find the 'observe element'. The observe element is the closest element "
             "3. Find the closest projection of the inital point on the observe element and snap this projection according to the 'snap_dim'.\n")
+        .allow_auto_conversion("point")
         .declare_key("name", IT::String(),
                 IT::Default::read_time(
                         "Default name have the form 'obs_<id>', where 'id' "
@@ -173,6 +174,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
     if (candidate_list.size() == 0) THROW( ExcNoInitialPoint() << in_rec_.ei_address() );
 
+    // Try to snap to the observe element with required snap_region
     for(unsigned int i_level=0; i_level < max_levels_; i_level++) {
         if (have_observe_element()) break;
         process_list.swap(candidate_list);
@@ -198,6 +200,9 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
             }
         }
     }
+    if (! have_observe_element()) {
+        THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) << EI_NLevels(max_levels_) );
+    }
     snap( mesh );
 }
 
@@ -215,31 +220,24 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces)
 
 
 
-Observe::Observe(string observe_name, Mesh &mesh, Input::Record in_rec)
-: mesh_(&mesh),
-  in_rec_(in_rec)
+Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array)
+: mesh_(&mesh)
 {
     // in_rec is Output input record.
 
-
-    auto observe_fields = in_rec.val<Input::Array>("observe_fields");
-    for(auto it = observe_fields.begin<Input::FullEnum>(); it != observe_fields.end(); ++it ) {
-        this->field_names_.insert((std::string)*it);
-    }
-
-    auto op_input_array = in_rec.val<Input::Array>("observe_points");
-    for(auto it = op_input_array.begin<Input::Record>(); it != op_input_array.end(); ++it) {
+    for(auto it = in_array.begin<Input::Record>(); it != in_array.end(); ++it) {
         ObservePoint point(*it, points_.size());
         point.find_observe_point(*mesh_);
         points_.push_back( point );
+        observed_element_indices_.insert(point.element_idx_);
     }
 
     time_unit_str_ = "s";
     time_unit_seconds_ = 1.0;
 
+    if (points_.size() == 0) return;
     observe_file_.open((observe_name + "_observe.yaml").c_str());
     output_header(observe_name);
-
 }
 
 Observe::~Observe() {
@@ -249,6 +247,8 @@ Observe::~Observe() {
 
 template<int spacedim, class Value>
 void Observe::compute_field_values(Field<spacedim, Value> &field) {
+
+    if (points_.size() == 0) return;
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field.name());
     if (it == observe_field_values_.end()) {
@@ -295,9 +295,11 @@ void Observe::output_header(string observe_name) {
 
 }
 
-void Observe::output_time_frame(TimeStep step) {
+void Observe::output_time_frame(double time) {
+    if (points_.size() == 0) return;
+
     unsigned int indent = 2;
-    observe_file_ << setw(indent) << "" << "- time: " << step.end() << endl;
+    observe_file_ << setw(indent) << "" << "- time: " << time << endl;
     for(auto &field_data : observe_field_values_) {
         observe_file_ << setw(indent) << "" << "  " << field_data.second->field_name << ": ";
         field_data.second->print_all_yaml(observe_file_);

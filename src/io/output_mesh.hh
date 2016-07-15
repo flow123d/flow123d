@@ -56,9 +56,9 @@ public:
     static const unsigned int spacedim = 3;
     
     /// Constructor. Takes computational mesh as a parameter.
-    OutputMeshBase(Mesh* mesh);
+    OutputMeshBase(Mesh &mesh);
     /// Constructor. Takes computational mesh and input record as a parameters.
-    OutputMeshBase(Mesh* mesh, const Input::Record &in_rec);
+    OutputMeshBase(Mesh &mesh, const Input::Record &in_rec);
     virtual ~OutputMeshBase();
     
     /**
@@ -73,7 +73,7 @@ public:
     OutputElementIterator end();
     
     /// Selects the error control field out of output field set according to input record.
-    void select_error_control_field(FieldSet * output_fields);
+    void select_error_control_field(FieldSet &output_fields);
     
     /// Vector of element indices in the computational mesh. (Important when refining.)
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
@@ -112,8 +112,8 @@ protected:
 class OutputMesh : public OutputMeshBase
 {
 public:
-    OutputMesh(Mesh* mesh);
-    OutputMesh(Mesh* mesh, const Input::Record &in_rec);
+    OutputMesh(Mesh &mesh);
+    OutputMesh(Mesh &mesh, const Input::Record &in_rec);
     ~OutputMesh();
     
     /// Creates the output mesh identical to the computational one.
@@ -133,8 +133,8 @@ protected:
 class OutputMeshDiscontinuous : public OutputMeshBase
 {
 public:
-    OutputMeshDiscontinuous(Mesh* mesh);
-    OutputMeshDiscontinuous(Mesh* mesh, const Input::Record& in_rec);
+    OutputMeshDiscontinuous(Mesh &mesh);
+    OutputMeshDiscontinuous(Mesh &mesh, const Input::Record& in_rec);
     ~OutputMeshDiscontinuous();
     
     /// Creates output mesh from the given continuous one.

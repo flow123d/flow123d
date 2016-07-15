@@ -14,6 +14,7 @@
 #include "fields/field.hh"
 #include "io/output_data.hh"
 #include "tools/time_governor.hh"
+#include "system/exceptions.hh"
 #include <armadillo>
 
 
@@ -27,6 +28,12 @@ class ObservePoint {
 public:
     DECLARE_INPUT_EXCEPTION(ExcNoInitialPoint,
             << "Failed to find the element containing the initial observe point.\n");
+    TYPEDEF_ERR_INFO(EI_RegionName, std::string);
+    TYPEDEF_ERR_INFO(EI_NLevels, unsigned int);
+    DECLARE_INPUT_EXCEPTION(ExcNoObserveElement,
+            << "Failed to find the observe element with snap region: " << EI_RegionName::qval
+            << " close to the initial observe point. Using maximal number of neighbour levels: " << EI_NLevels::val << "\n");
+
     static const Input::Type::Record & get_input_type();
 
 protected:
@@ -138,7 +145,7 @@ public:
      * observe_name - base name of the output file.
      * mesh -
      */
-    Observe(string observe_name, Mesh &mesh, Input::Record in_rec);
+    Observe(string observe_name, Mesh &mesh, Input::Array in_array);
 
     /// Destructor, must close the file.
     ~Observe();
@@ -166,14 +173,12 @@ public:
     /**
      * Write field values to the output file. Using the YAML format.
      */
-    void output_time_frame(TimeStep step);
+    void output_time_frame(double time);
 
 
 
 protected:
     Mesh *mesh_;
-    Input::Record in_rec_;
-
 
     /// Full information about observe points.
     std::vector<ObservePoint> points_;
@@ -185,9 +190,6 @@ protected:
 
     /// Stored field values.
     OutputDataFieldMap observe_field_values_;
-
-    /// Fields to observe.
-    std::set<string> field_names_;
 
     /// Output file stream.
     std::ofstream observe_file_;

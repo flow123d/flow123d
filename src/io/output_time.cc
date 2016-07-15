@@ -25,6 +25,7 @@
 #include "output_msh.hh"
 #include "output_mesh.hh"
 #include "io/output_time_set.hh"
+#include "io/observe.hh"
 #include <fields/field_set.hh>
 
 
@@ -59,6 +60,8 @@ const Record & OutputTime::get_input_type() {
 		*/
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
                 "Output mesh record enables output on a refined mesh.")
+        .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
+                "Array of observe points.")
 		.close();
 }
 
@@ -110,12 +113,20 @@ Input::Iterator<Input::Array> OutputTime::get_time_set_array() {
 }
 
 
-void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
+void OutputTime::make_output_mesh(Mesh &mesh, FieldSet &output_fields)
 {
+
+    // create observe object at first call
+    if (! observe_) {
+        auto observe_points = input_record_.val<Input::Array>("observe_points");
+        observe_ = std::make_shared<Observe>(this->_base_filename, mesh, observe_points);
+    }
+
+
     // already computed
     if(output_mesh_) return;
     
-    _mesh = mesh;
+    _mesh = &mesh;
 
     // Read optional error control field name
     auto it = input_record_.find<Input::Record>("output_mesh");
@@ -260,6 +271,9 @@ void OutputTime::write_time_frame()
     	// Write data to output stream, when data registered to this output
 		// streams were changed
 		if(write_time < time) {
+		    if (observe_)
+		        observe_->output_time_frame(time);
+
 			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n",
 			        this->_base_filename.c_str(), time);
 			write_data();
@@ -279,7 +293,10 @@ void OutputTime::write_time_frame()
 }
 
 std::shared_ptr<Observe> OutputTime::observe()
-{ return observe_; }
+{
+    ASSERT(observe_).error("The 'make_output_mesh' must be called before the 'observe' getter.\n");
+    return observe_;
+}
 
 
 void OutputTime::clear_data(void)

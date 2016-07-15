@@ -155,15 +155,18 @@ void EquationOutput::output(TimeStep step)
 {
     // TODO: remove const_cast after resolving problems with const Mesh.
     Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
-    //DBGMSG("call make output stream\n");
-    stream_->make_output_mesh(field_mesh, this);
+    stream_->make_output_mesh(*field_mesh, *this);
 
     for(FieldCommon * field : this->field_list) {
-        if (is_field_output_time(*field, step))
-            field->output(stream_);
-        // observe output
-        if (observe_fields_.find(field->name()) != observe_fields_.end()) {
-            field->observe_output(stream_->observe());
+
+        if ( field->flags().match( FieldFlag::allow_output) ) {
+            if (is_field_output_time(*field, step)) {
+                field->output(stream_);
+            }
+            // observe output
+            if (observe_fields_.find(field->name()) != observe_fields_.end()) {
+                field->observe_output( stream_->observe() );
+            }
         }
     }
 }

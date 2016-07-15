@@ -22,6 +22,7 @@
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "../arma_expect.hh"
+#include <fstream>
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
@@ -104,8 +105,8 @@ public:
 
 class TestObserve : public Observe {
 public:
-    TestObserve(Mesh &mesh, Input::Record in_rec)
-    : Observe("test_eq", mesh, in_rec)
+    TestObserve(Mesh &mesh, Input::Array in_array)
+    : Observe("test_eq", mesh, in_array)
     {
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
@@ -245,7 +246,8 @@ TEST(Observe, all) {
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
 
-    TestObserve obs(*mesh, in_rec);
+    {
+    TestObserve obs(*mesh, in_rec.val<Input::Array>("observe_points"));
     obs.check_points_input();
     obs.check_observe_points();
 
@@ -260,8 +262,22 @@ TEST(Observe, all) {
     obs.compute_field_values(field_set.vector_field);
     obs.compute_field_values(field_set.tensor_field);
 
-    obs.output_time_frame( tg.step() );
+    obs.output_time_frame( tg.t() );
     tg.next_time();
-    obs.output_time_frame( tg.step() );
+    obs.output_time_frame( tg.t() );
+    }
+    // closed observe file 'test_eq_observe.yaml'
+    // check results
+    std::ifstream  obs_file("test_eq_observe.yaml");
+    std::stringstream str_obs_file;
+    str_obs_file << obs_file.rdbuf();
+    obs_file.close();
+
+    std::ifstream  obs_file_ref("test_eq_observe_ref.yaml");
+    std::stringstream str_obs_file_ref;
+    str_obs_file_ref << obs_file_ref.rdbuf();
+    obs_file_ref.close();
+
+    EXPECT_EQ(str_obs_file_ref.str(), str_obs_file.str());
 }
 

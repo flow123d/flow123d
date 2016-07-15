@@ -103,7 +103,7 @@ public:
      */
     static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
     
-    void make_output_mesh(Mesh* mesh, FieldSet* output_fields);
+    void make_output_mesh(Mesh &mesh, FieldSet &output_fields);
     
     /**
      * \brief Generic method for registering output data stored in MultiField
