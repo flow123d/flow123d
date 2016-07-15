@@ -123,7 +123,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
         return;
     }
 
-    DBGMSG("compute field data\n");
+    //DBGMSG("compute field data\n");
 
     if(space_type == CORNER_DATA)
         compute_discontinuous_output_mesh();
@@ -147,7 +147,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     /* Copy data to array */
     switch(space_type) {
     case NODE_DATA: {
-        DBGMSG("compute field NODE data\n");
+        //DBGMSG("compute field NODE data\n");
         // set output data to zero
         vector<unsigned int> count(output_data.n_values, 0);
         for(unsigned int idx=0; idx < output_data.n_values; idx++)
@@ -175,7 +175,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     break;
     case CORNER_DATA: {
-        DBGMSG("compute field CORNER data\n");
+        //DBGMSG("compute field CORNER data\n");
         for(const auto & ele : *output_mesh_discont_)
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
@@ -193,7 +193,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     break;
     case ELEM_DATA: {
-        DBGMSG("compute field ELEM data\n");
+        //DBGMSG("compute field ELEM data\n");
         for(const auto & ele : *output_mesh_)
         {
             unsigned int ele_index = ele.idx();
