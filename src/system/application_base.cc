@@ -18,7 +18,7 @@
 #include "system/application_base.hh"
 #include "system/sys_profiler.hh"
 #include "system/logger_options.hh"
-
+#include "system/armadillo_tools.hh"
 
 #ifdef FLOW123D_HAVE_PETSC
 #include <petsc.h>
@@ -144,6 +144,8 @@ void ApplicationBase::init(int argc, char ** argv) {
     // parse our own command line arguments, leave others for PETSc
 	this->parse_cmd_line(argc, argv);
     Profiler::initialize();
+
+    armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
 
 	this->petsc_initialize(argc, argv);
 	petsc_initialized = true;
