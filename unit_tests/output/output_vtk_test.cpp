@@ -41,7 +41,7 @@ public:
         this->_mesh->read_gmsh_from_stream(in);
         
         // create output mesh identical to computational mesh
-        this->output_mesh_ = std::make_shared<OutputMesh>(this->_mesh);
+        this->output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
         this->output_mesh_->create_identical_mesh();
     }
 

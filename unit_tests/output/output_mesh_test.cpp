@@ -40,7 +40,7 @@ TEST(OutputMesh, create_identical)
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
     
-    auto output_mesh = std::make_shared<OutputMesh>(mesh);
+    auto output_mesh = std::make_shared<OutputMesh>(*mesh);
     output_mesh->create_identical_mesh();
     
     std::cout << "nodes: ";
@@ -77,7 +77,7 @@ TEST(OutputMesh, create_identical)
         EXPECT_EQ(ele.centre()[2], ele_acc.centre()[2]);
     }
     
-    auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(mesh);
+    auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
     output_mesh_discont->create_mesh(output_mesh);
     
     xprintf(Msg,"DISCONTINUOUS\n");
@@ -211,7 +211,7 @@ const string input_om = R"INPUT(
 class TestOutputMesh : public testing::Test, public OutputMesh {
 public:
     TestOutputMesh()
-    : OutputMesh(nullptr, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
+    : OutputMesh(mesh_, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
                             .get_root_interface<Input::Record>())
     {
     }
@@ -219,23 +219,25 @@ public:
     ~TestOutputMesh()
     {
     }
+
+    Mesh mesh_;
 };
 
 
 TEST_F(TestOutputMesh, read_input) {
     EXPECT_EQ(this->max_level_, 2);
-    EXPECT_EQ(this->orig_mesh_, nullptr);
+    EXPECT_EQ(this->orig_mesh_, &(this->mesh_));
   
     Field<3,FieldValue<3>::Scalar> scalar_field;
     
     // create field set of output fields
     FieldSet output_fields;
     output_fields += scalar_field.name("conc");
-    this->select_error_control_field(&output_fields);
+    this->select_error_control_field(output_fields);
     
     // no field 'conc' is to be found
     output_fields.field("conc")->name("conc_error");
-    EXPECT_THROW( this->select_error_control_field(&output_fields); ,
+    EXPECT_THROW( this->select_error_control_field(output_fields); ,
                   FieldSet::ExcUnknownField);
     
     // 'conc' field is now vector field
