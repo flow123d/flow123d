@@ -163,6 +163,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("log,l", po::value< string >()->default_value("flow123"), "Set base name for log files.")
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
+        ("no_signal_handler", "Turn off handling signals. Useful for debugging with valgrind.")
         ("no_profiler", "Turn off profiler output.")
         ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
 		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
@@ -230,6 +231,10 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     if (vm.count("petsc_redirect")) {
         this->petsc_redirect_file_ = vm["petsc_redirect"].as<string>();
+    }
+
+    if (vm.count("no_signal_handler")) {
+        this->signal_handler_off_ = true;
     }
 
     // if there is "solve" option
