@@ -83,11 +83,11 @@ protected:
     /**
      * \brief The declaration enumeration used for variant of file VTK format
      */
-    typedef enum Variant {
-    	VARIANT_ASCII  = 1,
-    	VARIANT_BINARY_UNCOMPRESSED = 2,
-    	VARIANT_BINARY_ZLIB = 3
-    } Variant;
+    typedef enum {
+    	VARIANT_ASCII  = 0,
+    	VARIANT_BINARY_UNCOMPRESSED = 1,
+    	VARIANT_BINARY_ZLIB = 2
+    } VTKVariant;
 
     // VTK Element types
     typedef enum {
@@ -130,6 +130,12 @@ protected:
         return types[t];
     };
 
+    static const std::string vtk_variant_map(VTKVariant t) {
+        static const std::vector<std::string> types = {
+            "ascii", "binary", "appended"};
+        return types[t];
+    };
+
     /// Registrar of class to factory
     static const int registrar;
 
@@ -144,14 +150,14 @@ protected:
     void fill_element_types_vector(std::vector<unsigned int> &data);
 
     /**
-     * Write registered data to output stream using ascii format
+     * Write registered data to output stream
      */
-    void write_vtk_data_ascii(OutputDataFieldVec &output_data_map);
+    void write_vtk_data(OutputDataFieldVec &output_data_map);
 
     /**
-     * Write registered data to output stream using ascii format
+     * Write registered data to output stream
      */
-    void write_vtk_data_ascii(OutputDataPtr output_data, VTKValueType type);
+    void write_vtk_data(OutputDataPtr output_data, VTKValueType type);
     
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
@@ -198,9 +204,14 @@ protected:
     */
    string subdir_name_;
 
+   /// Basename of main output file (without extension)
    string main_output_basename_;
 
+   /// Main output file directory
    string main_output_dir_;
+
+   /// Output format (ascii, binary or binary compressed)
+   VTKVariant variant_type_;
 };
 
 #endif /* OUTPUT_VTK_HH_ */

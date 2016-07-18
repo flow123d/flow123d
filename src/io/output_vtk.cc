@@ -62,6 +62,14 @@ OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
     this->enable_refinement_ = true;
     this->fix_main_file_extension(".pvd");
 
+    Input::Iterator<Input::AbstractRecord> it = in_rec.find<Input::AbstractRecord>("format");
+    if (it) {
+    	Input::Record rec = (Input::Record)(*it);
+    	this->variant_type_ = rec.val<VTKVariant>("variant");
+    } else {
+    	this->variant_type_ = VTKVariant::VARIANT_ASCII;
+    }
+
     if(this->rank == 0) {
         this->_base_file.open(this->_base_filename.c_str());
         INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
@@ -215,7 +223,7 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
 
 
 
-void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKValueType type)
+void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueType type)
 {
     ofstream &file = this->_data_file;
 
@@ -229,7 +237,7 @@ void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKV
         file
             << "NumberOfComponents=\"" << output_data->n_elem_ << "\" ";
     }
-    file    << "format=\"ascii\">"
+    file    << "format=\"" << vtk_variant_map(this->variant_type_) << "\">"
             << endl;
 
     /* Set precision to max */
@@ -242,10 +250,10 @@ void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKV
 }
 
 
-void OutputVTK::write_vtk_data_ascii(OutputDataFieldVec &output_data_vec)
+void OutputVTK::write_vtk_data(OutputDataFieldVec &output_data_vec)
 {
     for(OutputDataPtr data :  output_data_vec)
-        write_vtk_data_ascii(data, VTK_FLOAT64);
+        write_vtk_data(data, VTK_FLOAT64);
 }
 
 
@@ -289,10 +297,10 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
         /* Write data on nodes */
-        this->write_vtk_data_ascii(output_data_vec_[NODE_DATA]);
+        this->write_vtk_data(output_data_vec_[NODE_DATA]);
 
         /* Write data in corners of elements */
-        this->write_vtk_data_ascii(output_data_vec_[CORNER_DATA]);
+        this->write_vtk_data(output_data_vec_[CORNER_DATA]);
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -313,7 +321,7 @@ void OutputVTK::write_vtk_element_data(void)
     file << ">" << endl;
 
     /* Write own data */
-    this->write_vtk_data_ascii(data_map);
+    this->write_vtk_data(data_map);
 
     /* Write PointData end */
     file << "</CellData>" << endl;
@@ -345,17 +353,17 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
-            write_vtk_data_ascii(output_mesh_->nodes_, VTK_FLOAT64 );
+            write_vtk_data(output_mesh_->nodes_, VTK_FLOAT64 );
         file << "</Points>" << endl;
     
         
         /* Write VTK Topology */
         file << "<Cells>" << endl;
-            write_vtk_data_ascii(output_mesh_->connectivity_, VTK_INT32 );
-            write_vtk_data_ascii(output_mesh_->offsets_, VTK_INT32 );
+            write_vtk_data(output_mesh_->connectivity_, VTK_INT32 );
+            write_vtk_data(output_mesh_->offsets_, VTK_INT32 );
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
-            write_vtk_data_ascii(types, VTK_UINT8 );
+            write_vtk_data(types, VTK_UINT8 );
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
@@ -374,16 +382,16 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
-            write_vtk_data_ascii(output_mesh_discont_->nodes_, VTK_FLOAT64 );
+            write_vtk_data(output_mesh_discont_->nodes_, VTK_FLOAT64 );
         file << "</Points>" << endl;
 
         /* Write VTK Topology */
         file << "<Cells>" << endl;
-            write_vtk_data_ascii(output_mesh_discont_->connectivity_, VTK_INT32 );
-            write_vtk_data_ascii(output_mesh_discont_->offsets_, VTK_INT32 );
+            write_vtk_data(output_mesh_discont_->connectivity_, VTK_INT32 );
+            write_vtk_data(output_mesh_discont_->offsets_, VTK_INT32 );
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
-            write_vtk_data_ascii(types, VTK_UINT8 );
+            write_vtk_data(types, VTK_UINT8 );
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
