@@ -39,7 +39,7 @@ def ensure_iterable(o):
     :param o: tested object
     :return: list or tuple
     """
-    return [o] if type(o) not in (list, tuple) else o
+    return [o] if type(o) not in (list, tuple, set) else o
 
 
 def apply_to_all(lst, mtd, *args, **kwargs):

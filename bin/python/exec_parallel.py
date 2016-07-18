@@ -7,7 +7,7 @@ import pathfix; pathfix.init()
 # ----------------------------------------------
 import sys
 # ----------------------------------------------
-from scripts.core.base import Paths
+from scripts.core.base import Paths, GlobalResult
 from utils.argparser import ArgParser
 from utils.duration import Duration
 # ----------------------------------------------
@@ -16,7 +16,7 @@ from utils.duration import Duration
 parser = ArgParser("exec_parallel.py <parameters>  -- <executable> <executable arguments>")
 # ----------------------------------------------
 parser.add_section('General arguments')
-parser.add('-n', '--cpu', type=int, name='cpu', default=1, placeholder='<cpu>', docs=[
+parser.add('-n', '--cpu', type=list, name='cpu', default=[1], placeholder='<cpu>', docs=[
     'Run executable in <cpu> processes',
 ])
 parser.add('-q', '--queue', type=[True, str], name='queue', placeholder='[<queue>]', docs=[
@@ -71,10 +71,8 @@ if __name__ == '__main__':
 
     from scripts.exec_parallel_module import do_work
 
-    # for debug only set dir to where script should be
-    Paths.base_dir(__file__)
-    # Paths.base_dir('/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/bin/python')
-
     # run work
     returncode = do_work(parser)
+    if parser.simple_options.json:
+        GlobalResult.to_json(parser.simple_options.json)
     sys.exit(returncode)
