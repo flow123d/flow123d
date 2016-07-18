@@ -4,9 +4,10 @@
 # ----------------------------------------------
 import re
 # ----------------------------------------------
-from scripts.core.prescriptions import PBSModule
 from scripts.pbs.job import Job, JobState
+from scripts.prescriptions.remote_run import PBSModule
 # ----------------------------------------------
+
 
 
 class Module(PBSModule):
@@ -65,8 +66,6 @@ uname -a
 echo JOB START: `date`
 pwd
 
-echo "$$command$$" > "$$output$$"
-$$command$$ >> "$$output$$" 2>&1
+$$command$$
 
-echo "$$status_ok$$" >> "$$output$$"
 """.lstrip()

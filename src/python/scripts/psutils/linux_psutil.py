@@ -58,9 +58,17 @@ class Process(psutil.Process):
         """
         super(Process, self).__init__(pid)
         self.process = process
+        self.terminated = False
+
+    def wait(self, timeout=None):
+        if self.process:
+            return self.process.wait()
+        return super(Process, self).wait(timeout)
 
     @property
     def returncode(self):
+        if self.terminated:
+            return 1
         if self.process:
             return self.process.returncode
 
@@ -89,6 +97,7 @@ class Process(psutil.Process):
     @try_catch(default=True)
     def secure_kill(self):
         # first, lets be reasonable and terminate all processes (SIGTERM)
+        self.terminated = True
         children = self.children()
         self.apply(children, 'terminate')
 

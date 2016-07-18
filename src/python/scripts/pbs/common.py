@@ -23,7 +23,6 @@ class DummyModule(object):
 
     def Module(self, test_case, proc_value, filename):
         """
-        :rtype : scripts.core.prescriptions.PBSModule
         """
         pass
 
@@ -43,7 +42,7 @@ def get_pbs_module(hostname=None):
         hostname = platform.node()
 
     # try to get name from json file
-    host_file = Paths.join(Paths.source_dir(), 'host_table.json')
+    host_file = Paths.join(Paths.flow123d_root(), 'bin', 'python', 'host_table.json')
     if Paths.exists(host_file):
         with open(host_file, 'r') as fp:
             hosts = json.load(fp)

@@ -10,13 +10,51 @@ import platform
 import datetime
 import math
 import time
+import json
 # ----------------------------------------------
-
+from simplejson import JSONEncoder
 
 is_linux = platform.system().lower().startswith('linux')
 
 flow123d_name = "flow123d" if is_linux else "flow123d.exe"
 mpiexec_name = "mpiexec" if is_linux else "mpiexec.hydra"
+
+
+def find_base_dir():
+    import os
+    import pathfix
+    path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(pathfix.__file__)), '..', '..'))
+    return path
+
+
+class GlobalResult(object):
+    items = []
+    returncode = None
+    error = None
+    add = items.append
+
+    @classmethod
+    def to_json(cls, f=None):
+        obj = dict(
+            tests=cls.items,
+            returncode=cls.returncode,
+            error=cls.error
+        )
+        content = json.dumps(obj, indent=4, cls=MyEncoder)
+        if f:
+            with open(f, 'w') as fp:
+                fp.write(content)
+                print '\n' * 10
+                print content
+        return content
+
+
+class MyEncoder(JSONEncoder):
+    def default(self, o):
+        try:
+            return o.to_json()
+        except:
+            return str(o)
 
 
 class Printer(object):
@@ -40,6 +78,8 @@ class Printer(object):
 
     @classmethod
     def err(cls, msg='', *args, **kwargs):
+        if cls.indent:
+            sys.stdout.write('    ' * cls.indent)
         sys.stdout.write(msg.format(*args, **kwargs))
         sys.stdout.write('\n')
 
@@ -49,32 +89,38 @@ class Printer(object):
     def out(cls, msg='', *args, **kwargs):
         if cls.indent:
             sys.stdout.write('    ' * cls.indent)
-        sys.stdout.write(msg.format(*args, **kwargs))
+        if not args and not kwargs:
+            sys.stdout.write(msg)
+        else:
+            sys.stdout.write(msg.format(*args, **kwargs))
         sys.stdout.write('\n')
 
     @classmethod
     def dyn(cls, msg, *args, **kwargs):
         if cls.dynamic_output:
             sys.stdout.write('\r' + ' ' * 80)
-            sys.stdout.write('\r' + msg.format(*args, **kwargs))
+            if cls.indent:
+                sys.stdout.write('\r' + '    ' * cls.indent + msg.format(*args, **kwargs))
+            else:
+                sys.stdout.write('\r' + msg.format(*args, **kwargs))
             sys.stdout.flush()
 
     # ----------------------------------------------
 
     @classmethod
-    def open(cls):
-        cls.indent += 1
+    def open(cls, l=1):
+        cls.indent += l
 
     @classmethod
-    def close(cls):
-        cls.indent -= 1
+    def close(cls, l=1):
+        cls.indent -= l
 
 
 def make_relative(f):
     def wrapper(*args, **kwargs):
         path = f(*args, **kwargs)
         if Paths.format == PathFormat.RELATIVE:
-            return os.path.relpath(os.path.abspath(path), Paths.base_dir())
+            return os.path.relpath(os.path.abspath(path), Paths.flow123d_root())
         elif Paths.format == PathFormat.ABSOLUTE:
             return os.path.abspath(path)
         return path
@@ -113,7 +159,11 @@ class PathFilters(object):
             .replace('*', r'.*')\
             .replace('/', r'\/')
         patt = re.compile(fmt)
-        return lambda x: patt.match(x)
+        return lambda x: patt.match(x)\
+
+    @staticmethod
+    def filter_endswith(suffix=""):
+        return lambda x: x.endswith(suffix)
 
 
 class PathFormat(object):
@@ -123,12 +173,13 @@ class PathFormat(object):
 
 
 class Paths(object):
-    _base_dir = ''
+    _base_dir = find_base_dir()
     format = PathFormat.ABSOLUTE
+    cur_dir = os.getcwd()
 
     @classmethod
-    def base_dir(cls, v=None):
-        if v is None:
+    def init(cls, v=None):
+        if not v:
             return cls._base_dir
 
         if os.path.isfile(v):
@@ -140,8 +191,18 @@ class Paths(object):
         return cls._base_dir
 
     @classmethod
-    def source_dir(cls):
-        return cls.join(cls.dirname(__file__), '..', '..')
+    def current_dir(cls):
+        """
+        Returns path to current dir, where python was executed
+        """
+        return cls.cur_dir
+
+    @classmethod
+    def flow123d_root(cls):
+        """
+        Returns path to flow123d root
+        """
+        return cls._base_dir
 
     @classmethod
     def test_paths(cls, *paths):
@@ -174,7 +235,7 @@ class Paths(object):
     @classmethod
     @make_relative
     def bin_dir(cls):
-        return cls.join(cls.base_dir(), 'bin')
+        return cls.join(cls.flow123d_root(), 'bin')
 
     @classmethod
     @make_relative
@@ -196,7 +257,7 @@ class Paths(object):
     @classmethod
     @make_relative
     def path_to(cls, *args):
-        return os.path.join(cls.base_dir(), *args)
+        return os.path.join(cls.current_dir(), *args)
 
     @classmethod
     @make_relative
@@ -215,6 +276,9 @@ class Paths(object):
 
     @classmethod
     def browse(cls, path, filters=()):
+        """
+        :rtype: list[str]
+        """
         paths = [cls.join(path, p) for p in os.listdir(path)]
         return cls.filter(paths, filters)
 
@@ -343,7 +407,7 @@ class IO(object):
         """
         :rtype : str or None
         """
-        if Paths.exists(name):
+        if name and Paths.exists(name):
             with open(name, mode) as fp:
                 return fp.read()
 

@@ -3,14 +3,19 @@
 # author:   Jan Hybs
 # ----------------------------------------------
 import yaml
-import copy
 import itertools
 # ----------------------------------------------
+from copy import deepcopy
+# ----------------------------------------------
 from scripts.core.base import Paths
-from utils.globals import ensure_iterable
+from scripts.core.base import PathFilters
 # ----------------------------------------------
 
-default_values = dict(
+
+YAML = '.yaml'
+CONFIG_YAML = 'config.yaml'
+
+DEFAULTS = dict(
     proc=[1],
     time_limit=30,
     memory_limit=400,
@@ -25,221 +30,234 @@ default_values = dict(
 )
 
 
-class ConfigCaseBase(object):
-    def __init__(self, config):
-        """
-        :type config: scripts.config.yaml_config.YamlConfig
-        """
-        self.config = config
-
-        self.proc = default_values.get('proc')
-        self.time_limit = default_values.get('time_limit')
-        self.memory_limit = default_values.get('memory_limit')
-        self.check_rules = default_values.get('check_rules')
-        self.tags = set(default_values.get('tags'))
-
-
-    @classmethod
-    def _get(cls, o, prop):
-        return o.get(prop, default_values.get(prop))
-
-    def __repr__(self):
-        return '<{self.__class__.__name__} {self.files}>'.format(self=self)
-
-
-class DummyConfigCase(ConfigCaseBase):
-    def __init__(self, config, yaml_file):
-        """
-        :type config: scripts.config.yaml_config.YamlConfig
-        """
-        super(DummyConfigCase, self).__init__(config)
-        self.files = ensure_iterable(yaml_file)
-        self.proc = [1]
-
-
-class YamlConfigCase(ConfigCaseBase):
-    def __init__(self,  config, o={}):
-        """
-        :type config: scripts.config.yaml_config.YamlConfig
-        """
-        super(YamlConfigCase, self).__init__(config)
-        self.proc = self._get(o, 'proc')
-        self.time_limit = self._get(o, 'time_limit')
-        self.memory_limit = self._get(o, 'memory_limit')
-        self.check_rules = self._get(o, 'check_rules')
-        self.files = ensure_iterable(self._get(o, 'file'))
-        self.tags = set(self._get(o, 'tags'))
-
-        for i in range(len(self.files)):
-            self.files[i] = Paths.join(config.root, self.files[i])
-
-
-class YamlConfig(object):
+class ConfigPool(object):
     """
-    :type test_cases: list[scripts.config.yaml_config.YamlConfigCase]
-    :type common_config: dict
+    :type configs : dict[str, ConfigBase]
+    :type files : dict[str, ConfigBase]
     """
-    def __init__(self, filename):
-        # prepare paths
-        self.filename = filename
-        self.root = Paths.dirname(self.filename)
-        self.test_results = Paths.join(self.root, 'test_results')
-        self.ref_output = Paths.join(self.root, 'ref_output')
-        self.input = Paths.join(self.root, 'input')
-        self.test_cases = list()
+    def __init__(self):
+        self.configs = dict()
+        self.files = dict()
 
-        # read config or use default mini config
-        if Paths.exists(self.filename):
-            with open(self.filename, 'r') as fp:
-                self._yaml = yaml.load(fp)
-        else:
-            self._yaml = dict(
-                common_config=default_values.copy()
-            )
-        self._iter_index = 0
-        self.common_config = None
-        self.test_cases = None
-        self.include = []
-        self.exclude = []
+    def add_config(self, yaml_config_file):
+        self.configs[yaml_config_file] = None
+        return self
 
-    def update(self, **kwargs):
-        """
-        Updates all test_case values
-        :param kwargs:
-        :return:
-        """
-        for k,v in kwargs.items():
-            if v:
-                for test_case in self.test_cases:
-                    setattr(test_case, k, v)
+    def add_case(self, yaml_case_file):
+        config = Paths.join(Paths.dirname(yaml_case_file), CONFIG_YAML)
+        self.configs[config] = None
+        self.files[yaml_case_file] = None
+        return self
 
-    def parse(self):
-        # update common config using global values
-        self.common_config = self._get(('common_config', 'commons'), {})
-        self.common_config = self.merge(default_values, self.common_config)
-
-        # update test_cases using common config values
-        self.test_cases = list()
-        test_cases = self._get('test_cases', [])
-        for test_case in test_cases:
-            test_case = self.merge(self.common_config, test_case)
-            if self.check_tags(test_case):
-                self.test_cases.append(YamlConfigCase(self, test_case))
-
-    def check_tags(self, test_case):
-        tags = set(test_case['tags'])
-        inn = set(self.include)
-        exc = set(self.exclude)
-        result = True
-
-        if inn:
-            # if intersection between tags and include tags is empty
-            # do not include this case
-            if not tags.intersection(inn):
-                return False
-        if exc:
-            # if intersection between tags and exclude tags is not empty
-            # do not include this case
-            if tags.intersection(exc):
-                return False
-
-        return result
-
-    def get(self, index):
-        """
-        :rtype : scripts.config.yaml_config.YamlConfigCase
-        """
-        return self.test_cases[index]
-
-    def _get(self, names, default=None):
-        if type(names) in (list, tuple):
-            for name in names:
-                result = self._yaml.get(name, None)
-                if result:
-                    return result
-            return default
-        else:
-            return self._yaml.get(names, default)
-
-    def get_cases_for_file(self, prescription_class, yaml_file):
+    def add(self, yaml_file):
         """
         :type yaml_file: str
-        :type prescription_class: class
-        :rtype : list[scripts.core.prescriptions.PBSModule]
         """
-        tmp_result = list()
-        # prepare product of all possible combinations of input arguments for specified file
-        # for now we use only proc (cpu list) and files (file)
-        for test_case in self.test_cases:
-            if yaml_file in test_case.files:
-                tmp_result.append(list(itertools.product(
-                    ensure_iterable(test_case),
-                    ensure_iterable(test_case.proc),
-                    ensure_iterable(test_case.files),
-                )))
+        if yaml_file.endswith(CONFIG_YAML):
+            return self.add_config(yaml_file)
+        return self.add_case(yaml_file)
 
-        # if no results exists for this particular config
-        # we add dummy case which is basically default values
-        if not tmp_result:
-            dummy_case = DummyConfigCase(self, yaml_file)
-            tmp_result.append(list(itertools.product(
-                ensure_iterable(dummy_case),
-                ensure_iterable(dummy_case.proc),
-                ensure_iterable(dummy_case.files)
-            )))
+    def parse(self):
+        for k, v in self.configs.items():
+            self.configs[k] = ConfigBase(k)
 
+        for k, v in self.files.items():
+            config = Paths.join(Paths.dirname(k), CONFIG_YAML)
+            self.files[k] = self.configs[config]
+
+    __iadd__ = add
+
+    def update(self, proc, time_limit, memory_limit, **kwargs):
+        for config in self.configs.values():
+            config.update(proc, time_limit, memory_limit, **kwargs)
+
+
+class ConfigCaseFiles(object):
+    def __init__(self, root, ref_output, output):
+        """
+        :type ref_output: str
+        :type output: str
+        :type root: str
+        """
+        self.root = root
+        self.output = output
+        self.ndiff_log = self.in_output('ndiff.log')
+
+        self.pbs_script = self.in_output('pbs_script.qsub')
+        self.pbs_output = self.in_output('pbs_output.log')
+
+        self.job_output = self.in_output('job_output.log')
+        self.json_output = self.in_output('result.json')
+
+        self.input = self.in_root('input')
+        self.ref_output = ref_output
+
+    def in_root(self, *names):
+        """
+        :rtype: str
+        """
+        return Paths.join(self.root, *names)
+
+    def in_output(self, *names):
+        """
+        :rtype: str
+        """
+        return Paths.join(self.output, *names)
+
+
+class ConfigCase(object):
+    """
+    :type config   : scripts.config.base.ConfigBase
+    """
+    def __init__(self, o, config):
+        o = ConfigBase.merge(DEFAULTS, deepcopy(o))
+
+        self.file = o.get('file', None)
+        self.proc = int(o.get('proc', None))
+        self.time_limit = float(o.get('time_limit', None))
+        self.memory_limit = float(o.get('memory_limit', None))
+        self.tags = set(o.get('tags', None))
+        self.check_rules = o.get('check_rules', None)
+        self.config = config
+
+        if self.config:
+            self.file = Paths.join(self.config.root, self.file)
+            self.without_ext = Paths.basename(Paths.without_ext(self.file))
+            self.shortname = '{name}.{proc}'.format(name=self.without_ext, proc=self.proc)
+
+            self.fs = ConfigCaseFiles(
+                root=self.config.root,
+                ref_output=Paths.join(self.config.root, 'ref_output', self.without_ext),
+                output=Paths.join(
+                    self.config.root,
+                    'test_results',
+                    self.shortname
+                ))
+        else:
+            # create temp folder where files will be
+            tmp_folder = Paths.temp_file(o.get('tmp') + '-{date}-{time}-{rnd}')
+            Paths.ensure_path(tmp_folder, is_file=False)
+
+            self.fs = ConfigCaseFiles(
+                root=tmp_folder,
+                ref_output=tmp_folder,
+                output=tmp_folder
+            )
+
+    def to_string(self):
+        if self.file:
+            return '{} x {}'.format(
+                self.proc,
+                Paths.path_end(Paths.without_ext(self.file))
+            )
+        return 'process'
+
+    def to_json(self):
+        return dict(
+            cpu=self.proc,
+            test_case=self.file,
+        )
+    __repr__ = to_string
+
+
+class ConfigBase(object):
+    def __init__(self, yaml_config_file):
+        self.yaml_config_file = yaml_config_file
+        self.root = Paths.dirname(self.yaml_config_file)
+        self.yamls = self._get_all_yamls()
+        self.cases = list()
+        self.common_config = None
+
+        # create dummy case for every yaml file in folder
+        if not Paths.exists(self.yaml_config_file):
+            self.common_config = deepcopy(DEFAULTS)
+            for y in self.yamls:
+                dummy_case = deepcopy(DEFAULTS)
+                dummy_case['file'] = [y]
+                self.cases.append(dummy_case)
+        else:
+            # setup common config values
+            self.yaml_config = self._read_yaml()
+            self.common_config = self.merge(DEFAULTS, self.yaml_config.get('common_config', {}))
+
+            # first process files which are specified in test_cases
+            missing = [Paths.basename(y) for y in self.yamls]
+            for case in self.yaml_config.get('test_cases', []):
+                case_config = self.merge(self.common_config, case)
+                self.cases.append(case_config)
+                for f in case_config['file']:
+                    if f in missing:
+                        missing.remove(f)
+
+            # process rest (dummy case)
+            for y in missing:
+                dummy_case = deepcopy(self.common_config)
+                dummy_case['file'] = [y]
+                self.cases.append(dummy_case)
+
+    def get_all(self):
+        """
+        :rtype: list[ConfigCase]
+        """
         result = list()
-        for lst in tmp_result:
-            result.extend([prescription_class(*x) for x in lst])
+        for case in self.cases:
+            result.extend(self._get_all_for_case(case))
+        return [ConfigCase(r, self) for r in result]
 
-        # no config was given yaml file was declared
-        if not result:
-            result.append(prescription_class(default_values, 1, yaml_file))
-        return result
-
-    def get_all_cases(self, prescription_class):
+    def get_one(self, yaml_case_file):
         """
-        :type prescription_class: class
-        :rtype : list[scripts.core.prescriptions.MPIPrescription] or list[scripts.core.prescriptions.PBSModule]
+        :rtype: list[ConfigCase]
         """
-        tmp_result = list()
-        # prepare product of all possible combinations of input arguments
-        # for now we use only proc (cpu list) and files (file)
-        for test_case in self.test_cases:
-            tmp_result.append(list(itertools.product(
-                ensure_iterable(test_case),
-                ensure_iterable(test_case.proc),
-                ensure_iterable(test_case.files),
-            )))
-
         result = list()
-        for lst in tmp_result:
-            result.extend([prescription_class(*x) for x in lst])
+        for case in self.cases:
+            for f in case['file']:
+                if Paths.basename(f) == Paths.basename(yaml_case_file):
+                    dummy_case = deepcopy(case)
+                    dummy_case['file'] = [yaml_case_file]
+                    result.extend(self._get_all_for_case(dummy_case))
+        return [ConfigCase(r, self) for r in result]
+
+    def _read_yaml(self):
+        with open(self.yaml_config_file, 'r') as fp:
+            return yaml.load(fp)
+
+    def _get_all_yamls(self):
+        yamls = Paths.browse(
+            self.root,(
+                PathFilters.filter_endswith(YAML),
+                PathFilters.filter_not(PathFilters.filter_endswith(CONFIG_YAML))
+            ))
+        return yamls
+
+    def update(self, proc, time_limit, memory_limit, **kwargs):
+        for case in self.cases:
+            if proc:
+                case['proc'] = set(proc)
+            if time_limit:
+                case['time_limit'] = time_limit
+            if memory_limit:
+                case['time_limit'] = memory_limit
+
+    @classmethod
+    def _get_all_for_case(cls, case):
+        result = list()
+        changes = list(itertools.product(
+            case['file'],
+            case['proc']))
+
+        for f, p in changes:
+            dummy_case = deepcopy(case)
+            dummy_case['file'] = f
+            dummy_case['proc'] = p
+            result.append(dummy_case)
         return result
 
     @classmethod
-    def merge(cls, parent, children):
+    def merge(cls, parent, *children):
         """
         :type parent: dict
         """
-        parent_copy = copy.deepcopy(parent)
-        children = ensure_iterable(children)
+        parent_copy = deepcopy(parent)
         for child in children:
             parent_copy.update(child)
         return parent_copy
-
-    def __iter__(self):
-        self.iter_index = 0
-        return self
-
-    def next(self):
-        """
-        :rtype : scripts.config.yaml_config.YamlConfigCase
-        """
-        if self._iter_index >= len(self.test_cases):
-            raise StopIteration
-        else:
-            self._iter_index += 1
-            return self.test_cases[self._iter_index - 1]
-
-    __next__ = next

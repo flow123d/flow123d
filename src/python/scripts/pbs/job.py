@@ -2,11 +2,14 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
+import json
 import subprocess
 import time
 import datetime
 # ----------------------------------------------
 from scripts.core.base import Printer, IO
+from scripts.core.threads import PyPy
+from scripts.parser.json_parser import RuntestParser, JsonParser
 from scripts.pbs.common import job_ok_string
 from utils.strings import format_n_lines
 # ----------------------------------------------
@@ -57,7 +60,7 @@ class JobState(object):
 
 class Job(object):
     """
-    :type case : scripts.core.prescriptions.PBSModule
+    :type case : scripts.config.yaml_config.ConfigCase
     """
     def __init__(self, job_id, case):
         self.id = job_id
@@ -101,7 +104,8 @@ class Job(object):
         raise Exception('Job with id {self.id} does not exists'.format(self=self))
 
     def __repr__(self):
-        return "<Job #{s.id}, status {s.status} in queue {s.queue}>".format(s=self)
+        q = self.queue if self.queue else 'unknown'
+        return "<Job #{s.id}, status {s.status} in queue {q}>".format(s=self, q=q)
 
     # --------------------------------------------------------
 
@@ -221,37 +225,58 @@ class MultiJob(object):
         )
 
 
+def print_log_file(f, n_lines):
+    log_file = IO.read(f)
+    if log_file:
+        if n_lines == 0:
+            Printer.out('Full log from file {}:', f)
+        else:
+            Printer.out('Last {} lines from file {}:', abs(n_lines), f)
+
+        Printer.wrn(format_n_lines(log_file.rstrip(), -n_lines, indent=Printer.indent * '    '))
+
+
+def get_status_line(o, map=False):
+    if not map:
+        return '[{:^6}]:{o[returncode]:3} |'.format('ERROR', o=o)
+    return '[{:^6}]:{o[returncode]:3} |'.format(
+        PyPy.returncode_map.get(str(o['returncode']), 'ERROR'), o=o)
+
+
 def finish_pbs_job(job, batch):
     """
     :type job: scripts.pbs.job.Job
     """
     # try to get more detailed job status
     job.is_active = False
-    job_output = IO.read(job.case.job_output)
+    job_output = IO.read(job.case.fs.json_output)
 
     if job_output:
-        if job_output.find(job_ok_string) > 0:
-            # we found the string
+        job_json = JsonParser(json.loads(job_output), batch)
+        if job_json.returncode == 0:
             job.status = JobState.EXIT_OK
-            Printer.out('OK:    Job {} ended. {}', job, job.full_name)
-        else:
-            # we did not find the string :(
-            job.status = JobState.EXIT_ERROR
-            Printer.out('ERROR: Job {} ended. {}', job, job.full_name)
-
-        # in batch mode print job output
-        # otherwise print output on error only
-        if batch or job.status == JobState.EXIT_ERROR:
+            Printer.out('OK:    Job {}({}) ended', job, job.full_name)
+            Printer.open()
+            # in batch mode print all logs
             if batch:
-                Printer.out('       output: ')
-                Printer.out(format_n_lines(job_output, 0))
-            else:
-                Printer.out('       output (last 20 lines): ')
-                Printer.out(format_n_lines(job_output, -20))
+                Printer.open()
+                for test in job_json.tests:
+                    test.get_result()
+                Printer.close()
+            Printer.close()
+        else:
+            job.status = JobState.EXIT_ERROR
+            Printer.out('ERROR: Job {}({}) ended', job, job.full_name)
+            # in batch mode print all logs
+
+            Printer.open()
+            for test in job_json.tests:
+                test.get_result()
+            Printer.close()
     else:
         # no output file was generated assuming it went wrong
         job.status = JobState.EXIT_ERROR
         Printer.out('ERROR: Job {} ended (no output file found). Case: {}', job, job.full_name)
         Printer.out('       pbs output: ')
-        Printer.out(format_n_lines(IO.read(job.case.pbs_output), 0))
+        Printer.out(format_n_lines(IO.read(job.case.fs.pbs_output), 0))
     return 0 if job.status == JobState.EXIT_OK else 1
