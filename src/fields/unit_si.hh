@@ -53,6 +53,7 @@ public:
 	static UnitSI & Pa();
 	/// Returns dimensionless unit
 	static UnitSI & dimensionless();
+	/// Returns dimensionless unit
 	static UnitSI & one();
 
 	/// Methods set values of exponents for SI units with similar name

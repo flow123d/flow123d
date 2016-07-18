@@ -50,7 +50,7 @@ problem: !Coupling_Sequential
         - velocity_p0
 #        - subdomain
       add_input_times: true
-    balance: true          
+    balance: {}          
     nonlinear_solver:  
       tolerance: 1e-5
       max_it: 4

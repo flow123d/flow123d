@@ -331,6 +331,12 @@ public:
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
     virtual void output(std::shared_ptr<OutputTime> stream) =0;
+
+    /**
+     * Perform the observe output of the field.
+     * The Observe object passed by the parameter is called with the particular Field<> as the parameter
+     * to evaluate the field in observation points and store the values in the OutputData arrays.
+     */
     virtual void observe_output(std::shared_ptr<Observe> observe) =0;
 
 

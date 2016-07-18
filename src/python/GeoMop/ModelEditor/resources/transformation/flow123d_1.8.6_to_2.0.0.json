@@ -808,8 +808,34 @@
         "destination_path": "/problem/heat_equation/output/add_input_times",
         "create_path":true
       }
-    }
-
-      
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/flow_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    },
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/heat_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    }        
+             
   ]
 }

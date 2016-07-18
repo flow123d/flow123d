@@ -32,7 +32,11 @@ const IT::Array OutputTimeSet::get_input_type()
 
 void OutputTimeSet::read_from_input(Input::Array in_array, const TimeGovernor &tg)
 {
-    TimeMark::Type mark_type = tg.equation_fixed_mark_type();
+    read_from_input(in_array, tg, tg.equation_fixed_mark_type());
+}
+
+void OutputTimeSet::read_from_input(Input::Array in_array, const TimeGovernor &tg, TimeMark::Type mark_type)
+{
     double initial_time = tg.init_time();
     double simulation_end_time = tg.end_time();
 

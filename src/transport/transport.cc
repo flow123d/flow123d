@@ -94,7 +94,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
   input_rec(in_rec),
-  mh_dh(nullptr)
+  mh_dh(nullptr),
+  sources_corr(nullptr)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -179,44 +180,46 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi;
 
-    //Destroy mpi vectors at first
-    MatDestroy(&tm);
-    VecDestroy(&mass_diag);
-    VecDestroy(&vpmass_diag);
-    VecDestroy(&vcfl_flow_);
-    VecDestroy(&vcfl_source_);
-    delete cfl_flow_;
-    delete cfl_source_;
+    if (sources_corr) {
+        //Destroy mpi vectors at first
+        MatDestroy(&tm);
+        VecDestroy(&mass_diag);
+        VecDestroy(&vpmass_diag);
+        VecDestroy(&vcfl_flow_);
+        VecDestroy(&vcfl_source_);
+        delete cfl_flow_;
+        delete cfl_source_;
 
-    for (sbi = 0; sbi < n_substances(); sbi++) {
-        // mpi vectors
-        VecDestroy(&(vconc[sbi]));
-        VecDestroy(&(vpconc[sbi]));
-        VecDestroy(&(bcvcorr[sbi]));
-        VecDestroy(&(vcumulative_corr[sbi]));
-        VecDestroy(&(v_tm_diag[sbi]));
-        VecDestroy(&(v_sources_corr[sbi]));
+        for (sbi = 0; sbi < n_substances(); sbi++) {
+            // mpi vectors
+            VecDestroy(&(vconc[sbi]));
+            VecDestroy(&(vpconc[sbi]));
+            VecDestroy(&(bcvcorr[sbi]));
+            VecDestroy(&(vcumulative_corr[sbi]));
+            VecDestroy(&(v_tm_diag[sbi]));
+            VecDestroy(&(v_sources_corr[sbi]));
+
+            // arrays of arrays
+            delete conc[sbi];
+            delete cumulative_corr[sbi];
+            delete tm_diag[sbi];
+            delete sources_corr[sbi];
+        }
+
+        // arrays of mpi vectors
+        delete vconc;
+        delete vpconc;
+        delete bcvcorr;
+        delete vcumulative_corr;
+        delete v_tm_diag;
+        delete v_sources_corr;
         
         // arrays of arrays
-        delete conc[sbi];
-        delete cumulative_corr[sbi];
-        delete tm_diag[sbi];
-        delete sources_corr[sbi];
+        delete conc;
+        delete cumulative_corr;
+        delete tm_diag;
+        delete sources_corr;
     }
-    
-    // arrays of mpi vectors
-    delete vconc;
-    delete vpconc;
-    delete bcvcorr;
-    delete vcumulative_corr;
-    delete v_tm_diag;
-    delete v_sources_corr;
-    
-    // arrays of arrays
-    delete conc;
-    delete cumulative_corr;
-    delete tm_diag;
-    delete sources_corr;
 }
 
 
@@ -885,7 +888,7 @@ void ConvectionTransport::output_data() {
 	data_.output_fields.output(time().step());
 }
 
-void ConvectionTransport::set_balance_object(boost::shared_ptr<Balance> balance)
+void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
 	subst_idx = balance_->add_quantities(substances_.names());

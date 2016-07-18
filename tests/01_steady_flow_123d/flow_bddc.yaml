@@ -44,7 +44,7 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z
-    balance: true
+    balance: {}
     output:
       fields:
         - piezo_head_p0

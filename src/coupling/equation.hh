@@ -230,7 +230,7 @@ protected:
     FieldSet *eq_data_;
     
     /// object for calculation and writing the mass balance to file.
-    boost::shared_ptr<Balance> balance_;
+    std::shared_ptr<Balance> balance_;
     
 };
 

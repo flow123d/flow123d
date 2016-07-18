@@ -40,7 +40,7 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
     output_stream:
       file: test6_32d.pvd
       format: !vtk

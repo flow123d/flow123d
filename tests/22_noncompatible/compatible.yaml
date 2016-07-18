@@ -33,7 +33,7 @@ problem: !Coupling_Sequential
         - velocity_diff
         - pressure_diff
         - div_diff
-    balance: true
+    balance: {}
     output_stream: 
       file: ./test1.pvd
       format: !vtk

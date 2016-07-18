@@ -17,6 +17,7 @@ problem: !Coupling_Sequential
   flow_equation: !Flow_Darcy_MH
     output_specific:
     output_specific:
+    output_specific:
     input_fields:
     - region: 1d
       anisotropy: 10
@@ -29,7 +30,7 @@ problem: !Coupling_Sequential
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x
-    balance: true
+    balance: {}
     output_stream:
       file: ./test2.pvd
       format: !vtk

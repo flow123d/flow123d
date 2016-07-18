@@ -29,6 +29,7 @@ public:
      *
      */
     void read_from_input(Input::Array in_array, const TimeGovernor &tg);
+    void read_from_input(Input::Array in_array, const TimeGovernor &tg, TimeMark::Type mark_type);
     /**
      *
      */

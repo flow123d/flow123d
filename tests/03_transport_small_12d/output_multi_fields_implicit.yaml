@@ -25,7 +25,7 @@ problem: !Coupling_Sequential
           value: x+y
     output:
       fields: []
-    balance: true
+    balance: {}
     nonlinear_solver:
         linear_solver: !Petsc
             a_tol: 1.0e-12

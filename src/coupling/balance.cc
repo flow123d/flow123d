@@ -25,9 +25,10 @@
 
 #include <petscmat.h>
 #include "mesh/mesh.h"
-
+#include "io/output_time_set.hh"
 #include "coupling/balance.hh"
 #include "fields/unit_si.hh"
+#include "tools/time_governor.hh"
 
 using namespace Input::Type;
 
@@ -41,22 +42,41 @@ const Selection & Balance::get_format_selection_input_type() {
 
 const Record & Balance::get_input_type() {
 	return Record("Balance", "Balance of a conservative quantity, boundary fluxes and sources.")
-		.declare_key("balance_on", Bool(), Default("true"), "Balance is computed if the value is true.")
+	    .declare_key("times", OutputTimeSet::get_input_type(), Default("[]"), "" )
+	    .declare_key("add_output_times", Bool(), Default("true"), "Add all output times of the balanced equation to the balance output times set. "
+	            "Note that this is not the time set of the output stream.")
+		//.declare_key("balance_on", Bool(), Default("true"), "Balance is computed if the value is true.")
 		.declare_key("format", Balance::get_format_selection_input_type(), Default("\"txt\""), "Format of output file.")
 		.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
 				"If true, then balance is calculated at each computational time step, which can slow down the program.")
 		.declare_key("file", FileName::output(), Default::read_time("File name generated from the balanced quantity: <quantity_name>_balance.*"), "File name for output of balance.")
-		.allow_auto_conversion("balance_on")
 		.close();
 }
 
 
+std::shared_ptr<Balance> Balance::make_balance(
+        const std::string &file_prefix,
+        const Mesh *mesh,
+        const Input::Record &in_rec,
+        TimeGovernor &tg)
+{
+    auto ptr = make_shared<Balance>(file_prefix, mesh, in_rec, tg);
+    auto &marks = TimeGovernor::marks();
+    auto balance_output_type = tg.equation_mark_type() | TimeGovernor::marks().type_balance_output();
+    if (marks.begin(balance_output_type) == marks.end(balance_output_type) ) {
+        // no balance output time => force balance off
+        ptr.reset();
+    }
+    return ptr;
+}
 
 
 
-Balance::Balance(const std::string &file_prefix,
+Balance::Balance(
+        const std::string &file_prefix,
 		const Mesh *mesh,
-		const Input::Record &in_rec)
+		const Input::Record &in_rec,
+		TimeGovernor &tg)
 	: 	  mesh_(mesh),
 	  	  initial_time_(),
 	  	  last_time_(),
@@ -71,6 +91,15 @@ Balance::Balance(const std::string &file_prefix,
 
 	cumulative_ = in_rec.val<bool>("cumulative");
 	output_format_ = in_rec.val<OutputFormat>("format");
+
+	OutputTimeSet time_set;
+	balance_output_type_ = tg.equation_mark_type() | TimeGovernor::marks().type_balance_output();
+	time_set.read_from_input( in_rec.val<Input::Array>("times"), tg, balance_output_type_);
+	if (in_rec.val<bool>("add_output_times") ) {
+	    TimeGovernor::marks().add_to_type_all(
+	            tg.equation_mark_type() | TimeGovernor::marks().type_output(),
+	            TimeGovernor::marks().type_balance_output());
+	}
 
 	if (rank_ == 0) {
 		// set default value by output_format_
@@ -122,6 +151,12 @@ Balance::~Balance()
 	MatDestroy(&region_be_matrix_);
 	VecDestroy(&ones_);
 	VecDestroy(&ones_be_);
+}
+
+bool Balance::is_current(const TimeStep &step)
+{
+    auto &marks = TimeGovernor::marks();
+    return marks.current(step, balance_output_type_) != marks.end(balance_output_type_);
 }
 
 

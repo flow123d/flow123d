@@ -201,6 +201,11 @@ public:
     inline TimeMark::Type type_input()
     { return type_input_;}
 
+    /// Predefined base TimeMark type for times of balnace output.
+    /// Is defined by constructor as 0x08.
+    inline TimeMark::Type type_balance_output()
+    { return type_balance_output_;}
+
 
     /**
      * Basic method for inserting TimeMarks.
@@ -282,6 +287,8 @@ private:
     TimeMark::Type type_output_;
     /// Predefined type for change of boundary condition.
     TimeMark::Type type_input_;
+    /// Predefined type for balance output
+    TimeMark::Type type_balance_output_;
 };
 
 

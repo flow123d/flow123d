@@ -30,7 +30,7 @@ problem: !Coupling_Sequential
         - velocity_p0
         - conductivity
         - anisotropy
-    balance: true
+    balance: {}
     nonlinear_solver: 
         linear_solver: !Petsc
             a_tol: 1.0e-12

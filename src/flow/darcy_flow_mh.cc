@@ -148,7 +148,7 @@ const it::Record & DarcyMH::get_input_type() {
                 "Parameters of output from MH module.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Parameters of output form MH module.")
-        .declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
+        .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
         .declare_key("time", TimeGovernor::get_input_type(),
                 "Time governor setting for the unsteady Darcy flow model.")
@@ -335,11 +335,11 @@ void DarcyMH::zero_time_step()
 
     prepare_parallel();
     create_linear_system(rec);
+
     // initialization of balance object
-    Input::Iterator<Input::Record> it = input_record_.find<Input::Record>("balance");
-    if (it->val<bool>("balance_on"))
+    balance_ = Balance::make_balance("water", mesh_, input_record_.val<Input::Record>("balance"), time());
+    if (balance_)
     {
-        balance_ = boost::make_shared<Balance>("water", mesh_, *it);
         water_balance_idx_ = balance_->add_quantity("water_volume");
         balance_->allocate(rows_ds->lsize(), 1);
         balance_->units(UnitSI().m(3));
@@ -520,7 +520,7 @@ void DarcyMH::output_data() {
 			balance_->calculate_cumulative_fluxes(water_balance_idx_, schur0->get_solution(), time_->dt());
 		}
 
-		if (time_->is_current( TimeGovernor::marks().type_output() ))
+		if ( balance_->is_current( time().step()) )
 		{
 			balance_->calculate_mass(water_balance_idx_, schur0->get_solution());
 			balance_->calculate_source(water_balance_idx_, schur0->get_solution());

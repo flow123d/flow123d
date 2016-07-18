@@ -36,7 +36,8 @@ PetscErrorCode signal_handler(int signal, void *context)
 
 
 ApplicationBase::ApplicationBase(int argc,  char ** argv)
-: log_filename_("")
+: log_filename_(""),
+  signal_handler_off_(false)
 { }
 
 bool ApplicationBase::petsc_initialized = false;
@@ -110,7 +111,9 @@ void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 
 
     PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
-    PetscPushSignalHandler(signal_handler, nullptr);
+    if (! signal_handler_off_) {
+        PetscPushSignalHandler(signal_handler, nullptr);
+    }
 
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);

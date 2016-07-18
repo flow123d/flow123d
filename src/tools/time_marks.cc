@@ -58,6 +58,7 @@ void TimeMarks::reinit()
     type_fixed_time_ = new_mark_type();
     type_output_ = new_mark_type();
     type_input_ = new_mark_type();
+    type_balance_output_ = new_mark_type();
 
     // insert start and end stoppers
     marks_.push_back(TimeMark(-INFINITY, TimeMark::every_type));
