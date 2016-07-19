@@ -137,7 +137,7 @@ public:
 
     /**
      * Output data element on given index @p idx. Method for writing data
-     * to output stream.
+     * to output stream in ascii format.
      *
      * \note This method is used only by MSH file format.
      */
@@ -150,7 +150,7 @@ public:
             }
 
     /**
-     * \brief Print all data stored in output data
+     * \brief Print all data stored in output data in ascii format
      *
      * TODO: indicate if the tensor data are output in column-first or raw-first order
      *       and possibly implement transposition. Set such property for individual file formats.
@@ -164,6 +164,45 @@ public:
                 out_stream << *ptr << " ";
         }
             }
+
+    /**
+     * Output data element on given index @p idx. Method for writing data
+     * to output stream in binary format.
+     *
+     * \note This method is used only by MSH file format.
+     */
+    void print_binary(ostream &out_stream, unsigned int idx) override
+    {
+    	OLD_ASSERT_LESS(idx, this->n_values);
+    	out_stream << std::fixed << std::setprecision(10);
+        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
+            char* b = reinterpret_cast<char*>(&(*ptr));
+            for(unsigned int i=0; i<sizeof(ElemType); i++) {
+            	out_stream << b[sizeof(ElemType)-1-i];
+            }
+        }
+    }
+
+    /**
+     * \brief Print all data stored in output data in binary format.
+     *
+     * TODO: indicate if the tensor data are output in column-first or raw-first order
+     *       and possibly implement transposition. Set such property for individual file formats.
+     *       Class OutputData stores always in raw-first order.
+     */
+    void print_binary_all(ostream &out_stream) override
+    {
+    	for(unsigned int idx = 0; idx < this->n_values; idx++) {
+            ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+            for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
+                char* b = reinterpret_cast<char*>(&(*ptr));
+                for(unsigned int i=0; i<sizeof(ElemType); i++) {
+                	out_stream << b[sizeof(ElemType)-1-i];
+                }
+            }
+        }
+    }
 
     /**
      * Store data element of given data value under given index.

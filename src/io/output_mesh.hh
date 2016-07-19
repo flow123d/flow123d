@@ -60,6 +60,25 @@ public:
             out_stream << d << " ";
     }
     
+    /// Prints @p idx element of data vector into stream.
+    void print_binary(std::ostream& out_stream, unsigned int idx) override {
+        ASSERT_LT(idx, this->n_values).error();
+        char* b = reinterpret_cast<char*>(&data_[idx]);
+		for(unsigned int i=0; i<sizeof(T); i++) {
+			out_stream << b[sizeof(T)-1-i];
+		}
+    }
+
+    /// Prints the whole data vector into stream.
+    void print_binary_all(std::ostream& out_stream) override {
+        for(auto &d : data_) {
+            char* b = reinterpret_cast<char*>(&d);
+    		for(unsigned int i=0; i<sizeof(T); i++) {
+    			out_stream << b[sizeof(T)-1-i];
+    		}
+        }
+    }
+
     /// Access i-th element in the data vector.
     T& operator[](unsigned int i){
         ASSERT(i < data_.size());
