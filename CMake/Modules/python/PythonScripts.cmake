@@ -28,7 +28,6 @@ endmacro(install_python_lib)
 # setup some variables
 set(PYTHON_3RD_PARTY ${PY_BUILD_PREFIX}/lib/python2.7/site-packages)
 set(PYTHON_RUNTEST   ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
-set(PY_WRAPPER_PATHS ${PYTHON_SYSPATH})
 
 # install python dependencies
 install_python_lib(pyyaml yaml)
