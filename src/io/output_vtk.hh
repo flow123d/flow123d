@@ -200,6 +200,11 @@ protected:
    ofstream _data_file;
 
    /**
+    * Stream of appended data (used only for binary appended output)
+    */
+   ostringstream appended_data_;
+
+   /**
     * Path to time frame VTU data subdirectory
     */
    string subdir_name_;
