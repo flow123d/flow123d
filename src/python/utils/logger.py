@@ -40,22 +40,23 @@ class Logger(object):
     def __init__(self, name, level=logging.INFO, fmt=None):
         self.logger = logging.getLogger(name)
 
-        f = os.path.join(os.getcwd(), 'python.log')
         stream_logger = logging.StreamHandler()
         stream_logger.setLevel(level)
         stream_logger.setFormatter(fmt)
-
-        file_logger = logging.FileHandler(f)
-        file_logger.setLevel(level)
-        file_logger.setFormatter(fmt)
-
         self.logger.addHandler(stream_logger)
-        self.logger.addHandler(file_logger)
+
+        # f = os.path.join(os.getcwd(), 'python.log')
+        # file_logger = logging.FileHandler(f)
+        # file_logger.setLevel(level)
+        # file_logger.setFormatter(fmt)
+        # self.logger.addHandler(file_logger)
+
+
 
         # add empty lines if file contains some previous logs
-        if os.stat(f).st_size != 0:
-            with open(f, 'a+') as fp:
-                fp.write('\n' * 3)
+        # if os.stat(f).st_size != 0:
+        #     with open(f, 'a+') as fp:
+        #         fp.write('\n' * 3)
         # start logging
         self.info("{:%d-%m-%Y %H:%M:%S}".format(datetime.datetime.now()))
 
