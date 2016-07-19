@@ -590,9 +590,6 @@ if(USE_PYTHON)
     flow_define(HAVE_PYTHON)
 endif()
 
-# ----------------- Part 2/3 - PythonScripts ----------------------------------------
-# install 3rd party packages and copy python runtest
-include(python/PythonScripts)
 
 # ----------------- Part 3/3 - PythonCopy ------------------------------------------
 # Copy python libs to ${PY_BUILD_PREFIX}/lib/python2.7
