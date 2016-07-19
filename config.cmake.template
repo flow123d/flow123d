@@ -72,7 +72,12 @@
 #                 bsddb compiler ctypes curses distutils email encodings hotshot importlib 
 #                 json lib-dynload lib-tk lib2to3 logging multiprocessing 
 #                 plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
-#             
+#    - PYTHON_SYSPATH
+            - list of all paths which are necessary for python to run (3rd party)
+              in /lib/python2.7 folder (some path are generated automatically)
+              set(PYTHON_SYSPATH
+                  plat-linux2 lib-tk lib-old lib-dynload
+                  dist-packages site-packages)
 
 
 ### Boost ######################
