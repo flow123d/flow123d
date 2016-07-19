@@ -13,9 +13,7 @@ from exec_parallel import parser
 from scripts.core.base import IO
 from scripts.exec_parallel_module import do_work
 # ----------------------------------------------
-__dir__ = test_scripts.current_dir()
-extras = os.path.join(__dir__, 'extras')
-consumer = os.path.join(extras, 'consumer_cpp')
+consumer = test_scripts.get_consumer()
 
 
 class TestDoWork(test_scripts.UnitTest):
@@ -96,15 +94,18 @@ class TestDoWork(test_scripts.UnitTest):
     @test_scripts.print_test
     def test_pbs_mode(self):
         # this test can be only tested on PBS server
+        # on all server we can only test whether pbs script are prepared,
+        # assuming local_pbs (debug-like module) is assigned to current platform in host_table.json
 
+        current_dir = test_scripts.current_dir()
         do_work(parser, ['-q', '--', 'sleep', '1'], debug=True)
-        mpi_dirs = [f for f in os.listdir(__dir__) if f.startswith('exec-parallel-')]
-        mpi_dirs = [f for f in mpi_dirs if os.path.isdir(os.path.join(__dir__, f))]
+        mpi_dirs = [f for f in os.listdir(current_dir) if f.startswith('exec-parallel-')]
+        mpi_dirs = [f for f in mpi_dirs if os.path.isdir(os.path.join(current_dir, f))]
 
         self.assertGreaterEqual(len(mpi_dirs), 1)
 
         # test that script were actually created and contain at least one file
         # also remove them ...
         for mpi in mpi_dirs:
-            self.assertGreaterEqual(len(os.listdir(os.path.join(__dir__, mpi))), 1)
-            IO.delete_all(os.path.join(__dir__, mpi))
+            self.assertGreaterEqual(len(os.listdir(os.path.join(current_dir, mpi))), 1)
+            IO.delete_all(os.path.join(current_dir, mpi))
