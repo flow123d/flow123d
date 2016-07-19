@@ -164,6 +164,7 @@ endmacro()
 # - has to be done manually to get correct dependencies on CMake's list files.
 
 
+add_subdirectory("test_scripts")
 add_subdirectory("scripts")
 add_subdirectory("input")
 add_subdirectory("tools")
@@ -213,4 +214,3 @@ add_custom_command(OUTPUT ${JENKINS_JOBS_FILE}
                   DEPENDS jenkins_jobs_template.yaml
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
-
