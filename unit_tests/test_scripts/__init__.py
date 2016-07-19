@@ -23,11 +23,11 @@ def print_test(f):
     import sys
 
     def wrapper(*args, **kwargs):
-        sys.stdout.write('\n')
-        sys.stdout.write('=' * cols + '\n')
-        msg = ' EXECUTING {:=<40s}'.format(str(f.func_name) + ' ')
-        sys.stdout.write(('{:=^'+str(cols)+'}').format(msg) + '\n')
-        sys.stdout.write('=' * cols + '\n')
+        # sys.stdout.write('\n')
+        # sys.stdout.write('=' * cols + '\n')
+        # msg = ' EXECUTING {:=<40s}'.format(str(f.func_name) + ' ')
+        # sys.stdout.write(('{:=^'+str(cols)+'}').format(msg) + '\n')
+        # sys.stdout.write('=' * cols + '\n')
         return f(*args, **kwargs)
     return wrapper
 
@@ -64,7 +64,7 @@ def fix_paths():
     import os
 
     # we assume that this file is located in unit_tests/test_scripts
-    __dir__ = current_dir()
+    __dir__ = test_dir()
 
     # add path to src/python folder
     sys.path.append(
@@ -81,18 +81,28 @@ def fix_paths():
     )
 
 
-def current_dir():
+def test_dir():
     import os
     # we assume that this file is located in unit_tests/test_scripts
     return os.path.dirname(os.path.realpath(__file__))
+
+
+def current_dir():
+    import os
+    return os.getcwd()
+
+
+def get_consumer():
+    __dir__ = current_dir()
+    return os.path.join(__dir__, 'consumer_cc')
 
 
 def prepare_consumer():
     import os
     __dir__ = current_dir()
     extras = os.path.join(__dir__, 'extras')
+    consumer_bin = os.path.join(__dir__, 'consumer_cc')
     consumer_src = os.path.join(extras, 'consumer.cc')
-    consumer_bin = os.path.join(extras, 'consumer_cpp')
 
     # try to compile consumer.cc if not exists
     if not os.path.exists(consumer_bin):

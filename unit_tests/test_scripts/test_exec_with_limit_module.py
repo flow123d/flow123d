@@ -12,9 +12,7 @@ test_scripts.fix_paths()
 from exec_with_limit import parser
 from scripts.exec_with_limit_module import do_work
 # ----------------------------------------------
-__dir__ = test_scripts.current_dir()
-extras = os.path.join(__dir__, 'extras')
-consumer = os.path.join(extras, 'consumer_cpp')
+consumer = test_scripts.get_consumer()
 
 
 class TestDoWork(test_scripts.UnitTest):
