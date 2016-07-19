@@ -97,7 +97,7 @@ OutputVTK::~OutputVTK()
 
 int OutputVTK::write_data(void)
 {
-    ASSERT_PTR(output_mesh_);
+    ASSERT_PTR(output_mesh_).error();
 
     /* It's possible now to do output to the file only in the first process */
     if(this->rank != 0) {
@@ -157,7 +157,7 @@ int OutputVTK::write_data(void)
 void OutputVTK::make_subdirectory()
 {
     string main_file="./" + this->_base_filename; // guarantee that find_last_of succeeds
-    OLD_ASSERT( main_file.substr( main_file.size() - 4) == ".pvd" , "none");
+    ASSERT( main_file.substr( main_file.size() - 4) == ".pvd").error("Incorrect extension of VTK output file.");
     unsigned int last_sep_pos=main_file.find_last_of(DIR_DELIMITER);
     main_output_dir_=main_file.substr(2, last_sep_pos-2);
     main_output_basename_=main_file.substr(last_sep_pos+1);

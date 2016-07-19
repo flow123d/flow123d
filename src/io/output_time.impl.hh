@@ -143,7 +143,7 @@ public:
      */
     void print_ascii(ostream &out_stream, unsigned int idx) override
             {
-    	OLD_ASSERT_LESS(idx, this->n_values);
+    	ASSERT_LT(idx, this->n_values).error();
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
             out_stream << *ptr << " ";
@@ -173,7 +173,7 @@ public:
      */
     void print_binary(ostream &out_stream, unsigned int idx) override
     {
-    	OLD_ASSERT_LESS(idx, this->n_values);
+    	ASSERT_LT(idx, this->n_values).error();
     	out_stream << std::fixed << std::setprecision(10);
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
@@ -239,7 +239,7 @@ private:
      */
     template <class Func>
     void operate(unsigned int idx, const Value &val, const Func& func) {
-    	OLD_ASSERT_LESS(idx, this->n_values);
+    	ASSERT_LT(idx, this->n_values).error();
         ElemType *ptr = this->data_ + idx*this->n_elem_;
         for(unsigned int i_row = 0; i_row < this->n_rows; i_row++) {
             for(unsigned int i_col = 0; i_col < this->n_cols; i_col++) {
@@ -290,7 +290,7 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
-	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
+	ASSERT_LT(type, N_DISCRETE_SPACES).error();
     if (output_names.find(multi_field.name()) == output_names.end()) return;
 
     DiscreteSpaceFlags flags = output_names[multi_field.name()];
@@ -308,7 +308,7 @@ void OutputTime::register_data(const DiscreteSpace type,
         Field<spacedim, Value> &field_ref)
 {
     DBGMSG("register data\n");
-	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
+	ASSERT_LT(type, N_DISCRETE_SPACES).error();
     if (output_names.find(field_ref.name()) == output_names.end()) return;
     
     DiscreteSpaceFlags flags = output_names[field_ref.name()];
