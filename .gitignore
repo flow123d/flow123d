@@ -47,3 +47,4 @@ doc/reference_manual/flow_version.tex
 /.idea/
 bin/pythonenv.sh
 tests/runtest.sh
+bin/runtest.sh
