@@ -26,7 +26,7 @@
 #include "system/exc_common.hh"
 #include "config.h"
 #include "mpi.h"
-#include "asserts.hh"
+#include "logger.hh"
 
 /*! @brief Debugging macros.
  *
@@ -81,6 +81,9 @@
 #endif
 
 
+#include "asserts.hh"
+
+
 
 #ifdef FLOW123D_DEBUG_ASSERTS
 
@@ -133,71 +136,6 @@
 #define OLD_ASSERT_PTR( ptr )
 
 #endif
-
-
-/// Internal definitions of macros
-/// Internal clever macro A
-#define _FEAL_ASSERT_A(x) _FEAL_ASSERT_OP(x, B)
-/// Internal clever macro B
-#define _FEAL_ASSERT_B(x) _FEAL_ASSERT_OP(x, A)
-/// Internal clever macro recursion
-#define _FEAL_ASSERT_OP(x, next) \
-    _FEAL_ASSERT_A.add_value((x), #x)._FEAL_ASSERT_ ## next
-
-
-/// Definition of assert for debug and release mode
-#define FEAL_ASSERT( expr) \
-if ( !(expr) ) \
-  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
-
-/// Definition of assert for debug mode only
-#ifdef FLOW123D_DEBUG_ASSERTS
-#define FEAL_DEBUG_ASSERT( expr) \
-if ( !(expr) ) \
-  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
-#else
-#define FEAL_DEBUG_ASSERT( expr)
-#endif
-
-
-
-
-/// Internal definitions of macros
-/// Internal clever macro A
-#define _FEAL_ASSERT_A(x) _FEAL_ASSERT_OP(x, B)
-/// Internal clever macro B
-#define _FEAL_ASSERT_B(x) _FEAL_ASSERT_OP(x, A)
-/// Internal clever macro recursion
-#define _FEAL_ASSERT_OP(x, next) \
-    _FEAL_ASSERT_A.add_value((x), #x)._FEAL_ASSERT_ ## next
-
-
-/// Definition of assert for debug and release mode
-#define FEAL_ASSERT( expr) \
-if ( !(expr) ) \
-  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
-
-/// Definition of assert for debug mode only
-#ifdef FLOW123D_DEBUG_ASSERTS
-#define FEAL_DEBUG_ASSERT( expr) \
-if ( !(expr) ) \
-  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
-#else
-#define FEAL_DEBUG_ASSERT( expr) \
-if ( !(expr) ) \
-  feal::AssertNull()._FEAL_ASSERT_A
-#endif
-
-
-
-/// Allow use shorter versions of macro names if these names is not used with external library
-#ifndef ASSERT
-#define ASSERT( expr) FEAL_ASSERT( expr)
-#endif
-#ifndef DEBUG_ASSERT
-#define DEBUG_ASSERT( expr) FEAL_DEBUG_ASSERT( expr)
-#endif
-
 
 
 

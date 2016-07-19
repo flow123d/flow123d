@@ -248,9 +248,10 @@ int OutputMSH::write_tail(void)
 
 OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
 {
+    this->enable_refinement_ = false;
 	this->fix_main_file_extension(".msh");
     this->header_written = false;
-
+    
     if(this->rank == 0) {
         this->_base_file.open(this->_base_filename.c_str());
         INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );

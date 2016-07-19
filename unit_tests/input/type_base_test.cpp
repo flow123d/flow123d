@@ -6,6 +6,8 @@
  */
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 
 #include <input/input_type.hh>
@@ -70,28 +72,28 @@ TEST(InputTypeScalar, all_types) {
     EXPECT_TRUE( Default("true").check_validity( std::make_shared<Bool>() ) );
     EXPECT_TRUE( Default("false").check_validity( std::make_shared<Bool>() ) );
     EXPECT_FALSE( Default::obligatory().check_validity( std::make_shared<Bool>()) );
-    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Bool>() ); }, ExcWrongDefault,
-            "Default value 'yes' do not match type: 'Bool';" );
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Bool>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'yes' of type 'Bool';" );
 
     // Integer
     EXPECT_TRUE( Default("10").check_validity( std::make_shared<Integer>() ) );
     EXPECT_THROW_WHAT( { Default("10").check_validity( std::make_shared<Integer>(0,4) ); }, ExcWrongDefault,
             "Default value '10' do not match type: 'Integer';" );
-    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Integer>() ); }, ExcWrongDefault,
-            "Default value 'yes' do not match type: 'Integer';" );
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Integer>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'yes' of type 'Integer';" );
 
     // Double
     EXPECT_TRUE( Default("3.14").check_validity( std::make_shared<Double>() ) );
     EXPECT_TRUE( Default("-5.67E-23").check_validity( std::make_shared<Double>() ) );
     EXPECT_THROW_WHAT( { Default("-1e-10").check_validity( std::make_shared<Double>(0,4.4) ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
-    EXPECT_THROW_WHAT( { Default("-3.6t5").check_validity( std::make_shared<Double>() ); }, ExcWrongDefault,
-            "Default value .* do not match type: 'Double';" );
+    EXPECT_THROW_WHAT( { Default("-3.6t5").check_validity( std::make_shared<Double>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value '-3.6t5' of type 'Double';" );
 
     // String
     EXPECT_TRUE( Default("\"ahoj\"").check_validity( std::make_shared<String>() ) );
-    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( std::make_shared<String>() ); }, ExcWrongDefault,
-            "Default value .* do not match type: 'String';" );
+    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( std::make_shared<String>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'ahoj' of type 'String';" );
 
 
     // test equivalence operator

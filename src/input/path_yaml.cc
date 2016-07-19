@@ -49,7 +49,7 @@ PathYAML::~PathYAML()
 
 
 bool PathYAML::down(unsigned int index) {
-	FEAL_DEBUG_ASSERT(head().IsSequence()).error("Head node must be of type Array.");
+	ASSERT(head().IsSequence()).error("Head node must be of type Array.");
 
     if ( index >= head().size() ) return false;
     path_.push_back( make_pair( index, string("") ) );
@@ -60,7 +60,7 @@ bool PathYAML::down(unsigned int index) {
 
 
 bool PathYAML::down(const string& key) {
-	FEAL_DEBUG_ASSERT(head().IsMap()).error("Head node must be of type Record.");
+	ASSERT(head().IsMap()).error("Head node must be of type Record.");
 
     if ( head()[key] ) {
     	path_.push_back( make_pair( (int)(-1), key) );
@@ -201,6 +201,24 @@ std::string PathYAML::get_descendant_name() const {
 	} else {
 		return tag.erase(0, 1); // tag starts with '!' char
 	}
+}
+
+
+
+bool PathYAML::is_effectively_null() const {
+	if ( head().IsNull() ) {
+		// null value indicates empty record ...
+		return true;
+	} else if ( head().IsScalar() ) {
+		try {
+			// ... or empty string indicates empty record too
+			return (head().as<std::string>() == "");
+		} catch (YAML::Exception) {
+			// other cases don't have to lead to an error
+		}
+
+	}
+	return false;
 }
 
 

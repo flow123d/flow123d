@@ -47,6 +47,9 @@ protected:
     /// Override @p ExceptionBase::what_type_msg()
     std::string what_type_msg() const override;
 
+    /// Override @p ExceptionBase::form_message()
+    std::ostringstream &form_message(std::ostringstream &) const override;
+
     std::string expression_;                  ///< Assertion expression
 	std::string file_name_;                   ///< Actual file.
 	std::string function_;                    ///< Actual function.
@@ -60,9 +63,10 @@ protected:
  *
  * Allows define assert, warning etc. either only for debug mode or for release mode also.
  *
- * Definition of asserts is designed using macros FEAL_ASSERT and FEAL_DEBUG_ASSERT. First macro
+ * Definition of asserts is designed using macros FEAL_ASSERT and FEAL_ASSERT_DBG. First macro
  * is used for both modes, second is only for debug. Definition allows to printout given
- * variables too.
+ * variables too. For simplifying are designed shorter names of macros ASSERT and ASSERT_DBG,
+ * these names can be used if thea aren't in conflicts with external libraries.
  *
  * Examples of usage:
  *
@@ -84,7 +88,7 @@ protected:
  *
  * 3) This example is same as previous, but assert is performed only for debug mode.
  @code
-    FEAL_DEBUG_ASSERT(s1.empty() && s2.empty())(s1)(s2).error("Both strings must be empty!");
+    FEAL_ASSERT_DBG(s1.empty() && s2.empty())(s1)(s2).error("Both strings must be empty!");
  @endcode
  *
  * 4) Example is same as case 1). Assert type error is called automatically if any other is
@@ -97,6 +101,21 @@ protected:
  *    is not thrown, only warning is printed. Parameter of warning method is optional.
  @code
     FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Both strings should be empty!");
+ @endcode
+ *
+ * For simplifying we have defined several macros for comparsion of values:
+ *  - ASSERT_LT(a, b) or ASSERT_LT_DBG(a, b) ... check if (a < b)
+ *  - ASSERT_LE(a, b) or ASSERT_LE_DBG(a, b) ... check if (a <= b)
+ *  - ASSERT_GT(a, b) or ASSERT_GT_DBG(a, b) ... check if (a > b)
+ *  - ASSERT_GE(a, b) or ASSERT_GE_DBG(a, b) ... check if (a >= b)
+ *  - ASSERT_EQ(a, b) or ASSERT_EQ_DBG(a, b) ... check if (a == b)
+ *  - ASSERT_PTR(obj) or ASSERT_PTR_DBG(obj) ... check if obj is non-null pointer
+ *
+ * All macros allow easier declaration of assert. Following example shows declarations of same
+ * cases with usage of different macros:
+ @code
+    ASSERT_LT( idx, arr.size() ).error("Index out of array!");
+    FEAL_ASSERT( idx < arr.size() )(idx)(arr.size()).error("Index out of array!");
  @endcode
  */
 class Assert {
@@ -146,7 +165,7 @@ public:
 
 protected:
     Exc_assert exception_;               ///< Exception object
-	bool thrown_;                             ///< Flag marked if Assert thrown error, warning, ...
+	bool thrown_;                        ///< Flag marked if Assert thrown error, warning, ...
 
 };
 
@@ -155,7 +174,7 @@ protected:
 /**
  * Helper class defined empty code.
  *
- * Usage only in FEAL_DEBUG_ASSERT macro if FLOW123D_DEBUG_ASSERTS is off.
+ * Usage only in FEAL_ASSERT_DBG macro if FLOW123D_DEBUG_ASSERTS is off.
  */
 class AssertNull {
 public:
@@ -189,6 +208,150 @@ public:
 };
 
 } // namespace feal
+
+
+
+/****************************************************************
+ * Definitions of macros
+ */
+
+/**
+ * Definitions of internal macros
+ */
+/// Internal clever macro A
+#define _FEAL_ASSERT_A(x) _FEAL_ASSERT_OP(x, B)
+/// Internal clever macro B
+#define _FEAL_ASSERT_B(x) _FEAL_ASSERT_OP(x, A)
+/// Internal clever macro recursion
+#define _FEAL_ASSERT_OP(x, next) \
+    _FEAL_ASSERT_A.add_value((x), #x)._FEAL_ASSERT_ ## next
+
+
+/**
+ * Undefining redefinitions of comparsion macros.
+ *
+ * You can define FEAL_OVERRIDE_ASSERTS (e.g. in unit tests) and undefine macros with same name in external libraries.
+ */
+#ifdef ASSERT_LT
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_LT
+    #else
+        #warning "ASSERT_LT already defined out of FEAL."
+    #endif
+#endif
+
+#ifdef ASSERT_LE
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_LE
+    #else
+        #warning "ASSERT_LE already defined out of FEAL."
+    #endif
+#endif
+
+#ifdef ASSERT_GT
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_GT
+    #else
+        #warning "ASSERT_GT already defined out of FEAL."
+    #endif
+#endif
+
+#ifdef ASSERT_GE
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_GE
+    #else
+        #warning "ASSERT_GE already defined out of FEAL."
+    #endif
+#endif
+
+#ifdef ASSERT_EQ
+    #ifdef FEAL_OVERRIDE_ASSERTS
+        #undef ASSERT_EQ
+    #else
+        #warning "ASSERT_EQ already defined out of FEAL."
+    #endif
+#endif
+
+
+/**
+ * Definitions of assert macros
+ */
+/// Definition of assert for debug and release mode
+#define FEAL_ASSERT( expr) \
+if ( !(expr) ) \
+  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
+
+/// Definition of assert for debug mode only
+#ifdef FLOW123D_DEBUG_ASSERTS
+#define FEAL_ASSERT_DBG( expr) \
+if ( !(expr) ) \
+  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
+#else
+#define FEAL_ASSERT_DBG( expr) \
+if ( !(expr) ) \
+  feal::AssertNull()._FEAL_ASSERT_A
+#endif
+
+/// Definition of comparative assert macro (Less Than)
+#define ASSERT_LT(a, b) \
+	FEAL_ASSERT(a < b)(a)(b)
+
+/// Definition of comparative assert macro (Less Than) only for debug mode
+#define ASSERT_LT_DBG(a, b) \
+	FEAL_ASSERT_DBG(a < b)(a)(b)
+
+/// Definition of comparative assert macro (Less or Equal)
+#define ASSERT_LE(a, b) \
+	FEAL_ASSERT(a <= b)(a)(b)
+
+/// Definition of comparative assert macro (Less or Equal) only for debug mode
+#define ASSERT_LE_DBG(a, b) \
+	FEAL_ASSERT_DBG(a <= b)(a)(b)
+
+/// Definition of comparative assert macro (Greater Than)
+#define ASSERT_GT(a, b) \
+	FEAL_ASSERT(a > b)(a)(b)
+
+/// Definition of comparative assert macro (Greater Than) only for debug mode
+#define ASSERT_GT_DBG(a, b) \
+	FEAL_ASSERT_DBG(a > b)(a)(b)
+
+/// Definition of comparative assert macro (Greater or Equal)
+#define ASSERT_GE(a, b) \
+	FEAL_ASSERT(a >= b)(a)(b)
+
+/// Definition of comparative assert macro (Greater or Equal) only for debug mode
+#define ASSERT_GE_DBG(a, b) \
+	FEAL_ASSERT_DBG(a >= b)(a)(b)
+
+/// Definition of comparative assert macro (EQual)
+#define ASSERT_EQ(a, b) \
+	FEAL_ASSERT(a == b)(a)(b)
+
+/// Definition of comparative assert macro (EQual) only for debug mode
+#define ASSERT_EQ_DBG(a, b) \
+	FEAL_ASSERT_DBG(a == b)(a)(b)
+
+/// Definition of assert macro checking non-null pointer (PTR)
+#define ASSERT_PTR( ptr ) \
+	FEAL_ASSERT( (ptr) != nullptr )
+
+/// Definition of assert macro checking non-null pointer (PTR) only for debug mode
+#define ASSERT_PTR_DBG( ptr ) \
+	FEAL_ASSERT_DBG( (ptr) != nullptr )
+
+
+
+/// Allow use shorter versions of macro names if these names is not used with external library
+#ifndef ASSERT
+#define ASSERT( expr) FEAL_ASSERT( expr)
+#endif
+#ifndef ASSERT_DBG
+#define ASSERT_DBG( expr) FEAL_ASSERT_DBG( expr)
+#endif
+
+
+
 
 /**
  * Sources:

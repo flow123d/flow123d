@@ -29,7 +29,8 @@ Abstract & LinearODESolverBase::get_input_type() {
 }
     
 LinearODESolverBase::LinearODESolverBase()
-:step_(0), step_changed_(true)
+: step_(0), step_changed_(true),
+  system_matrix_changed_(false)
 {
 }
 
@@ -41,6 +42,7 @@ void LinearODESolverBase::set_system_matrix(const arma::mat& matrix)
 {
     system_matrix_ = matrix;
     step_changed_ = true;
+    system_matrix_changed_ = true;
 }
 
 void LinearODESolverBase::set_step(double step)
