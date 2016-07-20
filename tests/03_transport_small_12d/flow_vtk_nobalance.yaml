@@ -65,7 +65,7 @@ problem: !Coupling_Sequential
       # uranium 235
     time:
       end_time: 1000000.0
-    balance: false
+    balance: {add_output_times: false}
     reaction_term: !DualPorosity
       input_fields:
         - region: ALL

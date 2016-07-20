@@ -56,4 +56,4 @@ problem: !Coupling_Sequential
     time:
       end_time: 1.0
       init_dt: 0.1
-    balance: false
+    balance: {add_output_times: false}

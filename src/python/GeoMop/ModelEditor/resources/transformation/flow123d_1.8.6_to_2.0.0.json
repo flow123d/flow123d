@@ -850,7 +850,7 @@
         "action": "change-value",
         "parameters":{
           "path" : "/problem/solute_equation/balance",
-          "old_value" : "true",
+          "old_value" : "false",
           "new_value" : "{add_output_times: false}"
         }
     },    
@@ -859,7 +859,7 @@
         "action": "change-value",
         "parameters":{
           "path" : "/problem/heat_equation/balance",
-          "old_value" : "true",
+          "old_value" : "false",
           "new_value" : "{add_output_times: false}"
         }
     }        
