@@ -17,15 +17,16 @@ find_package(PythonInterp 2.7 REQUIRED)
 #    package_dir  - name of the folder which should be checked whether exists 
 #                   some packages name and dir are different e.g. pyyaml -> yaml
 macro(install_python_lib package_name package_dir)
-    execute_process(COMMAND
-        pwd
-    )
     if(EXISTS ${PYTHON_3RD_PARTY}/${package_dir})
         message(STATUS "Installing ${package_name} with pip .... skipped, already exists")
     else()
         message(STATUS "Installing ${package_name} with pip ....")
         message(STATUS "-- cd ${Flow123d_SOURCE_DIR}/CMake/Modules/python && pip install --target=${PYTHON_3RD_PARTY} ${package_name}")
-        execute_process(COMMAND cd ${Flow123d_SOURCE_DIR}/CMake/Modules/python && pip install --target=${PYTHON_3RD_PARTY} ${package_name})
+        # we start pip install from directory where setup.cfg is placed thus avoiding issue with --target usage
+        # https://github.com/pypa/pip/pull/3450 and https://github.com/pypa/pip/issues/3056
+        execute_process(
+            COMMAND pip install --target=${PYTHON_3RD_PARTY} ${package_name}
+            WORKING_DIRECTORY ${Flow123d_SOURCE_DIR}/CMake/Modules/python)
     endif()
 endmacro(install_python_lib)
 
