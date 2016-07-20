@@ -555,20 +555,21 @@ endif()
 # ----------------- Part 0/3 - variables ------------------------------------------
 # where python build starts for now we use build_tree
 set(PY_BUILD_PREFIX ${CMAKE_BINARY_DIR})
+# # define varible for storing this extra module path
+# this variable is used later to update search module path
+# if PYTHON_COPY is present it points to lib/flow123d dir in build tree
+# if not, default location is src/python dir in CMake_SOURCE_DIR location
 if(PYTHON_COPY)
     # copy python interpret files and 3rd party packages including
     # python utils files for flow123d
     set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
+    flow_define(PYTHON_EXTRA_MODULES_PATH ${PY_BUILD_PREFIX}/${PYTHON_EXTRA_MODULES_PATH})
 else()
     # if python copy is not set we do nothing but export
     # variable PYTHON_EXTRA_MODULES_PATH so python_loader can add correct path
     set(PYTHON_EXTRA_MODULES_PATH /src/python)
+    flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 endif()
-# define varible for storing this extra module path
-# this variable is used later to update search module path
-# if PYTHON_COPY is present it points to lib/flow123d dir in build tree
-# if not, default location is src/python dir in CMake_SOURCE_DIR location
-flow_define(PYTHON_EXTRA_MODULES_PATH ${PY_BUILD_PREFIX}/${PYTHON_EXTRA_MODULES_PATH})
 # check whether PYTHON_ROOT is set 
 if(NOT DEFINED PYTHON_ROOT)
     message(STATUS "--------------------------------------------------")

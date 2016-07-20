@@ -20,4 +20,3 @@ set(PYTHON_COPY_PACKAGES
     plat-linux2 pydoc_data sqlite3 test unittest wsgiref xml)
 set(PYTHON_SYSPATH
     plat-linux2 lib-tk lib-old lib-dynload dist-packages site-packages)
-set(PYTHON_COPY_DIST_PACKAGES)

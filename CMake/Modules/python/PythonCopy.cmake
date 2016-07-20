@@ -63,13 +63,3 @@ execute_process(COMMAND
 # we copy all and exclude some paths and files during install    
 execute_process(COMMAND
     cp -rn ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include)
-
-# construct PY_WRAPPER_PATHS for wrapper pythonenv
-set(PY_WRAPPER_PATHS "/lib/python2.7")
-list(APPEND PY_WRAPPER_PATHS ${PYTHON_EXTRA_MODULES_PATH})
-foreach(PY_PATH ${PYTHON_SYSPATH})
-    list(APPEND PY_WRAPPER_PATHS "/lib/python2.7/${PY_PATH}")
-endforeach()
-
-# configure pythonenv.sh script (populates py wrapper path used in wrapper file)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/pythonenv_template ${CMAKE_SOURCE_DIR}/bin/pythonenv.sh @ONLY)
