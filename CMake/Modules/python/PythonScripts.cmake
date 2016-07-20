@@ -46,3 +46,14 @@ configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${PYTHON_RUNTEST_
 execute_process(COMMAND
     ${CMAKE_COMMAND} -E create_symlink ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
 )
+
+# construct PY_WRAPPER_PATHS for wrapper pythonenv
+set(PY_WRAPPER_PATHS "/lib/python2.7")
+list(APPEND PY_WRAPPER_PATHS ${PYTHON_EXTRA_MODULES_PATH})
+foreach(PY_PATH ${PYTHON_SYSPATH})
+    list(APPEND PY_WRAPPER_PATHS "/lib/python2.7/${PY_PATH}")
+endforeach()
+
+# configure pythonenv.sh script (populates py wrapper path used in wrapper file)
+message(STATUS "Creating pythonenv.sh wrapper")
+configure_file(${CMAKE_SOURCE_DIR}/CMake/pythonenv_template ${CMAKE_SOURCE_DIR}/bin/pythonenv.sh @ONLY)
