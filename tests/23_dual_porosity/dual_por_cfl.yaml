@@ -15,6 +15,8 @@ problem: !Coupling_Sequential
       - region: BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0
+      - region: BULK
+        porosity: 0.5
     output:
       output_stream:
         file: ./dual_por_flow.pvd
@@ -31,7 +33,6 @@ problem: !Coupling_Sequential
         - region: BULK
           init_conc:
             - 1.0
-          porosity: 0.5
     substances:
       - A
     time:

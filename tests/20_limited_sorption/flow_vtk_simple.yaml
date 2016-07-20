@@ -23,6 +23,8 @@ problem: !Coupling_Sequential
       - region: .boundary
         bc_type: dirichlet
         bc_piezo_head: 0
+      - region: volume
+        porosity: 0.25
     output:
       output_stream:
         file: test_20.pvd
@@ -38,7 +40,6 @@ problem: !Coupling_Sequential
       input_fields:
         - region: volume
           init_conc: 1
-          porosity: 0.25
         - region: .boundary
           bc_conc: 1.0
     substances:
@@ -83,6 +84,6 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
       time_step: 0.2
-  # solute_equation
+  # secondary_equation
 # problem
 # root

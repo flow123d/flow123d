@@ -17,6 +17,8 @@ problem: !Coupling_Sequential
       - region: .right
         bc_type: dirichlet
         bc_pressure: 0
+      - region: BULK
+        porosity: 0.1
     output:
       output_stream:
         file: ./flow.pvd
@@ -34,7 +36,6 @@ problem: !Coupling_Sequential
           init_conc:
             - 0.0
             - 0.0
-          porosity: 0.1
         - region: .left
           time: 1.0
           bc_type: dirichlet

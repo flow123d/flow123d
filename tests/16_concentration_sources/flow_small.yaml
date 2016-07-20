@@ -17,6 +17,8 @@ problem: !Coupling_Sequential
       - region: .boundary
         bc_type: dirichlet
         bc_pressure: 0
+      - region: ALL
+        porosity: 0.9
     output:
       output_stream: 
         file: ./flow_test16.pvd
@@ -47,7 +49,6 @@ problem: !Coupling_Sequential
             - 0.6
             - 0.6
             - 0.6
-          porosity: 0.9
     output_stream: 
       file: ./transport_test16.pvd
       format: !vtk

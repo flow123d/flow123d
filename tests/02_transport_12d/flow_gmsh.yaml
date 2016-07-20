@@ -31,6 +31,8 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
+      - region: subset
+        porosity: 0.25
     balance:
       format: gnuplot
     output:
@@ -51,7 +53,6 @@ problem: !Coupling_Sequential
             value: x/12.75
         - region: subset
           init_conc: 0
-          porosity: 0.25
     output_stream:
       file: ./transport.msh
       format: !gmsh

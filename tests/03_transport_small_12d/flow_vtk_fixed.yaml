@@ -24,6 +24,8 @@ problem: !Coupling_Sequential
         value: x+y
       bc_type: dirichlet
       r_set: BOUNDARY
+    - r_set ALL
+      porosity: 0.25
     output:
       output_fields:
       - pressure_p0
@@ -42,7 +44,6 @@ problem: !Coupling_Sequential
       cumulative: true
     input_fields:
     - init_conc: 0
-      porosity: 0.25
       r_set: ALL
       # source is in the whole volume (l+s) -> times porosity
       sources_density: 

@@ -7,6 +7,7 @@ problem: !Coupling_Sequential
     input_fields:
       - region: ALL
         conductivity: 1.0e-15
+        porosity: 0.25
       - region: BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0
@@ -29,7 +30,6 @@ problem: !Coupling_Sequential
       input_fields:
         - region: ALL
           init_conc: 1.0
-          porosity: 0.25
         - region: BOUNDARY
           bc_conc: 0
     substances: A

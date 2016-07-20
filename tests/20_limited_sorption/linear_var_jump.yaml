@@ -25,6 +25,8 @@ problem: !Coupling_Sequential
       - region: BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0
+      - region: ALL
+        porosity: 0.25
     output:
       output_stream: 
         file: test_20.pvd
@@ -40,7 +42,6 @@ problem: !Coupling_Sequential
       input_fields:
         - region: ALL
           init_conc: 1
-          porosity: 0.25
         - region: BOUNDARY
           bc_conc: 1
     substances:

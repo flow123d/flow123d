@@ -17,6 +17,8 @@ problem: !Coupling_Sequential
       - region: BULK
         cross_section: 1
         anisotropy: 1
+      - region: BULK
+        porosity: 1
     output:
       output_stream: 
         file: ./flow_test16.pvd
@@ -39,7 +41,6 @@ problem: !Coupling_Sequential
           bc_conc: 0
         - region: BULK
           init_conc: 0
-          porosity: 1
           sources_density: !FieldElementwise
             gmsh_file: input/test16_sources.msh
             field_name: density

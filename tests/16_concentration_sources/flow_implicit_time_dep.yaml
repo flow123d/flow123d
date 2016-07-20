@@ -29,6 +29,12 @@ problem: !Coupling_Sequential
       - rid: 7
         cross_section: 1
         conductivity: 1
+      - rid: 7
+        porosity: 1
+      - rid: 7
+        time: 4
+        porosity: !FieldFormula
+          value: 4/t
     output:
       output_stream: 
         file: ./flow_test16.pvd
@@ -47,7 +53,6 @@ problem: !Coupling_Sequential
           bc_conc: 0
         - rid: 7
           init_conc: 0
-          porosity: 1
         - rid: 100
           sources_density: !FieldFormula
             value: max(4-t,0)
@@ -60,8 +65,6 @@ problem: !Coupling_Sequential
           sources_sigma: 0
         - rid: 7
           time: 4
-          porosity: !FieldFormula
-            value: 4/t
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
