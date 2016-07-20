@@ -45,19 +45,6 @@ const Record & OutputTime::get_input_type() {
 				"Format of output stream and possible parameters.")
 		.declare_key("times", OutputTimeSet::get_input_type(), Default::optional(),
 		        "Output times used for equations without is own output times key.")
-		/*
-		.declare_key("time_step", Double(0.0),
-				"Time interval between outputs.\n"
-				"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
-				"The start time and the end time are always added. ")*/
-
-		.declare_key("time_list", Array(Double(0.0)),
-				Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
-				"Explicit array of output time points (can be combined with 'time_step'.")
-		/*
-		.declare_key("add_input_times", Bool(), Default("false"),
-				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
-		*/
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
                 "Output mesh record enables output on a refined mesh.")
         .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
@@ -213,54 +200,7 @@ std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record
 }
 
 
-void OutputTime::add_admissible_field_names(const Input::Array &in_array)
-{
-    vector<Input::FullEnum> field_ids;
-    in_array.copy_to(field_ids);
 
-    for (auto field_full_enum: field_ids) {
-        /* Setting flags to zero means use just discrete space
-         * provided as default in the field.
-         */
-        DiscreteSpaceFlags flags = 0;
-        this->output_names[(std::string)field_full_enum]=flags;
-    }
-}
-
-
-
-
-void OutputTime::mark_output_times(const TimeGovernor &tg)
-{
-	TimeMark::Type output_mark_type = tg.equation_fixed_mark_type() | tg.marks().type_output();
-
-	double time_step;
-	if (input_record_.opt_val("time_step", time_step)) {
-		tg.add_time_marks_grid(time_step, output_mark_type);
-	}
-
-	Input::Array time_list;
-	if (input_record_.opt_val("time_list", time_list)) {
-		vector<double> list;
-		time_list.copy_to(list);
-		for( double time : list) tg.marks().add(TimeMark(time, output_mark_type));
-	} else {
-	    tg.marks().add( TimeMark(tg.init_time(), output_mark_type) );
-	}
-
-	bool add_flag;
-	if (input_record_.opt_val("add_input_times", add_flag) && add_flag) {
-		TimeMark::Type input_mark_type = tg.equation_mark_type() | tg.marks().type_input();
-		vector<double> mark_times;
-		// can not add marks while iterating through time marks
-		for(auto it = tg.marks().begin(input_mark_type); it != tg.marks().end(input_mark_type); ++it)
-			mark_times.push_back(it->time());
-		for(double time : mark_times)
-			tg.marks().add( TimeMark(time, output_mark_type) );
-
-	}
-
-}
 
 
 void OutputTime::write_time_frame()

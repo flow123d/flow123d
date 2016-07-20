@@ -88,8 +88,7 @@ void OutputTime::register_data(const DiscreteSpace type,
 	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
     //if (output_names.find(multi_field.name()) == output_names.end()) return;
 
-    DiscreteSpaceFlags flags = output_names[multi_field.name()];
-    if (! flags) flags = 1 << type;
+    DiscreteSpaceFlags flags = 1 << type;
     for (unsigned long index=0; index < multi_field.size(); index++)
         for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
             if (flags & (1 << ids))
@@ -106,8 +105,7 @@ void OutputTime::register_data(const DiscreteSpace type,
 	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
     //if (output_names.find(field_ref.name()) == output_names.end()) return;
     
-    DiscreteSpaceFlags flags = output_names[field_ref.name()];
-    if (! flags) flags = 1 << type;
+	DiscreteSpaceFlags flags = 1 << type;
     for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
         if (flags & (1 << ids))
             this->compute_field_data( DiscreteSpace(ids), field_ref);

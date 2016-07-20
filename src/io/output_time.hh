@@ -65,7 +65,7 @@ public:
     virtual ~OutputTime();
 
     /**
-     *
+     * Return the input array for the output time set of the output stream.
      */
     Input::Iterator<Input::Array> get_time_set_array();
 
@@ -133,22 +133,9 @@ public:
     std::shared_ptr<Observe> observe();
 
     /**
-     * \brief Registers names of output fields that can be written using this stream.
-     * @param in_array Array of admissible fields (array of selections).
-     */
-    void add_admissible_field_names(const Input::Array &in_array);
-
-    /**
      * \brief Clear data for output computed by method @p compute_field_data.
      */
     void clear_data(void);
-
-    /**
-     *  Add time marks matching given @p tg.output_mark_type as well as general output type
-     *  TimeMarks::type_output(). The time marks denotes times when output should be performed according
-     *  to the input record of the output stream, namely keys: time_step, time_list, and include_input_times.
-     */
-    void mark_output_times(const TimeGovernor &tg);
 
     /**
      * Declaration of new exception info used in following exception
@@ -225,7 +212,6 @@ protected:
      * output_data_vec_.
      */
     typedef unsigned int DiscreteSpaceFlags;
-    std::map<std::string, DiscreteSpaceFlags> output_names;
 
     /**
      * Record for current output stream
