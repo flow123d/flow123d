@@ -69,6 +69,8 @@
 #include "io/output_time.hh"
 
 #include "io/output_data_base.hh"
+#include "output_mesh.hh"
+#include "output_element.hh"
 
 
 /**
@@ -141,7 +143,7 @@ public:
      */
     void print(ostream &out_stream, unsigned int idx) override
             {
-        ASSERT_LESS(idx, this->n_values);
+    	OLD_ASSERT_LESS(idx, this->n_values);
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
             out_stream << *ptr << " ";
@@ -198,7 +200,7 @@ private:
      */
     template <class Func>
     void operate(unsigned int idx, const Value &val, const Func& func) {
-        ASSERT_LESS(idx, this->n_values);
+    	OLD_ASSERT_LESS(idx, this->n_values);
         ElemType *ptr = this->data_ + idx*this->n_elem_;
         for(unsigned int i_row = 0; i_row < this->n_rows; i_row++) {
             for(unsigned int i_col = 0; i_col < this->n_cols; i_col++) {
@@ -249,7 +251,7 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
-    ASSERT_LESS(type, N_DISCRETE_SPACES);
+	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
     if (output_names.find(multi_field.name()) == output_names.end()) return;
 
     DiscreteSpaceFlags flags = output_names[multi_field.name()];
@@ -266,9 +268,10 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         Field<spacedim, Value> &field_ref)
 {
-    ASSERT_LESS(type, N_DISCRETE_SPACES);
+    DBGMSG("register data\n");
+	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
     if (output_names.find(field_ref.name()) == output_names.end()) return;
-
+    
     DiscreteSpaceFlags flags = output_names[field_ref.name()];
     if (! flags) flags = 1 << type;
     for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
@@ -277,29 +280,25 @@ void OutputTime::register_data(const DiscreteSpace type,
 }
 
 
-
 template<int spacedim, class Value>
 void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
 {
-
     /* It's possible now to do output to the file only in the first process */
     if( this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return;
     }
 
+    DBGMSG("compute field data\n");
 
-    // TODO: remove const_cast after resolving problems with const Mesh.
-    Mesh *field_mesh = const_cast<Mesh *>(field.mesh());
-    ASSERT(!this->_mesh || this->_mesh==field_mesh, "Overwriting non-null mesh pointer.\n");
-    this->_mesh=field_mesh;
-    ASSERT(this->_mesh, "Null mesh pointer.\n");
-
+    if(space_type == CORNER_DATA)
+        compute_discontinuous_output_mesh();
+    
     // get possibly existing data for the same field, check both name and type
     std::vector<unsigned int> size(N_DISCRETE_SPACES);
-    size[NODE_DATA]=this->_mesh->n_nodes();
-    size[ELEM_DATA]=this->_mesh->n_elements();
-    size[CORNER_DATA]=this->_mesh->n_corners();
+    size[NODE_DATA] = output_mesh_->n_nodes();
+    size[ELEM_DATA] = output_mesh_->n_elements();
+    size[CORNER_DATA] = output_mesh_discont_->n_nodes();
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
@@ -310,64 +309,67 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(*it));
 
-    unsigned int i_node;
 
     /* Copy data to array */
     switch(space_type) {
     case NODE_DATA: {
+        DBGMSG("compute field NODE data\n");
         // set output data to zero
         vector<unsigned int> count(output_data.n_values, 0);
         for(unsigned int idx=0; idx < output_data.n_values; idx++)
             output_data.zero(idx);
 
-        // sum values
-        FOR_ELEMENTS(this->_mesh, ele) {
-            FOR_ELEMENT_NODES(ele, i_node) {
-                Node * node = ele->node[i_node];
-                unsigned int ele_index = ele.index();
-                unsigned int node_index = this->_mesh->node_vector.index(ele->node[i_node]);
-
+        for(const auto & ele : *output_mesh_)
+        {
+            std::vector<Space<3>::Point> vertices = ele.vertex_list();
+            for(unsigned int i=0; i < ele.n_nodes(); i++)
+            {
+                unsigned int node_index = ele.node_index(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
-                                field.value(node->point(),
-                                        ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
+                                field.value(vertices[i],
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
+                             );
                 output_data.add(node_index, node_value);
                 count[node_index]++;
-
             }
         }
-
+        
         // Compute mean values at nodes
         for(unsigned int idx=0; idx < output_data.n_values; idx++)
             output_data.normalize(idx, count[idx]);
     }
     break;
     case CORNER_DATA: {
-        unsigned int corner_index=0;
-        FOR_ELEMENTS(this->_mesh, ele) {
-            FOR_ELEMENT_NODES(ele, i_node) {
-                Node * node = ele->node[i_node];
-                unsigned int ele_index = ele.index();
-
+        DBGMSG("compute field CORNER data\n");
+        for(const auto & ele : *output_mesh_discont_)
+        {
+            std::vector<Space<3>::Point> vertices = ele.vertex_list();
+            for(unsigned int i=0; i < ele.n_nodes(); i++)
+            {
+                unsigned int node_index = ele.node_index(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
-                                field.value(node->point(),
-                                        ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
-                output_data.store_value(corner_index,  node_value);
-                corner_index++;
+                                field.value(vertices[i],
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
+                             );
+                output_data.store_value(node_index,  node_value);
             }
         }
     }
     break;
     case ELEM_DATA: {
-        FOR_ELEMENTS(this->_mesh, ele) {
-            unsigned int ele_index = ele.index();
+        DBGMSG("compute field ELEM data\n");
+        for(const auto & ele : *output_mesh_)
+        {
+            unsigned int ele_index = ele.idx();
             const Value &ele_value =
-                    Value( const_cast<typename Value::return_type &>(
-                            field.value(ele->centre(),
-                                    ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
-            //std::cout << ele_index << " ele:" << typename Value::return_type(ele_value) << std::endl;
-            output_data.store_value(ele_index,  ele_value);
+                        Value( const_cast<typename Value::return_type &>(
+                                field.value(ele.centre(),
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
+                                                                        )
+                             );
+                output_data.store_value(ele_index,  ele_value);
         }
     }
     break;

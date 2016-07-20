@@ -3,7 +3,7 @@
     TYPE = "SequentialCoupling", 
     description = "Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition", 
     mesh = {
-      mesh_file = "${INPUT}/test05.msh"
+      mesh_file = "${INPUT}/square_xy.msh"
     }, 
 
     primary_equation = {

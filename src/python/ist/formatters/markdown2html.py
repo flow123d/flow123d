@@ -1,7 +1,10 @@
-# encoding: utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # author:   Jan Hybs
-from xml.etree import ElementTree as ET
+
+from __future__ import absolute_import
 import markdown
+from xml.etree import ElementTree as ET
 from ist.formatters.extensions.md_latex import MdLatexSupport
 
 
@@ -14,7 +17,8 @@ class markdown2html(object):
         html_secured = markdown.markdown(secured_markdown, extensions=[
             'markdown.extensions.sane_lists',
             'markdown.extensions.nl2br',
-            'ist.formatters.extensions.md_links'])
+            'ist.formatters.extensions.md_links',
+            'ist.formatters.extensions.md_strike'])
         html = self._md_latex.finish(html_secured)
 
         if not reduce_to_tree:

@@ -6,6 +6,8 @@
  */
 
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 
 #include <input/input_type.hh>
@@ -51,7 +53,8 @@ using namespace Input::Type;
     // auto conversion - default value for TYPE
     EXPECT_EQ("\"EqDarcy\"", a_rec.get_selection_default().value() );
     // no more allow_auto_conversion for a_rec
-    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the Abstract 'EqBase' is closed.");
+    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, feal::Exc_assert,
+    		"Can not specify default value for TYPE key as the Abstract is closed.");
 
     a_rec.finish();
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
@@ -85,7 +88,7 @@ using namespace Input::Type;
     Abstract x = Abstract("AR","")
     	.allow_auto_conversion("BR")
 		.close();
-    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value '\"BR\"' for TYPE key do not match any descendant of Abstract 'AR'.");
+    EXPECT_THROW_WHAT({ x.finish(); }, ExcWrongDefault, "Default value for TYPE key do not match any descendant of Abstract.");
 
 }
 

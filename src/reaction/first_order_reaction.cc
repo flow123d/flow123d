@@ -17,7 +17,7 @@
 
 #include "reaction/first_order_reaction.hh"
 #include "reaction/reaction_term.hh"
-#include "reaction/linear_ode_solver.hh"
+#include "reaction/pade_approximant.hh"
 
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
@@ -69,7 +69,7 @@ const Record & FirstOrderReaction::get_input_type() {
 		.derive_from( ReactionTerm::get_input_type() )
 		.declare_key("reactions", Array( FirstOrderReaction::get_input_type_single_reaction()), Default::obligatory(),
 					"An array of first order chemical reactions.")
-		.declare_key("ode_solver", LinearODESolverBase::get_input_type(), Default::optional(),
+		.declare_key("ode_solver", PadeApproximant::get_input_type(), Default("{}"),
 					 "Numerical solver for the system of first order ordinary differential equations coming from the model.")
 		.close();
 }

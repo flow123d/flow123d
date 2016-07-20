@@ -47,7 +47,7 @@ public:
 	TYPEDEF_ERR_INFO(EI_MeshFile, std::string);
 	TYPEDEF_ERR_INFO(EI_NElems, unsigned int);
 	TYPEDEF_ERR_INFO(EI_NProcs, unsigned int);
-	DECLARE_EXCEPTION(ExcDecomposeMesh,
+	DECLARE_INPUT_EXCEPTION(ExcDecomposeMesh,
 			<< "Number of processors " << EI_NProcs::val << " greater then number of elements "
 			<< EI_NElems::val << ". Can not make partitioning of the mesh " << EI_MeshFile::qval << ".\n" );
 

@@ -5,6 +5,8 @@
  *      Author: pe
  */
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <ctime>
 #include <cstdlib>
 #include <sstream>

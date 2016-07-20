@@ -86,7 +86,8 @@ public:
      */
     virtual void set_balance_object(boost::shared_ptr<Balance> balance) = 0;
     
-    virtual bool assess_time_constraint(double &time_constraint) = 0;
+    /// Computes a constraint for time step.
+    virtual bool evaluate_time_constraint(double &time_constraint) = 0;
 
     /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
@@ -241,6 +242,9 @@ private:
 
     double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
     Semchem_interface *Semchem_reactions;
+    
+    double cfl_convection; ///< Time restriction due to transport
+    double cfl_reaction;   ///< Time restriction due to reactions
 
 };
 

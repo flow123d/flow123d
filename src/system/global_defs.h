@@ -26,15 +26,16 @@
 #include "system/exc_common.hh"
 #include "config.h"
 #include "mpi.h"
+#include "logger.hh"
 
 /*! @brief Debugging macros.
  *
- *  The macro ASSERT has to be used for assertion tests. An error occures if
+ *  The macro OLD_ASSERT has to be used for assertion tests. An error occures if
  *  given condition is violated.  Macro accepts additional variables to print.
  *
  *  Example:
  *  @verbatim
- *  ASSERT( i<size , "Array X overflow: index %d >= alocated size %d.\n",i,size);
+ *  OLD_ASSERT( i<size , "Array X overflow: index %d >= alocated size %d.\n",i,size);
  *  @endverbatim
  *
  *  The macro INPUT_CHECK should be used for assertions about user input. So
@@ -43,7 +44,7 @@
  *  The macro DBGMSG should be used for debugging messages,
  *  so they can be removed in production version.
  *
- *  WARN_ASSERT - can be used for consistency tests in debugging version.
+ *  OLD_WARN_ASSERT - can be used for consistency tests in debugging version.
  *
  *  @{
  */
@@ -80,6 +81,10 @@
 #endif
 
 
+#include "asserts.hh"
+
+
+
 #ifdef FLOW123D_DEBUG_ASSERTS
 
 /**
@@ -93,7 +98,7 @@
 //#define MPI_Comm_rank(A, B)
 //#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 
-#define ASSERT(i,...)   do {\
+#define OLD_ASSERT(i,...)   do {\
     if (!(i))  {\
         char msg[1024];\
         sprintf( msg, __VA_ARGS__);\
@@ -101,56 +106,34 @@
         THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
     }} while (0)
 
-#define WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
+#define OLD_WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
 
-
-#else
-
-#define ASSERT(...)
-#define WARN_ASSERT(...)
-
-#endif
-
-
-
-#ifdef FLOW123D_DEBUG_ASSERTS
-
-#define ASSERT_EQUAL( a, b)  do {\
+#define OLD_ASSERT_EQUAL( a, b)  do {\
     stringstream ss; ss << (a) << " != " << (b); \
-    ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
+    OLD_ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
     } while (0)
-#else
 
-#define ASSERT_EQUAL( a, b)
-
-#endif
-
-
-
-#ifdef FLOW123D_DEBUG_ASSERTS
-
-#define ASSERT_LESS( a, b) do {\
+#define OLD_ASSERT_LESS( a, b) do {\
     stringstream ss; ss << (a) << " >= " << (b); \
-    ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
+    OLD_ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
-
-
-
-#if defined(ASSERT_LE) && defined(FLOW123D_INCLUDES_GTEST)
-#undef ASSERT_LE
-#endif
-
-
-#define ASSERT_LE( a, b) do {\
+#define OLD_ASSERT_LE( a, b) do {\
     stringstream ss; ss << (a) << " > " << (b); \
-    ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
+    OLD_ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
+#define OLD_ASSERT_PTR( ptr ) do {\
+    OLD_ASSERT( ((ptr) != nullptr) , "Null pointer: %s\n", #ptr ); \
+    } while (0)
 #else
 
-#define ASSERT_LESS( a, b)
-#define ASSERT_LE( a, b)
+#define OLD_ASSERT(...)
+#define OLD_WARN_ASSERT(...)
+#define OLD_ASSERT_EQUAL( a, b)
+#define OLD_ASSERT_LESS( a, b)
+#define OLD_ASSERT_LE( a, b)
+#define OLD_ASSERT_PTR( ptr )
 
 #endif
 
@@ -188,15 +171,6 @@
 #endif
 
 
-#ifdef FLOW123D_DEBUG_ASSERTS
-
-static const int debug_asserts_view = 1;
-
-#else
-
-static const int debug_asserts_view = 0;
-
-#endif
 
 
 /**

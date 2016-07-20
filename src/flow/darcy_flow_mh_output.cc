@@ -49,7 +49,7 @@ namespace it = Input::Type;
 const it::Selection & DarcyFlowMHOutput::OutputFields::get_output_selection() {
     // Since result output fields are in the separate fieldset OutputFields,
     // we have to merge two selections.
-	return DarcyFlowMH::EqData().make_output_field_selection(
+	return DarcyMH::EqData().make_output_field_selection(
 	        "DarcyFlowMH_output_fields",
 	        "Selection of output fields for Darcy Flow MH model.")
 		.copy_values(OutputFields().make_output_field_selection(
@@ -97,7 +97,7 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 }
 
 
-DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_rec)
+DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   in_rec_(in_rec),
@@ -569,8 +569,8 @@ struct DiffData {
 
     //std::vector< std::vector<double>  > *ele_flux;
     std::vector<int> velocity_mask;
-    DarcyFlowMH_Steady *darcy;
-    DarcyFlowMH_Steady::EqData *data_;
+    DarcyMH *darcy;
+    DarcyMH::EqData *data_;
 };
 
 template <int dim>

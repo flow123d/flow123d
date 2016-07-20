@@ -28,9 +28,12 @@ class Mesh;
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
 class Field;
+class FieldSet;
 template <int spacedim, class Value>
 class MultiField;
 class TimeGovernor;
+class OutputMesh;
+class OutputMeshDiscontinuous;
 
 /**
  * \brief The class for outputting data during time.
@@ -92,7 +95,9 @@ public:
      * record in configuration file.
      */
     static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
-
+    
+    void make_output_mesh(Mesh* mesh, FieldSet* output_fields);
+    
     /**
      * \brief Generic method for registering output data stored in MultiField
      *
@@ -153,7 +158,9 @@ public:
     Input::AbstractRecord format_record_;
 
 protected:
-
+    
+    void compute_discontinuous_output_mesh();
+    
     /**
      * Interpolate given @p field into output discrete @p space and store the values
      * into private storage for postponed output.
@@ -230,6 +237,14 @@ protected:
      * Cached pointer at mesh used by this output stream
      */
     Mesh *_mesh;
+    
+    /// Output mesh.
+    std::shared_ptr<OutputMesh> output_mesh_;
+    /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
+    std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
+    
+    /// Auxliary flag for refinement enabling, due to gmsh format.
+    bool enable_refinement_;
 };
 
 

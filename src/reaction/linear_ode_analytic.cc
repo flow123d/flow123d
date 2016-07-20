@@ -58,7 +58,7 @@ void LinearODEAnalytic::compute_matrix()
 {
     START_TIMER("ODEAnalytic::compute_matrix");
 
-    ASSERT(system_matrix_.n_cols == system_matrix_.n_rows, "Matrix is not square.");
+    OLD_ASSERT(system_matrix_.n_cols == system_matrix_.n_rows, "Matrix is not square.");
     solution_matrix_.copy_size(system_matrix_);
     
     double exponential, temp;
@@ -75,4 +75,20 @@ void LinearODEAnalytic::compute_matrix()
         }
         solution_matrix_(i,i) = exponential;
     }
+}
+
+bool LinearODEAnalytic::evaluate_time_constraint(double &time_constraint)
+{
+    if (!system_matrix_changed_) return false;
+
+    system_matrix_changed_ = false;
+    
+    // set time constraint to 1/max(diag(reaction_matrix_))
+    time_constraint = 0;
+    for (unsigned int k=0; k<system_matrix_.n_rows; k++)
+      time_constraint = std::max(time_constraint, -system_matrix_(k,k));
+    
+    time_constraint = 1 / time_constraint;
+    
+    return true;
 }

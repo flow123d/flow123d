@@ -8,6 +8,12 @@
 
 
 #define TEST_USE_MPI
+#define FEAL_OVERRIDE_ASSERTS
+/*
+ * NOTE: This unit test uses asserts defined in namespace feal, not asseerts defined
+ * in gtest library.
+ */
+
 #include <flow_gtest_mpi.hh>
 #include <cmath>
 #include <algorithm>

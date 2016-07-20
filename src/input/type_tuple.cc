@@ -49,7 +49,7 @@ TypeBase::TypeHash Tuple::content_hash() const
 
 Tuple & Tuple::allow_auto_conversion(const string &from_key)
 {
-	ASSERT(false, "Call of allow_auto_conversion method is forbidden for type Tuple: '%s'", this->type_name().c_str());
+	ASSERT(false)(this->type_name()).error("Call of allow_auto_conversion method is forbidden for type Tuple");
 	return *this;
 }
 
@@ -70,7 +70,7 @@ bool Tuple::finish(bool is_generic)
 {
 	if (data_->finished) return true;
 
-	ASSERT(data_->closed_, "Finished Tuple '%s' must be closed!", this->type_name().c_str());
+	ASSERT(data_->closed_)(this->type_name()).error();
 
     data_->finished = true;
 
@@ -109,7 +109,7 @@ bool Tuple::finish(bool is_generic)
 
 Tuple &Tuple::derive_from(Abstract &parent)
 {
-	ASSERT(false, "Call of derive_from method is forbidden for type Tuple: '%s'", this->type_name().c_str());
+	ASSERT(false)(this->type_name()).error("Call of derive_from method is forbidden for type Tuple");
 	return *this;
 }
 
@@ -123,24 +123,23 @@ unsigned int Tuple::obligatory_keys_count() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Tuple::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Tuple::make_instance(std::vector<ParameterPair> vec)  {
 	Tuple tuple = this->deep_copy();
 	ParameterMap parameter_map;
 	this->set_instance_data(tuple, parameter_map, vec);
 
-	return std::make_pair( boost::make_shared<Tuple>(tuple.close()), parameter_map );
+	return std::make_pair( std::make_shared<Tuple>(tuple.close()), parameter_map );
 }
 
 
 Tuple Tuple::deep_copy() const {
 	Tuple tuple = Tuple();
-	tuple.data_ =  boost::make_shared<Record::RecordData>(*this->data_);
+	tuple.data_ =  std::make_shared<Record::RecordData>(*this->data_);
 	tuple.data_->closed_ = false;
 	tuple.data_->finished = false;
 	tuple.generic_type_hash_ = this->generic_type_hash_;
 	tuple.parameter_map_ = this->parameter_map_;
-	tuple.attributes_ = boost::make_shared<attribute_map>(*attributes_);
-
+	tuple.copy_attributes(*attributes_);
 	return tuple;
 }
 
@@ -151,19 +150,21 @@ Tuple &Tuple::root_of_generic_subtree() {
 }
 
 
-Tuple &Tuple::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
-                        const Default &default_value, const string &description)
+Tuple &Tuple::declare_key(const string &key, std::shared_ptr<TypeBase> type,
+                        const Default &default_value, const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    Record::declare_key(key, type, default_value, description);
+    Record::declare_key(key, type, default_value, description, key_attributes);
     return *this;
 }
 
 
 template <class KeyType>
 Tuple &Tuple::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
+                        const Default &default_value, const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    Record::declare_key(key, type, default_value, description);
+    Record::declare_key(key, type, default_value, description, key_attributes);
     return *this;
 }
 
@@ -171,9 +172,10 @@ Tuple &Tuple::declare_key(const string &key, const KeyType &type,
 
 template <class KeyType>
 Tuple &Tuple::declare_key(const string &key, const KeyType &type,
-                        const string &description)
+                        const string &description,
+                        TypeBase::attribute_map key_attributes)
 {
-    Record::declare_key(key, type, description);
+    Record::declare_key(key, type, description, key_attributes);
     return *this;
 }
 
@@ -182,8 +184,8 @@ Tuple &Tuple::declare_key(const string &key, const KeyType &type,
 // explicit instantiation of template methods
 
 #define TUPLE_DECLARE_KEY(TYPE) \
-template Tuple & Tuple::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template Tuple & Tuple::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
+template Tuple & Tuple::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description, TypeBase::attribute_map key_attributes); \
+template Tuple & Tuple::declare_key<TYPE>(const string &key, const TYPE &type, const string &description, TypeBase::attribute_map key_attributes)
 
 
 TUPLE_DECLARE_KEY(String);

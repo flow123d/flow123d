@@ -98,7 +98,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 #pragma GCC diagnostic ignored "-Wunused-variable"
             {
                 int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
-                ASSERT( err != FunctionParser::FP_NO_ERROR, "ParseAndDeduceVariables error: %s\n", tmp_parser.ErrorMsg() );
+                OLD_ASSERT( err != FunctionParser::FP_NO_ERROR, "ParseAndDeduceVariables error: %s\n", tmp_parser.ErrorMsg() );
             }
 #pragma GCC diagnostic pop
 
@@ -162,10 +162,10 @@ template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-    ASSERT_EQUAL( point_list.size(), value_list.size() );
+	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
-        ASSERT( envelope.n_rows()==this->value_.n_rows(),
+        OLD_ASSERT( envelope.n_rows()==this->value_.n_rows(),
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, envelope.n_rows(),this->value_.n_rows());
 

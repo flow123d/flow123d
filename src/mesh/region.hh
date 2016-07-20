@@ -83,12 +83,12 @@ public:
 
     /// Returns index of the region in the boundary set.
     inline unsigned int boundary_idx() const {
-        ASSERT( is_boundary(), "Try to get boundary index of a bulk region with internal idx: %d\n", idx_ );
+    	OLD_ASSERT( is_boundary(), "Try to get boundary index of a bulk region with internal idx: %d\n", idx_ );
         return idx_ >> 1; }
 
     /// Returns index of the region in the bulk set.
     inline unsigned int bulk_idx() const {
-        ASSERT( ! is_boundary(), "Try to get bulk index of boundary region with internal idx: %d\n", idx_ );
+    	OLD_ASSERT( ! is_boundary(), "Try to get bulk index of boundary region with internal idx: %d\n", idx_ );
         return idx_ >> 1; }
 
     /// Equality comparison operators for regions.
@@ -304,9 +304,6 @@ public:
                                              << "both ID and label match an existing elementary region with different boundary flag.");
 
     DECLARE_INPUT_EXCEPTION( ExcCantAdd, << "Can not add new elementary region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
-
-    DECLARE_INPUT_EXCEPTION( ExcUnusedRegion, << "Region with id: " << EI_ID::qval << " and label: " << EI_Label::qval
-    									<< " is not used in any element." );
 
     DECLARE_INPUT_EXCEPTION( ExcUnknownRegion, << "Unknown region with id: " << EI_ID::val );
 

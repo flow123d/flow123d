@@ -89,7 +89,7 @@ public:
     }
 
     inline arma::vec::fixed<spacedim> centre() const {
-        ASSERT(is_valid(), "Invalid element accessor.");       
+    	OLD_ASSERT(is_valid(), "Invalid element accessor.");
         if (is_regional() ) return arma::vec::fixed<spacedim>();
         else return element()->centre();
     }

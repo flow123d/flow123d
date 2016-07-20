@@ -116,6 +116,8 @@ public:
   
   void output_data(void) override;
   
+  bool evaluate_time_constraint(double &time_constraint) override { return false; }
+  
     
 protected:
   /**

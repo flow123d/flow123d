@@ -37,11 +37,12 @@ namespace it = Input::Type;
 const it::Record & LinSys_BDDC::get_input_type() {
 	return it::Record("Bddc", "Solver setting.")
 		.derive_from(LinSys::get_input_type())
-		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
-					"Relative residual tolerance (to initial error).")
-		.declare_key("max_it", it::Integer(0), it::Default("10000"),
-					"Maximum number of outer iterations of the linear solver.")
-		.declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
+        .declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-7."),
+                    "Relative residual tolerance,  (to initial error).")
+        .declare_key("max_it", it::Integer(0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1000."),
+                    "Maximum number of outer iterations of the linear solver.")
+
+        .declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
 					 "Maximum number of iterations of the linear solver with non-decreasing residual.")
 		.declare_key("number_of_levels", it::Integer(0), it::Default("2"),
 					 "Number of levels in the multilevel method (=2 for the standard BDDC).")
@@ -85,7 +86,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
             break;
         default:
             matrixType = la::BddcmlWrapper::GENERAL;
-            ASSERT( true, "Unknown matrix type %d", matrixTypeInt );
+            OLD_ASSERT( true, "Unknown matrix type %d", matrixTypeInt );
     }
 
     bddcml_ = new Bddcml_( size_,
@@ -108,6 +109,19 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
 #endif // FLOW123D_HAVE_BDDCML
 }
 
+
+void LinSys_BDDC::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
+{
+    if (! in_rec_.is_empty()) {
+        // input record is set
+        r_tol_ = in_rec_.val<double>("r_tol", r_tol);
+        // BDDC does not use a_tol_
+        a_tol_ = 0.01 * r_tol_;
+        max_it_ = in_rec_.val<unsigned int>("max_it", max_it);\
+    }
+}
+
+
 void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDofs,
                              const std::vector<int> & inet, 
                              const std::vector<int> & nnet, 
@@ -123,7 +137,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     // simply pass the data to BDDCML solver
     isngn_.resize(isngn.size());
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
-    ASSERT( numDofs == size_, "Global problem size mismatch!" );
+    OLD_ASSERT( numDofs == size_, "Global problem size mismatch!" );
 
     bddcml_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, element_permeability, meshDim );
 
@@ -285,9 +299,7 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 
 void LinSys_BDDC::set_from_input(const Input::Record in_rec)
 {
-    // common values
-    r_tol_  = in_rec.val<double>("r_tol");   
-    max_it_ = in_rec.val<int>("max_it");   
+    LinSys::set_from_input(in_rec);
 
     // BDDCML specific parameters
     max_nondecr_it_         = in_rec.val<int>("max_nondecr_it");   

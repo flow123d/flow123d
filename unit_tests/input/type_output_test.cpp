@@ -2,6 +2,8 @@
  * type_output_test.cpp
  */
 
+#define FEAL_OVERRIDE_ASSERTS
+
 #include <flow_gtest.hh>
 
 #include "input/type_base.hh"
@@ -236,7 +238,7 @@ TEST(OutputTypeParameter, parameter_test) {
     using namespace Input::Type;
 
     std::vector<TypeBase::ParameterPair> param_vec;
-    param_vec.push_back( std::make_pair("param", boost::make_shared<Integer>()) );
+    param_vec.push_back( std::make_pair("param", std::make_shared<Integer>()) );
 
     static Record param_record = Record("WithParameter", "Record with parameter.")
 			.declare_key("param", Parameter("param"), "desc.")

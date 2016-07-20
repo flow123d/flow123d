@@ -59,7 +59,7 @@
 //void DOFHandler<dim,spacedim>::distribute_dofs(FiniteElement<dim,spacedim> & fe, const unsigned int offset)
 //{
 //	// First check if dofs are already distributed.
-//	ASSERT(finite_element == 0, "Attempt to distribute DOFs multiple times!");
+//	OLD_ASSERT(finite_element == 0, "Attempt to distribute DOFs multiple times!");
 //
 //    unsigned int next_free_dof = offset;
 //    unsigned int n_obj_dofs[dim+1];
@@ -247,7 +247,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 		const unsigned int offset)
 {
 	// First check if dofs are already distributed.
-	ASSERT((fe1d_ == 0) && (fe2d_ == 0) && (fe3d_ == 0), "Attempt to distribute DOFs multiple times!");
+	OLD_ASSERT((fe1d_ == 0) && (fe2d_ == 0) && (fe3d_ == 0), "Attempt to distribute DOFs multiple times!");
 
     unsigned int next_free_dof = offset;
     // n_obj_dofs[element_dim][general_face_dim]
