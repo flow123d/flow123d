@@ -72,4 +72,5 @@ foreach(PY_PATH ${PYTHON_SYSPATH})
 endforeach()
 
 # configure pythonenv.sh script (populates py wrapper path used in wrapper file)
+message(STATUS "Creating pythonenv.sh wrapper")
 configure_file(${CMAKE_SOURCE_DIR}/CMake/pythonenv_template ${CMAKE_SOURCE_DIR}/bin/pythonenv.sh @ONLY)
