@@ -1,0 +1,10 @@
+column_names: [ flux,  flux_in,  flux_out,  mass,  source,  source_in,  source_out,  flux_increment,  source_increment,  flux_cumulative,  source_cumulative,  error ]
+data:
+  - time: 0
+    region: plane
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 10.6684, 10.6684, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .plane_boundary
+    quantity: water_volume
+    data: [ -10.6684, 0, -10.6684, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]

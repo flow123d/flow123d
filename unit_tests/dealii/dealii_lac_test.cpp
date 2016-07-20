@@ -1,5 +1,6 @@
 #define TEST_USE_PETSC
 #define TEST_HAS_MAIN
+#define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest_mpi.hh>
 #include "dealii/include/deal.II/lac/vector.templates.h"
