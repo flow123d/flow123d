@@ -183,7 +183,8 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 
 
-void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
+template <class T>
+void OutputVTK::fill_element_types_vector(std::vector< T >& data)
 {    
     auto offsets = output_mesh_->offsets_->data_;
     unsigned int n_elements = offsets.size();
@@ -194,13 +195,13 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
     n_nodes = offsets[0];
     switch(n_nodes) {
         case 2:
-            data[0] = (unsigned int)VTK_LINE;
+            data[0] = (T)VTK_LINE;
             break;
         case 3:
-            data[0] = (unsigned int)VTK_TRIANGLE;
+            data[0] = (T)VTK_TRIANGLE;
             break;
         case 4:
-            data[0] = (unsigned int)VTK_TETRA;
+            data[0] = (T)VTK_TETRA;
             break;
         }
     
@@ -209,16 +210,25 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
         n_nodes = offsets[i]-offsets[i-1];
         switch(n_nodes) {
         case 2:
-            data[i] = (unsigned int)VTK_LINE;
+            data[i] = (T)VTK_LINE;
             break;
         case 3:
-            data[i] = (unsigned int)VTK_TRIANGLE;
+            data[i] = (T)VTK_TRIANGLE;
             break;
         case 4:
-            data[i] = (unsigned int)VTK_TETRA;
+            data[i] = (T)VTK_TETRA;
             break;
         }
     }
+}
+
+
+
+template <class T>
+OutputTime::OutputDataPtr OutputVTK::create_element_data_ptr() {
+    auto types = std::make_shared<MeshData<T>>("types");
+    fill_element_types_vector<T>(types->data_);
+	return types;
 }
 
 
@@ -345,7 +355,7 @@ void OutputVTK::write_vtk_vtu_tail(void)
     if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB ) {
     	// appended data of binary compressed output
     	WarningOut() << "Zlib library is not supported yet. Appended output is not compressed." << endl;
-    	file << "<UnstructuredGrid>" << endl;
+    	file << "<UnstructuredGrid encoding=\"raw\">" << endl;
     	file << appended_data_.str() << endl;
     	file << "</UnstructuredGrid>" << endl;
     }
@@ -377,9 +387,11 @@ void OutputVTK::write_vtk_vtu(void)
         file << "<Cells>" << endl;
             write_vtk_data(output_mesh_->connectivity_, VTK_INT32 );
             write_vtk_data(output_mesh_->offsets_, VTK_INT32 );
-            auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_);
-            write_vtk_data(types, VTK_UINT8 );
+            if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
+            	write_vtk_data( create_element_data_ptr<unsigned int>(), VTK_UINT8 );
+            } else {
+            	write_vtk_data( create_element_data_ptr<uint8_t>(), VTK_UINT8 );
+            }
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
@@ -405,9 +417,11 @@ void OutputVTK::write_vtk_vtu(void)
         file << "<Cells>" << endl;
             write_vtk_data(output_mesh_discont_->connectivity_, VTK_INT32 );
             write_vtk_data(output_mesh_discont_->offsets_, VTK_INT32 );
-            auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_);
-            write_vtk_data(types, VTK_UINT8 );
+            if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
+            	write_vtk_data( create_element_data_ptr<unsigned int>(), VTK_UINT8 );
+            } else {
+            	write_vtk_data( create_element_data_ptr<uint8_t>(), VTK_UINT8 );
+            }
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
@@ -465,6 +479,18 @@ int OutputVTK::write_tail(void)
 
     return 1;
 }
+
+
+
+// explicit instantiation of template methods
+
+#define OUTPUT_VTK_FILL_ELEMENT_VECTOR(T) \
+template void OutputVTK::fill_element_types_vector<T>(std::vector< T >& data); \
+template OutputTime::OutputDataPtr OutputVTK::create_element_data_ptr<T>()
+
+
+OUTPUT_VTK_FILL_ELEMENT_VECTOR(unsigned int);
+OUTPUT_VTK_FILL_ELEMENT_VECTOR(uint8_t);
 
 
 
