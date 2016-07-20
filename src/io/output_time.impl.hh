@@ -86,7 +86,6 @@ void OutputTime::register_data(const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
 	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
-    //if (output_names.find(multi_field.name()) == output_names.end()) return;
 
     DiscreteSpaceFlags flags = 1 << type;
     for (unsigned long index=0; index < multi_field.size(); index++)
@@ -101,9 +100,7 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         Field<spacedim, Value> &field_ref)
 {
-    DBGMSG("register data\n");
 	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
-    //if (output_names.find(field_ref.name()) == output_names.end()) return;
     
 	DiscreteSpaceFlags flags = 1 << type;
     for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
@@ -120,8 +117,6 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
         /* TODO: do something, when support for Parallel VTK is added */
         return;
     }
-
-    //DBGMSG("compute field data\n");
 
     if(space_type == CORNER_DATA)
         compute_discontinuous_output_mesh();
@@ -173,7 +168,6 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     break;
     case CORNER_DATA: {
-        //DBGMSG("compute field CORNER data\n");
         for(const auto & ele : *output_mesh_discont_)
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
@@ -191,7 +185,6 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     break;
     case ELEM_DATA: {
-        //DBGMSG("compute field ELEM data\n");
         for(const auto & ele : *output_mesh_)
         {
             unsigned int ele_index = ele.idx();

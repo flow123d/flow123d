@@ -16,10 +16,16 @@
 class TimeGovernor;
 
 
+/**
+ * Set of times. Simple extension of std::set<double> providing
+ * initialization by an array of time grids.
+ * TODO: replace by std::set with non-member read and initialize functions.
+ *
+ * Finally we store just doubles, since it is like a set of the time marks with same type.
+ * So we need not to save the type.
+ */
 class OutputTimeSet {
 public:
-
-    //OutputTimeSet &operator=(const OutputTimeSet &);
 
     /**
      *
@@ -41,7 +47,6 @@ public:
 
 
 private:
-    //boost::unordered::unordered_set<TimeMark, TimeMarkHash> time_marks_;
     std::set<double> times_;
 };
 

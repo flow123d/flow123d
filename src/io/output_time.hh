@@ -103,6 +103,10 @@ public:
      */
     static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
     
+    /**
+     * Create the output mesh from the given computational mesh. The field set passed in is used
+     * to select the field used for adaptivity of the output mesh.
+     */
     void make_output_mesh(Mesh &mesh, FieldSet &output_fields);
     
     /**
@@ -130,6 +134,9 @@ public:
      */
     void write_time_frame();
 
+    /**
+     * Getter of the oubserve object.
+     */
     std::shared_ptr<Observe> observe();
 
     /**
