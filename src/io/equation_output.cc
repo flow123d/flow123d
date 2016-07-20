@@ -171,12 +171,6 @@ void EquationOutput::output(TimeStep step)
     }
 }
 
-/*
-void EquationOutput::add_output_time(double begin)
-{
-    common_output_times_.add(begin, 1.0, begin, equation_fixed_type_ );
-}
-*/
 
 void EquationOutput::add_output_times(double begin, double step, double end)
 {

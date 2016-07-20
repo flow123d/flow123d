@@ -27,14 +27,13 @@ FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
 using namespace Input::Type;
 
 
+/**
+ * Auxiliary implementation of OutputDataBase that performs output of single zero data for the fields that are
+ * off for current time frame.
+ */
 class DummyOutputData : public OutputDataBase {
 public:
 
-
-
-    /**
-     * \brief Constructor of templated OutputData
-     */
     DummyOutputData(std::string field_name_in, OutputDataBase::NumCompValueType n_elem_in)
    {
         this->output_field_name = field_name_in;
@@ -42,31 +41,14 @@ public:
         this->n_values = 1;
     }
 
-    /**
-     * \brief Destructor of OutputData
-     */
     virtual ~DummyOutputData() override
     {}
 
-
-    /**
-     * Output data element on given index @p idx. Method for writing data
-     * to output stream.
-     *
-     * \note This method is used only by MSH file format.
-     */
     void print(ostream &out_stream, unsigned int idx) override
     {
         for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
     }
 
-    /**
-     * \brief Print all data stored in output data
-     *
-     * TODO: indicate if the tensor data are output in column-first or raw-first order
-     *       and possibly implement transposition. Set such property for individual file formats.
-     *       Class OutputData stores always in raw-first order.
-     */
     void print_all(ostream &out_stream) override
     {
         for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";

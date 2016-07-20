@@ -20,7 +20,7 @@
 
 
 /**
- * Internal class for the class Observe.
+ * Class representing single observe point, used internally by the class Observe.
  * Members: input_pos_, snap_dim_, snap_region_name_ are set in constructor. Should be checked before passed in.
  * Members: element_idx_, global_coords_, local_coords_ are derived, set in Observe::find_observe_points.
  */
@@ -37,7 +37,9 @@ public:
     static const Input::Type::Record & get_input_type();
 
 protected:
-    /// Default constructor just for testing.
+    /**
+     *  Default constructor just for testing.
+     */
     ObservePoint();
 
     /**
@@ -126,15 +128,16 @@ protected:
     /// If we find more candidates we pass in the closest one.
     double distance_;
 
-
-
     /// Only Observe should use this class directly.
     friend class Observe;
 
 };
 
 
-
+/**
+ * This class takes care about the observe points in the output stream, storing observe values of the fields and
+ * their output in the YAML format.
+ */
 
 class Observe {
 public:

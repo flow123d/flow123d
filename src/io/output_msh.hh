@@ -126,6 +126,10 @@ private:
      * \param[in]   step        The number of steps from start
      */
     void write_node_data(OutputDataPtr output_data);
+    /**
+     * \brief writes ElementNode data ascii GMSH (.msh) output file.
+     *
+     */
     void write_corner_data(OutputDataPtr output_data);
 
 
@@ -138,6 +142,11 @@ private:
      */
     void write_elem_data(OutputDataPtr output_data);
 
+    /**
+     * Write fields of single discrete space type, use given format function for the output of single field data.
+     *
+     * At first call it fills dummy_data_list_ (assuming output of all fields at the first output frame).
+     */
     void write_field_data(OutputTime::DiscreteSpace type_idx, void (OutputMSH::* format_fce)(OutputDataPtr) );
 
     /**

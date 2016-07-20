@@ -46,19 +46,6 @@
 
 namespace it = Input::Type;
 
-/*
-const it::Selection & DarcyFlowMHOutput::OutputFields::get_output_selection() {
-    // Since result output fields are in the separate fieldset OutputFields,
-    // we have to merge two selections.
-	return DarcyMH::EqData().make_output_field_selection(
-	        "DarcyFlowMH_output_fields",
-	        "Selection of output fields for Darcy Flow MH model.")
-		.copy_values(OutputFields().make_output_field_selection(
-		        "DarcyMFOutput_output_fields",
-		        "Auxiliary selection.").close())
-		.close();
-}
-*/
 
 const it::Instance & DarcyFlowMHOutput::get_input_type() {
 	OutputFields output_fields;
