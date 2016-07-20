@@ -595,6 +595,7 @@ endif()
 # Copy python libs to ${PY_BUILD_PREFIX}/lib/python2.7
 if(PYTHON_COPY)
     include(python/PythonCopy)
+    flow_define(PYTHON_COPY)
 endif()
 
 # ----------------- Part 3/3 - PythonScripts ----------------------------------------

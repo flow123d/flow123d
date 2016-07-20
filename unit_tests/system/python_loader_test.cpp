@@ -49,20 +49,22 @@ TEST(PythonLoader, print_error) {
         "Message: global name 'a' is not defined\nTraceback");
 }
 
+
+// only test embedded python if we actually copied out python
+#ifdef FLOW123D_PYTHON_COPY
 TEST(PythonLoader, test_embedded_python) {
     FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
-    
     PythonLoader::initialize();
     
     string embedded_path = "build_tree/lib";
-    char* pPath = getenv ("PYTHONPATH");
+    char* pPath = getenv("PYTHONPATH");
     PySys_SetPath(pPath);
-    
     PyObject * arguments = PyTuple_New (0);
     PyObject * module = PythonLoader::load_module_from_file(string(UNIT_TESTS_SRC_DIR) + "/system/python_embedded.py");
     PyObject * callable  = PythonLoader::get_callable (module, "test");
     PyObject * result = PyObject_CallObject (callable, arguments);
-
+    PythonLoader::check_error();
+    
     if (PyString_Check(result)) {
         string result_string = string(PyString_AsString(result));
         cout << "result: " << endl << result_string << endl;
@@ -77,10 +79,10 @@ TEST(PythonLoader, test_embedded_python) {
             }
         }
     } else {
-        FAIL() << "Returned value from module is not type of string. Embedded Python now working propertly!";
+        FAIL() << "Returned value from module is not type of string. Embedded Python is not working properly!";
     }
 }
-
+#endif // FLOW123D_HAVE_PYTHON
 
 TEST(PythonLoader, function_error) {
 	EXPECT_THROW( { PythonLoader::load_module_from_string("func_xyz", python_function); }, PythonLoader::ExcPythonError);
