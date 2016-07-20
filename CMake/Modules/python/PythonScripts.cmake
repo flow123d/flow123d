@@ -24,9 +24,21 @@ macro(install_python_lib package_name package_dir)
         message(STATUS "-- cd ${Flow123d_SOURCE_DIR}/CMake/Modules/python && pip install --target=${PYTHON_3RD_PARTY} ${package_name}")
         # we start pip install from directory where setup.cfg is placed thus avoiding issue with --target usage
         # https://github.com/pypa/pip/pull/3450 and https://github.com/pypa/pip/issues/3056
+        # for now we try to install package using this fix (platform centos)
         execute_process(
             COMMAND pip install --target=${PYTHON_3RD_PARTY} ${package_name}
-            WORKING_DIRECTORY ${Flow123d_SOURCE_DIR}/CMake/Modules/python)
+            WORKING_DIRECTORY ${Flow123d_SOURCE_DIR}/CMake/Modules/python
+            RESULT_VARIABLE RETURNCODE)
+        # if we fail we do it normal way
+        if(NOT RETURNCODE EQUAL 0)
+            execute_process(
+                COMMAND pip install --target=${PYTHON_3RD_PARTY} ${package_name}
+                RESULT_VARIABLE RETURNCODE)
+        endif()
+        # could not install package
+        if(NOT RETURNCODE EQUAL 0)
+            message(WARNING "Could not install python package ${package_name}")
+        endif()
     endif()
 endmacro(install_python_lib)
 
@@ -35,9 +47,9 @@ set(PYTHON_3RD_PARTY ${PY_BUILD_PREFIX}/lib/python2.7/site-packages)
 set(PYTHON_RUNTEST   ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
 
 # install python dependencies
+install_python_lib(markdown markdown)
 install_python_lib(pyyaml yaml)
 install_python_lib(psutil psutil)
-install_python_lib(markdown markdown)
 
 # create Python runtest wrapper in src/bin
 # also create symlink of python runtest wrapper in tests
