@@ -22,6 +22,8 @@
 #include <armadillo>
 #include <vector>
 
+template<int dim, int spacedim> class QXFEMFactory;
+
 /**
  * @brief Base class for quadrature rules on simplices in arbitrary dimensions.
  *
@@ -95,7 +97,8 @@ protected:
      * To be filled by the constructors of the derived classes.
      */
     std::vector<double> weights;
-
+    
+    friend class QXFEMFactory<dim,3>;
 };
 
 
@@ -123,7 +126,7 @@ void Quadrature<dim>::resize(const unsigned int n_q)
 
 template<unsigned int dim>
 inline const unsigned int Quadrature<dim>::size() const {
-    return weights.size();
+    return quadrature_points.size();
 }
 
 template<unsigned int dim>
