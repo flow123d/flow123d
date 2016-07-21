@@ -97,7 +97,20 @@ TEST(qxfem, qxfem_factory) {
     
 //     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
 //     qfactory.gnuplot_refinement(ele, dir_name, *qxfem2, {func});
+
     
+//     std::ofstream q_points_file;
+//     q_points_file.open (dir_name + "unit_q_points.dat");
+//     if (q_points_file.is_open()) 
+//     {
+//         for(const Space<2>::Point &p : qxfem2->get_points())
+//             q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
+//     }
+//     else 
+//     { 
+//         std::cout << "Coud not write refinement for gnuplot.\n";
+//     }
+//     q_points_file.close();
     
     double sum=0;
     for(unsigned int q=0; q<qxfem2-> size(); q++) sum += qxfem2->weight(q);

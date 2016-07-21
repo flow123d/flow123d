@@ -59,7 +59,8 @@ std::shared_ptr< QXFEM< dim, spacedim > > QXFEMFactory<dim,spacedim>::create_sin
         refine_level(n_to_refine);
     }
     
-    distribute_qpoints(qxfem->real_points_, qxfem->quadrature_points, qxfem->weights, ele, sing);
+    distribute_qpoints(qxfem->real_points_, qxfem->weights, sing);
+    map_real_to_unit_points(qxfem->real_points_, qxfem->quadrature_points, ele);
     DBGMSG("n_real_qpoints %d %d\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
     return qxfem;
@@ -281,9 +282,7 @@ void QXFEMFactory<dim,spacedim>::refine_simplex(AuxSimplex& aux_simplex)
 
 template<int dim, int spacedim>
 void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_points,
-                                                       std::vector<typename Space<dim>::Point>& unit_points,
                                                        std::vector<double>& weights,
-                                                       ElementFullIter ele,
                                                        const std::vector<Singularity0D<spacedim>> & sing)
 {
     const unsigned int order = 3;
@@ -304,28 +303,9 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
     }
     DBGMSG("gauss size %d\n", n_gauss);
     
-    // using barycentric coordinates
-    // http://www.blackpawn.com/texts/pointinpoly/
-    Point v0 = simplices_[0].nodes[1] - simplices_[0].nodes[0],   // 0. edge of triangle
-          v1 = simplices_[0].nodes[2] - simplices_[0].nodes[0];   // 1. edge of triangle
-    // v2 = P - A
-    // Point in triangle is defined: 
-    // v2 = s*v0 + t*v1;
-    // make 2 equations for s and t:
-    // v2.v0 = s*v0.v0 + t*v1.v0;
-    // v2.v1 = + s*v0.v1 + t*v1.v1;
     
-    // dot products:
-    double
-        d00 = arma::dot(v0,v0),
-        d01 = arma::dot(v0,v1),
-        d11 = arma::dot(v1,v1);
-    double invdenom = 1.0/ (d00*d11 - d01*d01);
-                   
-                   
     //FIXME: compute number of active simplices during refinement
     real_points.reserve(order*simplices_.size());
-    unit_points.reserve(order*simplices_.size());
     weights.reserve(order*simplices_.size());
     for(unsigned int i=0; i<simplices_.size(); i++)
     {
@@ -352,23 +332,56 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                 
                 real_points.push_back(p);
                 
-                //map real to reference element
-                Point v2 = p - simplices_[0].nodes[0];
-                double d02 = arma::dot(v0,v2), 
-                       d12 = arma::dot(v1,v2);
-                double t0 = (d02*d11 - d12*d01) * invdenom,
-                       t1 = (d12*d00 - d02*d01) * invdenom;
-                
-                unit_points.push_back({t0, t1});
-                
                 double weight = gauss.weight(q) * area;
                 weights.push_back(weight);
             }
         }
     }
     real_points.shrink_to_fit();
-    unit_points.shrink_to_fit();
     weights.shrink_to_fit();
+}
+
+template<int dim, int spacedim>
+void QXFEMFactory<dim,spacedim>::map_real_to_unit_points(const std::vector<Point>& real_points,
+                                                         std::vector< typename Space< dim >::Point >& unit_points,
+                                                         ElementFullIter ele)
+{
+    ASSERT(dim == 2);
+    ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
+    ASSERT_DBG(ele->dim() == dim);
+    
+    unit_points.resize(real_points.size());
+    
+    // using barycentric coordinates
+    // http://www.blackpawn.com/texts/pointinpoly/
+    Point v0 = ele->node[1]->point() - ele->node[0]->point(),   // 0. edge of triangle
+          v1 = ele->node[2]->point() - ele->node[0]->point();   // 1. edge of triangle
+    // v2 = P - A
+    // Point in triangle is defined: 
+    // v2 = s*v0 + t*v1;
+    // make 2 equations for s and t:
+    // v2.v0 = s*v0.v0 + t*v1.v0;
+    // v2.v1 = + s*v0.v1 + t*v1.v1;
+    
+    // dot products:
+    double
+        d00 = arma::dot(v0,v0),
+        d01 = arma::dot(v0,v1),
+        d11 = arma::dot(v1,v1);
+    double invdenom = 1.0/ (d00*d11 - d01*d01);
+    
+    for(unsigned int i=0; i<real_points.size(); i++)
+    {
+        const Point& p = real_points[i];
+        //map real to reference element
+        Point v2 = p - simplices_[0].nodes[0];
+        double d02 = arma::dot(v0,v2), 
+                d12 = arma::dot(v1,v2);
+        double t0 = (d02*d11 - d12*d01) * invdenom,
+                t1 = (d12*d00 - d02*d01) * invdenom;
+            
+        unit_points[i] = {t0, t1};
+    }
 }
 
 

@@ -97,10 +97,12 @@ private:
     void refine_simplex(AuxSimplex &aux_element);
     
     void distribute_qpoints(std::vector< Point >& real_points, 
-                            std::vector< typename Space< dim >::Point >& unit_points,
                             std::vector< double >& weights,
-                            ElementFullIter ele,
                             const std::vector<Singularity0D<spacedim>> & sing);
+    
+    void map_real_to_unit_points(const std::vector<Point>& real_points,
+                                 std::vector< typename Space< dim >::Point >& unit_points,
+                                 ElementFullIter ele);
     
     /** @brief Tests intersection of 2d simplex and singularity (2d circle) in spacedim-dimensional (2 or 3) space.
      * @return intersection type:
