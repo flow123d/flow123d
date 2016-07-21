@@ -198,3 +198,12 @@ TEST(FilePath, create_output_dir) {
     EXPECT_TRUE(boost::filesystem::is_directory("./my_output/subdir"));
     boost::filesystem::remove_all("./my_output");
 }
+
+
+TEST(FilePath, delimiter_problem) {
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+
+    FilePath mesh_file("../mesh/simplest_cube.msh", FilePath::input_file);
+    EXPECT_TRUE( (boost::filesystem::current_path() / "../mesh") == boost::filesystem::path(mesh_file.parent_path()) );
+}
+
