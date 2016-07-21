@@ -75,7 +75,7 @@ public:
                             const std::vector<Singularity0D<spacedim>> & sing);
     
     
-private:
+protected:
     
     struct AuxSimplex{
         std::vector<Point> nodes;
@@ -108,7 +108,7 @@ private:
      * @return intersection type:
      * 
      */
-    int simplex_sigularity_intersection(const Singularity0D<spacedim>& w, AuxSimplex &s);
+    int simplex_sigularity_intersection(const Singularity0D<spacedim>& w, AuxSimplex &s, double& distance);
     
     /// Level of current refinement.
     unsigned int level_;

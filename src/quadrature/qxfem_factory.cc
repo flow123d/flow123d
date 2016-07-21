@@ -113,7 +113,8 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
         for(unsigned int j = 0; j < sing.size(); j++)
         {
 //             DBGMSG("QXFEM test simplex %d, singularity %d\n",i,j);
-            int res = simplex_sigularity_intersection(sing[j],simplices_[i]);
+            double distance_sqr = 1;
+            int res = simplex_sigularity_intersection(sing[j],simplices_[i], distance_sqr);
             if(res > 0) {
                 simplices_[i].refine = true;
                 n_simplices_to_refine++;
@@ -127,7 +128,8 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
 
 template<int dim, int spacedim>
 int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularity0D< spacedim >& w,
-                                                                AuxSimplex& s)
+                                                                AuxSimplex& s,
+                                                                double& distance_sqr)
 {
     ASSERT_DBG(dim == 2);
     ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
@@ -166,7 +168,7 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
             // http://www.blackpawn.com/texts/pointinpoly/
             // using barycentric coordinates test
             Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
-                  v1 = s.nodes[2] - s.nodes[0];   // 1. edge of triangle
+                  v1 = s.nodes[2] - s.nodes[1];   // 1. edge of triangle
             // v2 = c0
             // Point in triangle is defined: 
             // v2 = s*v0 + t*v1;
@@ -182,36 +184,82 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
                 d11 = arma::dot(v1,v1),
                 d12 = arma::dot(v1,c0);
             double invdenom = 1.0/ (d00*d11 - d01*d01);
-            double t1 = (d02*d11 - d12*d01) * invdenom,
-                   t2 = (d12*d00 - d02*d01) * invdenom;
+            double t0 = (d02*d11 - d12*d01) * invdenom,
+                   t1 = (d12*d00 - d02*d01) * invdenom;
                 
-            if ( (t1 >= 0) && (t2 >= 0) && (t1+t2 <= 1)){
+            if ( (t0 >= 0) && (t1 >= 0) && (t0+t1 <= 1)){
                 return 2;
             }
             
 //             DBGMSG("QXFEM refine test3\n");
             // ; TEST 3: Circle intersects edge
             
-            double k = arma::dot(c0,v0);
+            double k0 = arma::dot(c0,v0);
 
-            if( (k >= 0) && (k <= d00) && (c0sqr * d00 <= k*k)){
+            if( (k0 >= 0) && (k0 <= d00) && (c0sqr * d00 <= k0*k0)){
                 return 3;
             }
 
-            k = arma::dot(c1,v1);
-            if( (k >= 0) && (k <= d11) && (c1sqr * d11 <= k*k)){
+            double k1 = arma::dot(c1,v1);
+            if( (k1 >= 0) && (k1 <= d11) && (c1sqr * d11 <= k1*k1)){
                 return 4;
             }
             
             Point v2 = s.nodes[0] - s.nodes[2];   // 2. edge of triangle
             double d22 = arma::dot(v2,v2);
-            k = arma::dot(c2,v2);
-            if( (k >= 0) && (k <= d22) && (c2sqr * d22 <= k*k)){
+            double k2 = arma::dot(c2,v2);
+            if( (k2 >= 0) && (k2 <= d22) && (c2sqr * d22 <= k2*k2)){
                 return 5;
             }
 //             DBGMSG("QXFEM simplex not refined\n");
             // not refined therefore active
             s.active = true;
+            
+//             DBGMSG("d00 = %f\n", d00);
+//             DBGMSG("d11 = %f\n", d11);
+//             DBGMSG("d22 = %f\n", d22);
+//             DBGMSG("k0 = %f  %f\n",k0, k0*k0/d00);
+//             DBGMSG("k1 = %f  %f\n",k1, k1*k1/d11);
+//             DBGMSG("k2 = %f  %f\n",k2, k2*k2/d22);
+
+            // possibly compute distance_sqr
+            if(distance_sqr < 0) 
+            {
+                if( (k0 > 0) && (k0 <= d00) && (t1 < 0)){
+//                     DBGMSG("0 edge\n");
+                    distance_sqr = arma::dot(c0,c0) - k0*k0/d00;
+                    return -1;
+                }
+
+                if( (k1 > 0) && (k1 < d11) && (t0 > 0) ){
+//                     DBGMSG("1 edge\n");
+                    distance_sqr = arma::dot(c1,c1) - k1*k1/d11;
+                    return -1;
+                }
+                
+                if( (k2 > 0) && (k2 < d22) && (-t0+t1 > 1) ){
+//                     DBGMSG("2 edge\n");
+                    distance_sqr = arma::dot(c2,c2) - k2*k2/d22;
+                    return -1;
+                }
+                
+                if( (k0 < 0) && (k2 > 0) ){
+//                     DBGMSG("v0\n");
+                    distance_sqr = arma::dot(c0,c0);
+                    return -1;
+                }
+                if( (k0 > 0) && (k1 < 0) ){
+//                     DBGMSG("v1\n");
+                    distance_sqr = arma::dot(c1,c1);
+                    return -1;
+                }
+                if( (k1 > 0) && (k2 < 0) ){
+//                     DBGMSG("v2\n");
+                    distance_sqr = arma::dot(c2,c2);
+                    return -1;
+                }
+            }
+                
             return -1;
 }
 
