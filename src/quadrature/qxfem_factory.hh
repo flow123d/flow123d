@@ -108,7 +108,10 @@ protected:
      * @return intersection type:
      * 
      */
-    int simplex_sigularity_intersection(const Singularity0D<spacedim>& w, AuxSimplex &s, double& distance);
+    int simplex_sigularity_intersection(const Singularity0D<spacedim>& w,
+                                        AuxSimplex &s,
+                                        double& distance,
+                                        double& max_h);
     
     /// Level of current refinement.
     unsigned int level_;
@@ -117,8 +120,8 @@ protected:
     std::vector<AuxSimplex> simplices_;
     unsigned int level_offset_;
     
-//     // Square refinement criteria constant on the cells without well inside.
-//     static const double square_refinement_criteria_factor_;
+    // Square refinement criteria constant on the cells without well inside.
+    static const double distance_criteria_factor_;
 };
 
 

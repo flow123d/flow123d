@@ -26,6 +26,9 @@
 #include "mesh/elements.h"
 
 template<int dim, int spacedim>
+const double QXFEMFactory<dim,spacedim>::distance_criteria_factor_ = 0.25;
+
+template<int dim, int spacedim>
 void QXFEMFactory< dim, spacedim >::clear()
 {
     simplices_.clear();
@@ -46,6 +49,15 @@ std::shared_ptr< QXFEM< dim, spacedim > > QXFEMFactory<dim,spacedim>::create_sin
     AuxSimplex s;
     for(unsigned int i=0; i < ele->n_nodes(); i++)
         s.nodes.push_back(ele->node[i]->point());
+    
+    //we suppose counterclockwise node order
+    Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
+          v1 = s.nodes[2] - s.nodes[1];   // 1. edge of triangle
+    if(v0[1]*v1[2] - v0[2]*v1[1] + v0[2]*v1[0] - v0[0]*v1[2] + v0[0]*v1[1] - v0[1]*v1[0] < 0)
+    {
+        DBGMSG("change node order\n");
+        std::swap(s.nodes[0],s.nodes[1]);
+    }
     
     s.active = true;
     simplices_.push_back(s);
@@ -113,12 +125,26 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
         for(unsigned int j = 0; j < sing.size(); j++)
         {
 //             DBGMSG("QXFEM test simplex %d, singularity %d\n",i,j);
-            double distance_sqr = 1;
-            int res = simplex_sigularity_intersection(sing[j],simplices_[i], distance_sqr);
+            double distance_sqr = -1;
+            double max_h;
+            int res = simplex_sigularity_intersection(sing[j],simplices_[i], distance_sqr, max_h);
             if(res > 0) {
                 simplices_[i].refine = true;
                 n_simplices_to_refine++;
                 break;
+            }
+            // distance criterion
+            if(distance_sqr > 0)
+            {
+                double rmin = std::sqrt(distance_sqr)-sing[j].radius();
+                rmin = rmin*rmin;
+                if( max_h > distance_criteria_factor_ * rmin)
+                //if( max_h > distance_criteria_factor_ * distance_sqr)
+                {
+                    simplices_[i].refine = true;
+                    n_simplices_to_refine++;
+                    break;
+                }
             }
         }
     }
@@ -129,10 +155,13 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
 template<int dim, int spacedim>
 int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularity0D< spacedim >& w,
                                                                 AuxSimplex& s,
-                                                                double& distance_sqr)
+                                                                double& distance_sqr,
+                                                                double& max_h)
 {
     ASSERT_DBG(dim == 2);
     ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
+    
+    //we suppose counterclockwise node order
     
     //             DBGMSG("QXFEM refine test1\n");
             // TEST 1: Vertex within circle
@@ -215,29 +244,32 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
             // not refined therefore active
             s.active = true;
             
+//             DBGMSG("t0 = %f t1 = %f\n", t0, t1);
 //             DBGMSG("d00 = %f\n", d00);
 //             DBGMSG("d11 = %f\n", d11);
 //             DBGMSG("d22 = %f\n", d22);
 //             DBGMSG("k0 = %f  %f\n",k0, k0*k0/d00);
 //             DBGMSG("k1 = %f  %f\n",k1, k1*k1/d11);
 //             DBGMSG("k2 = %f  %f\n",k2, k2*k2/d22);
-
+            
+            max_h = std::max(std::max(d00,d11),d22);
+            
             // possibly compute distance_sqr
             if(distance_sqr < 0) 
             {
-                if( (k0 > 0) && (k0 <= d00) && (t1 < 0)){
+                if( (k0 >= 0) && (k0 <= d00) && (t1 < 0)){
 //                     DBGMSG("0 edge\n");
                     distance_sqr = arma::dot(c0,c0) - k0*k0/d00;
                     return -1;
                 }
 
-                if( (k1 > 0) && (k1 < d11) && (t0 > 0) ){
+                if( (k1 >= 0) && (k1 <= d11) && (t0 > 0) ){
 //                     DBGMSG("1 edge\n");
                     distance_sqr = arma::dot(c1,c1) - k1*k1/d11;
                     return -1;
                 }
                 
-                if( (k2 > 0) && (k2 < d22) && (-t0+t1 > 1) ){
+                if( (k2 >= 0) && (k2 <= d22) && (t0+t1 > 1) ){
 //                     DBGMSG("2 edge\n");
                     distance_sqr = arma::dot(c2,c2) - k2*k2/d22;
                     return -1;
@@ -510,6 +542,9 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
     strs << "set terminal x11\n";
     strs << "set size ratio -1\n";
     strs << "set parametric\n";
+    strs << "set xlabel 'X'\n";
+    strs << "set ylabel 'Y'\n";
+    strs << "set zlabel 'Z'\n";
        
     strs << "set style line 1 lt 2 lw 2 lc rgb 'blue'\n"
             << "set style line 2 lt 1 lw 2 lc rgb '#66A61E'\n";
