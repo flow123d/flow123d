@@ -70,6 +70,7 @@ std::shared_ptr< QXFEM< dim, spacedim > > QXFEMFactory<dim,spacedim>::create_sin
         
         refine_level(n_to_refine);
     }
+    refine_edge(sing);
     
     distribute_qpoints(qxfem->real_points_, qxfem->weights, sing);
     map_real_to_unit_points(qxfem->real_points_, qxfem->quadrature_points, ele);
@@ -92,7 +93,6 @@ void QXFEMFactory<dim,spacedim>::refine_level(unsigned int n_simplices_to_refine
 //             DBGMSG("QXFEM refine simplex %d\n",i);
             refine_simplex(s);
             s.active = false;
-            s.refine = false;
         }
     }
     level_offset_ = new_level_offset;
@@ -122,14 +122,16 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
     // go through simplices on the current level
     for(unsigned int i = level_offset_; i < simplices_.size(); i++)
     {
+        AuxSimplex& s = simplices_[i];
         for(unsigned int j = 0; j < sing.size(); j++)
         {
 //             DBGMSG("QXFEM test simplex %d, singularity %d\n",i,j);
             double distance_sqr = -1;
             double max_h;
-            int res = simplex_sigularity_intersection(sing[j],simplices_[i], distance_sqr, max_h);
+            int res = simplex_sigularity_intersection(sing[j],s, distance_sqr, max_h);
             if(res > 0) {
-                simplices_[i].refine = true;
+                s.refine = true;
+                s.sing_id = j;
                 n_simplices_to_refine++;
                 break;
             }
@@ -141,10 +143,14 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
                 if( max_h > distance_criteria_factor_ * rmin)
                 //if( max_h > distance_criteria_factor_ * distance_sqr)
                 {
-                    simplices_[i].refine = true;
+                    s.refine = true;
                     n_simplices_to_refine++;
                     break;
                 }
+            }
+            if(res == 0) {
+                s.active = false;
+                break;
             }
         }
     }
@@ -154,7 +160,7 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
 
 template<int dim, int spacedim>
 int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularity0D< spacedim >& w,
-                                                                AuxSimplex& s,
+                                                                const AuxSimplex& s,
                                                                 double& distance_sqr,
                                                                 double& max_h)
 {
@@ -184,7 +190,6 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
 //             DBGMSG("count_nodes %d\n",count_nodes);
             if(count_nodes > 0 ){
                 if(count_nodes == 3) { //triangle inside circle
-                    s.active = false;
                     return 0;
                 }
                 else {
@@ -241,8 +246,6 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
                 return 5;
             }
 //             DBGMSG("QXFEM simplex not refined\n");
-            // not refined therefore active
-            s.active = true;
             
 //             DBGMSG("t0 = %f t1 = %f\n", t0, t1);
 //             DBGMSG("d00 = %f\n", d00);
@@ -297,7 +300,7 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
 
 
 template<int dim, int spacedim>
-void QXFEMFactory<dim,spacedim>::refine_simplex(AuxSimplex& aux_simplex)
+void QXFEMFactory<dim,spacedim>::refine_simplex(const AuxSimplex& aux_simplex)
 {
     static const unsigned int n_subelements = 1 << dim,  //2^dim
                               n_old_nodes = RefElement<dim>::n_nodes,
@@ -345,9 +348,9 @@ void QXFEMFactory<dim,spacedim>::refine_simplex(AuxSimplex& aux_simplex)
     
     for(unsigned int i=0; i < n_subelements; i++)
     {
-        simplices_.push_back(AuxSimplex());
+        simplices_.push_back(AuxSimplex()); //create with active true, refine false
         AuxSimplex& s = simplices_.back();
-        s.active = true;
+        s.sing_id = aux_simplex.sing_id;
         
         s.nodes.resize(n_old_nodes);
         
@@ -381,12 +384,15 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
         }
         bary_points[q][dim] = complement;
     }
-    DBGMSG("gauss size %d\n", n_gauss);
+//     DBGMSG("gauss size %d\n", n_gauss);
     
-    
-    //FIXME: compute number of active simplices during refinement
-    real_points.reserve(order*simplices_.size());
-    weights.reserve(order*simplices_.size());
+    //TODO: compute number of active simplices during refinement
+    unsigned int n_active_simplices = 0;
+    for(unsigned int i=0; i<simplices_.size(); i++)
+        if(simplices_[i].active) n_active_simplices++;
+        
+    real_points.reserve(order*n_active_simplices);
+    weights.reserve(order*n_active_simplices);
     for(unsigned int i=0; i<simplices_.size(); i++)
     {
         const AuxSimplex& s = simplices_[i];
@@ -397,6 +403,8 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                   s1 = s.nodes[2] - s.nodes[0];   // 1. edge of triangle
             double area = arma::norm(arma::cross(s0,s1),2);
             
+            bool check_qpoint_inside_sing = s.refine && (s.sing_id >=0) && (i>level_offset_);
+            
             for(unsigned int q=0; q<n_gauss; q++)
             {
                 p.zeros();
@@ -405,7 +413,7 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                     p = p + bary_points[q][i]*s.nodes[i];
                 
                 //skip points inside singularity
-                if(i > level_offset_)   //last ref level - simplex might be on the edge
+                if(check_qpoint_inside_sing)   //simplex is intersecting singularity
                 {
                     if(arma::norm(sing[s.sing_id].center() - p,2) < sing[s.sing_id].radius()) continue;
                 }

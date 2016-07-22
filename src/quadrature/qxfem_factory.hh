@@ -78,6 +78,11 @@ public:
 protected:
     
     struct AuxSimplex{
+        AuxSimplex() {
+            active = true; 
+            refine = false;
+            sing_id = -1;
+        }
         std::vector<Point> nodes;
         int sing_id;
         bool active;
@@ -94,7 +99,7 @@ protected:
     /// Refines marked simplices.
     void refine_level(unsigned int n_simplices_to_refine);
     /// Refines single simplex.
-    void refine_simplex(AuxSimplex &aux_element);
+    void refine_simplex(const AuxSimplex &aux_element);
     
     void distribute_qpoints(std::vector< Point >& real_points, 
                             std::vector< double >& weights,
@@ -109,7 +114,7 @@ protected:
      * 
      */
     int simplex_sigularity_intersection(const Singularity0D<spacedim>& w,
-                                        AuxSimplex &s,
+                                        const AuxSimplex &s,
                                         double& distance,
                                         double& max_h);
     
