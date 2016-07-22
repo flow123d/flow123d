@@ -64,101 +64,142 @@ TEST(MultiField, transposition) {
 }
 
 string all_fields_input = R"YAML(
-const_field: !FieldConstant
+const_field_full: !FieldConstant
   value:
    - 1
    - 2
    - 3
-elementwise_field: !FieldElementwise
-  gmsh_file: fields/simplest_cube_data.msh
-  field_name:
-   - vector_fixed
-   - vector_fixed
-   - vector_fixed
-formula_field: !FieldFormula
+const_field_base: !FieldConstant
+  value: 1
+const_field_autoconv: 1
+
+formula_field_full: !FieldFormula
   value:
+   - t
    - x
    - y-t
-   - t
-interpolated_p0_field: !FieldInterpolatedP0
-  gmsh_file: fields/simplest_cube_data.msh
+formula_field_base: !FieldFormula
+  value: x
+
+elementwise_field: !FieldElementwise
+  gmsh_file: ../fields/simplest_cube_data.msh
   field_name: vector_fixed
+interpolated_p0_field: !FieldInterpolatedP0
+  gmsh_file: ../fields/simplest_cube_3d.msh
+  field_name: scalar
 )YAML";
 
-typedef MultiField<3, FieldValue<3>::Scalar> ScalarMultiField;
-typedef ScalarMultiField::SubFieldBaseType ScalarField;
+class MultiFieldTest : public testing::Test {
+public:
+	typedef MultiField<3, FieldValue<3>::Scalar> ScalarMultiField;
+	typedef ScalarMultiField::SubFieldBaseType ScalarField;
 
-TEST(MultiField, complete_test) {
-	Profiler::initialize();
+protected:
+    virtual void SetUp() {
+    	Profiler::initialize();
+    	FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
 
-	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 
-	ScalarMultiField empty_mf;
-	ScalarMultiField elementwise_mf;
+    	FilePath mesh_file( "../fields/simplest_cube_data.msh", FilePath::input_file);
+        GmshMeshReader reader(mesh_file);
+        mesh = new Mesh;
+        reader.read_physical_names(mesh);
+        reader.read_mesh(mesh);
+        mesh->check_and_finish();
 
-	Input::Type::Record full_rec = Input::Type::Record("MultiField", "Complete multi field")
-		.declare_key("const_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+    }
+
+    virtual void TearDown() {}
+
+    void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
+    	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
+    		auto subfield = ScalarField::function_factory((*it), 3);
+    		subfield->set_mesh(mesh, false);
+    		subfield->set_time(0.0);
+    		auto result = subfield->value( point, elm );
+    		EXPECT_DOUBLE_EQ( expected, result );
+    		expected += step;
+    	}
+    }
+
+    static const Input::Type::Record & get_input_type();
+    static ScalarMultiField empty_mf;
+    Mesh *mesh;
+    Space<3>::Point point;
+};
+
+MultiFieldTest::ScalarMultiField MultiFieldTest::empty_mf = MultiFieldTest::ScalarMultiField();
+
+const Input::Type::Record & MultiFieldTest::get_input_type() {
+	return Input::Type::Record("MultiField", "Complete multi field")
+		.declare_key("const_field_full", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+		.declare_key("const_field_base", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+		.declare_key("const_field_autoconv", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+		.declare_key("formula_field_full", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+		.declare_key("formula_field_base", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("elementwise_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("formula_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("interpolated_p0_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-	    .close();
+		.close();
+}
 
-	FilePath mesh_file( "fields/simplest_cube_data.msh", FilePath::input_file);
-    GmshMeshReader reader(mesh_file);
-    Mesh * mesh = new Mesh;
-    reader.read_physical_names(mesh);
-    reader.read_mesh(mesh);
-    mesh->check_and_finish();
 
-	Input::ReaderToStorage json_reader(all_fields_input, full_rec, Input::FileFormat::format_YAML);
+TEST_F(MultiFieldTest, complete_test) {
+	Input::ReaderToStorage json_reader(all_fields_input, MultiFieldTest::get_input_type(), Input::FileFormat::format_YAML);
 	Input::Record input = json_reader.get_root_interface<Input::Record>();
 
-	Space<3>::Point point;
-    point(0)=1.0; point(1)=2.0; point(2)=3.0;
-
-    { // test of FieldConstant
-		Input::Array const_fields = input.val<Input::Array>("const_field");
+    { // test of FieldConstant - full input
+		Input::Array const_fields = input.val<Input::Array>("const_field_full");
 		EXPECT_EQ(3, const_fields.size());
 
 		ElementAccessor<3> elm;
-		double expected_val = 1.0;
-
-		for (auto it = const_fields.begin<Input::AbstractRecord>(); it != const_fields.end(); ++it) {
-			auto subfield = ScalarField::function_factory((*it), 3);
-			subfield->set_time(0.0);
-			auto result = subfield->value( point, elm);
-			EXPECT_DOUBLE_EQ( expected_val, result );
-			expected_val += 1.0;
-		}
+		check_field_vals(const_fields, elm, 1.0, 1.0);
 	}
 
-	{ // test of FieldFormula
-		Input::Array formula_field = input.val<Input::Array>("formula_field");
+    { // test of FieldConstant - set key 'value' with one value
+		Input::Array const_fields = input.val<Input::Array>("const_field_base");
+		EXPECT_EQ(1, const_fields.size());
+
+		ElementAccessor<3> elm;
+		check_field_vals(const_fields, elm);
+	}
+
+    { // test of FieldConstant - autoconversion of FieldAlgorithmBase Abstract and 'value' key
+		Input::Array const_fields = input.val<Input::Array>("const_field_autoconv");
+		EXPECT_EQ(1, const_fields.size());
+
+		ElementAccessor<3> elm;
+		check_field_vals(const_fields, elm);
+	}
+
+	{ // test of FieldFormula - full input
+		Input::Array formula_field = input.val<Input::Array>("formula_field_full");
 		EXPECT_EQ(3, formula_field.size());
 
 	    ElementAccessor<3> elm;
+	    check_field_vals(formula_field, elm, 0.0, 1.0);
+	}
 
-		for (auto it = formula_field.begin<Input::AbstractRecord>(); it != formula_field.end(); ++it) {
-			auto subfield = ScalarField::function_factory((*it), 3);
-	        subfield->set_time(1.0);
-	        auto result = subfield->value( point, elm);
-			EXPECT_DOUBLE_EQ( 1.0, result );
-		}
+	{ // test of FieldFormula - set key 'value' with one value
+		Input::Array formula_field = input.val<Input::Array>("formula_field_base");
+		EXPECT_EQ(1, formula_field.size());
+
+	    ElementAccessor<3> elm;
+	    check_field_vals(formula_field, elm);
 	}
 
 	{ // test of FieldElementwise
 		Input::Array elementwise_field = input.val<Input::Array>("elementwise_field");
-		EXPECT_EQ(3, elementwise_field.size());
+		EXPECT_EQ(1, elementwise_field.size());
 
-        ElementAccessor<3> el_2d=mesh->element_accessor(1);
+        check_field_vals(elementwise_field, mesh->element_accessor(1));
+	}
 
-        for (auto it = elementwise_field.begin<Input::AbstractRecord>(); it != elementwise_field.end(); ++it) {
-			auto subfield = ScalarField::function_factory((*it), 3);
-			subfield->set_mesh(mesh,false);
-			subfield->set_time(0.0);
-			auto result = subfield->value( point, el_2d);
-			EXPECT_DOUBLE_EQ( 1.0, result );
-		}
+	{ // test of FieldInterpolatedP0
+		Input::Array interpolated_p0_field = input.val<Input::Array>("interpolated_p0_field");
+		EXPECT_EQ(1, interpolated_p0_field.size());
+
+        check_field_vals(interpolated_p0_field, mesh->element_accessor(1), 0.650, 0.0);
 	}
 }
 
@@ -176,8 +217,8 @@ string eq_data_input = R"JSON(
 TEST(Operators, assignment) {
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+    FilePath mesh_file("../mesh/simplest_cube.msh", FilePath::input_file);
     GmshMeshReader msh_reader(mesh_file);
     Mesh * mesh = new Mesh;
     msh_reader.read_physical_names(mesh);
