@@ -198,6 +198,20 @@ target_link_libraries(mesh_lib
     armadillo 
     ${Boost_LIBRARIES})
 
+# intersections_lib    
+add_library(intersections_lib 
+    intersection/plucker.cc
+    intersection/simplex.cc
+    intersection/intersection_point_aux.cc
+    intersection/intersection_aux.cc
+    intersection/intersection_local.cc
+    intersection/tracing_algorithm.cc
+    intersection/compute_intersection.cc
+    intersection/inspect_elements_algorithm.cc
+    intersection/inspect_elements.cc
+)
+target_link_libraries(intersections_lib
+    mesh_lib system_lib armadillo ${Boost_LIBRARIES})
 
 
 # fem_lib    
@@ -294,8 +308,9 @@ add_library(flow123d_lib
 
     coupling/hc_explicit_sequential.cc
 )    
+    
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib 
+    fem_lib mesh_lib la_lib semchem  input_lib system_lib intersections_lib
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 

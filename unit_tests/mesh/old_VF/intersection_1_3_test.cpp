@@ -9,7 +9,6 @@
 
 #include <flow_gtest.hh>
 #include "system/system.hh"
-#include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
@@ -25,12 +24,13 @@
 
 // Test rychlosti algoritmu, pro vyhledávání průsečíků sítě line_cube.msh
 TEST(intersections, 1d_3d){
-        Profiler::initialize();
 	unsigned int elementLimit = 20;
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
-	FilePath mesh_file("mesh/line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	FilePath mesh_file("mesh/pokus7.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
 	Mesh mesh_krychle;
 	GmshMeshReader reader(mesh_file);
+
+
 	BoundingBox bb;
 	std::vector<unsigned int> searchedElements;
 
@@ -39,9 +39,8 @@ TEST(intersections, 1d_3d){
 
 	BIHTree bt(&mesh_krychle, elementLimit);
 
-	//Profiler::initialize();
-	{
-	    START_TIMER("Inter");
+Profiler::initialize(MPI_COMM_WORLD);
+	{ START_TIMER("Inter");
 
 	    FOR_ELEMENTS(&mesh_krychle, elm) {
 	         if (elm->dim() == 1) {
@@ -61,22 +60,15 @@ TEST(intersections, 1d_3d){
 	        				FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_tetrahedron(ele, tt);
 	        				GetIntersection(ta, tt, iType, measure);
 	        				/*if (iType == line) {
-	        					xprintf(Msg, "%d %d \n",elm.id(),ele.id());
-	        				              }*/
-
+	        					xprintf(Msg, "%d %d \n",elm.id(),ele.id()); }*/
 	        			}
 	        		}
-
 	         }
-	     }
-	}
-        
-	Profiler::instance()->output(MPI_COMM_WORLD, cout);
-        
+	       }
+	END_TIMER("Inter");}
+	Profiler::instance()->output(cout);
 	Profiler::uninitialize();
-
 	xprintf(Msg, "Test is complete\n");
-
 }
 
 

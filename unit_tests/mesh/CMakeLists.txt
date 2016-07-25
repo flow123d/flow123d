@@ -21,8 +21,9 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
+#set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib)
 
-set(libs mesh_lib system_lib)
+set(libs mesh_lib system_lib intersections_lib)
 add_test_directory("${libs}")
     
     define_test(gmsh_reader)
@@ -30,6 +31,10 @@ add_test_directory("${libs}")
     define_mpi_test(bih_tree 1)
     define_test(bounding_box)
     #define_test(intersection_1_3)
+    #define_test(fast_intersection_1_3)
+    #define_mpi_test(intersection_2_3 1)
+    #define_mpi_test(ngh_intersection_2_3 1)
+    define_test(ref_element)
     
     define_mpi_test(partitioning 1)
     define_mpi_test(partitioning 2)
