@@ -149,26 +149,26 @@ public:
         
         double accurate_distance_sqr = arma::dot(u,u);
 //         DBGMSG("%f %f %e\n",computed_distance_sqr, accurate_distance_sqr, computed_distance_sqr-accurate_distance_sqr);
-        EXPECT_NEAR(accurate_distance_sqr, computed_distance_sqr, 1e-13);
+        EXPECT_NEAR(accurate_distance_sqr, computed_distance_sqr, 1e-14);
         
         
-//     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
-//     std::ofstream q_points_file;
-//     q_points_file.open (dir_name + "distance.dat");
-//     if (q_points_file.is_open())
-//     {
-//         for(const Space<3>::Point &p : s.nodes)
-//             q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
-//         
-//         q_points_file << s.nodes[0][0] << " " << s.nodes[0][1] << " " << s.nodes[0][2] << "\n";
-//         
-//         q_points_file << sing.center()[0] << " " << sing.center()[1] << " " << sing.center()[2] << "\n";
-//     }
-//     else
-//     {
-//         std::cout << "Coud not write refinement for gnuplot.\n";
-//     }
-//     q_points_file.close();
+//         string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
+//         std::ofstream q_points_file;
+//         q_points_file.open (dir_name + "distance.dat");
+//         if (q_points_file.is_open())
+//         {
+//             for(const Space<3>::Point &p : s.nodes)
+//                 q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
+//             
+//             q_points_file << s.nodes[0][0] << " " << s.nodes[0][1] << " " << s.nodes[0][2] << "\n";
+//             
+//             q_points_file << sing.center()[0] << " " << sing.center()[1] << " " << sing.center()[2] << "\n";
+//         }
+//         else
+//         {
+//             std::cout << "Coud not write refinement for gnuplot.\n";
+//         }
+//         q_points_file.close();
     }
 };
 
@@ -176,70 +176,83 @@ public:
 TEST_F(TestQXFEMFactory, distance) {
     // prepare simplex
     AuxSimplex s;
-    s.nodes = {{2,3,0}, {7,8,6}, {8,1,3}};
-
-    Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
-          v1 = s.nodes[2] - s.nodes[1],   // 1. edge of triangle
-          v2 = s.nodes[0] - s.nodes[2];   // 2. edge of triangle
-
-    //we suppose counterclockwise node order
-    ASSERT_DBG(v0[1]*v1[2] - v0[2]*v1[1] + v0[2]*v1[0] - v0[0]*v1[2] + v0[0]*v1[1] - v0[1]*v1[0] > 0);
+    std::vector<Point> nodes = {{2,3,0}, {8,1,3}, {7,8,6}};
+    s.nodes.resize(nodes.size());
     
-    // normals
-    Point nn = arma::cross(v0,v1);
-    Point n0 = arma::cross(v0, nn); n0 = n0/arma::norm(n0,2);
-    Point n1 = arma::cross(v1, nn); n1 = n1/arma::norm(n1,2);
-    Point n2 = arma::cross(v2, nn); n2 = n2/arma::norm(n2,2);
-
-    // length factor
-    double f = 13;
-    // singularity radius
-    double radius = 0.01;
+    const std::vector<std::vector<unsigned int>> permutations_triangle = {
+    {0,1,2},
+    {1,0,2},
+    {1,2,0},
+    {0,2,1},
+    {2,0,1},
+    {2,1,0}};
     
-    Point m,u,c;
+    for(unsigned int p=0; p<permutations_triangle.size(); p++) {        
+        for(unsigned int i=0; i<nodes.size(); i++)
+        {
+            s.nodes[i] = nodes[permutations_triangle[p][i]];
+        }
     
-    // Singularity v0
-    m = s.nodes[0] + 0.5*v0;
-    u = f*n0;
-    c = m + u;
+        Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
+            v1 = s.nodes[2] - s.nodes[1],   // 1. edge of triangle
+            v2 = s.nodes[0] - s.nodes[2];   // 2. edge of triangle
+        
+        // normals
+        Point nn = arma::cross(v0,v1);
+        Point n0 = arma::cross(v0, nn); n0 = n0/arma::norm(n0,2);
+        Point n1 = arma::cross(v1, nn); n1 = n1/arma::norm(n1,2);
+        Point n2 = arma::cross(v2, nn); n2 = n2/arma::norm(n2,2);
 
-//     DBGMSG("k0 = %f\n",arma::dot(m-s.nodes[0], m-s.nodes[0]));
-    test_distance(Singularity0D<3>(c,radius), s, u);
-    
-    // Singularity v1
-    m = s.nodes[1] + 0.33*v1;
-    u = f*n1;
-    c = m + u;
+        // length factor
+        double f = 1;
+        // singularity radius
+        double radius = 0.01;
+        
+        Point m,u,c;
+        
+        // Singularity v0
+        m = s.nodes[0] + 0.5*v0;
+        u = f*n0;
+        c = m + u;
 
-//     DBGMSG("k2 = %f\n",arma::dot(m-s.nodes[2], m-s.nodes[2]));
-    test_distance(Singularity0D<3>(c,radius), s, u);
-    
-    // Singularity v2
-    m = s.nodes[2] + 0.6*v2;
-    u = f*n2;
-    c = m + u;
+    //     DBGMSG("k0 = %f\n",arma::dot(m-s.nodes[0], m-s.nodes[0]));
+        test_distance(Singularity0D<3>(c,radius), s, u);
+        
+        // Singularity v1
+        m = s.nodes[1] + 0.33*v1;
+        u = f*n1;
+        c = m + u;
 
-//     DBGMSG("k1 = %f\n",arma::dot(m-s.nodes[1], m-s.nodes[1]));
-    test_distance(Singularity0D<3>(c,radius), s, u);
-    
-    // Singularity node0
-    m = s.nodes[0];
-    u = -f*n1;
-    c = m + u;
+    //     DBGMSG("k2 = %f\n",arma::dot(m-s.nodes[2], m-s.nodes[2]));
+        test_distance(Singularity0D<3>(c,radius), s, u);
+        
+        // Singularity v2
+        m = s.nodes[2] + 0.6*v2;
+        u = f*n2;
+        c = m + u;
 
-    test_distance(Singularity0D<3>(c,radius), s, u);
-    
-    // Singularity node1
-    m = s.nodes[1];
-    u = -f*n2;
-    c = m + u;
+    //     DBGMSG("k1 = %f\n",arma::dot(m-s.nodes[1], m-s.nodes[1]));
+        test_distance(Singularity0D<3>(c,radius), s, u);
+        
+        // Singularity node0
+        m = s.nodes[0];
+        u = -f*n1;
+        c = m + u;
 
-    test_distance(Singularity0D<3>(c,radius), s, u);
-    
-    // Singularity node2
-    m = s.nodes[2];
-    u = -f*n0;
-    c = m + u;
+        test_distance(Singularity0D<3>(c,radius), s, u);
+        
+        // Singularity node1
+        m = s.nodes[1];
+        u = -f*n2;
+        c = m + u;
 
-    test_distance(Singularity0D<3>(c,radius), s, u);
+        test_distance(Singularity0D<3>(c,radius), s, u);
+        
+        // Singularity node2
+        m = s.nodes[2];
+        u = -f*n0;
+        c = m + u;
+
+        test_distance(Singularity0D<3>(c,radius), s, u);
+    }
 }

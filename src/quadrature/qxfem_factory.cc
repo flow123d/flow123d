@@ -169,7 +169,7 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
     
     //we suppose counterclockwise node order
     
-    //             DBGMSG("QXFEM refine test1\n");
+//             DBGMSG("QXFEM refine test1\n");
             // TEST 1: Vertex within circle
             // http://www.phatcode.net/articles.php?id=459
             Point c0 = w.center() - s.nodes[0],
@@ -202,7 +202,8 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
             // http://www.blackpawn.com/texts/pointinpoly/
             // using barycentric coordinates test
             Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
-                  v1 = s.nodes[2] - s.nodes[1];   // 1. edge of triangle
+                  v1 = s.nodes[2] - s.nodes[0];   // 1. edge of triangle
+
             // v2 = c0
             // Point in triangle is defined: 
             // v2 = s*v0 + t*v1;
@@ -220,7 +221,9 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
             double invdenom = 1.0/ (d00*d11 - d01*d01);
             double t0 = (d02*d11 - d12*d01) * invdenom,
                    t1 = (d12*d00 - d02*d01) * invdenom;
-                
+            
+//             DBGMSG("t0 = %f t1 = %f\n", t0, t1);
+            
             if ( (t0 >= 0) && (t1 >= 0) && (t0+t1 <= 1)){
                 return 2;
             }
@@ -234,20 +237,19 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
                 return 3;
             }
 
-            double k1 = arma::dot(c1,v1);
-            if( (k1 >= 0) && (k1 <= d11) && (c1sqr * d11 <= k1*k1)){
+            double k1 = arma::dot(c0,v1);
+            if( (k1 >= 0) && (k1 <= d11) && (c0sqr * d11 <= k1*k1)){
                 return 4;
             }
             
-            Point v2 = s.nodes[0] - s.nodes[2];   // 2. edge of triangle
+            Point v2 = s.nodes[2] - s.nodes[1];   // 2. edge of triangle
             double d22 = arma::dot(v2,v2);
-            double k2 = arma::dot(c2,v2);
-            if( (k2 >= 0) && (k2 <= d22) && (c2sqr * d22 <= k2*k2)){
+            double k2 = arma::dot(c1,v2);
+            if( (k2 >= 0) && (k2 <= d22) && (c1sqr * d22 <= k2*k2)){
                 return 5;
             }
 //             DBGMSG("QXFEM simplex not refined\n");
             
-//             DBGMSG("t0 = %f t1 = %f\n", t0, t1);
 //             DBGMSG("d00 = %f\n", d00);
 //             DBGMSG("d11 = %f\n", d11);
 //             DBGMSG("d22 = %f\n", d22);
@@ -266,29 +268,29 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
                     return -1;
                 }
 
-                if( (k1 >= 0) && (k1 <= d11) && (t0 > 0) ){
+                if( (k1 >= 0) && (k1 <= d11) && (t0 < 0) ){
 //                     DBGMSG("1 edge\n");
-                    distance_sqr = arma::dot(c1,c1) - k1*k1/d11;
+                    distance_sqr = arma::dot(c0,c0) - k1*k1/d11;
                     return -1;
                 }
                 
                 if( (k2 >= 0) && (k2 <= d22) && (t0+t1 > 1) ){
 //                     DBGMSG("2 edge\n");
-                    distance_sqr = arma::dot(c2,c2) - k2*k2/d22;
+                    distance_sqr = arma::dot(c1,c1) - k2*k2/d22;
                     return -1;
                 }
                 
-                if( (k0 < 0) && (k2 > 0) ){
+                if( (k0 < 0) && (k1 < 0) ){
 //                     DBGMSG("v0\n");
                     distance_sqr = arma::dot(c0,c0);
                     return -1;
                 }
-                if( (k0 > 0) && (k1 < 0) ){
+                if( (k0 > 0) && (k2 < 0) ){
 //                     DBGMSG("v1\n");
                     distance_sqr = arma::dot(c1,c1);
                     return -1;
                 }
-                if( (k1 > 0) && (k2 < 0) ){
+                if( (k1 > 0) && (k2 > 0) ){
 //                     DBGMSG("v2\n");
                     distance_sqr = arma::dot(c2,c2);
                     return -1;
