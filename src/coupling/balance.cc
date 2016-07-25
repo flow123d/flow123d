@@ -93,13 +93,15 @@ Balance::Balance(
 	output_format_ = in_rec.val<OutputFormat>("format");
 
 	OutputTimeSet time_set;
-	balance_output_type_ = tg.equation_mark_type() | TimeGovernor::marks().type_balance_output();
+	balance_output_type_ = tg.equation_fixed_mark_type() | TimeGovernor::marks().type_balance_output();
 	time_set.read_from_input( in_rec.val<Input::Array>("times"), tg, balance_output_type_);
 	if (in_rec.val<bool>("add_output_times") ) {
 	    TimeGovernor::marks().add_to_type_all(
 	            tg.equation_mark_type() | TimeGovernor::marks().type_output(),
-	            TimeGovernor::marks().type_balance_output());
+	            balance_output_type_);
 	}
+
+
 
 	if (rank_ == 0) {
 		// set default value by output_format_

@@ -106,6 +106,8 @@ public:
     /**
      * Map from reference element to global coord system.
      * Matrix(3, dim()+1), last column is the translation vector.
+     *
+     * Temporary, this should be provided be a separate finite element mapping class.
      */
     inline arma::mat element_map() const
     {
@@ -127,6 +129,9 @@ public:
     arma::vec project_point(const arma::vec3 &point, const arma::mat &map) const;
 
 
+    /**
+     * Project a point and create the map as well.
+     */
     inline arma::vec project_point(const arma::vec3 &point) {
         return project_point(point, this->element_map() );
     }
