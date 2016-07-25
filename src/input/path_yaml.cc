@@ -205,6 +205,24 @@ std::string PathYAML::get_descendant_name() const {
 
 
 
+bool PathYAML::is_effectively_null() const {
+	if ( head().IsNull() ) {
+		// null value indicates empty record ...
+		return true;
+	} else if ( head().IsScalar() ) {
+		try {
+			// ... or empty string indicates empty record too
+			return (head().as<std::string>() == "");
+		} catch (YAML::Exception) {
+			// other cases don't have to lead to an error
+		}
+
+	}
+	return false;
+}
+
+
+
 std::ostream& operator<<(std::ostream& stream, const PathYAML& path) {
     path.output(stream);
     return stream;
