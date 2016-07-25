@@ -130,8 +130,8 @@ const string input = R"INPUT(
         refine_by_error = true,
         error_control_field = "conc"
     }*/
-  },
-  output_fields = ["conc"]
+  }
+  //,output_fields = ["conc"]
 }
 )INPUT";
 
@@ -163,8 +163,8 @@ TEST(OutputMesh, write_on_output_mesh) {
     Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
         .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
-        .declare_key("output_fields", Input::Type::Array(output_fields.make_output_field_selection("output_fields", "output").close()), 
-                     Input::Type::Default::obligatory(), "")
+        //.declare_key("output_fields", Input::Type::Array(output_fields.make_output_field_selection("output_fields", "output").close()),
+        //             Input::Type::Default::obligatory(), "")
         .close();
 
     // read input string
@@ -183,7 +183,7 @@ TEST(OutputMesh, write_on_output_mesh) {
     
     // create output
     std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>(in_rec.val<Input::Record>("output_stream"));
-    output->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+    //output->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
     
     // register output fields, compute and write data
     output_fields.output(output);
