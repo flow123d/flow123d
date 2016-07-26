@@ -217,6 +217,7 @@ target_link_libraries(intersections_lib
 # fem_lib    
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
+    quadrature/qxfem_factory.cc
     fem/fe_p.cc
     fem/dofhandler.cc
     fem/fe_values.cc
