@@ -176,3 +176,8 @@ FilePath::operator string() const {
 
 bool FilePath::operator ==(const FilePath &other) const
     {return *abs_file_path_ == boost::filesystem::path( string(other) ); }
+
+
+std::ostream& operator<<(std::ostream& stream, const FilePath& fp) {
+    return ( stream << string(fp) );
+}

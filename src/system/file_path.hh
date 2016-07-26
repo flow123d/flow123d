@@ -193,4 +193,10 @@ private:
     static std::shared_ptr<boost::filesystem::path> root_dir;
 };
 
+/**
+ * @brief Allow redirect FilePath to stream.
+ */
+std::ostream& operator<<(std::ostream& stream, const FilePath& fp);
+
+
 #endif /* FILE_NAME_HH_ */
