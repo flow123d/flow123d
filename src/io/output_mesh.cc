@@ -96,7 +96,7 @@ void OutputMeshBase::select_error_control_field(FieldSet* output_fields)
         if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
             
             error_control_field_ = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
-            DBGMSG("Output mesh will be refined according to field '%s'.\n", error_control_field_name.c_str());
+            DebugOut() << "Output mesh will be refined according to field " << error_control_field_name << ".";
         }
         else{
             THROW(ExcFieldNotScalar()
@@ -144,7 +144,7 @@ OutputMesh::~OutputMesh()
 
 void OutputMesh::create_identical_mesh()
 {
-    DBGMSG("Create outputmesh identical to computational one.\n");
+	DebugOut() << "Create outputmesh identical to computational one.";
 
     const unsigned int n_elements = orig_mesh_->n_elements(),
                        n_nodes = orig_mesh_->n_nodes();
@@ -226,7 +226,7 @@ void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
     
     if(nodes_->data_.size() > 0) return;          //already computed
     
-    DBGMSG("Create discontinuous outputmesh.\n");
+    DebugOut() << "Create discontinuous outputmesh.";
     
     // connectivity = for every element list the nodes => its length corresponds to discontinuous data
     const unsigned int n_corners = output_mesh->connectivity_->n_values;

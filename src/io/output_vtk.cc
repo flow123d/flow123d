@@ -77,7 +77,7 @@ OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
     if(this->rank == 0) {
         this->_base_file.open(string(this->_base_filename).c_str());
         INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
-        xprintf(MsgLog, "Writing flow output file: %s ... \n", string(this->_base_filename).c_str());
+        LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
     }
 
     this->make_subdirectory();
@@ -125,8 +125,7 @@ int OutputVTK::write_data(void)
     } else {
         /* Set up data file */
 
-        xprintf(MsgLog, "%s: Writing output file %s ... ",
-                __func__, string(this->_base_filename).c_str());
+    	LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
 
         /* Set floating point precision to max */
@@ -137,10 +136,9 @@ int OutputVTK::write_data(void)
         this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
                 << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
 
-        xprintf(MsgLog, "O.K.\n");
+        LogOut() << "O.K.";
 
-        xprintf(MsgLog, "%s: Writing output (frame %d) file %s ... ", __func__,
-                this->current_step, relative_frame_file.c_str());
+        LogOut() << __func__ << ": Writing output (frame " << this->current_step << ") file " << relative_frame_file << " ... ";
 
         this->write_vtk_vtu();
 
@@ -149,7 +147,7 @@ int OutputVTK::write_data(void)
         //delete data_file;
         //this->_data_file = NULL;
 
-        xprintf(MsgLog, "O.K.\n");
+        LogOut() << "O.K.";
     }
 
     return 1;
@@ -420,14 +418,13 @@ int OutputVTK::write_head(void)
         return 0;
     }
 
-    xprintf(MsgLog, "%s: Writing output file (head) %s ... ", __func__,
-    		string(this->_base_filename).c_str() );
+    LogOut() << __func__ << ": Writing output file (head) " << this->_base_filename << " ... ";
 
     this->_base_file << "<?xml version=\"1.0\"?>" << endl;
     this->_base_file << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
     this->_base_file << "<Collection>" << endl;
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 
     return 1;
 }
@@ -441,13 +438,12 @@ int OutputVTK::write_tail(void)
         return 0;
     }
 
-    xprintf(MsgLog, "%s: Writing output file (tail) %s ... ", __func__,
-    		string(this->_base_filename).c_str() );
+    LogOut() << __func__ << ": Writing output file (tail) " << this->_base_filename << " ... ";
 
     this->_base_file << "</Collection>" << endl;
     this->_base_file << "</VTKFile>" << endl;
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 
     return 1;
 }

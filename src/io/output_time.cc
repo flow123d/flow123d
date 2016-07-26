@@ -94,7 +94,7 @@ OutputTime::~OutputTime(void)
 
     if (this->_base_file.is_open()) this->_base_file.close();
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 }
 
 
@@ -124,7 +124,7 @@ void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
     {
         // skip creation of output mesh (use computational one)
         if(it)
-            xprintf(Warn,"Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!\n");
+        	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
     }
     
     
@@ -147,8 +147,7 @@ void OutputTime::fix_main_file_extension(std::string extension)
 {
     if(extension.compare( this->_base_filename.extension() ) != 0) {
         string new_name = this->_base_filename.cut_extension() + extension;
-        xprintf(Warn, "Renaming output file: %s to %s\n",
-        		string(this->_base_filename).c_str(), new_name.c_str());
+        WarningOut() << "Renaming output file: " << this->_base_filename << " to " << new_name;
         this->_base_filename = new_name;
     }
 }
@@ -249,8 +248,7 @@ void OutputTime::write_time_frame()
     	// Write data to output stream, when data registered to this output
 		// streams were changed
 		if(write_time < time) {
-			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n",
-					string(this->_base_filename).c_str(), time);
+			LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
 			write_data();
 			// Remember the last time of writing to output stream
 			write_time = time;
@@ -260,8 +258,7 @@ void OutputTime::write_time_frame()
             output_mesh_.reset();
             output_mesh_discont_.reset();
 		} else {
-			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
-					string(this->_base_filename).c_str(), time);
+			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
 		}
     }
     clear_data();

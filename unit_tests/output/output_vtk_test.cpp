@@ -14,6 +14,7 @@
 #include "mesh/mesh.h"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "system/logger_options.hh"
 
 const string test_output_time_input = R"JSON(
 {
@@ -35,6 +36,8 @@ public:
       )
     {
         Profiler::initialize();
+        LoggerOptions::get_instance().set_log_file("");
+
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
         this->_mesh = new Mesh();
         ifstream in(string(mesh_file).c_str());
