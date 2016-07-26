@@ -50,7 +50,7 @@ public:
     
     /// Prints @p idx element of data vector into stream.
     void print(std::ostream& out_stream, unsigned int idx) override {
-        ASSERT_LE(idx, this->n_values);
+        ASSERT_LT(idx, this->n_values).error();
         out_stream << data_[idx] ;
     }
     
@@ -62,7 +62,7 @@ public:
     
     /// Access i-th element in the data vector.
     T& operator[](unsigned int i){
-        ASSERT(i < data_.size());
+        ASSERT(i < data_.size()).error();
         return data_[i];
     }
     

@@ -101,7 +101,7 @@ OutputVTK::~OutputVTK()
 
 int OutputVTK::write_data(void)
 {
-    ASSERT_PTR(output_mesh_);
+    ASSERT_PTR(output_mesh_).error();
 
     /* It's possible now to do output to the file only in the first process */
     if(this->rank != 0) {
