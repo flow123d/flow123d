@@ -25,6 +25,7 @@
 #include "system/system.hh"
 #include "fem/finite_element.hh"
 
+template <unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM;
 
 /**
  * @brief Space of polynomial functions.
@@ -209,6 +210,7 @@ class FE_P_disc : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::unit_support_points;
     using FiniteElement<dim,spacedim>::order;
 
+    friend class FE_RT0_XFEM<dim,spacedim>;
 public:
 
     /// Constructor.
@@ -337,7 +339,7 @@ FE_P<degree,dim,spacedim>::FE_P()
 {
     this->init();
 
-    for (int i=0; i<=dim; i++)
+    for (unsigned int i=0; i<=dim; i++)
     {
         number_of_dofs += dof_distribution.number_of_single_dofs[i]
                          +2*dof_distribution.number_of_pairs[i]
@@ -350,7 +352,7 @@ FE_P<degree,dim,spacedim>::FE_P()
         number_of_sextuples[i] = dof_distribution.number_of_sextuples[i];
     }
 
-    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
+    for (unsigned int i=0; i<dof_distribution.unit_support_points.size(); i++)
         unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
     order = degree;

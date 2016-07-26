@@ -21,7 +21,9 @@
 
 #include "fem/finite_element.hh"
 #include "system/logger.hh"
+#include "mesh/ref_element.hh"
 
+template <unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM;
 
 /**
  * @brief Raviart-Thomas element of order 0.
@@ -42,6 +44,7 @@ class FE_RT0 : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::is_scalar_fe;
     using FiniteElement<dim,spacedim>::node_matrix;
 
+    friend class FE_RT0_XFEM<dim,spacedim>;
 public:
 
     /// Number of raw basis functions.
