@@ -56,6 +56,10 @@ FilePath::FilePath(string file_path, const  FileType ft)
 }
 
 
+FilePath::FilePath(string file_path)
+: FilePath(file_path, FilePath::output_file) {}
+
+
 FilePath::FilePath()
     : abs_file_path_( std::make_shared<boost::filesystem::path>("/__NO_FILE_NAME_GIVEN__") ),
       file_type_(output_file)
@@ -147,8 +151,20 @@ string FilePath::parent_path() const {
 	return abs_file_path_->parent_path().string();
 }
 
+
 string FilePath::filename() const {
 	return abs_file_path_->filename().string();
+}
+
+
+string FilePath::extension() const {
+	return abs_file_path_->extension().string();
+}
+
+
+string FilePath::cut_extension() const {
+	boost::filesystem::path path = abs_file_path_->parent_path() / abs_file_path_->stem();
+	return path.string();
 }
 
 

@@ -76,6 +76,9 @@ public:
      */
     FilePath(string file_path, const  FileType ft);
 
+    /// Same as previous but implicitly use FileType::output_file
+    FilePath(string file_path);
+
     /**
      * @brief Obsolete method for set input and output directories.
      *
@@ -156,6 +159,16 @@ public:
      * Return name of file.
      */
     string filename() const;
+
+    /**
+     * Return extension of file.
+     */
+    string extension() const;
+
+    /**
+     * Return path to file with filename without extension.
+     */
+    string cut_extension() const;
 
 private:
     /**

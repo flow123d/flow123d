@@ -145,11 +145,11 @@ void OutputTime::compute_discontinuous_output_mesh()
 
 void OutputTime::fix_main_file_extension(std::string extension)
 {
-    if(string(this->_base_filename).compare(string(this->_base_filename).size()-extension.size(), extension.size(), extension) != 0) {
-        string new_name = string(this->_base_filename) + extension;
+    if(extension.compare( this->_base_filename.extension() ) != 0) {
+        string new_name = this->_base_filename.cut_extension() + extension;
         xprintf(Warn, "Renaming output file: %s to %s\n",
         		string(this->_base_filename).c_str(), new_name.c_str());
-        this->_base_filename = FilePath(new_name, FilePath::output_file);
+        this->_base_filename = new_name;
     }
 }
 
