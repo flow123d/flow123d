@@ -24,7 +24,36 @@
 #include "mesh/point.hh"
 #include "mesh/elements.h"
 
+#include "fem/global_enrichment_func.hh"
+
 #include <armadillo>
+
+template<int dim, typename S> class SingularityCRTP;
+
+/**
+ * CRTP - Curiously recurring template pattern.
+ * - avoids virtual member calls for @p val, @p grad, @p div
+ */
+template<int dim, template<int> class S, int spacedim>
+class SingularityCRTP< dim, S<spacedim> > : public GlobalEnrichmentFunc<dim,spacedim>
+{
+public:
+    typedef typename Space<spacedim>::Point Point;
+    
+    SingularityCRTP(){}
+    virtual ~SingularityCRTP(){}
+    
+    /// scalar enrichment function
+    virtual double value(const Point &x) const = 0;
+    /// gradient of scalar enrichment function
+    virtual Point grad(const Point &x) const = 0;
+    
+    /// vector enrichment function
+    virtual Point vector(const Point &x) const = 0;
+    /// divergence of vector enrichment function
+    virtual double div(const Point &x) const = 0;
+};
+
 
 /** @brief Point singularity in 2D plane in 2D or 3D ambient space.
  * 
@@ -44,18 +73,21 @@
  * 
  */
 template<int spacedim>
-class Singularity0D
+class Singularity0D : public SingularityCRTP<2,Singularity0D<spacedim>>
 {
 public:
     typedef typename Space<spacedim>::Point Point;
     
     Singularity0D(const Point& center, double radius);
     
+    //(CRTP functions)
+    double value(const Point &x) const override;
+    Point grad(const Point &x) const override;
+    Point vector(const Point &x) const override;
+    double div(const Point &x) const override;
+
     Point center() const;
     double radius() const;
-    
-    double val(const Point &x) const;
-    Point grad(const Point &x) const;
     
     /// Computes circumference along edge.
     double circumference() const;
@@ -102,7 +134,7 @@ inline const std::vector<typename Singularity0D<spacedim>::Point>& Singularity0D
 
 
 template<int spacedim>
-double Singularity0D<spacedim>::val(const Point& x) const
+double Singularity0D<spacedim>::value(const Point& x) const
 {
     double distance = arma::norm(center_-x,2);
     if (distance >= radius_)
@@ -111,10 +143,9 @@ double Singularity0D<spacedim>::val(const Point& x) const
     return std::log(radius_);
 }
 
-
 template<int spacedim>
 typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Point &x) const
-{ 
+{
     Point grad; //initialize all entries with zero
     grad.zeros();
     
@@ -125,6 +156,18 @@ typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Poin
         grad = (x-center_) / distance;
     }
     return grad;  //returns zero if  (distance <= radius)
+}
+
+template<int spacedim>
+typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::vector(const Point &x) const
+{
+    return this->grad(x);
+}
+
+template<int spacedim>
+double Singularity0D<spacedim>::div(const Point& x) const
+{
+    return 0;
 }
 
 template<int spacedim>
