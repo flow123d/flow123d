@@ -186,9 +186,9 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 
 
-void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
+void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data, std::shared_ptr<OutputMeshBase> output_mesh)
 {    
-    auto offsets = output_mesh_->offsets_->data_;
+    auto offsets = output_mesh->offsets_->data_;
     unsigned int n_elements = offsets.size();
     
     data.resize(n_elements);
@@ -365,7 +365,7 @@ void OutputVTK::write_vtk_vtu(void)
             write_vtk_data_ascii(output_mesh_->connectivity_, VTK_INT32 );
             write_vtk_data_ascii(output_mesh_->offsets_, VTK_INT32 );
             auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_);
+            fill_element_types_vector(types->data_, output_mesh_);
             write_vtk_data_ascii(types, VTK_UINT8 );
         file << "</Cells>" << endl;
 
@@ -381,7 +381,7 @@ void OutputVTK::write_vtk_vtu(void)
     } else {
         /* Write Piece begin */
         file << "<Piece NumberOfPoints=\"" << output_mesh_discont_->n_nodes()
-                  << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
+                  << "\" NumberOfCells=\"" << output_mesh_discont_->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
@@ -393,7 +393,7 @@ void OutputVTK::write_vtk_vtu(void)
             write_vtk_data_ascii(output_mesh_discont_->connectivity_, VTK_INT32 );
             write_vtk_data_ascii(output_mesh_discont_->offsets_, VTK_INT32 );
             auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_);
+            fill_element_types_vector(types->data_, output_mesh_discont_);
             write_vtk_data_ascii(types, VTK_UINT8 );
         file << "</Cells>" << endl;
 

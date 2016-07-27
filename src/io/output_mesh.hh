@@ -33,6 +33,8 @@
 class Mesh;
 template<int, class Value> class Field;
 
+template<int> class ElementAccessor;
+
 /// Class representing data vector of geometry and topology information (especially for VTK).
 /// Filling the vector is the users responsibility.
 template <typename T>
@@ -50,7 +52,7 @@ public:
     
     /// Prints @p idx element of data vector into stream.
     void print(std::ostream& out_stream, unsigned int idx) override {
-        ASSERT_LE(idx, this->n_values);
+        ASSERT_LE(idx, this->data_.size());
         out_stream << data_[idx] ;
     }
     
@@ -104,6 +106,8 @@ public:
      */
     static const Input::Type::Record & get_input_type();
     
+    bool is_refined();
+    
     /// Gives iterator to the FIRST element of the output mesh.
     OutputElementIterator begin();
     /// Gives iterator to the LAST element of the output mesh.
@@ -139,6 +143,10 @@ protected:
     
     /// Refinement error control field.
     Field<3, FieldValue<3>::Scalar> *error_control_field_;
+    
+    bool is_refined_;
+    bool refine_by_error_;
+    double refinement_error_tolerance_;
     
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
@@ -181,6 +189,26 @@ public:
     void create_refined_mesh();
     
 protected:
+    
+    struct AuxElement{
+        std::vector<Space<spacedim>::Point> nodes;
+        unsigned int level;
+    };
+    
+    bool refinement_criterion_uniform(const AuxElement& ele);
+    bool refinement_criterion_error(const AuxElement& ele,
+                                    const Space<spacedim>::Point &centre,
+                                    const ElementAccessor<spacedim> &ele_acc,
+                                    Field<3, FieldValue<3>::Scalar> *error_control_field
+                                   );
+    
+    template<int dim>
+    void refine_aux_element(const AuxElement& aux_element,
+                            std::vector< AuxElement >& refinement,
+                            const ElementAccessor<spacedim> &ele_acc,
+                            Field<3, FieldValue<3>::Scalar> *error_control_field
+                           );
+    
     bool refinement_criterion();
 };
 

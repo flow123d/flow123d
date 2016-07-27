@@ -27,6 +27,8 @@
 
 using namespace std;
 
+class OutputMeshBase;
+
 /**
  * \brief This class is used for output data to VTK file format
  */
@@ -154,7 +156,7 @@ protected:
     /**
      * \brief Fills the given vector with VTK element types indicators.
      */
-    void fill_element_types_vector(std::vector<unsigned int> &data);
+    void fill_element_types_vector(std::vector<unsigned int> &data, std::shared_ptr<OutputMeshBase> output_mesh);
 
     /**
      * Write registered data to output stream using ascii format
