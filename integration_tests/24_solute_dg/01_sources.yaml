@@ -1,8 +1,9 @@
+# COMMENT_Stop_time:"1275",
 flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Steady flow + transport with source
   mesh:
-    mesh_file: ./input/test16.msh
+    mesh_file: ../00_mesh/test16.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
@@ -16,7 +17,7 @@ problem: !Coupling_Sequential
           value: y
       - region: BULK
         cross_section: 1
-        anisotropy: 1
+        conductivity: 1
     output:
       output_stream: 
         file: ./flow_test16.pvd
@@ -28,39 +29,41 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: true
-    time:
-      end_time: 5.7
-      max_dt: 1.0
-      min_dt: 1.0
   solute_equation: !Coupling_OperatorSplitting
-    transport: !Solute_Advection_FV
+    transport: !Solute_AdvectionDiffusion_DG
+      # dual_porosity:false,
       input_fields:
         - region: BOUNDARY
           bc_conc: 0
         - region: BULK
           init_conc: 0
           porosity: 1
-          sources_density: !FieldElementwise
-            gmsh_file: input/test16_sources.msh
-            field_name: density
-          sources_sigma: !FieldElementwise
-            gmsh_file: input/test16_sources.msh
-            field_name: sigma
-          sources_conc: !FieldElementwise
-            gmsh_file: input/test16_sources.msh
-            field_name: concentration
-    boundary_file: ./input/test16.tbc
-    initial_file: ./input/test16.tic
+          diff_m: 1.0e-09
+          disp_l: 0.01
+          disp_t: 0.01
+          dg_penalty: 10.0
+          sources_density: !FieldFormula
+            value: if(sqrt((x-0.4288)^2+(y-4.7699)^2)<0.04,1,0)
+          sources_sigma: !FieldFormula
+            value: if(sqrt((x-1.5849)^2+(y-4.7016)^2)<0.04,1,0)
+          sources_conc: !FieldFormula
+            value: if(sqrt((x-1.5849)^2+(y-4.7016)^2)<0.04,1,0)
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+      dg_variant: symmetric
     output_stream: 
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
       time_step: 0.8
       name: transport_output_stream
-    sources_file: ./input/test16.tso
+    sorption_enable: false
     substances:
       - conc
     time:
       end_time: 5.7
+      max_dt: 1.0
+      min_dt: 1.0
     balance:
       cumulative: true

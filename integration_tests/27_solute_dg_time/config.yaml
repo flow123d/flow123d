@@ -8,3 +8,4 @@ test_cases:
 - file: 03_bc.yaml
 - file: 04_bc_short_pulse.yaml
 - file: 05_unsteady_flow.yaml
+- file: 06_sources.yaml
