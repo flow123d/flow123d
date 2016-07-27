@@ -209,11 +209,12 @@ class ConfigBase(object):
         :rtype: list[ConfigCase]
         """
         result = list()
+        base_name = Paths.basename(yaml_case_file)
         for case in self.cases:
             for f in case['file']:
-                if Paths.basename(f) == Paths.basename(yaml_case_file):
+                if Paths.basename(f) == base_name:
                     dummy_case = deepcopy(case)
-                    dummy_case['file'] = [yaml_case_file]
+                    dummy_case['file'] = [base_name]
                     result.extend(self._get_all_for_case(dummy_case))
         return [ConfigCase(r, self) for r in result]
 
