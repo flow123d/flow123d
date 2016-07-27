@@ -6,3 +6,4 @@ test_cases:
 - file: 01_3el.yaml
 - file: 02_3el_cfl.yaml
 - file: 03_3el_molar_mass.yaml
+- file: 04_3el_chain.yaml
