@@ -10,3 +10,5 @@ test_cases:
 - file: 05_seepage.yaml
 - file: 06_river_square.yaml
 - file: 07_river_slope.yaml
+- file: 08_interpolated.yaml
+  proc: [1, 2, 3]
