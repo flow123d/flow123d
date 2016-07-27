@@ -2,7 +2,7 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: '[u''test18:'', u''diffusion'', u''through'', u''fractures'']'
   mesh:
-    mesh_file: ./input/test18.msh
+    mesh_file: ../00_mesh/test18.msh
     regions:
       - !From_Elements
         name: center
