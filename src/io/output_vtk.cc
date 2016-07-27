@@ -163,7 +163,8 @@ void OutputVTK::make_subdirectory()
 	main_output_basename_ = this->_base_filename.filename();
     main_output_basename_=main_output_basename_.substr(0, main_output_basename_.size() - 4); // 5 = ".pvd".size() +1
 
-    FilePath fp(main_output_dir_ + DIR_DELIMITER + main_output_basename_ + DIR_DELIMITER + "__tmp__", FilePath::output_file);
+    vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
+    FilePath fp(sub_path, FilePath::output_file);
     fp.create_output_dir();
 }
 

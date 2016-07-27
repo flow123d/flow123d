@@ -76,6 +76,9 @@ public:
      */
     FilePath(string file_path, const  FileType ft);
 
+    /// Same as previous, but create path from vector of strings.
+    FilePath(vector<string> sub_paths, const  FileType ft);
+
     /// Same as previous but implicitly use FileType::output_file
     FilePath(string file_path);
 

@@ -207,3 +207,13 @@ TEST(FilePath, delimiter_problem) {
     EXPECT_TRUE( (boost::filesystem::current_path() / "../mesh") == boost::filesystem::path(mesh_file.parent_path()) );
 }
 
+TEST(FilePath, create_from_vector) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    string abs_path = FilePath::get_absolute_working_dir();
+	FilePath::set_io_dirs(".",".","",abs_path);
+
+	vector<string> sub_paths = {"a", "b", "c"};
+	string str = FilePath(sub_paths, FilePath::output_file);
+	EXPECT_TRUE( (boost::filesystem::path(abs_path) / "a/b/c") == boost::filesystem::path(str) );
+}

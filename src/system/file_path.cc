@@ -21,10 +21,28 @@
 #include "system.hh"
 
 
+/**
+ * Helper method, create path string from vector of strings
+ */
+string create_path_from_vec(vector<string> sub_paths) {
+	ASSERT_GT(sub_paths.size(), 0).error();
+
+	if (sub_paths.size() == 1) {
+		return sub_paths[0];
+	} else {
+		boost::filesystem::path path = sub_paths[0];
+		for (unsigned int i=1; i<sub_paths.size(); ++i)
+			path = path / sub_paths[i];
+		return path.string();
+	}
+}
+
+
 // static data members
 map<string,string> FilePath::placeholder;
 std::shared_ptr<boost::filesystem::path> FilePath::output_dir=std::make_shared<boost::filesystem::path>(".");
 std::shared_ptr<boost::filesystem::path> FilePath::root_dir=std::make_shared<boost::filesystem::path>(".");
+
 
 FilePath::FilePath(string file_path, const  FileType ft)
 : file_type_(ft)
@@ -54,6 +72,10 @@ FilePath::FilePath(string file_path, const  FileType ft)
     }
 
 }
+
+
+FilePath::FilePath(vector<string> sub_paths, const  FileType ft)
+: FilePath(create_path_from_vec(sub_paths), ft) {}
 
 
 FilePath::FilePath(string file_path)
