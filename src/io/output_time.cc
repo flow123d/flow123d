@@ -146,7 +146,7 @@ void OutputTime::compute_discontinuous_output_mesh()
 void OutputTime::fix_main_file_extension(std::string extension)
 {
     if(extension.compare( this->_base_filename.extension() ) != 0) {
-        string new_name = this->_base_filename.cut_extension() + extension;
+        string new_name = (string)this->_base_filename + extension;
         WarningOut() << "Renaming output file: " << this->_base_filename << " to " << new_name;
         this->_base_filename = new_name;
     }
