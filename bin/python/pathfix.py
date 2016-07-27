@@ -14,21 +14,41 @@ So to sys.path is appended ../../src/python path
 import sys, os
 
 
-def print_debug ():
+def print_debug():
     """Prints debug information about python"""
-    print ("Python:    " + str (sys.version).replace ("\n", "") + ", " + str (sys.executable))
+    print ("Python " + str(sys.version).replace("\n", "") + ", " + str(sys.executable))
 
 
-def append_to_path ():
+def add_path(*args):
+    root = os.path.dirname(os.path.realpath(__file__))
+    if not args:
+        return root
+    path = os.path.abspath(
+        os.path.join(
+            root,
+            *args
+        )
+    )
+    sys.path.append(path)
+    return path
+
+
+def append_to_path():
     """Performs path fix"""
 
     # for now, always print debug info
-    print_debug ()
+    print_debug()
 
-    # add src/python into module path
-    path = os.path.join ('..', '..', 'src', 'python')
-    sys.path.append (path)
-    path = os.path.join ('src', 'python')
-    sys.path.append (path)
-    sys.path.append (os.getcwd())
-    # print 'paths: \n{:s}'.format ('\n'.join(sys.path))
+    # path to lib
+    add_path('lib')
+    add_path('..', 'lib')
+    # path to src/python if COPY_PYTHON is disabled
+    add_path('..', '..', 'src', 'python')
+    # path to lib/flow123d after COPY_PYTHON
+    add_path('..', '..', 'build_tree', 'lib', 'flow123d')
+    # path to lib/flow123d/site-packages additional libs after COPY_PYTHON
+    add_path('..', '..', 'build_tree', 'lib', 'flow123d', 'site-packages')
+
+
+# alias
+init = append_to_path
