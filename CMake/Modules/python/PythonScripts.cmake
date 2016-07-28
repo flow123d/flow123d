@@ -26,14 +26,17 @@ macro(install_python_lib package_name package_dir)
     else()
         message(STATUS "Installing ${package_name} with pip ....")
         message(STATUS "-- cd ${Flow123d_SOURCE_DIR}/CMake/Modules/python && pip install --target=${PYTHON_3RD_PARTY} ${package_name}")
-        # we start pip install from directory where setup.cfg is placed thus avoiding issue with --target usage
+        # we start pip install from directory where setup.cfg is placed and overwrite 
+        # default python pip configuration, thus avoiding issue with --target usage
         # https://github.com/pypa/pip/pull/3450 and https://github.com/pypa/pip/issues/3056
         # for now we try to install package using this fix (platform centos)
         execute_process(
             COMMAND pip install --target=${PYTHON_3RD_PARTY} ${package_name}
             WORKING_DIRECTORY ${Flow123d_SOURCE_DIR}/CMake/Modules/python
             RESULT_VARIABLE RETURNCODE)
-        # if we fail we do it normal way
+        
+        # if installation fails we run pip from current dir and do not override 
+        # any configuration
         if(NOT RETURNCODE EQUAL 0)
             execute_process(
                 COMMAND pip install --target=${PYTHON_3RD_PARTY} ${package_name}
