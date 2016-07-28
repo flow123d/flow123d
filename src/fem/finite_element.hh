@@ -277,6 +277,11 @@ public:
     const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
 
     /**
+     * @brief Returns the node matrix
+     */
+    const arma::mat& get_node_matrix();
+    
+    /**
      * @brief Destructor.
      */
     virtual ~FiniteElement();

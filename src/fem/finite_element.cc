@@ -170,6 +170,12 @@ const vector<arma::vec::fixed<dim> > &FiniteElement<dim,spacedim>::get_generaliz
     }
 }
 
+template<unsigned int dim, unsigned int spacedim>
+const arma::mat& FiniteElement<dim,spacedim>::get_node_matrix()
+{
+    return node_matrix;
+}
+
 
 template<unsigned int dim, unsigned int spacedim>
 FiniteElement<dim,spacedim>::~FiniteElement()

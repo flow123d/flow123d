@@ -16,10 +16,10 @@
  * @author  Pavel Exner
  */
 
-#ifndef FE_RT_XFEM_HH_
-#define FE_RT_XFEM_HH_
+#ifndef FE_RT0_XFEM_HH_
+#define FE_RT0_XFEM_HH_
 
-#include "fem/finite_element.hh"
+#include "fem/finite_element_enriched.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_p.hh"
 
@@ -31,137 +31,6 @@
 #include "system/logger.hh"
 
 template <unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM;
-template <unsigned int dim, unsigned int spacedim> class FiniteElementEnriched;
-
-template <unsigned int dim, unsigned int spacedim>
-class FiniteElementEnriched : public FiniteElement<dim,spacedim>
-{
-protected:
-    using FiniteElement<dim,spacedim>::number_of_dofs;
-    using FiniteElement<dim,spacedim>::number_of_single_dofs;
-    
-    FiniteElement<dim,spacedim> *fe;
-    FE_P_disc<1,dim, spacedim> pu;
-    
-    unsigned int n_regular_dofs_;
-    
-    std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr;
-public:
-    /**
-     * @brief Constructor.
-     */
-    FiniteElementEnriched(FiniteElement<dim,spacedim>* fe,
-                          std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr);
-    
-    virtual ~FiniteElementEnriched(){}
-    
-    const unsigned int n_regular_dofs() const;
-    const unsigned int n_enriched_dofs() const;
-    
-    
-    /**
-     * @brief The scalar variant of basis_vector must be implemented but may not be used.
-     */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-
-    /**
-     * @brief The scalar variant of basis_grad_vector must be implemented but may not be used.
-     */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-
-    /**
-     * @brief Returns the @p ith basis function evaluated at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-
-    /**
-     * @brief Returns the gradient of the @p ith basis function at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-
-    /**
-     * @brief Returns the divergence of the @p ith basis function at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-//     double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-    
-    /**
-     * @brief Calculates the data on the reference cell.
-     *
-     * @param q Quadrature.
-     * @param flags Flags that indicate what quantities should be calculated.
-     */
-    FEInternalData *initialize(const Quadrature<dim> &quad, UpdateFlags flags) override;
-};
-
-template <unsigned int dim, unsigned int spacedim>
-FiniteElementEnriched<dim,spacedim>::FiniteElementEnriched(FiniteElement<dim,spacedim>* fe,
-                                                           std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr)
-: fe(fe), enr(enr)
-{
-    this->init();
-
-    n_regular_dofs_ = dim+1;
-    
-    // regular + enriched from every singularity
-    number_of_dofs = n_regular_dofs_ + n_regular_dofs_ * enr.size();
-    number_of_single_dofs[dim] = number_of_dofs;
-}
-
-template <unsigned int dim, unsigned int spacedim>
-const unsigned int FiniteElementEnriched<dim,spacedim>::n_regular_dofs() const
-{   return n_regular_dofs_;}
-
-template <unsigned int dim, unsigned int spacedim>
-const unsigned int FiniteElementEnriched<dim,spacedim>::n_enriched_dofs() const
-{   return number_of_dofs - n_regular_dofs_;}
-
-template <unsigned int dim, unsigned int spacedim>
-double FiniteElementEnriched<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    return fe->basis_value(i,p);
-}
-
-template <unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FiniteElementEnriched<dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    return fe->basis_grad(i,p);
-}
-
-template <unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FiniteElementEnriched<dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    return fe->basis_vector(i,p);
-}
-
-template <unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<dim,dim> FiniteElementEnriched<dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    return fe->basis_grad_vector(i,p);
-}
-
-// template <unsigned int dim, unsigned int spacedim>
-// double FiniteElementEnriched<dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
-// {
-//     return fe.div(i,p);
-// }
-
-template <unsigned int dim, unsigned int spacedim>
-FEInternalData *FiniteElementEnriched<dim,spacedim>::initialize(const Quadrature<dim> &quad, UpdateFlags flags)
-{
-//     ASSERT_DBG(false).error("No internal data on reference element for XFEM.");
-    // return empty internal data since all internal data are element dependent
-    return new FEInternalData;
-}
-
-
-
-
 
 /**
  * @brief Raviart-Thomas element of order 0.
@@ -236,10 +105,6 @@ public:
 
 
 
-
-
-
-
 template <unsigned int dim, unsigned int spacedim>
 FE_RT0_XFEM<dim,spacedim>::FE_RT0_XFEM(FE_RT0<dim,spacedim>* fe,
                                        std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr)
@@ -250,15 +115,11 @@ FE_RT0_XFEM<dim,spacedim>::FE_RT0_XFEM(FE_RT0<dim,spacedim>* fe,
 }
 
 
-
-
-
 template <unsigned int dim, unsigned int spacedim>
 inline UpdateFlags FE_RT0_XFEM<dim,spacedim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags;
 
-    //TODO: get rid of update_quadrature_points; pass them to fv_values from quadrature
     if (flags & update_values)
         f |= update_jacobians | update_inverse_jacobians | update_volume_elements | update_quadrature_points;
 
@@ -275,17 +136,6 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
         FEInternalData &data,
         FEValuesData<dim,spacedim> &fv_data)
 {
-    DBGMSG("FE_RT0_XFEM fill fe_values base\n");
-    
-//     if(typeid(quad) == typeid(QXFEM<dim,spacedim>)){
-//         DBGMSG("quad XFEM\n");
-//         const QXFEM<dim,spacedim>* q = static_cast<const QXFEM<dim,spacedim>*>(&quad);
-//         DBGMSG("quad pointer %d\n",q);
-//         fill_fe_values(*q,fv_data);
-//     }
-//     else{
-//         DBGMSG("quad GAUSS\n");
-//     }   
     fill_fe_values(quad,fv_data);
 }
 
@@ -348,14 +198,14 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             arma::vec pu_values(RefElement<dim>::n_nodes);
             for (j=0; j<RefElement<dim>::n_nodes; j++)
                     pu_values[j] = pu.basis_value(j, quad.point(q));
-            pu_values = pu.node_matrix * pu_values;
+            pu_values = pu.get_node_matrix() * pu_values;
             
 //             DBGMSG("pu grad q[%d]\n",q);
             // compute PU grads
-            arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
-            for (j=0; j<RefElement<dim>::n_nodes; j++)
-                pu_grads.row(j) = arma::trans(pu.basis_grad(j, quad.point(q)));
-            pu_grads = pu.node_matrix * pu_grads;
+//             arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
+//             for (j=0; j<RefElement<dim>::n_nodes; j++)
+//                 pu_grads.row(j) = arma::trans(pu.basis_grad(j, quad.point(q)));
+//             pu_grads = pu.node_matrix * pu_grads;
             // real_pu_grad = pu_grads[i] * fv_data.inverse_jacobians[i];
             
             
@@ -371,12 +221,12 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
                 //compute interpolant
                 arma::vec::fixed<spacedim> interpolant;
                 interpolant.zeros();
-                for (unsigned int k=0; k<n_regular_dofs_; k++)
+                for (unsigned int k=0; k < n_regular_dofs_; k++)
                     interpolant += vectors[k] * enr_dof_val[w][k];
                 
 //                 quad.real_point(q).print(cout);
 //                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
-                for (unsigned int k=0; k<n_regular_dofs_; k++)
+                for (unsigned int k=0; k < pu.n_dofs(); k++)
                 {
                     vectors[j] =  pu_values[k] * (enr[w]->vector(fv_data.points[q]) - interpolant);
 //                     vectors[j] =  interpolant;//(enr[w]->vector(fv_data.points[q]) - interpolant);
@@ -404,16 +254,4 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 //     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-#endif // FE_RT_XFEM_HH_
+#endif // FE_RT0_XFEM_HH_
