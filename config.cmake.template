@@ -70,15 +70,18 @@
 #             correctly, example:
 #             set(PYTHON_COPY_PACKAGES
 #                 bsddb compiler ctypes curses distutils email encodings hotshot importlib 
-#                 json lib-dynload lib-tk lib2to3 logging multiprocessing 
+#                 json lib-dynload lib-tk lib2to3 logging multiprocessing plat-linux2
 #                 plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
+#            If value is not specified, value from above will be used
 #    - PYTHON_SYSPATH
-            - list of all paths which are necessary for python to run (3rd party)
-              in /lib/python2.7 folder (some path are generated automatically)
-              set(PYTHON_SYSPATH
-                  plat-linux2 lib-tk lib-old lib-dynload
-                  dist-packages site-packages)
-
+#           - list of all paths which are later on added on wrappers (necessary 
+#             for python to run (3rd party) and other modules). Values are relative
+#             to PYTHON_ROOT. Some path are generated automatically during
+#             installation.
+#             set(PYTHON_SYSPATH
+#                 plat-x86_64-linux-gnu plat-linux2 lib-tk lib-old lib-dynload
+#                 dist-packages site-packages)
+#            If value is not specified, value from above will be used
 
 ### Boost ######################
 # Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system
