@@ -6,7 +6,6 @@
  */
 
 
-#include <iostream>
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest.hh>
