@@ -1,34 +1,39 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-
-import math, re, datetime
-from scripts.core.prescriptions import PBSModule
-from scripts.pbs.job import Job, JobState
+# ----------------------------------------------
+import math
+import re
+import datetime
 import getpass
+# ----------------------------------------------
+from scripts.core.base import Printer
+from scripts.pbs.job import Job, JobState
+from scripts.prescriptions.remote_run import PBSModule
+# ----------------------------------------------
 
 
 class Module(PBSModule):
-    def get_pbs_command(self, options, pbs_script_filename):
+    def get_pbs_command(self, pbs_script_filename):
         # total parallel process
-        np = self.proc_value
+        np = self.case.proc
         # processes per node, default value 1
-        ppn = options.get('ppn', 1)
+        ppn = self.ppn
         # number of physical machines to be reserved
         nodes = float(np) / ppn
         if int(nodes) != nodes:
-            self.printer.wrn('Warning: NP is not divisible by PPN')
+            Printer.wrn('Warning: NP is not divisible by PPN')
         nodes = int(math.ceil(nodes))
 
         # memory limit
-        mem = int(self.test_case.memory_limit * ppn)
+        mem = int(self.case.memory_limit * ppn)
 
         # time_limit
-        walltime = datetime.timedelta(seconds=int(self.test_case.time_limit))
+        walltime = datetime.timedelta(seconds=int(self.case.time_limit))
 
         # get queue, if only -q is set, 'default' queue will be set
         # otherwise given string value will be used
-        queue = options.get('queue', True)
+        queue = self.queue
         queue = 'default' if type(queue) is not str else queue
 
         # command
@@ -39,7 +44,7 @@ class Module(PBSModule):
             '-l', 'walltime={walltime}'.format(**locals()),
             '-l', 'place=infiniband',
             '-q', '{queue}'.format(**locals()),
-            '-o', self.output_log,
+            '-o', self.case.fs.pbs_output,
             pbs_script_filename
         ]
 
@@ -107,7 +112,6 @@ uname -a
 echo JOB START: `date`
 pwd
 
-echo "$$command$$"
-# $$command$$
+$$command$$
 
 """.lstrip()

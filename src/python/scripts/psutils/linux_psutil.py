@@ -1,9 +1,30 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-
+# ----------------------------------------------
 import psutil
 import time
+# ----------------------------------------------
+from psutil import NoSuchProcess
+
+
+class try_catch(object):
+    """
+    Decorator which uses cache for certain amount of time
+    """
+    def __init__(self, default=0):
+        self.default = default
+
+    def __call__(self, f):
+        # call wrapped function or use caches value
+        def wrapper(other, *args, **kwargs):
+            try:
+                return f(other, *args, **kwargs)
+            except NoSuchProcess:
+                return self.default
+
+        return wrapper
+
 
 KB = 1000.0
 MB = KB ** 2
@@ -23,15 +44,33 @@ class Process(psutil.Process):
 
     @classmethod
     def popen(cls, *args, **kwargs):
-        return psutil.Popen(*args, **kwargs)
-
-    @classmethod
-    def _popen(cls, *args, **kwargs):
         process = psutil.Popen(*args, **kwargs)
-        return Process(process.pid)
+        return Process(process.pid, process)
 
-    def __init__(self, pid):
+    # @classmethod
+    # def _popen(cls, *args, **kwargs):
+    #     process = psutil.Popen(*args, **kwargs)
+    #     return Process(process.pid)
+
+    def __init__(self, pid, process=None):
+        """
+        :type process: psutil.Popen
+        """
         super(Process, self).__init__(pid)
+        self.process = process
+        self.terminated = False
+
+    def wait(self, timeout=None):
+        if self.process:
+            return self.process.wait()
+        return super(Process, self).wait(timeout)
+
+    @property
+    def returncode(self):
+        if self.terminated:
+            return 1
+        if self.process:
+            return self.process.returncode
 
     def children(self, recursive=True):
         children = super(Process, self).children(recursive)
@@ -39,6 +78,7 @@ class Process(psutil.Process):
         children.append(self)
         return children
 
+    @try_catch(default=0)
     def memory_usage(self, prop='vms', units=MiB):
         # use faster super call
         children = super(Process, self).children(True)
@@ -50,11 +90,14 @@ class Process(psutil.Process):
             return 0.0
         return sum([getattr(x, prop) for x in usages]) / units
 
+    @try_catch(default=0)
     def runtime(self):
         return time.time() - self.create_time()
 
+    @try_catch(default=True)
     def secure_kill(self):
         # first, lets be reasonable and terminate all processes (SIGTERM)
+        self.terminated = True
         children = self.children()
         self.apply(children, 'terminate')
 

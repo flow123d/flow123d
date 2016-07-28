@@ -1,7 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
+# ----------------------------------------------
 from scripts.core.base import Paths
+# ----------------------------------------------
 
 
 class CompareNdiff(object):

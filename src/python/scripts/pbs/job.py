@@ -1,10 +1,18 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-
+# ----------------------------------------------
+import json
 import subprocess
 import time
 import datetime
+# ----------------------------------------------
+from scripts.core.base import Printer, IO
+from scripts.core.threads import PyPy
+from scripts.parser.json_parser import RuntestParser, JsonParser
+from scripts.pbs.common import job_ok_string
+from utils.strings import format_n_lines
+# ----------------------------------------------
 
 
 class JobState(object):
@@ -52,12 +60,13 @@ class JobState(object):
 
 class Job(object):
     """
-    :type case : scripts.core.prescriptions.PBSModule
+    :type case : scripts.config.yaml_config.ConfigCase
     """
     def __init__(self, job_id, case):
         self.id = job_id
         self.case = case
 
+        self.full_name = 'Job'
         self.name = None
         self.queue = None
         self.status_changed = False
@@ -95,7 +104,8 @@ class Job(object):
         raise Exception('Job with id {self.id} does not exists'.format(self=self))
 
     def __repr__(self):
-        return "<Job #{s.id}, status {s.status} in queue {s.queue}>".format(s=self)
+        q = self.queue if self.queue else 'unknown'
+        return "<Job #{s.id}, status {s.status} in queue {q}>".format(s=self, q=q)
 
     # --------------------------------------------------------
 
@@ -176,24 +186,31 @@ class MultiJob(object):
         status = status - {JobState.EXIT_OK, JobState.EXIT_ERROR}
         return bool(status)
 
-    def print_status(self, printer):
-        """
-        :type printer: scripts.core.base.Printer
-        """
+    def print_status(self):
         for item in self.items:
-            printer.key(str(item))
+            Printer.out(str(item))
 
     def status_changed(self, desired=JobState.COMPLETED):
         """
         :rtype : list[scripts.pbs.job.Job]
         """
+        # get all changed jobs if not specified
         if desired is None:
             return [item for item in self.items if item.status_changed]
+
+        # otherwise just desired status
         if type(desired) is not set:
             desired = set(desired)
 
         return [item for item in self.items if item.status_changed and item.status in desired]
 
+    def get_all(self, status=None):
+        if not status:
+            return [item for item in self.items]
+
+        # return all jobs having certain status
+        status = set(status) if type(status) is str else status
+        return [item for item in self.items if item.status in status]
 
     def get_status_line(self):
         status = self.status().values()
@@ -206,3 +223,60 @@ class MultiJob(object):
             delta=datetime.timedelta(seconds=int(time.time() - self.start_time)),
             status=', '.join(['{}: {:d}'.format(k, v) for k, v in result.items()])
         )
+
+
+def print_log_file(f, n_lines):
+    log_file = IO.read(f)
+    if log_file:
+        if n_lines == 0:
+            Printer.out('Full log from file {}:', f)
+        else:
+            Printer.out('Last {} lines from file {}:', abs(n_lines), f)
+
+        Printer.wrn(format_n_lines(log_file.rstrip(), -n_lines, indent=Printer.indent * '    '))
+
+
+def get_status_line(o, map=False):
+    if not map:
+        return '[{:^6}]:{o[returncode]:3} |'.format('ERROR', o=o)
+    return '[{:^6}]:{o[returncode]:3} |'.format(
+        PyPy.returncode_map.get(str(o['returncode']), 'ERROR'), o=o)
+
+
+def finish_pbs_job(job, batch):
+    """
+    :type job: scripts.pbs.job.Job
+    """
+    # try to get more detailed job status
+    job.is_active = False
+    job_output = IO.read(job.case.fs.json_output)
+
+    if job_output:
+        job_json = JsonParser(json.loads(job_output), batch)
+        if job_json.returncode == 0:
+            job.status = JobState.EXIT_OK
+            Printer.out('OK:    Job {}({}) ended', job, job.full_name)
+            Printer.open()
+            # in batch mode print all logs
+            if batch:
+                Printer.open()
+                for test in job_json.tests:
+                    test.get_result()
+                Printer.close()
+            Printer.close()
+        else:
+            job.status = JobState.EXIT_ERROR
+            Printer.out('ERROR: Job {}({}) ended', job, job.full_name)
+            # in batch mode print all logs
+
+            Printer.open()
+            for test in job_json.tests:
+                test.get_result()
+            Printer.close()
+    else:
+        # no output file was generated assuming it went wrong
+        job.status = JobState.EXIT_ERROR
+        Printer.out('ERROR: Job {} ended (no output file found). Case: {}', job, job.full_name)
+        Printer.out('       pbs output: ')
+        Printer.out(format_n_lines(IO.read(job.case.fs.pbs_output), 0))
+    return 0 if job.status == JobState.EXIT_OK else 1

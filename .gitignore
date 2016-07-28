@@ -45,3 +45,7 @@ doc/reference_manual/flow_version.tex
 
 *.pyc
 /.idea/
+unit_tests/test_scripts/extras/consumer_cpp
+tests/runtest.sh
+bin/runtest.sh
+*python.log

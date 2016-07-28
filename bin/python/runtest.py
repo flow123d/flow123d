@@ -1,14 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-
-from __future__ import absolute_import
-import pathfix
 # ----------------------------------------------
-from scripts.core.base import Paths
+from __future__ import absolute_import
+import pathfix; pathfix.init()
+# ----------------------------------------------
+import sys
+# ----------------------------------------------
+from scripts.core.base import GlobalResult
 from utils.argparser import ArgParser
 from utils.duration import Duration
-
+# ----------------------------------------------
 
 parser = ArgParser("runtest.py [<parametes>] [<test set>]  [-- <test arguments>]")
 # ----------------------------------------------
@@ -79,17 +81,26 @@ parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder=
     'Optional memory limit per node in MB',
     'For precision use float value'
 ])
+parser.add('', '--root', hidden=True, type=str, name='root', placeholder='<ROOT>', docs=[
+    'Path to base dir of flow123d'
+])
+parser.add('', '--json', hidden=True, type=str, name='json', placeholder='<JSON>', docs=[
+    'Output result to json file'
+])
 # ----------------------------------------------
 
 if __name__ == '__main__':
-    from scripts.core.threads import BinExecutor
+    from utils.globals import check_modules
+
+    required = ('psutil', 'yaml', 'shutil', 'importlib', 'platform')
+    if not check_modules(*required):
+        sys.exit(1)
+
+    from scripts.core.execution import BinExecutor
     from scripts.runtest_module import do_work
-    #
-    # # for debug only set dir to where script should be
-    Paths.base_dir(__file__)
-    Paths.base_dir('/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d/bin/python/foo')
-    # Paths.base_dir(r'c:\cygwin64\home\Jan\flow\bin\python\testrun.py')
-    #
+
     # run work
     BinExecutor.register_sigint()
     do_work(parser)
+    if parser.simple_options.json:
+        GlobalResult.to_json(parser.simple_options.json)

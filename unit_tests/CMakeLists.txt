@@ -164,6 +164,7 @@ endmacro()
 # - has to be done manually to get correct dependencies on CMake's list files.
 
 
+add_subdirectory("test_scripts")
 add_subdirectory("scripts")
 add_subdirectory("input")
 add_subdirectory("tools")

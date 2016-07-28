@@ -1,11 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-
-from scripts.core.prescriptions import PBSModule
-from scripts.pbs.job import Job, JobState
-
+# ----------------------------------------------
 import re
+# ----------------------------------------------
+from scripts.pbs.job import Job, JobState
+from scripts.prescriptions.remote_run import PBSModule
+# ----------------------------------------------
+
 
 
 class Module(PBSModule):
@@ -20,7 +22,7 @@ class Module(PBSModule):
             'qsub',
             '-pe', 'orte', '{np}'.format(**locals()),
             '-l', 'num_proc={ppn}'.format(**locals()),
-            '-o', self.output_log,
+            '-o', self.pbs_output,
             pbs_script_filename
         ]
 
@@ -58,9 +60,12 @@ template = """
 
 #################
 
-ROOT="$$root$$"
 
-echo "$$command$$"
-# $$command$$
+# header - info about task
+uname -a
+echo JOB START: `date`
+pwd
+
+$$command$$
 
 """.lstrip()

@@ -1,12 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-import subprocess
-
-import time
-from scripts.core.base import Printer, Command, Paths, IO
+# ----------------------------------------------
+from scripts.core.base import Printer, Command, Paths
 from utils.counter import ProgressTime
-
+# ----------------------------------------------
+from utils.strings import format_n_lines
+# ----------------------------------------------
 
 def ensure_active(f):
     def wrapper(self, *args, **kwargs):
@@ -22,7 +22,6 @@ class ThreadMonitor(object):
         """
         self.pypy = pypy
         self.active = True
-        self.printer = Printer(Printer.LEVEL_KEY)
 
         # add listeners
         self.pypy.on_process_start += self.on_start
@@ -61,6 +60,7 @@ class ProgressMonitor(ThreadMonitor):
 
     @ensure_active
     def on_complete(self, pypy=None):
+        self.timer.format = 'Done    | elapsed time {}'
         self.timer.stop()
 
 
@@ -74,30 +74,24 @@ class InfoMonitor(ThreadMonitor):
     @ensure_active
     def on_start(self, pypy=None):
         if self.start_fmt:
-            self.printer.key(self.start_fmt.format(**dict(self=self)))
+            Printer.out(self.start_fmt.format(**dict(self=self)))
 
     @ensure_active
     def on_complete(self, pypy=None):
 
         # print either error that command failed or on_complete info id exists
         if self.pypy.returncode > 0:
-            self.printer.err('Error! Command ({process.pid}) ended with {process.returncode}'.
+            Printer.err('Error! Command ({process.pid}) ended with {process.returncode}'.
                              format(process=self.pypy.executor.process))
-            self.printer.err(Command.to_string(self.pypy.executor.command))
+            Printer.err(Command.to_string(self.pypy.executor.command))
         elif self.end_fmt:
-            self.printer.key(self.end_fmt.format(**dict(self=self)))
+            Printer.out(self.end_fmt.format(**dict(self=self)))
 
         if not self.pypy.progress:
-            self.printer.line()
-            output = IO.read(self.pypy.output_file)
+            Printer.separator()
+            output = self.pypy.executor.output.read()
             if output:
-                self.printer.out(output)
-
-
-class Limits(object):
-    def __init__(self, time_limit=None, memory_limit=None):
-        self.time_limit = time_limit
-        self.memory_limit = memory_limit
+                Printer.out(output)
 
 
 class LimitMonitor(ThreadMonitor):
@@ -115,7 +109,7 @@ class LimitMonitor(ThreadMonitor):
 
     def set_limits(self, case):
         """
-        :type case: scripts.config.yaml_config.YamlConfigCase
+        :type case: scripts.config.yaml_config.ConfigCase
         """
         # empty Limits object
         if not case:
@@ -139,7 +133,8 @@ class LimitMonitor(ThreadMonitor):
             try:
                 runtime = self.process.runtime()
                 if runtime > self.time_limit:
-                    self.printer.err(
+                    Printer.out()
+                    Printer.err(
                         'Error: Time limit exceeded! {:1.2f}s of runtime, {:1.2f}s allowed'.format(
                             runtime, self.time_limit
                         )
@@ -147,8 +142,7 @@ class LimitMonitor(ThreadMonitor):
                     self.terminated_cause = 'TIME_LIMIT'
                     self.terminated = True
                     self.process.secure_kill()
-            # except NoSuchProcess as e1:
-            #     pass
+                    return
             except AttributeError as e2:
                 pass
 
@@ -156,13 +150,15 @@ class LimitMonitor(ThreadMonitor):
             try:
                 memory_usage = self.process.memory_usage()
                 if memory_usage > self.memory_limit:
-                    self.printer.err('Error: Memory limit exceeded! {:1.2f}MB used, {:1.2f}MB allowed'.format(
+                    Printer.out()
+                    Printer.err('Error: Memory limit exceeded! {:1.2f}MB used, {:1.2f}MB allowed'.format(
                         memory_usage, self.memory_limit
                         )
                     )
                     self.terminated_cause = 'MEMORY_LIMIT'
                     self.terminated = True
                     self.process.secure_kill()
+                    return
             # except NoSuchProcess as e1:
             #     pass
             except AttributeError as e2:
@@ -173,29 +169,24 @@ class ErrorMonitor(ThreadMonitor):
     def __init__(self, pypy):
         super(ErrorMonitor, self).__init__(pypy)
         self.message = 'Command failed'
-        self.tail = 20
+        self.tail = 10
 
     @ensure_active
     def on_complete(self, pypy=None):
         if self.pypy.returncode > 0:
             if self.message:
-                self.printer.line()
-                self.printer.err(self.message)
+                Printer.separator()
+                Printer.open()
+                Printer.out(self.message)
+            else:
+                Printer.open()
 
             # if file pointer exist try to read errors and outputs
-            if self.pypy.output_file:
-                lines = (IO.read(self.pypy.output_file)).splitlines()[-self.tail:]
-
-                if lines:
-                    self.printer.err("## Command's last 20 lines (rest in {})".format(
-                        Paths.abspath(self.pypy.output_file)))
-                    self.printer.err('#' * 60)
-                    for l in lines:
-                        self.printer.err('## ' + str(l))
-                    self.printer.err('#' * 60)
+            output = self.pypy.executor.output.read()
+            if output:
+                if self.pypy.full_output:
+                    Printer.out('Output (last {} lines, rest in {}): ', self.tail, Paths.abspath(self.pypy.full_output))
                 else:
-                    self.printer.err('#' * 60)
-                    self.printer.err("## Both stdout and stderr are empty!")
-                    self.printer.err("## Could not extract any information from in {}".format(
-                        Paths.abspath(self.pypy.output_file)))
-                    self.printer.err('#' * 60)
+                    Printer.out('Output (last {} lines): ', self.tail)
+                Printer.wrn(format_n_lines(output, -self.tail, indent=Printer.indent * '    '))
+            Printer.close()

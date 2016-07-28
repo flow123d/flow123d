@@ -1,88 +1,126 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-from __future__ import absolute_import
+# ----------------------------------------------
 import random
 import sys
 import os
 import re
 import platform
+import datetime
+import math
+import time
+import json
+# ----------------------------------------------
+from simplejson import JSONEncoder
 
 is_linux = platform.system().lower().startswith('linux')
 
 flow123d_name = "flow123d" if is_linux else "flow123d.exe"
 mpiexec_name = "mpiexec" if is_linux else "mpiexec.hydra"
 
-import datetime
+
+def find_base_dir():
+    import os
+    import pathfix
+    path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(pathfix.__file__)), '..', '..'))
+    return path
+
+
+class GlobalResult(object):
+    items = []
+    returncode = None
+    error = None
+    add = items.append
+
+    @classmethod
+    def to_json(cls, f=None):
+        obj = dict(
+            tests=cls.items,
+            returncode=cls.returncode,
+            error=cls.error
+        )
+        content = json.dumps(obj, indent=4, cls=MyEncoder)
+        if f:
+            with open(f, 'w') as fp:
+                fp.write(content)
+                print '\n' * 10
+                print content
+        return content
+
+
+class MyEncoder(JSONEncoder):
+    def default(self, o):
+        try:
+            return o.to_json()
+        except:
+            return str(o)
 
 
 class Printer(object):
-    LEVEL_DBG = 00
-    LEVEL_KEY = 10
-    LEVEL_WRN = 20
-    LEVEL_ERR = 30
     indent = 0
+    batch_output = True
+    dynamic_output = not batch_output
 
-    def __init__(self, level=LEVEL_DBG):
-        self.level = level
-
-    def dbg(self, *args, **kwargs):
-        if self.level <= self.LEVEL_DBG:
-            self.out(*args, **kwargs)
-
-    def key(self, *args, **kwargs):
-        if self.level <= self.LEVEL_KEY:
-            self.out(*args, **kwargs)
-
-    def line(self):
-        self.key('-' * 60)
-
-    def wrn(self, *args, **kwargs):
-        if self.level <= self.LEVEL_WRN:
-            self.out(*args, **kwargs)
-
-    def err(self, *args, **kwargs):
-        if self.level <= self.LEVEL_ERR:
-            self.out(*args, **kwargs)
-
-    def copy(self):
-        return Printer(self.level)
-    # ----------------------------------------------
-
-    def out(self, msg='', *args, **kwargs):
-        if self.indent:
-            sys.stdout.write('    ' * self.indent)
+    @classmethod
+    def style(cls, msg='', *args, **kwargs):
         sys.stdout.write(msg.format(*args, **kwargs))
         sys.stdout.write('\n')
 
-    def out_r(self, msg, *args, **kwargs):
-        sys.stdout.write(msg.format(*args, **kwargs))
+    @classmethod
+    def separator(cls):
+        cls.out('-' * 60)
 
-    def out_rr(self, msg, *args, **kwargs):
+    @classmethod
+    def wrn(cls, msg='', *args, **kwargs):
         sys.stdout.write(msg.format(*args, **kwargs))
-        sys.stderr.write('\r')
-        sys.stdout.flush()
+        sys.stdout.write('\n')
 
-    def dyn(self, msg, *args, **kwargs):
-        sys.stdout.write('\r' + ' ' * 60)
-        sys.stdout.write('\r' + msg.format(*args, **kwargs))
-        sys.stdout.flush()
+    @classmethod
+    def err(cls, msg='', *args, **kwargs):
+        if cls.indent:
+            sys.stdout.write('    ' * cls.indent)
+        sys.stdout.write(msg.format(*args, **kwargs))
+        sys.stdout.write('\n')
+
     # ----------------------------------------------
 
     @classmethod
-    def open(cls):
-        cls.indent += 1
+    def out(cls, msg='', *args, **kwargs):
+        if cls.indent:
+            sys.stdout.write('    ' * cls.indent)
+        if not args and not kwargs:
+            sys.stdout.write(msg)
+        else:
+            sys.stdout.write(msg.format(*args, **kwargs))
+        sys.stdout.write('\n')
 
     @classmethod
-    def close(cls):
-        cls.indent -= 1
+    def dyn(cls, msg, *args, **kwargs):
+        if cls.dynamic_output:
+            sys.stdout.write('\r' + ' ' * 80)
+            if cls.indent:
+                sys.stdout.write('\r' + '    ' * cls.indent + msg.format(*args, **kwargs))
+            else:
+                sys.stdout.write('\r' + msg.format(*args, **kwargs))
+            sys.stdout.flush()
+
+    # ----------------------------------------------
+
+    @classmethod
+    def open(cls, l=1):
+        cls.indent += l
+
+    @classmethod
+    def close(cls, l=1):
+        cls.indent -= l
 
 
 def make_relative(f):
     def wrapper(*args, **kwargs):
         path = f(*args, **kwargs)
         if Paths.format == PathFormat.RELATIVE:
-            return os.path.relpath(os.path.abspath(path), Paths.base_dir())
+            return os.path.relpath(os.path.abspath(path), Paths.flow123d_root())
         elif Paths.format == PathFormat.ABSOLUTE:
             return os.path.abspath(path)
         return path
@@ -121,7 +159,11 @@ class PathFilters(object):
             .replace('*', r'.*')\
             .replace('/', r'\/')
         patt = re.compile(fmt)
-        return lambda x: patt.match(x)
+        return lambda x: patt.match(x)\
+
+    @staticmethod
+    def filter_endswith(suffix=""):
+        return lambda x: x.endswith(suffix)
 
 
 class PathFormat(object):
@@ -131,19 +173,36 @@ class PathFormat(object):
 
 
 class Paths(object):
-    _base_dir = ''
+    _base_dir = find_base_dir()
     format = PathFormat.ABSOLUTE
-    printer = Printer(Printer.LEVEL_WRN)
+    cur_dir = os.getcwd()
 
     @classmethod
-    def base_dir(cls, v=None):
-        if v is None:
+    def init(cls, v=None):
+        if not v:
             return cls._base_dir
-        cls._base_dir = os.path.dirname(os.path.realpath(v))
+
+        if os.path.isfile(v):
+            # if file is given, we assume file in bin/python was given
+            cls._base_dir = os.path.dirname(os.path.dirname(os.path.realpath(v)))
+        else:
+            # if dir was given we just convert it to real path and use it
+            cls._base_dir = os.path.realpath(v)
+        return cls._base_dir
 
     @classmethod
-    def source_dir(cls):
-        return cls.join(cls.dirname(__file__), '..', '..')
+    def current_dir(cls):
+        """
+        Returns path to current dir, where python was executed
+        """
+        return cls.cur_dir
+
+    @classmethod
+    def flow123d_root(cls):
+        """
+        Returns path to flow123d root
+        """
+        return cls._base_dir
 
     @classmethod
     def test_paths(cls, *paths):
@@ -151,7 +210,7 @@ class Paths(object):
         for path in paths:
             filename = getattr(cls, path)()
             if not cls.exists(filename):
-                cls.printer.err('Error: file {:10s} ({}) does not exists!', path, filename)
+                Printer.err('Error: file {:10s} ({}) does not exists!', path, filename)
                 status = False
 
         return status
@@ -176,7 +235,7 @@ class Paths(object):
     @classmethod
     @make_relative
     def bin_dir(cls):
-        return cls.join(cls.base_dir(), '..')
+        return cls.join(cls.flow123d_root(), 'bin')
 
     @classmethod
     @make_relative
@@ -198,7 +257,7 @@ class Paths(object):
     @classmethod
     @make_relative
     def path_to(cls, *args):
-        return os.path.join(cls.base_dir(), *args)
+        return os.path.join(cls.current_dir(), *args)
 
     @classmethod
     @make_relative
@@ -217,6 +276,9 @@ class Paths(object):
 
     @classmethod
     def browse(cls, path, filters=()):
+        """
+        :rtype: list[str]
+        """
         paths = [cls.join(path, p) for p in os.listdir(path)]
         return cls.filter(paths, filters)
 
@@ -345,7 +407,7 @@ class IO(object):
         """
         :rtype : str or None
         """
-        if Paths.exists(name):
+        if name and Paths.exists(name):
             with open(name, mode) as fp:
                 return fp.read()
 
@@ -366,3 +428,36 @@ class IO(object):
             Paths.unlink(name)
             return True
         return False
+
+    @classmethod
+    def delete_all(cls, folder):
+        import shutil
+        return shutil.rmtree(folder, ignore_errors=True)
+
+
+class DynamicSleep(object):
+    def __init__(self, min=100, max=5000, steps=13):
+        # -c * Math.cos(t/d * (Math.PI/2)) + c + b;
+        # t: current time, b: begInnIng value, c: change In value, d: duration
+        c = float(max - min)
+        d = float(steps)
+        b = float(min)
+        self.steps = list()
+        for t in range(steps+1):
+            self.steps.append(float(int(
+                -c * math.cos(t/d * (math.pi/2)) + c + b
+            ))/1000)
+        self.current = -1
+        self.total = len(self.steps)
+
+    def sleep(self):
+        sleep_duration = self.next()
+        time.sleep(sleep_duration)
+
+    def next(self):
+        self.current += 1
+
+        if self.current >= self.total:
+            return self.steps[-1]
+
+        return self.steps[self.current]

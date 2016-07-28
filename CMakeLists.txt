@@ -548,160 +548,48 @@ IF (PETSC_FOUND)
       ) 
 endif()
 
+
+
 ####################################################################################
 # PYTHON
-#
-# optionaly we use Python interface
-if (USE_PYTHON)
-    message(STATUS "\n ======================================================= ")
-    
-    # find Python interpret
-    find_package(PythonInterp 2.7)
-    if (PYTHONINTERP_FOUND)
-        set(PYTHON_3RD_PARTY ${CMAKE_BINARY_DIR}/lib/flow123d/site-packages)
-        set(PYTHON_RUNTEST   ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
-        
-        # install pip libs if folder does not exists
-        # TODO: better check of installed libs
-        if (NOT EXISTS ${CMAKE_BINARY_DIR})
-            # Install 3rd party libs using pip
-            message(STATUS "Installing requirements.txt with pip")
-            execute_process(
-              COMMAND pip install --target=${PYTHON_3RD_PARTY} -r ${CMAKE_SOURCE_DIR}/bin/python/requirements.txt
-            )
-        endif()
-        
-        # create Python runtest wrapper in src/bin
-        message(STATUS "Creating python runtest wrapper")
-        set(PYTHON_RUNTEST_WRAPPER "${CMAKE_SOURCE_DIR}/bin/runtest.sh")
-        configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${PYTHON_RUNTEST_WRAPPER} @ONLY)
-        
-        # create symlink of python runtest wrapper in tests
-        message(STATUS "Creating runtest wrapper symlink")
-        execute_process(
-          COMMAND ${CMAKE_COMMAND} -E create_symlink ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
-        )
-    endif()
-    
-    # find Python libs
-    find_package(PythonLibs 2.7)
-    if (PYTHONLIBS_FOUND)
-        include_directories( ${PYTHON_INCLUDE_DIRS})
-        flow_define(HAVE_PYTHON)
-        
-        string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MAJOR ${PYTHONLIBS_VERSION_STRING})
-        string(REGEX REPLACE "[0-9]+.([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MINOR ${PYTHONLIBS_VERSION_STRING})
-        flow_define_constant(PYTHONLIBS_VERSION_MAJOR ${PYTHONLIBS_VERSION_MAJOR})
-        flow_define_constant(PYTHONLIBS_VERSION_MINOR ${PYTHONLIBS_VERSION_MINOR})
-        flow_define(PYTHONLIBS_VERSION_STRING ${PYTHONLIBS_VERSION_STRING})
-        message(STATUS "Python version: ${PYTHONLIBS_VERSION_STRING}\n")
-        message(STATUS "Python major version: ${PYTHONLIBS_VERSION_MAJOR}\n")
-        message(STATUS "Python minor version: ${PYTHONLIBS_VERSION_MINOR}\n")
-        message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
-        message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
+# ----------------- Part 1/3 - PythonLibs ------------------------------------------
+# always detect PythonLibs but set flag HAVE_PYTHON conditionally to user
+# embedded python in flow123d
+include(python/PythonLibs)
+if(USE_PYTHON)
+    flow_define(HAVE_PYTHON)
+endif()
 
-        # set extra python module path in src directory, if case PYTHON_COPY if OFF
-        set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
-        if (PYTHON_COPY)
-            set(PY_BUILD_PREFIX "${CMAKE_BINARY_DIR}")
-            set(PYTHON_EXTRA_MODULES_PATH "${PY_BUILD_PREFIX}/lib/flow123d")
-              
-              # copy python files to build tree 
-              # first get prefix (we support just one prefix)
-              execute_process(
-                  COMMAND python -c "import sys; print sys.prefix"
-                  OUTPUT_VARIABLE PY_PREFIX
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)        
-              execute_process(
-                  COMMAND python -c "import sys; print sys.exec_prefix"
-                  OUTPUT_VARIABLE PY_EXEC_PREFIX
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)        
-              if (NOT (${PY_PREFIX} STREQUAL ${PY_EXEC_PREFIX}) )
-                  message(WARNING "Python exec_prefix (${PY_EXEC_PREFIX}) different then prefix (${PY_PREFIX}). Not supported.")
-              endif()
-                            
-            # get all valid python system paths
-            execute_process(
-              COMMAND python ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path --format cmake
-              OUTPUT_VARIABLE PY_PATHS
-              OUTPUT_STRIP_TRAILING_WHITESPACE)
+# ----------------- Part 2/3 - PythonCopy ------------------------------------------
+if(PYTHON_COPY)
+    # where python build starts for now we use build_tree 
+    set(PY_BUILD_PREFIX ${CMAKE_BINARY_DIR})
+    set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
+    # copy python interpret files and 3rd party packages including
+    # python utils files for flow123d
+    include(python/PythonCopy)
+else()
+    # if python copy is not set we do nothing but export
+    # variable PYTHON_EXTRA_MODULES_PATH so python_loader can add correct path
+    set(PYTHON_EXTRA_MODULES_PATH /src/python)
+endif()
+# define varible for storing this extra module path
+# this variable is used later to update search module path
+# if PYTHON_COPY is present it points to lib/flow123d dir in build tree
+# if not, default location is src/python dir in CMake_SOURCE_DIR location
+flow_define(PYTHON_EXTRA_MODULES_PATH ${PY_BUILD_PREFIX}/${PYTHON_EXTRA_MODULES_PATH})
 
-            
-            # The script:
-            #   1. takes all paths from Python system path (variable sys.path)
-            #   2. filter paths leaving only ones starting with Python system variable prefix (sys.prefix)
-            #   3. for each extract the name of the first subdirectory under prefix
-            #   4. remove duplicate subdirectories
-            #   5. return path joined with ; colon (CMAKE will interprets this as LIST)
-            # From:
-            #    /usr/local/python2.7
-            #    /usr/lib64/python2.7/site-packages
-            #    /usr/lib/python2.7/site-packages
-            # We get something like this:
-            #  "local/;lib64/;lib/"
-            execute_process(
-              COMMAND python ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path_subdir --format cmake
-              OUTPUT_VARIABLE PY_PREFIX_SUBDIRS
-              OUTPUT_STRIP_TRAILING_WHITESPACE)
-            
-            # remove prefix from each python path
-            # and recursively copy not overwrite existing files
-            # python path locations
-            # we strip prefix designated by python variable sys-prefix
-            # on linux we get something like "/usr"
-            # on windows we get path to installation folder
-            foreach(PY_PATH ${PY_PATHS})
-                string(REPLACE "${PY_PREFIX}" "" PY_ALT_PATH "${PY_PATH}")
-                # copy only if dir does not exists
-                if(NOT EXISTS "${PY_BUILD_PREFIX}/${PY_ALT_PATH}")
-                    message(STATUS "cmake -E copy_directory ${PY_PREFIX}${PY_ALT_PATH} ${PY_BUILD_PREFIX}${PY_ALT_PATH}")
-                    execute_process(
-                      COMMAND cmake -E copy_directory ${PY_PREFIX}/.${PY_ALT_PATH} ${PY_BUILD_PREFIX}/${PY_ALT_PATH}
-                     )
-                 endif()
-            endforeach(PY_PATH)
-            execute_process(
-              COMMAND chmod -R 764 ${PY_BUILD_PREFIX}/
-             )
-            
-            message(STATUS "Python prefix: ${PY_PREFIX}")
-            message(STATUS "Python target prefix: ${PY_BUILD_PREFIX}")
-            flow_define(PYTHON_PREFIX ${PY_PREFIX})
-            
-            # copy flow123d python scripts and modules
-            execute_process(
-                COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${PY_BUILD_PREFIX}/lib/flow123d 
-                )
-                
-            # copy python include (h files for embedded python)
-            set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
-            execute_process(          
-                COMMAND mkdir -p ${PY_BUILD_PREFIX}/include 
-                )             
-            # recursive copy, not overwrite existing files
-            # we copy all and exclude some paths and files during install    
-            execute_process(
-                COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include 
-                )
+# ----------------- Part 3/3 - PythonScripts ----------------------------------------
+# install 3rd party packages and copy python runtest
+include(python/PythonScripts)
+# create list of path for wrappers
+set(PY_WRAPPER_PATHS "/lib/python2.7")
+list(APPEND PY_WRAPPER_PATHS ${PYTHON_EXTRA_MODULES_PATH})
+foreach(PY_PATH ${PYTHON_SYSPATH})
+    list(APPEND PY_WRAPPER_PATHS "/lib/python2.7/${PY_PATH}")
+endforeach()
 
-            # save python system path without prefix to PY_WRAPPER_PATHS 
-            # variable so it can be later used in wrapper via configure_file
-            execute_process(
-              COMMAND python ${CMAKE_SOURCE_DIR}/bin/python/python_path_script.py sys_path_without_prefix --format cmake
-              OUTPUT_VARIABLE PY_WRAPPER_PATHS
-              OUTPUT_STRIP_TRAILING_WHITESPACE)
-        endif()
-    else()
-        set(PYTHON_INCLUDE_DIRS "")
-        set(PYTHON_LIBRARIES "")
-    endif()
 
-    # define varible for storing this extra module path
-    # this variable is used later to update search module path
-    # if PYTHON_COPY is present it points to lib/flow123d dir in build tree
-    # if not, default location is src/python dir in CMake_SOURCE_DIR location
-    flow_define(PYTHON_EXTRA_MODULES_PATH "${PYTHON_EXTRA_MODULES_PATH}")
-endif()  
 
 #################################################################################
 #  YAML_CPP_FOUND - set to true if the library is found
@@ -1006,16 +894,14 @@ endif()
 
 # install python modules and system libs
 if (PYTHON_COPY)
-    # install all sub folders of Python
-    foreach(PY_PREFIX_SUBDIR ${PY_PREFIX_SUBDIRS})
-        install(DIRECTORY ${PY_BUILD_PREFIX}/${PY_PREFIX_SUBDIR}/
-                DESTINATION ${PY_PREFIX_SUBDIR}/ OPTIONAL)
-    endforeach(PY_PATH)
+    # install lib folder of Python to lib
+    install(DIRECTORY ${PY_BUILD_PREFIX}/lib
+            DESTINATION lib
+            OPTIONAL)
     # copy Python's include
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
             DESTINATION include)
 endif()
-
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
 if (CYGWIN)

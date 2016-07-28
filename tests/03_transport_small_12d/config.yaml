@@ -1,1 +1,37 @@
-/home/jan-hybs/Dokumenty/projects/Flow123d-python-utils/src/config.yaml
+common_config:
+  proc: [1]
+  time_limit: 30
+  memory_limit: 400
+  check_rules:
+      - ndiff:
+          files: ["*"]
+
+# Main list contain one item for every active test.
+test_cases:
+  - file: [flow_implicit.yaml]
+    tags: [long-run, problematic]
+    proc: [3, 2]
+    time_limit: 5.0
+    check_rules:
+      - ndiff:
+            files: ["*/*.vtu"]
+            r_tol: 1e-3
+            a_tol: 1e-6
+      - ndiff:
+            files: ["*.vtu"]
+            r_tol: 100
+            a_tol: 200
+  - file: [flow_implicit.yaml]
+    tags: [problematic]
+    proc: [1, 2]
+    time_limit: 5.0
+    memory_limit: 800
+    check_rules:
+      - ndiff:
+            files: ["*/*.vtu"]
+            r_tol: 1e+3
+            a_tol: 1e+6
+      - ndiff:
+            files: ["*.txt"]
+            r_tol: 10
+            a_tol: 20
