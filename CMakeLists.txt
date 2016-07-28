@@ -570,15 +570,26 @@ else()
     set(PYTHON_EXTRA_MODULES_PATH /src/python)
     flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 endif()
-# check whether PYTHON_ROOT is set 
+
+# check whether PYTHON_ROOT is set and use default value if not
 if(NOT DEFINED PYTHON_ROOT)
     message(WARNING "PYTHON_ROOT not set! Using default configuration which may not work on this system")
-    
     set(PYTHON_ROOT /usr/lib/python2.7)
+endif()
+
+# set default value for PYTHON_COPY_PACKAGES if not defined
+if(NOT DEFINED PYTHON_COPY_PACKAGES)
     set(PYTHON_COPY_PACKAGES
         bsddb compiler ctypes curses distutils email encodings hotshot importlib 
-        json lib-dynload lib-tk lib2to3 logging multiprocessing 
+        json lib-dynload lib-tk lib2to3 logging multiprocessing plat-linux2
         plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
+endif()
+
+# set default value for PYTHON_SYSPATH if not defined
+if(NOT DEFINED PYTHON_SYSPATH)
+    set(PYTHON_SYSPATH
+        plat-x86_64-linux-gnu plat-linux2 lib-tk lib-old lib-dynload
+        dist-packages site-packages)
 endif()
 
 # ----------------- Part 1/3 - PythonLibs ------------------------------------------
