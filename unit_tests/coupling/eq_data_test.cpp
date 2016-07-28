@@ -102,7 +102,7 @@ protected:
         BCField<3, FieldValue<3>::Scalar > bc_pressure;
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
-        BCField<3, FieldValue<3>::Vector > bc_conc;
+        BCField<3, FieldValue<3>::VectorFixed > bc_conc;
 
     };
 
@@ -140,7 +140,7 @@ public:
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;
-        Field<3, FieldValue<3>::Vector > init_conc;
+        Field<3, FieldValue<3>::VectorFixed > init_conc;
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
         MultiField<3, FieldValue<3>::Scalar > conc_mobile;
     };
@@ -160,7 +160,7 @@ protected:
         mesh= new Mesh;
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
-        component_names = { "comp_0", "comp_1", "comp_2", "comp_3" };
+        component_names = { "comp_0", "comp_1", "comp_2" };
 
     }
 
@@ -233,11 +233,11 @@ TEST_F(SomeEquation, values) {
                 TYPE="FieldConstant",
                 value=1.1
               },
-            init_conc = [ 1, 2, 3, 4],
+            init_conc = [ 1, 2, 3 ],
             // MultiField
             conc_mobile = {
                 TYPE="FieldConstant", 
-                value=[1, 2, 3, 4]
+                value=[1, 2, 3]
               }
           },
           { region= ["2D XY diagonal", "3D back"],
@@ -258,11 +258,11 @@ TEST_F(SomeEquation, values) {
             },
             bc_conc={
                 TYPE="FieldFormula",
-                value=["x", "10+x", "20+x", "30+x"]
+                value=["x", "10+x", "20+x"]
             },
             conc_mobile = {
                 TYPE="FieldConstant", 
-                value=[5, 6, 7, 8]
+                value=[5, 6, 7]
               }
           },
           { rid=102,
@@ -321,14 +321,11 @@ TEST_F(SomeEquation, values) {
         EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );
     }
 
-    // init_conc - variable length vector
-    FieldValue<3>::Vector::return_type conc = data.init_conc.value(p, el_1d);
-    EXPECT_EQ(1 ,conc.n_cols);
-    EXPECT_EQ(4 ,conc.n_rows);
+    // init_conc - fixed length vector
+    FieldValue<3>::VectorFixed::return_type conc = data.init_conc.value(p, el_1d);
     EXPECT_DOUBLE_EQ(1 ,conc[0]);
     EXPECT_DOUBLE_EQ(2 ,conc[1]);
     EXPECT_DOUBLE_EQ(3 ,conc[2]);
-    EXPECT_DOUBLE_EQ(4 ,conc[3]);
 
     // bulk_set_filed - test setting on region set, test setting field without default value
     EXPECT_EQ( 5.7, data.bulk_set_field.value(p, el_1d) );
@@ -346,7 +343,6 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ(1.0, bc_value(0) );
     EXPECT_DOUBLE_EQ(11.0, bc_value(1) );
     EXPECT_DOUBLE_EQ(21.0, bc_value(2) );
-    EXPECT_DOUBLE_EQ(31.0, bc_value(3) );
 }
 
 
