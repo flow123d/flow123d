@@ -81,7 +81,7 @@ public:
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-//     double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
+    double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
     
     /**
      * @brief Calculates the data on the reference cell.
@@ -138,11 +138,11 @@ arma::mat::fixed<dim,dim> FiniteElementEnriched<dim,spacedim>::basis_grad_vector
     return fe->basis_grad_vector(i,p);
 }
 
-// template <unsigned int dim, unsigned int spacedim>
-// double FiniteElementEnriched<dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
-// {
-//     return fe.div(i,p);
-// }
+template <unsigned int dim, unsigned int spacedim>
+double FiniteElementEnriched<dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
+{
+    return fe->basis_div(i,p);
+}
 
 template <unsigned int dim, unsigned int spacedim>
 FEInternalData *FiniteElementEnriched<dim,spacedim>::initialize(const Quadrature<dim> &quad, UpdateFlags flags)

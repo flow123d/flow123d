@@ -181,6 +181,11 @@ public:
      */
     arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
+    /**
+     * @brief The divergence of vector must be implemented but may not be used.
+     */
+    double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    
     virtual ~FE_P();
 
 private:
@@ -240,6 +245,11 @@ public:
      */
     arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
+    /**
+     * @brief The divergence of vector must be implemented but may not be used.
+     */
+    double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    
     /// Destructor
     virtual ~FE_P_disc();
 
@@ -363,27 +373,34 @@ FE_P<degree,dim,spacedim>::FE_P()
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+	ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
     return poly_space.basis_value(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+	ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
     return poly_space.basis_grad(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-	OLD_ASSERT(false, "basis_vector() may not be called for scalar finite element.");
+	ASSERT_DBG(false).error("basis_vector() may not be called for scalar finite element.");
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-	OLD_ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
+	ASSERT_DBG(false).error("basis_grad_vector() may not be called for scalar finite element.");
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+double FE_P<degree,dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
+{
+    ASSERT_DBG(false).error("basis_div() may not be called for scalar finite element.");
+    return 0.0;
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
@@ -425,29 +442,36 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+	ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
     return poly_space.basis_value(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+	ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
     return poly_space.basis_grad(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-	OLD_ASSERT(false, "basis_vector() may not be called for scalar finite element.");
+	ASSERT_DBG(false).error("basis_vector() may not be called for scalar finite element.");
     return arma::vec::fixed<dim>();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-	OLD_ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
+	ASSERT_DBG(false).error("basis_grad_vector() may not be called for scalar finite element.");
     return arma::mat::fixed<dim,dim>();
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+double FE_P_disc<degree,dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
+{
+    ASSERT_DBG(false).error("basis_div() may not be called for scalar finite element.");
+    return 0.0;
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>

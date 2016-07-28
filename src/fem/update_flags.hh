@@ -150,7 +150,13 @@ enum UpdateFlags
                     * Same as update_JxW_values but for quadratures living
                     * on a side of the cell.
                     */
-      update_side_JxW_values              = 0x0100
+      update_side_JxW_values              = 0x0100,
+                        //! Divergence of vectorial shape functions
+                       /**
+                    * Computes divergence of the vectorial shape functions
+                    * on the cell. Only for vectorial finite elements, e.g. RT.
+                    */
+      update_divergence              = 0x0200
 };
 
 
@@ -171,6 +177,7 @@ STREAM& operator << (STREAM& s, UpdateFlags u)
   if (u & update_normal_vectors)               s << "normal_vectors|";
   if (u & update_jacobians)                    s << "jacobians|";
   if (u & update_inverse_jacobians)            s << "inverse_jacobians|";
+  if (u & update_divergence)                   s << "divergence";
   return s;
 }
 

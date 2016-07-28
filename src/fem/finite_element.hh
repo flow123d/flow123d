@@ -216,6 +216,16 @@ public:
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
+     * @brief Calculates the divergence of the @p i-th raw basis functionat the point @p p
+     * (vectorial finite elements).
+     *
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
+     */
+    virtual double basis_div(const unsigned int i,
+            const arma::vec::fixed<dim> &p) const = 0;
+            
+    /**
      * @brief Initializes the @p node_matrix for computing the coefficients
      * of the raw basis functions from values at support points.
      *
