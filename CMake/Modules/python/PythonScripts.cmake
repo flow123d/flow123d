@@ -12,6 +12,10 @@
 # check working python 2.7+
 find_package(PythonInterp 2.7 REQUIRED)
 
+# setup some variables
+set(PYTHON_3RD_PARTY ${PY_BUILD_PREFIX}/lib/python2.7/site-packages)
+set(PYTHON_RUNTEST   ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
+
 # macro for installing python modules using pip
 #    package_name - name of the module to be installed
 #    package_dir  - name of the folder which should be checked whether exists 
@@ -41,10 +45,6 @@ macro(install_python_lib package_name package_dir)
         endif()
     endif()
 endmacro(install_python_lib)
-
-# setup some variables
-set(PYTHON_3RD_PARTY ${PY_BUILD_PREFIX}/lib/python2.7/site-packages)
-set(PYTHON_RUNTEST   ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
 
 # install python dependencies
 install_python_lib(markdown markdown)
