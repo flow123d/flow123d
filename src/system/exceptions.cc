@@ -52,17 +52,20 @@ const char * ExceptionBase::what() const throw () {
     // Be sure that this function do not throw.
     try {
         std::ostringstream converter;
-
-        converter << std::endl << std::endl;
-        converter << "--------------------------------------------------------" << std::endl;
-        converter << this->what_type_msg();
-        print_info(converter);
-
-        converter << "\n** Diagnosting info **\n" ;
-        converter << boost::diagnostic_information_what( *this );
-        print_stacktrace(converter);
-        converter << "--------------------------------------------------------" << std::endl;
-
+        this->form_message(converter);
+        if (EI_Nested::ptr(*this)) {
+            std::shared_ptr<ExceptionBase> exc_ptr = *EI_Nested::ptr(*this);
+            while (exc_ptr) {
+            	converter << "--------------------------------------------------------" << std::endl;
+            	converter << "Nested exception:" << std::endl;
+            	exc_ptr->form_message(converter);
+            	if (EI_Nested::ptr(*exc_ptr)) {
+            		exc_ptr = *EI_Nested::ptr(*exc_ptr);
+            	} else {
+            		exc_ptr.reset();
+            	}
+            }
+        }
         message = converter.str();
         return message.c_str();
 
@@ -83,6 +86,21 @@ const char * ExceptionBase::what() const throw () {
 
 std::string ExceptionBase::what_type_msg() const {
 	return "Program Error: ";
+}
+
+
+std::ostringstream &ExceptionBase::form_message(std::ostringstream &converter) const {
+
+    converter << "--------------------------------------------------------" << std::endl;
+    converter << this->what_type_msg();
+    this->print_info(converter);
+
+    converter << "\n** Diagnosting info **\n" ;
+    converter << boost::diagnostic_information_what( *this );
+    print_stacktrace(converter);
+    converter << std::endl << "--------------------------------------------------------" << std::endl;
+
+    return converter;
 }
 
 

@@ -48,7 +48,7 @@ void normalize_vector( double u[] )
 	double l;
 
 	if ((l = vector_length( u )) < NUM_ZERO ) {
-        xprintf(Warn,"Normalization of nearly zero vector.\n");
+        WarningOut() << "Normalization of nearly zero vector." << std::endl;
 	}
 	u[0] /= l; u[1] /= l; u[2] /= l;
 }

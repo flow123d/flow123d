@@ -72,8 +72,8 @@ void StackTrace::print(std::ostream &out, std::vector<std::string> frames_to_cut
 {
 	using namespace std;
 
-    out << endl;
-    out << "** Stacktrace **" << endl;
+    out << std::endl;
+    out << "** Stacktrace **" << std::endl;
 
     int i_frame;
     for(i_frame=0; i_frame < n_frames_; i_frame++) {
@@ -101,14 +101,13 @@ void StackTrace::print(std::ostream &out, std::vector<std::string> frames_to_cut
         demagled_f_name = abi::__cxa_demangle(magled_fname.c_str(), 0, 0, &status);
 #endif
         if (status == 0) {
-            out << setw(3) << out_i_frame << "  " << demagled_f_name << endl;
+            out << setw(3) << out_i_frame << "  " << demagled_f_name << std::endl;
             free(demagled_f_name);
         } else {
-            out << setw(3) << out_i_frame << "  " << magled_fname << endl;
+            out << setw(3) << out_i_frame << "  " << magled_fname << std::endl;
         }
 
         if (magled_fname == "main") break;
     }
-    out << endl;
 
 }

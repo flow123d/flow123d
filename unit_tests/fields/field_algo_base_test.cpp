@@ -6,6 +6,7 @@
  */
 
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 
 #include <memory>
 #include <boost/regex.hpp>
