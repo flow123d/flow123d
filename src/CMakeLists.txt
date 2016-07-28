@@ -91,6 +91,10 @@ add_library(system_lib
     system/application_base.cc
     system/logger.cc
     system/logger_options.cc
+    
+    system/fmt/format.cc
+    system/fmt/ostream.cc
+    system/fmt/posix.cc
 )
 target_link_libraries(system_lib 
     ${PETSC_LIBRARIES}  
@@ -222,6 +226,7 @@ add_library(coupling_lib
     io/output_time.cc
     io/output_vtk.cc
     io/output_msh.cc
+    io/output_mesh.cc
     
     fields/field_values.cc
     fields/field_common.cc

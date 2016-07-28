@@ -534,6 +534,7 @@ TEST_F(InputReaderToStorageTest, Record) {
 }
 
 
+
 const string input_yaml_abstract = R"YAML(
 !EqDarcy
 b_val: 10
@@ -877,6 +878,124 @@ TEST_F(InputReaderToStorageTest, Tuple) {
     }
 
 }
+
+
+
+const string input_yaml_empty_rec_without_tag = R"YAML(
+format: 
+  #int_key: 10
+)YAML";
+
+const string input_yaml_empty_rec_with_tag = R"YAML(
+format: !RecordA
+  #int_key: 10
+)YAML";
+
+const string input_yaml_rec_with_empty_scalar = R"YAML(
+format: 
+  int_key:
+  str_key:
+)YAML";
+
+
+
+TEST_F(InputReaderToStorageTest, EmptyRecord) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    static Type::Record inrec = Type::Record( "InRecord", "desc.")
+        .declare_key("int_key", Type::Integer(), Type::Default::optional(), "")
+        .declare_key("str_key", Type::String(), Type::Default::optional(), "")
+        .close();
+
+    static Type::Record root_rec = Type::Record( "RootRecord", "desc.")
+        .declare_key("format", inrec, Type::Default::obligatory(), "")
+	    .close();
+
+    static Type::Abstract a_rec = Type::Abstract("BaseOfRec", "Base of records.")
+        .allow_auto_conversion("RecordA")
+        .close();
+
+    static Type::Record descA_rec = Type::Record( "RecordA", "desc.")
+        .derive_from(a_rec)
+		.copy_keys(inrec)
+	    .close();
+
+    static Type::Record root_rec_with_abstract = Type::Record( "RootRecordWithAbstract", "desc.")
+        .declare_key("format", a_rec, Type::Default::obligatory(), "")
+	    .close();
+
+    { // JSON format, read record
+        stringstream ss("{ format: {} }");
+        read_stream(ss, root_rec);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_TRUE(storage_->get_item(0)->get_item(0)->is_null() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(1)->is_null() );
+    }
+
+    { // YAML format, read record
+        stringstream ss(input_yaml_empty_rec_without_tag);
+        read_stream(ss, root_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_TRUE(storage_->get_item(0)->get_item(0)->is_null() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(1)->is_null() );
+    }
+
+    { // JSON format, read abstract
+        stringstream ss("{ format: { TYPE=\"RecordA\" } }");
+        read_stream(ss, root_rec_with_abstract);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(3, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "RecordA");
+        EXPECT_TRUE(storage_->get_item(0)->get_item(1)->is_null() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(2)->is_null() );
+    }
+
+    { // YAML format, read abstract
+        stringstream ss(input_yaml_empty_rec_with_tag);
+        read_stream(ss, root_rec_with_abstract, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(3, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "RecordA");
+        EXPECT_TRUE(storage_->get_item(0)->get_item(1)->is_null() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(2)->is_null() );
+    }
+
+    { // YAML format, read abstract with autoconversion
+        stringstream ss(input_yaml_empty_rec_without_tag);
+        read_stream(ss, root_rec_with_abstract, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(3, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "RecordA");
+        EXPECT_TRUE(storage_->get_item(0)->get_item(1)->is_null() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(2)->is_null() );
+    }
+
+    { // YAML format, read record with empty keys
+        stringstream ss(input_yaml_rec_with_empty_scalar);
+        read_stream(ss, root_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_TRUE(storage_->get_item(0)->get_item(0)->is_null() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(1)->is_null() );
+    }
+
+}
+
+
 
 TEST(InputReaderToStorageTest_external, get_root_interface) {
     static Type::Record one_rec = Type::Record("One","")
