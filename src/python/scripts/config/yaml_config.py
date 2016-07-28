@@ -37,6 +37,7 @@ TAG_TEST_CASES = 'test_cases'
 TAG_CHECK_RULES = 'check_rules'
 TAG_TAGS = 'tags'
 
+REF_OUTPUT_DIR = 'ref_out'
 
 class ConfigPool(object):
     """
@@ -135,7 +136,7 @@ class ConfigCase(object):
 
             self.fs = ConfigCaseFiles(
                 root=self.config.root,
-                ref_output=Paths.join(self.config.root, 'ref_output', self.without_ext),
+                ref_output=Paths.join(self.config.root, REF_OUTPUT_DIR, self.without_ext),
                 output=Paths.join(
                     self.config.root,
                     'test_results',
