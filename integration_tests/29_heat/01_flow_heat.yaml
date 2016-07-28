@@ -2,7 +2,7 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: heat_transfer
   mesh:
-    mesh_file: ./input/test21.msh
+    mesh_file: ../00_mesh/test21.msh
     regions:
       - !Union
         name: .bottom
