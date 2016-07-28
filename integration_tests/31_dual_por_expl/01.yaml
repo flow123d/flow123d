@@ -14,7 +14,7 @@ output_streams:
 problem: !Coupling_Sequential
   description: Simple dual porosity test - steady flow, simple transport
   mesh:
-    mesh_file: input/dual_por.msh
+    mesh_file: ../00_mesh/dual_por.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
