@@ -10,7 +10,7 @@ from copy import deepcopy
 from scripts.core.base import Paths
 from scripts.core.base import PathFilters
 # ----------------------------------------------
-
+from utils.globals import ensure_iterable
 
 YAML = '.yaml'
 CONFIG_YAML = 'config.yaml'
@@ -28,6 +28,14 @@ DEFAULTS = dict(
         }
     ]
 )
+
+TAG_FILES = 'files'
+TAG_PROC = 'proc'
+TAG_TIME_LIMIT = 'time_limit'
+TAG_MEMORY_LIMIT = 'memory_limit'
+TAG_TEST_CASES = 'test_cases'
+TAG_CHECK_RULES = 'check_rules'
+TAG_TAGS = 'tags'
 
 
 class ConfigPool(object):
@@ -112,12 +120,12 @@ class ConfigCase(object):
     def __init__(self, o, config):
         o = ConfigBase.merge(DEFAULTS, deepcopy(o))
 
-        self.file = o.get('file', None)
-        self.proc = int(o.get('proc', None))
-        self.time_limit = float(o.get('time_limit', None))
-        self.memory_limit = float(o.get('memory_limit', None))
-        self.tags = set(o.get('tags', None))
-        self.check_rules = o.get('check_rules', None)
+        self.file = o.get(TAG_FILES, None)
+        self.proc = int(o.get(TAG_PROC, None))
+        self.time_limit = float(o.get(TAG_TIME_LIMIT, None))
+        self.memory_limit = float(o.get(TAG_MEMORY_LIMIT, None))
+        self.tags = set(o.get(TAG_TAGS, None))
+        self.check_rules = o.get(TAG_CHECK_RULES, None)
         self.config = config
 
         if self.config:
@@ -182,17 +190,20 @@ class ConfigBase(object):
 
             # first process files which are specified in test_cases
             missing = [Paths.basename(y) for y in self.yamls]
-            for case in self.yaml_config.get('test_cases', []):
+            for case in self.yaml_config.get(TAG_TEST_CASES, []):
                 case_config = self.merge(self.common_config, case)
+
+                # ensure that value is array
+                case_config[TAG_FILES] = ensure_iterable(case_config.get(TAG_FILES, []))
                 self.cases.append(case_config)
-                for f in case_config['file']:
+                for f in case_config[TAG_FILES]:
                     if f in missing:
                         missing.remove(f)
 
             # process rest (dummy case)
             for y in missing:
                 dummy_case = deepcopy(self.common_config)
-                dummy_case['file'] = [y]
+                dummy_case[TAG_FILES] = [y]
                 self.cases.append(dummy_case)
 
     def get_all(self):
@@ -209,12 +220,11 @@ class ConfigBase(object):
         :rtype: list[ConfigCase]
         """
         result = list()
-        base_name = Paths.basename(yaml_case_file)
         for case in self.cases:
-            for f in case['file']:
-                if Paths.basename(f) == base_name:
+            for f in case[TAG_FILES]:
+                if Paths.basename(f) == Paths.basename(yaml_case_file):
                     dummy_case = deepcopy(case)
-                    dummy_case['file'] = [base_name]
+                    dummy_case[TAG_FILES] = [yaml_case_file]
                     result.extend(self._get_all_for_case(dummy_case))
         return [ConfigCase(r, self) for r in result]
 
@@ -233,23 +243,23 @@ class ConfigBase(object):
     def update(self, proc, time_limit, memory_limit, **kwargs):
         for case in self.cases:
             if proc:
-                case['proc'] = set(proc)
+                case[TAG_PROC] = set(proc)
             if time_limit:
-                case['time_limit'] = time_limit
+                case[TAG_TIME_LIMIT] = time_limit
             if memory_limit:
-                case['time_limit'] = memory_limit
+                case[TAG_MEMORY_LIMIT] = memory_limit
 
     @classmethod
     def _get_all_for_case(cls, case):
         result = list()
         changes = list(itertools.product(
-            case['file'],
-            case['proc']))
+            case[TAG_FILES],
+            case[TAG_PROC]))
 
         for f, p in changes:
             dummy_case = deepcopy(case)
-            dummy_case['file'] = f
-            dummy_case['proc'] = p
+            dummy_case[TAG_FILES] = f
+            dummy_case[TAG_PROC] = p
             result.append(dummy_case)
         return result
 
