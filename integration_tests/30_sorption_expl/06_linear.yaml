@@ -14,7 +14,7 @@ output_streams:
 problem: !Coupling_Sequential
   description: Adsorption all
   mesh:
-    mesh_file: input/test_20.msh
+    mesh_file: ../00_mesh/test_20.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
@@ -74,9 +74,9 @@ problem: !Coupling_Sequential
       input_fields:
         - region: ALL
           rock_density: 1.0
-          sorption_type: langmuir
-          isotherm_mult: 0.4
-          isotherm_other: 0.6
+          sorption_type: linear
+          isotherm_mult: 0.6
+          isotherm_other: 0.4
       output_fields: []
     balance:
       cumulative: true
