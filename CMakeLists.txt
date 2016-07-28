@@ -572,9 +572,7 @@ else()
 endif()
 # check whether PYTHON_ROOT is set 
 if(NOT DEFINED PYTHON_ROOT)
-    message(STATUS "--------------------------------------------------")
-    message(STATUS "PYTHON_ROOT not set! Using default configuration which may not work on this system")
-    message(STATUS "--------------------------------------------------")
+    message(WARNING "PYTHON_ROOT not set! Using default configuration which may not work on this system")
     
     set(PYTHON_ROOT /usr/lib/python2.7)
     set(PYTHON_COPY_PACKAGES
