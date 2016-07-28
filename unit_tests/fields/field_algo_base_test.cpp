@@ -161,11 +161,9 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 // full list
 #define f_list(Dim) \
 	Field<Dim,FV<0>::Scalar> , \
-	Field<Dim,FV<0>::Vector>, \
     Field<Dim,FV<0>::Enum>, \
     Field<Dim,FV<0>::EnumVector>, \
     Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<0>::Vector>, \
 	Field<Dim,FV<2>::VectorFixed>, \
 	Field<Dim,FV<3>::VectorFixed>, \
 	Field<Dim,FV<2>::TensorFixed>, \
@@ -586,7 +584,7 @@ TEST(Field, init_from_input) {
 	mesh.read_gmsh_from_stream(in);
 
     Field<3, FieldValue<3>::Enum > sorption_type;
-    Field<3, FieldValue<3>::Vector > init_conc;
+    Field<3, FieldValue<3>::VectorFixed > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
 
 
@@ -834,7 +832,7 @@ TEST(Field, init_from_default) {
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
     }
-    Field<3, FieldValue<3>::Vector > vector_field;
+    Field<3, FieldValue<3>::VectorFixed > vector_field;
 
 }
 
