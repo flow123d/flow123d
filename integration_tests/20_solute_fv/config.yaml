@@ -5,3 +5,4 @@ common_config:
 test_cases:
 - file: 01_sources_small.yaml
 - file: 02_sources.yaml
+- file: 03_bc.yaml

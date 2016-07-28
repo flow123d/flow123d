@@ -2,7 +2,7 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Test of boundary conditions for transport
   mesh:
-    mesh_file: ./input/mesh.msh
+    mesh_file: ../00_mesh/square_structured.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc &anchor3
@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
       - region: BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x
+          value: (x-0.5)*y
     output:
       output_stream: 
         file: ./flow.pvd
@@ -26,25 +26,15 @@ problem: !Coupling_Sequential
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
-        - region: domain
-          diff_m: 1.0
-          sources_density: 0
-          init_conc: 5
-        - region: .left
-          bc_type: total_flux
-          bc_flux: !FieldFormula
-            value: -(7.5*4*y*(1-y))
         - region: .right
-          bc_type: inflow
-          bc_conc: 10
-        - region: .top
-          bc_type: total_flux
-          bc_robin_sigma: 1
-          bc_conc: 2
+          bc_conc: 1
         - region: .bottom
-          bc_type: total_flux
-          bc_robin_sigma: 1
           bc_conc: 2
+        - region: .top
+          bc_conc: 3
+        - region: domain
+          diff_m: !FieldFormula
+            value: if(y>0.5,0,1e-2)
       solver: 
         a_tol: 1.0e-12
         r_tol: 1.0e-12
@@ -52,11 +42,18 @@ problem: !Coupling_Sequential
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 1
+      time_list:
+        - 0
+        - 0.25
+        - 0.5
+        - 1
+        - 2
+        - 10
       name: transport_output_stream
     substances:
       - tracer
     time:
       end_time: 10
+      max_dt: 0.25
     balance:
       cumulative: true

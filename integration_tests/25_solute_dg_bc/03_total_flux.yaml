@@ -2,7 +2,7 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Test of boundary conditions for transport
   mesh:
-    mesh_file: ./input/mesh.msh
+    mesh_file: ../00_mesh/square_structured.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc &anchor3
@@ -11,7 +11,8 @@ problem: !Coupling_Sequential
     input_fields:
       - region: BOUNDARY
         bc_type: dirichlet
-        bc_pressure: 0
+        bc_pressure: !FieldFormula
+          value: x
     output:
       output_stream: 
         file: ./flow.pvd
@@ -26,22 +27,24 @@ problem: !Coupling_Sequential
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
         - region: domain
-          diff_m: 0.01
+          diff_m: 1.0
           sources_density: 0
           init_conc: 5
         - region: .left
-          bc_type: diffusive_flux
-          bc_flux: -0.1
+          bc_type: total_flux
+          bc_flux: !FieldFormula
+            value: -(7.5*4*y*(1-y))
         - region: .right
-          bc_type: diffusive_flux
+          bc_type: inflow
           bc_conc: 10
-          bc_robin_sigma: 1
         - region: .top
-          bc_type: diffusive_flux
-          bc_flux: 0.1
+          bc_type: total_flux
+          bc_robin_sigma: 1
+          bc_conc: 2
         - region: .bottom
-          bc_type: diffusive_flux
-          bc_flux: 0.1
+          bc_type: total_flux
+          bc_robin_sigma: 1
+          bc_conc: 2
       solver: 
         a_tol: 1.0e-12
         r_tol: 1.0e-12
