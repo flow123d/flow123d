@@ -248,9 +248,17 @@ operator &= (UpdateFlags &f1, UpdateFlags f2)
 
 
 
-
-
-
+/**
+ * Global operator which returns an object in which all bits are negated.
+ *
+ * @ref UpdateFlags
+ */
+inline
+UpdateFlags
+operator ~ (UpdateFlags f)
+{
+  return static_cast<UpdateFlags> (~ static_cast<unsigned int> (f));
+}
 
 
 #endif /* UPDATE_FLAGS_HH_ */

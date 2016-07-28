@@ -20,6 +20,7 @@
 
 #include "fem/mapping.hh"
 #include "quadrature/quadrature.hh"
+#include <quadrature/qxfem.hh>
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
 
@@ -146,6 +147,18 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 {
     this->allocate(_mapping, _quadrature, _fe, _flags);
 
+    //UpdateFlags map_update_flags = this->data.update_flags;
+    
+    if(typeid(_quadrature) == typeid(QXFEM<dim,spacedim>)){
+        DBGMSG("FEValues: quad XFEM - dismiss update_quadrature_points flag.\n");
+        QXFEM<dim,spacedim>* q = static_cast<QXFEM<dim,spacedim>*>(&_quadrature);
+        
+//         map_update_flags = map_update_flags & (~update_quadrature_points);
+        this->data.update_flags = this->data.update_flags & (~update_quadrature_points);
+        //TODO: think of way to avoid copying the whole vector
+        this->data.points = q->get_real_points();
+    }
+    
     // precompute the maping data and finite element data
     this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
     this->fe_data = this->fe->initialize(*this->quadrature, this->data.update_flags);
