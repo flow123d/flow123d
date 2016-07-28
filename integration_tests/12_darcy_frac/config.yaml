@@ -10,3 +10,8 @@ test_cases:
 - file: 05_bddc.yaml
 - file: 06_square.yaml
 - file: 07_cube.yaml
+- files:
+  - 08_square_compatible.yaml
+  - 09_square_noncomp_p0.yaml
+  - 10_square_noncomp_p1.yaml
+  proc: [1]
