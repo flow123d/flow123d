@@ -55,11 +55,10 @@ execute_process(COMMAND
     cp -rT ${CMAKE_SOURCE_DIR}/src/python ${PY_BUILD_PREFIX}/lib/flow123d)
 
 # copy python include (h files for embedded python)
-# TODO: where is PYTHON_SUBDIR variable set?
-set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
+set(PYTHON_COPY_INCLUDE_TARGET include/)
 execute_process(COMMAND
     mkdir -p ${PY_BUILD_PREFIX}/include)
 # recursive copy, not overwrite existing files
 # we copy all and exclude some paths and files during install    
 execute_process(COMMAND
-    cp -rn ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include)
+    cp -rf ${PYTHON_INCLUDE_DIR} ${PY_BUILD_PREFIX}/include)
