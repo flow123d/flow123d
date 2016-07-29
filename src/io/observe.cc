@@ -236,7 +236,8 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array)
     time_unit_seconds_ = 1.0;
 
     if (points_.size() == 0) return;
-    observe_file_.open((observe_name + "_observe.yaml").c_str());
+    FilePath observe_file_path(observe_name + "_observe.yaml", FilePath::output_file);
+    observe_file_.open( string(observe_file_path).c_str());
     output_header(observe_name);
 }
 

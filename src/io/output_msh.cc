@@ -71,24 +71,18 @@ const Record & OutputMSH::get_input_type() {
 		.close();
 }
 
-const int OutputMSH::registrar = Input::register_class< OutputMSH, const Input::Record & >("gmsh") +
+const int OutputMSH::registrar = Input::register_class< OutputMSH >("gmsh") +
 		OutputMSH::get_input_type().size();
 
 
-OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
+OutputMSH::OutputMSH()
 {
     this->enable_refinement_ = false;
-    this->fix_main_file_extension(".msh");
     this->header_written = false;
 
     dummy_data_list_.resize(OutputTime::N_DISCRETE_SPACES);
 
 
-    if(this->rank == 0) {
-        this->_base_file.open(this->_base_filename.c_str());
-        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
-        xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
-    }
 }
 
 OutputMSH::~OutputMSH()
@@ -303,14 +297,23 @@ int OutputMSH::write_head(void)
 
 int OutputMSH::write_data(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
-            this->_base_filename.c_str());
 
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
+        if(this->rank == 0) {
+            this->fix_main_file_extension(".msh");
+            this->_base_file.open(this->_base_filename.c_str());
+            INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
+            xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
+        }
+
         this->write_head();
         this->header_written = true;
     }
+
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
+            this->_base_filename.c_str());
+
 
     this->write_field_data(NODE_DATA, &OutputMSH::write_node_data);
     this->write_field_data(CORNER_DATA, &OutputMSH::write_corner_data);

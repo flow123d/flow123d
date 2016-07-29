@@ -145,8 +145,9 @@ public:
     /**
      * Construct the observation object.
      *
-     * observe_name - base name of the output file.
-     * mesh -
+     * observe_name - base name of the output file, the equation name.
+     * mesh - the mesh used for search for the observe points
+     * in_array - the array of observe points
      */
     Observe(string observe_name, Mesh &mesh, Input::Array in_array);
 

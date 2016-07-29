@@ -1,4 +1,4 @@
-# Observation file: /home/jb/workspace/flow123d_JB/tests/03_transport_small_12d/output/flow.pvd
+# Observation file: flow
 time_unit: s
 time_unit_in_secodns: 1
 points:

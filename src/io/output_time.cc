@@ -38,10 +38,10 @@ using namespace Input::Type;
 const Record & OutputTime::get_input_type() {
     return Record("OutputStream", "Parameters of output.")
 		// The stream
-		.declare_key("file", FileName::output(), Default::obligatory(),
+		.declare_key("file", FileName::output(), Default::read_time("Name of the equation associated with the output stream."),
 				"File path to the connected output file.")
 				// The format
-		.declare_key("format", OutputTime::get_input_format_type(), Default::optional(),
+		.declare_key("format", OutputTime::get_input_format_type(), Default("{}"),
 				"Format of output stream and possible parameters.")
 		.declare_key("times", OutputTimeSet::get_input_type(), Default::optional(),
 		        "Output times used for equations without is own output times key.")
@@ -55,28 +55,32 @@ const Record & OutputTime::get_input_type() {
 
 Abstract & OutputTime::get_input_format_type() {
 	return Abstract("OutputTime", "Format of output stream and possible parameters.")
+	    .allow_auto_conversion("vtk")
 		.close();
 }
 
 
 OutputTime::OutputTime()
-: _mesh(nullptr)
-{}
-
-
-
-OutputTime::OutputTime(const Input::Record &in_rec)
 : current_step(0),
-    time(-1.0),
-    write_time(-1.0),
-    input_record_(in_rec),
-    _mesh(nullptr)
+  time(-1.0),
+  write_time(-1.0),
+  _mesh(nullptr)
 {
-    // Read output base file name
-    this->_base_filename = in_rec.val<FilePath>("file");
-    
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+}
 
+
+
+void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec)
+{
+    input_record_ = in_rec;
+    equation_name_ = equation_name;
+
+    // Read output base file name
+    // TODO: remove dummy ".xyz" extension after merge with DF
+    FilePath output_file_path(equation_name+".xyz", FilePath::output_file);
+    input_record_.opt_val("file", output_file_path);
+    this->_base_filename = output_file_path;
 }
 
 
@@ -106,7 +110,7 @@ void OutputTime::make_output_mesh(Mesh &mesh, FieldSet &output_fields)
     // create observe object at first call
     if (! observe_) {
         auto observe_points = input_record_.val<Input::Array>("observe_points");
-        observe_ = std::make_shared<Observe>(this->_base_filename, mesh, observe_points);
+        observe_ = std::make_shared<Observe>(this->equation_name_, mesh, observe_points);
     }
 
 
@@ -119,7 +123,7 @@ void OutputTime::make_output_mesh(Mesh &mesh, FieldSet &output_fields)
     auto it = input_record_.find<Input::Record>("output_mesh");
     
     if(enable_refinement_) {
-        if(it){
+        if(it) {
             output_mesh_ = std::make_shared<OutputMesh>(mesh, *it);
             output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh, *it);
             output_mesh_->select_error_control_field(output_fields);
@@ -183,18 +187,13 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec)
 {
 	std::shared_ptr<OutputTime> output_time;
 
-    Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
-
-    if(format) {
-    	output_time = (*format).factory< OutputTime, const Input::Record & >(in_rec);
-        output_time->format_record_ = *format;
-    } else {
-        output_time = Input::Factory< OutputTime, const Input::Record & >::instance()->create("OutputVTK", in_rec);
-    }
+    Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
+  	output_time = format.factory< OutputTime >();
+    output_time->init_from_input(equation_name, in_rec);
 
     return output_time;
 }

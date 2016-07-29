@@ -335,8 +335,6 @@ void TransportDG<Model>::initialize()
 	}
 
     // set time marks for writing the output
-	//Model::output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
-    //Model::output_stream_->mark_output_times(*Model::time_);
     data_.output_fields.initialize(Model::output_stream_, input_rec.val<Input::Record>("output"), this->time());
 
     // allocate matrix and vector structures

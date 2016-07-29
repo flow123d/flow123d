@@ -29,14 +29,10 @@ public:
 	typedef OutputTime FactoryBaseType;
 
     /**
-     * \brief The constructor of this class
+     * \brief The constructor of this class.
+     * We open the output file in first call of write_data
      */
     OutputMSH();
-
-    /**
-     * \brief The constructor of this class
-     */
-    OutputMSH(const Input::Record &in_rec);
 
     /**
      * \brief The destructor of this class

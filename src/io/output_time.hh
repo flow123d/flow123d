@@ -54,9 +54,10 @@ public:
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
+     * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    OutputTime(const Input::Record &in_rec);
+    void init_from_input(const std::string &equation_name, const Input::Record &in_rec);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
@@ -101,7 +102,7 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec);
     
     /**
      * Create the output mesh from the given computational mesh. The field set passed in is used
@@ -155,10 +156,6 @@ public:
     DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
             << " returning variable size vectors. Try convert to MultiField.\n");
 
-    /**
-     * Record for current output stream
-     */
-    Input::AbstractRecord format_record_;
 
 protected:
     
@@ -234,6 +231,12 @@ protected:
      * Name of base output file
      */
     string _base_filename;
+
+    /**
+     * Name of the equation owning the output stream. Usually the balance equation.
+     * Used for forming default output file name and the name of observe output file.
+     */
+    std::string equation_name_;
 
     /**
      * Cached pointer at mesh used by this output stream
