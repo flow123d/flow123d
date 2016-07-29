@@ -62,6 +62,22 @@ TEST(BoostFileSystem, base_methods) {
 		string path_str = convert_path( path.string() );
 		EXPECT_EQ("x/y", path_str);
 	}
+
+	// tests of absolute paths
+	{
+		boost::filesystem::path path_absolute("//home/flow/flow123d");       // absolute in unix and windows
+		boost::filesystem::path path_unix_absolute("/home/flow/flow123d");   // absolute in unix
+		boost::filesystem::path path_win_absolute("C:\\cygwin\\home\\flow"); // absolute in windows
+
+		EXPECT_TRUE(path_absolute.is_absolute());
+#ifdef FLOW123D_HAVE_CYGWIN
+		EXPECT_FALSE(path_unix_absolute.is_absolute());
+		EXPECT_TRUE(path_win_absolute.is_absolute());
+#else
+		EXPECT_TRUE(path_unix_absolute.is_absolute());
+		EXPECT_FALSE(path_win_absolute.is_absolute());
+#endif // FLOW123D_HAVE_CYGWIN
+	}
 }
 
 
@@ -201,10 +217,11 @@ TEST(FilePath, create_output_dir) {
 
 
 TEST(FilePath, delimiter_problem) {
-    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    FilePath mesh_file("../mesh/simplest_cube.msh", FilePath::input_file);
-    EXPECT_TRUE( (boost::filesystem::current_path() / "../mesh") == boost::filesystem::path(mesh_file.parent_path()) );
+    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    boost::filesystem::path expect_path = boost::filesystem::path(UNIT_TESTS_SRC_DIR) / "mesh";
+    EXPECT_TRUE( expect_path == boost::filesystem::path(mesh_file.parent_path()) );
 }
 
 TEST(FilePath, create_from_vector) {
