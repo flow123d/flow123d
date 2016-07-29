@@ -207,11 +207,13 @@ static const Input::Type::Selection & get_test_selection() {
 class TestOutputTime : public testing::Test, public OutputTime {
 public:
 	TestOutputTime()
-	: OutputTime(
-	    		Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
-	    		.get_root_interface<Input::Record>()
-	    		)
+	: OutputTime()
+
 	{
+	    auto in_rec =
+	            Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
+                .get_root_interface<Input::Record>();
+	    this->init_from_input("dummy_equation", in_rec);
 	    Profiler::initialize();
 		// read simple mesh
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);

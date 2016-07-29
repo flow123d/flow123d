@@ -182,7 +182,8 @@ TEST(OutputMesh, write_on_output_mesh) {
     output_fields.set_time(0.0, LimitSide::right);
     
     // create output
-    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>(in_rec.val<Input::Record>("output_stream"));
+    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
+    output->init_from_input("dummy_equation", in_rec.val<Input::Record>("output_stream"));
     //output->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
     
     // register output fields, compute and write data
