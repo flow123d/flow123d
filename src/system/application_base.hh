@@ -140,6 +140,9 @@ protected:
 
     /// File handler for redirecting PETSc output
     static FILE *petsc_output_;
+
+    /// Turn off signal handling useful to debug with valgrind.
+    bool signal_handler_off_;
 };
 
 #endif /* APPLICATION_BASE_HH_ */

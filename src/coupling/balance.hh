@@ -23,9 +23,11 @@
 #include "transport/substance.hh"
 #include "petscmat.h"
 #include "fields/unit_si.hh"
+#include "tools/time_marks.hh"
 
 class RegionDB;
-
+class TimeGovernor;
+class TimeStep;
 
 
 
@@ -137,6 +139,13 @@ public:
 	/// Input selection for file format.
 	static const Input::Type::Selection & get_format_selection_input_type();
 
+	static std::shared_ptr<Balance> make_balance(
+	        const std::string &file_prefix,
+	        const Mesh *mesh,
+	        const Input::Record &in_rec,
+	        TimeGovernor &tg);
+
+
 	/**
 	 * Constructor.
 	 * @param file_prefix  Prefix of output file name.
@@ -145,7 +154,8 @@ public:
 	 */
 	Balance(const std::string &file_prefix,
 			const Mesh *mesh,
-			const Input::Record &in_rec);
+			const Input::Record &in_rec,
+            TimeGovernor &tg);
 
 	~Balance();
 
@@ -154,6 +164,8 @@ public:
 
 	/// Getter for cumulative_.
 	inline bool cumulative() const { return cumulative_; }
+
+	bool is_current(const TimeStep &step);
 
 	/**
 	 * Define a single conservative quantity.
@@ -489,6 +501,9 @@ private:
 
 	/// time of last calculated balance
 	double last_time_;
+
+	/// TimeMark type for balance output.
+	TimeMark::Type balance_output_type_;
 
 	/// true before calculating the mass at initial time, otherwise false
 	bool initial_;

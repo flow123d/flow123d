@@ -338,7 +338,7 @@ ConcentrationTransportModel::~ConcentrationTransportModel()
 {}
 
 
-void ConcentrationTransportModel::set_balance_object(boost::shared_ptr<Balance> balance)
+void ConcentrationTransportModel::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
 	subst_idx = balance_->add_quantities(substances_.names());

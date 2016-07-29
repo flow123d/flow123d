@@ -43,6 +43,13 @@ unsigned int Region::id() const
 unsigned int Region::dim() const
     { return db_->get_dim(idx_); }
 
+bool Region::is_in_region_set(const RegionSet &set) const
+{
+    for(const Region &reg : set)
+        if (reg.idx_ == this->idx_) return true;
+    return false;
+}
+
 /**************************************************************************************************
  * Implementation of     RegionDB
  */

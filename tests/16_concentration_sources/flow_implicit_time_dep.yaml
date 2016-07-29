@@ -16,6 +16,7 @@ problem: !Coupling_Sequential
         element_list:
           - 721
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -30,16 +31,16 @@ problem: !Coupling_Sequential
         cross_section: 1
         conductivity: 1
     output:
-      output_stream: 
-        file: ./flow_test16.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream: 
+      file: ./flow_test16.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
@@ -70,8 +71,9 @@ problem: !Coupling_Sequential
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
-      time_step: 1
       name: transport_output_stream
+      times:
+        - step: 1
     substances:
       - conc
     time:

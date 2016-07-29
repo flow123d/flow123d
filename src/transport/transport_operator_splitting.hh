@@ -84,7 +84,7 @@ public:
     /**
      * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
      */
-    virtual void set_balance_object(boost::shared_ptr<Balance> balance) = 0;
+    virtual void set_balance_object(std::shared_ptr<Balance> balance) = 0;
     
     /// Computes a constraint for time step.
     virtual bool evaluate_time_constraint(double &time_constraint) = 0;
