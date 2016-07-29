@@ -61,13 +61,13 @@
           init_conc = 0,
           porosity= 0.25
         },
-        { rid = 184
+        { rid = 184,
           rock_density = 2700,
           sorption_mult = [0.2,0]
         },
         { 
           r_set="BOUNDARY",
-          time = 5
+          time = 5,
           bc_conc = 0
         }
       ],
@@ -90,7 +90,7 @@
         end_time = 10
       },
       balance = {
-        file = "mass_balance_dg.txt"
+        file = "mass_balance_dg.txt",
         cumulative = true
       },
       
