@@ -8,8 +8,8 @@
 #define FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 #define FEAL_OVERRIDE_ASSERTS
 
-#include "system/exceptions.hh"
 #include <flow_gtest.hh>
+#include "system/exceptions.hh"
 
 #include <string>
 #include <iostream>
@@ -228,17 +228,5 @@ TEST(FealAssert, assert) {
     	EXPECT_THROW_WHAT( { ASSERT_EQ(i, j).error(); }, feal::Exc_assert, "Expression: 'i == j'" );
     	EXPECT_THROW( { ASSERT_PTR(empty).error(); }, feal::Exc_assert );
     }
-
-}
-
-TEST(FealAssert, warning) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-    std::string s1 = "feal";
-    std::string s2 = "assert";
-    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Strings must be empty.");
-
-    // shorter version of macro - "ASSERT" - is not in conflict with external library
-    ASSERT(0).warning("Zero value.");
 
 }

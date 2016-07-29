@@ -427,7 +427,7 @@ int xremove( const char *fname )
         INPUT_CHECK(!( rc != 0 ),"Cannot remove file %s\n", fname );
     }
     else
-        xprintf( Warn, "File '%s' does not exist, can not remove. Ignoring.\n", fname );
+    	WarningOut() << "File '" << fname << "' does not exist, can not remove. Ignoring." << std::endl;
 
     return(rc);
 }
