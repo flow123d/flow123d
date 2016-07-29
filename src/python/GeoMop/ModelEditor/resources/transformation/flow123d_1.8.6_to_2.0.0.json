@@ -12,7 +12,7 @@
       "parameters": {
         "path": "/",
         "key": "flow123d_version",
-        "value": "1.8.9"  
+        "value": "2.0.0_rc"  
       }  
     },
     {

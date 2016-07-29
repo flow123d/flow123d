@@ -38,7 +38,7 @@ TEST(TokenizerPosition, compare_speed) {
 	// create file, fill vector of positions
 	{
 
-		ofstream fout( FilePath("tokenizer_speed.txt", FilePath::output_file) );
+		ofstream fout( FilePath("system/tokenizer_speed.txt", FilePath::output_file) );
 		for (unsigned int i=0; i<file_line_count; i++) {
 			position_data.push_back( Tokenizer::Position(fout.tellp(), (i+1), 0) );
 			fout << (i+1) << " " << file_line_text << std::endl;

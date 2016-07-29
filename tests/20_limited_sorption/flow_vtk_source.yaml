@@ -1,4 +1,4 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: "Sorption with sources - no flow, no transport, only source term and\
     \ sorptions. \nQualitative and mass balance check.\n- A - check sorption none\
@@ -108,7 +108,7 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
-  # secondary_equation
+  # solute_equation
 # problem
 # root
       times:
