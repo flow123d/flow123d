@@ -2,24 +2,29 @@ flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
   mesh:
-    mesh_file: ./input/test2.msh
+    mesh_file: ./input/compatible.msh
     regions:
     - !Union
       name: subset
-      region_ids:
-      - 48
-      - 184
+      regions:
+      - 2d
+      - 1d
+    - !Union
+      name: .sides
+      regions:
+      - .2d
+      - .1d
   flow_equation: !Flow_Darcy_MH
     input_fields:
-    - rid: 48
+    - region: 1d
       anisotropy: 10
       sigma: 0.05
       cross_section: !FieldFormula
         value: 0.1+x/10
-    - rid: 184
+    - region: 2d
       anisotropy: 1
       cross_section: 1
-    - region: BOUNDARY
+    - region: .sides
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x
@@ -41,17 +46,17 @@ problem: !Coupling_Sequential
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
-      - region: BOUNDARY
+      - region: .sides
         bc_conc: 1
       - region: subset
         init_conc: 0
         porosity: 0.25
-      - rid: 184
+      - region: 2d
         rock_density: 2700
         sorption_mult:
         - 0.2
         - 0
-      - region: BOUNDARY
+      - region: .sides
         time: 5
         bc_conc: 0
       dg_order: 1
