@@ -4,6 +4,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ${INPUT}/square_2d.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -27,14 +28,14 @@ problem: !Coupling_Sequential
           value: 2*x
     n_schurs: 2
     output:
-      output_stream:
-        add_input_times: true
-        file: ./test09.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+      add_input_times: true
+    balance: {}
+    output_stream:
+      file: ./test09.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

@@ -15,6 +15,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ${INPUT}/test_20.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -26,15 +27,15 @@ problem: !Coupling_Sequential
         bc_pressure: !FieldFormula
           value: x
     output:
-      output_stream: 
-        file: test_20.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
       pressure_p0: flow_output_stream
       pressure_p1: flow_output_stream
       velocity_p0: flow_output_stream
-    balance: true
+    balance: {}
+    output_stream: 
+      file: test_20.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:

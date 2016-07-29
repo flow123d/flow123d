@@ -22,6 +22,7 @@
 #include "system/global_defs.h"
 #include "time_governor.hh"
 #include "time_marks.hh"
+#include <boost/functional/hash.hpp>
 
 // ------------------------------------------------------
 // implementation of members of class TimeMark
@@ -57,6 +58,7 @@ void TimeMarks::reinit()
     type_fixed_time_ = new_mark_type();
     type_output_ = new_mark_type();
     type_input_ = new_mark_type();
+    type_balance_output_ = new_mark_type();
 
     // insert start and end stoppers
     marks_.push_back(TimeMark(-INFINITY, TimeMark::every_type));
@@ -71,15 +73,15 @@ TimeMark::Type TimeMarks::new_mark_type() {
     return current_type;
 }
 
-void TimeMarks::add(const TimeMark &mark) {
+TimeMark TimeMarks::add(const TimeMark &mark) {
     // find first mark with time greater or equal to the new mark
     vector<TimeMark>::iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), mark);
 
     // check equivalence with found mark
     if (fabs(first_ge->time() - mark.time()) < TimeGovernor::time_step_precision) {
-	//if "equal" does bitwise OR with the mark type at the first_ge iterator position
+	//if times are "equal" do bitwise OR with the mark type at the first_ge iterator position
         first_ge->add_to_type(mark.mark_type());
-        return;
+        return *first_ge;
     }
     // possibly check equivalence with previous mark
     if (first_ge != marks_.begin()) {
@@ -87,11 +89,12 @@ void TimeMarks::add(const TimeMark &mark) {
         --previous;
         if (fabs(previous->time() - mark.time()) < TimeGovernor::time_step_precision) {
             previous->add_to_type(mark.mark_type());
-            return;
+            return *previous;
         }
     }
 
     marks_.insert(first_ge, mark);
+    return mark;
 }
 
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
@@ -105,12 +108,32 @@ void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark
 	}
 }
 
-bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const
+
+void  TimeMarks::add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_type) {
+    for(auto &mark : marks_)
+        if (mark.match_mask(filter_type)) mark.add_to_type(add_type);
+
+}
+
+/*
+bool TimeMarks::is_current(const TimeStep &time_step, const TimeMark::Type &mask) const
 {
+    return ( current(time_step, mask) != this->end(mask) );
+
     if (tg.t() == TimeGovernor::inf_time) return tg.is_end();
     const TimeMark &tm = *last(tg, mask);
 
     return tg.step().lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
+
+}*/
+
+
+TimeMarks::iterator TimeMarks::current(const TimeStep &time_step, const TimeMark::Type &mask) const
+{
+    //if (time_step.end() == TimeGovernor::inf_time) return tg.is_end();
+    auto it = last(time_step, mask);
+    if ( time_step.contains(it->time()) ) return it;
+    else return this->end(mask);
 }
 
 TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type &mask) const
@@ -124,17 +147,21 @@ TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type
     return TimeMarksIterator(marks_, first_ge, mask);
 }
 
-TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type &mask) const
+TimeMarks::iterator TimeMarks::last(const TimeStep &time_step, const TimeMark::Type &mask) const
 {
     // first time mark which does compare strictly greater then actual tg time
     vector<TimeMark>::const_iterator first_ge =
-            std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t()+0.01*tg.dt(),mask));
-    while ( ! tg.step().ge(first_ge->time()) || ! first_ge->match_mask(mask) ) {
+            std::lower_bound(marks_.begin(), marks_.end(), TimeMark(time_step.end()+0.01*time_step.length(),mask));
+    while ( ! time_step.ge(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         --first_ge;
     }
     return TimeMarksIterator(marks_, first_ge, mask);
 }
 
+TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type &mask) const
+{
+    return last(tg.step(), mask);
+}
 
 
 TimeMarks::iterator TimeMarks::last(const TimeMark::Type &mask) const
@@ -166,4 +193,13 @@ ostream& operator<<(ostream& stream, const TimeMarks &marks)
     for(vector<TimeMark>::const_iterator it = marks.marks_.begin(); it != marks.marks_.end(); ++it)
         stream << *it << endl;
     return stream;
+}
+
+
+std::size_t TimeMarkHash::operator()(TimeMark const& mark) const
+{
+    std::size_t seed = 0;
+    boost::hash_combine(seed, mark.time());
+    boost::hash_combine(seed, mark.mark_type());
+    return seed;
 }

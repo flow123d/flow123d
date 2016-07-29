@@ -45,14 +45,14 @@ const string eq_data_input = R"JSON(
         region="BULK",
         init_pressure=1.1,
         velocity={TYPE="FieldFormula",
-            value=[ "x", "y" ]
+            value=[ "x", "y" , "z"]
         },
         reaction_type="r_first"
       },
       { 
         time=1.0,
         region="BULK",
-        velocity=[1,2]
+        velocity=[1,2,4]
       }
 ]
 )JSON";
@@ -84,7 +84,7 @@ public:
 		}
 
 		// fields
-	    Field<3, FieldValue<3>::Vector > velocity;
+	    Field<3, FieldValue<3>::VectorFixed > velocity;
 	    Field<3, FieldValue<3>::Scalar > init_pressure;
 	    Field<3, FieldValue<3>::Enum > type;
 	};
@@ -226,12 +226,12 @@ TEST_F(SomeEquation, set_field) {
 
 TEST_F(SomeEquation, collective_interface) {
     auto data = EqData();
-    component_names_ = { "component_0", "component_1", "component_2", "component_3" };
+    //component_names_ = { "component_0", "component_1", "component_2", "component_3" };
 
-    EXPECT_EQ(1,data["velocity"].n_comp());
-    data.set_components(component_names_);
+    //EXPECT_EQ(1,data["velocity"].n_comp());
+    //data.set_components(component_names_);
     EXPECT_EQ(0,data["init_pressure"].n_comp());
-    EXPECT_EQ(4,data["velocity"].n_comp());
+    //EXPECT_EQ(4,data["velocity"].n_comp());
     EXPECT_EQ(0,data["reaction_type"].n_comp());
 
     EXPECT_EQ(nullptr,data["init_pressure"].mesh());

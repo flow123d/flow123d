@@ -54,9 +54,9 @@ public:
     typedef FieldElementwise<3, FieldValue<3>::Scalar > ScalarField;
     typedef FieldElementwise<3, FieldValue<3>::Enum > EnumField;
     typedef FieldElementwise<3, FieldValue<3>::VectorFixed > VecFixField;
-    typedef FieldElementwise<3, FieldValue<3>::Vector > VecField;
-    typedef FieldElementwise<3, FieldValue<2>::TensorFixed > TensorField;
-    typedef FieldElementwise<3, FieldValue<3>::EnumVector > EnumVector;
+    //typedef FieldElementwise<3, FieldValue<3>::Vector > VecField;
+    typedef FieldElementwise<3, FieldValue<3>::TensorFixed > TensorField;
+    //typedef FieldElementwise<3, FieldValue<3>::EnumVector > EnumVector;
 
     virtual void SetUp() {
         // setup FilePath directories
@@ -72,7 +72,7 @@ public:
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .declare_key("vector", VecField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            //.declare_key("vector", VecField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
@@ -159,7 +159,7 @@ TEST_F(FieldElementwiseTest, bc_vector_fixed) {
     }
 }
 
-
+/*
 TEST_F(FieldElementwiseTest, vector) {
 	string expected_vals[2] = {"1 2 3", "2 3 4"};
     VecField field(3);
@@ -174,9 +174,9 @@ TEST_F(FieldElementwiseTest, vector) {
         }
     }
 }
+*/
 
-
-
+/*
 TEST_F(FieldElementwiseTest, bc_vector) {
 	string expected_vals[2] = {"4 5 6", "5 6 7"};
     VecField field(3);
@@ -191,10 +191,10 @@ TEST_F(FieldElementwiseTest, bc_vector) {
         }
         EXPECT_TRUE( arma::min(arma::vec("0 0 0") == field.value(point,mesh->element_accessor(5,true))) );
     }
-}
+}*/
 
 TEST_F(FieldElementwiseTest, tensor_fixed) {
-	string expected_vals[2] = {"1 3; 2 4", "2 4; 3 5"};
+	string expected_vals[2] = {"1 4 7; 2 5 8; 3 6 9", "2 5 8; 3 6 9; 4 7 10"};
     TensorField field;
     field.init_from_input(rec.val<Input::Record>("tensor_fixed"));
     field.set_mesh(mesh,false);
@@ -203,7 +203,7 @@ TEST_F(FieldElementwiseTest, tensor_fixed) {
     	field.set_time(test_time[j]);
 
     	for(unsigned int i=0; i < mesh->element.size(); i++) {
-    		arma::umat match = ( arma::mat22(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
+    		arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
             EXPECT_TRUE( match.min() );
         }
     }
@@ -213,7 +213,7 @@ TEST_F(FieldElementwiseTest, tensor_fixed) {
 
 
 TEST_F(FieldElementwiseTest, bc_tensor_fixed) {
-	string expected_vals[2] = {"4 6; 5 7", "5 7; 6 8"};
+	string expected_vals[2] = {"4 7 10; 5 8 11; 6 9 12", "5 8 11; 6 9 12; 7 10 13"};
     TensorField field;
     field.init_from_input(rec.val<Input::Record>("tensor_fixed"));
     field.set_mesh(mesh, true);
@@ -222,10 +222,10 @@ TEST_F(FieldElementwiseTest, bc_tensor_fixed) {
     	field.set_time(test_time[j]);
 
         for(unsigned int i=0; i < 4; i++) {
-            arma::umat match = ( arma::mat22(expected_vals[j]) == field.value(point,mesh->element_accessor(i,true)) );
+            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i,true)) );
             EXPECT_TRUE( match.min() );
         }
-        arma::umat match = ( arma::mat22("0 0; 0 0") == field.value(point,mesh->element_accessor(5,true)) );
+        arma::umat match = ( arma::mat33("0 0 0; 0 0 0; 0 0 0") == field.value(point,mesh->element_accessor(5,true)) );
         EXPECT_TRUE( match.min() );
     }
 }
@@ -269,7 +269,7 @@ TEST_F(FieldElementwiseTest, bc_scalar_enum) {
 
 
 
-
+/*
 TEST_F(FieldElementwiseTest, vector_enum) {
     EnumVector field(2);
     field.set_mesh(mesh,false);
@@ -316,3 +316,4 @@ TEST_F(FieldElementwiseTest, bc_vector_enum) {
     }
 }
 
+*/

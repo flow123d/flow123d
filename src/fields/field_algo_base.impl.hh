@@ -163,13 +163,15 @@ template class field<dim_from, FieldValue<dim_to>::TensorFixed >;               
 // Instantiation of fields with domain in the ambient space of dimension @p dim_from
 #define INSTANCE_TO_ALL(field, dim_from) \
 template class field<dim_from, FieldValue<0>::Enum >;                       \
-template class field<dim_from, FieldValue<0>::EnumVector >;                \
 template class field<dim_from, FieldValue<0>::Integer >;                       \
 template class field<dim_from, FieldValue<0>::Scalar >;                       \
-template class field<dim_from, FieldValue<0>::Vector >;                         \
 \
-INSTANCE_DIM_DEP_VALUES( field, dim_from, 2) \
-INSTANCE_DIM_DEP_VALUES( field, dim_from, 3) \
+INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
+
+
+//template class field<dim_from, FieldValue<0>::EnumVector >;                \
+//template class field<dim_from, FieldValue<0>::Vector >;                         \
+
 
 // All instances of one field class template @p field.
 // currently we need only fields on 3D ambient space (and 2D for some tests)

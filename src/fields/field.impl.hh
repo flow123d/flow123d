@@ -24,6 +24,7 @@
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
+#include "io/observe.hh"
 
 
 /******************************************************************************************
@@ -322,6 +323,13 @@ void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 	// currently we cannot output boundary fields
 	if (!is_bc())
 		stream->register_data(this->output_type(), *this);
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
+{
+    observe->compute_field_values(*this);
 }
 
 
