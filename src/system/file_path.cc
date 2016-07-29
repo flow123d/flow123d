@@ -179,6 +179,11 @@ string FilePath::filename() const {
 }
 
 
+string FilePath::stem() const {
+	return abs_file_path_->stem().string();
+}
+
+
 string FilePath::extension() const {
 	return abs_file_path_->extension().string();
 }

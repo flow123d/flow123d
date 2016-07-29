@@ -159,9 +159,14 @@ public:
     string parent_path() const;
 
     /**
-     * Return name of file.
+     * Return name of file with extension.
      */
     string filename() const;
+
+    /**
+     * Return name of file without extension.
+     */
+    string stem() const;
 
     /**
      * Return extension of file.

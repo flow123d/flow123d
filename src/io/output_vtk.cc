@@ -158,10 +158,9 @@ int OutputVTK::write_data(void)
 
 void OutputVTK::make_subdirectory()
 {
-	OLD_ASSERT( string(this->_base_filename).substr( string(this->_base_filename).size() - 4) == ".pvd" , "none");
+	ASSERT_EQ(this->_base_filename.extension(), ".pvd").error();
 	main_output_dir_ = this->_base_filename.parent_path();
-	main_output_basename_ = this->_base_filename.filename();
-    main_output_basename_=main_output_basename_.substr(0, main_output_basename_.size() - 4); // 5 = ".pvd".size() +1
+	main_output_basename_ = this->_base_filename.stem();
 
     vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
     FilePath fp(sub_path, FilePath::output_file);
