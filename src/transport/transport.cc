@@ -65,29 +65,13 @@ const IT::Record &ConvectionTransport::get_input_type()
 			        EqData().make_field_descriptor_type(_equation_name)),
 			        IT::Default::obligatory(),
 			        "")
-
-            .declare_key("output_fields",
-			                IT::Array(
-			                        ConvectionTransport::EqData().output_fields
-			                            .make_output_field_selection(
-			                                    _equation_name + "_output_fields",
-			                                "Selection of output fields for Advective Solute Transport model.")
-			                            .close()),
-			                IT::Default("\"conc\""),
-			                "List of fields to write to output file.")
+            .declare_key("output",
+                    EqData().output_fields.make_output_type(_equation_name, ""),
+                    IT::Default("{ fields: [ \"conc\" ] }"),
+                    "Setting of the fields output.")
 			.close();
 }
 
-/*
-const IT::Selection & ConvectionTransport::get_output_selection() {
-	return  ConvectionTransport::EqData().output_fields
-            .make_output_field_selection(
-                "ConvectionTransport_output_fields",
-                "Selection of output fields for Convection Solute Transport model.")
-            .close();
-
-}
-*/
 
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
@@ -97,7 +81,9 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
     	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
-    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
+    output_fields += conc_mobile.name("conc")
+            .units( UnitSI().kg().m(-3) )
+            .flags(FieldFlag::equation_result);
 	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
@@ -108,7 +94,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
   input_rec(in_rec),
-  mh_dh(nullptr)
+  mh_dh(nullptr),
+  sources_corr(nullptr)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -146,8 +133,13 @@ void ConvectionTransport::initialize()
 		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(n_substances());
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
-	output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
-    output_stream_->mark_output_times(*time_);
+	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
+    //output_stream_->mark_output_times(*time_);
+
+	data_.output_fields.initialize(output_stream_, input_rec.val<Input::Record>("output"), time() );
+	//cout << "Transport." << endl;
+	//cout << time().marks();
+
 
     if (balance_ != nullptr)
     	balance_->allocate(el_ds->lsize(), 1);
@@ -188,44 +180,46 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi;
 
-    //Destroy mpi vectors at first
-    MatDestroy(&tm);
-    VecDestroy(&mass_diag);
-    VecDestroy(&vpmass_diag);
-    VecDestroy(&vcfl_flow_);
-    VecDestroy(&vcfl_source_);
-    delete cfl_flow_;
-    delete cfl_source_;
+    if (sources_corr) {
+        //Destroy mpi vectors at first
+        MatDestroy(&tm);
+        VecDestroy(&mass_diag);
+        VecDestroy(&vpmass_diag);
+        VecDestroy(&vcfl_flow_);
+        VecDestroy(&vcfl_source_);
+        delete cfl_flow_;
+        delete cfl_source_;
 
-    for (sbi = 0; sbi < n_substances(); sbi++) {
-        // mpi vectors
-        VecDestroy(&(vconc[sbi]));
-        VecDestroy(&(vpconc[sbi]));
-        VecDestroy(&(bcvcorr[sbi]));
-        VecDestroy(&(vcumulative_corr[sbi]));
-        VecDestroy(&(v_tm_diag[sbi]));
-        VecDestroy(&(v_sources_corr[sbi]));
+        for (sbi = 0; sbi < n_substances(); sbi++) {
+            // mpi vectors
+            VecDestroy(&(vconc[sbi]));
+            VecDestroy(&(vpconc[sbi]));
+            VecDestroy(&(bcvcorr[sbi]));
+            VecDestroy(&(vcumulative_corr[sbi]));
+            VecDestroy(&(v_tm_diag[sbi]));
+            VecDestroy(&(v_sources_corr[sbi]));
+
+            // arrays of arrays
+            delete conc[sbi];
+            delete cumulative_corr[sbi];
+            delete tm_diag[sbi];
+            delete sources_corr[sbi];
+        }
+
+        // arrays of mpi vectors
+        delete vconc;
+        delete vpconc;
+        delete bcvcorr;
+        delete vcumulative_corr;
+        delete v_tm_diag;
+        delete v_sources_corr;
         
         // arrays of arrays
-        delete conc[sbi];
-        delete cumulative_corr[sbi];
-        delete tm_diag[sbi];
-        delete sources_corr[sbi];
+        delete conc;
+        delete cumulative_corr;
+        delete tm_diag;
+        delete sources_corr;
     }
-    
-    // arrays of mpi vectors
-    delete vconc;
-    delete vpconc;
-    delete bcvcorr;
-    delete vcumulative_corr;
-    delete v_tm_diag;
-    delete v_sources_corr;
-    
-    // arrays of arrays
-    delete conc;
-    delete cumulative_corr;
-    delete tm_diag;
-    delete sources_corr;
 }
 
 
@@ -886,16 +880,15 @@ void ConvectionTransport::calculate_instant_balance()
 
 void ConvectionTransport::output_data() {
 
-    if (time_->is_current( time_->marks().type_output() )) {
+    data_.output_fields.set_time(time().step(), LimitSide::right);
+    if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
         output_vector_gather();
-
-		data_.output_fields.set_time(time_->step(), LimitSide::right);
-		data_.output_fields.output(output_stream_);
-
     }
+
+	data_.output_fields.output(time().step());
 }
 
-void ConvectionTransport::set_balance_object(boost::shared_ptr<Balance> balance)
+void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
 	subst_idx = balance_->add_quantities(substances_.names());

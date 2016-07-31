@@ -148,10 +148,14 @@ const it::Record & DarcyMH::get_input_type() {
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
                 "Non-linear solver for MH problem.")
+        .declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
+                "Parameters of output stream.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ fields: [ \"pressure_p0\", \"velocity_p0\" ] }"),
+                "Parameters of output from MH module.")
+        .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Parameters of output form MH module.")
-        .declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
+        .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
         .declare_key("time", TimeGovernor::get_input_type(),
                 "Time governor setting for the unsteady Darcy flow model.")
@@ -305,7 +309,7 @@ void DarcyMH::init_eq_data()
 void DarcyMH::initialize() {
 
     init_eq_data();
-    output_object = new DarcyFlowMHOutput(this, this->input_record_.val<Input::Record>("output"));
+    output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
     // Initialize bc_switch_dirichlet to size of global boundary.
@@ -333,10 +337,9 @@ void DarcyMH::initialize() {
 
 
     // initialization of balance object
-    Input::Iterator<Input::Record> it = input_record_.find<Input::Record>("balance");
-    if (it->val<bool>("balance_on"))
+    balance_ = Balance::make_balance("water", mesh_, input_record_.val<Input::Record>("balance"), time());
+    if (balance_)
     {
-        balance_ = std::make_shared<Balance>("water", mesh_, *it);
         data_-> water_balance_idx_ = water_balance_idx_ = balance_->add_quantity("water_volume");
         balance_->allocate(mh_dh.rows_ds->lsize(), 1);
         balance_->units(UnitSI().m(3));
@@ -567,7 +570,7 @@ void DarcyMH::output_data() {
 			balance_->calculate_cumulative_fluxes(water_balance_idx_, schur0->get_solution(), time_->dt());
 		}
 
-		if (time_->is_current( TimeGovernor::marks().type_output() ))
+		if ( balance_->is_current( time().step()) )
 		{
 			balance_->calculate_mass(water_balance_idx_, schur0->get_solution());
 			balance_->calculate_source(water_balance_idx_, schur0->get_solution());
@@ -1573,31 +1576,6 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 
 
 
-// ========================
-// unsteady
-/*
-DarcyFlowMH_Steady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec)
-{
-
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-	data_->mark_input_times(this->mark_type());
-	data_->set_time(time_->step(), LimitSide::right);
-
-	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
-	//balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_->cross_section.units()*data_->storativity.units());
-
-	//time_->fix_dt_until_mark();
-	create_linear_system();
-
-
-
-    assembly_linear_system();
-	read_init_condition();
-
-    output_data();
-}
-*/
 
 void DarcyMH::read_initial_condition()
 {

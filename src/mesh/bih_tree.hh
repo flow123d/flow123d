@@ -72,7 +72,7 @@ public:
 	 * @param boundingBox Bounding box which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &result_list);
+    void find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &result_list) const;
 
 	/**
 	 * Gets elements which can have intersection with point
@@ -80,7 +80,7 @@ public:
 	 * @param point Point which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list);
+    void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list) const;
 
     /**
      * Get vector of mesh elements bounding boxes

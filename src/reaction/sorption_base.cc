@@ -326,7 +326,7 @@ void SorptionBase::initialize_fields()
   data_->set_mesh(*mesh_);
 
   //initialization of output
-  output_array = input_record_.val<Input::Array>("output_fields");
+  //output_array = input_record_.val<Input::Array>("output_fields");
   data_->conc_solid.set_components(substances_.names());
   data_->output_fields.set_mesh(*mesh_);
   data_->output_fields.output_type(OutputTime::ELEM_DATA);
@@ -337,7 +337,8 @@ void SorptionBase::initialize_fields()
 	  auto output_field_ptr = conc_solid_out[sbi].create_field<3, FieldValue<3>::Scalar>(substances_.size());
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
-  output_stream_->add_admissible_field_names(output_array);
+  //output_stream_->add_admissible_field_names(output_array);
+  data_->output_fields.initialize(output_stream_, input_record_.val<Input::Record>("output"), time());
 }
 
 
@@ -353,12 +354,14 @@ void SorptionBase::zero_time_step()
   make_tables();
     
   // write initial condition
-  output_vector_gather();
-  data_->output_fields.set_time(time_->step(), LimitSide::right);
-  data_->output_fields.output(output_stream_);
+  //output_vector_gather();
+  //data_->output_fields.set_time(time_->step(), LimitSide::right);
+  //data_->output_fields.output(output_stream_);
   
   if(reaction_liquid) reaction_liquid->zero_time_step();
   if(reaction_solid) reaction_solid->zero_time_step();
+
+  output_data();
 }
 
 void SorptionBase::set_initial_condition()
@@ -509,9 +512,11 @@ void SorptionBase::output_vector_gather()
 
 void SorptionBase::output_data(void )
 {
-    output_vector_gather();
+    data_->output_fields.set_time(time().step(), LimitSide::right);
+    if ( data_->output_fields.is_field_output_time(data_->conc_solid, time().step()) ) {
+        output_vector_gather();
+    }
 
     // Register fresh output data
-    data_->output_fields.set_time(time_->step(), LimitSide::right);
-    data_->output_fields.output(output_stream_);
+    data_->output_fields.output(time().step());
 }

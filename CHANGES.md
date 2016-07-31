@@ -1,5 +1,131 @@
 List of all changes in user interface and major internal changes.
 
+***********************************************
+
+#Flow123d version 2.0.0_rc
+(2016-06-20)
+
+### User interface
+* Adopt YAML (http://www.yaml.org/start.html) as the format for the principal input file.
+  The CON format (derivate of JSON) is still accepted, but obsolete. Only pure JSON format will be supported in the future. 
+
+* A tool is provided for conversion from the CON with the structure of the 1.8.2 version to the YAML 
+  format with the new structure. 
+
+  Usage:    ```bin/input_convert.py path/to/old_file.con```
+
+  Doc:      ```bin/input_convert.py --help```
+
+* Vector valued fields are replaced by "multifields". This allows independent setting for individual components.
+  E.g. ``` init_conc = [ 0, 1, {TYPE=FieldFormula, value="x*y"} ]```
+
+* Automatic conversion from Record to Array is implemented as a transpose, e.g.
+  ```{ a: [1,2], b: [3,4] }``` 
+  
+  may be converted to 
+  
+  ```[ {a:1, b:3}, {a:2, b:4} ]. ```
+  
+  Useful for multifields.
+
+* Field descriptors in the 'input_fields' list need not to form increasing time series, this is required only 
+for the sequence of field descriptors of the single field. E.g. this is valid:
+    ``` 
+    input_fields : [
+       { time:0.0, region:"ALL", conductivity:1 },
+       { time:1.0, region:"ALL", conductivity:2 },
+       { time:0.0, region:"ALL", init_pressure: 0.5}        
+    ]
+    ```
+* Removed support for old BCD files.
+
+* Changes in the structure of the input file:
+    
+    * Add obligatory key: `/flow123d_version` with a string marking the version of the file format
+    
+    * All boundary fluxes on input are treated as positive if they are increasing the mass balance.
+      This is contradictory to the convention used in PDE, but is consistent with treatment of the volume sources.
+      Same convention is used in balance output files. The conversion script takes care of 
+      sign change for constant and formula input fields, but produce an invalid input
+      in the case of `FieldElementwise` or `FieldPython` in order to mark these fields that must be 
+      fixed manually by the user.
+    
+    * Combined Neumann + Robin boundary condition. The separate BC types 'neumann' and 'robin' for 
+      the Darcy flow and the DG transport are replaced by the single BC type 'total_flux'. 
+      Moreover, DG transport supports BC type 'diffusive_flux' which applies only to 
+      the diffusion-dispersion boundary flux.
+    
+    
+    * Rename couplings to: 'Coupling_OperatorSplitting', 'Coupling_Sequential'
+    
+    * 'Coupling_Sequantial' have keys 'flow_equation', 'solute_equation', 'heat_equation' instead of 
+    'primary_equation' and 'secondary_equation'.
+    
+    * Rename equations to: 'Flow_Darcy_MH', 'Flow_Richards_LMH', Solute_AdvectionDiffusion_DG', 'Solute_Advection_FV', 'Heat_AdvectionDiffusion_DG',
+    
+     
+     * Move setting of the Solute_Advection_FV and Solute_AdvectionDiffusion_DG under the 
+       key 'transport' of the Coupling_OperatorSplitting. This is necessary to allow coupling
+       of reactions with the diffusive transport.
+         
+    
+     * Modification of the mesh setting. Regions and region sets are now treated equally, the term "region"
+       now means the set of elementary regions, i.e. what was the region set up to now. Regions are imported
+       from the mesh (named physical group in GMSH), further regions may be created by operations in the 
+       list: /problem/mesh/regions; which now support operations from both previous lists:
+           /problem/mesh/regions and /problem/mesh/sets     
+    
+     * Remove the key 'r_set' from the field descriptors. Use the key 'region' instead. Moreover, 
+       list of region labels may be used.
+     
+     * Flow_Darcy_MH dynamicaly switch between steady and unsteady behavior according to the value of the 
+     'storativity' field. Zero value (default) force the steady model. Similarly for the Flow_Richards_LMH 
+     however both fields 'storativity' and 'water_content_saturated' must be zero (default).
+     
+     * Rename the key 'solver' of the flow equations to 'linear_solver'  and move it under the 
+      new key 'nonlinear_solver'.
+    
+     * Add HTML format of the generated documentation to the structure of the input file.
+     
+     
+     
+
+### New features
+* DG - Reactions operator splitting.
+* 'total_flux' combined Neumann and Robin BC for the flow equations.
+* 'seepage_face' and 'river' boundary conditions for the flow equations
+* 'total_flux' combined Neumann and Robin BC and 'diffusive_flux' the Solute_AdvectionDiffusion_DG equation.
+* Coupling of the Solute_AdvectionDiffusion_DG model with the general reaction term via operator splitting.
+* Using stable Pade aproximant for Decays and FirstOrderReaction.
+* Make whole reaction term models unconditionaly stable (no additional time step constraints).
+* Use conservative formulation in Solute_Advection_FV, allow time dependent 'porosity' and 'cross_section' fields.
+* Use PETSc 3.6
+
+
+
+### Bug fixes
+* Fix bug in treatment of the paths given by -i and -o command line arguments.
+* Fix calculation of the dispersivity for small velocities in Solute_AdvectionDiffusion_DG.
+* Allow arbitrary sources in Solute_Advection_FV, set CFL condition appropriately.
+
+### Internals:
+* Introduce generic input types, allow simplification of the documentation.
+* Introduce attributes for input types and record keys, allow passing additional information to exteranal 
+  applications, e.g. GeoMop.
+* Introduce input type Tuple.
+* YAML input reader.
+* Treat Input::Abstract as an interface. Allow Record derived from more abstracts (interfaces).
+  Input::Abstract have no keys and is not derived from the Record anymore.
+* Adopt the linear algebra classes from the deal.ii project.
+* Memory profiler.
+* Consistent usage of the ReferenceElement class, to get numbering and orientation of various geometry entities.
+* Display code coverage of unit tests on Jenkins build server interface.
+* Input::Factory mechanism is used for constructing objects according to the input. Reduce dependencies of sources.
+* Executable wrappers dealing with compatibility of the shared libraries.
+* General default values (JSON format).
+
+
+
 ************************************************
 
 #Flow123d version 1.8.2

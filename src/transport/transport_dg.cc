@@ -33,6 +33,7 @@
 #include "coupling/balance.hh"
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
+#include "io/equation_output.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);
 FLOW123D_FORCE_LINK_IN_CHILD(heatModel);
@@ -69,19 +70,20 @@ const Selection & TransportDG<Model>::EqData::get_output_selection() {
 
 template<class Model>
 const Record & TransportDG<Model>::get_input_type() {
+    std::string equation_name = std::string(Model::ModelEqData::name()) + "_DG";
 	return Model::get_input_type("DG", "DG solver")
 		.declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
 				"Linear solver for MH problem.")
 		.declare_key("input_fields", Array(
 		        TransportDG<Model>::EqData()
-		            .make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")),
+		            .make_field_descriptor_type(equation_name)),
 		        IT::Default::obligatory(),
 		        "Input fields of the equation.")
 		.declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("\"non-symmetric\""),
 				"Variant of interior penalty discontinuous Galerkin method.")
 		.declare_key("dg_order", Integer(0,3), Default("1"),
 				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
-
+/*
 		.declare_key("output_fields",
 		        Array(
 		            // Get selection name and description from the model
@@ -93,6 +95,11 @@ const Record & TransportDG<Model>::get_input_type() {
                     .close()),
 				Default(Model::ModelEqData::default_output_field()),
 				"List of fields to write to output file.")
+*/
+        .declare_key("output",
+                EqData().output_fields.make_output_type(equation_name, ""),
+                IT::Default("{ fields: [ " + Model::ModelEqData::default_output_field() + "] }"),
+                "Setting of the field output.")
 		.close();
 }
 
@@ -230,7 +237,9 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
 
+
     // add all input fields to the output list
+    output_fields += *this;
 
 }
 
@@ -261,7 +270,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     // create finite element structures and distribute DOFs
     feo = new FEObjects(Model::mesh_, dg_order);
-    DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
+    //DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
 
 }
 
@@ -326,9 +335,7 @@ void TransportDG<Model>::initialize()
 	}
 
     // set time marks for writing the output
-	Model::output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
-    Model::output_stream_->mark_output_times(*Model::time_);
-
+    data_.output_fields.initialize(Model::output_stream_, input_rec.val<Input::Record>("output"), this->time());
 
     // allocate matrix and vector structures
     ls    = new LinSys*[Model::n_substances()];
@@ -634,14 +641,16 @@ void TransportDG<Model>::calculate_concentration_matrix()
 template<class Model>
 void TransportDG<Model>::output_data()
 {
-    if (!Model::time_->is_current( Model::time_->marks().type_output() )) return;
+    //if (!Model::time_->is_current( Model::time_->marks().type_output() )) return;
+
 
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
-    output_vector_gather();
-    data_.subset(FieldFlag::allow_output).set_time( Model::time_->step(), LimitSide::left);
-    data_.output(Model::output_stream_);
+    data_.output_fields.set_time( this->time().step(), LimitSide::left);
+    if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
+        output_vector_gather();
+    data_.output_fields.output(this->time().step());
 
 	Model::output_data();
 

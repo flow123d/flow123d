@@ -31,8 +31,9 @@ using namespace std;
 #include "fields/field_common.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field_flag.hh"
-#include "io/output_time.hh"
+//#include "io/output_time.hh"
 
+class OutputTime;
 
 namespace IT=Input::Type;
 
@@ -216,6 +217,10 @@ public:
      */
     void output(std::shared_ptr<OutputTime> stream) override;
 
+    /**
+     * Implementation of FieldCommonBase::observe_output().
+     */
+    void observe_output(std::shared_ptr<Observe> observe) override;
 
     /**
      * Returns true, if field is currently set to a time in which it is discontinuous.

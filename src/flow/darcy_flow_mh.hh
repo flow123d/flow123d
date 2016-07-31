@@ -154,8 +154,6 @@ public:
         enum BC_Type {
             none=0,
             dirichlet=1,
-            //neumann=2,
-            //robin=3,
             total_flux=4,
             seepage=5,
             river=6
@@ -326,7 +324,6 @@ protected:
 
     MortarMethod mortar_method_;
 
-    /// object for calculation and writing the water balance to file.
     std::shared_ptr<Balance> balance_;
     /// index of water balance within the Balance object.
     unsigned int water_balance_idx_;

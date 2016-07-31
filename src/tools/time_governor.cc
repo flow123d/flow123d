@@ -114,6 +114,12 @@ bool TimeStep::safe_compare(double t1, double t0) const
 
 
 
+ostream& operator<<(ostream& out, const TimeStep& t_step) {
+    out << "time: " << t_step.end() << "step: " << t_step.length() << endl;
+}
+
+
+
 TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_type)
 {
     // use new mark type as default
@@ -335,6 +341,13 @@ void TimeGovernor::add_time_marks_grid(double step, TimeMark::Type mark_type) co
 	// always add start time and end time
 	marks().add(TimeMark(init_time_, mark_type | eq_mark_type_));
 	marks().add(TimeMark(end_time(), mark_type | eq_mark_type_));
+}
+
+
+bool TimeGovernor::is_current(const TimeMark::Type &mask) const
+{
+    TimeMark::Type type = equation_mark_type() | mask;
+    return time_marks_.current(step(), type) != time_marks_.end(type);
 }
 
 

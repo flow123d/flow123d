@@ -32,6 +32,11 @@ Boundary::Boundary()
 {}
 
 
+Region Boundary::region() {
+    return element()->region();
+}
+
+
 Element * Boundary::element() {
     return &( mesh_->bc_elements[bc_ele_idx_] );
 }

@@ -155,7 +155,7 @@ public:
 
 	void set_target_time(double target_time) override {};
 
-	void set_balance_object(boost::shared_ptr<Balance> balance) override;
+	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
     const vector<unsigned int> &get_subst_idx() override
 	{ return subst_idx; }

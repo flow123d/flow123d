@@ -77,7 +77,6 @@ it::Record & Application::get_input_type() {
 
 Application::Application( int argc,  char ** argv)
 : ApplicationBase(argc, argv),
-  main_input_dir_("."),
   main_input_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
@@ -90,21 +89,6 @@ Application::Application( int argc,  char ** argv)
     PythonLoader::initialize(argv[0]);
 #endif
 
-}
-
-
-void Application::split_path(const string& path, string& directory, string& file_name) {
-
-    size_t delim_pos=path.find_last_of(DIR_DELIMITER);
-    if (delim_pos < string::npos) {
-
-        // It seems, that there is some path in fname ... separate it
-        directory =path.substr(0,delim_pos);
-        file_name =path.substr(delim_pos+1); // till the end
-    } else {
-        directory = ".";
-        file_name = path;
-    }
 }
 
 
@@ -179,6 +163,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("log,l", po::value< string >()->default_value("flow123"), "Set base name for log files.")
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
+        ("no_signal_handler", "Turn off signal handling. Useful for debugging with valgrind.")
         ("no_profiler", "Turn off profiler output.")
         ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
 		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
@@ -248,10 +233,14 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         this->petsc_redirect_file_ = vm["petsc_redirect"].as<string>();
     }
 
+    if (vm.count("no_signal_handler")) {
+        this->signal_handler_off_ = true;
+    }
+
     // if there is "solve" option
+    string input_filename = ".";
     if (vm.count("solve")) {
-        string input_filename = vm["solve"].as<string>();
-        split_path(input_filename, main_input_dir_, main_input_filename_);
+        input_filename = vm["solve"].as<string>();
     }
 
     // possibly turn off profilling
@@ -270,7 +259,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // assumes working directory "."
-    FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
+    main_input_filename_ = FilePath::set_dirs_from_input(input_filename, input_dir, output_dir );
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();
@@ -407,10 +396,10 @@ int main(int argc, char **argv) {
         Application app(argc, argv);
         app.init(argc, argv);
     } catch (std::exception & e) {
-        std::cerr << e.what();
+        _LOG( Logger::MsgType::error ) << e.what();
         return ApplicationBase::exit_failure;
     } catch (...) {
-        std::cerr << "Unknown exception" << endl;
+        _LOG( Logger::MsgType::error ) << "Unknown exception" << endl;
         return ApplicationBase::exit_failure;
     }
 
