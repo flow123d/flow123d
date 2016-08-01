@@ -56,9 +56,14 @@ TEST(PythonLoader, test_embedded_python) {
     FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
     PythonLoader::initialize();
     
-    string embedded_path = "build_tree/lib";
+    // get system variable PYTHONPATH if exists
+    // and hand it to embedded python 
     char* pPath = getenv("PYTHONPATH");
-    PySys_SetPath(pPath);
+    if (pPath != NULL) {
+        PySys_SetPath(pPath);
+    }
+    
+    string embedded_path = "build_tree/lib";
     PyObject * arguments = PyTuple_New (0);
     PyObject * module = PythonLoader::load_module_from_file(string(UNIT_TESTS_SRC_DIR) + "/system/python_embedded.py");
     PyObject * callable  = PythonLoader::get_callable (module, "test");
@@ -67,7 +72,6 @@ TEST(PythonLoader, test_embedded_python) {
     
     if (PyString_Check(result)) {
         string result_string = string(PyString_AsString(result));
-        cout << "result: " << endl << result_string << endl;
         
         stringstream lines(result_string);
         string line;
