@@ -107,6 +107,9 @@ private:
     /// If true, we do output of profiling information.
     bool use_profiler;
 
+    /// If true, preserves output of balance in YAML format.
+    bool yaml_balance_output_;
+
     /// root input record
     Input::Record root_record;
 };

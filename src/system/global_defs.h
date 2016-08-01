@@ -26,7 +26,7 @@
 #include "system/exc_common.hh"
 #include "config.h"
 #include "mpi.h"
-#include "asserts.hh"
+#include "logger.hh"
 
 /*! @brief Debugging macros.
  *
@@ -79,6 +79,9 @@
 #define  FLOW123D_DEBUG_PROFILER
 
 #endif
+
+
+#include "asserts.hh"
 
 
 
