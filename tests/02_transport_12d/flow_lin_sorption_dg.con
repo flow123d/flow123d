@@ -3,13 +3,20 @@
     TYPE = "SequentialCoupling", 
     description = "Test2 - Transport 1D-2D (convection, dual porosity, sorption)", 
     mesh = {
-      mesh_file = "./input/test2.msh",
+      mesh_file = "./input/compatible.msh",
       sets = [
           {
             name = "subset",
-            region_ids = [
-                48,
-                184
+            region_labels = [
+                "2d",
+                "1d"
+            ]
+          },
+          {
+            name = ".sides",
+            region_labels = [
+                ".2d",
+                ".1d"
             ]
           }
         ]
@@ -19,17 +26,21 @@
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { rid = 48,
+        { region = "1d",
           anisotropy = 10,
           sigma = 0.05,
           cross_section = { TYPE="FieldFormula", value="0.1+x/10" }
         },
-        { rid = 184,
+        { region = "2d",
           anisotropy = 1,
           cross_section = 1
         },
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test2.fbc"
+        { region = ".sides",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x"
+          }
         }
       ],
 
@@ -37,8 +48,13 @@
 
       output = {
         output_stream = {
-          REF = "/system/output_streams/0"
-        }, 
+          file = "./test2.pvd", 
+          format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          }, 
+          name = "flow_output_stream"
+        },
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0", "region_id" ]
       }, 
       solver = {
@@ -53,7 +69,7 @@
 
       input_fields=[
         { 
-          r_set="BOUNDARY",
+          r_set=".sides",
           bc_conc = 1
         },
         {
@@ -61,12 +77,12 @@
           init_conc = 0,
           porosity= 0.25
         },
-        { rid = 184,
+        { region = "2d",
           rock_density = 2700,
           sorption_mult = [0.2,0]
         },
         { 
-          r_set="BOUNDARY",
+          r_set=".sides",
           time = 5,
           bc_conc = 0
         }
@@ -77,7 +93,13 @@
       solvent_density = 1000,
 
       output_stream = {
-        REF = "/system/output_streams/1"
+        file = "./transport_dg.pvd", 
+        format = {
+          TYPE = "vtk",
+          variant = "ascii"
+        }, 
+        time_step = 1,
+        name = "transport_output_stream"
       },
       
       output_fields=["conc", "region_id"],
@@ -98,29 +120,5 @@
         TYPE="Petsc"
       }
     }
-  }, 
-
-  system = {
-    output_streams = [
-      {
-        file = "./test2.pvd", 
-        format = {
-          TYPE = "vtk", 
-          variant = "ascii"
-        }, 
-        name = "flow_output_stream"
-      }, 
-      {
-        file = "./transport_dg.pvd", 
-        format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
-          variant = "ascii"
-        }, 
-        time_step = 1,
-        name = "transport_output_stream"
-      }
-    ]
   }
 }
