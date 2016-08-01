@@ -17,6 +17,7 @@
 
 #include "output_vtk.hh"
 #include "output_data_base.hh"
+#include "output_mesh_data.hh"
 #include "output_mesh.hh"
 
 #include <limits.h>
@@ -65,29 +66,15 @@ const Selection & OutputVTK::get_input_type_compression() {
 }
 
 
-const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::Record & >("vtk") +
+const int OutputVTK::registrar = Input::register_class< OutputVTK >("vtk") +
 		OutputVTK::get_input_type().size();
-
-
-OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
-{
-    this->enable_refinement_ = true;
-    this->fix_main_file_extension(".pvd");
-
-    if(this->rank == 0) {
-        this->_base_file.open(string(this->_base_filename).c_str());
-        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
-        LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
-    }
-
-    this->make_subdirectory();
-    this->write_head();
-}
 
 
 
 OutputVTK::OutputVTK()
-{}
+{
+    this->enable_refinement_ = true;
+}
 
 
 
@@ -107,6 +94,17 @@ int OutputVTK::write_data(void)
     if(this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
+    }
+
+    if (! this->_base_file.is_open()) {
+        this->fix_main_file_extension(".pvd");
+
+        this->_base_file.open(string(this->_base_filename).c_str());
+        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
+        LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
+
+        this->make_subdirectory();
+        this->write_head();
     }
 
     ostringstream ss;

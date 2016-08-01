@@ -8,12 +8,12 @@
 #ifndef REGION_SET_HH_
 #define REGION_SET_HH_
 
-#include "mesh/mesh.h"
+
 #include "mesh/region.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
 
-
+class Mesh;
 
 /**
  * Base class represented regions.

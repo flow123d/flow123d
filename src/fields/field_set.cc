@@ -172,7 +172,7 @@ void FieldSet::output(std::shared_ptr<OutputTime> stream) {
     // TODO: remove const_cast after resolving problems with const Mesh.
     Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
     DBGMSG("call make output stream\n");
-    stream->make_output_mesh(field_mesh, this);
+    stream->make_output_mesh(*field_mesh, *this);
     
     for(auto field : field_list)
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )

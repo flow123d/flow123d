@@ -117,6 +117,15 @@ public:
         { return safe_compare(other_time, end()); }
 
     /**
+      * Performs rounding safe comparison time (step) == other_time. See @fn gt
+      */
+    inline bool eq(double other_time) const
+        { return this->le(other_time) && this->ge(other_time); }
+
+    inline bool contains(double other_time) const
+        { return this->ge(other_time) && this->lt(other_time + length_); }
+
+    /**
      * Returns true if two time steps are exactly the same.
      */
     bool operator==(const TimeStep & other)
@@ -139,6 +148,8 @@ private:
     /// End time point of the time step.
     double end_;
 };
+
+std::ostream& operator<<(std::ostream& out, const TimeStep& t_step);
 
 
 
@@ -356,8 +367,8 @@ public:
     /**
      * Simpler interface to TimeMarks::is_current().
      */
-    inline bool is_current(const TimeMark::Type &mask) const
-        {return time_marks_.is_current(*this, equation_mark_type() | mask); }
+    bool is_current(const TimeMark::Type &mask) const;
+
 
     /**
      * Simpler interface to TimeMarks::next().
@@ -483,6 +494,12 @@ public:
     /// Infinity time used for steady case.
     static const double inf_time;
 
+    /**
+     *  Rounding precision for computing time_step.
+     *  Used as technical lower bound for the time step.
+     */
+    static const double time_step_precision;
+
 private:
 
 
@@ -495,12 +512,6 @@ private:
      * Set time marks for the start time and end time (if finite).
      */
     void init_common(double init_time, double end_time, TimeMark::Type type);
-
-    /**
-     *  Rounding precision for computing time_step.
-     *  Used as technical lower bound for the time step.
-     */
-    static const double time_step_precision;
 
     /**
      *  Size of the time step buffer, i.e. recent_time_steps_.
@@ -566,7 +577,8 @@ private:
  * streams for various log targets.
  *
  */
-ostream& operator<<(ostream& out, const TimeGovernor& tg);
+std::ostream& operator<<(std::ostream& out, const TimeGovernor& tg);
+
 
 
 #endif /* TIME_HH_ */

@@ -320,6 +320,12 @@ void PathJSON::remember_reference() {
 
 
 
+bool PathJSON::is_effectively_null() const {
+	return false;
+}
+
+
+
 std::ostream& operator<<(std::ostream& stream, const PathJSON& path) {
     path.output(stream);
     return stream;

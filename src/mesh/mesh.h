@@ -24,8 +24,8 @@
 #include "mesh/mesh_types.hh"
 
 #include "mesh/nodes.hh"
-#include "mesh/elements.h"
-#include "mesh/sides.h"
+//#include "mesh/elements.h"
+//#include "mesh/sides.h"
 #include "mesh/edges.h"
 #include "mesh/neighbours.h"
 #include "mesh/boundaries.h"
@@ -33,15 +33,11 @@
 #include "mesh/partitioning.hh"
 #include "mesh/region_set.hh"
 
+
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
-#include "boost/shared_ptr.hpp"
 #include "system/exceptions.hh"
 
-// Forward declarations
-template <int spacedim>
-class ElementAccessor;
-class GmshMeshReader;
 
 
 
@@ -278,6 +274,10 @@ public:
      */
     void check_and_finish();
     
+    const BIHTree &get_bih_tree();
+
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements;
 
 
 protected:
@@ -356,9 +356,6 @@ protected:
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
 
-    // For each node the vector contains a list of elements that use this node
-    vector<vector<unsigned int> > node_elements;
-
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
     unsigned int max_edge_sides_[3];
 
@@ -370,7 +367,12 @@ protected:
     /**
      * Mesh partitioning. Created in setup_topology.
      */
-    boost::shared_ptr<Partitioning> part_;
+    std::shared_ptr<Partitioning> part_;
+
+    /**
+     * BIH Tree for intersection and observe points lookup.
+     */
+    std::shared_ptr<BIHTree> bih_tree_;
     /**
      * Accessor to the input record for the mesh.
      */

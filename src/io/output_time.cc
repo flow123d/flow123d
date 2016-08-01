@@ -24,6 +24,8 @@
 #include "output_vtk.hh"
 #include "output_msh.hh"
 #include "output_mesh.hh"
+#include "io/output_time_set.hh"
+#include "io/observe.hh"
 #include <fields/field_set.hh>
 
 
@@ -36,50 +38,49 @@ using namespace Input::Type;
 const Record & OutputTime::get_input_type() {
     return Record("OutputStream", "Parameters of output.")
 		// The stream
-		.declare_key("file", FileName::output(), Default::obligatory(),
+		.declare_key("file", FileName::output(), Default::read_time("Name of the equation associated with the output stream."),
 				"File path to the connected output file.")
 				// The format
-		.declare_key("format", OutputTime::get_input_format_type(), Default::optional(),
+		.declare_key("format", OutputTime::get_input_format_type(), Default("{}"),
 				"Format of output stream and possible parameters.")
-		.declare_key("time_step", Double(0.0),
-				"Time interval between outputs.\n"
-				"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
-				"The start time and the end time are always added. ")
-		.declare_key("time_list", Array(Double(0.0)),
-				Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
-				"Explicit array of output time points (can be combined with 'time_step'.")
-		.declare_key("add_input_times", Bool(), Default("false"),
-				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
+		.declare_key("times", OutputTimeSet::get_input_type(), Default::optional(),
+		        "Output times used for equations without is own output times key.")
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
                 "Output mesh record enables output on a refined mesh.")
+        .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
+                "Array of observe points.")
 		.close();
 }
 
 
 Abstract & OutputTime::get_input_format_type() {
 	return Abstract("OutputTime", "Format of output stream and possible parameters.")
+	    .allow_auto_conversion("vtk")
 		.close();
 }
 
 
 OutputTime::OutputTime()
-: _mesh(nullptr)
-{}
-
-
-
-OutputTime::OutputTime(const Input::Record &in_rec)
 : current_step(0),
-    time(-1.0),
-    write_time(-1.0),
-    input_record_(in_rec),
-    _mesh(nullptr)
+  time(-1.0),
+  write_time(-1.0),
+  _mesh(nullptr)
 {
-    // Read output base file name
-    this->_base_filename = in_rec.val<FilePath>("file");
-    
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+}
 
+
+
+void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec)
+{
+    input_record_ = in_rec;
+    equation_name_ = equation_name;
+
+    // Read output base file name
+    // TODO: remove dummy ".xyz" extension after merge with DF
+    FilePath output_file_path(equation_name+".xyz", FilePath::output_file);
+    input_record_.opt_val("file", output_file_path);
+    this->_base_filename = output_file_path;
 }
 
 
@@ -98,19 +99,31 @@ OutputTime::~OutputTime(void)
 }
 
 
+Input::Iterator<Input::Array> OutputTime::get_time_set_array() {
+    return input_record_.find<Input::Array>("times");
+}
 
-void OutputTime::make_output_mesh(Mesh* mesh, FieldSet* output_fields)
+
+void OutputTime::make_output_mesh(Mesh &mesh, FieldSet &output_fields)
 {
+
+    // create observe object at first call
+    if (! observe_) {
+        auto observe_points = input_record_.val<Input::Array>("observe_points");
+        observe_ = std::make_shared<Observe>(this->equation_name_, mesh, observe_points);
+    }
+
+
     // already computed
     if(output_mesh_) return;
     
-    _mesh = mesh;
+    _mesh = &mesh;
 
     // Read optional error control field name
     auto it = input_record_.find<Input::Record>("output_mesh");
     
     if(enable_refinement_) {
-        if(it){
+        if(it) {
             output_mesh_ = std::make_shared<OutputMesh>(mesh, *it);
             output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh, *it);
             output_mesh_->select_error_control_field(output_fields);
@@ -173,71 +186,19 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec)
 {
 	std::shared_ptr<OutputTime> output_time;
 
-    Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
-
-    if(format) {
-    	output_time = (*format).factory< OutputTime, const Input::Record & >(in_rec);
-        output_time->format_record_ = *format;
-    } else {
-        output_time = Input::Factory< OutputTime, const Input::Record & >::instance()->create("OutputVTK", in_rec);
-    }
+    Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
+  	output_time = format.factory< OutputTime >();
+    output_time->init_from_input(equation_name, in_rec);
 
     return output_time;
 }
 
 
-void OutputTime::add_admissible_field_names(const Input::Array &in_array)
-{
-    vector<Input::FullEnum> field_ids;
-    in_array.copy_to(field_ids);
 
-    for (auto field_full_enum: field_ids) {
-        /* Setting flags to zero means use just discrete space
-         * provided as default in the field.
-         */
-        DiscreteSpaceFlags flags = 0;
-        this->output_names[(std::string)field_full_enum]=flags;
-    }
-}
-
-
-
-
-void OutputTime::mark_output_times(const TimeGovernor &tg)
-{
-	TimeMark::Type output_mark_type = tg.equation_fixed_mark_type() | tg.marks().type_output();
-
-	double time_step;
-	if (input_record_.opt_val("time_step", time_step)) {
-		tg.add_time_marks_grid(time_step, output_mark_type);
-	}
-
-	Input::Array time_list;
-	if (input_record_.opt_val("time_list", time_list)) {
-		vector<double> list;
-		time_list.copy_to(list);
-		for( double time : list) tg.marks().add(TimeMark(time, output_mark_type));
-	} else {
-	    tg.marks().add( TimeMark(tg.init_time(), output_mark_type) );
-	}
-
-	bool add_flag;
-	if (input_record_.opt_val("add_input_times", add_flag) && add_flag) {
-		TimeMark::Type input_mark_type = tg.equation_mark_type() | tg.marks().type_input();
-		vector<double> mark_times;
-		// can not add marks while iterating through time marks
-		for(auto it = tg.marks().begin(input_mark_type); it != tg.marks().end(input_mark_type); ++it)
-			mark_times.push_back(it->time());
-		for(double time : mark_times)
-			tg.marks().add( TimeMark(time, output_mark_type) );
-
-	}
-
-}
 
 
 void OutputTime::write_time_frame()
@@ -248,6 +209,9 @@ void OutputTime::write_time_frame()
     	// Write data to output stream, when data registered to this output
 		// streams were changed
 		if(write_time < time) {
+		    if (observe_)
+		        observe_->output_time_frame(time);
+
 			LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
 			write_data();
 			// Remember the last time of writing to output stream
@@ -263,6 +227,13 @@ void OutputTime::write_time_frame()
     }
     clear_data();
 }
+
+std::shared_ptr<Observe> OutputTime::observe()
+{
+    ASSERT(observe_).error("The 'make_output_mesh' must be called before the 'observe' getter.\n");
+    return observe_;
+}
+
 
 void OutputTime::clear_data(void)
 {

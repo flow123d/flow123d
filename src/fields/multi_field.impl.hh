@@ -22,6 +22,7 @@
 #include "multi_field.hh"
 #include "fields/field_algo_base.hh"
 #include "input/input_exception.hh"
+#include "io/observe.hh"
 
 namespace it = Input::Type;
 
@@ -187,6 +188,13 @@ void MultiField<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 		stream->register_data(this->output_type(), *this);
 }
 
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
+{
+    for(auto &field : sub_fields_) observe->compute_field_values(field);
+}
 
 
 

@@ -272,6 +272,10 @@ public:
      * Key has name given by parameter @p key, the type given by target of pointer @p type,
      * default value by parameter @p default_value, and with given @p description.
      * The parameter @p type points to a descendant of TypeBase.
+     *
+     * The optional attributes map may be provided, e.g.:
+     *
+     * declare_key("old_key", ..., { {Attribute::obsolete(), "Replaced by 'new_key'."} } )
      */
     Record &declare_key(const string &key, std::shared_ptr<TypeBase> type,
                             const Default &default_value, const string &description,
@@ -309,7 +313,7 @@ public:
      * as descendant of parent if Record is derived (for mechanism of set parent and
      * descendant see \p derive_from)
      */
-    const Record &close() const;
+    Record &close() const;
 
 
     /// Implements @p TypeBase::is_finished.

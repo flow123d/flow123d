@@ -50,14 +50,38 @@
 # set(BDDCML_ROOT "$ENV{HOME}/local/BDDCML/bddcml-2.2")
 
 ### Python setting ###############################################################
-# USE_PYTHON - only use python if this is set to "yes"
+# USE_PYTHON - use embedded python if this is set to "yes"
 # We add python library only on explicit request since it leads to tons of errors when debugging with valgrind.
 #
 # set(USE_PYTHON "yes")
 
 # PYTHON_COPY - make copy of python files, necessary for release builds
 # set(PYTHON_COPY "yes")
-
+#  - Following variables MUST ALSO BE SET:
+#    - PYTHON_ROOT
+#           - absolute path to python root e.g.:
+#             set(PYTHON_ROOT "/usr/lib/python2.7")
+#           
+#    - PYTHON_COPY_PACKAGES 
+#           - list of all core modules which will be copied
+#             each entry represents folder name realtive to root, e.g.:
+#             set(PYTHON_COPY_MODULES encodings json)
+#           - by default we want almost all basic packages to python can work 
+#             correctly, example:
+#             set(PYTHON_COPY_PACKAGES
+#                 bsddb compiler ctypes curses distutils email encodings hotshot importlib 
+#                 json lib-dynload lib-tk lib2to3 logging multiprocessing plat-linux2
+#                 plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
+#            If value is not specified, value from above will be used
+#    - PYTHON_SYSPATH
+#           - list of all paths which are later on added on wrappers (necessary 
+#             for python to run (3rd party) and other modules). Values are relative
+#             to PYTHON_ROOT. Some path are generated automatically during
+#             installation.
+#             set(PYTHON_SYSPATH
+#                 plat-x86_64-linux-gnu plat-linux2 lib-tk lib-old lib-dynload
+#                 dist-packages site-packages)
+#            If value is not specified, value from above will be used
 
 ### Boost ######################
 # Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system

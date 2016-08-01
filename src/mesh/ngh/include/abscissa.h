@@ -22,6 +22,7 @@
 #include "point.h"
 #include "mesh/bounding_box.hh"
 
+
 class TAbscissa : public TBisector {
 private:
     static int numberInstance;

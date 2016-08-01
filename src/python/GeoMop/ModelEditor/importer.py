@@ -44,18 +44,29 @@ if __name__ == "__main__":
                                  'processed after import')
         parser.add_argument('--destination-file', nargs='?', default=None,
                             help='The destination file if is different from source file')
-        parser.add_argument('--con_file', help='CON input file', required=True)
+        parser.add_argument('--con_file', help='CON input file', nargs='?')
+        parser.add_argument('--yaml_file', help='YAML input file', nargs='?')
         args = parser.parse_args()
 
+        #print(args.con_file, args.yaml_file )
+        # read input file
+        cfg.init(None)        
+        if args.con_file:
+            cfg.import_file(args.con_file)
+            source_file = args.con_file
+        elif args.yaml_file:
+            cfg.open_file(args.yaml_file)
+            source_file = args.yaml_file
+
+        # check destination file
         if args.destination_file:
             file = args.destination_file
         else:
-            file = os.path.splitext(args.con_file)[0] + '.yaml'  # replace extension
+            file = os.path.splitext(source_file)[0] + '.yaml'  # replace extension
         if os.path.isfile(file):
             raise Exception("File already exists")
 
-        cfg.init(None)
-        cfg.import_file(args.con_file)
+        # apply traansformations        
         if args.transformation_name is not None:
             for transf in args.transformation_name:
                 cfg.transform(transf)
