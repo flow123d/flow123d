@@ -3,6 +3,7 @@
 # author:   Jan Hybs
 # 
 # Simple python script testing embedded python functionality
+from __future__ import absolute_import
 
 def test():
     import os, sys, site, json, binascii
