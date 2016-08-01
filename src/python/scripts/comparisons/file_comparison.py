@@ -11,8 +11,8 @@ class CompareNdiff(object):
     def get_command(f1, f2, **details):
         return [
             Paths.ndiff(),
-            '-r', str(details.get('r_tol', '100.01')),
-            '-a', str(details.get('a_tol', '100.0001')),
+            '-r', str(details.get('r_tol', '0.01')),
+            '-a', str(details.get('a_tol', '0.0001')),
             Paths.abspath(f1),
             Paths.abspath(f2)
         ]

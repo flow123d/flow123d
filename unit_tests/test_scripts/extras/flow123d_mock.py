@@ -40,7 +40,7 @@ time.sleep(float(options.time))
 if options.solve:
     solve_name = os.path.basename(options.solve)
     solve_dir = os.path.dirname(options.solve)
-    ref = os.path.join(solve_dir, 'ref_output', solve_name[:solve_name.find('.')])
+    ref = os.path.join(solve_dir, 'ref_out', solve_name[:solve_name.find('.')])
     out = os.path.join(solve_dir, 'test_results', solve_name[:solve_name.find('.')])
 
     # clean on demand

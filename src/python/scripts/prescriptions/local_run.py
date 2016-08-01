@@ -11,6 +11,8 @@ from scripts.prescriptions import AbstractRun
 from scripts.comparisons import file_comparison
 # ----------------------------------------------
 
+REF_OUTPUT_DIR = 'ref_out'
+
 
 class LocalRun(AbstractRun):
     def __init__(self, case):
@@ -61,7 +63,7 @@ class LocalRun(AbstractRun):
                     pm.executor.output = OutputMode.variable_output()
                     pm.full_output = self.case.fs.ndiff_log
 
-                    path = Paths.path_end_until(pair[0], 'ref_output')
+                    path = Paths.path_end_until(pair[0], REF_OUTPUT_DIR)
                     test_name = Paths.basename(Paths.dirname(Paths.dirname(self.case.fs.ref_output)))
                     size = Paths.filesize(pair[0], True)
                     pm.name = '{}: {} ({})'.format(test_name, path, size)
