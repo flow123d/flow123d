@@ -53,15 +53,16 @@ FilePath::FilePath(string file_path, const  FileType ft)
         return;
     }
 
+    bool is_abs_path = boost::filesystem::path( convert_for_check_absolute(file_path) ).is_absolute();
     substitute_value(file_path);
 	abs_file_path_ = std::make_shared<boost::filesystem::path>(file_path);
     if (ft == input_file) {
-    	if ( abs_file_path_->is_absolute() ) {
+    	if ( is_abs_path ) {
     	} else {
             abs_file_path_ = std::make_shared<boost::filesystem::path>(*root_dir / file_path);
     	}
     } else if (ft == output_file) {
-        if ( abs_file_path_->is_absolute() ) {
+        if ( is_abs_path ) {
             if (abs_file_path_->string().substr(0, output_dir->string().size()) == output_dir->string()) {
             	abs_file_path_ = std::make_shared<boost::filesystem::path>( abs_file_path_->string().substr(output_dir->string().size()+1) );
             } else {
@@ -97,7 +98,7 @@ void FilePath::set_io_dirs(const string working_dir, const string root, const st
 
 void FilePath::set_dirs(const string root, const string input, const string output) {
     // root directory
-	if (boost::filesystem::path(root).is_absolute()) {
+	if (boost::filesystem::path( convert_for_check_absolute(root) ).is_absolute()) {
 		root_dir = std::make_shared<boost::filesystem::path>(root);
 	} else {
 		boost::filesystem::path abs_root_path = boost::filesystem::canonical( boost::filesystem::current_path() / root );
@@ -108,18 +109,21 @@ void FilePath::set_dirs(const string root, const string input, const string outp
 	// if param output is absolute output_dir = output
 	// else output_dir = root / output
 	// the resulting relative path is always completed to absulute path
-	boost::filesystem::path output_path = boost::filesystem::path(output);
 	boost::filesystem::path full_output_path;
-    if ( !output_path.is_absolute() ) {
-    	full_output_path = boost::filesystem::path(root) / output_path;
+    if ( !boost::filesystem::path( convert_for_check_absolute(output) ).is_absolute() ) {
+    	if (boost::filesystem::path( convert_for_check_absolute(root) ).is_absolute()) {
+    		full_output_path = boost::filesystem::path(root) / output;
+    	    boost::filesystem::create_directories(full_output_path);
+    	} else {
+    		boost::filesystem::path output_path = boost::filesystem::path(root) / output;
+    		boost::filesystem::create_directories( output_path );
+    		full_output_path = boost::filesystem::canonical( boost::filesystem::current_path() / output_path);
+    	}
     } else {
-    	full_output_path = output_path;
+    	full_output_path = boost::filesystem::path(output);
+        boost::filesystem::create_directories(full_output_path);
     }
-    boost::filesystem::create_directories(full_output_path);
-	if ( !full_output_path.is_absolute() ) {
-    	full_output_path = boost::filesystem::canonical( boost::filesystem::current_path() / full_output_path );
-	}
-	output_dir = std::make_shared<boost::filesystem::path>(full_output_path);
+	output_dir = std::make_shared<boost::filesystem::path>( full_output_path );
 
 	// the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);
@@ -127,9 +131,11 @@ void FilePath::set_dirs(const string root, const string input, const string outp
 
 
 string FilePath::set_dirs_from_input(const string main_yaml, const string input, const string output) {
-	boost::filesystem::path input_path(main_yaml);
-	if ( !input_path.is_absolute() ) {
+	boost::filesystem::path input_path;
+	if ( !boost::filesystem::path( convert_for_check_absolute(main_yaml) ).is_absolute() ) {
     	input_path = boost::filesystem::path(".") / main_yaml;
+    } else {
+    	input_path = boost::filesystem::path(main_yaml);
     }
 	FilePath::set_dirs(input_path.parent_path().string(), input, output);
 
@@ -192,6 +198,17 @@ string FilePath::extension() const {
 string FilePath::cut_extension() const {
 	boost::filesystem::path path = abs_file_path_->parent_path() / abs_file_path_->stem();
 	return path.string();
+}
+
+
+string FilePath::convert_for_check_absolute(const string path) {
+	ASSERT(path.length()).error("Empty path.");
+
+	if (path[0] == '/') {
+		return "/" + path;
+	} else {
+		return path;
+	}
 }
 
 

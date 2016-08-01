@@ -184,6 +184,15 @@ private:
      */
     void substitute_value(string &path);
 
+    /**
+     * @brief Prepare path string for check absolute path.
+     *
+     * Check first char of path string. If it is slash '/', add second slash char. Two slashes
+     * at begin is necessary for correct output of boost::filesystem::path.is_absolute() method
+     * for detection absolute path in unix format ("/home/x/y/z") under cygwin.
+     */
+    static string convert_for_check_absolute(string path);
+
 
     /// Final absolute path to the file.
     std::shared_ptr<boost::filesystem::path> abs_file_path_;

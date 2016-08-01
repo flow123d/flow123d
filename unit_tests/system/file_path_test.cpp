@@ -93,7 +93,6 @@ TEST(FilePath, output_relative) {
     //EXPECT_DEATH( {FilePath("input/${INPUT}/init.in", FilePath::input_file);},
     //        "Creating FileName object before set_io_dirs is called.");
 
-    boost::filesystem::create_directories("./main_root");
     FilePath::set_io_dirs(".", "./main_root", "variant_input", "../output_root");
 
     { // relative output_dir x relative output substitution
@@ -207,7 +206,7 @@ TEST(FilePath, input_absolute) {
 TEST(FilePath, create_output_dir) {
     //::testing::FLAGS_gtest_death_test_style = "threadsafe";
     boost::filesystem::remove_all("./my_output");
-    FilePath::set_io_dirs(".","", "my_input", "my_output");
+    FilePath::set_io_dirs(".",".", "my_input", "my_output");
     EXPECT_TRUE(boost::filesystem::is_directory("./my_output"));
     FilePath fp("subdir/some_file.xyz", FilePath::output_file);
     fp.create_output_dir();
