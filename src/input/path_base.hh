@@ -106,6 +106,9 @@ public:
     /// Get set of keys of head type record, if head type is not record return false
     virtual bool get_record_key_set(std::set<std::string> &) const =0;
 
+    /// Check empty Input Type Record, necessary for correct proccess of YAML output, for JSON has no effect
+    virtual bool is_effectively_null() const =0;
+
     /// Get size of array (sequence type), if object is not array return -1
     virtual int get_array_size() const =0;
 

@@ -8,8 +8,8 @@
 #define FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 #define FEAL_OVERRIDE_ASSERTS
 
-#include "system/exceptions.hh"
 #include <flow_gtest.hh>
+#include "system/exceptions.hh"
 
 #include <string>
 #include <iostream>
@@ -132,6 +132,52 @@ TEST(Exceptions, InnerClass) {
 }
 
 
+//------------------------------------------------------------------------
+namespace Inner {
+class NestedExc {
+public:
+    TYPEDEF_ERR_INFO(EI_Time, double);
+    TYPEDEF_ERR_INFO(EI_Step, unsigned int);
+    TYPEDEF_ERR_INFO(EI_Name, std::string);
+    DECLARE_EXCEPTION(ExcFirstLevel, << EI_Name::qval);
+    DECLARE_EXCEPTION(ExcSecondLevel, << EI_Step::val);
+    DECLARE_EXCEPTION(ExcThirdLevel, << EI_Time::val);
+
+    void third_level() {
+        THROW( ExcThirdLevel() << EI_Time(0.5) );
+    }
+
+    void second_level() {
+        try {
+        	third_level();
+        } catch (ExcThirdLevel &e) {
+        	THROW( ExcSecondLevel() << EI_Step(1) << make_nested_ei(e) );
+        }
+    }
+
+    void first_level() {
+        try {
+        	second_level();
+        } catch (ExcSecondLevel &e) {
+        	THROW( ExcFirstLevel() << EI_Name("Test") << make_nested_ei(e) );
+        }
+    }
+
+};
+} // namespace Inner
+//----------------------------------------------------------------------------
+
+// Test of EI_Nested tag
+TEST(Exceptions, NestedExc) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    try {
+    	Inner::NestedExc nested;
+    	nested.first_level();
+    } catch (Inner::NestedExc::ExcFirstLevel &e) {
+        std::cout << e.what();
+    }
+}
+
 
 //------------------------------------------------------------------------
 class BlackBox {
@@ -228,17 +274,5 @@ TEST(FealAssert, assert) {
     	EXPECT_THROW_WHAT( { ASSERT_EQ(i, j).error(); }, feal::Exc_assert, "Expression: 'i == j'" );
     	EXPECT_THROW( { ASSERT_PTR(empty).error(); }, feal::Exc_assert );
     }
-
-}
-
-TEST(FealAssert, warning) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-    std::string s1 = "feal";
-    std::string s2 = "assert";
-    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Strings must be empty.");
-
-    // shorter version of macro - "ASSERT" - is not in conflict with external library
-    ASSERT(0).warning("Zero value.");
 
 }

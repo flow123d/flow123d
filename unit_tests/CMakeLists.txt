@@ -94,7 +94,7 @@ macro(define_test class_name)
   
   # rule to run the test
   add_custom_target(${test_name} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/pythonenv.sh ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -139,7 +139,7 @@ macro(define_mpi_test class_name n_proc)
   # set(RUN_COMMAND ulimit -t 300\; )
   # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")  
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/pythonenv.sh ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       	      
@@ -214,4 +214,3 @@ add_custom_command(OUTPUT ${JENKINS_JOBS_FILE}
                   DEPENDS jenkins_jobs_template.yaml
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
-

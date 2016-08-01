@@ -17,6 +17,7 @@
 
 
 #include "system/asserts.hh"
+#include "system/logger.hh"
 
 
 namespace feal {
@@ -32,7 +33,7 @@ Exc_assert::Exc_assert()
 void Exc_assert::print_info(std::ostringstream &out) const
 {
 	out << std::endl << "> In file: " << file_name_ << "(" << line_ << "): Throw in function " << function_ << std::endl;
-	out << "> Expression: \'" << expression_ << "\'" << std::endl;
+	out << "> Expression: \'" << expression_ << "\'" << "\n";
 	if (current_val_.size()) {
 		out << "> Values:" << std::endl;
 		for (auto val : current_val_) {
@@ -44,6 +45,19 @@ void Exc_assert::print_info(std::ostringstream &out) const
 
 std::string Exc_assert::what_type_msg() const {
 	return what_type_msg_;
+}
+
+
+std::ostringstream &Exc_assert::form_message(std::ostringstream &converter) const {
+
+    converter << "--------------------------------------------------------" << std::endl;
+    converter << this->what_type_msg();
+    print_info(converter);
+
+    print_stacktrace(converter);
+    converter << std::endl << "--------------------------------------------------------" << std::endl;
+
+    return converter;
 }
 
 
@@ -81,8 +95,10 @@ void Assert::error(std::string error_msg)
 void Assert::warning(std::string warning_msg)
 {
 	thrown_ = true;
-	exception_.what_type_msg_ = "Warning: " + warning_msg;
-	std::cerr << exception_.what();
+	std::ostringstream info_str, stack_str;
+	exception_.print_info(info_str);
+	exception_.print_stacktrace(stack_str);
+	WarningOut() << warning_msg << info_str.str() << StreamMask::log << stack_str.str();
 }
 
 } // namespace feal

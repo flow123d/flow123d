@@ -140,11 +140,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         return storage;
     }
 
-    // return Null storage if there is null on the current location
-    if (p.is_null_type())
-        return new StorageNull();
-
-    // dispatch types
+    // dispatch types - complex types
     if (typeid(*type) == typeid(Type::Tuple)) {
         return make_storage(p, static_cast<const Type::Tuple *>(type) );
     } else
@@ -153,7 +149,17 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
     } else
     if (typeid(*type) == typeid(Type::Array)) {
         return make_storage(p, static_cast<const Type::Array *>(type) );
-    } else
+    } else {
+    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
+    	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
+    }
+
+    // return Null storage if there is null on the current location
+	if (p.is_null_type()) {
+		return new StorageNull();
+	}
+
+    // dispatch types - scalar types
     if (typeid(*type) == typeid(Type::Integer)) {
         return make_storage(p, static_cast<const Type::Integer *>(type) );
     } else
@@ -166,14 +172,11 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
     if (typeid(*type) == typeid(Type::Selection)) {
         return make_storage(p, static_cast<const Type::Selection *>(type) );
     } else {
-    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
-    	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
-
         const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) return make_storage(p, string_type );
 
         // default -> error
-        xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
+        THROW( Type::ExcUnknownDescendant() << Type::EI_TypeName(typeid(type).name()) );
     }
 
     return new StorageNull();
@@ -183,7 +186,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *record)
 {
 	std::set<string> keys_to_process;
-	if ( p.get_record_key_set(keys_to_process) ) {
+	bool effectively_null = p.is_effectively_null();
+	if ( p.get_record_key_set(keys_to_process) || effectively_null ) {
         std::set<string>::iterator set_it;
 
         /*Type::Record::KeyIter key_it;
@@ -212,7 +216,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         		keys_to_process.erase(set_it);
         	}
 
-            if ( p.down(it->key_) ) {
+            if ( !effectively_null && p.down(it->key_) ) {
                 // key on input => check & use it
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
@@ -237,7 +241,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         }
 
         for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
-        	xprintf(Warn, "Unprocessed key '%s' in %s '%s'.\n", (*set_it).c_str(), record->class_name().c_str(), p.as_string().c_str() );
+        	WarningOut() << "Unprocessed key '" << (*set_it) << "' in " << record->class_name()
+        			<< " '" << p.as_string() << "'." << std::endl;
         }
 
         return storage_array;
@@ -635,7 +640,10 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
 
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration
-        xprintf(Msg, "Wrong default value while reading an input stream:\n");
+    	e << Type::EI_Desc("Wrong default value while reading an input stream:\n");
+        e << EI_KeyName("UNKNOWN KEY");
+        throw;
+    } catch (Input::Type::ExcWrongDefaultJSON & e) {
         e << EI_KeyName("UNKNOWN KEY");
         throw;
     }

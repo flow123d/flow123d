@@ -1839,7 +1839,7 @@ void DarcyMH::setup_time_term() {
         local_diagonal[i_loc_row]= - diagonal_coeff / time_->dt();
 
         if (balance_ != nullptr)
-        	balance_->add_mass_matrix_values(water_balance_idx_, ele->region().bulk_idx(), {i_loc_row}, {diagonal_coeff});
+        	balance_->add_mass_matrix_values(water_balance_idx_, ele->region().bulk_idx(), {row_4_el[el_4_loc[i_loc_el]]}, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);

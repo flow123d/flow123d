@@ -58,9 +58,9 @@
 # PYTHON_COPY - make copy of python files, necessary for release builds
 # set(PYTHON_COPY "yes")
 #  - Following variables MUST ALSO BE SET:
-#    - PYTHON_COPY_ROOT
+#    - PYTHON_ROOT
 #           - absolute path to python root e.g.:
-#             set(PYTHON_COPY_ROOT "/usr/lib/python2.7")
+#             set(PYTHON_ROOT "/usr/lib/python2.7")
 #           
 #    - PYTHON_COPY_PACKAGES 
 #           - list of all core modules which will be copied
@@ -72,26 +72,12 @@
 #                 bsddb compiler ctypes curses distutils email encodings hotshot importlib 
 #                 json lib-dynload lib-tk lib2to3 logging multiprocessing 
 #                 plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
-#             
-#   - PYTHON_COPY_DIST_PACKAGES
-#           - list of all 3rd party packages (installed using pip or other tool)
-#             each entry is either
-#                - relative path:
-#                   - relativity is taken towards PYTHON_COPY_ROOT
-#                   - all relativity is kept during copy so dist-packages/yaml
-#                     will create folder dist-packages/yaml
-#                - absolute path:
-#                   - only last 2 folders are taken into account for relativity
-#                     (we cannot conclusively estimate where relativity begins)
-#                     e.g. /usr/local/lib/dist-packages/markdown
-#                     will create folder dist-packages/markdown
-# - PYTHON_SYSPATH
-#          - list of all path which should be added to PYTHONPATH after python
-#            is copied out. Values MUST BE relative to PYTHON_COPY_DESTINATION
-#            which is in build_tree/lib/python2.7
-#          - example of syspath for ubuntu based system:
-#            set(PYTHON_SYSPATH
-#                plat-x86_64-linux-gnu lib-tk lib-old lib-dynload dist-packages site-packages)
+#    - PYTHON_SYSPATH
+            - list of all paths which are necessary for python to run (3rd party)
+              in /lib/python2.7 folder (some path are generated automatically)
+              set(PYTHON_SYSPATH
+                  plat-linux2 lib-tk lib-old lib-dynload
+                  dist-packages site-packages)
 
 
 ### Boost ######################

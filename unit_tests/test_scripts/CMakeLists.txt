@@ -7,6 +7,10 @@ execute_process(COMMAND
     ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/extras/ ${CMAKE_CURRENT_BINARY_DIR}/extras/)
 add_executable(consumer_cc EXCLUDE_FROM_ALL extras/consumer.cc) 
 
+
+# find python 2.7
+find_package(PythonInterp 2.7 REQUIRED)
+
 # Custom target which runs all tests for python scripts. By default output is hidden (flag -b)
 # but on error it is displayed (sufficient for all applications)
 add_custom_target(test_scripts

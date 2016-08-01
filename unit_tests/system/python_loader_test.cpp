@@ -50,6 +50,44 @@ TEST(PythonLoader, print_error) {
 }
 
 
+// only test embedded python if we actually copied out python
+#ifdef FLOW123D_PYTHON_COPY
+TEST(PythonLoader, test_embedded_python) {
+    FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
+    PythonLoader::initialize();
+    
+    // get system variable PYTHONPATH if exists
+    // and hand it to embedded python 
+    char* pPath = getenv("PYTHONPATH");
+    if (pPath != NULL) {
+        PySys_SetPath(pPath);
+    }
+    
+    string embedded_path = "build_tree/lib";
+    PyObject * arguments = PyTuple_New (0);
+    PyObject * module = PythonLoader::load_module_from_file(string(UNIT_TESTS_SRC_DIR) + "/system/python_embedded.py");
+    PyObject * callable  = PythonLoader::get_callable (module, "test");
+    PyObject * result = PyObject_CallObject (callable, arguments);
+    PythonLoader::check_error();
+    
+    if (PyString_Check(result)) {
+        string result_string = string(PyString_AsString(result));
+        
+        stringstream lines(result_string);
+        string line;
+        while(std::getline(lines,line,'\n')) {
+            if (line.find(embedded_path) == string::npos) {
+                FAIL() << "Python is not using embedded library! Path must contain '" << embedded_path << "' part :" << line << endl;
+            } else {
+                cout << "OK Using embedded python library: " << line << endl;
+            }
+        }
+    } else {
+        FAIL() << "Returned value from module is not type of string. Embedded Python is not working properly!";
+    }
+}
+#endif // FLOW123D_HAVE_PYTHON
+
 TEST(PythonLoader, function_error) {
 	EXPECT_THROW( { PythonLoader::load_module_from_string("func_xyz", python_function); }, PythonLoader::ExcPythonError);
 }

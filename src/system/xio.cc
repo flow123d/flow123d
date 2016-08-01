@@ -44,7 +44,7 @@ static XFILE xstderr = {&std::string("stderr")[0], &std::string("w")[0], 0};
 
 static XFILE * xio_getfptr( FILE * f );
 
-#define XIO_WARN(f) xprintf(Warn, "File pointer '%p' not in xfiles_map. Opened with regular fopen() or already closed?\n", (f) )
+#define XIO_WARN(f) LogOut() << "File pointer '" << (f) << "' not in xfiles_map. Opened with regular fopen() or already closed?" << std::endl;
 #define XIO_PRINT_INFO(f) printf( "XIO: In function '%s', %s\n", __func__, xio_getfulldescription( f ) )
 #define XIO_DEBUG(f) do { if ( Xio::get_instance()->get_verbosity() > 0 ) XIO_PRINT_INFO(f); } while (0)
 
@@ -74,7 +74,7 @@ void Xio::init()
 	if (instance == NULL) {
 		instance = new Xio();
 	} else {
-		xprintf(Warn, "The XIO library already initialized.\n");
+		WarningOut() << "The XIO library already initialized." << std::endl;
 	}
 }
 
@@ -244,7 +244,7 @@ FILE *xfopen( const char *fname, const char *mode )
     FILE *rc;
 
     OLD_ASSERT(!( (fname == NULL) || (mode == NULL) ),"NULL pointer as argument of function xfopen()\n");
-    xprintf(MsgLog,"Opening file: '%s'\n", fname);
+    LogOut() << "Opening file: '" << fname << "'" << std::endl;
     rc = fopen( fname, mode );
     INPUT_CHECK( rc != NULL ,"Cannot open file '%s' with permissions %s\n", fname, mode );
 

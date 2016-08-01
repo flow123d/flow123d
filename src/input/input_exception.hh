@@ -34,8 +34,9 @@ namespace Input {
 class Exception : public virtual ExceptionBase
 {
 public:
-    const char * what () const throw ();
     virtual ~Exception() throw () {};
+protected:
+    std::ostringstream &form_message(std::ostringstream &) const override;
 };
 
 

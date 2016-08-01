@@ -11,7 +11,6 @@
 find_package(PythonLibs 2.7 REQUIRED)
 
 include_directories(${PYTHON_INCLUDE_DIRS})
-flow_define(HAVE_PYTHON)
 # parse version
 string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MAJOR ${PYTHONLIBS_VERSION_STRING})
 string(REGEX REPLACE "[0-9]+.([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MINOR ${PYTHONLIBS_VERSION_STRING})
