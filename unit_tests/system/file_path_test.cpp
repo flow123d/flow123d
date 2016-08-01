@@ -93,6 +93,7 @@ TEST(FilePath, output_relative) {
     //EXPECT_DEATH( {FilePath("input/${INPUT}/init.in", FilePath::input_file);},
     //        "Creating FileName object before set_io_dirs is called.");
 
+    boost::filesystem::create_directories("./main_root");
     FilePath::set_io_dirs(".", "./main_root", "variant_input", "../output_root");
 
     { // relative output_dir x relative output substitution
