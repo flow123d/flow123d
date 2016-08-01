@@ -1,4 +1,4 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
@@ -17,6 +17,8 @@ problem: !Coupling_Sequential
           - .2d_fracture_2
           - .3d_cube
   flow_equation: !Flow_Darcy_MH
+    output_specific:
+      raw_flow_output: ./raw_output.txt
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -45,16 +47,15 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z
-    balance: true
+    balance: {}
     output:
-      output_stream: 
-        file: ./test1.msh
-        format: !gmsh
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
         - velocity_p0
-      raw_flow_output: ./raw_output.txt
+    output_stream: 
+      file: ./test1.msh
+      format: !gmsh
+        variant: ascii
+      name: flow_output_stream

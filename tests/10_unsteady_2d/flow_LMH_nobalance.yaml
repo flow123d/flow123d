@@ -1,4 +1,4 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   time: &anchor2
     end_time: 0.5
@@ -8,6 +8,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ${INPUT}/test10.msh
   flow_equation: !Flow_Richards_LMH
+    output_specific:
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -28,15 +29,16 @@ problem: !Coupling_Sequential
         a_tol: 1.0e-07
     n_schurs: 2
     output:
-      output_stream: 
-        file: ./test10.pvd
-        format: !vtk
-          variant: ascii
-        time_step: 0.25
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: false
+    balance: {add_output_times: false}
     time: *anchor2
+    output_stream: 
+      file: ./test10.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+      times:
+        - step: 0.25

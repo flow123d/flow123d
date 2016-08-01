@@ -55,6 +55,10 @@ UnitSI & UnitSI::dimensionless() {
 	return unit;
 }
 
+UnitSI & UnitSI::one() {
+    return dimensionless();
+}
+
 UnitSI & UnitSI::m(int exp) {
 	exponents_[UnitSI::order_m] = exp;
 	undef_ = false;

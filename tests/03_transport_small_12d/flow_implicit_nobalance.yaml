@@ -1,9 +1,10 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test3 - Transport implicit 1D-2D, (convection, dispersion)
   mesh:
     mesh_file: ./input/test3.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -19,16 +20,16 @@ problem: !Coupling_Sequential
       - region: IMPLICIT BOUNDARY
         flow_old_bcd_file: ./input/test3.fbc
     output:
-      output_stream: 
-        file: flow.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: false
+    balance: {add_output_times: false}
+    output_stream: 
+      file: flow.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
@@ -49,9 +50,10 @@ problem: !Coupling_Sequential
       file: transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.5
       name: transport_output_stream
+      times:
+        - step: 0.5
     time:
       end_time: 1.0
       init_dt: 0.1
-    balance: false
+    balance: {add_output_times: false}
