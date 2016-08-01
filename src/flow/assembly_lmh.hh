@@ -159,7 +159,7 @@ public:
                 // check sign
                 //
                 system_.balance->add_mass_vec_value(ad_->water_balance_idx_, ele.region().bulk_idx(), diagonal_coef*ad_->water_content_previous_it[local_side]);
-                system_.balance->add_mass_matrix_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {mass_diagonal});
+//                 system_.balance->add_mass_matrix_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {mass_diagonal});
                 system_.balance->add_source_vec_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {source_diagonal});
             }
         }
