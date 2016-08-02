@@ -143,14 +143,7 @@ protected:
     /**
      * \brief Fills the given vector with VTK element types indicators.
      */
-    template <class T>
-    void fill_element_types_vector(std::vector<T> &data);
-
-    /**
-     * \brief Create OutputDataPtr with data of VTK element types indicators.
-     */
-    template <class T>
-    OutputDataPtr create_element_data_ptr();
+    void fill_element_types_vector(std::vector<unsigned int> &data);
 
     /**
      * Write registered data to output stream
