@@ -66,7 +66,7 @@ void MeshData<T>::print_all_yaml(std::ostream& out_stream)
 template <class T>
 T& MeshData<T>::operator[](unsigned int i)
 {
-    ASSERT(i < data_.size());
+    ASSERT_DBG(i < data_.size());
     return data_[i];
 }
 

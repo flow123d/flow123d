@@ -47,9 +47,9 @@ const Selection & OutputVTK::get_input_type_variant() {
 		.add_value(OutputVTK::VARIANT_ASCII, "ascii",
 			"ASCII variant of VTK file format")
 		.add_value(OutputVTK::VARIANT_BINARY_UNCOMPRESSED, "binary",
-			"Uncompressed binary variant of VTK file format (not supported yet)")
+			"Uncompressed appended binary XML VTK format without usage of base64 encoding of appended data.")
 		.add_value(OutputVTK::VARIANT_BINARY_ZLIB, "binary_zlib",
-			"Binary variant of VTK file format compressed with zlib (not supported yet)")
+			"Appended binary XML VTK format without usage of base64 encoding of appended data. Compressed with ZLib. (Not supported yet)")
 		.close();
 }
 
@@ -86,6 +86,14 @@ int OutputVTK::write_data(void)
 
     if (! this->_base_file.is_open()) {
         this->fix_main_file_extension(".pvd");
+
+        Input::Iterator<Input::AbstractRecord> it = input_record_.find<Input::AbstractRecord>("format");
+        if (it) {
+            Input::Record rec = (Input::Record)(*it);
+            this->variant_type_ = rec.val<VTKVariant>("variant");
+        } else {
+            this->variant_type_ = VTKVariant::VARIANT_ASCII;
+        }
 
         this->_base_file.open(this->_base_filename.c_str());
         INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
