@@ -337,7 +337,8 @@ void DarcyMH::initialize() {
 
 
     // initialization of balance object
-    balance_ = Balance::make_balance("water", mesh_, input_record_.val<Input::Record>("balance"), time());
+    balance_ = std::make_shared<Balance>("water", mesh_);
+    balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
     if (balance_)
     {
         data_-> water_balance_idx_ = water_balance_idx_ = balance_->add_quantity("water_volume");

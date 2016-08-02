@@ -139,33 +139,36 @@ public:
 	/// Input selection for file format.
 	static const Input::Type::Selection & get_format_selection_input_type();
 
-	static std::shared_ptr<Balance> make_balance(
-	        const std::string &file_prefix,
-	        const Mesh *mesh,
-	        const Input::Record &in_rec,
-	        TimeGovernor &tg);
-
 
 	/**
 	 * Constructor.
-	 * @param file_prefix  Prefix of output file name.
-	 * @param mesh         Mesh.
-	 * @param in_rec       Input record of balance.
+     * @param file_prefix  Prefix of output file name.
+     * @param mesh         Mesh.
 	 */
-	Balance(const std::string &file_prefix,
-			const Mesh *mesh,
-			const Input::Record &in_rec,
-            TimeGovernor &tg);
+	Balance(const std::string &file_prefix, const Mesh *mesh);
 
+	/**
+	 * Destructor.
+	 */
 	~Balance();
 
+    /**
+     * Initialize the balance object according to the input.
+     * The balance output time marks are set according to the already existing output time marks of the same equation.
+     * So, this method must be called after Output::
+     *
+     * @param in_rec       Input record of balance.
+     * @param tg           TimeGovernor of the equation. We need just equation mark type.
+     *
+     */
+    void init_from_input(const Input::Record &in_rec, TimeGovernor &tg);
+
 	/// Setter for units of conserved quantities.
-	void units(const UnitSI &unit) { units_ = unit; units_.undef(false); }
+	void units(const UnitSI &unit);
 
 	/// Getter for cumulative_.
 	inline bool cumulative() const { return cumulative_; }
 
-	bool is_current(const TimeStep &step);
 
 	/**
 	 * Define a single conservative quantity.
@@ -188,6 +191,10 @@ public:
 	 */
 	void allocate(unsigned int n_loc_dofs,
 			unsigned int max_dofs_per_boundary);
+
+
+    /// Returns true if the given time step is marked for the balance output.
+    bool is_current(const TimeStep &step);
 
 	/**
 	 * This method must be called before assembling the matrix for computing mass.
@@ -395,6 +402,14 @@ public:
 private:
 	/// Size of column in output (used if delimiter is space)
 	static const unsigned int output_column_width = 20;
+	/**
+	 * Postponed allocation and initialization to allow calling setters in arbitrary order.
+	 * In particular we need to perform adding of output times after the output time marks are set.
+	 * On the other hand we need to read the input before we make the allocation.
+	 *
+	 * The initialization is done during the first call of any start_*_assembly method.
+	 */
+	void lazy_initialize();
 
 	/// Perform output in old format (for compatibility)
 	void output_legacy(double time);
@@ -417,6 +432,17 @@ private:
 	/// Format double value of csv output. If delimiter is space, align text to column.
 	std::string format_csv_val(double val, char delimiter, bool initial = false);
 
+
+	/// Allocation parameters. Set by the allocate method used in the lazy_initialize.
+    unsigned int n_loc_dofs_;
+    unsigned int max_dofs_per_boundary_;
+
+
+    /// Save prefix passed in in constructor.
+    std::string file_prefix_;
+
+    /// File path for output_ stream.
+    FilePath balance_output_file_;
 
     /// Handle for file for output in given OutputFormat of balance and total fluxes over individual regions and region sets.
     ofstream output_;
@@ -502,8 +528,11 @@ private:
 	/// time of last calculated balance
 	double last_time_;
 
-	/// TimeMark type for balance output.
+	/// TimeMark type for balance output of particular equation.
 	TimeMark::Type balance_output_type_;
+
+	/// TimeMark type for output of particular equation.
+	TimeMark::Type output_mark_type_;
 
 	/// true before calculating the mass at initial time, otherwise false
 	bool initial_;
@@ -514,6 +543,13 @@ private:
 	/// true before allocating necessary internal structures (Petsc matrices etc.)
 	bool allocation_done_;
 
+	/// If the balance is on. Balance is off in the case of no balance output time marks.
+    bool balance_on_;
+
+    /// Add output time marks to balance output time marks.
+    bool add_output_times_;
+
+
 	/// MPI rank.
 	int rank_;
 
@@ -522,6 +558,9 @@ private:
 
 	/// marks whether YAML output has printed header
 	bool output_yaml_header_;
+
+
+
 
 };
 
