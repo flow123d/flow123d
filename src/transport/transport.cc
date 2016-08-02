@@ -458,7 +458,7 @@ void ConvectionTransport::compute_concentration_sources() {
                 {
                     balance_->add_source_matrix_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
                                                        {- src_sigma(sbi) * ele->measure() * csection});
-                    balance_->add_source_rhs_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
+                    balance_->add_source_vec_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
                                                     {source * ele->measure()});
                 }
             }
