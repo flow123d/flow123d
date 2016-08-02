@@ -1,9 +1,11 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Flow in 2d-1d domain, compatible mesh
   mesh:
     mesh_file: ./input/compatible.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
+      compute_errors: true
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -23,13 +25,7 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 10
     output:
-      compute_errors: true
-      output_stream: 
-        file: ./test1.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
@@ -37,4 +33,9 @@ problem: !Coupling_Sequential
         - velocity_diff
         - pressure_diff
         - div_diff
-    balance: true
+    balance: {}
+    output_stream: 
+      file: ./test1.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

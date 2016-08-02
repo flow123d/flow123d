@@ -161,15 +161,10 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 // full list
 #define f_list(Dim) \
 	Field<Dim,FV<0>::Scalar> , \
-	Field<Dim,FV<0>::Vector>, \
     Field<Dim,FV<0>::Enum>, \
-    Field<Dim,FV<0>::EnumVector>, \
     Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<0>::Vector>, \
-	Field<Dim,FV<2>::VectorFixed>, \
-	Field<Dim,FV<3>::VectorFixed>, \
-	Field<Dim,FV<2>::TensorFixed>, \
-	Field<Dim,FV<3>::TensorFixed>
+	Field<Dim,FV<Dim>::VectorFixed>, \
+	Field<Dim,FV<Dim>::TensorFixed>
 
 // simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
@@ -586,7 +581,7 @@ TEST(Field, init_from_input) {
 	mesh.read_gmsh_from_stream(in);
 
     Field<3, FieldValue<3>::Enum > sorption_type;
-    Field<3, FieldValue<3>::Vector > init_conc;
+    //Field<3, FieldValue<3>::Vector > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
 
 
@@ -594,12 +589,12 @@ TEST(Field, init_from_input) {
 
 
     sorption_type.input_selection( &get_sorption_type_selection() );
-    init_conc.set_components(component_names);
+    //init_conc.set_components(component_names);
 
     it::Record main_record =
             it::Record("main", "desc")
             .declare_key("sorption_type", sorption_type.get_input_type(), it::Default::obligatory(), "desc")
-            .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
+           // .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc")
 			.close();
 
@@ -609,13 +604,13 @@ TEST(Field, init_from_input) {
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     sorption_type.set_mesh(mesh);
-    init_conc.set_mesh(mesh);
+    //init_conc.set_mesh(mesh);
     conductivity.set_mesh(mesh);
 
     auto region_set = mesh.region_db().get_region_set("BULK");
 
     sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
-    init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
+    //init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
     conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"));
 
 
@@ -623,7 +618,7 @@ TEST(Field, init_from_input) {
 
 
     sorption_type.set_time(TimeGovernor().step(), LimitSide::right);
-    init_conc.set_time(TimeGovernor().step(), LimitSide::right);
+    //init_conc.set_time(TimeGovernor().step(), LimitSide::right);
     conductivity.set_time(TimeGovernor().step(), LimitSide::right);
 
     {	
@@ -633,8 +628,8 @@ TEST(Field, init_from_input) {
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
 
 
-	    auto vec_value = init_conc.value(ele.centre(), ele);
-	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == vec_value ) );
+	   // auto vec_value = init_conc.value(ele.centre(), ele);
+	   // EXPECT_TRUE( arma::min( arma::vec("10 20 30") == vec_value ) );
 
 	    auto result =conductivity.value(ele.centre(), ele);
 	    arma::mat diff = arma::mat33("-0.5 0 0;0 0 0; 0 0 -0.5") - result;
@@ -651,11 +646,11 @@ TEST(Field, init_from_input) {
 	    Region reg = mesh.region_db().find_id(40);
 
 	    EXPECT_TRUE( sorption_type.is_constant(reg) );
-	    EXPECT_TRUE( init_conc.is_constant(reg) );
+	  //  EXPECT_TRUE( init_conc.is_constant(reg) );
 
-	    ele = ElementAccessor<3>(&mesh, reg);
-	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
-	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
+	    //ele = ElementAccessor<3>(&mesh, reg);
+	    //EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
+	    //EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
 
    }
 
@@ -834,7 +829,7 @@ TEST(Field, init_from_default) {
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
     }
-    Field<3, FieldValue<3>::Vector > vector_field;
+    //Field<3, FieldValue<3>::Vector > vector_field;
 
 }
 

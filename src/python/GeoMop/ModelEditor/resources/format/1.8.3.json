@@ -1,0 +1,3958 @@
+{ "version" : {
+"flow123d_commit" : "release_1.8.3",
+"flow123d_version" : "1.8.3",
+"date" : "May 30 2016, 13:37:09"
+},
+"ist_nodes" : [
+{
+"id" : "ccc37055d9f1e820",
+"input_type" : "Record",
+"name" : "Root",
+"full_name" : "Root",
+
+"description" : "Root record of JSON input for Flow123d.",
+"keys" : [
+{ "key" : "problem",
+"description" : "Simulation problem to be solved.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "1b711caed3fa480"
+},
+{ "key" : "pause_after_run",
+"description" : "If true, the program will wait for key press before it terminates.",
+"default" : { "type" : "value at declaration",
+"value" : "false" },
+"type" : "282546d52edd4"
+}]
+},{
+"id" : "1b711caed3fa480",
+"input_type" : "Abstract",
+"name" : "Problem",
+"full_name" : "Problem",
+"description" : "The root record of description of particular the problem to solve.",
+"implementations" : [
+"ec0d5ba0f7cdfdd2"]},{
+"id" : "ec0d5ba0f7cdfdd2",
+"input_type" : "Record",
+"name" : "SequentialCoupling",
+"full_name" : "SequentialCoupling:Problem",
+
+"description" : "Record with data for a general sequential coupling.\n",
+"implements" : [ "Problem" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "SequentialCoupling" },
+"type" : "b0bf265898e2625b"
+},
+{ "key" : "description",
+"description" : "Short description of the solved problem.\nIs displayed in the main log, and possibly in other text output files.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "mesh",
+"description" : "Computational mesh common to all equations.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "c57e1ac33a446313"
+},
+{ "key" : "time",
+"description" : "Simulation time frame and time step.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "d8574f6af69c7e1f"
+},
+{ "key" : "primary_equation",
+"description" : "Primary equation, have all data given.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89b3f43c155cf1e8"
+},
+{ "key" : "secondary_equation",
+"description" : "The equation that depends (the velocity field) on the result of the primary equation.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ba303a95a63b8f96"
+}]
+},{
+"id" : "b0bf265898e2625b",
+"input_type" : "Selection",
+"name" : "Problem_TYPE_selection",
+"full_name" : "Problem_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "SequentialCoupling",
+"description" : "" }]
+},{
+"id" : "29b5533100b6f60f",
+"input_type" : "String",
+"name" : "String",
+"full_name" : "String"
+},{
+"id" : "c57e1ac33a446313",
+"input_type" : "Record",
+"name" : "Mesh",
+"full_name" : "Mesh",
+
+"description" : "Record with mesh related data.",
+"keys" : [
+{ "key" : "mesh_file",
+"description" : "Input file with mesh description.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "regions",
+"description" : "List of additional region definitions not contained in the mesh.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "5985ba73963f9447"
+},
+{ "key" : "sets",
+"description" : "List of region set definitions. There are three region sets implicitly defined:\nALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ed43a6296093cd75"
+},
+{ "key" : "partitioning",
+"description" : "Parameters of mesh partitioning algorithms.\n",
+"default" : { "type" : "value at declaration",
+"value" : "any_neighboring" },
+"type" : "61e56a6c5dbf2445"
+}]
+},{
+"id" : "89a808b8e9515bf8",
+"name" : "FileName_input",
+"full_name" : "FileName_input",
+"input_type" : "FileName",
+"file_mode" : "input"
+},{
+"id" : "5985ba73963f9447",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "b9614d55a6c3462e"
+},
+{
+"id" : "b9614d55a6c3462e",
+"input_type" : "Record",
+"name" : "Region",
+"full_name" : "Region",
+
+"description" : "Definition of region of elements.",
+"keys" : [
+{ "key" : "name",
+"description" : "Label (name) of the region. Has to be unique in one mesh.\n",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "id",
+"description" : "The ID of the region to which you assign label.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "element_list",
+"description" : "Specification of the region by the list of elements. This is not recomended",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ccc88a2172d23cc3"
+}]
+},{
+"id" : "151ce92d5201d44f",
+"input_type" : "Integer",
+"name" : "Integer",
+"full_name" : "Integer",
+"range" : [0, 2147483647]
+},{
+"id" : "ccc88a2172d23cc3",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "151ce92d5201d44f"
+},
+{
+"id" : "ed43a6296093cd75",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "b9f7de6b7bbc0cdb"
+},
+{
+"id" : "b9f7de6b7bbc0cdb",
+"input_type" : "Record",
+"name" : "RegionSet",
+"full_name" : "RegionSet",
+
+"description" : "Definition of one region set.",
+"keys" : [
+{ "key" : "name",
+"description" : "Unique name of the region set.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "region_ids",
+"description" : "List of region ID numbers that has to be added to the region set.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ccc88a2172d23cc3"
+},
+{ "key" : "region_labels",
+"description" : "List of labels of the regions that has to be added to the region set.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "eee303f526b982ce"
+},
+{ "key" : "union",
+"description" : "Defines region set as a union of given pair of sets. Overrides previous keys.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "eee3033466b9ffa2"
+},
+{ "key" : "intersection",
+"description" : "Defines region set as an intersection of given pair of sets. Overrides previous keys.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "eee3033466b9ffa2"
+},
+{ "key" : "difference",
+"description" : "Defines region set as a difference of given pair of sets. Overrides previous keys.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "eee3033466b9ffa2"
+}]
+},{
+"id" : "eee303f526b982ce",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "29b5533100b6f60f"
+},
+{
+"id" : "eee3033466b9ffa2",
+"input_type" : "Array",
+"range" : [2, 2],
+"subtype" : "29b5533100b6f60f"
+},
+{
+"id" : "61e56a6c5dbf2445",
+"input_type" : "Record",
+"name" : "Partition",
+"full_name" : "Partition",
+
+"description" : "Setting for various types of mesh partitioning.",
+"reducible_to_key" : "graph_type",
+"keys" : [
+{ "key" : "tool",
+"description" : "Software package used for partitioning. See corresponding selection.",
+"default" : { "type" : "value at declaration",
+"value" : "METIS" },
+"type" : "f9756fb2f66076a1"
+},
+{ "key" : "graph_type",
+"description" : "Algorithm for generating graph and its weights from a multidimensional mesh.",
+"default" : { "type" : "value at declaration",
+"value" : "any_neighboring" },
+"type" : "23a812d749635ca0"
+}]
+},{
+"id" : "f9756fb2f66076a1",
+"input_type" : "Selection",
+"name" : "PartTool",
+"full_name" : "PartTool",
+"description" : "Select the partitioning tool to use.",
+"values" : [
+{ "value" : "0",
+ "name" : "PETSc",
+"description" : "Use PETSc interface to various partitioning tools." },
+{ "value" : "1",
+ "name" : "METIS",
+"description" : "Use direct interface to Metis." }]
+},{
+"id" : "23a812d749635ca0",
+"input_type" : "Selection",
+"name" : "GraphType",
+"full_name" : "GraphType",
+"description" : "Different algorithms to make the sparse graph with weighted edges\nfrom the multidimensional mesh. Main difference is dealing with \nneighborings of elements of different dimension.",
+"values" : [
+{ "value" : "0",
+ "name" : "any_neighboring",
+"description" : "Add edge for any pair of neighboring elements." },
+{ "value" : "1",
+ "name" : "any_wight_lower_dim_cuts",
+"description" : "Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face." },
+{ "value" : "2",
+ "name" : "same_dimension_neghboring",
+"description" : "Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply)." }]
+},{
+"id" : "d8574f6af69c7e1f",
+"input_type" : "Record",
+"name" : "TimeGovernor",
+"full_name" : "TimeGovernor",
+
+"description" : "Setting of the simulation time. (can be specific to one equation)",
+"reducible_to_key" : "max_dt",
+"keys" : [
+{ "key" : "start_time",
+"description" : "Start time of the simulation.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "47484ede475775e6"
+},
+{ "key" : "end_time",
+"description" : "End time of the simulation.",
+"default" : { "type" : "value at read time",
+"value" : "Infinite end time." },
+"type" : "47484ede475775e6"
+},
+{ "key" : "init_dt",
+"description" : "Initial guess for the time step.\nOnly useful for equations that use adaptive time stepping.If set to 0.0, the time step is determined in fully autonomous way if the equation supports it.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "min_dt",
+"description" : "Soft lower limit for the time step. Equation using adaptive time stepping can notsuggest smaller time step, but actual time step could be smaller in order to match prescribed input or output times.",
+"default" : { "type" : "value at read time",
+"value" : "Machine precision." },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "max_dt",
+"description" : "Hard upper limit for the time step. Actual length of the time step is also limitedby input and output times.",
+"default" : { "type" : "value at read time",
+"value" : "Whole time of the simulation if specified, infinity else." },
+"type" : "6b1c4ede475775aa"
+}]
+},{
+"id" : "47484ede475775e6",
+"input_type" : "Double",
+"name" : "Double",
+"full_name" : "Double",
+"range" : [-1.79769e+308, 1.79769e+308]
+},{
+"id" : "6b1c4ede475775aa",
+"input_type" : "Double",
+"name" : "Double",
+"full_name" : "Double",
+"range" : [0, 1.79769e+308]
+},{
+"id" : "89b3f43c155cf1e8",
+"input_type" : "Abstract",
+"name" : "DarcyFlowMH",
+"full_name" : "DarcyFlowMH",
+"description" : "Mixed-Hybrid  solver for saturated Darcy flow.",
+"implementations" : [
+"1cee334f0ee15fde",
+
+"f8b59ec6579bb8e7",
+
+"7f8079521b88dfc6"]},{
+"id" : "1cee334f0ee15fde",
+"input_type" : "Record",
+"name" : "Steady_MH",
+"full_name" : "Steady_MH:DarcyFlowMH",
+
+"description" : "Mixed-Hybrid  solver for STEADY saturated Darcy flow.",
+"implements" : [ "DarcyFlowMH" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "Steady_MH" },
+"type" : "951d22f534f4713a"
+},
+{ "key" : "n_schurs",
+"description" : "Number of Schur complements to perform when solving MH sytem.",
+"default" : { "type" : "value at declaration",
+"value" : "2" },
+"type" : "151ce92dd201d44a"
+},
+{ "key" : "solver",
+"description" : "Linear solver for MH problem.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "c41013c46f054475"
+},
+{ "key" : "output",
+"description" : "Parameters of output form MH module.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "2015c5bce001f29b"
+},
+{ "key" : "mortar_method",
+"description" : "Method for coupling Darcy flow between dimensions.",
+"default" : { "type" : "value at declaration",
+"value" : "None" },
+"type" : "77e8d459d5c35386"
+},
+{ "key" : "balance",
+"description" : "Settings for computing mass balance.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d280bda6d317af17"
+},
+{ "key" : "input_fields",
+"description" : "",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47947985b66e5c1c"
+}]
+},{
+"id" : "951d22f534f4713a",
+"input_type" : "Selection",
+"name" : "DarcyFlowMH_TYPE_selection",
+"full_name" : "DarcyFlowMH_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "Steady_MH",
+"description" : "" },
+{ "value" : "1",
+ "name" : "Unsteady_MH",
+"description" : "" },
+{ "value" : "2",
+ "name" : "Unsteady_LMH",
+"description" : "" }]
+},{
+"id" : "151ce92dd201d44a",
+"input_type" : "Integer",
+"name" : "Integer",
+"full_name" : "Integer",
+"range" : [0, 2]
+},{
+"id" : "c41013c46f054475",
+"input_type" : "Abstract",
+"name" : "LinSys",
+"full_name" : "LinSys",
+"description" : "Linear solver setting.",
+"implementations" : [
+"9a480c47798196db",
+
+"281b2fb42a1e54be"]},{
+"id" : "9a480c47798196db",
+"input_type" : "Record",
+"name" : "Petsc",
+"full_name" : "Petsc:LinSys",
+
+"description" : "Solver setting.",
+"implements" : [ "LinSys" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "Petsc" },
+"type" : "8350a9dda11719b"
+},
+{ "key" : "r_tol",
+"description" : "Relative residual tolerance (to initial error).",
+"default" : { "type" : "value at declaration",
+"value" : "1.0e-7" },
+"type" : "ab1c4ede475775a9"
+},
+{ "key" : "max_it",
+"description" : "Maximum number of outer iterations of the linear solver.",
+"default" : { "type" : "value at declaration",
+"value" : "10000" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "a_tol",
+"description" : "Absolute residual tolerance.",
+"default" : { "type" : "value at declaration",
+"value" : "1.0e-9" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "options",
+"description" : "Options passed to PETSC before creating KSP instead of default setting.",
+"default" : { "type" : "value at declaration",
+"value" : "" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "8350a9dda11719b",
+"input_type" : "Selection",
+"name" : "LinSys_TYPE_selection",
+"full_name" : "LinSys_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "Petsc",
+"description" : "" },
+{ "value" : "1",
+ "name" : "Bddc",
+"description" : "" }]
+},{
+"id" : "ab1c4ede475775a9",
+"input_type" : "Double",
+"name" : "Double",
+"full_name" : "Double",
+"range" : [0, 1]
+},{
+"id" : "281b2fb42a1e54be",
+"input_type" : "Record",
+"name" : "Bddc",
+"full_name" : "Bddc:LinSys",
+
+"description" : "Solver setting.",
+"implements" : [ "LinSys" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "Bddc" },
+"type" : "8350a9dda11719b"
+},
+{ "key" : "r_tol",
+"description" : "Relative residual tolerance (to initial error).",
+"default" : { "type" : "value at declaration",
+"value" : "1.0e-7" },
+"type" : "ab1c4ede475775a9"
+},
+{ "key" : "max_it",
+"description" : "Maximum number of outer iterations of the linear solver.",
+"default" : { "type" : "value at declaration",
+"value" : "10000" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "max_nondecr_it",
+"description" : "Maximum number of iterations of the linear solver with non-decreasing residual.",
+"default" : { "type" : "value at declaration",
+"value" : "30" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "number_of_levels",
+"description" : "Number of levels in the multilevel method (=2 for the standard BDDC).",
+"default" : { "type" : "value at declaration",
+"value" : "2" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "use_adaptive_bddc",
+"description" : "Use adaptive selection of constraints in BDDCML.",
+"default" : { "type" : "value at declaration",
+"value" : "false" },
+"type" : "282546d52edd4"
+},
+{ "key" : "bddcml_verbosity_level",
+"description" : "Level of verbosity of the BDDCML library: 0 - no output, 1 - mild output, 2 - detailed output.",
+"default" : { "type" : "value at declaration",
+"value" : "0" },
+"type" : "151ce92dd201d44a"
+}]
+},{
+"id" : "282546d52edd4",
+"input_type" : "Bool",
+"name" : "Bool",
+"full_name" : "Bool"
+},{
+"id" : "2015c5bce001f29b",
+"input_type" : "Record",
+"name" : "DarcyMHOutput",
+"full_name" : "DarcyMHOutput",
+
+"description" : "Parameters of MH output.",
+"keys" : [
+{ "key" : "output_stream",
+"description" : "Parameters of output stream.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "a991884958d2c471"
+},
+{ "key" : "output_fields",
+"description" : "List of fields to write to output file.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "11051a11cc67edeb"
+},
+{ "key" : "compute_errors",
+"description" : "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.",
+"default" : { "type" : "value at declaration",
+"value" : "false" },
+"type" : "282546d52edd4"
+},
+{ "key" : "raw_flow_output",
+"description" : "Output file with raw data form MH module.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "5c42d5b72cb92ff"
+}]
+},{
+"id" : "a991884958d2c471",
+"input_type" : "Record",
+"name" : "OutputStream",
+"full_name" : "OutputStream",
+
+"description" : "Parameters of output.",
+"keys" : [
+{ "key" : "file",
+"description" : "File path to the connected output file.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "5c42d5b72cb92ff"
+},
+{ "key" : "format",
+"description" : "Format of output stream and possible parameters.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "fccf661f43d5a258"
+},
+{ "key" : "time_step",
+"description" : "Time interval between outputs.\nRegular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\nThe start time and the end time are always added. ",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "time_list",
+"description" : "Explicit array of output time points (can be combined with 'time_step'.",
+"default" : { "type" : "value at read time",
+"value" : "List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior." },
+"type" : "ae4d15413e119e57"
+},
+{ "key" : "add_input_times",
+"description" : "Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.",
+"default" : { "type" : "value at declaration",
+"value" : "false" },
+"type" : "282546d52edd4"
+}]
+},{
+"id" : "5c42d5b72cb92ff",
+"name" : "FileName_output",
+"full_name" : "FileName_output",
+"input_type" : "FileName",
+"file_mode" : "output"
+},{
+"id" : "fccf661f43d5a258",
+"input_type" : "Abstract",
+"name" : "OutputTime",
+"full_name" : "OutputTime",
+"description" : "Format of output stream and possible parameters.",
+"implementations" : [
+"7e7e815d8f0ac0f1",
+
+"d38f878a68971700"]},{
+"id" : "7e7e815d8f0ac0f1",
+"input_type" : "Record",
+"name" : "vtk",
+"full_name" : "vtk:OutputTime",
+
+"description" : "Parameters of vtk output format.",
+"implements" : [ "OutputTime" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "vtk" },
+"type" : "598790df6b23b31b"
+},
+{ "key" : "variant",
+"description" : "Variant of output stream file format.",
+"default" : { "type" : "value at declaration",
+"value" : "ascii" },
+"type" : "1b5802ce6b78beab"
+},
+{ "key" : "parallel",
+"description" : "Parallel or serial version of file format.",
+"default" : { "type" : "value at declaration",
+"value" : "false" },
+"type" : "282546d52edd4"
+},
+{ "key" : "compression",
+"description" : "Compression used in output stream file format.",
+"default" : { "type" : "value at declaration",
+"value" : "none" },
+"type" : "7127cbcf4491394b"
+}]
+},{
+"id" : "598790df6b23b31b",
+"input_type" : "Selection",
+"name" : "OutputTime_TYPE_selection",
+"full_name" : "OutputTime_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "vtk",
+"description" : "" },
+{ "value" : "1",
+ "name" : "gmsh",
+"description" : "" }]
+},{
+"id" : "1b5802ce6b78beab",
+"input_type" : "Selection",
+"name" : "VTK variant (ascii or binary)",
+"full_name" : "VTK variant (ascii or binary)",
+"description" : "",
+"values" : [
+{ "value" : "1",
+ "name" : "ascii",
+"description" : "ASCII variant of VTK file format" },
+{ "value" : "2",
+ "name" : "binary",
+"description" : "Binary variant of VTK file format (not supported yet)" }]
+},{
+"id" : "7127cbcf4491394b",
+"input_type" : "Selection",
+"name" : "Type of compression of VTK file format",
+"full_name" : "Type of compression of VTK file format",
+"description" : "",
+"values" : [
+{ "value" : "1",
+ "name" : "none",
+"description" : "Data in VTK file format are not compressed" },
+{ "value" : "2",
+ "name" : "zlib",
+"description" : "Data in VTK file format are compressed using zlib (not supported yet)" }]
+},{
+"id" : "d38f878a68971700",
+"input_type" : "Record",
+"name" : "gmsh",
+"full_name" : "gmsh:OutputTime",
+
+"description" : "Parameters of gmsh output format.",
+"implements" : [ "OutputTime" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "gmsh" },
+"type" : "598790df6b23b31b"
+}]
+},{
+"id" : "ae4d15413e119e57",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "6b1c4ede475775aa"
+},
+{
+"id" : "11051a11cc67edeb",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "e380f7ae742b5b21"
+},
+{
+"id" : "e380f7ae742b5b21",
+"input_type" : "Selection",
+"name" : "DarcyMHOutput_Selection",
+"full_name" : "DarcyMHOutput_Selection",
+"description" : "Selection of fields available for output.",
+"values" : [
+{ "value" : "0",
+ "name" : "anisotropy",
+"description" : "Output of the field anisotropy $[-]$ (Anisotropy of the conductivity tensor.)." },
+{ "value" : "1",
+ "name" : "cross_section",
+"description" : "Output of the field cross_section $[m^{3-d}]$ (Complement dimension parameter (cross section for 1D, thickness for 2D).)." },
+{ "value" : "2",
+ "name" : "conductivity",
+"description" : "Output of the field conductivity $[ms^{-1}]$ (Isotropic conductivity scalar.)." },
+{ "value" : "3",
+ "name" : "sigma",
+"description" : "Output of the field sigma $[-]$ (Transition coefficient between dimensions.)." },
+{ "value" : "4",
+ "name" : "water_source_density",
+"description" : "Output of the field water_source_density $[s^{-1}]$ (Water source density.)." },
+{ "value" : "5",
+ "name" : "init_pressure",
+"description" : "Output of the field init_pressure $[m]$ (Initial condition as pressure)." },
+{ "value" : "6",
+ "name" : "storativity",
+"description" : "Output of the field storativity $[m^{-1}]$ (Storativity.)." },
+{ "value" : "7",
+ "name" : "pressure_p0",
+"description" : "Output of the field pressure_p0 $[m]$." },
+{ "value" : "8",
+ "name" : "pressure_p1",
+"description" : "Output of the field pressure_p1 $[m]$." },
+{ "value" : "9",
+ "name" : "piezo_head_p0",
+"description" : "Output of the field piezo_head_p0 $[m]$." },
+{ "value" : "10",
+ "name" : "velocity_p0",
+"description" : "Output of the field velocity_p0 $[ms^{-1}]$." },
+{ "value" : "11",
+ "name" : "subdomain",
+"description" : "Output of the field subdomain $[-]$." },
+{ "value" : "12",
+ "name" : "region_id",
+"description" : "Output of the field region_id $[-]$." },
+{ "value" : "13",
+ "name" : "pressure_diff",
+"description" : "Output of the field pressure_diff $[m]$." },
+{ "value" : "14",
+ "name" : "velocity_diff",
+"description" : "Output of the field velocity_diff $[ms^{-1}]$." },
+{ "value" : "15",
+ "name" : "div_diff",
+"description" : "Output of the field div_diff $[s^{-1}]$." }]
+},{
+"id" : "77e8d459d5c35386",
+"input_type" : "Selection",
+"name" : "MH_MortarMethod",
+"full_name" : "MH_MortarMethod",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "None",
+"description" : "Mortar space: P0 on elements of lower dimension." },
+{ "value" : "1",
+ "name" : "P0",
+"description" : "Mortar space: P0 on elements of lower dimension." },
+{ "value" : "2",
+ "name" : "P1",
+"description" : "Mortar space: P1 on intersections, using non-conforming pressures." }]
+},{
+"id" : "d280bda6d317af17",
+"input_type" : "Record",
+"name" : "Balance",
+"full_name" : "Balance",
+
+"description" : "Balance of a conservative quantity, boundary fluxes and sources.",
+"reducible_to_key" : "balance_on",
+"keys" : [
+{ "key" : "balance_on",
+"description" : "Balance is computed if the value is true.",
+"default" : { "type" : "value at declaration",
+"value" : "true" },
+"type" : "282546d52edd4"
+},
+{ "key" : "format",
+"description" : "Format of output file.",
+"default" : { "type" : "value at declaration",
+"value" : "txt" },
+"type" : "c4f9fd44881c5c15"
+},
+{ "key" : "cumulative",
+"description" : "Compute cumulative balance over time. If true, then balance is calculated at each computational time step, which can slow down the program.",
+"default" : { "type" : "value at declaration",
+"value" : "false" },
+"type" : "282546d52edd4"
+},
+{ "key" : "file",
+"description" : "File name for output of balance.",
+"default" : { "type" : "value at read time",
+"value" : "FileName balance.*" },
+"type" : "5c42d5b72cb92ff"
+}]
+},{
+"id" : "c4f9fd44881c5c15",
+"input_type" : "Selection",
+"name" : "Balance_output_format",
+"full_name" : "Balance_output_format",
+"description" : "Format of output file for balance.",
+"values" : [
+{ "value" : "0",
+ "name" : "legacy",
+"description" : "Legacy format used by previous program versions." },
+{ "value" : "1",
+ "name" : "txt",
+"description" : "Excel format with tab delimiter." },
+{ "value" : "2",
+ "name" : "gnuplot",
+"description" : "Format compatible with GnuPlot datafile with fixed column width." }]
+},{
+"id" : "47947985b66e5c1c",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "5706f8134bda4f8c"
+},
+{
+"id" : "5706f8134bda4f8c",
+"input_type" : "Record",
+"name" : "DarcyFlowMH_Data",
+"full_name" : "DarcyFlowMH_Data",
+
+"description" : "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any DarcyFlowMH_Data record that comes later in the boundary data array.",
+"keys" : [
+{ "key" : "r_set",
+"description" : "Name of region set where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "region",
+"description" : "Label of the region where to set fields. ",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "rid",
+"description" : "ID of the region where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "time",
+"description" : "Apply field setting in this record after this time.\nThese times have to form an increasing sequence.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "anisotropy",
+"description" : "Anisotropy of the conductivity tensor. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "e28c3e33a86c827a"
+},
+{ "key" : "cross_section",
+"description" : "Complement dimension parameter (cross section for 1D, thickness for 2D). $[m^{3-d}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "conductivity",
+"description" : "Isotropic conductivity scalar. $[ms^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "sigma",
+"description" : "Transition coefficient between dimensions. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "water_source_density",
+"description" : "Water source density. $[s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "bc_type",
+"description" : "Boundary condition type, possible values: $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e25be68a12"
+},
+{ "key" : "bc_pressure",
+"description" : "Dirichlet BC condition value for pressure. $[m]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "bc_flux",
+"description" : "Flux in Neumman or Robin boundary condition. $[m^{4-d}s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "bc_robin_sigma",
+"description" : "Conductivity coefficient in Robin boundary condition. $[m^{3-d}s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "init_pressure",
+"description" : "Initial condition as pressure $[m]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "storativity",
+"description" : "Storativity. $[m^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "bc_piezo_head",
+"description" : "Boundary condition for pressure as piezometric head.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e25697b4a4"
+},
+{ "key" : "init_piezo_head",
+"description" : "Initial condition for pressure as piezometric head.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e5a853ca91"
+},
+{ "key" : "flow_old_bcd_file",
+"description" : "File with mesh dependent boundary conditions (obsolete).",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "89a808b8e9515bf8"
+}]
+},{
+"id" : "e28c3e33a86c827a",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Real[3,3]",
+"full_name" : "Field:R3 -> Real[3,3]",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "6b5fc5580a4642e7",
+"implementations" : [
+"6b5fc5580a4642e7",
+
+"c088acff2455ec56",
+
+"aebfb23650887aaf",
+
+"c32d364c80594cf8",
+
+"33662495c9b6a8ff"]},{
+"id" : "6b5fc5580a4642e7",
+"input_type" : "Record",
+"name" : "FieldConstant",
+"full_name" : "FieldConstant:Field:R3 -> Real[3,3]",
+
+"description" : "R3 -> Real[3,3] Field constant in space.",
+"implements" : [ "Field:R3 -> Real[3,3]" ],
+"reducible_to_key" : "value",
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldConstant" },
+"type" : "e47fd6e84201e61f"
+},
+{ "key" : "value",
+"description" : "Value of the constant field.\nFor vector values, you can use scalar value to enter constant vector.\nFor square NxN-matrix values, you can use:\n* vector of size N to enter diagonal matrix\n* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* scalar to enter multiple of the unit matrix.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "558c3ac110b5cea3"
+}]
+},{
+"id" : "e47fd6e84201e61f",
+"input_type" : "Selection",
+"name" : "Field:R3 -> Real[3,3]_TYPE_selection",
+"full_name" : "Field:R3 -> Real[3,3]_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "FieldConstant",
+"description" : "" },
+{ "value" : "1",
+ "name" : "FieldPython",
+"description" : "" },
+{ "value" : "2",
+ "name" : "FieldFormula",
+"description" : "" },
+{ "value" : "3",
+ "name" : "FieldElementwise",
+"description" : "" },
+{ "value" : "4",
+ "name" : "FieldInterpolatedP0",
+"description" : "" }]
+},{
+"id" : "558c3ac110b5cea3",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "cba115413e116f1a"
+},
+{
+"id" : "cba115413e116f1a",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "47484ede475775e6"
+},
+{
+"id" : "c088acff2455ec56",
+"input_type" : "Record",
+"name" : "FieldPython",
+"full_name" : "FieldPython:Field:R3 -> Real[3,3]",
+
+"description" : "R3 -> Real[3,3] Field given by a Python script.",
+"implements" : [ "Field:R3 -> Real[3,3]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldPython" },
+"type" : "e47fd6e84201e61f"
+},
+{ "key" : "script_string",
+"description" : "Python script given as in place string",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_file' is not given." },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "script_file",
+"description" : "Python script given as external file",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_striong' is not given." },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "function",
+"description" : "Function in the given script that returns tuple containing components of the return type.\nFor NxM tensor values: tensor(row,col) = tuple( M*row + col ).",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "aebfb23650887aaf",
+"input_type" : "Record",
+"name" : "FieldFormula",
+"full_name" : "FieldFormula:Field:R3 -> Real[3,3]",
+
+"description" : "R3 -> Real[3,3] Field given by runtime interpreted formula.",
+"implements" : [ "Field:R3 -> Real[3,3]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldFormula" },
+"type" : "e47fd6e84201e61f"
+},
+{ "key" : "value",
+"description" : "String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\nFor vector values, you can use just one string to enter homogeneous vector.\nFor square NxN-matrix values, you can use:\n* array of strings of size N to enter diagonal matrix\n* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* just one string to enter (spatially variable) multiple of the unit matrix.\nFormula can contain variables x,y,z,t and usual operators and functions.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "45d2b3f2f233c5ec"
+}]
+},{
+"id" : "45d2b3f2f233c5ec",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "eee303f526b992fd"
+},
+{
+"id" : "eee303f526b992fd",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "29b5533100b6f60f"
+},
+{
+"id" : "c32d364c80594cf8",
+"input_type" : "Record",
+"name" : "FieldElementwise",
+"full_name" : "FieldElementwise:Field:R3 -> Real[3,3]",
+
+"description" : "R3 -> Real[3,3] Field constant in space.",
+"implements" : [ "Field:R3 -> Real[3,3]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldElementwise" },
+"type" : "e47fd6e84201e61f"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "33662495c9b6a8ff",
+"input_type" : "Record",
+"name" : "FieldInterpolatedP0",
+"full_name" : "FieldInterpolatedP0:Field:R3 -> Real[3,3]",
+
+"description" : "R3 -> Real[3,3] Field constant in space.",
+"implements" : [ "Field:R3 -> Real[3,3]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldInterpolatedP0" },
+"type" : "e47fd6e84201e61f"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "4c39e1e59767d512",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Real",
+"full_name" : "Field:R3 -> Real",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "69d0ea76672fc521",
+"implementations" : [
+"69d0ea76672fc521",
+
+"9d674cfa63e128b6",
+
+"9c2bb5f8c703648",
+
+"145028efd74e75ab",
+
+"ccc8cdf863f915bd"]},{
+"id" : "69d0ea76672fc521",
+"input_type" : "Record",
+"name" : "FieldConstant",
+"full_name" : "FieldConstant:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field constant in space.",
+"implements" : [ "Field:R3 -> Real" ],
+"reducible_to_key" : "value",
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldConstant" },
+"type" : "81eb10d042b6187f"
+},
+{ "key" : "value",
+"description" : "Value of the constant field.\nFor vector values, you can use scalar value to enter constant vector.\nFor square NxN-matrix values, you can use:\n* vector of size N to enter diagonal matrix\n* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* scalar to enter multiple of the unit matrix.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47484ede475775e6"
+}]
+},{
+"id" : "81eb10d042b6187f",
+"input_type" : "Selection",
+"name" : "Field:R3 -> Real_TYPE_selection",
+"full_name" : "Field:R3 -> Real_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "FieldConstant",
+"description" : "" },
+{ "value" : "1",
+ "name" : "FieldPython",
+"description" : "" },
+{ "value" : "2",
+ "name" : "FieldFormula",
+"description" : "" },
+{ "value" : "3",
+ "name" : "FieldElementwise",
+"description" : "" },
+{ "value" : "4",
+ "name" : "FieldInterpolatedP0",
+"description" : "" }]
+},{
+"id" : "9d674cfa63e128b6",
+"input_type" : "Record",
+"name" : "FieldPython",
+"full_name" : "FieldPython:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field given by a Python script.",
+"implements" : [ "Field:R3 -> Real" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldPython" },
+"type" : "81eb10d042b6187f"
+},
+{ "key" : "script_string",
+"description" : "Python script given as in place string",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_file' is not given." },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "script_file",
+"description" : "Python script given as external file",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_striong' is not given." },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "function",
+"description" : "Function in the given script that returns tuple containing components of the return type.\nFor NxM tensor values: tensor(row,col) = tuple( M*row + col ).",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "9c2bb5f8c703648",
+"input_type" : "Record",
+"name" : "FieldFormula",
+"full_name" : "FieldFormula:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field given by runtime interpreted formula.",
+"implements" : [ "Field:R3 -> Real" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldFormula" },
+"type" : "81eb10d042b6187f"
+},
+{ "key" : "value",
+"description" : "String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\nFor vector values, you can use just one string to enter homogeneous vector.\nFor square NxN-matrix values, you can use:\n* array of strings of size N to enter diagonal matrix\n* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* just one string to enter (spatially variable) multiple of the unit matrix.\nFormula can contain variables x,y,z,t and usual operators and functions.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "145028efd74e75ab",
+"input_type" : "Record",
+"name" : "FieldElementwise",
+"full_name" : "FieldElementwise:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field constant in space.",
+"implements" : [ "Field:R3 -> Real" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldElementwise" },
+"type" : "81eb10d042b6187f"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "ccc8cdf863f915bd",
+"input_type" : "Record",
+"name" : "FieldInterpolatedP0",
+"full_name" : "FieldInterpolatedP0:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field constant in space.",
+"implements" : [ "Field:R3 -> Real" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldInterpolatedP0" },
+"type" : "81eb10d042b6187f"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "4c39e1e25be68a12",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Enum",
+"full_name" : "Field:R3 -> Enum",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "b753b8b5e1a4c9bc",
+"implementations" : [
+"b753b8b5e1a4c9bc",
+
+"aca2db4be13b7a9f",
+
+"bf36e62b64bdebea",
+
+"62aecc6eb5178080",
+
+"a1366114cb6bb917"]},{
+"id" : "b753b8b5e1a4c9bc",
+"input_type" : "Record",
+"name" : "FieldConstant",
+"full_name" : "FieldConstant:Field:R3 -> Enum",
+
+"description" : "R3 -> Enum Field constant in space.",
+"implements" : [ "Field:R3 -> Enum" ],
+"reducible_to_key" : "value",
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldConstant" },
+"type" : "3eb120dc434da870"
+},
+{ "key" : "value",
+"description" : "Value of the constant field.\nFor vector values, you can use scalar value to enter constant vector.\nFor square NxN-matrix values, you can use:\n* vector of size N to enter diagonal matrix\n* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* scalar to enter multiple of the unit matrix.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "94bf0c49ca4f4a64"
+}]
+},{
+"id" : "3eb120dc434da870",
+"input_type" : "Selection",
+"name" : "Field:R3 -> Enum_TYPE_selection",
+"full_name" : "Field:R3 -> Enum_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "FieldConstant",
+"description" : "" },
+{ "value" : "1",
+ "name" : "FieldFormula",
+"description" : "" },
+{ "value" : "2",
+ "name" : "FieldPython",
+"description" : "" },
+{ "value" : "3",
+ "name" : "FieldInterpolatedP0",
+"description" : "" },
+{ "value" : "4",
+ "name" : "FieldElementwise",
+"description" : "" }]
+},{
+"id" : "94bf0c49ca4f4a64",
+"input_type" : "Selection",
+"name" : "DarcyFlow_BC_Type",
+"full_name" : "DarcyFlow_BC_Type",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "none",
+"description" : "Homogeneous Neumann boundary condition. Zero flux" },
+{ "value" : "1",
+ "name" : "dirichlet",
+"description" : "Dirichlet boundary condition. Specify the pressure head through the 'bc_pressure' field or the piezometric head through the 'bc_piezo_head' field." },
+{ "value" : "2",
+ "name" : "neumann",
+"description" : "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field." },
+{ "value" : "3",
+ "name" : "robin",
+"description" : "Robin boundary condition. Water outflow equal to \\$sigma (h - h^R)$. Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head through 'bc_pressure' and 'bc_piezo_head' respectively." }]
+},{
+"id" : "aca2db4be13b7a9f",
+"input_type" : "Record",
+"name" : "FieldFormula",
+"full_name" : "FieldFormula:Field:R3 -> Enum",
+
+"description" : "R3 -> Enum Field given by runtime interpreted formula.",
+"implements" : [ "Field:R3 -> Enum" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldFormula" },
+"type" : "3eb120dc434da870"
+},
+{ "key" : "value",
+"description" : "String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\nFor vector values, you can use just one string to enter homogeneous vector.\nFor square NxN-matrix values, you can use:\n* array of strings of size N to enter diagonal matrix\n* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* just one string to enter (spatially variable) multiple of the unit matrix.\nFormula can contain variables x,y,z,t and usual operators and functions.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "bf36e62b64bdebea",
+"input_type" : "Record",
+"name" : "FieldPython",
+"full_name" : "FieldPython:Field:R3 -> Enum",
+
+"description" : "R3 -> Enum Field given by a Python script.",
+"implements" : [ "Field:R3 -> Enum" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldPython" },
+"type" : "3eb120dc434da870"
+},
+{ "key" : "script_string",
+"description" : "Python script given as in place string",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_file' is not given." },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "script_file",
+"description" : "Python script given as external file",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_striong' is not given." },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "function",
+"description" : "Function in the given script that returns tuple containing components of the return type.\nFor NxM tensor values: tensor(row,col) = tuple( M*row + col ).",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "62aecc6eb5178080",
+"input_type" : "Record",
+"name" : "FieldInterpolatedP0",
+"full_name" : "FieldInterpolatedP0:Field:R3 -> Enum",
+
+"description" : "R3 -> Enum Field constant in space.",
+"implements" : [ "Field:R3 -> Enum" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldInterpolatedP0" },
+"type" : "3eb120dc434da870"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "a1366114cb6bb917",
+"input_type" : "Record",
+"name" : "FieldElementwise",
+"full_name" : "FieldElementwise:Field:R3 -> Enum",
+
+"description" : "R3 -> Enum Field constant in space.",
+"implements" : [ "Field:R3 -> Enum" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldElementwise" },
+"type" : "3eb120dc434da870"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "4c39e1e25697b4a4",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Real",
+"full_name" : "Field:R3 -> Real",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "c27ac3dece5e20bb",
+"implementations" : [
+"c27ac3dece5e20bb",
+
+"5cf44b4811e560d5",
+
+"cc1ca74de1fe5cc6",
+
+"c451f20a1355f584",
+
+"97c41dbca5bf12bd"]},{
+"id" : "c27ac3dece5e20bb",
+"input_type" : "Record",
+"name" : "FieldConstant",
+"full_name" : "FieldConstant:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field constant in space.",
+"implements" : [ "Field:R3 -> Real" ],
+"reducible_to_key" : "value",
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldConstant" },
+"type" : "fe16e5a31476a427"
+},
+{ "key" : "value",
+"description" : "Value of the constant field.\nFor vector values, you can use scalar value to enter constant vector.\nFor square NxN-matrix values, you can use:\n* vector of size N to enter diagonal matrix\n* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* scalar to enter multiple of the unit matrix.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47484ede475775e6"
+}]
+},{
+"id" : "fe16e5a31476a427",
+"input_type" : "Selection",
+"name" : "Field:R3 -> Real_TYPE_selection",
+"full_name" : "Field:R3 -> Real_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "FieldConstant",
+"description" : "" },
+{ "value" : "1",
+ "name" : "FieldFormula",
+"description" : "" },
+{ "value" : "2",
+ "name" : "FieldPython",
+"description" : "" },
+{ "value" : "3",
+ "name" : "FieldInterpolatedP0",
+"description" : "" },
+{ "value" : "4",
+ "name" : "FieldElementwise",
+"description" : "" }]
+},{
+"id" : "5cf44b4811e560d5",
+"input_type" : "Record",
+"name" : "FieldFormula",
+"full_name" : "FieldFormula:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field given by runtime interpreted formula.",
+"implements" : [ "Field:R3 -> Real" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldFormula" },
+"type" : "fe16e5a31476a427"
+},
+{ "key" : "value",
+"description" : "String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\nFor vector values, you can use just one string to enter homogeneous vector.\nFor square NxN-matrix values, you can use:\n* array of strings of size N to enter diagonal matrix\n* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* just one string to enter (spatially variable) multiple of the unit matrix.\nFormula can contain variables x,y,z,t and usual operators and functions.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "cc1ca74de1fe5cc6",
+"input_type" : "Record",
+"name" : "FieldPython",
+"full_name" : "FieldPython:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field given by a Python script.",
+"implements" : [ "Field:R3 -> Real" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldPython" },
+"type" : "fe16e5a31476a427"
+},
+{ "key" : "script_string",
+"description" : "Python script given as in place string",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_file' is not given." },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "script_file",
+"description" : "Python script given as external file",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_striong' is not given." },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "function",
+"description" : "Function in the given script that returns tuple containing components of the return type.\nFor NxM tensor values: tensor(row,col) = tuple( M*row + col ).",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "c451f20a1355f584",
+"input_type" : "Record",
+"name" : "FieldInterpolatedP0",
+"full_name" : "FieldInterpolatedP0:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field constant in space.",
+"implements" : [ "Field:R3 -> Real" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldInterpolatedP0" },
+"type" : "fe16e5a31476a427"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "97c41dbca5bf12bd",
+"input_type" : "Record",
+"name" : "FieldElementwise",
+"full_name" : "FieldElementwise:Field:R3 -> Real",
+
+"description" : "R3 -> Real Field constant in space.",
+"implements" : [ "Field:R3 -> Real" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldElementwise" },
+"type" : "fe16e5a31476a427"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "4c39e1e5a853ca91",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Real",
+"full_name" : "Field:R3 -> Real",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "c27ac3dece5e20bb",
+"implementations" : [
+"c27ac3dece5e20bb",
+
+"5cf44b4811e560d5",
+
+"cc1ca74de1fe5cc6",
+
+"c451f20a1355f584",
+
+"97c41dbca5bf12bd"]},{
+"id" : "f8b59ec6579bb8e7",
+"input_type" : "Record",
+"name" : "Unsteady_MH",
+"full_name" : "Unsteady_MH:DarcyFlowMH",
+
+"description" : "Mixed-Hybrid solver for unsteady saturated Darcy flow.",
+"implements" : [ "DarcyFlowMH" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "Unsteady_MH" },
+"type" : "951d22f534f4713a"
+},
+{ "key" : "n_schurs",
+"description" : "Number of Schur complements to perform when solving MH sytem.",
+"default" : { "type" : "value at declaration",
+"value" : "2" },
+"type" : "151ce92dd201d44a"
+},
+{ "key" : "solver",
+"description" : "Linear solver for MH problem.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "c41013c46f054475"
+},
+{ "key" : "output",
+"description" : "Parameters of output form MH module.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "2015c5bce001f29b"
+},
+{ "key" : "mortar_method",
+"description" : "Method for coupling Darcy flow between dimensions.",
+"default" : { "type" : "value at declaration",
+"value" : "None" },
+"type" : "77e8d459d5c35386"
+},
+{ "key" : "balance",
+"description" : "Settings for computing mass balance.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d280bda6d317af17"
+},
+{ "key" : "input_fields",
+"description" : "",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47947985b66e5c1c"
+},
+{ "key" : "time",
+"description" : "Time governor setting for the unsteady Darcy flow model.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d8574f6af69c7e1f"
+}]
+},{
+"id" : "7f8079521b88dfc6",
+"input_type" : "Record",
+"name" : "Unsteady_LMH",
+"full_name" : "Unsteady_LMH:DarcyFlowMH",
+
+"description" : "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.",
+"implements" : [ "DarcyFlowMH" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "Unsteady_LMH" },
+"type" : "951d22f534f4713a"
+},
+{ "key" : "n_schurs",
+"description" : "Number of Schur complements to perform when solving MH sytem.",
+"default" : { "type" : "value at declaration",
+"value" : "2" },
+"type" : "151ce92dd201d44a"
+},
+{ "key" : "solver",
+"description" : "Linear solver for MH problem.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "c41013c46f054475"
+},
+{ "key" : "output",
+"description" : "Parameters of output form MH module.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "2015c5bce001f29b"
+},
+{ "key" : "mortar_method",
+"description" : "Method for coupling Darcy flow between dimensions.",
+"default" : { "type" : "value at declaration",
+"value" : "None" },
+"type" : "77e8d459d5c35386"
+},
+{ "key" : "balance",
+"description" : "Settings for computing mass balance.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d280bda6d317af17"
+},
+{ "key" : "input_fields",
+"description" : "",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47947985b66e5c1c"
+},
+{ "key" : "time",
+"description" : "Time governor setting for the unsteady Darcy flow model.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d8574f6af69c7e1f"
+}]
+},{
+"id" : "ba303a95a63b8f96",
+"input_type" : "Abstract",
+"name" : "Transport",
+"full_name" : "Transport",
+"description" : "Secondary equation for transport of substances.",
+"implementations" : [
+"157db991784b6742",
+
+"b3aefe40ba25fdf5",
+
+"4bd9295d642df95f"]},{
+"id" : "157db991784b6742",
+"input_type" : "Record",
+"name" : "TransportOperatorSplitting",
+"full_name" : "TransportOperatorSplitting:Transport",
+
+"description" : "Explicit FVM transport (no diffusion)\ncoupled with reaction and adsorption model (ODE per element)\n via operator splitting.",
+"implements" : [ "Transport" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "TransportOperatorSplitting" },
+"type" : "94e955e50d64fef1"
+},
+{ "key" : "time",
+"description" : "Time governor setting for the secondary equation.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d8574f6af69c7e1f"
+},
+{ "key" : "balance",
+"description" : "Settings for computing balance.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d280bda6d317af17"
+},
+{ "key" : "output_stream",
+"description" : "Parameters of output stream.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "a991884958d2c471"
+},
+{ "key" : "substances",
+"description" : "Specification of transported substances.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "57a7a5e1a86f94ad"
+},
+{ "key" : "reaction_term",
+"description" : "Reaction model involved in transport.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "input_fields",
+"description" : "",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "472c73cd9a47928a"
+},
+{ "key" : "output_fields",
+"description" : "List of fields to write to output file.",
+"default" : { "type" : "value at declaration",
+"value" : "conc" },
+"type" : "afe6afd982c3ff91"
+}]
+},{
+"id" : "94e955e50d64fef1",
+"input_type" : "Selection",
+"name" : "Transport_TYPE_selection",
+"full_name" : "Transport_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "TransportOperatorSplitting",
+"description" : "" },
+{ "value" : "1",
+ "name" : "SoluteTransport_DG",
+"description" : "" },
+{ "value" : "2",
+ "name" : "HeatTransfer_DG",
+"description" : "" }]
+},{
+"id" : "57a7a5e1a86f94ad",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "bb8ed616e3e5a7f6"
+},
+{
+"id" : "bb8ed616e3e5a7f6",
+"input_type" : "Record",
+"name" : "Substance",
+"full_name" : "Substance",
+
+"description" : "Chemical substance.",
+"reducible_to_key" : "name",
+"keys" : [
+{ "key" : "name",
+"description" : "Name of the substance.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "molar_mass",
+"description" : "Molar mass of the substance [kg/mol].",
+"default" : { "type" : "value at declaration",
+"value" : "1" },
+"type" : "6b1c4ede475775aa"
+}]
+},{
+"id" : "3729aedf9c87de91",
+"input_type" : "Abstract",
+"name" : "ReactionTerm",
+"full_name" : "ReactionTerm",
+"description" : "Equation for reading information about simple chemical reactions.",
+"implementations" : [
+"eb0c2ee15b1bcb77",
+
+"d4d500b9be84285",
+
+"ab7918b3226addfb",
+
+"5d8be33ba83c3f4c",
+
+"3173af91fd789bd9",
+
+"5b159dc311c3109f",
+
+"383f4f5f97af3d1b"]},{
+"id" : "eb0c2ee15b1bcb77",
+"input_type" : "Record",
+"name" : "FirstOrderReaction",
+"full_name" : "FirstOrderReaction:ReactionTerm",
+
+"description" : "A model of first order chemical reactions (decompositions of a reactant into products).",
+"implements" : [ "ReactionTerm" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FirstOrderReaction" },
+"type" : "58e17bc45416665e"
+},
+{ "key" : "reactions",
+"description" : "An array of first order chemical reactions.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d58a5e2406c40720"
+},
+{ "key" : "ode_solver",
+"description" : "Numerical solver for the system of first order ordinary differential equations coming from the model.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "147cac660aa7d93c"
+}]
+},{
+"id" : "58e17bc45416665e",
+"input_type" : "Selection",
+"name" : "ReactionTerm_TYPE_selection",
+"full_name" : "ReactionTerm_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "FirstOrderReaction",
+"description" : "" },
+{ "value" : "1",
+ "name" : "RadioactiveDecay",
+"description" : "" },
+{ "value" : "2",
+ "name" : "Sorption",
+"description" : "" },
+{ "value" : "3",
+ "name" : "SorptionMobile",
+"description" : "" },
+{ "value" : "4",
+ "name" : "SorptionImmobile",
+"description" : "" },
+{ "value" : "5",
+ "name" : "DualPorosity",
+"description" : "" },
+{ "value" : "6",
+ "name" : "Semchem",
+"description" : "" }]
+},{
+"id" : "d58a5e2406c40720",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "6bf77257be7e7f51"
+},
+{
+"id" : "6bf77257be7e7f51",
+"input_type" : "Record",
+"name" : "Reaction",
+"full_name" : "Reaction",
+
+"description" : "Describes a single first order chemical reaction.",
+"keys" : [
+{ "key" : "reactants",
+"description" : "An array of reactants. Do not use array, reactions with only one reactant (decays) are implemented at the moment!",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "de6fc6e6e4ae1572"
+},
+{ "key" : "reaction_rate",
+"description" : "The reaction rate coefficient of the first order reaction.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "products",
+"description" : "An array of products.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "7c6b91701222b97b"
+}]
+},{
+"id" : "de6fc6e6e4ae1572",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "b6874fe828cdc89a"
+},
+{
+"id" : "b6874fe828cdc89a",
+"input_type" : "Record",
+"name" : "FirstOrderReactionReactant",
+"full_name" : "FirstOrderReactionReactant",
+
+"description" : "A record describing a reactant of a reaction.",
+"reducible_to_key" : "name",
+"keys" : [
+{ "key" : "name",
+"description" : "The name of the reactant.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "7c6b91701222b97b",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "d8ee3f89fd5f6db"
+},
+{
+"id" : "d8ee3f89fd5f6db",
+"input_type" : "Record",
+"name" : "FirstOrderReactionProduct",
+"full_name" : "FirstOrderReactionProduct",
+
+"description" : "A record describing a product of a reaction.",
+"reducible_to_key" : "name",
+"keys" : [
+{ "key" : "name",
+"description" : "The name of the product.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "branching_ratio",
+"description" : "The branching ratio of the product when there are more products.\nThe value must be positive. Further, the branching ratios of all products are normalized in order to sum to one.\nThe default value 1.0, should only be used in the case of single product.",
+"default" : { "type" : "value at declaration",
+"value" : "1.0" },
+"type" : "6b1c4ede475775aa"
+}]
+},{
+"id" : "147cac660aa7d93c",
+"input_type" : "Abstract",
+"name" : "LinearODESolver",
+"full_name" : "LinearODESolver",
+"description" : "Solver of a linear system of ODEs.",
+"implementations" : [
+"9e88f84e499dc8a6",
+
+"1dfdaf46adc1b540"]},{
+"id" : "9e88f84e499dc8a6",
+"input_type" : "Record",
+"name" : "PadeApproximant",
+"full_name" : "PadeApproximant:LinearODESolver",
+
+"description" : "Record with an information about pade approximant parameters.",
+"implements" : [ "LinearODESolver" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "PadeApproximant" },
+"type" : "32cf0d026b89e195"
+},
+{ "key" : "nominator_degree",
+"description" : "Polynomial degree of the nominator of Pade approximant.",
+"default" : { "type" : "value at declaration",
+"value" : "2" },
+"type" : "151ce92d5201d40e"
+},
+{ "key" : "denominator_degree",
+"description" : "Polynomial degree of the nominator of Pade approximant",
+"default" : { "type" : "value at declaration",
+"value" : "2" },
+"type" : "151ce92d5201d40e"
+}]
+},{
+"id" : "32cf0d026b89e195",
+"input_type" : "Selection",
+"name" : "LinearODESolver_TYPE_selection",
+"full_name" : "LinearODESolver_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "PadeApproximant",
+"description" : "" },
+{ "value" : "1",
+ "name" : "LinearODEAnalytic",
+"description" : "" }]
+},{
+"id" : "151ce92d5201d40e",
+"input_type" : "Integer",
+"name" : "Integer",
+"full_name" : "Integer",
+"range" : [1, 2147483647]
+},{
+"id" : "1dfdaf46adc1b540",
+"input_type" : "Record",
+"name" : "LinearODEAnalytic",
+"full_name" : "LinearODEAnalytic:LinearODESolver",
+
+"description" : "Evaluate analytic solution of the system of ODEs.",
+"implements" : [ "LinearODESolver" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "LinearODEAnalytic" },
+"type" : "32cf0d026b89e195"
+}]
+},{
+"id" : "d4d500b9be84285",
+"input_type" : "Record",
+"name" : "RadioactiveDecay",
+"full_name" : "RadioactiveDecay:ReactionTerm",
+
+"description" : "A model of a radioactive decay and possibly of a decay chain.",
+"implements" : [ "ReactionTerm" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "RadioactiveDecay" },
+"type" : "58e17bc45416665e"
+},
+{ "key" : "decays",
+"description" : "An array of radioactive decays.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "be36e19ca6ac9b1f"
+},
+{ "key" : "ode_solver",
+"description" : "Numerical solver for the system of first order ordinary differential equations coming from the model.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "147cac660aa7d93c"
+}]
+},{
+"id" : "be36e19ca6ac9b1f",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "3cf35a4e737f77ef"
+},
+{
+"id" : "3cf35a4e737f77ef",
+"input_type" : "Record",
+"name" : "Decay",
+"full_name" : "Decay",
+
+"description" : "A model of a radioactive decay.",
+"keys" : [
+{ "key" : "radionuclide",
+"description" : "The name of the parent radionuclide.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "half_life",
+"description" : "The half life of the parent radionuclide in seconds.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "products",
+"description" : "An array of the decay products (daughters).",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "5d66558290abdd3e"
+}]
+},{
+"id" : "5d66558290abdd3e",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "1758ff64a5e09a45"
+},
+{
+"id" : "1758ff64a5e09a45",
+"input_type" : "Record",
+"name" : "RadioactiveDecayProduct",
+"full_name" : "RadioactiveDecayProduct",
+
+"description" : "A record describing a product of a radioactive decay.",
+"reducible_to_key" : "name",
+"keys" : [
+{ "key" : "name",
+"description" : "The name of the product.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "energy",
+"description" : "Not used at the moment! The released energy in MeV from the decay of the radionuclide into the product.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "branching_ratio",
+"description" : "The branching ratio of the product when there is more than one.Considering only one product, the default ratio 1.0 is used.Its value must be positive. Further, the branching ratios of all products are normalizedby their sum, so the sum then gives 1.0 (this also resolves possible rounding errors).",
+"default" : { "type" : "value at declaration",
+"value" : "1.0" },
+"type" : "6b1c4ede475775aa"
+}]
+},{
+"id" : "ab7918b3226addfb",
+"input_type" : "Record",
+"name" : "Sorption",
+"full_name" : "Sorption:ReactionTerm",
+
+"description" : "Sorption model in the reaction term of transport.",
+"implements" : [ "ReactionTerm" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "Sorption" },
+"type" : "58e17bc45416665e"
+},
+{ "key" : "substances",
+"description" : "Names of the substances that take part in the sorption model.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "eee303f526b992fd"
+},
+{ "key" : "solvent_density",
+"description" : "Density of the solvent.",
+"default" : { "type" : "value at declaration",
+"value" : "1.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "substeps",
+"description" : "Number of equidistant substeps, molar mass and isotherm intersections",
+"default" : { "type" : "value at declaration",
+"value" : "1000" },
+"type" : "151ce92d5201d40e"
+},
+{ "key" : "solubility",
+"description" : "Specifies solubility limits of all the sorbing species.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ae4d15413e119e57"
+},
+{ "key" : "table_limits",
+"description" : "Specifies highest aqueous concentration in interpolation table.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ae4d15413e119e57"
+},
+{ "key" : "input_fields",
+"description" : "Containes region specific data necessary to construct isotherms.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d50502ee29b1ace6"
+},
+{ "key" : "reaction_liquid",
+"description" : "Reaction model following the sorption in the liquid.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "reaction_solid",
+"description" : "Reaction model following the sorption in the solid.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "output_fields",
+"description" : "List of fields to write to output stream.",
+"default" : { "type" : "value at declaration",
+"value" : "conc_solid" },
+"type" : "6cb744a07400bb04"
+}]
+},{
+"id" : "d50502ee29b1ace6",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "f0c3569bdac9e2ce"
+},
+{
+"id" : "f0c3569bdac9e2ce",
+"input_type" : "Record",
+"name" : "Sorption_Data",
+"full_name" : "Sorption_Data",
+
+"description" : "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any Sorption_Data record that comes later in the boundary data array.",
+"keys" : [
+{ "key" : "r_set",
+"description" : "Name of region set where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "region",
+"description" : "Label of the region where to set fields. ",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "rid",
+"description" : "ID of the region where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "time",
+"description" : "Apply field setting in this record after this time.\nThese times have to form an increasing sequence.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "rock_density",
+"description" : "Rock matrix density. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "sorption_type",
+"description" : "Considered sorption is described by selected isotherm. If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868727689c32eef"
+},
+{ "key" : "isotherm_mult",
+"description" : "Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description. $[kg^{-1}mol]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "isotherm_other",
+"description" : "Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a). $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "init_conc_solid",
+"description" : "Initial solid concentration of substances. Vector, one value for every substance. $[kg^{-1}mol]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+}]
+},{
+"id" : "868727689c32eef",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Enum[n]",
+"full_name" : "Field:R3 -> Enum[n]",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "601f231ac03e8e0c",
+"implementations" : [
+"601f231ac03e8e0c",
+
+"69cc879317d1a91d",
+
+"1f394ae00c32ea27",
+
+"f7ad999ca5fc7da5",
+
+"63ff36d278eb6a39"]},{
+"id" : "601f231ac03e8e0c",
+"input_type" : "Record",
+"name" : "FieldConstant",
+"full_name" : "FieldConstant:Field:R3 -> Enum[n]",
+
+"description" : "R3 -> Enum[n] Field constant in space.",
+"implements" : [ "Field:R3 -> Enum[n]" ],
+"reducible_to_key" : "value",
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldConstant" },
+"type" : "732cc773c52bf98b"
+},
+{ "key" : "value",
+"description" : "Value of the constant field.\nFor vector values, you can use scalar value to enter constant vector.\nFor square NxN-matrix values, you can use:\n* vector of size N to enter diagonal matrix\n* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* scalar to enter multiple of the unit matrix.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "ddcb0cfa288ba385"
+}]
+},{
+"id" : "732cc773c52bf98b",
+"input_type" : "Selection",
+"name" : "Field:R3 -> Enum[n]_TYPE_selection",
+"full_name" : "Field:R3 -> Enum[n]_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "FieldConstant",
+"description" : "" },
+{ "value" : "1",
+ "name" : "FieldFormula",
+"description" : "" },
+{ "value" : "2",
+ "name" : "FieldPython",
+"description" : "" },
+{ "value" : "3",
+ "name" : "FieldInterpolatedP0",
+"description" : "" },
+{ "value" : "4",
+ "name" : "FieldElementwise",
+"description" : "" }]
+},{
+"id" : "ddcb0cfa288ba385",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "b992ede334b6d7e7"
+},
+{
+"id" : "b992ede334b6d7e7",
+"input_type" : "Selection",
+"name" : "SorptionType",
+"full_name" : "SorptionType",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "none",
+"description" : "No sorption considered." },
+{ "value" : "1",
+ "name" : "linear",
+"description" : "Linear isotherm runs the concentration exchange between liquid and solid." },
+{ "value" : "3",
+ "name" : "langmuir",
+"description" : "Langmuir isotherm runs the concentration exchange between liquid and solid." },
+{ "value" : "2",
+ "name" : "freundlich",
+"description" : "Freundlich isotherm runs the concentration exchange between liquid and solid." }]
+},{
+"id" : "69cc879317d1a91d",
+"input_type" : "Record",
+"name" : "FieldFormula",
+"full_name" : "FieldFormula:Field:R3 -> Enum[n]",
+
+"description" : "R3 -> Enum[n] Field given by runtime interpreted formula.",
+"implements" : [ "Field:R3 -> Enum[n]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldFormula" },
+"type" : "732cc773c52bf98b"
+},
+{ "key" : "value",
+"description" : "String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\nFor vector values, you can use just one string to enter homogeneous vector.\nFor square NxN-matrix values, you can use:\n* array of strings of size N to enter diagonal matrix\n* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* just one string to enter (spatially variable) multiple of the unit matrix.\nFormula can contain variables x,y,z,t and usual operators and functions.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "eee303f526b992fd"
+}]
+},{
+"id" : "1f394ae00c32ea27",
+"input_type" : "Record",
+"name" : "FieldPython",
+"full_name" : "FieldPython:Field:R3 -> Enum[n]",
+
+"description" : "R3 -> Enum[n] Field given by a Python script.",
+"implements" : [ "Field:R3 -> Enum[n]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldPython" },
+"type" : "732cc773c52bf98b"
+},
+{ "key" : "script_string",
+"description" : "Python script given as in place string",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_file' is not given." },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "script_file",
+"description" : "Python script given as external file",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_striong' is not given." },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "function",
+"description" : "Function in the given script that returns tuple containing components of the return type.\nFor NxM tensor values: tensor(row,col) = tuple( M*row + col ).",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "f7ad999ca5fc7da5",
+"input_type" : "Record",
+"name" : "FieldInterpolatedP0",
+"full_name" : "FieldInterpolatedP0:Field:R3 -> Enum[n]",
+
+"description" : "R3 -> Enum[n] Field constant in space.",
+"implements" : [ "Field:R3 -> Enum[n]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldInterpolatedP0" },
+"type" : "732cc773c52bf98b"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "63ff36d278eb6a39",
+"input_type" : "Record",
+"name" : "FieldElementwise",
+"full_name" : "FieldElementwise:Field:R3 -> Enum[n]",
+
+"description" : "R3 -> Enum[n] Field constant in space.",
+"implements" : [ "Field:R3 -> Enum[n]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldElementwise" },
+"type" : "732cc773c52bf98b"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "868791b89801c0f",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Real[n]",
+"full_name" : "Field:R3 -> Real[n]",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "8b23b0c46ba92e6",
+"implementations" : [
+"8b23b0c46ba92e6",
+
+"dc0af4cda6504d9e",
+
+"2570899da86e686f",
+
+"acfddc808ab1a045",
+
+"7d5fabc70a8402ce"]},{
+"id" : "8b23b0c46ba92e6",
+"input_type" : "Record",
+"name" : "FieldConstant",
+"full_name" : "FieldConstant:Field:R3 -> Real[n]",
+
+"description" : "R3 -> Real[n] Field constant in space.",
+"implements" : [ "Field:R3 -> Real[n]" ],
+"reducible_to_key" : "value",
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldConstant" },
+"type" : "5a6fad9e0cac331c"
+},
+{ "key" : "value",
+"description" : "Value of the constant field.\nFor vector values, you can use scalar value to enter constant vector.\nFor square NxN-matrix values, you can use:\n* vector of size N to enter diagonal matrix\n* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* scalar to enter multiple of the unit matrix.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "cba115413e116f1a"
+}]
+},{
+"id" : "5a6fad9e0cac331c",
+"input_type" : "Selection",
+"name" : "Field:R3 -> Real[n]_TYPE_selection",
+"full_name" : "Field:R3 -> Real[n]_TYPE_selection",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "FieldConstant",
+"description" : "" },
+{ "value" : "1",
+ "name" : "FieldPython",
+"description" : "" },
+{ "value" : "2",
+ "name" : "FieldFormula",
+"description" : "" },
+{ "value" : "3",
+ "name" : "FieldElementwise",
+"description" : "" },
+{ "value" : "4",
+ "name" : "FieldInterpolatedP0",
+"description" : "" }]
+},{
+"id" : "dc0af4cda6504d9e",
+"input_type" : "Record",
+"name" : "FieldPython",
+"full_name" : "FieldPython:Field:R3 -> Real[n]",
+
+"description" : "R3 -> Real[n] Field given by a Python script.",
+"implements" : [ "Field:R3 -> Real[n]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldPython" },
+"type" : "5a6fad9e0cac331c"
+},
+{ "key" : "script_string",
+"description" : "Python script given as in place string",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_file' is not given." },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "script_file",
+"description" : "Python script given as external file",
+"default" : { "type" : "value at read time",
+"value" : "Obligatory if 'script_striong' is not given." },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "function",
+"description" : "Function in the given script that returns tuple containing components of the return type.\nFor NxM tensor values: tensor(row,col) = tuple( M*row + col ).",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "2570899da86e686f",
+"input_type" : "Record",
+"name" : "FieldFormula",
+"full_name" : "FieldFormula:Field:R3 -> Real[n]",
+
+"description" : "R3 -> Real[n] Field given by runtime interpreted formula.",
+"implements" : [ "Field:R3 -> Real[n]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldFormula" },
+"type" : "5a6fad9e0cac331c"
+},
+{ "key" : "value",
+"description" : "String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\nFor vector values, you can use just one string to enter homogeneous vector.\nFor square NxN-matrix values, you can use:\n* array of strings of size N to enter diagonal matrix\n* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* just one string to enter (spatially variable) multiple of the unit matrix.\nFormula can contain variables x,y,z,t and usual operators and functions.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "eee303f526b992fd"
+}]
+},{
+"id" : "acfddc808ab1a045",
+"input_type" : "Record",
+"name" : "FieldElementwise",
+"full_name" : "FieldElementwise:Field:R3 -> Real[n]",
+
+"description" : "R3 -> Real[n] Field constant in space.",
+"implements" : [ "Field:R3 -> Real[n]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldElementwise" },
+"type" : "5a6fad9e0cac331c"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "7d5fabc70a8402ce",
+"input_type" : "Record",
+"name" : "FieldInterpolatedP0",
+"full_name" : "FieldInterpolatedP0:Field:R3 -> Real[n]",
+
+"description" : "R3 -> Real[n] Field constant in space.",
+"implements" : [ "Field:R3 -> Real[n]" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldInterpolatedP0" },
+"type" : "5a6fad9e0cac331c"
+},
+{ "key" : "gmsh_file",
+"description" : "Input file with ASCII GMSH file format.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "89a808b8e9515bf8"
+},
+{ "key" : "field_name",
+"description" : "The values of the Field are read from the \\$ElementData section with field name given by this key.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "29b5533100b6f60f"
+}]
+},{
+"id" : "6cb744a07400bb04",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "e6b68a3586d67e90"
+},
+{
+"id" : "e6b68a3586d67e90",
+"input_type" : "Selection",
+"name" : "Sorption_Output",
+"full_name" : "Sorption_Output",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "rock_density",
+"description" : "Output of the field rock_density $[m^{-3}kg]$ (Rock matrix density.)." },
+{ "value" : "1",
+ "name" : "sorption_type",
+"description" : "Output of the field sorption_type $[-]$ (Considered sorption is described by selected isotherm. If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.)." },
+{ "value" : "2",
+ "name" : "isotherm_mult",
+"description" : "Output of the field isotherm_mult $[kg^{-1}mol]$ (Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.)." },
+{ "value" : "3",
+ "name" : "isotherm_other",
+"description" : "Output of the field isotherm_other $[-]$ (Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).)." },
+{ "value" : "4",
+ "name" : "init_conc_solid",
+"description" : "Output of the field init_conc_solid $[kg^{-1}mol]$ (Initial solid concentration of substances. Vector, one value for every substance.)." },
+{ "value" : "5",
+ "name" : "conc_solid",
+"description" : "Output of the field conc_solid $[m^{-3}kg]$." }]
+},{
+"id" : "5d8be33ba83c3f4c",
+"input_type" : "Record",
+"name" : "SorptionMobile",
+"full_name" : "SorptionMobile:ReactionTerm",
+
+"description" : "Sorption model in the mobile zone, following the dual porosity model.",
+"implements" : [ "ReactionTerm" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "SorptionMobile" },
+"type" : "58e17bc45416665e"
+},
+{ "key" : "substances",
+"description" : "Names of the substances that take part in the sorption model.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "eee303f526b992fd"
+},
+{ "key" : "solvent_density",
+"description" : "Density of the solvent.",
+"default" : { "type" : "value at declaration",
+"value" : "1.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "substeps",
+"description" : "Number of equidistant substeps, molar mass and isotherm intersections",
+"default" : { "type" : "value at declaration",
+"value" : "1000" },
+"type" : "151ce92d5201d40e"
+},
+{ "key" : "solubility",
+"description" : "Specifies solubility limits of all the sorbing species.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ae4d15413e119e57"
+},
+{ "key" : "table_limits",
+"description" : "Specifies highest aqueous concentration in interpolation table.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ae4d15413e119e57"
+},
+{ "key" : "input_fields",
+"description" : "Containes region specific data necessary to construct isotherms.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d50502ee29b1ace6"
+},
+{ "key" : "reaction_liquid",
+"description" : "Reaction model following the sorption in the liquid.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "reaction_solid",
+"description" : "Reaction model following the sorption in the solid.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "output_fields",
+"description" : "List of fields to write to output stream.",
+"default" : { "type" : "value at declaration",
+"value" : "conc_solid" },
+"type" : "d45aaf028b7674d5"
+}]
+},{
+"id" : "d45aaf028b7674d5",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "c94cc5b6aa783106"
+},
+{
+"id" : "c94cc5b6aa783106",
+"input_type" : "Selection",
+"name" : "SorptionMobile_Output",
+"full_name" : "SorptionMobile_Output",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "rock_density",
+"description" : "Output of the field rock_density $[m^{-3}kg]$ (Rock matrix density.)." },
+{ "value" : "1",
+ "name" : "sorption_type",
+"description" : "Output of the field sorption_type $[-]$ (Considered sorption is described by selected isotherm. If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.)." },
+{ "value" : "2",
+ "name" : "isotherm_mult",
+"description" : "Output of the field isotherm_mult $[kg^{-1}mol]$ (Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.)." },
+{ "value" : "3",
+ "name" : "isotherm_other",
+"description" : "Output of the field isotherm_other $[-]$ (Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).)." },
+{ "value" : "4",
+ "name" : "init_conc_solid",
+"description" : "Output of the field init_conc_solid $[kg^{-1}mol]$ (Initial solid concentration of substances. Vector, one value for every substance.)." },
+{ "value" : "5",
+ "name" : "conc_solid",
+"description" : "Output of the field conc_solid $[m^{-3}kg]$." }]
+},{
+"id" : "3173af91fd789bd9",
+"input_type" : "Record",
+"name" : "SorptionImmobile",
+"full_name" : "SorptionImmobile:ReactionTerm",
+
+"description" : "Sorption model in the immobile zone, following the dual porosity model.",
+"implements" : [ "ReactionTerm" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "SorptionImmobile" },
+"type" : "58e17bc45416665e"
+},
+{ "key" : "substances",
+"description" : "Names of the substances that take part in the sorption model.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "eee303f526b992fd"
+},
+{ "key" : "solvent_density",
+"description" : "Density of the solvent.",
+"default" : { "type" : "value at declaration",
+"value" : "1.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "substeps",
+"description" : "Number of equidistant substeps, molar mass and isotherm intersections",
+"default" : { "type" : "value at declaration",
+"value" : "1000" },
+"type" : "151ce92d5201d40e"
+},
+{ "key" : "solubility",
+"description" : "Specifies solubility limits of all the sorbing species.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ae4d15413e119e57"
+},
+{ "key" : "table_limits",
+"description" : "Specifies highest aqueous concentration in interpolation table.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "ae4d15413e119e57"
+},
+{ "key" : "input_fields",
+"description" : "Containes region specific data necessary to construct isotherms.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d50502ee29b1ace6"
+},
+{ "key" : "reaction_liquid",
+"description" : "Reaction model following the sorption in the liquid.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "reaction_solid",
+"description" : "Reaction model following the sorption in the solid.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "output_fields",
+"description" : "List of fields to write to output stream.",
+"default" : { "type" : "value at declaration",
+"value" : "conc_immobile_solid" },
+"type" : "9d51b725073d8608"
+}]
+},{
+"id" : "9d51b725073d8608",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "e73723d3edbac273"
+},
+{
+"id" : "e73723d3edbac273",
+"input_type" : "Selection",
+"name" : "SorptionImmobile_Output",
+"full_name" : "SorptionImmobile_Output",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "rock_density",
+"description" : "Output of the field rock_density $[m^{-3}kg]$ (Rock matrix density.)." },
+{ "value" : "1",
+ "name" : "sorption_type",
+"description" : "Output of the field sorption_type $[-]$ (Considered sorption is described by selected isotherm. If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.)." },
+{ "value" : "2",
+ "name" : "isotherm_mult",
+"description" : "Output of the field isotherm_mult $[kg^{-1}mol]$ (Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.)." },
+{ "value" : "3",
+ "name" : "isotherm_other",
+"description" : "Output of the field isotherm_other $[-]$ (Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).)." },
+{ "value" : "4",
+ "name" : "init_conc_solid",
+"description" : "Output of the field init_conc_solid $[kg^{-1}mol]$ (Initial solid concentration of substances. Vector, one value for every substance.)." },
+{ "value" : "5",
+ "name" : "conc_immobile_solid",
+"description" : "Output of the field conc_immobile_solid $[m^{-3}kg]$." }]
+},{
+"id" : "5b159dc311c3109f",
+"input_type" : "Record",
+"name" : "DualPorosity",
+"full_name" : "DualPorosity:ReactionTerm",
+
+"description" : "Dual porosity model in transport problems.\nProvides computing the concentration of substances in mobile and immobile zone.\n",
+"implements" : [ "ReactionTerm" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "DualPorosity" },
+"type" : "58e17bc45416665e"
+},
+{ "key" : "input_fields",
+"description" : "Containes region specific data necessary to construct dual porosity model.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "bccb65fa50978e4f"
+},
+{ "key" : "scheme_tolerance",
+"description" : "Tolerance according to which the explicit Euler scheme is used or not.Set 0.0 to use analytic formula only (can be slower).",
+"default" : { "type" : "value at declaration",
+"value" : "1e-3" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "reaction_mobile",
+"description" : "Reaction model in mobile zone.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "reaction_immobile",
+"description" : "Reaction model in immobile zone.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "3729aedf9c87de91"
+},
+{ "key" : "output_fields",
+"description" : "List of fields to write to output stream.",
+"default" : { "type" : "value at declaration",
+"value" : "conc_immobile" },
+"type" : "6a8716add7ee5e5c"
+}]
+},{
+"id" : "bccb65fa50978e4f",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "a29015a904b2e76a"
+},
+{
+"id" : "a29015a904b2e76a",
+"input_type" : "Record",
+"name" : "DualPorosity_Data",
+"full_name" : "DualPorosity_Data",
+
+"description" : "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any DualPorosity_Data record that comes later in the boundary data array.",
+"keys" : [
+{ "key" : "r_set",
+"description" : "Name of region set where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "region",
+"description" : "Label of the region where to set fields. ",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "rid",
+"description" : "ID of the region where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "time",
+"description" : "Apply field setting in this record after this time.\nThese times have to form an increasing sequence.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "diffusion_rate_immobile",
+"description" : "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone. $[s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "porosity_immobile",
+"description" : "Porosity of the immobile zone. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "init_conc_immobile",
+"description" : "Initial concentration of substances in the immobile zone. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+}]
+},{
+"id" : "6a8716add7ee5e5c",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "5b2939a4c63953f6"
+},
+{
+"id" : "5b2939a4c63953f6",
+"input_type" : "Selection",
+"name" : "DualPorosity_Output",
+"full_name" : "DualPorosity_Output",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "diffusion_rate_immobile",
+"description" : "Output of the field diffusion_rate_immobile $[s^{-1}]$ (Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.)." },
+{ "value" : "1",
+ "name" : "porosity_immobile",
+"description" : "Output of the field porosity_immobile $[-]$ (Porosity of the immobile zone.)." },
+{ "value" : "2",
+ "name" : "init_conc_immobile",
+"description" : "Output of the field init_conc_immobile $[m^{-3}kg]$ (Initial concentration of substances in the immobile zone.)." },
+{ "value" : "3",
+ "name" : "conc_immobile",
+"description" : "Output of the field conc_immobile $[m^{-3}kg]$." }]
+},{
+"id" : "383f4f5f97af3d1b",
+"input_type" : "Record",
+"name" : "Semchem",
+"full_name" : "Semchem:ReactionTerm",
+
+"description" : "Declares infos valid for all reactions. NOT SUPPORTED!!!.",
+"implements" : [ "ReactionTerm" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "Semchem" },
+"type" : "58e17bc45416665e"
+},
+{ "key" : "precision",
+"description" : "How accurate should the simulation be, decimal places(?).",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "151ce8ce3201d44f"
+},
+{ "key" : "temperature",
+"description" : "Isothermal reaction, thermodynamic temperature.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47484ede475775e6"
+},
+{ "key" : "temp_gf",
+"description" : "Thermodynamic parameter.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47484ede475775e6"
+},
+{ "key" : "param_afi",
+"description" : "Thermodynamic parameter.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47484ede475775e6"
+},
+{ "key" : "param_b",
+"description" : "Thermodynamic parameter.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47484ede475775e6"
+},
+{ "key" : "epsilon",
+"description" : "Thermodynamic parameter.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "47484ede475775e6"
+},
+{ "key" : "time_steps",
+"description" : "Simulation parameter.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "151ce8ce3201d44f"
+},
+{ "key" : "slow_kinetic_steps",
+"description" : "Simulation parameter.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "151ce8ce3201d44f"
+}]
+},{
+"id" : "151ce8ce3201d44f",
+"input_type" : "Integer",
+"name" : "Integer",
+"full_name" : "Integer",
+"range" : [-2147483648, 2147483647]
+},{
+"id" : "472c73cd9a47928a",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "45e828f9f93a3c4b"
+},
+{
+"id" : "45e828f9f93a3c4b",
+"input_type" : "Record",
+"name" : "TransportOperatorSplitting_Data",
+"full_name" : "TransportOperatorSplitting_Data",
+
+"description" : "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any TransportOperatorSplitting_Data record that comes later in the boundary data array.",
+"keys" : [
+{ "key" : "r_set",
+"description" : "Name of region set where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "region",
+"description" : "Label of the region where to set fields. ",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "rid",
+"description" : "ID of the region where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "time",
+"description" : "Apply field setting in this record after this time.\nThese times have to form an increasing sequence.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "porosity",
+"description" : "Mobile porosity $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "sources_density",
+"description" : "Density of concentration sources. $[m^{-3}kgs^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "sources_sigma",
+"description" : "Concentration flux. $[s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "sources_conc",
+"description" : "Concentration sources threshold. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "bc_conc",
+"description" : "Boundary conditions for concentrations. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "init_conc",
+"description" : "Initial concentrations. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "transport_old_bcd_file",
+"description" : "File with mesh dependent boundary conditions (obsolete).",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "89a808b8e9515bf8"
+}]
+},{
+"id" : "afe6afd982c3ff91",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "7383963063af00d8"
+},
+{
+"id" : "7383963063af00d8",
+"input_type" : "Selection",
+"name" : "ConvectionTransport_Output",
+"full_name" : "ConvectionTransport_Output",
+"description" : "",
+"values" : [
+{ "value" : "0",
+ "name" : "porosity",
+"description" : "Output of the field porosity $[-]$ (Mobile porosity)." },
+{ "value" : "1",
+ "name" : "sources_density",
+"description" : "Output of the field sources_density $[m^{-3}kgs^{-1}]$ (Density of concentration sources.)." },
+{ "value" : "2",
+ "name" : "sources_sigma",
+"description" : "Output of the field sources_sigma $[s^{-1}]$ (Concentration flux.)." },
+{ "value" : "3",
+ "name" : "sources_conc",
+"description" : "Output of the field sources_conc $[m^{-3}kg]$ (Concentration sources threshold.)." },
+{ "value" : "4",
+ "name" : "init_conc",
+"description" : "Output of the field init_conc $[m^{-3}kg]$ (Initial concentrations.)." },
+{ "value" : "5",
+ "name" : "conc",
+"description" : "Output of the field conc $[m^{-3}kg]$." },
+{ "value" : "6",
+ "name" : "region_id",
+"description" : "Output of the field region_id $[-]$." }]
+},{
+"id" : "b3aefe40ba25fdf5",
+"input_type" : "Record",
+"name" : "SoluteTransport_DG",
+"full_name" : "SoluteTransport_DG:Transport",
+
+"description" : "DG solver for solute transport.",
+"implements" : [ "Transport" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "SoluteTransport_DG" },
+"type" : "94e955e50d64fef1"
+},
+{ "key" : "time",
+"description" : "Time governor setting for the secondary equation.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d8574f6af69c7e1f"
+},
+{ "key" : "balance",
+"description" : "Settings for computing balance.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d280bda6d317af17"
+},
+{ "key" : "output_stream",
+"description" : "Parameters of output stream.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "a991884958d2c471"
+},
+{ "key" : "substances",
+"description" : "Names of transported substances.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "57a7a5e1a86f94ad"
+},
+{ "key" : "solvent_density",
+"description" : "Density of the solvent [kg.m^(-3)].",
+"default" : { "type" : "value at declaration",
+"value" : "1.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "solver",
+"description" : "Linear solver for MH problem.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "9a480c47798196db"
+},
+{ "key" : "input_fields",
+"description" : "",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "21f435c7f9f9caf5"
+},
+{ "key" : "dg_variant",
+"description" : "Variant of interior penalty discontinuous Galerkin method.",
+"default" : { "type" : "value at declaration",
+"value" : "non-symmetric" },
+"type" : "63d5c736bdd40bf1"
+},
+{ "key" : "dg_order",
+"description" : "Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).",
+"default" : { "type" : "value at declaration",
+"value" : "1" },
+"type" : "151ce92dd201d44b"
+},
+{ "key" : "output_fields",
+"description" : "List of fields to write to output file.",
+"default" : { "type" : "value at declaration",
+"value" : "conc" },
+"type" : "34569a0cf7ce1f61"
+}]
+},{
+"id" : "21f435c7f9f9caf5",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "689dd9d95d6cc1c4"
+},
+{
+"id" : "689dd9d95d6cc1c4",
+"input_type" : "Record",
+"name" : "SoluteTransport_DG_Data",
+"full_name" : "SoluteTransport_DG_Data",
+
+"description" : "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any SoluteTransport_DG_Data record that comes later in the boundary data array.",
+"keys" : [
+{ "key" : "r_set",
+"description" : "Name of region set where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "region",
+"description" : "Label of the region where to set fields. ",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "rid",
+"description" : "ID of the region where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "time",
+"description" : "Apply field setting in this record after this time.\nThese times have to form an increasing sequence.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "porosity",
+"description" : "Mobile porosity $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "sources_density",
+"description" : "Density of concentration sources. $[m^{-3}kgs^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "sources_sigma",
+"description" : "Concentration flux. $[s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "sources_conc",
+"description" : "Concentration sources threshold. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "bc_conc",
+"description" : "Dirichlet boundary condition (for each substance). $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "init_conc",
+"description" : "Initial concentrations. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "disp_l",
+"description" : "Longitudal dispersivity (for each substance). $[m]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "disp_t",
+"description" : "Transversal dispersivity (for each substance). $[m]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "diff_m",
+"description" : "Molecular diffusivity (for each substance). $[m^{2}s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "rock_density",
+"description" : "Rock matrix density. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "sorption_mult",
+"description" : "Coefficient of linear sorption. $[kg^{-1}mol]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "fracture_sigma",
+"description" : "Coefficient of diffusive transfer through fractures (for each substance). $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "dg_penalty",
+"description" : "Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "bc_type",
+"description" : "Boundary condition type, possible values: inflow, dirichlet, neumann, robin. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "8687276a8958289"
+},
+{ "key" : "bc_flux",
+"description" : "Flux in Neumann boundary condition. $[m^{1-d}kgs^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "bc_robin_sigma",
+"description" : "Conductivity coefficient in Robin boundary condition. $[m^{4-d}s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+}]
+},{
+"id" : "8687276a8958289",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Enum[n]",
+"full_name" : "Field:R3 -> Enum[n]",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "b0f0bbd79dfea881",
+"implementations" : [
+"b0f0bbd79dfea881",
+
+"69cc879317d1a91d",
+
+"1f394ae00c32ea27",
+
+"f7ad999ca5fc7da5",
+
+"63ff36d278eb6a39"]},{
+"id" : "b0f0bbd79dfea881",
+"input_type" : "Record",
+"name" : "FieldConstant",
+"full_name" : "FieldConstant:Field:R3 -> Enum[n]",
+
+"description" : "R3 -> Enum[n] Field constant in space.",
+"implements" : [ "Field:R3 -> Enum[n]" ],
+"reducible_to_key" : "value",
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "FieldConstant" },
+"type" : "732cc773c52bf98b"
+},
+{ "key" : "value",
+"description" : "Value of the constant field.\nFor vector values, you can use scalar value to enter constant vector.\nFor square NxN-matrix values, you can use:\n* vector of size N to enter diagonal matrix\n* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n* scalar to enter multiple of the unit matrix.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "abe78e5b8adbb721"
+}]
+},{
+"id" : "abe78e5b8adbb721",
+"input_type" : "Array",
+"range" : [1, 4294967295],
+"subtype" : "66846cfeeb8a95b0"
+},
+{
+"id" : "66846cfeeb8a95b0",
+"input_type" : "Selection",
+"name" : "TransportDG_BC_Type",
+"full_name" : "TransportDG_BC_Type",
+"description" : "Types of boundary condition supported by the transport DG model (solute transport or heat transfer).",
+"values" : [
+{ "value" : "0",
+ "name" : "none",
+"description" : "Homogeneous Neumann boundary condition. Zero flux" },
+{ "value" : "2",
+ "name" : "dirichlet",
+"description" : "Dirichlet boundary condition." },
+{ "value" : "3",
+ "name" : "neumann",
+"description" : "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field." },
+{ "value" : "4",
+ "name" : "robin",
+"description" : "Robin boundary condition. Water outflow equal to \\$sigma (h - h^R)$. " },
+{ "value" : "1",
+ "name" : "inflow",
+"description" : "Prescribes the concentration in the inflow water on the inflow part of the boundary." }]
+},{
+"id" : "63d5c736bdd40bf1",
+"input_type" : "Selection",
+"name" : "DG_variant",
+"full_name" : "DG_variant",
+"description" : "Type of penalty term.",
+"values" : [
+{ "value" : "-1",
+ "name" : "non-symmetric",
+"description" : "non-symmetric weighted interior penalty DG method" },
+{ "value" : "0",
+ "name" : "incomplete",
+"description" : "incomplete weighted interior penalty DG method" },
+{ "value" : "1",
+ "name" : "symmetric",
+"description" : "symmetric weighted interior penalty DG method" }]
+},{
+"id" : "151ce92dd201d44b",
+"input_type" : "Integer",
+"name" : "Integer",
+"full_name" : "Integer",
+"range" : [0, 3]
+},{
+"id" : "34569a0cf7ce1f61",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "c75d34e72353edde"
+},
+{
+"id" : "c75d34e72353edde",
+"input_type" : "Selection",
+"name" : "SoluteTransport_DG_Output",
+"full_name" : "SoluteTransport_DG_Output",
+"description" : "Output record for DG solver for solute transport.",
+"values" : [
+{ "value" : "0",
+ "name" : "porosity",
+"description" : "Output of the field porosity $[-]$ (Mobile porosity)." },
+{ "value" : "1",
+ "name" : "sources_density",
+"description" : "Output of the field sources_density $[m^{-3}kgs^{-1}]$ (Density of concentration sources.)." },
+{ "value" : "2",
+ "name" : "sources_sigma",
+"description" : "Output of the field sources_sigma $[s^{-1}]$ (Concentration flux.)." },
+{ "value" : "3",
+ "name" : "sources_conc",
+"description" : "Output of the field sources_conc $[m^{-3}kg]$ (Concentration sources threshold.)." },
+{ "value" : "4",
+ "name" : "init_conc",
+"description" : "Output of the field init_conc $[m^{-3}kg]$ (Initial concentrations.)." },
+{ "value" : "5",
+ "name" : "disp_l",
+"description" : "Output of the field disp_l $[m]$ (Longitudal dispersivity (for each substance).)." },
+{ "value" : "6",
+ "name" : "disp_t",
+"description" : "Output of the field disp_t $[m]$ (Transversal dispersivity (for each substance).)." },
+{ "value" : "7",
+ "name" : "diff_m",
+"description" : "Output of the field diff_m $[m^{2}s^{-1}]$ (Molecular diffusivity (for each substance).)." },
+{ "value" : "8",
+ "name" : "rock_density",
+"description" : "Output of the field rock_density $[m^{-3}kg]$ (Rock matrix density.)." },
+{ "value" : "9",
+ "name" : "sorption_mult",
+"description" : "Output of the field sorption_mult $[kg^{-1}mol]$ (Coefficient of linear sorption.)." },
+{ "value" : "10",
+ "name" : "conc",
+"description" : "Output of the field conc $[m^{-3}kg]$." },
+{ "value" : "11",
+ "name" : "fracture_sigma",
+"description" : "Output of the field fracture_sigma $[-]$ (Coefficient of diffusive transfer through fractures (for each substance).)." },
+{ "value" : "12",
+ "name" : "dg_penalty",
+"description" : "Output of the field dg_penalty $[-]$ (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.)." },
+{ "value" : "13",
+ "name" : "region_id",
+"description" : "Output of the field region_id $[-]$." }]
+},{
+"id" : "4bd9295d642df95f",
+"input_type" : "Record",
+"name" : "HeatTransfer_DG",
+"full_name" : "HeatTransfer_DG:Transport",
+
+"description" : "DG solver for heat transfer.",
+"implements" : [ "Transport" ],
+"keys" : [
+{ "key" : "TYPE",
+"description" : "Sub-record selection.",
+"default" : { "type" : "value at declaration",
+"value" : "HeatTransfer_DG" },
+"type" : "94e955e50d64fef1"
+},
+{ "key" : "time",
+"description" : "Time governor setting for the secondary equation.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d8574f6af69c7e1f"
+},
+{ "key" : "balance",
+"description" : "Settings for computing balance.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "d280bda6d317af17"
+},
+{ "key" : "output_stream",
+"description" : "Parameters of output stream.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "a991884958d2c471"
+},
+{ "key" : "solver",
+"description" : "Linear solver for MH problem.",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "9a480c47798196db"
+},
+{ "key" : "input_fields",
+"description" : "",
+"default" : { "type" : "obligatory",
+"value" : "OBLIGATORY" },
+"type" : "b8ea60169b450773"
+},
+{ "key" : "dg_variant",
+"description" : "Variant of interior penalty discontinuous Galerkin method.",
+"default" : { "type" : "value at declaration",
+"value" : "non-symmetric" },
+"type" : "63d5c736bdd40bf1"
+},
+{ "key" : "dg_order",
+"description" : "Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).",
+"default" : { "type" : "value at declaration",
+"value" : "1" },
+"type" : "151ce92dd201d44b"
+},
+{ "key" : "output_fields",
+"description" : "List of fields to write to output file.",
+"default" : { "type" : "value at declaration",
+"value" : "temperature" },
+"type" : "8b390dc79b687010"
+}]
+},{
+"id" : "b8ea60169b450773",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "5e2469043969e9"
+},
+{
+"id" : "5e2469043969e9",
+"input_type" : "Record",
+"name" : "HeatTransfer_DG_Data",
+"full_name" : "HeatTransfer_DG_Data",
+
+"description" : "Record to set fields of the equation.\nThe fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\nand after the time given by the key 'time'. The field setting can be overridden by\n any HeatTransfer_DG_Data record that comes later in the boundary data array.",
+"keys" : [
+{ "key" : "r_set",
+"description" : "Name of region set where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "region",
+"description" : "Label of the region where to set fields. ",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "29b5533100b6f60f"
+},
+{ "key" : "rid",
+"description" : "ID of the region where to set fields.",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "151ce92d5201d44f"
+},
+{ "key" : "time",
+"description" : "Apply field setting in this record after this time.\nThese times have to form an increasing sequence.",
+"default" : { "type" : "value at declaration",
+"value" : "0.0" },
+"type" : "6b1c4ede475775aa"
+},
+{ "key" : "bc_temperature",
+"description" : "Boundary value of temperature. $[K]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "init_temperature",
+"description" : "Initial temperature. $[K]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "porosity",
+"description" : "Porosity. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "fluid_density",
+"description" : "Density of fluid. $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "fluid_heat_capacity",
+"description" : "Heat capacity of fluid. $[m^{2}s^{-2}K^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "fluid_heat_conductivity",
+"description" : "Heat conductivity of fluid. $[mkgs^{-3}K^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "solid_density",
+"description" : "Density of solid (rock). $[m^{-3}kg]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "solid_heat_capacity",
+"description" : "Heat capacity of solid (rock). $[m^{2}s^{-2}K^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "solid_heat_conductivity",
+"description" : "Heat conductivity of solid (rock). $[mkgs^{-3}K^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "disp_l",
+"description" : "Longitudal heat dispersivity in fluid. $[m]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "disp_t",
+"description" : "Transversal heat dispersivity in fluid. $[m]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "fluid_thermal_source",
+"description" : "Thermal source density in fluid. $[m^{-1}kgs^{-3}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "solid_thermal_source",
+"description" : "Thermal source density in solid. $[m^{-1}kgs^{-3}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "fluid_heat_exchange_rate",
+"description" : "Heat exchange rate in fluid. $[s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "solid_heat_exchange_rate",
+"description" : "Heat exchange rate of source in solid. $[s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "fluid_ref_temperature",
+"description" : "Reference temperature of source in fluid. $[K]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "solid_ref_temperature",
+"description" : "Reference temperature in solid. $[K]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "4c39e1e59767d512"
+},
+{ "key" : "fracture_sigma",
+"description" : "Coefficient of diffusive transfer through fractures (for each substance). $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "dg_penalty",
+"description" : "Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "bc_type",
+"description" : "Boundary condition type, possible values: inflow, dirichlet, neumann, robin. $[-]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "86872763bdda45f"
+},
+{ "key" : "bc_flux",
+"description" : "Flux in Neumann boundary condition. $[m^{1-d}kgs^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+},
+{ "key" : "bc_robin_sigma",
+"description" : "Conductivity coefficient in Robin boundary condition. $[m^{4-d}s^{-1}]$",
+"default" : { "type" : "optional",
+"value" : "OPTIONAL" },
+"type" : "868791b89801c0f"
+}]
+},{
+"id" : "86872763bdda45f",
+"input_type" : "Abstract",
+"name" : "Field:R3 -> Enum[n]",
+"full_name" : "Field:R3 -> Enum[n]",
+"description" : "Abstract record for all time-space functions.",
+"default_descendant" : "b0f0bbd79dfea881",
+"implementations" : [
+"b0f0bbd79dfea881",
+
+"69cc879317d1a91d",
+
+"1f394ae00c32ea27",
+
+"f7ad999ca5fc7da5",
+
+"63ff36d278eb6a39"]},{
+"id" : "8b390dc79b687010",
+"input_type" : "Array",
+"range" : [0, 4294967295],
+"subtype" : "16e783dcab75ce89"
+},
+{
+"id" : "16e783dcab75ce89",
+"input_type" : "Selection",
+"name" : "HeatTransfer_DG_Output",
+"full_name" : "HeatTransfer_DG_Output",
+"description" : "Selection for output fields of DG solver for heat transfer.",
+"values" : [
+{ "value" : "0",
+ "name" : "init_temperature",
+"description" : "Output of the field init_temperature $[K]$ (Initial temperature.)." },
+{ "value" : "1",
+ "name" : "porosity",
+"description" : "Output of the field porosity $[-]$ (Porosity.)." },
+{ "value" : "2",
+ "name" : "fluid_density",
+"description" : "Output of the field fluid_density $[m^{-3}kg]$ (Density of fluid.)." },
+{ "value" : "3",
+ "name" : "fluid_heat_capacity",
+"description" : "Output of the field fluid_heat_capacity $[m^{2}s^{-2}K^{-1}]$ (Heat capacity of fluid.)." },
+{ "value" : "4",
+ "name" : "fluid_heat_conductivity",
+"description" : "Output of the field fluid_heat_conductivity $[mkgs^{-3}K^{-1}]$ (Heat conductivity of fluid.)." },
+{ "value" : "5",
+ "name" : "solid_density",
+"description" : "Output of the field solid_density $[m^{-3}kg]$ (Density of solid (rock).)." },
+{ "value" : "6",
+ "name" : "solid_heat_capacity",
+"description" : "Output of the field solid_heat_capacity $[m^{2}s^{-2}K^{-1}]$ (Heat capacity of solid (rock).)." },
+{ "value" : "7",
+ "name" : "solid_heat_conductivity",
+"description" : "Output of the field solid_heat_conductivity $[mkgs^{-3}K^{-1}]$ (Heat conductivity of solid (rock).)." },
+{ "value" : "8",
+ "name" : "disp_l",
+"description" : "Output of the field disp_l $[m]$ (Longitudal heat dispersivity in fluid.)." },
+{ "value" : "9",
+ "name" : "disp_t",
+"description" : "Output of the field disp_t $[m]$ (Transversal heat dispersivity in fluid.)." },
+{ "value" : "10",
+ "name" : "fluid_thermal_source",
+"description" : "Output of the field fluid_thermal_source $[m^{-1}kgs^{-3}]$ (Thermal source density in fluid.)." },
+{ "value" : "11",
+ "name" : "solid_thermal_source",
+"description" : "Output of the field solid_thermal_source $[m^{-1}kgs^{-3}]$ (Thermal source density in solid.)." },
+{ "value" : "12",
+ "name" : "fluid_heat_exchange_rate",
+"description" : "Output of the field fluid_heat_exchange_rate $[s^{-1}]$ (Heat exchange rate in fluid.)." },
+{ "value" : "13",
+ "name" : "solid_heat_exchange_rate",
+"description" : "Output of the field solid_heat_exchange_rate $[s^{-1}]$ (Heat exchange rate of source in solid.)." },
+{ "value" : "14",
+ "name" : "fluid_ref_temperature",
+"description" : "Output of the field fluid_ref_temperature $[K]$ (Reference temperature of source in fluid.)." },
+{ "value" : "15",
+ "name" : "solid_ref_temperature",
+"description" : "Output of the field solid_ref_temperature $[K]$ (Reference temperature in solid.)." },
+{ "value" : "16",
+ "name" : "temperature",
+"description" : "Output of the field temperature $[K]$." },
+{ "value" : "17",
+ "name" : "fracture_sigma",
+"description" : "Output of the field fracture_sigma $[-]$ (Coefficient of diffusive transfer through fractures (for each substance).)." },
+{ "value" : "18",
+ "name" : "dg_penalty",
+"description" : "Output of the field dg_penalty $[-]$ (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.)." },
+{ "value" : "19",
+ "name" : "region_id",
+"description" : "Output of the field region_id $[-]$." }]
+},{}],
+"IST_hash" : 183
+}

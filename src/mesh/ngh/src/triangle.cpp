@@ -17,6 +17,7 @@
 
 #include "system/exc_common.hh"
 #include "mesh/ngh/include/triangle.h"
+#include "mesh/element_impls.hh"
 
 
 
