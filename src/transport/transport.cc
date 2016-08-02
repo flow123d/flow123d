@@ -140,9 +140,9 @@ void ConvectionTransport::initialize()
 	//cout << "Transport." << endl;
 	//cout << time().marks();
 
-
     if (balance_ != nullptr)
-    	balance_->allocate(el_ds->lsize(), 1);
+       balance_->allocate(el_ds->lsize(), 1);
+
 }
 
 
@@ -891,5 +891,5 @@ void ConvectionTransport::output_data() {
 void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
-	subst_idx = balance_->add_quantities(substances_.names());
+    subst_idx = balance_->add_quantities(substances_.names());
 }
