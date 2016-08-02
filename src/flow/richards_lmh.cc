@@ -355,6 +355,13 @@ void RichardsLMH::postprocess() {
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
 */
+
+    // update structures for balance of water volume
+    if (balance_ != nullptr)
+      assembly_linear_system();
+
+
+
     int side_rows[4];
     double values[4];
 
