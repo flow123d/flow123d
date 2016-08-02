@@ -17,4 +17,4 @@ sed '/^##.*$/{
         :sub-yes   # a label (the goto target of the 't' branch)
                    # fall through to final auto-pattern_print (2 lines)
        }
-     }' $1 | sed '/^##/!s/^/    /;/^##/s/^##\(.*\)/\1/' $1 | pandoc -o $1.pdf --toc -N
+     }' $1 | sed '/^##/!s/^/    /;/^##/s/^##\(.*\)/\1/' $1 | pandoc -o $1.pdf --toc -N -V geometry="margin=1in"
