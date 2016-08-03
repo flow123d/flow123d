@@ -104,7 +104,7 @@ TEST(FieldPython, vector_2D) {
     }
 }
 
-
+/*
 TEST(FieldPython, vector_variable) {
 
     double pi = 4.0 * atan(1);
@@ -130,7 +130,7 @@ TEST(FieldPython, vector_variable) {
     EXPECT_DOUBLE_EQ( 1, result[1]);
     }
 }
-
+*/
 
 TEST(FieldPython, double_3D) {
     Space<3>::Point point_1, point_2;

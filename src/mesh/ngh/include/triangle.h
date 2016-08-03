@@ -21,8 +21,11 @@
 #include "point.h"
 #include "plain.h"
 #include "abscissa.h"
+#include "mesh/mesh_types.hh"
 #include "mesh/bounding_box.hh"
-#include "mesh/elements.h"
+//#include "mesh/elements.h"
+
+
 
 class TTriangle {
 private:

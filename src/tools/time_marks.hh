@@ -97,6 +97,11 @@ public:
     bool operator<(const TimeMark& another) const
       { return time_ < another.time(); }
 
+    /// For unordered maps and sets, hashing.
+    bool operator==(const TimeMark & other_mark) const {
+        return (time_ == other_mark.time_) && ( mark_type_ == other_mark.mark_type_);
+    }
+
 
 private:
     /// The marked time.
@@ -120,6 +125,7 @@ std::ostream& operator<<(std::ostream& stream, const TimeMark &marks);
 
 
 /***************************************************************************************/
+class TimeStep;
 class TimeGovernor;
 class TimeMarksIterator;
 
@@ -195,12 +201,17 @@ public:
     inline TimeMark::Type type_input()
     { return type_input_;}
 
+    /// Predefined base TimeMark type for times of balnace output.
+    /// Is defined by constructor as 0x08.
+    inline TimeMark::Type type_balance_output()
+    { return type_balance_output_;}
+
 
     /**
      * Basic method for inserting TimeMarks.
      * @param mark    Reference to TimeMark object.
      */
-    void add(const TimeMark &mark);
+    TimeMark add(const TimeMark &mark);
 
     /**
      * Method for creating and inserting equally spaced TimeMarks.
@@ -215,10 +226,17 @@ public:
     void add_time_marks(double time, double dt, double end_time, TimeMark::Type type);
 
     /**
-     * Find the last time mark matching given mask, and returns true if it is in the time interval of
-     * current time step.
+     * Apply TimeMark::add_to_type (|=) to all time marks matching the filter type.
      */
-    bool is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const;
+    void add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_type);
+
+    //bool is_current(const TimeStep &time_step, const TimeMark::Type &mask) const;
+
+    /*
+     * Find the last time mark matching given mask, and returns its iterator if it is in the time interval of
+     * the current time step. Returns end(mask) otherwise.
+     */
+    TimeMarks::iterator current(const TimeStep &time_step, const TimeMark::Type &mask) const;
 
     /**
      * Return the first TimeMark with time strictly greater then tg.time() that match the mask.
@@ -238,6 +256,7 @@ public:
      * @param tg    the time governor
      * @param mask  mask of marks to iterate on
      */
+    TimeMarks::iterator last(const TimeStep &time_step, const TimeMark::Type &mask) const;
     TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
     /**
@@ -268,6 +287,8 @@ private:
     TimeMark::Type type_output_;
     /// Predefined type for change of boundary condition.
     TimeMark::Type type_input_;
+    /// Predefined type for balance output
+    TimeMark::Type type_balance_output_;
 };
 
 
@@ -347,5 +368,13 @@ private:
     /// Mask type.
     TimeMark::Type mask_;
 };
+
+
+
+struct TimeMarkHash : std::unary_function<TimeMark, std::size_t>
+{
+    std::size_t operator()(TimeMark const& mark) const;
+};
+
 
 #endif /* TIME_MARKS_HH_ */

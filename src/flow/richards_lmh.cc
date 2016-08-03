@@ -47,30 +47,6 @@ const int RichardsLMH::registrar =
 RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
     : DarcyMH(mesh_in, in_rec)
 {
-    /*
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-    data_.mark_input_times(this->mark_type());
-    data_.set_time(time_->step(), LimitSide::right);
-
-    output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
-    //balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
-
-    //time_->fix_dt_until_mark();
-    create_linear_system();
-    if ( typeid(SchurComplement) != typeid(*(this->schur0)) ) {
-        DBGMSG( "%s != %s\n", typeid(LinSys_PETSC).name(),typeid(*(this->schur0)).name() );
-        THROW( ExcMessage() << EI_Message("Only SchurComplement linear solver currently allowed for DarcyFlowLMH.") );
-    }
-
-    VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
-
-    assembly_linear_system();
-    read_init_condition();
-    output_data();
-    */
 }
 
 

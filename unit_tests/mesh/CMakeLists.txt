@@ -26,6 +26,8 @@
 set(libs mesh_lib system_lib intersections_lib)
 add_test_directory("${libs}")
     
+    define_test(ref_element)
+    define_test(element)
     define_test(gmsh_reader)
     define_test(intersection)
     define_mpi_test(bih_tree 1)
@@ -34,7 +36,6 @@ add_test_directory("${libs}")
     #define_test(fast_intersection_1_3)
     #define_mpi_test(intersection_2_3 1)
     #define_mpi_test(ngh_intersection_2_3 1)
-    define_test(ref_element)
     
     define_mpi_test(partitioning 1)
     define_mpi_test(partitioning 2)
