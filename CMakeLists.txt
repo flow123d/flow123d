@@ -638,6 +638,11 @@ message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
 
 
 
+# set encoding of VTU output file 
+flow_define(LITTLE_ENDIAN true)
+
+
+
 message(STATUS "\n ======================================================= ")
 
 
