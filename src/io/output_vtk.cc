@@ -237,21 +237,16 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueTy
     }
     file    << "format=\"" << vtk_variant_map(this->variant_type_) << "\"";
 
-    if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB ) {
-    	// binary compressed output
+    if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
+    	// ascii output
+    	file << ">" << endl;
+    	file.precision(std::numeric_limits<double>::digits10); // Set precision to max
+    	output_data->print_ascii_all(file);
+    	file << "\n</DataArray>" << endl;
+    } else {
+    	// binary output is stored to appended_data_ stream
     	file    << " offset=\"" << appended_data_.tellp() << "\"/>" << endl;
     	output_data->print_binary_all(appended_data_);
-    } else {
-    	file	<< ">" << endl;
-    	if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
-            // ascii output
-            file.precision(std::numeric_limits<double>::digits10); // Set precision to max
-            output_data->print_ascii_all(file);
-    	} else {
-    		// binary output
-    		output_data->print_binary_all(file);
-    	}
-    	file << "\n</DataArray>" << endl;
     }
 
 }
@@ -340,9 +335,10 @@ void OutputVTK::write_vtk_vtu_tail(void)
     ofstream &file = this->_data_file;
 
     file << "</UnstructuredGrid>" << endl;
-    if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB ) {
+    if ( this->variant_type_ != VTKVariant::VARIANT_ASCII ) {
     	// appended data of binary compressed output
-    	WarningOut() << "Zlib library is not supported yet. Appended output is not compressed." << endl;
+    	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB )
+    			WarningOut() << "Zlib library is not supported yet. Appended output is not compressed." << endl;
     	file << "<UnstructuredGrid encoding=\"raw\">" << endl;
     	file << appended_data_.str() << endl;
     	file << "</UnstructuredGrid>" << endl;

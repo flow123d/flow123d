@@ -24,7 +24,7 @@ MeshData<T>::~MeshData()
 template <class T>
 void MeshData<T>::print_ascii(std::ostream& out_stream, unsigned int idx)
 {
-    ASSERT_LE(idx, this->n_values);
+    ASSERT_LT(idx, this->n_values);
     out_stream << data_[idx] ;
 }
 
@@ -41,8 +41,8 @@ void MeshData<T>::print_ascii_all(std::ostream& out_stream)
 template <class T>
 void MeshData<T>::print_binary(std::ostream& out_stream, unsigned int idx)
 {
-    ASSERT_LE(idx, this->n_values);
-    out_stream << data_[idx] ;
+    ASSERT_LT(idx, this->n_values);
+    out_stream.write(reinterpret_cast<const char*>(&data_[idx]), sizeof(T));
 }
 
 /// Prints the whole data vector into stream.
@@ -50,7 +50,7 @@ template <class T>
 void MeshData<T>::print_binary_all(std::ostream& out_stream)
 {
     for(auto &d : data_)
-        out_stream << d << " ";
+        out_stream.write(reinterpret_cast<const char*>(&d), sizeof(T));
 }
 
 
