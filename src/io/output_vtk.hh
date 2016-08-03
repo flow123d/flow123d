@@ -132,6 +132,16 @@ protected:
         return types[t];
     };
 
+    static const unsigned int vtk_data_type_binary_size(VTKValueType t) {
+        static const std::vector<unsigned int> sizes = { 1, 1, 2, 2, 4, 4, 4, 8 };
+        return sizes[t];
+    };
+
+    static const bool vtk_data_type_binary_sign(VTKValueType t) {
+        static const std::vector<bool> signs = { true, false, true, false, true, false, true, true };
+        return signs[t];
+    };
+
     /// Registrar of class to factory
     static const int registrar;
 

@@ -63,12 +63,12 @@ public:
     /**
      * Print one value at given index in binary format
      */
-    virtual void print_binary(ostream &out_stream, unsigned int idx) = 0;
+    virtual void print_binary(ostream &out_stream, unsigned int idx, long int size, bool sign = true) = 0;
 
     /**
      * Print all data in binary format at once stored in database
      */
-    virtual void print_binary_all(ostream &out_stream) = 0;
+    virtual void print_binary_all(ostream &out_stream, long int size, bool sign = true) = 0;
 
     /**
      * Print stored values in the YAML format (using JSON like arrays).

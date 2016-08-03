@@ -39,18 +39,18 @@ void MeshData<T>::print_ascii_all(std::ostream& out_stream)
 
 /// Prints @p idx element of data vector into stream.
 template <class T>
-void MeshData<T>::print_binary(std::ostream& out_stream, unsigned int idx)
+void MeshData<T>::print_binary(std::ostream& out_stream, unsigned int idx, long int size, bool sign)
 {
     ASSERT_LT(idx, this->n_values);
-    out_stream.write(reinterpret_cast<const char*>(&data_[idx]), sizeof(T));
+    out_stream.write(reinterpret_cast<const char*>(&data_[idx]), size);
 }
 
 /// Prints the whole data vector into stream.
 template <class T>
-void MeshData<T>::print_binary_all(std::ostream& out_stream)
+void MeshData<T>::print_binary_all(std::ostream& out_stream, long int size, bool sign)
 {
     for(auto &d : data_)
-        out_stream.write(reinterpret_cast<const char*>(&d), sizeof(T));
+    	out_stream.write(reinterpret_cast<const char*>(&d), size);
 }
 
 

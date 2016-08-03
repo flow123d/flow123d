@@ -246,7 +246,8 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueTy
     } else {
     	// binary output is stored to appended_data_ stream
     	file    << " offset=\"" << appended_data_.tellp() << "\"/>" << endl;
-    	output_data->print_binary_all(appended_data_);
+    	output_data->print_binary_all( appended_data_, vtk_data_type_binary_size(type),
+    			vtk_data_type_binary_sign(type) );
     }
 
 }

@@ -59,7 +59,7 @@ public:
      *
      * \note This method is used only by MSH file format.
      */
-    void print_binary(ostream &out_stream, unsigned int idx) override;
+    void print_binary(ostream &out_stream, unsigned int idx, long int size, bool sign = true) override;
 
     /**
      * \brief Print all data stored in output data
@@ -68,7 +68,7 @@ public:
      *       and possibly implement transposition. Set such property for individual file formats.
      *       Class OutputData stores always in raw-first order.
      */
-    void print_binary_all(ostream &out_stream) override;
+    void print_binary_all(ostream &out_stream, long int size, bool sign = true) override;
 
     void print_all_yaml(ostream &out_stream) override;
 

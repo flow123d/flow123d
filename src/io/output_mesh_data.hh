@@ -30,10 +30,10 @@ public:
     void print_ascii_all(std::ostream& out_stream) override;
 
     /// Prints @p idx element of data vector into stream.
-    void print_binary(std::ostream& out_stream, unsigned int idx) override;
+    void print_binary(std::ostream& out_stream, unsigned int idx, long int size, bool sign = true) override;
 
     /// Prints the whole data vector into stream.
-    void print_binary_all(std::ostream& out_stream) override;
+    void print_binary_all(std::ostream& out_stream, long int size, bool sign = true) override;
 
     /// Prints the whole data vector into stream. UNSUPPORTED.
     void print_all_yaml(std::ostream& out_stream) override;

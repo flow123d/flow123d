@@ -95,20 +95,20 @@ void OutputData<Value>::print_ascii_all(ostream &out_stream)
 
 /// Prints @p idx element of data vector into stream.
 template <class Value>
-void OutputData<Value>::print_binary(std::ostream& out_stream, unsigned int idx) {
+void OutputData<Value>::print_binary(std::ostream& out_stream, unsigned int idx, long int size, bool sign) {
 	ASSERT_LT(idx, this->n_values).error();
     ElemType *ptr_begin = this->data_ + n_elem_ * idx;
     for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
-        out_stream.write(reinterpret_cast<const char*>(&(*ptr)), sizeof(Value));
+        out_stream.write(reinterpret_cast<const char*>(&(*ptr)), size);
 }
 
 /// Prints the whole data vector into stream.
 template <class Value>
-void OutputData<Value>::print_binary_all(std::ostream& out_stream) {
+void OutputData<Value>::print_binary_all(std::ostream& out_stream, long int size, bool sign) {
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
-            out_stream.write(reinterpret_cast<const char*>(&(*ptr)), sizeof(Value));
+            out_stream.write(reinterpret_cast<const char*>(&(*ptr)), size);
     }
 }
 
