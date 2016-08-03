@@ -204,27 +204,29 @@ static const Input::Type::Selection & get_test_selection() {
 		.close();
 }
 
-class TestOutputTime : public testing::Test, public OutputTime {
+class TestOutputTime : public testing::Test,
+                       public OutputTime
+{
 public:
 	TestOutputTime()
 	: OutputTime()
 
 	{
+	    my_mesh = new Mesh();
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
-	    this->init_from_input("dummy_equation", in_rec);
+	    this->init_from_input("dummy_equation", *my_mesh, in_rec);
 	    Profiler::initialize();
 		// read simple mesh
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    my_mesh = new Mesh();
 	    ifstream in(string(mesh_file).c_str());
 	    my_mesh->read_gmsh_from_stream(in);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 	}
 	virtual ~TestOutputTime() {
-		delete my_mesh;
+	    delete my_mesh;
 	}
 	int write_data(void) override {return 0;};
 	//int write_head(void) override {return 0;};
