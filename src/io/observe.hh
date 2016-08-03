@@ -166,7 +166,7 @@ public:
      * This can be used to evaluate derived fields only on these elements in the times not selected to
      * full output.
      */
-    inline const std::set<unsigned int> &observed_elements() const
+    inline const std::vector<unsigned int> &observed_elements() const
             { return observed_element_indices_;}
 
     /**
@@ -187,13 +187,17 @@ protected:
     /// Full information about observe points.
     std::vector<ObservePoint> points_;
     /// Elements of the o_points.
-    std::set<unsigned int> observed_element_indices_;
+    std::vector<unsigned int> observed_element_indices_;
 
     typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
     typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
 
     /// Stored field values.
     OutputDataFieldMap observe_field_values_;
+
+
+    /// Time of fields when the observe values were computed
+    double observe_values_time_;
 
     /// Output file stream.
     std::ofstream observe_file_;

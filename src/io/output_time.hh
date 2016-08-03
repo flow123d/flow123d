@@ -57,7 +57,7 @@ public:
      * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    void init_from_input(const std::string &equation_name, const Input::Record &in_rec);
+    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
@@ -102,13 +102,13 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
     
     /**
      * Create the output mesh from the given computational mesh. The field set passed in is used
      * to select the field used for adaptivity of the output mesh.
      */
-    void make_output_mesh(Mesh &mesh, FieldSet &output_fields);
+    void make_output_mesh(FieldSet &output_fields);
     
     /**
      * \brief Generic method for registering output data stored in MultiField

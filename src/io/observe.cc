@@ -6,8 +6,10 @@
  */
 
 #include <string>
-#include <unordered_set>
 #include <numeric>
+#include <cmath>
+#include <algorithm>
+#include <unordered_set>
 
 #include "system/global_defs.h"
 #include "input/accessors.hh"
@@ -221,7 +223,8 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces)
 
 
 Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array)
-: mesh_(&mesh)
+: mesh_(&mesh),
+  observe_values_time_(numeric_limits<double>::signaling_NaN())
 {
     // in_rec is Output input record.
 
@@ -229,8 +232,12 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array)
         ObservePoint point(*it, points_.size());
         point.find_observe_point(*mesh_);
         points_.push_back( point );
-        observed_element_indices_.insert(point.element_idx_);
+        observed_element_indices_.push_back(point.element_idx_);
     }
+    // make indices unique
+    std::sort(observed_element_indices_.begin(), observed_element_indices_.end());
+    auto last = std::unique(observed_element_indices_.begin(), observed_element_indices_.end());
+    observed_element_indices_.erase(last, observed_element_indices_.end());
 
     time_unit_str_ = "s";
     time_unit_seconds_ = 1.0;
@@ -248,6 +255,12 @@ Observe::~Observe() {
 
 template<int spacedim, class Value>
 void Observe::compute_field_values(Field<spacedim, Value> &field) {
+
+    double field_time = field.time();
+    if ( std::isnan(observe_values_time_) )
+        observe_values_time_ = field_time;
+    else
+        ASSERT(fabs(field_time - observe_values_time_) < 2*numeric_limits<double>::epsilon());
 
     if (points_.size() == 0) return;
 
@@ -299,12 +312,14 @@ void Observe::output_header(string observe_name) {
 void Observe::output_time_frame(double time) {
     if (points_.size() == 0) return;
 
+
     unsigned int indent = 2;
-    observe_file_ << setw(indent) << "" << "- time: " << time << endl;
+    observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
     for(auto &field_data : observe_field_values_) {
         observe_file_ << setw(indent) << "" << "  " << field_data.second->field_name << ": ";
         field_data.second->print_all_yaml(observe_file_);
         observe_file_ << endl;
     }
+    observe_values_time_ = numeric_limits<double>::signaling_NaN();
 
 }

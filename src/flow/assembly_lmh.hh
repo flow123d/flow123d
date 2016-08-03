@@ -45,11 +45,15 @@
 template<int dim>
 class AssemblyLMH : public AssemblyMH<dim> {
 public:
+
     typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtr;
+
     AssemblyLMH(AssemblyDataPtr data)
     : AssemblyMH<dim>(data),
       ad_(data),
-      system_(data->system_)
+      system_(data->system_),
+      genuchten_on(false),
+      cross_section(1.0)
     {}
 
     void reset_soil_model(LocalElementAccessorBase<3> ele) {
