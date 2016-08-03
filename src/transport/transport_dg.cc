@@ -528,11 +528,10 @@ void TransportDG<Model>::update_solution()
                     VecSum(mass_vec[i], &total_mass);
                     sorption_sources[i] -= total_mass;
                 }
-                if (stiffness_matrix[i] == NULL)
-                    MatConvert(*( ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
-                else
-                    MatCopy(*( ls_dt[i]->get_matrix() ), mass_matrix[i], DIFFERENT_NONZERO_PATTERN);
+                MatConvert(*( ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
             }
+            else
+                MatCopy(*( ls_dt[i]->get_matrix() ), mass_matrix[i], DIFFERENT_NONZERO_PATTERN);
         }
     }
 
