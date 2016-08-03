@@ -1,0 +1,13 @@
+#!/usr/bin/gnuplot
+
+set terminal pdf color enhanced lw 2
+set output '03_mass_plot.pdf'
+set xlabel 'time [years]'
+set ylabel 'mass in the rock [kg]'
+set y2label 'mass flux through .surface/.tunnel [kg/s]'
+set key top center out horizontal
+set ytics nomirror
+set y2tics
+plot '<grep rock ref_out/03_column_transport/mass_balance.txt' u ($1/86400/365):7 w l axes x1y1 t 'rock',\
+     '<grep .surface ref_out/03_column_transport/mass_balance.txt' u ($1/86400/365):4 w l axes x1y2 t '.surface',\
+     '<grep .tunnel ref_out/03_column_transport/mass_balance.txt' u ($1/86400/365):4 w l axes x1y2 t '.tunnel'

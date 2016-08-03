@@ -1,0 +1,123 @@
+##---
+##title: Flow123d tutorial 3 -- ``1D column transport''
+##---
+### Description and input
+##This is a variant of ```01_column.yaml``` and ```02_column_infiltration.yaml```. See therein for details.
+##
+##We demonstrate a simulation of the transport of a tracer.
+##The equation of advective transport (no diffusion/dispersion) is specified by:
+##
+##      solute_equation: !Coupling_OperatorSplitting
+##        transport: !Solute_Advection_FV
+##
+##The boundary condition of concentration is prescribed on the surface region:
+##
+##        input_fields:
+##          - region: .surface
+##            bc_conc: 100
+##
+##The default type of boundary condition is ```inflow```, i.e. prescribed concentration is applied where water flows into the domain.
+##
+##We provide the name of the transported substance (in general there can be any number of substances):
+##
+##      substances:
+##        - O-18
+##
+##The end time of the simulation is set in the section ```time``` to value 1e10 second (381 years):
+## 
+##      time:
+##        end_time: 1e10
+##
+##The output files can be generated for specific time values. We set the time step for output to 1e7 second (=3.8 months):
+##
+##      output_stream:
+##        time_step: 1e7
+##
+##Finally, we turn on computation of mass balance with cumulative sums over the simulation time interval.
+##
+##      balance:
+##        cumulative: true
+##
+### Results
+##The results of the mass balance computation are in the output folder in the file ```mass_balance.txt```.
+##The evolution of concentration is depicted in Figure @fig:transport.
+##A selected part of numerical results of mass balance is in the Table @tbl:mass_balance.
+##On the region ".surface", the mass flux of the tracer is still identical (6 × 10-6 kg/s).
+##On ".tunnel", the mass flux is zero at the beginning and then it changes within around 100 years to the opposite value of inflow -6 × 10-6 kg/s.
+##Figure @fig:mass_plot depicts results from the file ```mass_balance.txt``` for mass transported through the boundaries ".surface" and ".tunnel" and in the volume of "rock".
+##
+##
+## 
+##![Results of transport.](03_transport.png){#fig:transport}
+##
+##time|    region    |quantity [kg]|    flux|    flux_in|    flux_out|    mass|    error
+##----|-----------|-------------|-----|----------|------------|-------|--------
+##3.96E+09|    rock|    A|    0|    0|    0|    22544.1|    0|
+##3.96E+09|    .surface|    A|    6.34E-06|    6.34E-06|    0|    0|    0|
+##3.96E+09|    .tunnel|    A|    -4.88E-06|    0|    -4.88E-06|    0|    0|
+##3.96E+09|    IMPLICIT BOUNDARY|    A|    -1.02E-19|    0|    -1.02E-19|    0|    0|
+##3.96E+09|    ALL|    A|    1.46E-06|    6.34E-06|    -4.88E-06|    22544.1|    -7.39E-10|
+##3.97E+09|    rock|    A|    0|    0|    0|    22558.7|    0|
+##3.97E+09|    .surface|    A|    6.34E-06|    6.34E-06|    0|    0|    0|
+##3.97E+09|    .tunnel|    A|    -4.92E-06|    0|    -4.92E-06|    0|    0|
+##3.97E+09|    IMPLICIT BOUNDARY|    A|    -1.02E-19|    0|    -1.02E-19|    0|    0|
+##3.97E+09|    ALL|    A|    1.42E-06|    6.34E-06|    -4.92E-06|    22558.7|    -7.53E-10|
+##
+##: Illustration of the results in “water_balanced.txt” – selected columns in two time steps (edited table, extract from the file). {#tbl:mass_balance}
+##
+##![Results of evolution of mass in the volume and flux through boundaries.](03_mass_plot.pdf){#fig:mass_plot}
+##
+### The control file
+##
+##Below is the complete YAML file ```03_column_transport.yaml```.
+##
+flow123d_version: 1.8.9
+problem: !Coupling_Sequential
+  description: Example 1 of real locality - column 1D model with transport
+  mesh:
+    mesh_file: ./01_mesh.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1e-15
+        r_tol: 1e-15
+    input_fields:
+      - region: rock
+        conductivity: 1e-8
+      - region: .tunnel
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .surface
+        bc_type: total_flux
+        bc_flux: 6.34E-09
+    balance: true
+    output:
+      output_stream: 
+        file: flow.msh
+        format: !gmsh
+          variant: ascii
+      output_fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: .surface
+          bc_conc: 100
+          time: 0
+        - region: .surface
+          bc_conc: 100
+          time: 1e7
+    substances:
+      - tracer
+    time:
+      end_time: 1e10
+    output_stream:
+      time_step: 1e7
+      file: transport.msh
+      format: !gmsh
+        variant: ascii
+    balance:
+      cumulative: true

@@ -1,46 +1,102 @@
 ##---
 ##title: Flow123d tutorial 1 -- ``1D column''
 ##---
-##The first example is inspirited a real locality of a water treatment plant tunnel Bedřichov in the granite rock massif. There is the particular seepage site 23 m under the surface and it has very fast reaction on rainfall events. Real data of discharge and concentration of stable isotopes are used.
 ##
-### Geometry and boundary conditions
-##It is considered a pseudo one-dimensional model in the range 10 × 23 m of the atmospheric pressure on the surface and on the bottom and no flow boundary condition on the edges (Figure \ref{fig1}a).
+### Description
+##The first example is inspired by a real locality of a water treatment plant tunnel Bedřichov in the granite rock massif.
+##There is a particular seepage site 23 m under the surface which has a very fast reaction on rainfall events.
+##Real data of discharge and concentration of stable isotopes are used.
 ##
-##![\label{fig1}a) the geometry; b) the boundary condition of the example 1. c) Results of piezometric head and flux in gmsh software from file ex_1-flux.msh.](http://bacula.nti.tul.cz/~ales.balvin/ex1_mesh_bc_flux.png)
+##A pseudo one-dimensional model is considered in the range 10 × 23 m with the atmospheric pressure on the surface and on the bottom, and no flow boundary condition on the edges (Figure {@fig:geom}).
+##
+##![a) the mesh; b) the boundary conditions; c) computed piezometric head and flux.](01_mesh_bc_flux.png){#fig:geom}
 ##
 ##
 ##
-### Flux field computation
-#### Set of model mesh
-##In control file is important a sensitive of spaces from beginning of row. It is mandatory to hang the structure of spaces in control file (“flow_gmsh_flux.yaml”). The spaces divide section of problem setting.
-##Mesh file comes from "./input" folder.   
+### Input
+##The model settings are given in the control file, which is in YAML format.
+##Every line contains one parameter and its value(s).
+##The indentation of lines is important, since it indicates the section to which the parameter belongs.
 ##
-##    mesh:
-##      mesh_file: ./input/mesh_ex1.msh
+#### Setting the computational mesh
 ##
-##In this example we solve problem in Darcy flow and it is set at row-file 12 in “flow_gmsh_flux.yaml”.
+##The mesh file can be generated using the software [GMSH](http://www.gmsh.info).
+##It has to contain:
+##
+##* point coordinates;
+##* simplicial elements (lines, triangles, tetrahedra). Elements of lower dimensions represent fractures or channels;
+##* physical regions (groups of elements, labeled either by numerical id or string caption). Names of regions defining boundary have to start by a dot;
+##
+##The mesh file is specified by the following lines:
+##
+##      mesh:
+##        mesh_file: ./01_mesh.msh
+##
+##Here the leading "./" denotes the directory where the control file is placed.
+##
+#### Setting the model and physical parameters
+##In this example we use the Darcy flow model, which is set by:
 ##    
-##    flow_equation: !Flow_Darcy_MH
+##      flow_equation: !Flow_Darcy_MH
 ##
-##NOTE:
-##The software Flow123d creates new folder for all results which consist from controlling file and appendix ".out". 
+##Note:
+##The equation name consists of three parts: physical process (flow), mathematical model (Darcy) and numerical method (MH = mixed hybrid finite element method).
 ##
-#### Set of model parameters
-##For the rock massif ("- region: rock") we prescribed the hydraulic conductivity K = 1e-8 m/s. This value is typical for the granite rock massif. The cross-section parameter is set on the 1 m width.
+##The bulk parameters and boundary conditions are defined in the section ```input_fields```.
+##For the rock massif (```- region: rock```) we prescribe the hydraulic conductivity $K = 10^{-8}$ m/s (typical value for the granite rock massif):
 ##
-##Code illustration: prescription of hydraulic parameters input_fields: 
+##      input_fields:
+##        - region: rock
+##          conductivity: 1e-8
 ##
-##    input_fields:
-##      - region: rock
-##        conductivity: 1e-8
-##        cross_section: 1
-##      - region: dirichlet_boundary
-##        bc_type: dirichlet
-##        bc_pressure: 0
-##    Control file: “flow_gmsh_flux.yaml”
+##We prescribe the atmospheric presure both at the surface and the tunnel:
 ##
-#### Results
-##The results of computation are in the file “water_balance.txt”. The input flux on the surface is 1 × 10-7 and the output flux on the tunnel is -1 × 10-7 (Table 1).
+##        - region: .tunnel
+##          bc_type: dirichlet
+##          bc_pressure: 0
+##        - region: .surface
+##          bc_type: dirichlet
+##          bc_pressure: 0
+##
+##If no boundary condition is given then the default "no flow" is applied.
+##
+#### Setting solver parameters
+##For the solution of the linear algebra problem we have to specify solver type and tolerances for controlling the residual.
+##In ```flow_equation``` we can use either ```Petsc``` solver which performs well for small and moderate size problems, or ```Bddc``` (a scalable domain decomposition solver).
+##Two stopping criteria can be given: absolute and relative tolerance of residual.
+##
+##      nonlinear_solver:
+##        linear_solver: !Petsc
+##          a_tol: 1e-15
+##          r_tol: 1e-15
+##
+##The key ```nonlinear_solver``` has further parameters which play role in other (nonlinear) flow models.
+##
+#### Setting output
+##In the section ```output``` we define the file name and type (supported types are ```gmsh``` and ```vtk```, which can be viewed by GMSH, ParaView, respectively) to which the solution is saved:
+##
+##      output:
+##        output_stream:
+##          file: flow.msh
+##          format: !gmsh
+##            variant: ascii
+##
+##The list of fields (solution components, input fields etc.) to be saved is specified by:
+##
+##        output_fields:
+##          - piezo_head_p0
+##          - pressure_p0
+##          - pressure_p1
+##          - velocity_p0
+##
+##In addition, Flow123d provides computation of balance of fluid volume, flux through boundaries and volume sources.
+##This is turned on by
+##
+##        balance: true
+##
+### Results
+##The results of computation are generated to the files ```flow.msh``` and ```water_balance.txt```.
+##From the balance file, one can see that the input flux on the surface is 1 × $10^{-7}$ and the output flux on the tunnel is -1 × $10^{-7}$ (Table @tbl:water_balance).
 ##
 ##"time"|    "region"|    "quantity [m(3)]"|    "flux"|    "flux_in"|    "flux_out"|
 ##----|-----------|-------------|-----:|----------:|------------:|
@@ -49,112 +105,38 @@
 ##0|    ".tunnel"|    "water_volume"|    -1e-07|    0|    -1e-07|
 ##0|    "IMPLICIT BOUNDARY"|    "water_volume"|    2.58e-26|    6.46e-26|    -3.87e-26|
 ##
-##: Results in “water_balanced.txt” (edited table, no whole file).
+##: Results in ```water_balanced.txt``` (edited table, extract from the file). {#tbl:water_balance}
 ##
-#### Variants
-##In the main YAML file we can change some parameters for an investigation of the model behaviour.
-##
-##### Infiltration
-##First we change the atmospheric pressure on the surface to the more realistic infiltration 200 mm/yr (= 6.34e-9 m/s).
-##
-##Code illustration: prescription of the flux on the surface 
-##
-##      - region: dirichlet_boundary
-##        bc_type: dirichlet
-##        bc_pressure: 0
-##    Control file: “flow_gmsh_infiltration.yaml”
-##
-##The results are in the file “water_balanced.txt” again. We can see that the value of the input and output flux changed to 6.34e-8. The visual results are similar to the 
+### Variants
+##Control files ```02_column_infiltration.yaml``` and ```03_column_transport.yaml``` contain modified boundary conditions and solute transport model for the same physical problem.
 ##
 ##
-### Transport model
-##The numerical diffusion is used for this example. The ordering equation is set at row 38 and 39:
+### The control file
 ##
-##    solute_equation: !Coupling_OperatorSplitting
-##      transport: !Solute_Advection_FV
-##
-##
-##The boundary condition of concentration is prescribed on the surface region (rows 40-43):
-##
-##    input_fields:
-##      - region: .surface
-##        bc_conc: !FieldFormula
-##          value: 100
-##
-##The name of substance was "A" for this example.
-##
-##    substances:
-##      - A
-##
-##The output time step of printout was set in section output_stream:
-##
-##    output_stream:
-##      time_step: 1e7
-##
-##And the end time was set in section time:
-## 
-##    time:
-##      end_time: 1e10
-##
-##
-#### Transport model - results
-##The balanced results of the transport computation are in the output folder in the file "mass_balance.txt". The concentration is depicted on the Figure 2. Through the “.surface”, the concentration is still identical (6 × 10-6). Through the based marked “.tunnel”, the concentration is zero at the beginning and then is changed around 100 years to the opposite value of inflow -6 × 10-6. The selected part of numerical results of mass is in the Table 2. The figure 3 depicts results from file "mass_balance.txt" for mass transported through the boundaries ".surface" and ".tunnel" and in the volume of model "rock".
-##
-##Note:
-##Each model boundary is mandatory to assign with dot in a mesh file: ".surface". 
-##
-## 
-##![alt text](http://bacula.nti.tul.cz/~ales.balvin/transport.png "Results of transport")
-##Figure 2: Results of transport from “mass_balance.txt”.
-##
-##time|    region    |quantity [kg]|    flux|    flux_in|    flux_out|    mass|    error
-##----|-----------|-------------|-----|----------|------------|-------|--------
-##3.96E+09|    rock|    A|    0|    0|    0|    22544.1|    0|
-##3.96E+09|    .surface|    A|    6.34E-06|    6.34E-06|    0|    0|    0|
-##3.96E+09|    .tunnel|    A|    -4.88E-06|    0|    -4.88E-06|    0|    0|
-##3.96E+09|    IMPLICIT BOUNDARY|    A|    -1.02E-19|    0|    -1.02E-19|    0|    0|
-##3.96E+09|    ALL|    A|    1.46E-06|    6.34E-06|    -4.88E-06|    22544.1|    -7.39E-10|
-##3.97E+09|    rock|    A|    0|    0|    0|    22558.7|    0|
-##3.97E+09|    .surface|    A|    6.34E-06|    6.34E-06|    0|    0|    0|
-##3.97E+09|    .tunnel|    A|    -4.92E-06|    0|    -4.92E-06|    0|    0|
-##3.97E+09|    IMPLICIT BOUNDARY|    A|    -1.02E-19|    0|    -1.02E-19|    0|    0|
-##3.97E+09|    ALL|    A|    1.42E-06|    6.34E-06|    -4.92E-06|    22558.7|    -7.53E-10|
-##
-##: Illustration of the results in “water_balanced.txt” – selected column in two time steps (edited table, no whole file).
-##
-##![alt text](http://bacula.nti.tul.cz/~ales.balvin/ex1_curves_of_transport.png "Results of transport")
-##Figure 3: Results of transport in four time moments (1 time step = 3.8 months)
-##
-### Conclusion
-##On the naive two-dimensional model the hydraulic and the transport model computation was shown. 
+##Below is the complete YAML file ```01_column.yaml```.
 ##
 flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Example 1 of real locality - column 1D model
   mesh:
-    mesh_file: ./input/mesh_ex1.msh
-    regions:
-      - !Union
-        name: dirichlet_boundary 
-        regions:
-          - .surface
-          - .tunnel
+    mesh_file: ./01_mesh.msh
   flow_equation: !Flow_Darcy_MH
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-15
-        r_tol: 1.0e-15
     input_fields:
       - region: rock
         conductivity: 1e-8
-        cross_section: 1
-      - region: dirichlet_boundary
+      - region: .tunnel
         bc_type: dirichlet
         bc_pressure: 0
-    balance: true
+      - region: .surface
+        bc_type: dirichlet
+        bc_pressure: 0
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1e-15
+        r_tol: 1e-15
     output:
-      output_stream: 
-        file: ./ex_1-flux.msh
+      output_stream:
+        file: flow.msh
         format: !gmsh
           variant: ascii
       output_fields:
@@ -162,3 +144,4 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
+    balance: true
