@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test14 - 2D transport with time variable boundary, test matching input/output
     times even if prescribed initial and maximal time step is larger.
   mesh:
-    mesh_file: ../00_mesh/rectangle_with_bc_.msh
+    mesh_file: ../00_mesh/rectangle_1x0.2.msh
   # steady velocity field, with velocity v:0.1
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:

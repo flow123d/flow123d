@@ -3,7 +3,7 @@ flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Transport 1D-2D, (convection, dual porosity, sorption)
   mesh:
-    mesh_file: ../00_mesh/square_frac_boundary.msh
+    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
     regions:
       - !Union
         name: 1d_domain

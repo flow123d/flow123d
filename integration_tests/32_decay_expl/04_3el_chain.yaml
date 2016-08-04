@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: narrow radioaoctive decay chain, with transport switched enabled but
     with zero pressure gradient, VTK output test12
   mesh:
-    mesh_file: ../00_mesh/sit_decay.msh
+    mesh_file: ../00_mesh/prism_3el.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc

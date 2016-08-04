@@ -2,7 +2,7 @@ flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test of boundary conditions for transport
   mesh:
-    mesh_file: ../00_mesh/square_structured.msh
+    mesh_file: ../00_mesh/square_1x1_str.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc

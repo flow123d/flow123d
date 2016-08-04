@@ -13,7 +13,7 @@ problem: !Coupling_Sequential
   # The inflow velocity is sigma*(bc_pressure - bc_switch_pressure) = 0.0004*0.3 = 1.2e-4 
   
   mesh:
-    mesh_file: ../00_mesh/slope_surface.msh
+    mesh_file: ../00_mesh/slope_xz_1x1.5.msh
   flow_equation: !Flow_Darcy_MH
     n_schurs: 2
     input_fields:

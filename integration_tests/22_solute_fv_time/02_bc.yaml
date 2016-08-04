@@ -2,7 +2,7 @@ flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test14 - 2D transport with time variable boundary
   mesh:
-    mesh_file: ../00_mesh/test14.msh
+    mesh_file: ../00_mesh/rectangle_1x0.2_1080el.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc

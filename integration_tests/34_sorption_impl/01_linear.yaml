@@ -15,7 +15,7 @@ output_streams:
 problem: !Coupling_Sequential
   description: Adsorption all
   mesh:
-    mesh_file: ../00_mesh/test_20.msh
+    mesh_file: ../00_mesh/rectangle_5x1.msh
   flow_equation: !Flow_Darcy_MH
     input_fields:
     - region: rectangle

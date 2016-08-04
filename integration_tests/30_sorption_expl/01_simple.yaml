@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Simple sorption test - no flow, no transport, known values of sorbed
     substances.
   mesh:
-    mesh_file: ../00_mesh/mesh_simple.msh
+    mesh_file: ../00_mesh/prism_11el.msh
     regions:
       - !Union
         name: .boundary

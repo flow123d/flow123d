@@ -4,7 +4,7 @@ problem: !Coupling_Sequential
     \ sorptions. \nQualitative and mass balance check.\n- A - check sorption none\
     \ (with source, init_conc_solid)"
   mesh:
-    mesh_file: ../00_mesh/mesh_simple.msh
+    mesh_file: ../00_mesh/prism_11el.msh
     regions:
       - !Union
         name: .boundary

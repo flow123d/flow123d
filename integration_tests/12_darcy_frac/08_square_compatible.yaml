@@ -2,7 +2,7 @@ flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Flow in 2d-1d domain, compatible mesh
   mesh:
-    mesh_file: ../00_mesh/compatible.msh
+    mesh_file: ../00_mesh/square_2x2_frac_comp.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc

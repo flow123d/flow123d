@@ -2,7 +2,7 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Demonstration of non-stable solution of dual porosity without CFL restriction
   mesh:
-    mesh_file: ../00_mesh/dual_por.msh
+    mesh_file: ../00_mesh/square_1x1_40el.msh
   flow_equation: !Flow_Darcy_MH
     input_fields:
       - region: ALL
