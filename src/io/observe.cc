@@ -243,9 +243,12 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array)
     time_unit_seconds_ = 1.0;
 
     if (points_.size() == 0) return;
-    FilePath observe_file_path(observe_name + "_observe.yaml", FilePath::output_file);
-    observe_file_.open( string(observe_file_path).c_str());
-    output_header(observe_name);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+    if (rank_==0) {
+        FilePath observe_file_path(observe_name + "_observe.yaml", FilePath::output_file);
+        observe_file_.open( string(observe_file_path).c_str());
+        output_header(observe_name);
+    }
 }
 
 Observe::~Observe() {
@@ -254,15 +257,16 @@ Observe::~Observe() {
 
 
 template<int spacedim, class Value>
-void Observe::compute_field_values(Field<spacedim, Value> &field) {
+void Observe::compute_field_values(Field<spacedim, Value> &field)
+{
+    if (points_.size() == 0) return;
 
     double field_time = field.time();
     if ( std::isnan(observe_values_time_) )
         observe_values_time_ = field_time;
     else
-        ASSERT(fabs(field_time - observe_values_time_) < 2*numeric_limits<double>::epsilon());
-
-    if (points_.size() == 0) return;
+        ASSERT(fabs(field_time - observe_values_time_) < 2*numeric_limits<double>::epsilon())
+              (field_time)(observe_values_time_);
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field.name());
     if (it == observe_field_values_.end()) {
@@ -312,14 +316,16 @@ void Observe::output_header(string observe_name) {
 void Observe::output_time_frame(double time) {
     if (points_.size() == 0) return;
 
-
-    unsigned int indent = 2;
-    observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
-    for(auto &field_data : observe_field_values_) {
-        observe_file_ << setw(indent) << "" << "  " << field_data.second->field_name << ": ";
-        field_data.second->print_all_yaml(observe_file_);
-        observe_file_ << endl;
+    if (rank_ == 0) {
+        unsigned int indent = 2;
+        observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
+        for(auto &field_data : observe_field_values_) {
+            observe_file_ << setw(indent) << "" << "  " << field_data.second->field_name << ": ";
+            field_data.second->print_all_yaml(observe_file_);
+            observe_file_ << endl;
+        }
     }
+
     observe_values_time_ = numeric_limits<double>::signaling_NaN();
 
 }

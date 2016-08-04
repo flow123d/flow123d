@@ -182,6 +182,10 @@ public:
 
 
 protected:
+    // MPI rank.
+    int rank_;
+
+    // Mesh used for search of points.
     Mesh *mesh_;
 
     /// Full information about observe points.
