@@ -33,7 +33,9 @@ using namespace std;
 #include "io/output_time.hh"
 
 
+class Mesh;
 class Region;
+class Observe;
 
 namespace IT=Input::Type;
 
@@ -203,7 +205,10 @@ public:
     { return shared_->input_default_;}
 
     const UnitSI &units() const
-    { return shared_->units_;}
+    {
+        ASSERT(shared_->units_.is_def())(name()).error("Getting undefined unit.\n");
+        return shared_->units_;
+    }
 
     OutputTime::DiscreteSpace output_type() const
     { return type_of_output_data_; }
@@ -327,6 +332,12 @@ public:
      */
     virtual void output(std::shared_ptr<OutputTime> stream) =0;
 
+    /**
+     * Perform the observe output of the field.
+     * The Observe object passed by the parameter is called with the particular Field<> as the parameter
+     * to evaluate the field in observation points and store the values in the OutputData arrays.
+     */
+    virtual void observe_output(std::shared_ptr<Observe> observe) =0;
 
 
     /**

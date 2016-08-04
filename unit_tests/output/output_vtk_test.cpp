@@ -29,11 +29,13 @@ const string test_output_time_input = R"JSON(
 class TestOutputVTK : public testing::Test, public OutputVTK {
 public:
     TestOutputVTK()
-    : OutputVTK(
-            Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
-            .get_root_interface<Input::Record>()
-      )
+    : OutputVTK()
     {
+
+        auto in_rec = Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
+                      .get_root_interface<Input::Record>();
+        this->init_from_input("dummy_equation", in_rec);
+
         Profiler::initialize();
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
         this->_mesh = new Mesh();
@@ -41,7 +43,7 @@ public:
         this->_mesh->read_gmsh_from_stream(in);
         
         // create output mesh identical to computational mesh
-        this->output_mesh_ = std::make_shared<OutputMesh>(this->_mesh);
+        this->output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
         this->output_mesh_->create_identical_mesh();
     }
 
@@ -53,10 +55,10 @@ public:
 
 
 TEST_F(TestOutputVTK, write_data) {
+    this->current_step=1;
+    this->write_data();
     EXPECT_EQ("./test1.pvd", this->_base_filename);
     EXPECT_EQ("test1", this->main_output_basename_);
     EXPECT_EQ(".", this->main_output_dir_);
-    this->current_step=1;
-    this->write_data();
 }
 

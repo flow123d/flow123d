@@ -75,7 +75,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 		.derive_from(AdvectionProcessBase::get_input_type())
 		.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
 				"Time governor setting for the secondary equation.")
-		.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
+		.declare_key("balance", Balance::get_input_type(), Default("{}"),
 				"Settings for computing balance.")
 		.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 				"Parameters of output stream.")
@@ -138,7 +138,6 @@ TransportEqData::TransportEqData()
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : AdvectionProcessBase(init_mesh, in_rec),
-  convection(NULL),
   Semchem_reactions(NULL),
   cfl_convection(numeric_limits<double>::max()),
   cfl_reaction(numeric_limits<double>::max())
@@ -151,25 +150,31 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	Input::AbstractRecord trans = in_rec.val<Input::AbstractRecord>("transport");
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
 
-	convection->set_time_governor(*(new TimeGovernor(in_rec.val<Input::Record>("time"))));
+	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	convection->set_time_governor(time());
 
 	// Initialize list of substances.
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream")));
+    convection->set_output_stream(OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream")));
 
 
     // initialization of balance object
-    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
-    if (it->val<bool>("balance_on"))
+
+    balance_ = make_shared<Balance>("mass", mesh_);
+    balance_->init_from_input(in_rec.val<Input::Record>("balance"), this->time());
+
+    if (balance_)
     {
-  	  balance_ = boost::make_shared<Balance>("mass", mesh_, *it);
   	  balance_->units(UnitSI().kg(1));
   	  convection->set_balance_object(balance_);
     }
 
-	convection->initialize();
+	convection->initialize(); //
+
+
+
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type());
 
@@ -225,7 +230,7 @@ void TransportOperatorSplitting::output_data(){
         if(reaction) reaction->output_data(); // do not perform write_time_frame
         convection->output_stream()->write_time_frame();
 
-        if (balance_ != nullptr && time_->is_current( time_->marks().type_output() ))
+        if (balance_ != nullptr && balance_->is_current( time_->step() ) )
         {
         	START_TIMER("TOS-balance");
         	convection->calculate_instant_balance();

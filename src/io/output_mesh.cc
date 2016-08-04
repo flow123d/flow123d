@@ -37,12 +37,12 @@ const IT::Record & OutputMeshBase::get_input_type() {
         .close();
 }
 
-OutputMeshBase::OutputMeshBase(Mesh* mesh)
+OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
     nodes_ (std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR)),
     connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
     offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
-    orig_mesh_(mesh),
+    orig_mesh_(&mesh),
     max_level_(0),
     is_refined_(false),
     refine_by_error_(false),
@@ -51,13 +51,13 @@ OutputMeshBase::OutputMeshBase(Mesh* mesh)
 }
 
 
-OutputMeshBase::OutputMeshBase(Mesh* mesh, const Input::Record &in_rec)
+OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
 : 
     nodes_ (std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR)),
     connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
     offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
     input_record_(in_rec), 
-    orig_mesh_(mesh),
+    orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level")),
     is_refined_(false),
     refine_by_error_(input_record_.val<bool>("refine_by_error")),
@@ -83,7 +83,7 @@ OutputElementIterator OutputMeshBase::end()
     return OutputElementIterator(OutputElement(offsets_->n_values, shared_from_this()));
 }
 
-void OutputMeshBase::select_error_control_field(FieldSet* output_fields)
+void OutputMeshBase::select_error_control_field(FieldSet &output_fields)
 {
     if(refine_by_error_)
     {
@@ -92,7 +92,7 @@ void OutputMeshBase::select_error_control_field(FieldSet* output_fields)
         auto it = input_record_.find<std::string>("error_control_field");
         if(it) error_control_field_name = *it;
 
-        FieldCommon* field =  output_fields->field(error_control_field_name);
+        FieldCommon* field =  output_fields.field(error_control_field_name);
         // throw input exception if the field is unknown
         if(field == nullptr){
             THROW(FieldSet::ExcUnknownField()
@@ -143,12 +143,12 @@ unsigned int OutputMeshBase::n_nodes()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-OutputMesh::OutputMesh(Mesh* mesh)
+OutputMesh::OutputMesh(Mesh  &mesh)
 : OutputMeshBase(mesh)
 {
 }
 
-OutputMesh::OutputMesh(Mesh* mesh, const Input::Record& in_rec)
+OutputMesh::OutputMesh(Mesh &mesh, const Input::Record& in_rec)
 : OutputMeshBase(mesh, in_rec)
 {
 }
@@ -221,12 +221,12 @@ bool OutputMesh::refinement_criterion()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh* mesh)
+OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh &mesh)
 : OutputMeshBase(mesh)
 {
 }
 
-OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh* mesh, const Input::Record& in_rec)
+OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh &mesh, const Input::Record& in_rec)
 : OutputMeshBase(mesh, in_rec)
 {
 }

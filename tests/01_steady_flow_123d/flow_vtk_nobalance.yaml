@@ -1,9 +1,10 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   # test auto conversion for the Mesh record
   mesh: ./input/test1_new.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -37,15 +38,15 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z
-    balance: false
+    balance: {add_output_times: false}
     output:
-      output_stream: 
-        file: ./test1.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
         - velocity_p0
+    output_stream: 
+      file: ./test1.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

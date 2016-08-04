@@ -36,8 +36,12 @@ const IT::Record & SorptionSimple::get_input_type() {
 	return IT::Record("Sorption", "Sorption model in the reaction term of transport.")
         .derive_from( ReactionTerm::get_input_type() )
         .copy_keys(SorptionBase::get_input_type())
-        .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
-                     IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
+        //.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
+        //             IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
+        .declare_key("output", make_output_type("Sorption", "conc_solid"),
+             IT::Default("{ fields: [ \"conc_solid\" ] }"),
+             "Setting of the fields output.")
+
 		.close();
 }
 
@@ -136,8 +140,12 @@ const IT::Record & SorptionMob::get_input_type() {
 	return IT::Record("SorptionMobile", "Sorption model in the mobile zone, following the dual porosity model.")
         .derive_from( ReactionTerm::get_input_type() )
         .copy_keys(SorptionBase::get_input_type())
-        .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
-            IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
+        //.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
+        //    IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
+        .declare_key("output", make_output_type("SorptionMobile", "conc_solid"),
+             IT::Default("{ fields: [ \"conc_solid\" ] }"),
+             "Setting of the fields output.")
+
 		.close();
 }
 
@@ -225,8 +233,12 @@ const IT::Record & SorptionImmob::get_input_type() {
 	return IT::Record("SorptionImmobile", "Sorption model in the immobile zone, following the dual porosity model.")
         .derive_from( ReactionTerm::get_input_type() )
         .copy_keys(SorptionBase::get_input_type())
-        .declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
-            IT::Default("\"conc_immobile_solid\""), "List of fields to write to output stream.")
+        //.declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
+        //    IT::Default("\"conc_immobile_solid\""), "List of fields to write to output stream.")
+        .declare_key("output", make_output_type("SorptionImmobile", "conc_immobile_solid"),
+             IT::Default("{ fields: [ \"conc_immobile_solid\" ] }"),
+             "Setting of the fields output.")
+
 		.close();
 }
 

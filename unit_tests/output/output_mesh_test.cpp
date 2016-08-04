@@ -15,9 +15,9 @@
 #include "system/sys_profiler.hh"
 
 #include "fields/field_constant.hh"
-#include <fields/field.hh>
-#include <fields/field_set.hh>
-#include <fields/field_common.hh>
+#include "fields/field.hh"
+#include "fields/field_set.hh"
+#include "fields/field_common.hh"
 #include "input/input_type.hh"
 
 #include "input/accessors.hh"
@@ -40,7 +40,7 @@ TEST(OutputMesh, create_identical)
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
     
-    auto output_mesh = std::make_shared<OutputMesh>(mesh);
+    auto output_mesh = std::make_shared<OutputMesh>(*mesh);
     output_mesh->create_identical_mesh();
     
     std::cout << "nodes: ";
@@ -77,7 +77,7 @@ TEST(OutputMesh, create_identical)
         EXPECT_EQ(ele.centre()[2], ele_acc.centre()[2]);
     }
     
-    auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(mesh);
+    auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
     output_mesh_discont->create_mesh(output_mesh);
     
     xprintf(Msg,"DISCONTINUOUS\n");
@@ -120,7 +120,7 @@ const string input = R"INPUT(
        //value="x+y+z"
    },
    output_stream = {
-    file = "./test1.pvd", 
+    file = "./output/test1.pvd",
     format = {
         TYPE = "vtk", 
         variant = "ascii"
@@ -130,8 +130,7 @@ const string input = R"INPUT(
         refine_by_error = true,
         error_control_field = "conc"
     }
-  },
-  output_fields = ["conc"]
+  }
 }
 )INPUT";
 
@@ -163,8 +162,6 @@ TEST(OutputMesh, write_on_output_mesh) {
     Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
         .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
-        .declare_key("output_fields", Input::Type::Array(output_fields.make_output_field_selection("output_fields", "output").close()), 
-                     Input::Type::Default::obligatory(), "")
         .close();
 
     // read input string
@@ -183,8 +180,8 @@ TEST(OutputMesh, write_on_output_mesh) {
     output_fields.set_time(0.0, LimitSide::right);
     
     // create output
-    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>(in_rec.val<Input::Record>("output_stream"));
-    output->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
+    output->init_from_input("dummy_equation", in_rec.val<Input::Record>("output_stream"));
     
     // register output fields, compute and write data
     output_fields.output(output);
@@ -192,12 +189,6 @@ TEST(OutputMesh, write_on_output_mesh) {
 
     delete mesh;
 }
-
-
-
-
-
-
 
 
 
@@ -212,7 +203,7 @@ const string input_om = R"INPUT(
 class TestOutputMesh : public testing::Test, public OutputMeshDiscontinuous {
 public:
     TestOutputMesh()
-    : OutputMeshDiscontinuous(nullptr, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
+    : OutputMeshDiscontinuous(mesh_, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
                             .get_root_interface<Input::Record>())
     {
     }
@@ -332,30 +323,26 @@ public:
     ~TestOutputMesh()
     {
     }
+
+    Mesh mesh_;
 };
 
 
 TEST_F(TestOutputMesh, read_input) {
     EXPECT_EQ(this->max_level_, 2);
-    EXPECT_EQ(this->orig_mesh_, nullptr);
+    EXPECT_EQ(this->orig_mesh_, &(this->mesh_));
   
     Field<3,FieldValue<3>::Scalar> scalar_field;
     
     // create field set of output fields
     FieldSet output_fields;
     output_fields += scalar_field.name("conc");
-    this->select_error_control_field(&output_fields);
+    this->select_error_control_field(output_fields);
     
     // no field 'conc' is to be found
     output_fields.field("conc")->name("conc_error");
-    EXPECT_THROW( this->select_error_control_field(&output_fields); ,
+    EXPECT_THROW( this->select_error_control_field(output_fields); ,
                   FieldSet::ExcUnknownField);
-    
-    // 'conc' field is now vector field
-    Field<3,FieldValue<3>::Vector> vector_field;
-    output_fields += vector_field.name("conc");
-    EXPECT_THROW( this->select_error_control_field(&output_fields); ,
-                  OutputMeshBase::ExcFieldNotScalar);
 }
 
 
@@ -389,18 +376,17 @@ const string input_refine = R"INPUT(
        // value="x+y+z"
    },
    output_stream = {
-    file = "./test_refine.pvd", 
+    file = "./output/test_refine.pvd",
     format = {
         TYPE = "vtk", 
         variant = "ascii"
     },
     output_mesh = {
-        max_level = 2
+        max_level = 3
         refine_by_error = true
         error_control_field = "conc"
     }
-  },
-  output_fields = ["conc"]
+  }
 }
 )INPUT";
 
@@ -448,8 +434,6 @@ TEST(OutputMesh, write_on_refined_mesh) {
     Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
         .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
-        .declare_key("output_fields", Input::Type::Array(output_fields.make_output_field_selection("output_fields", "output").close()), 
-                     Input::Type::Default::obligatory(), "")
         .close();
 
     // read input string
@@ -468,8 +452,8 @@ TEST(OutputMesh, write_on_refined_mesh) {
     output_fields.set_time(0.0, LimitSide::right);
     
     // create output
-    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>(in_rec.val<Input::Record>("output_stream"));
-    output->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
+    output->init_from_input("dummy_equation", in_rec.val<Input::Record>("output_stream"));
     
     // register output fields, compute and write data
     output_fields.output(output);
