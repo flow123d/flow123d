@@ -91,7 +91,7 @@ add_library(system_lib
     system/application_base.cc
     system/logger.cc
     system/logger_options.cc
-    
+    system/armadillo_tools.cc
     system/fmt/format.cc
     system/fmt/ostream.cc
     system/fmt/posix.cc
@@ -238,9 +238,16 @@ target_link_libraries(fem_lib
 add_library(coupling_lib 
    # unfortunatelly field sources depends on output sources
    # and viceversa
+    io/output_data.cc
     io/output_time.cc
     io/output_vtk.cc
     io/output_msh.cc
+    io/observe.cc
+    io/output_mesh_data.cc
+    io/output_mesh.cc
+    io/output_time_set.cc
+    io/equation_output.cc
+    
     
     fields/field_values.cc
     fields/field_common.cc
@@ -258,7 +265,7 @@ add_library(coupling_lib
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
-    system_lib input_lib mesh_lib tools_lib
+    system_lib input_lib mesh_lib tools_lib fem_lib
     fparser     
     armadillo
     ${Boost_LIBRARIES})

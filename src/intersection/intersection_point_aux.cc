@@ -56,7 +56,19 @@ IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-1> &IP,
     ASSERT_DBG(M>1 && M<4);
     
     local_bcoords_A_ = IP.local_bcoords_A();
-    local_bcoords_B_ = RefElement<M>::template interpolate<M-1>(IP.local_bcoords_B(), idx_B);
+    
+    // FIXME: switch barycentric coords everywhere in intersections to remove this
+    arma::vec::fixed<M> b;
+    b.rows(0,M-2) = IP.local_bcoords_B().rows(1,M-1);
+    b[M-1] = IP.local_bcoords_B()[0];
+    
+    local_bcoords_B_ = RefElement<M>::template interpolate<M-1>(b, idx_B);
+    
+    // switch back
+    double bb = local_bcoords_B_[M];
+    local_bcoords_B_.rows(1,M) = local_bcoords_B_.rows(0,M-1);
+    local_bcoords_B_[0] = bb;
+    
     idx_A_ = IP.idx_A();
     idx_B_ = idx_B;
     orientation_ = IP.orientation();
@@ -70,7 +82,18 @@ IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-2> &IP,
     ASSERT_DBG(M == 3);
 
     local_bcoords_A_ = IP.local_bcoords_A();
-    local_bcoords_B_ = RefElement<3>::interpolate<1>(IP.local_bcoords_B(), idx_B);
+    
+    // FIXME: switch barycentric coords everywhere in intersections to remove this
+    arma::vec::fixed<2> b = IP.local_bcoords_B();
+    std::swap(b[0],b[1]);
+    
+    local_bcoords_B_ = RefElement<3>::interpolate<1>(b, idx_B);
+    
+    // switch back
+    double bb = local_bcoords_B_[M];
+    local_bcoords_B_.rows(1,M) = local_bcoords_B_.rows(0,M-1);
+    local_bcoords_B_[0] = bb;
+    
     idx_A_ = IP.idx_A();
     idx_B_ = idx_B;
     orientation_ = IP.orientation();

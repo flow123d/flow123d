@@ -29,14 +29,10 @@ public:
 	typedef OutputTime FactoryBaseType;
 
     /**
-     * \brief The constructor of this class
+     * \brief The constructor of this class.
+     * We open the output file in first call of write_data
      */
     OutputMSH();
-
-    /**
-     * \brief The constructor of this class
-     */
-    OutputMSH(const Input::Record &in_rec);
 
     /**
      * \brief The destructor of this class
@@ -81,6 +77,12 @@ private:
     bool header_written;
 
     /**
+     * EquationOutput force output of all output fields at the time zero.
+     * We keep this list to perform single elemnent/node output in order to have correct behavior in GMSH.
+     */
+    std::vector< std::vector< OutputDataPtr >> dummy_data_list_;
+
+    /**
      * \brief This function write header of GMSH (.msh) file format
      */
     void write_msh_header(void);
@@ -119,7 +121,12 @@ private:
      * \param[in]   time        The time from start
      * \param[in]   step        The number of steps from start
      */
-    void write_msh_node_data(double time, int step);
+    void write_node_data(OutputDataPtr output_data);
+    /**
+     * \brief writes ElementNode data ascii GMSH (.msh) output file.
+     *
+     */
+    void write_corner_data(OutputDataPtr output_data);
 
 
     /**
@@ -129,7 +136,14 @@ private:
      * \param[in]   time        The time from start
      * \param[in]   step        The number of steps from start
      */
-    void write_msh_elem_data(double time, int step);
+    void write_elem_data(OutputDataPtr output_data);
+
+    /**
+     * Write fields of single discrete space type, use given format function for the output of single field data.
+     *
+     * At first call it fills dummy_data_list_ (assuming output of all fields at the first output frame).
+     */
+    void write_field_data(OutputTime::DiscreteSpace type_idx, void (OutputMSH::* format_fce)(OutputDataPtr) );
 
     /**
      * \brief This method add right suffix to .msh GMSH file

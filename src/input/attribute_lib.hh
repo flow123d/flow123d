@@ -64,7 +64,8 @@ public:
 	{ return "_link_name"; }
 
 	/**
-	 * Attribute to mark obsolete types.
+	 * Attribute to mark obsolete types. The value of the attribute is the replacement of the
+	 * feature, or reason to abandon the type.
 	 *
 	 * Format of value: bool
 	 */

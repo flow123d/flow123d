@@ -7,7 +7,8 @@
 # The transformations have to be defined in the file
 # "src/python/GeoMop/ModelEditor/resources/transformations/${TRANSFORM_FILE}.json".
 
-TRANSFORM_FILE=flow123d_1.8.6_to_2.0.0
+TRANSFORM_FILE_CON=flow123d_1.8.6_to_2.0.0
+TRANSFORM_FILE_YAML=flow123d_2.0.0_rc_to_2.0.0
 
 # Relative path to "importer.py" script from directory,
 # where this script is placed
@@ -19,6 +20,20 @@ IMPORTER_PY="${0%/*}/${IMPORTER_PY}"
 for f in $@ 
 do
   echo "Processing $f"
-  rm -f ${f%.con}.yaml
-  python3 $IMPORTER_PY --transformation-name ${TRANSFORM_FILE} --con_file $f
+  if [ "${f%.yaml}" == "$f" ]
+  then 
+        # con file
+        rm -f "${f%.con}.yaml"
+        python3 "$IMPORTER_PY" --transformation-name "${TRANSFORM_FILE_CON}" --con_file "$f"
+  else     
+        # yaml file
+        
+        new_name="${f%.yaml}.orig.yaml"
+        if [ ! -f "${new_name}" ]
+        then
+            cp "$f" "${new_name}"        
+        fi    
+        rm "$f"
+        python3 "$IMPORTER_PY" --transformation-name "${TRANSFORM_FILE_YAML}" --yaml_file "${new_name}" --destination-file "$f"
+  fi  
 done
