@@ -18,7 +18,7 @@
 #ifndef MAKE_EDGES_H
 #define MAKE_EDGES_H
 
-#include "mesh/mesh.h"
+#include "mesh/sides.h"
 
 //=============================================================================
 // STRUCTURE OF THE EDGE OF THE MESH

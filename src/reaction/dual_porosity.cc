@@ -57,14 +57,10 @@ const Record & DualPorosity::get_input_type() {
 
 		.declare_key("reaction_mobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in mobile zone.")
 		.declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
-
-		.declare_key("output_fields",
-            Array(EqData().output_fields
-              .make_output_field_selection(
-                  "DualPorosity_output_fields",
-                  "Selection of field names of Dual Porosity model available for output.")
-              .close()),
-            Default("\"conc_immobile\""), "List of fields to write to output stream.")
+		.declare_key("output",
+		                    EqData().output_fields.make_output_type("DualPorosity", ""),
+		                    IT::Default("{ fields: [ \"conc_immobile\" ] }"),
+		                    "Setting of the fields output.")
 		.close();
 }
     
@@ -97,8 +93,13 @@ DualPorosity::EqData::EqData()
         .units( UnitSI::dimensionless() )
         .flags( FieldFlag::input_copy );
 
+  *this += conc_immobile
+          .name("conc_immobile")
+          .units( UnitSI().kg().m(-3) )
+          .flags(FieldFlag::equation_result);
+
   output_fields += *this;
-  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
+
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
@@ -204,7 +205,7 @@ void DualPorosity::initialize_fields()
   data_.set_mesh(*mesh_);
   
   //initialization of output
-  output_array = input_record_.val<Input::Array>("output_fields");
+  //output_array = input_record_.val<Input::Array>("output_fields");
   data_.output_fields.set_components(substances_.names());
   data_.output_fields.set_mesh(*mesh_);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
@@ -215,7 +216,8 @@ void DualPorosity::initialize_fields()
 	auto output_field_ptr = conc_immobile_out[sbi].create_field<3, FieldValue<3>::Scalar>(substances_.size());
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
-  output_stream_->add_admissible_field_names(output_array);
+  //output_stream_->add_admissible_field_names(output_array);
+  data_.output_fields.initialize(output_stream_, input_record_.val<Input::Record>("output"),time());
 }
 
 
@@ -244,15 +246,18 @@ void DualPorosity::zero_time_step()
   set_initial_condition();
   
   // write initial condition
-  output_vector_gather();
-  data_.output_fields.set_time(time_->step(0), LimitSide::right);
-  data_.output_fields.output(output_stream_);
+  //output_vector_gather();
+  //data_.output_fields.set_time(time_->step(0), LimitSide::right);
+  //data_.output_fields.output(output_stream_);
+
+  output_data();
   
   if(reaction_mobile)
     reaction_mobile->zero_time_step();
 
   if(reaction_immobile)
     reaction_immobile->zero_time_step();
+
 }
 
 void DualPorosity::set_initial_condition()
@@ -391,14 +396,19 @@ void DualPorosity::output_vector_gather()
 
 void DualPorosity::output_data(void )
 {
-    output_vector_gather();
+    data_.output_fields.set_time(time_->step(), LimitSide::right);
+    if ( data_.output_fields.is_field_output_time(data_.conc_immobile, time().step()) ) {
+        output_vector_gather();
+    }
 
     // Register fresh output data
-    data_.output_fields.set_time(time_->step(), LimitSide::right);
-    data_.output_fields.output(output_stream_);
-    
-    if (reaction_mobile) reaction_mobile->output_data();
-    if (reaction_immobile) reaction_immobile->output_data();
+    data_.output_fields.output(time_->step());
+
+    if (time_->tlevel() !=0) {
+        // zero_time_step call zero_time_Step of subreactions which performs its own output
+        if (reaction_mobile) reaction_mobile->output_data();
+        if (reaction_immobile) reaction_immobile->output_data();
+    }
 }
 
 

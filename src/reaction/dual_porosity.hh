@@ -31,6 +31,7 @@
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
 #include "./reaction/reaction_term.hh"
+#include "io/equation_output.hh"
 
 class Mesh;
 
@@ -63,7 +64,7 @@ public:
     MultiField<3, FieldValue<3>::Scalar>  conc_immobile;    ///< Calculated concentrations in the immobile zone.
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
-    FieldSet output_fields;
+    EquationOutput output_fields;
 
   };
 
@@ -126,7 +127,7 @@ protected:
    */
   EqData data_;
 
-  Input::Array output_array;
+  //Input::Array output_array;
 
   /**
    * Input data set - fields in this set are read from the input file.

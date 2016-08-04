@@ -20,6 +20,7 @@
 
 #include "elements.h"
 #include "sides.h"
+#include "mesh/mesh.h"
 #include "side_impl.hh"
 
 inline unsigned int Element::dim() const {

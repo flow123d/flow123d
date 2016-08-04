@@ -162,12 +162,9 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 #define f_list(Dim) \
 	Field<Dim,FV<0>::Scalar> , \
     Field<Dim,FV<0>::Enum>, \
-    Field<Dim,FV<0>::EnumVector>, \
     Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<2>::VectorFixed>, \
-	Field<Dim,FV<3>::VectorFixed>, \
-	Field<Dim,FV<2>::TensorFixed>, \
-	Field<Dim,FV<3>::TensorFixed>
+	Field<Dim,FV<Dim>::VectorFixed>, \
+	Field<Dim,FV<Dim>::TensorFixed>
 
 // simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
@@ -832,7 +829,7 @@ TEST(Field, init_from_default) {
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
     }
-    Field<3, FieldValue<3>::VectorFixed > vector_field;
+    //Field<3, FieldValue<3>::Vector > vector_field;
 
 }
 

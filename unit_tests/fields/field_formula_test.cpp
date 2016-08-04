@@ -55,6 +55,7 @@ TEST(FieldFormula, read_from_input) {
     point_2(0)=2.0; point_2(1)=4.0; point_2(2)=6.0;
     ElementAccessor<3> elm;
 
+
     auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), 3);
     {
         arma::vec result;
@@ -127,7 +128,7 @@ string set_time_input = R"INPUT(
 
 
 TEST(FieldFormula, set_time) {
-    typedef FieldAlgorithmBase<2, FieldValue<3>::VectorFixed > VectorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");

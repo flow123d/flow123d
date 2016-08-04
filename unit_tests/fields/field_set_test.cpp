@@ -45,14 +45,14 @@ const string eq_data_input = R"JSON(
         region="BULK",
         init_pressure=1.1,
         velocity={TYPE="FieldFormula",
-            value=[ "x", "y" ]
+            value=[ "x", "y" , "z"]
         },
         reaction_type="r_first"
       },
       { 
         time=1.0,
         region="BULK",
-        velocity=[1,2]
+        velocity=[1,2,4]
       }
 ]
 )JSON";
@@ -84,7 +84,7 @@ public:
 		}
 
 		// fields
-	    Field<2, FieldValue<2>::VectorFixed > velocity;
+	    Field<3, FieldValue<3>::VectorFixed > velocity;
 	    Field<3, FieldValue<3>::Scalar > init_pressure;
 	    Field<3, FieldValue<3>::Enum > type;
 	};
