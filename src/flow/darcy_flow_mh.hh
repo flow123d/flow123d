@@ -89,6 +89,10 @@ template<unsigned int dim> class QGauss;
  */
 class RichardsSystem {
 public:
+    // temporary solution how to pass information about dirichlet BC on edges
+    // should be done better when we move whole assembly into assembly classes
+    // the vector is set in assembly_mh_matrix and used in LMH assembly of the time term
+    std::vector<unsigned int> dirichlet_edge;
     std::shared_ptr<arma::mat> local_matrix;
     std::shared_ptr<Balance> balance;
     LinSys *lin_sys;
