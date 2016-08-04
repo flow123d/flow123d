@@ -188,6 +188,61 @@ TEST(RefElement, clip_2d) {
 }
 
 
+TEST(RefElement, interpolate) {
+    
+//     RefElement<1>::bary_coords<0>(0).print(cout,"1-0: 0");
+//     RefElement<1>::bary_coords<0>(1).print(cout,"1-0: 1");
+//     
+//     RefElement<2>::bary_coords<1>(0).print(cout,"2-1: 0");
+//     RefElement<2>::bary_coords<1>(1).print(cout,"2-1: 1");
+//     RefElement<2>::bary_coords<1>(2).print(cout,"2-1: 2");
+//     
+//     RefElement<3>::bary_coords<1>(0).print(cout,"3-1: 0");
+//     RefElement<3>::bary_coords<1>(1).print(cout,"3-1: 1");
+//     RefElement<3>::bary_coords<1>(2).print(cout,"3-1: 2");
+//     RefElement<3>::bary_coords<1>(3).print(cout,"3-1: 3");
+//     RefElement<3>::bary_coords<1>(4).print(cout,"3-1: 4");
+//     RefElement<3>::bary_coords<1>(5).print(cout,"3-1: 5");
+//     
+//     RefElement<3>::bary_coords<2>(0).print(cout,"3-2: 0");
+//     RefElement<3>::bary_coords<2>(1).print(cout,"3-2: 1");
+//     RefElement<3>::bary_coords<2>(2).print(cout,"3-2: 2");
+//     RefElement<3>::bary_coords<2>(3).print(cout,"3-2: 3");
+    
+    //VF
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0.25 0"),       RefElement<2>::interpolate<1>("0.75 0.25",0));
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0 0.25"),       RefElement<2>::interpolate<1>("0.75 0.25",1));
+//     EXPECT_ARMA_EQ( arma::vec("0 0.75 0.25"),       RefElement<2>::interpolate<1>("0.75 0.25",2));
+//     
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0.25 0 0"),     RefElement<3>::interpolate<1>("0.75 0.25",0));
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0 0.25 0"),     RefElement<3>::interpolate<1>("0.75 0.25",1));
+//     EXPECT_ARMA_EQ( arma::vec("0 0.75 0.25 0"),     RefElement<3>::interpolate<1>("0.75 0.25",2));
+//     
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0 0 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",3));
+//     EXPECT_ARMA_EQ( arma::vec("0 0.75 0 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",4));
+//     EXPECT_ARMA_EQ( arma::vec("0 0 0.75 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",5));
+    
+    EXPECT_ARMA_EQ( arma::vec("0.75 0 0.25"),       RefElement<2>::interpolate<1>("0.75 0.25",0));
+    EXPECT_ARMA_EQ( arma::vec("0 0.75 0.25"),       RefElement<2>::interpolate<1>("0.75 0.25",1));
+    EXPECT_ARMA_EQ( arma::vec("0.25 0.75 0"),       RefElement<2>::interpolate<1>("0.75 0.25",2));
+    
+    EXPECT_ARMA_EQ( arma::vec("0.75 0 0 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",0));
+    EXPECT_ARMA_EQ( arma::vec("0 0.75 0 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",1));
+    EXPECT_ARMA_EQ( arma::vec("0.25 0.75 0 0"),     RefElement<3>::interpolate<1>("0.75 0.25",2));
+    
+    EXPECT_ARMA_EQ( arma::vec("0 0 0.75 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",3));
+    EXPECT_ARMA_EQ( arma::vec("0.25 0 0.75 0"),     RefElement<3>::interpolate<1>("0.75 0.25",4));
+    EXPECT_ARMA_EQ( arma::vec("0 0.25 0.75 0"),     RefElement<3>::interpolate<1>("0.75 0.25",5));
+    EXPECT_ARMA_EQ( arma::vec("0 0 0.75 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",3));
+    EXPECT_ARMA_EQ( arma::vec("0.25 0 0.75 0"),     RefElement<3>::interpolate<1>("0.75 0.25",4));
+    EXPECT_ARMA_EQ( arma::vec("0 0.25 0.75 0"),     RefElement<3>::interpolate<1>("0.75 0.25",5));
+    
+    EXPECT_ARMA_EQ( arma::vec("0.3 0.2 0 0.5"),     RefElement<3>::interpolate<2>("0.3 0.2 0.5",0));
+    EXPECT_ARMA_EQ( arma::vec("0.3 0 0.2 0.5"),     RefElement<3>::interpolate<2>("0.3 0.2 0.5",1));
+    EXPECT_ARMA_EQ( arma::vec("0 0.3 0.2 0.5"),     RefElement<3>::interpolate<2>("0.3 0.2 0.5",2));
+    EXPECT_ARMA_EQ( arma::vec("0.5 0.3 0.2 0"),     RefElement<3>::interpolate<2>("0.3 0.2 0.5",3));
+    
+}
 
 
 
@@ -199,8 +254,7 @@ TEST(RefElement, clip_2d) {
 
 
 
-
-
+/*
 
 // Write down the definition of RefElement
 
@@ -344,3 +398,4 @@ TEST(RefElement, write_down) {
     topology<2>();
     topology<3>();
 }
+*/
