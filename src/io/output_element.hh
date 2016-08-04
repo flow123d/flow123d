@@ -18,6 +18,7 @@
 #ifndef OUTPUT_ELEMENT_HH_
 #define OUTPUT_ELEMENT_HH_
 
+#include "output_mesh_data.hh"
 #include "output_mesh.hh"
 
 template <int spacedim>

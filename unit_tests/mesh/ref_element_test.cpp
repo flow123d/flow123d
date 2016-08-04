@@ -1,22 +1,265 @@
 /*
  * Ref Element unit test.
  * 
- * There is not much to test actually, but this serves mainly for user checking and testing.
+ * ref_element_test.cpp
  *
- * Author: pe
+ *  Created on: Jul 4, 2016
+ *      Author: jb
  */
 
 
-#include <flow_gtest.hh>
 
+#include <flow_gtest.hh>
 #include "mesh/ref_element.hh"
 
+#include "../../src/system/armadillo_tools.hh"
+#include "arma_expect.hh"
 #include "system/sys_profiler.hh"
+#include "armadillo"
 
 using namespace std;
 
+TEST(RefElement, barycentric_on_face) {
+    armadillo_setup();
+
+    // dim 1
+    EXPECT_ARMA_EQ( arma::vec("1"),
+            RefElement<1>::barycentric_on_face( arma::vec("0 1"), 0));
+    EXPECT_ARMA_EQ( arma::vec("1"),
+            RefElement<1>::barycentric_on_face( arma::vec("1 0"), 1));
+
+    // dim 2
+    EXPECT_ARMA_EQ( arma::vec("0 1"),             RefElement<2>::barycentric_on_face( arma::vec("0 0 1"), 0));
+    EXPECT_ARMA_EQ( arma::vec("1 0"),             RefElement<2>::barycentric_on_face( arma::vec("1 0 0"), 0));
+
+    EXPECT_ARMA_EQ( arma::vec("0 1"),             RefElement<2>::barycentric_on_face( arma::vec("0 0 1"), 1));
+    EXPECT_ARMA_EQ( arma::vec("1 0"),             RefElement<2>::barycentric_on_face( arma::vec("0 1 0"), 1));
+
+    EXPECT_ARMA_EQ( arma::vec("0 1"),             RefElement<2>::barycentric_on_face( arma::vec("1 0 0"), 2));
+    EXPECT_ARMA_EQ( arma::vec("1 0"),             RefElement<2>::barycentric_on_face( arma::vec("0 1 0"), 2));
+
+
+    // dim 3
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"),             RefElement<3>::barycentric_on_face( arma::vec("0 0 0 1"), 0));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"),             RefElement<3>::barycentric_on_face( arma::vec("1 0 0 0"), 0));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"),             RefElement<3>::barycentric_on_face( arma::vec("0 1 0 0"), 0));
+
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"),             RefElement<3>::barycentric_on_face( arma::vec("0 0 0 1"), 1));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"),             RefElement<3>::barycentric_on_face( arma::vec("1 0 0 0"), 1));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"),             RefElement<3>::barycentric_on_face( arma::vec("0 0 1 0"), 1));
+
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"),             RefElement<3>::barycentric_on_face( arma::vec("0 0 0 1"), 2));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"),             RefElement<3>::barycentric_on_face( arma::vec("0 1 0 0"), 2));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"),             RefElement<3>::barycentric_on_face( arma::vec("0 0 1 0"), 2));
+
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"),             RefElement<3>::barycentric_on_face( arma::vec("1 0 0 0"), 3));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"),             RefElement<3>::barycentric_on_face( arma::vec("0 1 0 0"), 3));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"),             RefElement<3>::barycentric_on_face( arma::vec("0 0 1 0"), 3));
+}
+
+TEST(RefElement, barycentric_from_face) {
+    armadillo_setup();
+
+    // dim 1
+    EXPECT_ARMA_EQ( arma::vec("0 1"),
+            RefElement<1>::barycentric_from_face( arma::vec("1"), 0));
+    EXPECT_ARMA_EQ( arma::vec("1 0"),
+            RefElement<1>::barycentric_from_face( arma::vec("1"), 1));
+
+    // dim 2
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"),
+            RefElement<2>::barycentric_from_face( arma::vec("0 1"), 0));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"),
+            RefElement<2>::barycentric_from_face( arma::vec("1 0"), 0));
+
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"),
+            RefElement<2>::barycentric_from_face( arma::vec("0 1"), 1));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"),
+            RefElement<2>::barycentric_from_face( arma::vec("1 0"), 1));
+
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"),
+            RefElement<2>::barycentric_from_face( arma::vec("0 1"), 2));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"),
+            RefElement<2>::barycentric_from_face( arma::vec("1 0"), 2));
+
+
+    // dim 3
+    EXPECT_ARMA_EQ( arma::vec("0 0 0 1"),
+            RefElement<3>::barycentric_from_face( arma::vec("0 0 1"), 0));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("1 0 0"), 0));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("0 1 0"), 0));
+
+    EXPECT_ARMA_EQ( arma::vec("0 0 0 1"),
+            RefElement<3>::barycentric_from_face( arma::vec("0 0 1"), 1));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("1 0 0"), 1));
+    EXPECT_ARMA_EQ( arma::vec("0 0 1 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("0 1 0"), 1));
+
+    EXPECT_ARMA_EQ( arma::vec("0 0 0 1"),
+            RefElement<3>::barycentric_from_face( arma::vec("0 0 1"), 2));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("1 0 0"), 2));
+    EXPECT_ARMA_EQ( arma::vec("0 0 1 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("0 1 0"), 2));
+
+    EXPECT_ARMA_EQ( arma::vec("1 0 0 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("0 0 1"), 3));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("1 0 0"), 3));
+    EXPECT_ARMA_EQ( arma::vec("0 0 1 0"),
+            RefElement<3>::barycentric_from_face( arma::vec("0 1 0"), 3));
+}
+
+TEST(RefElement, centers_of_subelements) {
+    armadillo_setup();
+
+    // dim = 1
+    {
+    auto list = RefElement<1>::centers_of_subelements(0);
+    EXPECT_EQ( 2, list.size());
+    EXPECT_ARMA_EQ( arma::vec("0"), list[0]);
+    EXPECT_ARMA_EQ( arma::vec("1"), list[1]);
+    }
+    {
+    auto list = RefElement<1>::centers_of_subelements(1);
+    EXPECT_EQ( 1, list.size());
+    EXPECT_ARMA_EQ( arma::vec("0.5"), list[0]);
+    }
+
+    // dim = 2
+    {
+    auto list = RefElement<2>::centers_of_subelements(0);
+    EXPECT_EQ( 3, list.size());
+    EXPECT_ARMA_EQ( arma::vec("0 0"), list[0]);
+    EXPECT_ARMA_EQ( arma::vec("1 0"), list[1]);
+    EXPECT_ARMA_EQ( arma::vec("0 1"), list[2]);
+    }
+    {
+    auto list = RefElement<2>::centers_of_subelements(1);
+    EXPECT_EQ( 3, list.size());
+    EXPECT_ARMA_EQ( arma::vec("0.5 0"), list[0]);
+    EXPECT_ARMA_EQ( arma::vec("0 0.5"), list[1]);
+    EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), list[2]);
+    }
+    {
+    auto list = RefElement<2>::centers_of_subelements(2);
+    EXPECT_EQ( 1, list.size());
+    EXPECT_ARMA_EQ( arma::vec({ 1/3.0, 1/3.0 }), list[0]);
+    }
+
+}
+
+
+TEST(RefElement, clip_1d) {
+    armadillo_setup();
+
+    // in element
+    EXPECT_ARMA_EQ( arma::vec("0 1"), RefElement<1>::clip( arma::vec("0 1")));
+    EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), RefElement<1>::clip( arma::vec("0.5 0.5")));
+    EXPECT_ARMA_EQ( arma::vec("1 0"), RefElement<1>::clip( arma::vec("1 0")));
+    // out of element
+    EXPECT_ARMA_EQ( arma::vec("0 1"), RefElement<1>::clip( arma::vec("-0.5 1.5")));
+    EXPECT_ARMA_EQ( arma::vec("1 0"), RefElement<1>::clip( arma::vec("1.5 -0.5")));
+}
+
+
+TEST(RefElement, clip_2d) {
+    armadillo_setup();
+
+    //in element
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"), RefElement<2>::clip( arma::vec("1 0 0")));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"), RefElement<2>::clip( arma::vec("0 1 0")));
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"), RefElement<2>::clip( arma::vec("0 0 1")));
+    EXPECT_ARMA_EQ( arma::vec("0.3 0.3 0.4"), RefElement<2>::clip( arma::vec("0.3 0.3 0.4")));
+    // out of element
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"), RefElement<2>::clip( arma::vec("-0.5 0 1.5")));
+    EXPECT_ARMA_EQ( arma::vec("0 0 1"), RefElement<2>::clip( arma::vec("0 -0.5 1.5")));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"), RefElement<2>::clip( arma::vec("-0.5 1 0.5")));
+    EXPECT_ARMA_EQ( arma::vec("0 1 0"), RefElement<2>::clip( arma::vec("0.3 1.3 -0.6")));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"), RefElement<2>::clip( arma::vec("1 -0.5 0.5")));
+    EXPECT_ARMA_EQ( arma::vec("1 0 0"), RefElement<2>::clip( arma::vec("1.3 0.3 -0.6")));
+
+    EXPECT_ARMA_EQ( arma::vec("0.5 0 0.5"), RefElement<2>::clip( arma::vec("0.5 -0.3 0.8")));
+    EXPECT_ARMA_EQ( arma::vec("0 0.5 0.5"), RefElement<2>::clip( arma::vec("-0.3 0.5 0.8")));
+    EXPECT_ARMA_EQ( arma::vec("0.5 0.5 0"), RefElement<2>::clip( arma::vec("1 1 -1")));
+}
+
+
+TEST(RefElement, interpolate) {
+    
+//     RefElement<1>::bary_coords<0>(0).print(cout,"1-0: 0");
+//     RefElement<1>::bary_coords<0>(1).print(cout,"1-0: 1");
+//     
+//     RefElement<2>::bary_coords<1>(0).print(cout,"2-1: 0");
+//     RefElement<2>::bary_coords<1>(1).print(cout,"2-1: 1");
+//     RefElement<2>::bary_coords<1>(2).print(cout,"2-1: 2");
+//     
+//     RefElement<3>::bary_coords<1>(0).print(cout,"3-1: 0");
+//     RefElement<3>::bary_coords<1>(1).print(cout,"3-1: 1");
+//     RefElement<3>::bary_coords<1>(2).print(cout,"3-1: 2");
+//     RefElement<3>::bary_coords<1>(3).print(cout,"3-1: 3");
+//     RefElement<3>::bary_coords<1>(4).print(cout,"3-1: 4");
+//     RefElement<3>::bary_coords<1>(5).print(cout,"3-1: 5");
+//     
+//     RefElement<3>::bary_coords<2>(0).print(cout,"3-2: 0");
+//     RefElement<3>::bary_coords<2>(1).print(cout,"3-2: 1");
+//     RefElement<3>::bary_coords<2>(2).print(cout,"3-2: 2");
+//     RefElement<3>::bary_coords<2>(3).print(cout,"3-2: 3");
+    
+    //VF
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0.25 0"),       RefElement<2>::interpolate<1>("0.75 0.25",0));
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0 0.25"),       RefElement<2>::interpolate<1>("0.75 0.25",1));
+//     EXPECT_ARMA_EQ( arma::vec("0 0.75 0.25"),       RefElement<2>::interpolate<1>("0.75 0.25",2));
+//     
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0.25 0 0"),     RefElement<3>::interpolate<1>("0.75 0.25",0));
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0 0.25 0"),     RefElement<3>::interpolate<1>("0.75 0.25",1));
+//     EXPECT_ARMA_EQ( arma::vec("0 0.75 0.25 0"),     RefElement<3>::interpolate<1>("0.75 0.25",2));
+//     
+//     EXPECT_ARMA_EQ( arma::vec("0.75 0 0 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",3));
+//     EXPECT_ARMA_EQ( arma::vec("0 0.75 0 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",4));
+//     EXPECT_ARMA_EQ( arma::vec("0 0 0.75 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",5));
+    
+    EXPECT_ARMA_EQ( arma::vec("0.75 0 0.25"),       RefElement<2>::interpolate<1>("0.75 0.25",0));
+    EXPECT_ARMA_EQ( arma::vec("0 0.75 0.25"),       RefElement<2>::interpolate<1>("0.75 0.25",1));
+    EXPECT_ARMA_EQ( arma::vec("0.25 0.75 0"),       RefElement<2>::interpolate<1>("0.75 0.25",2));
+    
+    EXPECT_ARMA_EQ( arma::vec("0.75 0 0 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",0));
+    EXPECT_ARMA_EQ( arma::vec("0 0.75 0 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",1));
+    EXPECT_ARMA_EQ( arma::vec("0.25 0.75 0 0"),     RefElement<3>::interpolate<1>("0.75 0.25",2));
+    
+    EXPECT_ARMA_EQ( arma::vec("0 0 0.75 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",3));
+    EXPECT_ARMA_EQ( arma::vec("0.25 0 0.75 0"),     RefElement<3>::interpolate<1>("0.75 0.25",4));
+    EXPECT_ARMA_EQ( arma::vec("0 0.25 0.75 0"),     RefElement<3>::interpolate<1>("0.75 0.25",5));
+    EXPECT_ARMA_EQ( arma::vec("0 0 0.75 0.25"),     RefElement<3>::interpolate<1>("0.75 0.25",3));
+    EXPECT_ARMA_EQ( arma::vec("0.25 0 0.75 0"),     RefElement<3>::interpolate<1>("0.75 0.25",4));
+    EXPECT_ARMA_EQ( arma::vec("0 0.25 0.75 0"),     RefElement<3>::interpolate<1>("0.75 0.25",5));
+    
+    EXPECT_ARMA_EQ( arma::vec("0.3 0.2 0 0.5"),     RefElement<3>::interpolate<2>("0.3 0.2 0.5",0));
+    EXPECT_ARMA_EQ( arma::vec("0.3 0 0.2 0.5"),     RefElement<3>::interpolate<2>("0.3 0.2 0.5",1));
+    EXPECT_ARMA_EQ( arma::vec("0 0.3 0.2 0.5"),     RefElement<3>::interpolate<2>("0.3 0.2 0.5",2));
+    EXPECT_ARMA_EQ( arma::vec("0.5 0.3 0.2 0"),     RefElement<3>::interpolate<2>("0.3 0.2 0.5",3));
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+/*
+
+// Write down the definition of RefElement
+
 template<unsigned int dim>
-void test_coordinates(){
+void coordinates(){
     cout << "\ndim = " << dim  << "  ------------------\n" << endl;
     for(unsigned int nid=0; nid < RefElement<dim>::n_nodes; nid++)
     {
@@ -62,7 +305,7 @@ void test_coordinates(){
 }
 
 template<unsigned int dim>
-void test_topology(){
+void topology(){
     cout << "\ndim = " << dim  << "  ------------------ topology\n" << endl;
     IdxVector<2> v({0,1});
     
@@ -144,14 +387,15 @@ void test_topology(){
     }
 }
 
-TEST(RefElement, test_coordinates) {
+TEST(RefElement, write_down) {
     Profiler::initialize();
 
-    test_coordinates<1>();
-    test_coordinates<2>();
-    test_coordinates<3>();
+    coordinates<1>();
+    coordinates<2>();
+    coordinates<3>();
     
-    test_topology<1>();
-    test_topology<2>();
-    test_topology<3>();
+    topology<1>();
+    topology<2>();
+    topology<3>();
 }
+*/

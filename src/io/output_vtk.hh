@@ -37,11 +37,6 @@ class OutputVTK : public OutputTime {
 public:
 	typedef OutputTime FactoryBaseType;
 
-    /**
-     * \brief The constructor of this class. The head of file is written, when
-     * constructor is called
-     */
-    OutputVTK(const Input::Record &in_rec);
 
     /**
      * \brief The constructor of this class. The head of file is written, when

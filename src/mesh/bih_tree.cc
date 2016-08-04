@@ -210,7 +210,7 @@ const BoundingBox &BIHTree::tree_box() {
 }
 
 
-void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list)
+void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list) const
 {
 	std::stack<unsigned int, std::vector<unsigned int> > node_stack;
 	OLD_ASSERT_EQUAL(result_list.size() , 0);
@@ -260,7 +260,8 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 }
 
 
-void BIHTree::find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list) {
+void BIHTree::find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list) const
+{
 	find_bounding_box(BoundingBox(point), result_list);
 }
 

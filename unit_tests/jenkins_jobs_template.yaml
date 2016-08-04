@@ -9,8 +9,14 @@
     # default template fields
     node: "{platform}"
     workspace: "F123-{platform}-{build-type}"
-    logrotate: 
-      daysToKeep: 200
+    properties:    
+        - build-discarder:
+            days-to-keep: 200
+            num-to-keep: 200
+            #artifact-days-to-keep: 
+            #artifact-num-to-keep:    
+    #logrotate: 
+    #  daysToKeep: 200
     wrappers:
       - build-name:
           name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
@@ -321,7 +327,7 @@
             - master
             - 1.8.2
             - 1.8.4
-            - geomop_testing
+            - 2.0.0_rc
             - JHY_continuous_package_testing
     triggers:
       # run every day around 3 AM even if there is no change in code
@@ -484,6 +490,7 @@
     defaults: flow123d-build
     properties:
       - throttle:
+          option: "category"
           max-total: 1
           max-per-node: 1
           categories:
@@ -584,6 +591,7 @@
     disabled: false
     properties:
       - throttle:
+          option: "category"
           max-total: 1
           max-per-node: 1
           categories:

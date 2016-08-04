@@ -1,4 +1,4 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0_rc
 output_streams:
   - &anchor1
     file: test_20.pvd
@@ -16,6 +16,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: input/test_20.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -27,16 +28,16 @@ problem: !Coupling_Sequential
         bc_pressure: !FieldFormula
           value: x
     output:
-      output_stream: 
-        file: test_20.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream: 
+      file: test_20.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -57,8 +58,9 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.5
       name: transport_output_stream
+      times:
+        - step: 0.5
     time:
       end_time: 15.0
     reaction_term: !Sorption
@@ -91,6 +93,7 @@ problem: !Coupling_Sequential
             - 0
             - 0.6
             - 0.4
-      output_fields: []
+      output:
+        fields: []
     balance:
       cumulative: true
