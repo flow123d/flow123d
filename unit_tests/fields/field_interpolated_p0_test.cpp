@@ -116,7 +116,6 @@ public:
     typedef FieldInterpolatedP0<3, FieldValue<3>::Enum > EnumField;
     typedef FieldInterpolatedP0<3, FieldValue<3>::VectorFixed > VecFixField;
     typedef FieldInterpolatedP0<3, FieldValue<3>::TensorFixed > TensorField;
-    //typedef FieldInterpolatedP0<3, FieldValue<3>::EnumVector > EnumVector;
 
     virtual void SetUp() {
         // setup FilePath directories
