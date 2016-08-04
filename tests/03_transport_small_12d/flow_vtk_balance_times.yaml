@@ -66,7 +66,7 @@ problem: !Coupling_Sequential
     time:
       end_time: 1000000.0
     balance: 
-        add_output_times: false
+        add_output_times: true
         times:
             - step: 200000.0
             - 300000.0
