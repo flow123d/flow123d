@@ -292,6 +292,23 @@ vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
     return p;
 }
 
+template<unsigned int dim>
+auto RefElement<dim>::local_to_bary(const LocalPoint& lp) -> BaryPoint
+{
+    ASSERT_EQ_DBG(lp.n_rows, dim);
+    BaryPoint bp;
+    bp.rows(0, dim - 1) = lp;
+    bp( dim ) = 1.0 - arma::sum(lp);
+    return bp;
+}
+
+template<unsigned int dim>
+auto RefElement<dim>::bary_to_local(const BaryPoint& bp) -> LocalPoint
+{
+    ASSERT_EQ_DBG(bp.n_rows, dim+1);
+    LocalPoint lp = bp.rows(0, dim - 1);
+    return lp;
+}
 
 template<unsigned int dim>
 inline unsigned int RefElement<dim>::oposite_node(unsigned int sid)
