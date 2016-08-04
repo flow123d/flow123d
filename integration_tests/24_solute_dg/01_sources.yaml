@@ -42,12 +42,15 @@ problem: !Coupling_Sequential
           disp_l: 0.01
           disp_t: 0.01
           dg_penalty: 10.0
-          sources_density: !FieldFormula
-            value: if(sqrt((x-0.4288)^2+(y-4.7699)^2)<0.04,1,0)
-          sources_sigma: !FieldFormula
-            value: if(sqrt((x-1.5849)^2+(y-4.7016)^2)<0.04,1,0)
-          sources_conc: !FieldFormula
-            value: if(sqrt((x-1.5849)^2+(y-4.7016)^2)<0.04,1,0)
+          sources_density: !FieldElementwise
+            gmsh_file: 01_input_sources.msh
+            field_name: density
+          sources_sigma: !FieldElementwise
+            gmsh_file: 01_input_sources.msh
+            field_name: sigma
+          sources_conc: !FieldElementwise
+            gmsh_file: 01_input_sources.msh
+            field_name: concentration
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
