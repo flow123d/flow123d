@@ -245,8 +245,9 @@ TEST_F(InputInterfaceTest, RecordVal) {
     Array array = record.val<Array>("array_of_int");
     EXPECT_EQ(2, *( ++array.begin<int>()) );
 
-    EXPECT_THROW_WHAT( {record.val<string>("some_double");}, ExcTypeMismatch,
-            "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='\\S*';");
+    stringstream ss;
+    ss << "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='" << typeid(string).name() << "';";
+    EXPECT_THROW_WHAT( {record.val<string>("some_double");}, ExcTypeMismatch, ss.str());
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 #ifdef FLOW123D_DEBUG_ASSERTS
@@ -280,8 +281,9 @@ TEST_F(InputInterfaceTest, RecordFind) {
     Iterator<Record> it_r = record.find<Record>("some_record");
     EXPECT_EQ(123, it_r->val<int>("some_integer"));
 
-    EXPECT_THROW_WHAT( {record.find<string>("some_double");}, ExcTypeMismatch,
-            "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='\\S*';");
+    stringstream ss;
+    ss << "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='" << typeid(string).name() << "';";
+    EXPECT_THROW_WHAT( {record.find<string>("some_double");}, ExcTypeMismatch, ss.str());
     EXPECT_THROW( {record.find<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 }
