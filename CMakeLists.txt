@@ -517,10 +517,12 @@ endif()
 #                              with correctly set dependencies on other libraries
 
 message(STATUS "\n =======================================================")
+set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
+set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})
 find_package(ArmadilloFlow 3.2.4)
 if (NOT Armadillo_FOUND)
   message(STATUS "Try to install our own Armadillo.")
-  set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
+  message(FATAL_ERROR "NO INSTALL.")
   include(InstallArmadillo)
 
   # we try to erease from the cache everything that can cause failure of the second find_package
@@ -573,8 +575,8 @@ endif()
 
 # check whether PYTHON_ROOT is set and use default value if not
 if(NOT DEFINED PYTHON_ROOT)
-    message(WARNING "PYTHON_ROOT not set! Using default configuration which may not work on this system")
     set(PYTHON_ROOT /usr/lib/python2.7)
+    message(WARNING "Variable PYTHON_ROOT not set. Using default value '${PYTHON_ROOT}'.")
 endif()
 
 # set default value for PYTHON_COPY_PACKAGES if not defined
@@ -608,7 +610,9 @@ endif()
 
 # ----------------- Part 3/3 - PythonScripts ----------------------------------------
 # install 3rd party packages and copy python runtest
-include(python/PythonScripts)
+if (NOT DEFINED PYTHON_SCRIPTS_OFF)
+    include(python/PythonScripts)
+endif()    
 
 
 
