@@ -620,6 +620,7 @@ endif()
 #  YAML_CPP_FOUND - set to true if the library is found
 
 message(STATUS "\n =======================================================")
+set(YamlCpp_ROOT_HINT ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
 find_package(YamlCpp)
 if (NOT YamlCpp_FOUND)
     message(STATUS "Try to install our own yaml-cpp library.")

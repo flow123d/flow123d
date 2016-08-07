@@ -808,6 +808,11 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
 
+        }
+
+        if (fill_matrix) {
+            assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
+
             // assemble matrix for weights in BDDCML
             // approximation to diagonal of 
             // S = -C - B*inv(A)*B'
@@ -818,17 +823,16 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
             // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
             // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-               double val_side =  local_matrix(i,i);
-               double val_edge =  -1./local_matrix(i,i);
+               for(unsigned int i=0; i < nsides; i++) {
+                   double val_side =  local_matrix(i,i);
+                   double val_edge =  -1./local_matrix(i,i);
 
-               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_row, val_side );
-               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_row, val_edge );
+                   static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_rows[i], val_side );
+                   static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_rows[i], val_edge );
+               }
             }
+
         }
-
-        if (fill_matrix)
-            assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
-
 
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
 
