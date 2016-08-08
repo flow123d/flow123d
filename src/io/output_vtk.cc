@@ -246,7 +246,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueTy
     } else {
     	// binary output is stored to appended_data_ stream
     	file    << " offset=\"" << appended_data_.tellp() << "\"/>" << endl;
-    	output_data->print_binary_all( appended_data_, sizes[type] );
+    	output_data->print_binary_all( appended_data_ );
     }
 
 }
@@ -373,7 +373,7 @@ void OutputVTK::write_vtk_vtu(void)
             write_vtk_data(output_mesh_->offsets_, VTK_INT32 );
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
-           	write_vtk_data( types, VTK_UINT8 );
+           	write_vtk_data( types, VTK_UINT32 );
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
@@ -401,7 +401,7 @@ void OutputVTK::write_vtk_vtu(void)
             write_vtk_data(output_mesh_discont_->offsets_, VTK_INT32 );
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
-           	write_vtk_data( types, VTK_UINT8 );
+           	write_vtk_data( types, VTK_UINT32 );
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
