@@ -14,7 +14,7 @@
 <DataArray type="Int32" Name="offsets" format="ascii">
 4 8 12 
 </DataArray>
-<DataArray type="UInt8" Name="types" format="ascii">
+<DataArray type="UInt32" Name="types" format="ascii">
 10 10 10 
 </DataArray>
 </Cells>
