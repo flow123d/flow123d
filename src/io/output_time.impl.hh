@@ -76,7 +76,6 @@
 
 
 
-
 /**************************************************************************************************************
  * OutputTime implementation
  */
@@ -140,7 +139,6 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     /* Copy data to array */
     switch(space_type) {
     case NODE_DATA: {
-        //DBGMSG("compute field NODE data\n");
         // set output data to zero
         vector<unsigned int> count(output_data.n_values, 0);
         for(unsigned int idx=0; idx < output_data.n_values; idx++)

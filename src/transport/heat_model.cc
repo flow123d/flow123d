@@ -248,8 +248,9 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
     output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"));
     //output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
+    balance_ = std::make_shared<Balance>("energy", mesh_);
+    balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-    balance_ = Balance::make_balance("energy", mesh_, in_rec.val<Input::Record>("balance"), time());
     if (balance_)
     {
     	subst_idx = {balance_->add_quantity("energy")};
@@ -258,18 +259,15 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 }
 
 
-void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
-{
-	substances.initialize({""});
-}
-
 void HeatTransferModel::output_data()
 {
 	output_stream_->write_time_frame();
 	if (balance_ != nullptr)
 	{
-		calculate_instant_balance();
-		balance_->output(time_->t());
+	    if (balance_->is_current(time_->step())) {
+            calculate_instant_balance();
+            balance_->output(time_->t());
+	    }
 	}
 }
 

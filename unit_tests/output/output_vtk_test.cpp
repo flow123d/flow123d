@@ -14,6 +14,7 @@
 #include "mesh/mesh.h"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "system/logger_options.hh"
 
 const string test_output_time_input = R"JSON(
 {
@@ -37,6 +38,8 @@ public:
         this->init_from_input("dummy_equation", in_rec);
 
         Profiler::initialize();
+        LoggerOptions::get_instance().set_log_file("");
+
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
         this->_mesh = new Mesh();
         ifstream in(string(mesh_file).c_str());
@@ -57,7 +60,7 @@ public:
 TEST_F(TestOutputVTK, write_data) {
     this->current_step=1;
     this->write_data();
-    EXPECT_EQ("./test1.pvd", this->_base_filename);
+    EXPECT_EQ("./test1.pvd", string(this->_base_filename));
     EXPECT_EQ("test1", this->main_output_basename_);
     EXPECT_EQ(".", this->main_output_dir_);
 }

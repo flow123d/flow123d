@@ -207,9 +207,9 @@ arma::vec Element::project_point(const arma::vec3 &point, const arma::mat &map) 
 
     if (dim() == 0) return arma::ones(1);
 
-    auto A=map.cols(0, dim()-1);
-    auto AtA = A.t()*A;
-    auto Atb = A.t()*(point - map.col(dim()));
+    arma::mat A=map.cols(0, dim()-1);
+    arma::mat AtA = A.t()*A;
+    arma::vec Atb = A.t()*(point - map.col(dim()));
     arma::vec bary_coord(dim()+1);
     bary_coord.rows(0, dim() - 1) = solve(AtA, Atb);
     bary_coord( dim() ) = 1.0 - arma::sum( bary_coord.rows(0,dim()-1) );
