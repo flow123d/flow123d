@@ -23,6 +23,7 @@
 #include <fstream>
 #include "input/accessors.hh"
 
+class FilePath;
 class Observe;
 class OutputDataBase;
 class Mesh;
@@ -230,7 +231,7 @@ protected:
     /**
      * Name of base output file
      */
-    string _base_filename;
+    FilePath _base_filename;
 
     /**
      * Name of the equation owning the output stream. Usually the balance equation.

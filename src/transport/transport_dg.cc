@@ -246,7 +246,6 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
-          mass_matrix(0),
 		  input_rec(in_rec),
 		  allocation_done(false)
 {
@@ -267,6 +266,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // DG variant and order
     dg_variant = in_rec.val<DGVariant>("dg_variant");
     dg_order = in_rec.val<unsigned int>("dg_order");
+    
+    Model::init_from_input(in_rec);
 
     // create finite element structures and distribute DOFs
     feo = new FEObjects(Model::mesh_, dg_order);
@@ -290,12 +291,15 @@ void TransportDG<Model>::initialize()
     int qsize = max(feo->q<0>()->size(), max(feo->q<1>()->size(), max(feo->q<2>()->size(), feo->q<3>()->size())));
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     mm_coef.resize(qsize);
+    ret_coef.resize(Model::n_substances());
+    sorption_sources.resize(Model::n_substances());
     ad_coef.resize(Model::n_substances());
     dif_coef.resize(Model::n_substances());
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
-      ad_coef[sbi].resize(qsize);
-      dif_coef[sbi].resize(qsize);
+    	ret_coef[sbi].resize(qsize);
+    	ad_coef[sbi].resize(qsize);
+    	dif_coef[sbi].resize(qsize);
     }
     ad_coef_edg.resize(max_edg_sides);
     dif_coef_edg.resize(max_edg_sides);
@@ -339,16 +343,19 @@ void TransportDG<Model>::initialize()
 
     // allocate matrix and vector structures
     ls    = new LinSys*[Model::n_substances()];
-    ls_dt = new LinSys_PETSC(feo->dh()->distr());
-    ( (LinSys_PETSC *)ls_dt )->set_from_input( input_rec.val<Input::Record>("solver") );
+    ls_dt = new LinSys*[Model::n_substances()];
     solution_elem_ = new double*[Model::n_substances()];
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
+
+    	ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
     }
     stiffness_matrix = new Mat[Model::n_substances()];
+    mass_matrix = new Mat[Model::n_substances()];
     rhs = new Vec[Model::n_substances()];
     mass_vec = new Vec[Model::n_substances()];
 
@@ -367,7 +374,6 @@ template<class Model>
 TransportDG<Model>::~TransportDG()
 {
     delete Model::time_;
-    delete ls_dt;
 
     if (Model::mesh_->get_el_ds()->myp() == 0)
     {
@@ -382,13 +388,17 @@ TransportDG<Model>::~TransportDG()
     {
     	delete ls[i];
     	delete[] solution_elem_[i];
+    	delete ls_dt[i];
     	MatDestroy(&stiffness_matrix[i]);
+    	MatDestroy(&mass_matrix[i]);
     	VecDestroy(&rhs[i]);
     	VecDestroy(&mass_vec[i]);
     }
     delete[] ls;
     delete[] solution_elem_;
+    delete[] ls_dt;
     delete[] stiffness_matrix;
+    delete[] mass_matrix;
     delete[] rhs;
     delete[] mass_vec;
     delete feo;
@@ -438,6 +448,15 @@ void TransportDG<Model>::zero_time_step()
 			Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution());
 			Model::balance_->calculate_source(Model::subst_idx[sbi], ls[sbi]->get_solution());
 			Model::balance_->calculate_flux(Model::subst_idx[sbi], ls[sbi]->get_solution());
+
+			// add sources due to sorption
+			vector<double> masses(Model::mesh_->region_db().bulk_size());
+			double mass = 0;
+			Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution(), masses);
+			for (auto reg_mass : masses)
+				mass += reg_mass;
+
+			sorption_sources[sbi] = mass;
 		}
     }
 
@@ -448,19 +467,20 @@ void TransportDG<Model>::zero_time_step()
 template<class Model>
 void TransportDG<Model>::preallocate()
 {
-	// preallocate mass matrix
-	ls_dt->start_allocation();
-	assemble_mass_matrix();
-	mass_matrix = NULL;
-
 	// preallocate system matrix
 	for (unsigned int i=0; i<Model::n_substances(); i++)
 	{
+		// preallocate system matrix
 		ls[i]->start_allocation();
 		stiffness_matrix[i] = NULL;
 		rhs[i] = NULL;
+
+		// preallocate mass matrix
+		ls_dt[i]->start_allocation();
+		mass_matrix[i] = NULL;
 	}
 	assemble_stiffness_matrix();
+	assemble_mass_matrix();
 	set_sources();
 	set_boundary_conditions();
 
@@ -482,25 +502,34 @@ void TransportDG<Model>::update_solution()
     END_TIMER("data reinit");
     
 	// assemble mass matrix
-    if (mass_matrix == NULL || data_.subset(FieldFlag::in_time_term).changed() )
+    if (mass_matrix[0] == NULL || data_.subset(FieldFlag::in_time_term).changed() )
 	{
-		ls_dt->start_add_assembly();
-		ls_dt->mat_zero_entries();
-		assemble_mass_matrix();
-		ls_dt->finish_assembly();
-		
-		// construct mass_vec for initial time
-		if (mass_matrix == NULL)
-		{
-		  for (unsigned int i=0; i<Model::n_substances(); i++)
-		  {
-		    VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
-		    MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
-		  }
-		}
-		
-		mass_matrix = *(ls_dt->get_matrix());
-	}
+    	for (unsigned int i=0; i<Model::n_substances(); i++)
+        {
+            ls_dt[i]->start_add_assembly();
+            ls_dt[i]->mat_zero_entries();
+        }
+        assemble_mass_matrix();
+        for (unsigned int i=0; i<Model::n_substances(); i++)
+        {
+            ls_dt[i]->finish_assembly();
+            // construct mass_vec for initial time
+            if (mass_matrix[i] == NULL)
+            {
+                VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
+                MatMult(*(ls_dt[i]->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
+                if (Model::balance_ != nullptr && Model::balance_->cumulative())
+                {
+                    double total_mass = 0;
+                    VecSum(mass_vec[i], &total_mass);
+                    sorption_sources[i] -= total_mass;
+                }
+                MatConvert(*( ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
+            }
+            else
+                MatCopy(*( ls_dt[i]->get_matrix() ), mass_matrix[i], DIFFERENT_NONZERO_PATTERN);
+        }
+    }
 
 	// assemble stiffness matrix
     if (stiffness_matrix[0] == NULL
@@ -571,7 +600,7 @@ void TransportDG<Model>::update_solution()
     for (unsigned int i=0; i<Model::n_substances(); i++)
     {
     	MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
-		MatAXPY(m, 1./Model::time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
+		MatAXPY(m, 1./Model::time_->dt(), mass_matrix[i], SUBSET_NONZERO_PATTERN);
 		ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
 		Vec w;
 		VecDuplicate(rhs[i], &w);
@@ -584,7 +613,7 @@ void TransportDG<Model>::update_solution()
 		ls[i]->solve();
 
 		// update mass_vec due to possible changes in mass matrix
-		MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
+		MatMult(*(ls_dt[i]->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
 
@@ -663,6 +692,18 @@ void TransportDG<Model>::calculate_cumulative_balance()
     	{
     		Model::balance_->calculate_cumulative_sources(Model::subst_idx[sbi], ls[sbi]->get_solution(), Model::time_->dt());
     		Model::balance_->calculate_cumulative_fluxes(Model::subst_idx[sbi], ls[sbi]->get_solution(), Model::time_->dt());
+
+    		// add sources due to sorption
+    		vector<double> masses(Model::mesh_->region_db().bulk_size());
+    		double mass = 0;
+    		Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution(), masses);
+    		for (auto reg_mass : masses)
+    			mass += reg_mass;
+    		double total_mass = 0;
+    		VecSum(mass_vec[sbi], &total_mass);
+
+    		Model::balance_->add_cumulative_source(Model::subst_idx[sbi], mass-total_mass-sorption_sources[sbi]);
+    		sorption_sources[sbi] = mass - total_mass;
     	}
     }
 }
@@ -718,32 +759,34 @@ void TransportDG<Model>::assemble_mass_matrix()
         ElementAccessor<3> ele_acc = cell->element_accessor();
 
         Model::compute_mass_matrix_coefficient(fe_values.point_list(), ele_acc, mm_coef);
+        Model::compute_retardation_coefficient(fe_values.point_list(), ele_acc, ret_coef);
 
-        // assemble the local mass matrix
-        for (unsigned int i=0; i<ndofs; i++)
+        for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
-            for (unsigned int j=0; j<ndofs; j++)
-            {
-                local_mass_matrix[i*ndofs+j] = 0;
-                for (unsigned int k=0; k<qsize; k++)
-                    local_mass_matrix[i*ndofs+j] += mm_coef[k]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
-            }
-        }
-
-        if (Model::balance_ != nullptr)
-        {
+            // assemble the local mass matrix
             for (unsigned int i=0; i<ndofs; i++)
             {
-            	local_mass_balance_vector[i] = 0;
-            	for (unsigned int k=0; k<qsize; k++)
-            		local_mass_balance_vector[i] += mm_coef[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+                for (unsigned int j=0; j<ndofs; j++)
+                {
+                    local_mass_matrix[i*ndofs+j] = 0;
+                    for (unsigned int k=0; k<qsize; k++)
+                        local_mass_matrix[i*ndofs+j] += (mm_coef[k]+ret_coef[sbi][k])*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
+                }
             }
 
-        	for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-        		Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], ele_acc.region().bulk_idx(), dof_indices, local_mass_balance_vector);
+            if (Model::balance_ != nullptr)
+            {
+                for (unsigned int i=0; i<ndofs; i++)
+                {
+                        local_mass_balance_vector[i] = 0;
+                        for (unsigned int k=0; k<qsize; k++)
+                            local_mass_balance_vector[i] += mm_coef[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+                }
+            }
+            
+            Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], ele_acc.region().bulk_idx(), dof_indices, local_mass_balance_vector);
+			ls_dt[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
         }
-
-        ls_dt->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
     }
 }
 
@@ -1167,7 +1210,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
 	vector<arma::vec3> velocity_higher, velocity_lower;
 	vector<arma::vec> frac_sigma(qsize, arma::vec(Model::n_substances()));
-	vector<double> csection_lower(qsize), csection_higher(qsize), mm_coef_lower(qsize), mm_coef_higher(qsize);
+	vector<double> csection_lower(qsize), csection_higher(qsize), por_lower(qsize), por_higher(qsize);
     PetscScalar local_matrix[4*ndofs*ndofs];
     double comm_flux[2][2];
 
@@ -1204,11 +1247,11 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		calculate_velocity(cell_sub, velocity_lower, fv_rt);
 		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, cell_sub->element_accessor(), ad_coef_edg[0], dif_coef_edg[0]);
 		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, cell->element_accessor(), ad_coef_edg[1], dif_coef_edg[1]);
-		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell_sub->element_accessor(), mm_coef_lower);
-		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell->element_accessor(), mm_coef_higher);
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
+		data_.porosity.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), por_lower);
+		data_.porosity.value_list(fe_values_vb.point_list(), cell->element_accessor(), por_higher);
 
 		for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 		{
@@ -1230,9 +1273,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 				double sigma = frac_sigma[k][sbi]*arma::dot(dif_coef_edg[0][sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*
 				        2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
 
-				// Since mm_coef_* contains cross section, we have to divide by it.
 				double transport_flux = arma::dot(ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
-				double por_lower_over_higher = mm_coef_lower[k]*csection_higher[k]/(mm_coef_higher[k]*csection_lower[k]);
+				double por_lower_over_higher = por_lower[k]/por_higher[k];
 
 				comm_flux[0][0] =  (sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
 				comm_flux[0][1] = -(sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
@@ -1730,7 +1772,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 	}
     // update mass_vec for the case that mass matrix changes in next time step
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-    	MatMult(*(ls_dt->get_matrix()), ls[sbi]->get_solution(), mass_vec[sbi]);
+    	MatMult(*(ls_dt[sbi]->get_matrix()), ls[sbi]->get_solution(), mass_vec[sbi]);
 }
 
 template<class Model>

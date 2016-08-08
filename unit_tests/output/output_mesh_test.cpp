@@ -143,10 +143,10 @@ TEST(OutputMesh, write_on_output_mesh) {
     typedef Field<3,FieldValue<3>::Scalar> ScalarField;
   
     // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
 
     // read mesh - simplset cube from test1
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+    FilePath mesh_file( "../mesh/simplest_cube.msh", FilePath::input_file);
     Mesh* mesh = new Mesh();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);

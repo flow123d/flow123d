@@ -62,6 +62,22 @@ TEST(BoostFileSystem, base_methods) {
 		string path_str = convert_path( path.string() );
 		EXPECT_EQ("x/y", path_str);
 	}
+
+	// tests of absolute paths
+	{
+		boost::filesystem::path path_absolute("//home/flow/flow123d");       // absolute in unix and windows
+		boost::filesystem::path path_unix_absolute("/home/flow/flow123d");   // absolute in unix
+		boost::filesystem::path path_win_absolute("C:\\cygwin\\home\\flow"); // absolute in windows
+
+		EXPECT_TRUE(path_absolute.is_absolute());
+#ifdef FLOW123D_HAVE_CYGWIN
+		EXPECT_FALSE(path_unix_absolute.is_absolute());
+		EXPECT_TRUE(path_win_absolute.is_absolute());
+#else
+		EXPECT_TRUE(path_unix_absolute.is_absolute());
+		EXPECT_FALSE(path_win_absolute.is_absolute());
+#endif // FLOW123D_HAVE_CYGWIN
+	}
 }
 
 
@@ -191,10 +207,30 @@ TEST(FilePath, input_absolute) {
 TEST(FilePath, create_output_dir) {
     //::testing::FLAGS_gtest_death_test_style = "threadsafe";
     boost::filesystem::remove_all("./my_output");
-    FilePath::set_io_dirs(".","", "my_input", "my_output");
+    FilePath::set_io_dirs(".",".", "my_input", "my_output");
     EXPECT_TRUE(boost::filesystem::is_directory("./my_output"));
     FilePath fp("subdir/some_file.xyz", FilePath::output_file);
     fp.create_output_dir();
     EXPECT_TRUE(boost::filesystem::is_directory("./my_output/subdir"));
     boost::filesystem::remove_all("./my_output");
+}
+
+
+TEST(FilePath, delimiter_problem) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    boost::filesystem::path expect_path = boost::filesystem::path(UNIT_TESTS_SRC_DIR) / "mesh";
+    EXPECT_TRUE( expect_path == boost::filesystem::path(mesh_file.parent_path()) );
+}
+
+TEST(FilePath, create_from_vector) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    string abs_path = FilePath::get_absolute_working_dir();
+	FilePath::set_io_dirs(".",".","",abs_path);
+
+	vector<string> sub_paths = {"a", "b", "c"};
+	string str = FilePath(sub_paths, FilePath::output_file);
+	EXPECT_TRUE( (boost::filesystem::path(abs_path) / "a/b/c") == boost::filesystem::path(str) );
 }
