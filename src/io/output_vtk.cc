@@ -215,9 +215,17 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
 
 void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueType type)
 {
+    // names of types in DataArray section
+	static const std::vector<std::string> types = {
+        "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Float32", "Float64" };
+    // sizes of types in DataArray section
+	static const std::vector<unsigned int> sizes = { 1, 1, 2, 2, 4, 4, 4, 8 };
+    // formats of DataArray section
+	static const std::vector<std::string> formats = { "ascii", "binary", "appended" };
+
     ofstream &file = this->_data_file;
 
-    file    << "<DataArray type=\"" << vtk_value_type_map(type) << "\" ";
+    file    << "<DataArray type=\"" << types[type] << "\" ";
     // possibly write name
     if( ! output_data->output_field_name.empty()) 
         file << "Name=\"" << output_data->output_field_name <<"\" ";
@@ -227,7 +235,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueTy
         file
             << "NumberOfComponents=\"" << output_data->n_elem_ << "\" ";
     }
-    file    << "format=\"" << vtk_variant_map(this->variant_type_) << "\"";
+    file    << "format=\"" << formats[this->variant_type_] << "\"";
 
     if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
     	// ascii output
@@ -238,8 +246,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueTy
     } else {
     	// binary output is stored to appended_data_ stream
     	file    << " offset=\"" << appended_data_.tellp() << "\"/>" << endl;
-    	output_data->print_binary_all( appended_data_, vtk_data_type_binary_size(type),
-    			vtk_data_type_binary_sign(type) );
+    	output_data->print_binary_all( appended_data_, sizes[type] );
     }
 
 }

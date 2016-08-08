@@ -119,29 +119,6 @@ protected:
                    VTK_FLOAT32, VTK_FLOAT64
     } VTKValueType;
 
-    static const std::string vtk_value_type_map(VTKValueType t) {
-        static const std::vector<std::string> types = {
-            "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32",
-            "Float32","Float64"};
-        return types[t];
-    };
-
-    static const std::string vtk_variant_map(VTKVariant t) {
-        static const std::vector<std::string> types = {
-            "ascii", "binary", "appended"};
-        return types[t];
-    };
-
-    static const unsigned int vtk_data_type_binary_size(VTKValueType t) {
-        static const std::vector<unsigned int> sizes = { 1, 1, 2, 2, 4, 4, 4, 8 };
-        return sizes[t];
-    };
-
-    static const bool vtk_data_type_binary_sign(VTKValueType t) {
-        static const std::vector<bool> signs = { true, false, true, false, true, false, true, true };
-        return signs[t];
-    };
-
     /// Registrar of class to factory
     static const int registrar;
 
