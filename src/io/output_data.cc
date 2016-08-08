@@ -99,7 +99,7 @@ void OutputData<Value>::print_binary(std::ostream& out_stream, unsigned int idx,
 	ASSERT_LT(idx, this->n_values).error();
     ElemType *ptr_begin = this->data_ + n_elem_ * idx;
     for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
-        out_stream.write(reinterpret_cast<const char*>(&(*ptr)), size);
+        out_stream.write(reinterpret_cast<const char*>(ptr), size);
 }
 
 /// Prints the whole data vector into stream.

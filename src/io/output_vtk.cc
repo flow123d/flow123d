@@ -87,13 +87,8 @@ int OutputVTK::write_data(void)
     if (! this->_base_file.is_open()) {
         this->fix_main_file_extension(".pvd");
 
-        Input::Iterator<Input::AbstractRecord> it = input_record_.find<Input::AbstractRecord>("format");
-        if (it) {
-            Input::Record rec = (Input::Record)(*it);
-            this->variant_type_ = rec.val<VTKVariant>("variant");
-        } else {
-            this->variant_type_ = VTKVariant::VARIANT_ASCII;
-        }
+        auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
+        variant_type_ = format_rec.val<VTKVariant>("variant");
 
         this->_base_file.open(this->_base_filename.c_str());
         INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );

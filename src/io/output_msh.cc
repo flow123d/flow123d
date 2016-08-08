@@ -56,12 +56,12 @@ public:
 
     void print_binary(ostream &out_stream, unsigned int idx, long int size, bool sign = true) override
     {
-        for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
+        ASSERT(false).error("Not implemented.");
     }
 
     void print_binary_all(ostream &out_stream, long int size, bool sign = true) override
     {
-        for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
+        ASSERT(false).error("Not implemented.");
     }
 
     void print_all_yaml(ostream &out_stream) override
