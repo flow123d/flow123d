@@ -1,0 +1,56 @@
+flow123d_version: 1.8.9
+problem: !Coupling_Sequential
+  description: Example 1 of real locality - column 1D model with transport
+  mesh:
+    mesh_file: ./input/mesh_ex1.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-15
+        r_tol: 1.0e-15
+    input_fields:
+      - region: rock
+        conductivity: 1e-8
+        cross_section: 1
+      - region: .tunnel
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .surface
+        bc_type: total_flux
+        bc_flux: 6.34E-09
+    balance: true
+    output:
+      output_stream: 
+        file: ./ex_1-flux.msh
+        format: !gmsh
+          variant: ascii
+      output_fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: rock
+          porosity: 1
+        - region: .surface
+          bc_conc: !FieldFormula
+            value: 100
+          time: 0
+        - region: .surface
+          bc_conc: !FieldFormula
+            value: 0
+          time: 1e7
+    output_stream:
+      time_step: 1e7
+      file: ./transport.msh
+      format: !gmsh
+        variant: ascii
+      name: transport_output_stream
+    substances:
+      - O-18
+    time:
+      end_time: 1e10
+    balance:
+      cumulative: true

@@ -1,0 +1,57 @@
+flow123d_version: 1.8.9
+problem: !Coupling_Sequential
+  description: Example 2 inspirated of real locality - 2D model of the tunnel with transport
+  mesh:
+    mesh_file: ./input/mesh.gmsh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-15
+        r_tol: 1.0e-15
+    input_fields:
+      - region: rock
+        conductivity: 3.0E-07
+        cross_section: 1
+      - region: .tunnel
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .base
+        bc_type: dirichlet
+        bc_pressure: 270
+      - region: .surface
+        bc_type: total_flux
+        bc_flux: 2.698E-08
+    balance: true
+    output:
+      output_stream: 
+        file: ./flow.msh
+        format: !gmsh
+          variant: ascii
+      output_fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: rock
+          porosity: 0.067
+        - region: .surface
+          bc_conc: 100
+          time: 0
+        - region: .surface
+          bc_conc: 0
+          time: 1e7
+    output_stream:
+      time_step: 1e7
+      file: ./transport.msh
+      format: !gmsh
+        variant: ascii
+      name: transport_output_stream
+    substances:
+      - O-18
+    time:
+      end_time: 1e10
+    balance:
+      cumulative: true
