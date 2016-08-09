@@ -110,6 +110,11 @@ public:
     std::vector<std::vector<arma::mat::fixed<spacedim,spacedim> > > shape_grad_vectors;
 
     /**
+     * @brief Divergence of shape functions (for vectorial finite elements).
+     */
+    std::vector<std::vector<double> > shape_divergence;
+    
+    /**
      * @brief Normal vectors to the element at the quadrature points lying
      * on a side.
      */
@@ -269,6 +274,20 @@ public:
         return data.shape_grad_vectors[point_no][function_no];
     }
 
+    /**
+     * @brief Return the divergence of the @p function_no-th shape function at
+     * the @p point_no-th quadrature point.
+     *
+     * For vectorial finite elements.
+     *
+     * @param function_no Number of the shape function.
+     * @param point_no Number of the quadrature point.
+     */
+    inline double shape_divergence(const unsigned int function_no, const unsigned int point_no)
+    {
+        return data.shape_divergence[point_no][function_no];
+    }
+    
     /**
      * @brief Return the relative volume change of the cell (Jacobian determinant).
      *

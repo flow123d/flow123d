@@ -80,6 +80,10 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
             shape_grad_vectors.resize(size);
         }
     }
+    
+    if (update_flags & update_divergence){
+        shape_divergence.resize(size);
+    }
 
     if (update_flags & update_quadrature_points)
         points.resize(size);

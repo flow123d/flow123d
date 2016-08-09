@@ -278,7 +278,6 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
     if (flags & update_gradients)
     {
     	arma::mat::fixed<dim,dim> grad;
-    	arma::mat::fixed<dim,dim> shape_grads;
         vector<arma::mat> grads;
 
         data->basis_grad_vectors.resize(q.size());
