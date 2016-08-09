@@ -61,7 +61,7 @@
 ##4e+09|   IMPLICIT BOUNDARY| O-18|  -1.02e-19|    0|   -1.02e-19|    0|   0
 ##4e+09|   ALL|   O-18|  9.40e-07| 6.34e-06|    -5.39e-06|    22774.9| -6.03e-10
 ##
-##: Illustration of the results in ```water_balanced.txt``` – selected columns in two time steps. {#tbl:mass_balance}
+##: Illustration of the results in ```mass_balance.txt``` – selected columns in two time steps. {#tbl:mass_balance}
 ##
 ##![Results of evolution of mass in the volume and flux through boundaries.](03_mass_plot.pdf){#fig:mass_plot}
 ##
