@@ -12,6 +12,7 @@
 template <class T>
 MeshData<T>::MeshData(std::string name, NumCompValueType n_elem)
 {
+	this->set_vtk_type<T>();
     output_field_name = name;
     n_elem_ = n_elem;
 }

@@ -213,7 +213,7 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
 
 
 
-void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueType type)
+void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
 {
     // names of types in DataArray section
 	static const std::vector<std::string> types = {
@@ -225,7 +225,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueTy
 
     ofstream &file = this->_data_file;
 
-    file    << "<DataArray type=\"" << types[type] << "\" ";
+    file    << "<DataArray type=\"" << types[output_data->vtk_type_] << "\" ";
     // possibly write name
     if( ! output_data->output_field_name.empty()) 
         file << "Name=\"" << output_data->output_field_name <<"\" ";
@@ -255,7 +255,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, VTKValueTy
 void OutputVTK::write_vtk_data(OutputDataFieldVec &output_data_vec)
 {
     for(OutputDataPtr data :  output_data_vec)
-        write_vtk_data(data, VTK_FLOAT64);
+        write_vtk_data(data);
 }
 
 
@@ -363,17 +363,17 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
-            write_vtk_data(output_mesh_->nodes_, VTK_FLOAT64 );
+            write_vtk_data(output_mesh_->nodes_);
         file << "</Points>" << endl;
     
         
         /* Write VTK Topology */
         file << "<Cells>" << endl;
-            write_vtk_data(output_mesh_->connectivity_, VTK_INT32 );
-            write_vtk_data(output_mesh_->offsets_, VTK_INT32 );
+            write_vtk_data(output_mesh_->connectivity_);
+            write_vtk_data(output_mesh_->offsets_);
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
-           	write_vtk_data( types, VTK_UINT32 );
+           	write_vtk_data( types );
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
@@ -392,16 +392,16 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
-            write_vtk_data(output_mesh_discont_->nodes_, VTK_FLOAT64 );
+            write_vtk_data(output_mesh_discont_->nodes_);
         file << "</Points>" << endl;
 
         /* Write VTK Topology */
         file << "<Cells>" << endl;
-            write_vtk_data(output_mesh_discont_->connectivity_, VTK_INT32 );
-            write_vtk_data(output_mesh_discont_->offsets_, VTK_INT32 );
+            write_vtk_data(output_mesh_discont_->connectivity_);
+            write_vtk_data(output_mesh_discont_->offsets_);
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
-           	write_vtk_data( types, VTK_UINT32 );
+           	write_vtk_data( types );
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */

@@ -15,6 +15,7 @@ template <class Value>
 OutputData<Value>::OutputData(const FieldCommon &field, unsigned int size)
 : val_aux(aux)
 {
+	this->set_vtk_type<ElemType>();
     this->field_name = field.name();
     this->field_units = field.units();
     this->output_field_name = this->field_name;

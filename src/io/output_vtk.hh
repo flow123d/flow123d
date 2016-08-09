@@ -115,10 +115,6 @@ protected:
         VTK_TETRA_SIZE = 4
     } VTKElemSize;
 
-    typedef enum { VTK_INT8, VTK_UINT8, VTK_INT16, VTK_UINT16, VTK_INT32, VTK_UINT32, 
-                   VTK_FLOAT32, VTK_FLOAT64
-    } VTKValueType;
-
     /// Registrar of class to factory
     static const int registrar;
 
@@ -138,9 +134,9 @@ protected:
     void write_vtk_data(OutputDataFieldVec &output_data_map);
 
     /**
-     * Write registered data to output stream
+     * Write output data stored in OutputData vector to output stream
      */
-    void write_vtk_data(OutputDataPtr output_data, VTKValueType type);
+    void write_vtk_data(OutputDataPtr output_data);
     
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
