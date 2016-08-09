@@ -161,26 +161,20 @@ inline void FE_P0_XFEM<dim,spacedim>::fill_fe_values(
         vector<vector<double>> enr_dof_val(enr.size());
         auto& gen_points = fe->get_generalized_support_points();
         for (unsigned int w=0; w<enr.size(); w++){
-            enr_dof_val[w].resize(gen_points.size()); // for P0 is equal 1
+            enr_dof_val[w].resize(gen_points.size()); // for P0 is equal 1 (barycenter)
             for (unsigned int i = 0; i < gen_points.size(); i++)
             {
-                // compute barycenter of the side ( = real generalized_support_point)
+                // compute real generalized_support_point
                 Point real_point; real_point.zeros();
-                //TODO: use RefElement barycentric coord conversion when available
-                //TODO: do the same in RT0 FE with generalized_support_points
-                double complement = 1.0;
-                for (j = 0; j < RefElement<dim>::n_nodes-1; j++){
-                    complement -= gen_points[i][j];
-                    real_point += gen_points[i][j] * ele->node[j]->point();
-                }
-                real_point += complement * ele->node[RefElement<dim>::n_nodes-1]->point();
                 
-//                 enr[w]->vector(real_point).print(cout);
-//                 normals[i].print(cout);
+                arma::vec::fixed<dim+1> bp = RefElement<dim>::local_to_bary(gen_points[i]);
+                for (j = 0; j < RefElement<dim>::n_nodes; j++)
+                    real_point += bp[j] * ele->node[j]->point();
+                    
                 enr_dof_val[w][i] = enr[w]->value(real_point);
+//                 cout << "interpolant: [" << i << "]: " << setprecision(15) << enr_dof_val[w][i] << endl;
             }
         }
-
         
         vector<double> values(number_of_dofs);
         
