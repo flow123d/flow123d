@@ -989,6 +989,59 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
 // }
 
 
+
+void InspectElementsAlgorithm12::compute_intersections_2()
+{
+    DBGMSG("Intersections 1d-2d (2-bihtree)\n");
+    
+    START_TIMER("BIHTree");
+    BIHTree bt(mesh, 20);
+    END_TIMER("BIHTree");
+    
+    START_TIMER("Element iteration");
+    
+    FOR_ELEMENTS(mesh, elm) {
+        unsigned int component_ele_idx = elm->index();
+        
+        if (elm->dim() == 1)                                    // is component element
+            //&& elements_bb[component_ele_idx].intersect(mesh_3D_bb))   // its bounding box intersects 3D mesh bounding box
+        {   
+            update_simplex(elm, abscissa_); // update component simplex
+            std::vector<unsigned int> searchedElements;
+            
+            START_TIMER("BIHtree find");
+            bt.find_bounding_box(bt.get_elements()[component_ele_idx], searchedElements);
+            END_TIMER("BIHtree find");
+            
+            START_TIMER("Bounding box element iteration");
+            
+            // Go through all element which bounding box intersects the component element bounding box
+            for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
+            {
+                unsigned int bulk_ele_idx = *it;
+                ElementFullIter ele_2D = mesh->element(bulk_ele_idx);
+                
+                if (ele_2D->dim() == 2) { 
+                    update_simplex(ele_2D, triangle_); // update triangle
+                    
+                    IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx, 0);
+                    START_TIMER("Compute intersection");
+                    ComputeIntersection<Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
+                    CI.compute_final(is.points());
+                    END_TIMER("Compute intersection");
+                    
+                    if(is.points().size() > 0) {
+                        intersectionaux_storage12_.push_back(is);
+                    }
+                }
+            }
+            END_TIMER("Bounding box element iteration");
+        }
+    }
+
+    END_TIMER("Element iteration");
+}
+
 // Declaration of specializations implemented in cpp:
 template class InspectElementsAlgorithm<1>;
 template class InspectElementsAlgorithm<2>;

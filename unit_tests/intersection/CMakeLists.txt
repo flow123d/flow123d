@@ -31,6 +31,7 @@ add_test_directory("${libs}")
     define_mpi_test(compute_intersection_22 1)
     define_mpi_test(compute_intersection_23 1)
     
+    define_mpi_test(prolongation_12 1)
     define_mpi_test(prolongation_13 1)
     define_mpi_test(prolongation_23 1)
     

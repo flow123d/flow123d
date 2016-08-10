@@ -201,12 +201,51 @@ void InspectElements::compute_intersections_12(vector< IntersectionLocal< 1, 2 >
 //     END_TIMER("Intersection into storage");
 }
 
+void InspectElements::compute_intersections_12_2(vector< IntersectionLocal< 1, 2 > >& storage)
+{
+    START_TIMER("Intersection algorithm");
+    algorithm12_.compute_intersections_2();
+    END_TIMER("Intersection algorithm");
+    
+    START_TIMER("Intersection into storage");
+    storage.reserve(algorithm12_.intersectionaux_storage12_.size());
+    
+    for(IntersectionAux<1,2> &is : algorithm12_.intersectionaux_storage12_) {
+        unsigned int abscissa_idx = is.component_ele_idx();
+        unsigned int triangle_idx = is.bulk_ele_idx();
+
+        storage.push_back(IntersectionLocal<1,2>(is));
+        intersection_map_[abscissa_idx].push_back(std::make_pair(
+                                                    triangle_idx,
+                                                    &(storage.back())
+                                                ));
+        intersection_map_[triangle_idx].push_back(std::make_pair(
+                                                    abscissa_idx,
+                                                    &(storage.back())
+                                                ));
+//         DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+//         for(const IntersectionPointAux<1,2>& ip : is.points()) {
+//             //cout << ip;
+//             auto p = ip.coords(mesh->element(is.component_ele_idx()));
+//             cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+//         }
+    }
+    END_TIMER("Intersection into storage");
+}
+
+
 void InspectElements::compute_intersections(computeintersection::IntersectionType d)
 {
     intersection_map_.resize(mesh->n_elements());
     
-    if(d & (IntersectionType::d12 | IntersectionType::d12_1 | IntersectionType::d12_2)){
+    if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
         ASSERT(0).error("NOT IMPLEMENTED.");
+    }
+    
+    if(d & IntersectionType::d12_2){
+        START_TIMER("Intersections 1D-2D (2)");
+        compute_intersections_12_2(intersection_storage12_);
+        END_TIMER("Intersections 1D-2D (2)");
     }
     
     if(d & (IntersectionType::d13 | IntersectionType::d12_3)){

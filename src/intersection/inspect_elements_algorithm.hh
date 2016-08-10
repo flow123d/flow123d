@@ -237,11 +237,16 @@ public:
      */
     void compute_intersections(std::vector<std::vector<ILpair>> &intersection_map,
                                std::vector<IntersectionLocal<1,2>> &storage);
+    
+    /** @brief Runs the algorithm (2): compute 1D-2D intersection in 3D ambient space
+     * BIH is used to find intersection candidates.
+     */
+    void compute_intersections_2();
 private:
     Mesh *mesh;
     
     /// Stores temporarily 1D-2D intersections.
-//     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
+    std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
     
     /// Object representing a line element.
     Simplex<1> abscissa_;
