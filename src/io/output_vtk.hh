@@ -129,9 +129,9 @@ protected:
     void fill_element_types_vector(std::vector<unsigned int> &data);
 
     /**
-     * Write registered data to output stream
+     * Write registered data of all components of given Field to output stream
      */
-    void write_vtk_data(OutputDataFieldVec &output_data_map);
+    void write_vtk_field_data(OutputDataFieldVec &output_data_map);
 
     /**
      * Write output data stored in OutputData vector to output stream

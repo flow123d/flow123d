@@ -252,7 +252,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
 }
 
 
-void OutputVTK::write_vtk_data(OutputDataFieldVec &output_data_vec)
+void OutputVTK::write_vtk_field_data(OutputDataFieldVec &output_data_vec)
 {
     for(OutputDataPtr data :  output_data_vec)
         write_vtk_data(data);
@@ -299,10 +299,10 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
         /* Write data on nodes */
-        this->write_vtk_data(output_data_vec_[NODE_DATA]);
+        this->write_vtk_field_data(output_data_vec_[NODE_DATA]);
 
         /* Write data in corners of elements */
-        this->write_vtk_data(output_data_vec_[CORNER_DATA]);
+        this->write_vtk_field_data(output_data_vec_[CORNER_DATA]);
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -323,7 +323,7 @@ void OutputVTK::write_vtk_element_data(void)
     file << ">" << endl;
 
     /* Write own data */
-    this->write_vtk_data(data_map);
+    this->write_vtk_field_data(data_map);
 
     /* Write PointData end */
     file << "</CellData>" << endl;
