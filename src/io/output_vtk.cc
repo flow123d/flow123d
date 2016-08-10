@@ -218,10 +218,8 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     // names of types in DataArray section
 	static const std::vector<std::string> types = {
         "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Float32", "Float64" };
-    // sizes of types in DataArray section
-	static const std::vector<unsigned int> sizes = { 1, 1, 2, 2, 4, 4, 4, 8 };
     // formats of DataArray section
-	static const std::vector<std::string> formats = { "ascii", "binary", "appended" };
+	static const std::vector<std::string> formats = { "ascii", "appended", "appended" };
 
     ofstream &file = this->_data_file;
 
@@ -339,9 +337,9 @@ void OutputVTK::write_vtk_vtu_tail(void)
     	// appended data of binary compressed output
     	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB )
     			WarningOut() << "Zlib library is not supported yet. Appended output is not compressed." << endl;
-    	file << "<UnstructuredGrid encoding=\"raw\">" << endl;
+    	file << "<AppendedData encoding=\"raw\">" << endl;
     	file << appended_data_.str() << endl;
-    	file << "</UnstructuredGrid>" << endl;
+    	file << "</AppendedData>" << endl;
     }
     file << "</VTKFile>" << endl;
 }
