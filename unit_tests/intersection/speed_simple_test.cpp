@@ -6,6 +6,9 @@
  */
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
+#include "system/global_defs.h"
+
+#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
 #include <armadillo>
 
@@ -567,3 +570,6 @@ TEST(speed_simple_23, all) {
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
 }
+
+
+#endif // FLOW123D_RUN_UNIT_BENCHMARKS
