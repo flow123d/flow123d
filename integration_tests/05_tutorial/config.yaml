@@ -5,5 +5,4 @@ common_config:
 test_cases:
 - files:
   - 01_column.yaml
-  - 02_column_infiltration.yaml
-  - 03_column_transport.yaml
+  - 02_column_transport.yaml
