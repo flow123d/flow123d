@@ -574,8 +574,8 @@ endif()
 
 # check whether PYTHON_ROOT is set and use default value if not
 if(NOT DEFINED PYTHON_ROOT)
-    message(WARNING "PYTHON_ROOT not set! Using default configuration which may not work on this system")
     set(PYTHON_ROOT /usr/lib/python2.7)
+    message(WARNING "Variable PYTHON_ROOT not set. Using default value '${PYTHON_ROOT}'.")
 endif()
 
 # set default value for PYTHON_COPY_PACKAGES if not defined
@@ -609,7 +609,9 @@ endif()
 
 # ----------------- Part 3/3 - PythonScripts ----------------------------------------
 # install 3rd party packages and copy python runtest
-include(python/PythonScripts)
+if (NOT DEFINED PYTHON_SCRIPTS_OFF)
+    include(python/PythonScripts)
+endif()    
 
 
 
@@ -1061,7 +1063,7 @@ if (CYGWIN)
     set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
         WriteRegStr HKCR '.con' '' 'Flow123dFile'
         WriteRegStr HKCR 'Flow123dFile\\\\shell' '' 'open'
-        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\"%1\\"'
+        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\\"%1\\\"'
         System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
         ")
 
