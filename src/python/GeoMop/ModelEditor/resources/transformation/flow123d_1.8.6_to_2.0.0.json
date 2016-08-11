@@ -210,6 +210,15 @@
       }
     },
     {
+      "NAME": "Move solvent_density from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/solvent_density",
+        "destination_path": "/problem/secondary_equation/transport/solvent_density",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
       "NAME": "Move dg_variant from SoluteTransport_DG to transport",
       "action": "move-key",
       "parameters": {

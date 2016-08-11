@@ -69,7 +69,7 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     } else	{
     	// construct full log name
     	log_name << log_filename <<  "." << sys_info.my_proc << ".old.log";
-    	sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
+    	sys_info.log_fname = log_name.str();
     	sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
     	LoggerOptions::get_instance().set_log_file(log_filename);
     }
