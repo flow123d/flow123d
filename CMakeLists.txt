@@ -1060,7 +1060,6 @@ if (CYGWIN)
 
     # Extra NSIS commands that will be added to the end of the install Section, 
     # after your install tree is available on the target system.
-    
     # File association for CON files."
     set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
         WriteRegStr HKCR '.con' '' 'Flow123dFile'

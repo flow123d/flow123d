@@ -98,7 +98,7 @@ const Record & TransportDG<Model>::get_input_type() {
 */
         .declare_key("output",
                 EqData().output_fields.make_output_type(equation_name, ""),
-                IT::Default("{ fields: [ " + Model::ModelEqData::default_output_field() + "] }"),
+                IT::Default("{ \"fields\": [ " + Model::ModelEqData::default_output_field() + "] }"),
                 "Setting of the field output.")
 		.close();
 }
