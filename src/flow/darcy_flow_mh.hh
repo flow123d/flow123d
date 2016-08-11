@@ -266,7 +266,7 @@ protected:
 
 
     //void prepare_parallel();
-    void make_row_numberings();
+    //void make_row_numberings();
     /// Initialize global_row_4_sub_row.
     //void prepare_parallel_bddc();
 

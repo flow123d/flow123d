@@ -938,7 +938,7 @@ void DarcyMH::assembly_source_term()
         schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
 
         if (balance_ != nullptr)
-        	balance_->add_source_vec_values(water_balance_idx_, ele_ac.region().bulk_idx(), {ele_ac.ele_row()}, {source});
+        	balance_->add_source_vec_values(water_balance_idx_, ele_ac.region().bulk_idx(), {(int) ele_ac.ele_row()}, {source});
     }
 
     if (balance_ != nullptr)

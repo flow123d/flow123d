@@ -106,7 +106,8 @@ public:
             FOR_ELEMENT_SIDES(ele.full_iter(), i)
             {
                 uint local_edge = ele.edge_local_idx(i);
-                conductivity += soil_model->conductivity(ad_->phead_edge_[local_edge]);
+                double phead = ad_->phead_edge_[local_edge];
+                conductivity += soil_model->conductivity(phead);
                 head += ad_->phead_edge_[local_edge];
             }
             conductivity /= ele.n_sides();
@@ -168,7 +169,7 @@ public:
             if (system_.balance != nullptr) {
                 system_.balance->add_mass_vec_value(ad_->water_balance_idx_, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
-                system_.balance->add_source_vec_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {source_diagonal});
+                system_.balance->add_source_vec_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {(int)edge_row}, {source_diagonal});
             }
         }
 
@@ -177,10 +178,9 @@ public:
     AssemblyDataPtr ad_;
     RichardsSystem system_;
 
-    //SoilModel_VanGenuchten soil_model;
-    std::shared_ptr<SoilModelBase> soil_model;
     bool genuchten_on;
     double cross_section;
+    std::shared_ptr<SoilModelBase> soil_model;
 };
 
 
