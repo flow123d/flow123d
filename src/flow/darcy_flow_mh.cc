@@ -144,7 +144,7 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
                 "Parameters of output stream.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ fields: [ \"pressure_p0\", \"velocity_p0\" ] }"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Parameters of output from MH module.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Parameters of output form MH module.")
