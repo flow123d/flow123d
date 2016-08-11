@@ -829,7 +829,6 @@ TEST(Field, init_from_default) {
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
     }
-    //Field<3, FieldValue<3>::Vector > vector_field;
 
 }
 
