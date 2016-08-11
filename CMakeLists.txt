@@ -517,8 +517,9 @@ endif()
 #                              with correctly set dependencies on other libraries
 
 message(STATUS "\n =======================================================")
+
 set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
-set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})
+set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
 find_package(ArmadilloFlow 3.2.4)
 if (NOT Armadillo_FOUND)
   message(STATUS "Try to install our own Armadillo.")
@@ -531,7 +532,6 @@ if (NOT Armadillo_FOUND)
   unset(Armadillo_LIBRARY_DIRS CACHE)
   unset(Armadillo_CONFIGURE_FILE CACHE)
 
-  set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
   find_package(ArmadilloFlow 3.2.4 REQUIRED)
 
 endif()
@@ -619,18 +619,17 @@ endif()
 #  YAML_CPP_FOUND - set to true if the library is found
 
 message(STATUS "\n =======================================================")
-set(YamlCpp_ROOT_HINT ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
+set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
+set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
 find_package(YamlCpp)
 if (NOT YamlCpp_FOUND)
     message(STATUS "Try to install our own yaml-cpp library.")
-    set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
     include(InstallYamlCpp)
 
     unset(YamlCpp_FOUND CACHE) 
     unset(YamlCpp_INCLUDE_DIR CACHE)        # overwrite cache    
     unset(YamlCpp_LIBRARY CACHE)
 
-    set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
     find_package(YamlCpp REQUIRED)
     
     message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
