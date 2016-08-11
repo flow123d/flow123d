@@ -261,10 +261,8 @@ void OutputTime::clear_data(void)
 
 #define INSTANCE_TO_ALL( MACRO, dim_from) \
 		MACRO(dim_from, FieldValue<0>::Enum ) \
-		MACRO(dim_from, FieldValue<0>::EnumVector) \
 		MACRO(dim_from, FieldValue<0>::Integer) \
 		MACRO(dim_from, FieldValue<0>::Scalar) \
-		MACRO(dim_from, FieldValue<0>::Vector) \
         INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
         INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
 
