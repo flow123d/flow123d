@@ -457,7 +457,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 #include "fields/field_python.hh"
 #include "fields/field_values.hh"
 
-typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
+typedef FieldPython<3, FieldValue<3>::VectorFixed > ExactSolution;
 
 /*
 * Calculate approximation of L2 norm for:
