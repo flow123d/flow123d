@@ -522,7 +522,6 @@ set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})
 find_package(ArmadilloFlow 3.2.4)
 if (NOT Armadillo_FOUND)
   message(STATUS "Try to install our own Armadillo.")
-  message(FATAL_ERROR "NO INSTALL.")
   include(InstallArmadillo)
 
   # we try to erease from the cache everything that can cause failure of the second find_package

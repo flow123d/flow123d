@@ -35,7 +35,7 @@ file (WRITE "${cmakelists_fname}"
 # run cmake
 execute_process(COMMAND ${CMAKE_COMMAND} ${EXTERNAL_YamlCpp_DIR} 
     WORKING_DIRECTORY ${EXTERNAL_YamlCpp_DIR})
-#    OUTPUT_FILE ${EXTERNAL_YamlCpp_DIR}/cmake.log)
+    OUTPUT_FILE ${EXTERNAL_YamlCpp_DIR}/cmake.log)
 
 find_program (MAKE_EXECUTABLE NAMES make gmake)
 # run make

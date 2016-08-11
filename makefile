@@ -40,7 +40,7 @@ all: build-flow123d
 
 # Just build flow123d with existing configuration.
 fast-flow123d:
-	./check_dates.sh
+#	./check_dates.sh
 	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
 	
 
