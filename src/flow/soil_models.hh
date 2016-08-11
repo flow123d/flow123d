@@ -8,10 +8,10 @@
 #ifndef _HYDRO_FUNCTIONS_HH
 #define	_HYDRO_FUNCTIONS_HH
 
-#include <algorithm>
-#include <cmath>
 
-
+namespace fadbad {
+  template <class T> class B;
+}
 
 // todo: 
 // objekt por SoilModel - jedna sada primarnich i pomocnych parametru
@@ -43,41 +43,96 @@ struct SoilData {
 //    double  Kk;             // conductivity at the cut point
 };
 
-class SoilModel_VanGenuchten {
-public:
-    SoilModel_VanGenuchten();
-    SoilModel_VanGenuchten(SoilData soil);
 
+/**
+ * Pure virtual interface, of all models.
+ */
+class SoilModelBase {
+public:
+    enum SoilModelType {
+        van_genuchten=0,
+        irmay=1
+    };
+
+    typedef fadbad::B<double> DiffDouble;
+
+    virtual void reset(SoilData soil)=0;
+
+    virtual double conductivity( const double &phead) const =0;
+    virtual auto conductivity(const DiffDouble &p_head)->DiffDouble const =0;
+
+    virtual double water_content( const double &phead) const =0;
+    virtual auto water_content(const DiffDouble &p_head)->DiffDouble const =0;
+
+    virtual ~SoilModelBase() {};
+};
+
+
+template <class Model>
+class SoilModelImplBase : public SoilModelBase {
+public:
+    // We assume that Model have method templates:
+    // template <class T>  T conductivity_(const T &h) const;
+    // template <class T>  T water_content_(const T &h) const;
+
+    typedef SoilModelBase::DiffDouble DiffDouble;
+
+    void reset(SoilData data) override;
+
+    double conductivity( const double &p_head) const override;
+    auto conductivity(const DiffDouble &p_head)->DiffDouble const override;
+
+    double water_content( const double &p_head) const override;
+    auto water_content(const DiffDouble &p_head)->DiffDouble const override;
+
+    ~SoilModelImplBase() {}
+};
+
+
+namespace internal {
+    class VanGenuchten;
+    class Irmay;
+}
+
+
+class SoilModel_VanGenuchten : public SoilModelImplBase<internal::VanGenuchten>
+{
+public:
+    ~SoilModel_VanGenuchten() {};
+};
+
+class SoilModel_Irmay : public SoilModelImplBase<internal::Irmay>
+{
+public:
+    ~SoilModel_Irmay() {};
+};
+
+
+// ************************************** Internal model definitions
+namespace internal {
+
+class VanGenuchten {
+public:
     void reset(SoilData soil);
 
     template <class T>
-    T conductivity(const T &h) const;
+    T conductivity_(const T &h) const;
 
     template <class T>
-    T water_content(const T &h) const;
+    T water_content_(const T &h) const;
 
 protected:
 
-    template <class T>
-    inline T Q_rel(const T &h) const
-    {
-        return  pow( 1 + pow(-soil_param_.alpha * h, soil_param_.n), -m);
-    }
-
-    template <class T>
-    inline T Q_rel_inv(const T &q) const
-    {
-        return  -pow( pow( q, -1/m ) -1, 1/soil_param_.n)/soil_param_.alpha;
-    }
-
+    template <class T> T Q_rel(const T &h) const;
+    template <class T> T Q_rel_inv(const T &q) const;
 
     // input parameters
     SoilData  soil_param_;
 
     // conductivity parameters
-    const double Bpar;
-    const double Ppar;
-    const double K_lower_limit;
+    static constexpr double Bpar=0.5;
+    static constexpr double Ppar=2;
+    static constexpr double K_lower_limit=1.0E-20;
 
     // aux values
     double m;
@@ -89,118 +144,21 @@ protected:
 
 };
 
-SoilModel_VanGenuchten::SoilModel_VanGenuchten()
-:  Bpar(0.5), Ppar(2), K_lower_limit(1.0E-20)
-{
-
-}
 
 
-SoilModel_VanGenuchten::SoilModel_VanGenuchten(SoilData soil)
-:  SoilModel_VanGenuchten()
-{
-    reset(soil);
-}
-
-
-void SoilModel_VanGenuchten::reset(SoilData soil)
-{
-    // check soil parameters
-    ASSERT_LT_DBG( soil.cut_fraction, 1.0);
-    ASSERT_GT_DBG( soil.cut_fraction, 0.0);
-    soil_param_ = soil;
-
-    m = 1-1/soil_param_.n;
-    // soil_param_.cut_fraction = (Qs -Qr)/(Qnc - Qr)
-    Qs_nc = (soil_param_.Qs - soil_param_.Qr)/soil_param_.cut_fraction  + soil_param_.Qr;
-
-    // conductivity internal scaling
-    FFQr = 1.0;   // pow(1 - pow(Qeer,1/m),m);
-    double Qs_relative = soil_param_.cut_fraction;
-    FFQs = pow(1 - pow(Qs_relative, 1/m),m);
-
-
-    Hs = Q_rel_inv(soil_param_.cut_fraction);
-    //std::cout << "Hs : " << Hs << " qs: " << soil_param_.Qs << " qsnc: " << Qs_nc << std::endl;
-
-}
-
-
-// pri generovani grafu jsem zjistil ze originalni vzorecek pro
-// vodivost pres theta je numericky nestabilni pro tlaky blizke
-// nule, zejmena pro velka n
-// tento vzorec je stabilni:
-//
-/// k(h)=t(h)**(0.5)* (1- ((h)**n/(1+(h)**n)) **m)**2
-
-template <class T>
-T SoilModel_VanGenuchten::conductivity(const T& h) const
-{
-    T Kr,Q, Q_unscaled, Q_cut_unscaled, FFQ;
-
-      if (h < Hs) {
-            Q_unscaled = Q_rel(h);
-            Q_cut_unscaled = Q_unscaled / soil_param_.cut_fraction;
-            FFQ = pow(1 - pow(Q_unscaled,1/m),m);
-            Kr = soil_param_.Ks * pow(Q_cut_unscaled,Bpar)*pow((FFQr - FFQ)/(FFQr - FFQs),Ppar);
-    }
-    else Kr = soil_param_.Ks;
-
-    if (Kr < K_lower_limit) return K_lower_limit;
-    else return Kr;
-}
-
-
-template <class T>
-T SoilModel_VanGenuchten::water_content(const T& h) const
-{
-    if (h < Hs) return soil_param_.Qr + (Qs_nc - soil_param_.Qr) *Q_rel(h);
-    else return soil_param_.Qs;
-}
-
-
-class SoilModel_Irmay : public SoilModel_VanGenuchten {
+class Irmay : public VanGenuchten {
 public:
-    SoilModel_Irmay();
-    SoilModel_Irmay(SoilData soil);
-
     template <class T>
-    T conductivity(const T &h) const;
-
+    T conductivity_(const T &h) const;
 private:
     // conductivity parameters
-    const double Ppar;
-    const double K_lower_limit;
+    static constexpr double power_par = 3.0;
 };
 
-SoilModel_Irmay::SoilModel_Irmay()
-:  Ppar(3), K_lower_limit(1.0E-20)
-{}
-
-
-SoilModel_Irmay::SoilModel_Irmay(SoilData soil)
-:  SoilModel_Irmay()
-{
-    reset(soil);
-}
+} // close namespace internal
 
 
 
-
-template <class T>
-T SoilModel_Irmay::conductivity(const T& h) const
-{
-    T Kr;
-
-    if (h < Hs) {
-        T Q = this->Q_rel(h);
-        Kr = soil_param_.Ks * pow(Q, 3);
-    }
-    else Kr = soil_param_.Ks;
-
-    if (Kr < K_lower_limit) return K_lower_limit;
-    else return Kr;
-}
 
 
 
