@@ -59,9 +59,6 @@ TEST(la, local_to_global_map) {
     std::shared_ptr<Distribution> sh_distr=std::make_shared<Distribution>(3+rank,PETSC_COMM_WORLD);
     LocalToGlobalMap sh_lg_map(sh_distr);
     EXPECT_TRUE( sh_distr == sh_lg_map.get_distr() );
-    EXPECT_EQ( 2, sh_distr.use_count() );
-    EXPECT_EQ( 2, sh_lg_map.get_distr().use_count() );
-
     }
 }
 

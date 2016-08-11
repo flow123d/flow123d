@@ -649,15 +649,15 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 
     arma::mat &local_matrix = *(data_->system_.local_matrix);
 
+
     if (balance_ != nullptr && fill_matrix)
         balance_->start_flux_assembly(water_balance_idx_);
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         unsigned int nsides = ele_ac.n_sides();
+        data_->system_.dirichlet_edge.resize(nsides);
 
-        if (fill_matrix) 
-            assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
         
 
         for (unsigned int i = 0; i < nsides; i++) {
@@ -677,6 +677,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 
             // set block C and C': side-edge, edge-side
             double c_val = 1.0;
+            data_->system_.dirichlet_edge[i] = 0;
 
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
@@ -692,6 +693,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     loc_side_rhs[i] -= bc_pressure;
                     ls->rhs_set_value(edge_row, -bc_pressure);
                     ls->mat_set_value(edge_row, edge_row, -1.0);
+                    data_->system_.dirichlet_edge[i] = 1;
 
                 } else if ( type == EqData::total_flux) {
                     // internally we work with outward flux
@@ -754,6 +756,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                         loc_side_rhs[i] -= bc_pressure;
                         ls->rhs_set_value(edge_row, -bc_pressure);
                         ls->mat_set_value(edge_row, edge_row, -1.0);
+                        data_->system_.dirichlet_edge[i] = 1;
                     } else {
                         //DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], side_flux, bc_flux);
                         ls->rhs_set_value(edge_row, side_flux);
@@ -805,6 +808,11 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
 
+        }
+
+        if (fill_matrix) {
+            assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
+
             // assemble matrix for weights in BDDCML
             // approximation to diagonal of 
             // S = -C - B*inv(A)*B'
@@ -815,12 +823,15 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
             // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
             // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-               double val_side =  local_matrix(i,i);
-               double val_edge =  -1./local_matrix(i,i);
+               for(unsigned int i=0; i < nsides; i++) {
+                   double val_side =  local_matrix(i,i);
+                   double val_edge =  -1./local_matrix(i,i);
 
-               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_row, val_side );
-               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_row, val_edge );
+                   static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_rows[i], val_side );
+                   static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_rows[i], val_edge );
+               }
             }
+
         }
 
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);

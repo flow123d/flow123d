@@ -45,11 +45,15 @@
 template<int dim>
 class AssemblyLMH : public AssemblyMH<dim> {
 public:
+
     typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtr;
+
     AssemblyLMH(AssemblyDataPtr data)
     : AssemblyMH<dim>(data),
       ad_(data),
-      system_(data->system_)
+      system_(data->system_),
+      genuchten_on(false),
+      cross_section(1.0)
     {}
 
     void reset_soil_model(LocalElementAccessorBase<3> ele) {
@@ -131,35 +135,38 @@ public:
         update_water_content(ele);
         FOR_ELEMENT_SIDES(ele.full_iter(), i)
         {
+
             uint local_edge = ele.edge_local_idx(i);
             uint local_side = ele.side_local_idx(i);
             uint edge_row = ele.edge_row(i);
-            double capacity = this->ad_->capacity[local_side];
-            double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
-            double mass_diagonal = diagonal_coef * capacity;
+            if (ad_->system_.dirichlet_edge[i] == 0) {
 
-            /*
-            cout << "w diff: " << water_content_diff
-                 << " mass: " << mass_diagonal * ad_->phead_edge_[local_edge]
-                 << " w prev: " << -ad_->water_content_previous_it[local_side]
-                 << " w time: " << ad_->water_content_previous_time[local_side]
-                 << " c: " << capacity
-                 << " p: " << ad_->phead_edge_[local_edge]
-                 << " z:" << ele.centre()[2] << endl;
+                double capacity = this->ad_->capacity[local_side];
+                double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
+                double mass_diagonal = diagonal_coef * capacity;
 
-            */
+                /*
+                cout << "w diff: " << water_content_diff
+                     << " mass: " << mass_diagonal * ad_->phead_edge_[local_edge]
+                     << " w prev: " << -ad_->water_content_previous_it[local_side]
+                     << " w time: " << ad_->water_content_previous_time[local_side]
+                     << " c: " << capacity
+                     << " p: " << ad_->phead_edge_[local_edge]
+                     << " z:" << ele.centre()[2] << endl;
 
-            double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] / this->ad_->time_step_
-                              + diagonal_coef * water_content_diff / this->ad_->time_step_;
+                */
 
-            system_.lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal/this->ad_->time_step_ );
-            system_.lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
+                double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] / this->ad_->time_step_
+                                  + diagonal_coef * water_content_diff / this->ad_->time_step_;
+
+
+                system_.lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal/this->ad_->time_step_ );
+                system_.lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
+            }
 
             if (system_.balance != nullptr) {
-                // check sign
-                //
-                system_.balance->add_mass_vec_value(ad_->water_balance_idx_, ele.region().bulk_idx(), diagonal_coef*ad_->water_content_previous_it[local_side]);
-//                 system_.balance->add_mass_matrix_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {mass_diagonal});
+                system_.balance->add_mass_vec_value(ad_->water_balance_idx_, ele.region().bulk_idx(),
+                        diagonal_coef*ad_->water_content_previous_it[local_side]);
                 system_.balance->add_source_vec_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {edge_row}, {source_diagonal});
             }
         }

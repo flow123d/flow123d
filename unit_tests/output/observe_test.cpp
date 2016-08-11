@@ -261,9 +261,14 @@ TEST(Observe, all) {
     obs.compute_field_values(field_set.enum_field);
     obs.compute_field_values(field_set.vector_field);
     obs.compute_field_values(field_set.tensor_field);
-
     obs.output_time_frame( tg.t() );
+
     tg.next_time();
+    field_set.set_time( tg.step(), LimitSide::right);
+    obs.compute_field_values(field_set.scalar_field);
+    obs.compute_field_values(field_set.enum_field);
+    obs.compute_field_values(field_set.vector_field);
+    obs.compute_field_values(field_set.tensor_field);
     obs.output_time_frame( tg.t() );
     }
     // closed observe file 'test_eq_observe.yaml'

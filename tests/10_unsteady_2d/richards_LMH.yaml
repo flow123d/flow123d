@@ -2,16 +2,17 @@ flow123d_version: 1.8.9
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
-    #mesh_file: ./input/test10_bentonit_0.001.msh
     mesh_file: ./input/test10_bentonit_0.001.msh
+    #mesh_file: ./input/test10_bentonit_0.005.msh
   flow_equation: !Flow_Richards_LMH
+    output_specific:
     
     time: # time in hours (consistent with conductivity)
-        end_time: 1000     # original experiment from UGN up to time 6000 h
+        end_time: 3000     # original experiment from UGN up to time 6000 h
         init_dt: 1
         # current time step enlargement logic do not allow to extent time step up to the output timestep
         # maximum timestep wil be just 50.
-        max_dt: 100        
+        max_dt: 300        
         min_dt: 0.1
 
     input_fields:
@@ -37,21 +38,31 @@ problem: !Coupling_Sequential
         bc_robin_sigma: 1e6
 
     nonlinear_solver:
-      tolerance: 1e-9
+      tolerance: 1e-7
       max_it: 20 # should stop after 5 iterations due to stagnation
       converge_on_stagnation: false
       linear_solver: !Petsc 
         a_tol: 1e-11
     n_schurs: 2
     output:
-      output_stream: 
-        file: ./flow.pvd
-        format: !vtk
-          variant: ascii
-        time_step: 100        
-      output_fields:
+      fields:
         - pressure_p0        
         - velocity_p0
+      observe_fields: [ pressure_p0, velocity_p0 ]  
     balance:
       cumulative: true
     
+    output_stream: 
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 100
+      observe_points:
+        - [ 0, 0, -0.25 ]
+        - [ 0, 0, -0.2 ]
+        - [ 0, 0, -0.15 ]
+        - [ 0, 0, -0.1 ]
+        - [ 0, 0, -0.05 ]
+        - [ 0, 0, 0.0 ]
+        

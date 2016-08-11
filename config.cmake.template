@@ -83,6 +83,11 @@
 #                 dist-packages site-packages)
 #            If value is not specified, value from above will be used
 
+# PYTHON_SCRIPTS_OFF Do not configure python scripts. Usefull if you are offline.
+# set(PYTHON_SCRIPTS_OFF "yes")
+
+
+
 ### Boost ######################
 # Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system
 #
