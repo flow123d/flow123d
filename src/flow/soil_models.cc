@@ -20,31 +20,31 @@
 template <class Model>
 void SoilModelImplBase<Model>::reset(SoilData data)
 {
-    static_cast<Model*>(this)->reset(data);
+    model_.reset_(data);
 }
 
 template <class Model>
 double SoilModelImplBase<Model>::conductivity( const double &p_head) const
 {
-    return static_cast<Model*>(this)->conductivity_(p_head);
+    return model_.conductivity_(p_head);
 }
 
 template <class Model>
 auto SoilModelImplBase<Model>::conductivity(const DiffDouble &p_head)->DiffDouble const
 {
-    return static_cast<Model*>(this)->conductivity_(p_head);
+    return model_.conductivity_(p_head);
 }
 
 template <class Model>
 double SoilModelImplBase<Model>::water_content( const double &p_head) const
 {
-    return static_cast<Model*>(this)->water_content_(p_head);
+    return model_.water_content_(p_head);
 }
 
 template <class Model>
 auto SoilModelImplBase<Model>::water_content(const DiffDouble &p_head)->DiffDouble const
 {
-    return static_cast<Model*>(this)->water_content_(p_head);
+    return model_.water_content_(p_head);
 }
 
 
@@ -52,8 +52,11 @@ auto SoilModelImplBase<Model>::water_content(const DiffDouble &p_head)->DiffDoub
 
 namespace internal {
 
+VanGenuchten::VanGenuchten()
+: Bpar(0.5), Ppar(2), K_lower_limit(1.0E-20)
+{}
 
-void VanGenuchten::reset(SoilData soil)
+void VanGenuchten::reset_(SoilData soil)
 {
     // check soil parameters
     ASSERT_LT_DBG( soil.cut_fraction, 1.0);
@@ -100,7 +103,7 @@ T VanGenuchten::Q_rel_inv(const T &q) const
 template <class T>
 T VanGenuchten::conductivity_(const T& h) const
 {
-    T Kr,Q, Q_unscaled, Q_cut_unscaled, FFQ;
+    T Kr, Q_unscaled, Q_cut_unscaled, FFQ;
 
       if (h < Hs) {
             Q_unscaled = Q_rel(h);
@@ -114,8 +117,8 @@ T VanGenuchten::conductivity_(const T& h) const
     else return Kr;
 }
 
-template SoilModelBase::DiffDouble VanGenuchten::conductivity_<SoilModelBase::DiffDouble>(const SoilModelBase::DiffDouble &h) const;
-template double VanGenuchten::conductivity_<double>(const double &h) const;
+//template SoilModelBase::DiffDouble VanGenuchten::conductivity_<SoilModelBase::DiffDouble>(const SoilModelBase::DiffDouble &h) const;
+//template double VanGenuchten::conductivity_<double>(const double &h) const;
 
 
 template <class T>
@@ -125,10 +128,14 @@ T VanGenuchten::water_content_(const T& h) const
     else return soil_param_.Qs;
 }
 
-template SoilModelBase::DiffDouble VanGenuchten::water_content_<SoilModelBase::DiffDouble>(const SoilModelBase::DiffDouble &h) const;
-template double VanGenuchten::water_content_<double>(const double &h) const;
+//template SoilModelBase::DiffDouble VanGenuchten::water_content_<SoilModelBase::DiffDouble>(const SoilModelBase::DiffDouble &h) const;
+//template double VanGenuchten::water_content_<double>(const double &h) const;
 
-
+Irmay::Irmay()
+: VanGenuchten()
+{
+    Ppar=3;
+}
 
 
 template <class T>
@@ -138,7 +145,7 @@ T Irmay::conductivity_(const T& h) const
 
     if (h < Hs) {
         T Q = this->Q_rel(h);
-        Kr = soil_param_.Ks * pow(Q, power_par);
+        Kr = soil_param_.Ks * pow(Q, Ppar);
     }
     else Kr = soil_param_.Ks;
 
@@ -146,9 +153,14 @@ T Irmay::conductivity_(const T& h) const
     else return Kr;
 }
 
-template SoilModelBase::DiffDouble Irmay::conductivity_<SoilModelBase::DiffDouble>(const SoilModelBase::DiffDouble &h) const;
-template double Irmay::conductivity_<double>(const double &h) const;
-
-
+//template SoilModelBase::DiffDouble Irmay::conductivity_<SoilModelBase::DiffDouble>(const SoilModelBase::DiffDouble &h) const;
+//template double Irmay::conductivity_<double>(const double &h) const;
 
 } //close namespace internal
+
+
+
+template class SoilModelImplBase<internal::VanGenuchten>;
+template class SoilModelImplBase<internal::Irmay>;
+
+

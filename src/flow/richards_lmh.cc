@@ -73,12 +73,20 @@ const it::Record & RichardsLMH::get_input_type() {
     .copy_keys( RichardsLMH::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
 
+    auto model_selection = it::Selection("Flow_Darcy_BC_Type")
+            .add_value(SoilModelBase::van_genuchten, "van_genuchten", "Van Genuchten soil model with cutting near zero.")
+            .add_value(SoilModelBase::irmay, "irmay", "Irmay model for conductivity, Van Genuchten model for the water content. Suitable for bentonite.")
+            .close();
+
+
     return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
-
+        .declare_key("soil_model", model_selection, it::Default("\"van_genuchten\""),
+                "Selection of the globally applied soil model. In future we replace this key by a field for selection of the model."
+                "That will allow usage of different soil model in a single simulation.")
         .close();
 }
 
@@ -99,6 +107,14 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
 }
 
 void RichardsLMH::initialize_specific() {
+
+    auto model_type = input_record_.val<SoilModelBase::SoilModelType>("soil_model");
+    if (model_type == SoilModelBase::van_genuchten)
+        data_->soil_model_ = std::make_shared<SoilModel_VanGenuchten>();
+    else if (model_type == SoilModelBase::irmay)
+        data_->soil_model_ = std::make_shared<SoilModel_Irmay>();
+    else
+        ASSERT(false);
 
     // create edge vectors
     unsigned int n_local_edges = mh_dh.edge_new_local_4_mesh_idx_.size();

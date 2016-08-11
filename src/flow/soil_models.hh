@@ -86,26 +86,11 @@ public:
     auto water_content(const DiffDouble &p_head)->DiffDouble const override;
 
     ~SoilModelImplBase() {}
+
+private:
+    Model model_;
 };
 
-
-namespace internal {
-    class VanGenuchten;
-    class Irmay;
-}
-
-
-class SoilModel_VanGenuchten : public SoilModelImplBase<internal::VanGenuchten>
-{
-public:
-    ~SoilModel_VanGenuchten() {};
-};
-
-class SoilModel_Irmay : public SoilModelImplBase<internal::Irmay>
-{
-public:
-    ~SoilModel_Irmay() {};
-};
 
 
 // ************************************** Internal model definitions
@@ -113,7 +98,9 @@ namespace internal {
 
 class VanGenuchten {
 public:
-    void reset(SoilData soil);
+    VanGenuchten();
+
+    void reset_(SoilData soil);
 
     template <class T>
     T conductivity_(const T &h) const;
@@ -129,10 +116,10 @@ protected:
     // input parameters
     SoilData  soil_param_;
 
-    // conductivity parameters
-    static constexpr double Bpar=0.5;
-    static constexpr double Ppar=2;
-    static constexpr double K_lower_limit=1.0E-20;
+    // constant conductivity parameters
+    double Bpar;
+    double Ppar;
+    double K_lower_limit;
 
     // aux values
     double m;
@@ -148,14 +135,18 @@ protected:
 
 class Irmay : public VanGenuchten {
 public:
+    Irmay();
+
     template <class T>
     T conductivity_(const T &h) const;
-private:
-    // conductivity parameters
-    static constexpr double power_par = 3.0;
 };
 
 } // close namespace internal
+
+
+typedef SoilModelImplBase<internal::VanGenuchten> SoilModel_VanGenuchten;
+typedef SoilModelImplBase<internal::Irmay> SoilModel_Irmay;
+
 
 
 
@@ -339,9 +330,9 @@ T FC<T>::operator()(const T& h)
     else
         return 0.0;
 }
-/*
 
-          ! ************************************************************************
+
+! ************************************************************************
 ! FH - inverse water saturation function
 ! **************************************
 real pure function FH_4(h,Matr)

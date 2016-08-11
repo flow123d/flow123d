@@ -53,7 +53,8 @@ public:
       ad_(data),
       system_(data->system_),
       genuchten_on(false),
-      cross_section(1.0)
+      cross_section(1.0),
+      soil_model(data->soil_model_)
     {}
 
     void reset_soil_model(LocalElementAccessorBase<3> ele) {
@@ -67,7 +68,7 @@ public:
             soil_data.Ks = this->ad_->conductivity.value(ele.centre(), ele.element_accessor());
             soil_data.cut_fraction = 0.999;
 
-            soil_model.reset(soil_data);
+            soil_model->reset(soil_data);
         }
 
     }
@@ -82,7 +83,7 @@ public:
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
-                  fadbad::B<double> evaluated( soil_model.water_content(x_phead) );
+                  fadbad::B<double> evaluated( soil_model->water_content(x_phead) );
                   evaluated.diff(0,1);
                   water_content = evaluated.val();
                   capacity = x_phead.d(0);
@@ -105,7 +106,7 @@ public:
             FOR_ELEMENT_SIDES(ele.full_iter(), i)
             {
                 uint local_edge = ele.edge_local_idx(i);
-                conductivity += soil_model.conductivity(ad_->phead_edge_[local_edge]);
+                conductivity += soil_model->conductivity(ad_->phead_edge_[local_edge]);
                 head += ad_->phead_edge_[local_edge];
             }
             conductivity /= ele.n_sides();
@@ -177,7 +178,7 @@ public:
     RichardsSystem system_;
 
     //SoilModel_VanGenuchten soil_model;
-    SoilModel_Irmay soil_model;
+    std::shared_ptr<SoilModelBase> soil_model;
     bool genuchten_on;
     double cross_section;
 };

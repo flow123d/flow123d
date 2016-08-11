@@ -11,6 +11,8 @@
 #include "flow/darcy_flow_mh.hh"
 #include "fields/vec_seq_double.hh"
 
+class SoilModelBase;
+
 /**
  * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.
  *
@@ -72,6 +74,7 @@ public:
         // This is necessary in the assembly
         // TODO: store time information in the field set and in fields, is it ok also for more complex discretization methods?
         double time_step_;
+        std::shared_ptr<SoilModelBase> soil_model_;
     };
 
     RichardsLMH(Mesh &mesh, const Input::Record in_rec);
