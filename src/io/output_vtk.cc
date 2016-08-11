@@ -23,6 +23,7 @@
 #include <limits.h>
 #include "input/factory.hh"
 #include "input/accessors_forward.hh"
+#include "system/file_path.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
@@ -87,7 +88,7 @@ OutputVTK::~OutputVTK()
 
 int OutputVTK::write_data(void)
 {
-    ASSERT_PTR(output_mesh_);
+    ASSERT_PTR(output_mesh_).error();
 
     /* It's possible now to do output to the file only in the first process */
     if(this->rank != 0) {
@@ -98,9 +99,9 @@ int OutputVTK::write_data(void)
     if (! this->_base_file.is_open()) {
         this->fix_main_file_extension(".pvd");
 
-        this->_base_file.open(this->_base_filename.c_str());
-        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
-        xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
+        this->_base_file.open(string(this->_base_filename).c_str());
+        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
+        LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
 
         this->make_subdirectory();
         this->write_head();
@@ -122,8 +123,7 @@ int OutputVTK::write_data(void)
     } else {
         /* Set up data file */
 
-        xprintf(MsgLog, "%s: Writing output file %s ... ",
-                __func__, this->_base_filename.c_str());
+    	LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
 
         /* Set floating point precision to max */
@@ -134,10 +134,9 @@ int OutputVTK::write_data(void)
         this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
                 << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
 
-        xprintf(MsgLog, "O.K.\n");
+        LogOut() << "O.K.";
 
-        xprintf(MsgLog, "%s: Writing output (frame %d) file %s ... ", __func__,
-                this->current_step, relative_frame_file.c_str());
+        LogOut() << __func__ << ": Writing output (frame " << this->current_step << ") file " << relative_frame_file << " ... ";
 
         this->write_vtk_vtu();
 
@@ -146,7 +145,7 @@ int OutputVTK::write_data(void)
         //delete data_file;
         //this->_data_file = NULL;
 
-        xprintf(MsgLog, "O.K.\n");
+        LogOut() << "O.K.";
     }
 
     return 1;
@@ -157,14 +156,12 @@ int OutputVTK::write_data(void)
 
 void OutputVTK::make_subdirectory()
 {
-    string main_file="./" + this->_base_filename; // guarantee that find_last_of succeeds
-    OLD_ASSERT( main_file.substr( main_file.size() - 4) == ".pvd" , "none");
-    unsigned int last_sep_pos=main_file.find_last_of(DIR_DELIMITER);
-    main_output_dir_=main_file.substr(2, last_sep_pos-2);
-    main_output_basename_=main_file.substr(last_sep_pos+1);
-    main_output_basename_=main_output_basename_.substr(0, main_output_basename_.size() - 4); // 5 = ".pvd".size() +1
+	ASSERT_EQ(this->_base_filename.extension(), ".pvd").error();
+	main_output_dir_ = this->_base_filename.parent_path();
+	main_output_basename_ = this->_base_filename.stem();
 
-    FilePath fp(main_output_dir_ + DIR_DELIMITER + main_output_basename_ + DIR_DELIMITER + "__tmp__", FilePath::output_file);
+    vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
+    FilePath fp(sub_path, FilePath::output_file);
     fp.create_output_dir();
 }
 
@@ -419,14 +416,13 @@ int OutputVTK::write_head(void)
         return 0;
     }
 
-    xprintf(MsgLog, "%s: Writing output file (head) %s ... ", __func__,
-            this->_base_filename.c_str() );
+    LogOut() << __func__ << ": Writing output file (head) " << this->_base_filename << " ... ";
 
     this->_base_file << "<?xml version=\"1.0\"?>" << endl;
     this->_base_file << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
     this->_base_file << "<Collection>" << endl;
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 
     return 1;
 }
@@ -440,13 +436,12 @@ int OutputVTK::write_tail(void)
         return 0;
     }
 
-    xprintf(MsgLog, "%s: Writing output file (tail) %s ... ", __func__,
-            this->_base_filename.c_str() );
+    LogOut() << __func__ << ": Writing output file (tail) " << this->_base_filename << " ... ";
 
     this->_base_file << "</Collection>" << endl;
     this->_base_file << "</VTKFile>" << endl;
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 
     return 1;
 }

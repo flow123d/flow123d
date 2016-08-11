@@ -315,29 +315,29 @@ public:
 
 TEST_F(TestOutputTime, fix_main_file_extension)
 {
-    this->_base_filename="test.pvd";
+    this->_base_filename=FilePath("test.pvd", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.pvd", this->_base_filename);
+    EXPECT_EQ("test.pvd", string(this->_base_filename));
 
-    this->_base_filename="test";
+    this->_base_filename=FilePath("test", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.pvd", this->_base_filename);
+    EXPECT_EQ("test.pvd", string(this->_base_filename));
 
-    this->_base_filename="test.msh";
+    this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.msh.pvd", this->_base_filename);
+    EXPECT_EQ("test.msh.pvd", string(this->_base_filename));
 
-    this->_base_filename="test.msh";
+    this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.msh", this->_base_filename);
+    EXPECT_EQ("test.msh", string(this->_base_filename));
 
-    this->_base_filename="test";
+    this->_base_filename=FilePath("test", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.msh", this->_base_filename);
+    EXPECT_EQ("test.msh", string(this->_base_filename));
 
-    this->_base_filename="test.pvd";
+    this->_base_filename=FilePath("test.pvd", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.pvd.msh", this->_base_filename);
+    EXPECT_EQ("test.pvd.msh", string(this->_base_filename));
 
 }
 

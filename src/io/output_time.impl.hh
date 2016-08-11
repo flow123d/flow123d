@@ -76,7 +76,6 @@
 
 
 
-
 /**************************************************************************************************************
  * OutputTime implementation
  */
@@ -85,7 +84,7 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
-	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
+	ASSERT_LT(type, N_DISCRETE_SPACES).error();
 
     DiscreteSpaceFlags flags = 1 << type;
     for (unsigned long index=0; index < multi_field.size(); index++)
@@ -100,7 +99,7 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         Field<spacedim, Value> &field_ref)
 {
-	OLD_ASSERT_LESS(type, N_DISCRETE_SPACES);
+	ASSERT_LT(type, N_DISCRETE_SPACES).error();
     
 	DiscreteSpaceFlags flags = 1 << type;
     for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
@@ -140,7 +139,6 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     /* Copy data to array */
     switch(space_type) {
     case NODE_DATA: {
-        //DBGMSG("compute field NODE data\n");
         // set output data to zero
         vector<unsigned int> count(output_data.n_values, 0);
         for(unsigned int idx=0; idx < output_data.n_values; idx++)

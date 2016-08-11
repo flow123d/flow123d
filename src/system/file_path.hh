@@ -76,6 +76,12 @@ public:
      */
     FilePath(string file_path, const  FileType ft);
 
+    /// Same as previous, but create path from vector of strings.
+    FilePath(vector<string> sub_paths, const  FileType ft);
+
+    /// Same as previous but implicitly use FileType::output_file
+    FilePath(string file_path);
+
     /**
      * @brief Obsolete method for set input and output directories.
      *
@@ -147,11 +153,45 @@ public:
      */
     void create_output_dir();
 
+    /**
+     * Return path to file.
+     */
+    string parent_path() const;
+
+    /**
+     * Return name of file with extension.
+     */
+    string filename() const;
+
+    /**
+     * Return name of file without extension.
+     */
+    string stem() const;
+
+    /**
+     * Return extension of file.
+     */
+    string extension() const;
+
+    /**
+     * Return path to file with filename without extension.
+     */
+    string cut_extension() const;
+
 private:
     /**
      * Substitutes placeholders in @p path.
      */
     void substitute_value(string &path);
+
+    /**
+     * @brief Prepare path string for check absolute path.
+     *
+     * Check first char of path string. If it is slash '/', add second slash char. Two slashes
+     * at begin is necessary for correct output of boost::filesystem::path.is_absolute() method
+     * for detection absolute path in unix format ("/home/x/y/z") under cygwin.
+     */
+    static string convert_for_check_absolute(string path);
 
 
     /// Final absolute path to the file.
@@ -169,5 +209,11 @@ private:
     /// Prefix path for input files (directory of the main input file).
     static std::shared_ptr<boost::filesystem::path> root_dir;
 };
+
+/**
+ * @brief Allow redirect FilePath to stream.
+ */
+std::ostream& operator<<(std::ostream& stream, const FilePath& fp);
+
 
 #endif /* FILE_NAME_HH_ */
