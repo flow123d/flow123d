@@ -50,7 +50,13 @@ void InspectElementsAlgorithm<dim>::init()
     intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionAux<dim,3>>());
     n_intersections_ = 0;
     component_counter_ = 0;
+    END_TIMER("Intersection initialization");
+}
 
+template<unsigned int dim>
+void InspectElementsAlgorithm<dim>::compute_bounding_boxes()
+{
+    START_TIMER("Compute bounding boxes");
     if(elements_bb.size() == 0){
         elements_bb.resize(mesh->n_elements());
         bool first_3d_element = true;
@@ -69,10 +75,9 @@ void InspectElementsAlgorithm<dim>::init()
                 }
         }
     }
-    END_TIMER("Intersection initialization");
+    END_TIMER("Compute bounding boxes");
 }
 
- 
 template<unsigned int dim> 
 bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_ele_idx,
                                                        unsigned int bulk_ele_idx,
@@ -123,13 +128,11 @@ bool InspectElementsAlgorithm<dim>::intersection_exists(unsigned int component_e
 
 
 template<unsigned int dim>
-void InspectElementsAlgorithm<dim>::compute_intersections()
+void InspectElementsAlgorithm<dim>::compute_intersections(std::shared_ptr<BIHTree> bih)
 {
     xprintf(Msg,"#########   ALGORITHM: compute_intersections   #########\n");
+    ASSERT_PTR_DBG(bih);
     init();
-    START_TIMER("BIHTree");
-    BIHTree bt(mesh, 20);
-    END_TIMER("BIHTree");
     
     START_TIMER("Element iteration");
     
@@ -138,12 +141,12 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
         
         if (elm->dim() == dim &&                                // is component element
             !closed_elements[component_ele_idx] &&                    // is not closed yet
-            elements_bb[component_ele_idx].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
+            bih->ele_bounding_box(component_ele_idx).intersect(bih->tree_box()))    // its bounding box intersects 3D mesh bounding box
         {    
             std::vector<unsigned int> searchedElements;
             
             START_TIMER("BIHtree find");
-            bt.find_bounding_box(elements_bb[component_ele_idx], searchedElements);
+            bih->find_bounding_box(bih->ele_bounding_box(component_ele_idx), searchedElements);
             END_TIMER("BIHtree find");
 
 //             component_counter_++;
@@ -263,13 +266,11 @@ void InspectElementsAlgorithm<dim>::compute_intersections()
 }
   
 template<unsigned int dim>
-void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree()
+void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(std::shared_ptr<BIHTree> bih)
 {
     xprintf(Msg,"#########   ALGORITHM: compute_intersections_BIHtree   #########\n");
+    ASSERT_PTR_DBG(bih);
     init();
-    START_TIMER("BIHTree");
-    BIHTree bt(mesh, 20);
-    END_TIMER("BIHTree");
     
     START_TIMER("Element iteration");
     
@@ -277,13 +278,13 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree()
         unsigned int component_ele_idx = elm->index();
         
         if (elm->dim() == dim &&                                    // is component element
-            elements_bb[component_ele_idx].intersect(mesh_3D_bb))   // its bounding box intersects 3D mesh bounding box
+            bih->ele_bounding_box(component_ele_idx).intersect(bih->tree_box()))   // its bounding box intersects 3D mesh bounding box
         {   
             update_simplex(elm, component_simplex); // update component simplex
             std::vector<unsigned int> searchedElements;
             
             START_TIMER("BIHtree find");
-            bt.find_bounding_box(elements_bb[component_ele_idx], searchedElements);
+            bih->find_bounding_box(bih->ele_bounding_box(component_ele_idx), searchedElements);
             END_TIMER("BIHtree find");
             
             START_TIMER("Bounding box element iteration");
@@ -331,8 +332,10 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
 {
     xprintf(Msg,"#########   ALGORITHM: compute_intersections_BB   #########\n");
     init();
+    compute_bounding_boxes();
     
     START_TIMER("Element iteration");
+    
     
     FOR_ELEMENTS(mesh, elm) {
         unsigned int component_ele_idx = elm->index();
@@ -990,13 +993,10 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
 
 
 
-void InspectElementsAlgorithm12::compute_intersections_2()
+void InspectElementsAlgorithm12::compute_intersections_2(std::shared_ptr<BIHTree> bih)
 {
     DBGMSG("Intersections 1d-2d (2-bihtree)\n");
-    
-    START_TIMER("BIHTree");
-    BIHTree bt(mesh, 20);
-    END_TIMER("BIHTree");
+    ASSERT_PTR_DBG(bih);
     
     START_TIMER("Element iteration");
     
@@ -1010,7 +1010,7 @@ void InspectElementsAlgorithm12::compute_intersections_2()
             std::vector<unsigned int> searchedElements;
             
             START_TIMER("BIHtree find");
-            bt.find_bounding_box(bt.get_elements()[component_ele_idx], searchedElements);
+            bih->find_bounding_box(bih->ele_bounding_box(component_ele_idx), searchedElements);
             END_TIMER("BIHtree find");
             
             START_TIMER("Bounding box element iteration");

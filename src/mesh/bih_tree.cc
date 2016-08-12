@@ -58,6 +58,12 @@ BIHTree::~BIHTree() {
 
 }
 
+const BoundingBox& BIHTree::ele_bounding_box(unsigned int ele_idx) const
+{
+    ASSERT_DBG(ele_idx < elements_.size());
+    return elements_[ele_idx];
+}
+
 
 void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	BIHNode &node = nodes_[node_idx];
