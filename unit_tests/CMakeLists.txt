@@ -166,6 +166,7 @@ endmacro()
 
 add_subdirectory("scripts")
 add_subdirectory("input")
+add_subdirectory("flow")
 add_subdirectory("tools")
 add_subdirectory("la")
 add_subdirectory("system")

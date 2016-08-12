@@ -53,7 +53,7 @@ const Record & Balance::get_input_type() {
 		.close();
 }
 
-
+/*
 std::shared_ptr<Balance> Balance::make_balance(
         const std::string &file_prefix,
         const Mesh *mesh,
@@ -68,64 +68,26 @@ std::shared_ptr<Balance> Balance::make_balance(
         ptr.reset();
     }
     return ptr;
-}
+}*/
 
 
 
-Balance::Balance(
-        const std::string &file_prefix,
-		const Mesh *mesh,
-		const Input::Record &in_rec,
-		TimeGovernor &tg)
-	: 	  mesh_(mesh),
+Balance::Balance(const std::string &file_prefix, const Mesh *mesh)
+	: 	  file_prefix_(file_prefix),
+	      mesh_(mesh),
 	  	  initial_time_(),
 	  	  last_time_(),
 	  	  initial_(true),
 	  	  allocation_done_(false),
 	  	  output_line_counter_(0),
-		  output_yaml_header_(false)
+          balance_on_(true),
+          output_yaml_header_(false)
+
 {
-    OLD_ASSERT_PTR(mesh);
-
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
-
-	cumulative_ = in_rec.val<bool>("cumulative");
-	output_format_ = in_rec.val<OutputFormat>("format");
-
-	OutputTimeSet time_set;
-	balance_output_type_ = tg.equation_fixed_mark_type() | TimeGovernor::marks().type_balance_output();
-	time_set.read_from_input( in_rec.val<Input::Array>("times"), tg, balance_output_type_);
-	if (in_rec.val<bool>("add_output_times") ) {
-	    TimeGovernor::marks().add_to_type_all(
-	            tg.equation_mark_type() | TimeGovernor::marks().type_output(),
-	            balance_output_type_);
-	}
-
-
-
-	if (rank_ == 0) {
-		// set default value by output_format_
-		std::string default_file_name, yaml_file_name;
-		switch (output_format_)
-		{
-		case txt:
-			default_file_name = file_prefix + "_balance.txt";
-			break;
-		case gnuplot:
-			default_file_name = file_prefix + "_balance.dat";
-			break;
-		case legacy:
-			default_file_name = file_prefix + "_balance.txt";
-			break;
-		}
-		// set file name of YAML output
-		yaml_file_name = file_prefix + "_balance.yaml";
-
-		output_.open(string(in_rec.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file))).c_str());
-		output_yaml_.open(string(FilePath(yaml_file_name, FilePath::output_file)).c_str());
-	}
-
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
+    ASSERT_PTR(mesh_);
 }
+
 
 
 Balance::~Balance()
@@ -136,12 +98,12 @@ Balance::~Balance()
 	}
 	for (unsigned int c=0; c<quantities_.size(); ++c)
 	{
-		MatDestroy(&(region_mass_matrix_[c]));
-		MatDestroy(&(be_flux_matrix_[c]));
-		MatDestroy(&(region_source_matrix_[c]));
-		MatDestroy(&(region_source_rhs_[c]));
-		VecDestroy(&(be_flux_vec_[c]));
-		VecDestroy(&(region_source_vec_[c]));
+		chkerr(MatDestroy(&(region_mass_matrix_[c])));
+		chkerr(MatDestroy(&(be_flux_matrix_[c])));
+		chkerr(MatDestroy(&(region_source_matrix_[c])));
+		chkerr(MatDestroy(&(region_source_rhs_[c])));
+		chkerr(VecDestroy(&(be_flux_vec_[c])));
+		chkerr(VecDestroy(&(region_source_vec_[c])));
 	}
 	delete[] region_mass_matrix_;
 	delete[] be_flux_matrix_;
@@ -150,21 +112,65 @@ Balance::~Balance()
 	delete[] region_source_rhs_;
 	delete[] region_source_vec_;
 
-	MatDestroy(&region_be_matrix_);
-	VecDestroy(&ones_);
-	VecDestroy(&ones_be_);
+	chkerr(MatDestroy(&region_be_matrix_));
+	chkerr(VecDestroy(&ones_));
+	chkerr(VecDestroy(&ones_be_));
 }
 
-bool Balance::is_current(const TimeStep &step)
+
+void Balance::init_from_input(
+        const Input::Record &in_rec,
+        TimeGovernor &tg)
 {
+    ASSERT(! allocation_done_);
+
     auto &marks = TimeGovernor::marks();
-    return marks.current(step, balance_output_type_) != marks.end(balance_output_type_);
+
+    output_mark_type_ = tg.equation_mark_type() | marks.type_output(),
+    balance_output_type_ = tg.equation_fixed_mark_type() | marks.type_balance_output();
+
+    cumulative_ = in_rec.val<bool>("cumulative");
+    output_format_ = in_rec.val<OutputFormat>("format");
+
+    OutputTimeSet time_set;
+    time_set.read_from_input( in_rec.val<Input::Array>("times"), tg, balance_output_type_);
+    add_output_times_ = in_rec.val<bool>("add_output_times");
+
+    if (rank_ == 0) {
+        // set default value by output_format_
+        std::string default_file_name;
+        switch (output_format_)
+        {
+        case txt:
+            default_file_name = file_prefix_ + "_balance.txt";
+            break;
+        case gnuplot:
+            default_file_name = file_prefix_ + "_balance.dat";
+            break;
+        case legacy:
+            default_file_name = file_prefix_ + "_balance.txt";
+            break;
+        }
+
+
+
+        balance_output_file_ = in_rec.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file));
+    }
+
 }
 
+
+void Balance::units(const UnitSI &unit)
+{
+    ASSERT(! allocation_done_);
+
+    units_ = unit;
+    units_.undef(false);
+}
 
 unsigned int Balance::add_quantity(const string &name)
 {
-	OLD_ASSERT(!allocation_done_, "Attempt to add quantity after allocation.");
+    ASSERT(! allocation_done_);
 
 	Quantity q(quantities_.size(), name);
 	quantities_.push_back(q);
@@ -175,13 +181,9 @@ unsigned int Balance::add_quantity(const string &name)
 
 std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &names)
 {
-	OLD_ASSERT(!allocation_done_, "Attempt to add quantity after allocation.");
-
-	vector<unsigned int> indices;
-
+    vector<unsigned int> indices;
 	for (auto name : names)
 		indices.push_back(add_quantity(name));
-
 	return indices;
 }
 
@@ -189,7 +191,26 @@ std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &nam
 void Balance::allocate(unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
 {
-	OLD_ASSERT(!allocation_done_, "Attempt to allocate Balance object multiple times.");
+    ASSERT(! allocation_done_);
+    n_loc_dofs_ = n_loc_dofs;
+    max_dofs_per_boundary_ = max_dofs_per_boundary;
+}
+
+void Balance::lazy_initialize()
+{
+    if (allocation_done_) return;
+
+    auto &marks = TimeGovernor::marks();
+    if (add_output_times_)
+        marks.add_to_type_all(output_mark_type_, balance_output_type_);
+    // if there are no balance marks turn balance off
+    if (marks.begin(balance_output_type_) == marks.end(balance_output_type_) )
+    {
+        balance_on_ = false;
+        cumulative_ = false;
+        return;
+    }
+
 	// Max. number of regions to which a single dof can contribute.
 	// TODO: estimate or compute this number directly (from mesh or dof handler).
 	const int n_bulk_regs_per_dof = min(10, (int)mesh_->region_db().bulk_size());
@@ -247,13 +268,14 @@ void Balance::allocate(unsigned int n_loc_dofs,
 	be_flux_matrix_ = new Mat[n_quant];
 	region_source_matrix_ = new Mat[n_quant];
 	region_source_rhs_ = new Mat[n_quant];
+    region_mass_vec_ = new Vec[n_quant];
 	be_flux_vec_ = new Vec[n_quant];
 	region_source_vec_ = new Vec[n_quant];
 
 	for (unsigned int c=0; c<n_quant; ++c)
 	{
 		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-				n_loc_dofs,
+				n_loc_dofs_,
 				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
@@ -263,38 +285,43 @@ void Balance::allocate(unsigned int n_loc_dofs,
 				0,
 				&(region_mass_matrix_[c])));
 
-		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-				be_regions_.size(),
-				n_loc_dofs,
-				PETSC_DECIDE,
-				PETSC_DECIDE,
-				max_dofs_per_boundary,
-				0,
-				0,
-				0,
-				&(be_flux_matrix_[c])));
+        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
+               n_loc_dofs_,
+               (rank_==0)?mesh_->region_db().bulk_size():0,
+               PETSC_DECIDE,
+               PETSC_DECIDE,
+               (rank_==0)?n_bulk_regs_per_dof:0,
+               0,
+               (rank_==0)?0:n_bulk_regs_per_dof,
+               0,
+               &(region_source_matrix_[c])));
 
-		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-				n_loc_dofs,
-				(rank_==0)?mesh_->region_db().bulk_size():0,
-				PETSC_DECIDE,
-				PETSC_DECIDE,
-				(rank_==0)?n_bulk_regs_per_dof:0,
-				0,
-				(rank_==0)?0:n_bulk_regs_per_dof,
-				0,
-				&(region_source_matrix_[c])));
+       chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
+               n_loc_dofs_,
+               (rank_==0)?mesh_->region_db().bulk_size():0,
+               PETSC_DECIDE,
+               PETSC_DECIDE,
+               (rank_==0)?n_bulk_regs_per_dof:0,
+               0,
+               (rank_==0)?0:n_bulk_regs_per_dof,
+               0,
+               &(region_source_rhs_[c])));
 
-		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-				n_loc_dofs,
-				(rank_==0)?mesh_->region_db().bulk_size():0,
-				PETSC_DECIDE,
-				PETSC_DECIDE,
-				(rank_==0)?n_bulk_regs_per_dof:0,
-				0,
-				(rank_==0)?0:n_bulk_regs_per_dof,
-				0,
-				&(region_source_rhs_[c])));
+       chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
+               be_regions_.size(),
+               n_loc_dofs_,
+               PETSC_DECIDE,
+               PETSC_DECIDE,
+               max_dofs_per_boundary_,
+               0,
+               0,
+               0,
+               &(be_flux_matrix_[c])));
+        
+        chkerr(VecCreateMPI(PETSC_COMM_WORLD,
+                (rank_==0)?mesh_->region_db().bulk_size():0,
+                PETSC_DECIDE,
+                &(region_mass_vec_[c])));
 
 		chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 				be_regions_.size(),
@@ -332,11 +359,11 @@ void Balance::allocate(unsigned int n_loc_dofs,
 
 	double *ones_array;
 	chkerr(VecCreateMPI(PETSC_COMM_WORLD,
-			n_loc_dofs,
+			n_loc_dofs_,
 			PETSC_DECIDE,
 			&ones_));
 	chkerr(VecGetArray(ones_, &ones_array));
-	fill_n(ones_array, n_loc_dofs, 1);
+	fill_n(ones_array, n_loc_dofs_, 1);
 	chkerr(VecRestoreArray(ones_, &ones_array));
 
 	chkerr(VecCreateMPI(PETSC_COMM_WORLD,
@@ -347,20 +374,43 @@ void Balance::allocate(unsigned int n_loc_dofs,
 	fill_n(ones_array, be_regions_.size(), 1);
 	chkerr(VecRestoreArray(ones_be_, &ones_array));
 
-	allocation_done_ = true;
+
+    if (rank_ == 0) {
+        output_.open(string( balance_output_file_ ).c_str());
+        // set file name of YAML output
+        string yaml_file_name = file_prefix_ + "_balance.yaml";
+        output_yaml_.open(string(FilePath(yaml_file_name, FilePath::output_file)).c_str());
+    }
+
+    allocation_done_ = true;
 }
 
 
+
+bool Balance::is_current(const TimeStep &step)
+{
+    if (! balance_on_) return false;
+
+    auto &marks = TimeGovernor::marks();
+    bool res =  marks.current(step, balance_output_type_) != marks.end(balance_output_type_);
+
+    //cout << "flag: " << res << " time: " << step.end() << " type:" << hex << balance_output_type_ << endl;
+    return res;
+}
+
 void Balance::start_mass_assembly(unsigned int quantity_idx)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
+    lazy_initialize();
+    if (! balance_on_) return;
 	chkerr(MatZeroEntries(region_mass_matrix_[quantity_idx]));
+    chkerr(VecZeroEntries(region_mass_vec_[quantity_idx]));
 }
 
 
 void Balance::start_flux_assembly(unsigned int quantity_idx)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
+    lazy_initialize();
+    if (! balance_on_) return;
 	chkerr(MatZeroEntries(be_flux_matrix_[quantity_idx]));
 	chkerr(VecZeroEntries(be_flux_vec_[quantity_idx]));
 }
@@ -368,7 +418,8 @@ void Balance::start_flux_assembly(unsigned int quantity_idx)
 
 void Balance::start_source_assembly(unsigned int quantity_idx)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
+    lazy_initialize();
+    if (! balance_on_) return;
 	chkerr(MatZeroEntries(region_source_matrix_[quantity_idx]));
 	chkerr(MatZeroEntries(region_source_rhs_[quantity_idx]));
 	chkerr(VecZeroEntries(region_source_vec_[quantity_idx]));
@@ -377,15 +428,21 @@ void Balance::start_source_assembly(unsigned int quantity_idx)
 
 void Balance::finish_mass_assembly(unsigned int quantity_idx)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
+	ASSERT(allocation_done_);
+    if (! balance_on_) return;
+
 	chkerr(MatAssemblyBegin(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+    chkerr(VecAssemblyBegin(region_mass_vec_[quantity_idx]));
+    chkerr(VecAssemblyEnd(region_mass_vec_[quantity_idx]));
 }
 
 void Balance::finish_flux_assembly(unsigned int quantity_idx)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
-	chkerr(MatAssemblyBegin(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+    ASSERT(allocation_done_);
+    if (! balance_on_) return;
+
+    chkerr(MatAssemblyBegin(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(VecAssemblyBegin(be_flux_vec_[quantity_idx]));
 	chkerr(VecAssemblyEnd(be_flux_vec_[quantity_idx]));
@@ -393,8 +450,10 @@ void Balance::finish_flux_assembly(unsigned int quantity_idx)
 
 void Balance::finish_source_assembly(unsigned int quantity_idx)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
-	chkerr(MatAssemblyBegin(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+    ASSERT(allocation_done_);
+    if (! balance_on_) return;
+
+    chkerr(MatAssemblyBegin(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyBegin(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY));
@@ -409,6 +468,9 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 		const vector<int> &dof_indices,
 		const vector<double> &values)
 {
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
 	PetscInt reg_array[1] = { (int)region_idx };
 
 	chkerr_assert(MatSetValues(region_mass_matrix_[quantity_idx],
@@ -426,6 +488,9 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 		const vector<int> &dof_indices,
 		const vector<double> &values)
 {
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
 	PetscInt elem_array[1] = { int(be_offset_+elem_idx) };
 	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
 			1,
@@ -442,6 +507,9 @@ void Balance::add_source_matrix_values(unsigned int quantity_idx,
 		const vector<int> &dof_indices,
 		const vector<double> &values)
 {
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
 	PetscInt reg_array[1] = { (int)region_idx };
 
 	chkerr_assert(MatSetValues(region_source_matrix_[quantity_idx],
@@ -454,10 +522,24 @@ void Balance::add_source_matrix_values(unsigned int quantity_idx,
 }
 
 
+void Balance::add_mass_vec_value(unsigned int quantity_idx,
+        unsigned int region_idx,
+        double value)
+{
+  chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
+            region_idx,
+            value,
+            ADD_VALUES));
+}
+
+
 void Balance::add_flux_vec_value(unsigned int quantity_idx,
 		unsigned int elem_idx,
 		double value)
 {
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
     chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
 			be_offset_+elem_idx,
 			value,
@@ -465,11 +547,14 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 }
 
 
-void Balance::add_source_rhs_values(unsigned int quantity_idx,
+void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
 		const vector<int> &dof_indices,
 		const vector<double> &values)
 {
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
 	PetscInt reg_array[1] = { (int)region_idx };
 
 	chkerr_assert(MatSetValues(region_source_rhs_[quantity_idx],
@@ -482,13 +567,22 @@ void Balance::add_source_rhs_values(unsigned int quantity_idx,
 }
 
 
+void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
+{
+    ASSERT_DBG(allocation_done_);
+    if (!cumulative_) return;
+
+    if (rank_ == 0)
+        increment_sources_[quantity_idx] += source;
+}
+
+
 void Balance::calculate_cumulative_sources(unsigned int quantity_idx,
 		const Vec &solution,
 		double dt)
 {
+    ASSERT_DBG(allocation_done_);
 	if (!cumulative_) return;
-
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
 
 	Vec bulk_vec;
 
@@ -518,9 +612,8 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 		const Vec &solution,
 		double dt)
 {
-	if (!cumulative_) return;
-
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
+    ASSERT_DBG(allocation_done_);
+    if (!cumulative_) return;
 
 	Vec boundary_vec;
 
@@ -556,8 +649,10 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 		const Vec &solution,
 		vector<double> &output_array)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
-	Vec bulk_vec;
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
+    Vec bulk_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
@@ -568,7 +663,10 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 
 	// compute mass on regions: M'.u
 	chkerr(VecZeroEntries(bulk_vec));
-	chkerr(MatMultTranspose(region_mass_matrix_[quantity_idx], solution, bulk_vec));
+	chkerr(MatMultTransposeAdd(region_mass_matrix_[quantity_idx], 
+                               solution, 
+                               region_mass_vec_[quantity_idx], 
+                               bulk_vec));
 	VecDestroy(&bulk_vec);
 }
 
@@ -576,8 +674,10 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 void Balance::calculate_source(unsigned int quantity_idx,
 		const Vec &solution)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
-	Vec bulk_vec;
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
+    Vec bulk_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
@@ -631,8 +731,10 @@ void Balance::calculate_source(unsigned int quantity_idx,
 void Balance::calculate_flux(unsigned int quantity_idx,
 		const Vec &solution)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
-	Vec boundary_vec;
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
+    Vec boundary_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1,
 	        (rank_==0)?mesh_->region_db().boundary_size():0,
@@ -667,19 +769,14 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	VecDestroy(&boundary_vec);
 }
 
-void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
-{
-	if (rank_ == 0)
-		increment_sources_[quantity_idx] += source;
-}
-
 
 
 
 
 void Balance::output(double time)
 {
-	OLD_ASSERT(allocation_done_, "Balance structures are not allocated!");
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
 
 	// gather results from processes and sum them up
 	const unsigned int n_quant = quantities_.size();

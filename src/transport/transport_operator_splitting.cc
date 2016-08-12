@@ -157,19 +157,24 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream")));
+    convection->set_output_stream(OutputTime::create_output_stream("solute", *mesh_, in_rec.val<Input::Record>("output_stream")));
 
 
     // initialization of balance object
 
-    balance_ = Balance::make_balance("mass", mesh_, in_rec.val<Input::Record>("balance"), time());
+    balance_ = make_shared<Balance>("mass", mesh_);
+    balance_->init_from_input(in_rec.val<Input::Record>("balance"), this->time());
+
     if (balance_)
     {
   	  balance_->units(UnitSI().kg(1));
   	  convection->set_balance_object(balance_);
     }
 
-	convection->initialize();
+	convection->initialize(); //
+
+
+
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type());
 
@@ -225,7 +230,7 @@ void TransportOperatorSplitting::output_data(){
         if(reaction) reaction->output_data(); // do not perform write_time_frame
         convection->output_stream()->write_time_frame();
 
-        if (balance_ != nullptr && time_->is_current( time_->marks().type_output() ))
+        if (balance_ != nullptr && balance_->is_current( time_->step() ) )
         {
         	START_TIMER("TOS-balance");
         	convection->calculate_instant_balance();

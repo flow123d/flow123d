@@ -154,8 +154,8 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
 void EquationOutput::output(TimeStep step)
 {
     // TODO: remove const_cast after resolving problems with const Mesh.
-    Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
-    stream_->make_output_mesh(*field_mesh, *this);
+    //Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
+    stream_->make_output_mesh(*this);
 
     for(FieldCommon * field : this->field_list) {
 

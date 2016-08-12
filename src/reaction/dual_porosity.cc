@@ -59,7 +59,7 @@ const Record & DualPorosity::get_input_type() {
 		.declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
 		.declare_key("output",
 		                    EqData().output_fields.make_output_type("DualPorosity", ""),
-		                    IT::Default("{ fields: [ \"conc_immobile\" ] }"),
+		                    IT::Default("{ \"fields\": [ \"conc_immobile\" ] }"),
 		                    "Setting of the fields output.")
 		.close();
 }

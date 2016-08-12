@@ -67,7 +67,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 			        "")
             .declare_key("output",
                     EqData().output_fields.make_output_type(_equation_name, ""),
-                    IT::Default("{ fields: [ \"conc\" ] }"),
+                    IT::Default("{ \"fields\": [ \"conc\" ] }"),
                     "Setting of the fields output.")
 			.close();
 }
@@ -140,9 +140,9 @@ void ConvectionTransport::initialize()
 	//cout << "Transport." << endl;
 	//cout << time().marks();
 
-
     if (balance_ != nullptr)
-    	balance_->allocate(el_ds->lsize(), 1);
+       balance_->allocate(el_ds->lsize(), 1);
+
 }
 
 
@@ -458,7 +458,7 @@ void ConvectionTransport::compute_concentration_sources() {
                 {
                     balance_->add_source_matrix_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
                                                        {- src_sigma(sbi) * ele->measure() * csection});
-                    balance_->add_source_rhs_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
+                    balance_->add_source_vec_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
                                                     {source * ele->measure()});
                 }
             }
@@ -881,9 +881,9 @@ void ConvectionTransport::calculate_instant_balance()
 void ConvectionTransport::output_data() {
 
     data_.output_fields.set_time(time().step(), LimitSide::right);
-    if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
-        output_vector_gather();
-    }
+    //if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
+    output_vector_gather();
+    //}
 
 	data_.output_fields.output(time().step());
 }
@@ -891,5 +891,5 @@ void ConvectionTransport::output_data() {
 void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
-	subst_idx = balance_->add_quantities(substances_.names());
+    subst_idx = balance_->add_quantities(substances_.names());
 }
