@@ -132,7 +132,7 @@ macro(define_mpi_test class_name n_proc)
   else() 
   	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>) 
   	target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
-  	add_dependencies(${test_binary} mpiexec_link)      # make
+  	# add_dependencies(${test_binary} mpiexec_link)      # make
   endif()	
 
   # rule to run the test
