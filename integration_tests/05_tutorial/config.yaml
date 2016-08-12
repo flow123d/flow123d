@@ -6,3 +6,4 @@ test_cases:
 - files:
   - 01_column.yaml
   - 02_column_transport.yaml
+  - 03_tunnel.yaml
