@@ -76,32 +76,36 @@ void armadillo_setup()
 
 // internal implementation template
 template <class T>
-string field_value_to_yaml_matrix(const T &mat) {
+string field_value_to_yaml_matrix(const T &mat, unsigned int prec) {
     stringstream ss;
-    ss << "[ ";
+    ss << std::scientific << std::setprecision(6) << "[ ";
     for(unsigned int i_row=0; i_row < mat.n_rows; i_row ++ ) {
         if (i_row != 0) ss << ", ";
         ss << "[ ";
         for(unsigned int i_col=0; i_col < mat.n_cols; i_col++) {
             if (i_col != 0) ss << ", ";
-            ss << mat.at(i_row, i_col);
+            ss << fmt::format("{0:#.{1}g}", mat.at(i_row, i_col), prec);
+            //ss  << mat.at(i_row, i_col);
         }
         ss << " ]";
     }
     ss << " ]";
+    //ss << std::defaultfloat << std::setprecision(0);
     return ss.str();
 }
 
 // internal implementation template
 template <class T>
-string field_value_to_yaml_vector(const T &vec) {
+string field_value_to_yaml_vector(const T &vec, unsigned int prec) {
     stringstream ss;
-    ss << "[ ";
+    ss << std::scientific << std::setprecision(6) << "[ ";
     for(unsigned int i=0; i < vec.n_elem; i++) {
         if (i != 0) ss << ", ";
-        ss << vec(i);
+        ss << fmt::format("{0:#.{1}g}", vec(i), prec);
+        //ss << scientific << setprecision(6) << vec(i);
     }
     ss << " ]";
+    //ss << std::defaultfloat << std::setprecision(0);
     return ss.str();
 }
 
@@ -111,9 +115,9 @@ struct field_value_scalar_resolution;
 template <>
 struct field_value_scalar_resolution<std::true_type> {
     template <class T>
-    inline static string print(const  T &mat) {
+    inline static string print(const  T &mat, unsigned int prec) {
         stringstream ss;
-        ss << mat;
+        ss << fmt::format("{0:#.{1}g}", mat, prec);
         return ss.str();
     }
 };
@@ -121,40 +125,40 @@ struct field_value_scalar_resolution<std::true_type> {
 template <>
 struct field_value_scalar_resolution<std::false_type> {
     template <class T>
-    inline static string print(const  T &mat) {
+    inline static string print(const  T &mat, unsigned int prec) {
         if (mat.n_cols == 1 || mat.n_rows == 1) {
-            return field_value_to_yaml_vector(mat);
+            return field_value_to_yaml_vector(mat, prec);
         } else {
-            return field_value_to_yaml_matrix(mat);
+            return field_value_to_yaml_matrix(mat, prec);
         }
     }
 };
 
 
 template <class T>
-inline string field_value_to_yaml(const T &mat) {
-    return field_value_scalar_resolution< typename std::is_scalar<T>::type >::print(mat);
+inline string field_value_to_yaml(const T &mat, unsigned int prec) {
+    return field_value_scalar_resolution< typename std::is_scalar<T>::type >::print(mat, prec);
 }
 
 
 
 #define FIELD_VALUE_TO_YAML_DIM(dim) \
-    template string field_value_to_yaml(arma::Mat<double>::fixed<dim,dim> const  &mat);  \
-    template string field_value_to_yaml(const arma::Mat<int>::fixed<dim,dim> &mat); \
-    template string field_value_to_yaml(const arma::Mat<unsigned int>::fixed<dim,dim> &mat); \
-    template string field_value_to_yaml(const arma::Col<double>::fixed<dim> &mat);  \
-    template string field_value_to_yaml(const arma::Col<int>::fixed<dim> &mat);   \
-    template string field_value_to_yaml(const arma::Col<unsigned int>::fixed<dim> &mat);
+    template string field_value_to_yaml(arma::Mat<double>::fixed<dim,dim> const  &mat, unsigned int prec);  \
+    template string field_value_to_yaml(const arma::Mat<int>::fixed<dim,dim> &mat, unsigned int prec); \
+    template string field_value_to_yaml(const arma::Mat<unsigned int>::fixed<dim,dim> &mat, unsigned int prec); \
+    template string field_value_to_yaml(const arma::Col<double>::fixed<dim> &mat, unsigned int prec);  \
+    template string field_value_to_yaml(const arma::Col<int>::fixed<dim> &mat, unsigned int prec);   \
+    template string field_value_to_yaml(const arma::Col<unsigned int>::fixed<dim> &mat, unsigned int prec);
 
 FIELD_VALUE_TO_YAML_DIM(2);
 FIELD_VALUE_TO_YAML_DIM(3);
 
-template string field_value_to_yaml(const arma::Col<double> &mat);
-template string field_value_to_yaml(const arma::Col<unsigned int> &mat);
+template string field_value_to_yaml(const arma::Col<double> &mat, unsigned int prec);
+template string field_value_to_yaml(const arma::Col<unsigned int> &mat, unsigned int prec);
 
-template string field_value_to_yaml(const double &mat);
-template string field_value_to_yaml(const int &mat);
-template string field_value_to_yaml(const unsigned int &mat);
+template string field_value_to_yaml(const double &mat, unsigned int prec);
+template string field_value_to_yaml(const int &mat, unsigned int prec);
+template string field_value_to_yaml(const unsigned int &mat, unsigned int prec);
 
 
 
