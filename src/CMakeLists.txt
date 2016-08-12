@@ -316,5 +316,5 @@ target_link_libraries(flow123d_lib
 set_target_properties(flow123d_lib 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
-add_dependencies(flow123d_lib tbb)
+#add_dependencies(flow123d_lib tbb)
 
