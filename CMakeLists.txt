@@ -53,9 +53,11 @@ project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.8.8)
+    
 cmake_policy(SET CMP0017 NEW)
-cmake_policy(SET CMP0037 OLD)
-
+if (${CMAKE_VERSION} VERSION_GREATER 3.0)
+    cmake_policy(SET CMP0037 OLD)
+endif()
 
 
 # allow duplicate custom targets for makefiles
