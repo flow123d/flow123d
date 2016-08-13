@@ -33,28 +33,30 @@ FLOW123D_FORCE_LINK_IN_PARENT(vtk)
 FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 
 
-using namespace Input::Type;
+namespace IT = Input::Type;
 
-const Record & OutputTime::get_input_type() {
-    return Record("OutputStream", "Parameters of output.")
+const IT::Record & OutputTime::get_input_type() {
+    return IT::Record("OutputStream", "Parameters of output.")
 		// The stream
-		.declare_key("file", FileName::output(), Default::read_time("Name of the equation associated with the output stream."),
+		.declare_key("file", IT::FileName::output(), IT::Default::read_time("Name of the equation associated with the output stream."),
 				"File path to the connected output file.")
 				// The format
-		.declare_key("format", OutputTime::get_input_format_type(), Default("{}"),
+		.declare_key("format", OutputTime::get_input_format_type(), IT::Default("{}"),
 				"Format of output stream and possible parameters.")
-		.declare_key("times", OutputTimeSet::get_input_type(), Default::optional(),
+		.declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
 		        "Output times used for equations without is own output times key.")
-        .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
+        .declare_key("output_mesh", OutputMeshBase::get_input_type(), IT::Default::optional(),
                 "Output mesh record enables output on a refined mesh.")
+        .declare_key("precision", IT::Integer(0), IT::Default("5"),
+                "The number of decimal digits used in output of floating point values.")
         .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
                 "Array of observe points.")
 		.close();
 }
 
 
-Abstract & OutputTime::get_input_format_type() {
-	return Abstract("OutputTime", "Format of output stream and possible parameters.")
+IT::Abstract & OutputTime::get_input_format_type() {
+	return IT::Abstract("OutputTime", "Format of output stream and possible parameters.")
 	    .allow_auto_conversion("vtk")
 		.close();
 }
@@ -231,7 +233,8 @@ std::shared_ptr<Observe> OutputTime::observe()
     // create observe object at first call
     if (! observe_) {
         auto observe_points = input_record_.val<Input::Array>("observe_points");
-        observe_ = std::make_shared<Observe>(this->equation_name_, *_mesh, observe_points);
+        unsigned int precision = input_record_.val<unsigned int>("precision");
+        observe_ = std::make_shared<Observe>(this->equation_name_, *_mesh, observe_points, precision);
     }
     return observe_;
 }

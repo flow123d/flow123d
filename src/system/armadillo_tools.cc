@@ -78,19 +78,20 @@ void armadillo_setup()
 template <class T>
 string field_value_to_yaml_matrix(const T &mat, unsigned int prec) {
     stringstream ss;
-    ss << std::scientific << std::setprecision(6) << "[ ";
+    ss << "[ ";
     for(unsigned int i_row=0; i_row < mat.n_rows; i_row ++ ) {
         if (i_row != 0) ss << ", ";
         ss << "[ ";
         for(unsigned int i_col=0; i_col < mat.n_cols; i_col++) {
             if (i_col != 0) ss << ", ";
-            ss << fmt::format("{0:#.{1}g}", mat.at(i_row, i_col), prec);
-            //ss  << mat.at(i_row, i_col);
+            if (std::is_floating_point<decltype(mat.at(0,0))>::value)
+                ss << fmt::format("{0:#.{1}g}", mat.at(i_row, i_col), prec);
+            else
+                ss << mat.at(i_row, i_col);
         }
         ss << " ]";
     }
     ss << " ]";
-    //ss << std::defaultfloat << std::setprecision(0);
     return ss.str();
 }
 
@@ -98,14 +99,15 @@ string field_value_to_yaml_matrix(const T &mat, unsigned int prec) {
 template <class T>
 string field_value_to_yaml_vector(const T &vec, unsigned int prec) {
     stringstream ss;
-    ss << std::scientific << std::setprecision(6) << "[ ";
+    ss <<  "[ ";
     for(unsigned int i=0; i < vec.n_elem; i++) {
         if (i != 0) ss << ", ";
-        ss << fmt::format("{0:#.{1}g}", vec(i), prec);
-        //ss << scientific << setprecision(6) << vec(i);
+        if (std::is_floating_point<decltype(vec[0])>::value)
+            ss << fmt::format("{0:#.{1}g}", vec(i), prec);
+        else
+            ss << vec(i);
     }
     ss << " ]";
-    //ss << std::defaultfloat << std::setprecision(0);
     return ss.str();
 }
 
@@ -117,7 +119,10 @@ struct field_value_scalar_resolution<std::true_type> {
     template <class T>
     inline static string print(const  T &mat, unsigned int prec) {
         stringstream ss;
-        ss << fmt::format("{0:#.{1}g}", mat, prec);
+        if (std::is_integral<T>::value)
+            ss << mat;
+        else
+            ss << fmt::format("{0:#.{1}g}", mat, prec);
         return ss.str();
     }
 };
