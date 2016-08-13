@@ -890,9 +890,11 @@ install(PROGRAMS  bin/time_limit.sh       DESTINATION bin/)
 # install shared libraries
 if (CYGWIN)
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" cygwin WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    # install DLL, must be in the same dir as the binary
     install(DIRECTORY build_tree/bin/            
         DESTINATION bin/
         PATTERN mpiexec EXCLUDE
+        PATTERN flow* EXCLUDE
         )
     
     # replace path separator and make path relative
@@ -904,24 +906,30 @@ if (CYGWIN)
     configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.bat @ONLY)
 else()
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
-    install(DIRECTORY build_tree/lib/            
-        DESTINATION lib/
-        PATTERN lib/python* EXCLUDE
-        PATTERN *.a EXCLUDE
-        )
+    #install(CODE "execute_process(COMMAND ls /home/jb/workspace/build-master/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux )")
+        
     # configure wrapper file
     configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh @ONLY)
 endif()        
 
+install(DIRECTORY build_tree/lib/           
+    DESTINATION lib/
+    #PATTERN lib/python* EXCLUDE
+    PATTERN *.a EXCLUDE
+    )
+
+
 # install python modules and system libs
 if (PYTHON_COPY)
     # install lib folder of Python to lib
-    install(DIRECTORY ${PY_BUILD_PREFIX}/lib
-            DESTINATION lib
-            OPTIONAL)
+    #install(DIRECTORY ${PY_BUILD_PREFIX}/lib
+    #        DESTINATION lib
+    #        OPTIONAL)
+    
     # copy Python's include
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
             DESTINATION include)
+            
 endif()
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
