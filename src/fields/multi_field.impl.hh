@@ -168,7 +168,14 @@ void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
-	if (typeid(other) == typeid(*this)) {
+    ASSERT( flags().match(FieldFlag::input_copy))(other.name().c_str())(this->name().c_str())
+            .error("Can not copy to the non-copy field.");
+
+    // do not use copy if the field have its own input
+    if ( flags().match(FieldFlag::declare_input)
+         && data_->input_list_.size() != 0 ) return;
+
+    if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  MultiField<spacedim, Value> const &>(other);
 		this->operator=(other_field);
 	} else if (typeid(other) == typeid(SubFieldType)) {

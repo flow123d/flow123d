@@ -307,8 +307,13 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
-	OLD_ASSERT( flags().match(FieldFlag::input_copy), "Try to call copy from the field '%s' to the non-copy field '%s'.",
-	        other.name().c_str(), this->name().c_str());
+	ASSERT( flags().match(FieldFlag::input_copy))(other.name().c_str())(this->name().c_str())
+	        .error("Can not copy to the non-copy field.");
+
+	// do not use copy if the field have its own input
+	if ( flags().match(FieldFlag::declare_input)
+	     && data_->input_list_.size() != 0 ) return;
+
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);
 		this->operator=(other_field);

@@ -322,6 +322,10 @@ public:
     /**
      * Check that @p other is instance of the same Field<..> class and
      * perform assignment. Polymorphic copy.
+     *
+     * The copy is performed only if *this have set flag 'input_copy'.
+     * If *this have set also the flag 'decare_input' the copy is performed only if the
+     * input_list is empty.
      */
     virtual void copy_from(const FieldCommon & other) =0;
 
