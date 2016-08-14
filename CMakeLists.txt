@@ -877,9 +877,15 @@ if (UNIX)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
 endif()
 
+if (CYGWIN)
+    set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/CYGWIN/NSIS/Flow123d-2.0.0_rc-CYGWIN/Unspecified)
+else()
+    set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux)  
+endif()
+
 macro(ls DIR)
     install(CODE "execute_process(COMMAND echo LS ${DIR})")
-    install(CODE "execute_process(COMMAND ls /home/jb/workspace/build-master/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux/${DIR} )")
+    install(CODE "execute_process(COMMAND ls ${_CPACK_INSTALL_ROOT}/${DIR} )")
 endmacro()
 
 # install bin directory
@@ -996,6 +1002,7 @@ SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
 SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
+SET(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE On)
 
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 
@@ -1034,7 +1041,7 @@ if (CYGWIN)
     # 1. Page
     # Displayed name of the software, and target subdirectory of installation prefix.
     SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Flow123d ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH}")
-    SET(CPACK_PACKAGE_VENDOR  "Technical University of Liberec (c) 2016")
+    
     
     # 2. Page
     # Software banner in installer.
