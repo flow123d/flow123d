@@ -875,6 +875,10 @@ if (UNIX)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
 endif()
 
+macro(ls DIR)
+    install(CODE "execute_process(COMMAND echo LS ${DIR})")
+    install(CODE "execute_process(COMMAND ls /home/jb/workspace/build-master/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux/${DIR} )")
+endmacro()
 
 # install bin directory
 install(DIRECTORY bin/config              DESTINATION bin/)
@@ -912,11 +916,16 @@ else()
     configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh @ONLY)
 endif()        
 
+ls( lib )
+ls( bin)
 install(DIRECTORY build_tree/lib/           
     DESTINATION lib/
     #PATTERN lib/python* EXCLUDE
     PATTERN *.a EXCLUDE
     )
+
+ls( lib )
+ls( bin)
 
 
 # install python modules and system libs
@@ -932,6 +941,9 @@ if (PYTHON_COPY)
             
 endif()
 
+ls( lib )
+ls( bin)
+
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
 if (CYGWIN)
     install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin.exe"
@@ -946,6 +958,9 @@ else()
     install(PROGRAMS    build_tree/bin/ld-linux-loader.so  DESTINATION bin/)
 endif()
 
+
+ls( lib )
+ls( bin)
 
 install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
@@ -1017,6 +1032,7 @@ if (CYGWIN)
     # 1. Page
     # Displayed name of the software, and target subdirectory of installation prefix.
     SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Flow123d ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH}")
+    SET(CPACK_PACKAGE_VENDOR  "Technical University of Liberec (c) 2016")
     
     # 2. Page
     # Software banner in installer.
