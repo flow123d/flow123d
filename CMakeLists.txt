@@ -868,6 +868,8 @@ message(STATUS "===========================================")
 ####################################################################################
 # Install and Packaging
 
+set(CMAKE_INSTALL_MESSAGE ALWAYS)
+
 # Cache PLATFORM_NAME
 set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
 
@@ -1175,6 +1177,10 @@ endif()
 #  SET(CPACK_SOURCE_STRIP_FILES "")
 #ENDIF(WIN32 AND NOT UNIX)
 #SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+
+add_custom_target(package_debug
+              COMMAND ${CMAKE_CPACK_COMMAND} --debug --verbose --config CPackConfig.cmake
+              COMMENTS "Build package with debug and verbose output")
 
 INCLUDE(CPack)
 
