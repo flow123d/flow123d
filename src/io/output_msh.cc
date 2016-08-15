@@ -54,11 +54,6 @@ public:
         for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
     }
 
-    void print_binary(ostream &out_stream, unsigned int idx) override
-    {
-        ASSERT(false).error("Not implemented.");
-    }
-
     void print_binary_all(ostream &out_stream) override
     {
         ASSERT(false).error("Not implemented.");

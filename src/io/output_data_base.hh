@@ -68,11 +68,6 @@ public:
     virtual void print_ascii_all(ostream &out_stream) = 0;
 
     /**
-     * Print one value at given index in binary format
-     */
-    virtual void print_binary(ostream &out_stream, unsigned int idx) = 0;
-
-    /**
      * Print all data in binary format at once stored in database
      */
     virtual void print_binary_all(ostream &out_stream) = 0;

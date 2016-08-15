@@ -54,14 +54,6 @@ public:
     void print_ascii_all(ostream &out_stream) override;
 
     /**
-     * Output data element on given index @p idx. Method for writing data
-     * to output stream.
-     *
-     * \note This method is used only by MSH file format.
-     */
-    void print_binary(ostream &out_stream, unsigned int idx) override;
-
-    /**
      * \brief Print all data stored in output data
      *
      * TODO: indicate if the tensor data are output in column-first or raw-first order

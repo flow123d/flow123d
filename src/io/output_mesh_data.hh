@@ -29,9 +29,6 @@ public:
     /// Prints the whole data vector into stream.
     void print_ascii_all(std::ostream& out_stream) override;
 
-    /// Prints @p idx element of data vector into stream.
-    void print_binary(std::ostream& out_stream, unsigned int idx) override;
-
     /// Prints the whole data vector into stream.
     void print_binary_all(std::ostream& out_stream) override;
 
