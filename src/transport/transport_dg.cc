@@ -98,7 +98,7 @@ const Record & TransportDG<Model>::get_input_type() {
 */
         .declare_key("output",
                 EqData().output_fields.make_output_type(equation_name, ""),
-                IT::Default("{ fields: [ " + Model::ModelEqData::default_output_field() + "] }"),
+                IT::Default("{ \"fields\": [ " + Model::ModelEqData::default_output_field() + "] }"),
                 "Setting of the field output.")
 		.close();
 }
@@ -410,20 +410,16 @@ TransportDG<Model>::~TransportDG()
 template<class Model>
 void TransportDG<Model>::output_vector_gather()
 {
-//     IS is;
     VecScatter output_scatter;
-//     int idx[] = { 0 };
+    VecScatterCreateToZero(ls[0]->get_solution(), &output_scatter, PETSC_NULL);
 	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 	{
 		// gather solution to output_vec[sbi]
-		//ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(),1 , idx, PETSC_COPY_VALUES, &is);
-		//VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
-		VecScatterCreateToZero(ls[sbi]->get_solution(), &output_scatter, PETSC_NULL);
 	    VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterDestroy(&(output_scatter));
-		//ISDestroy(&(is));
 	}
+    VecScatterDestroy(&(output_scatter));
+
 }
 
 
@@ -677,8 +673,8 @@ void TransportDG<Model>::output_data()
 
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
-    if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
-        output_vector_gather();
+    //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
+    output_vector_gather();
     data_.output_fields.output(this->time().step());
 
 	Model::output_data();
@@ -951,7 +947,7 @@ void TransportDG<Model>::set_sources()
         			local_source_balance_rhs[i] += local_rhs[i];
         		}
         		Model::balance_->add_source_matrix_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_vector);
-        		Model::balance_->add_source_rhs_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_rhs);
+        		Model::balance_->add_source_vec_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_rhs);
         	}
         }
     }

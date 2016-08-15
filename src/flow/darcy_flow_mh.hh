@@ -59,6 +59,7 @@ class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
 class VectorSeqDouble;
+class AssemblyBase;
 
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
 template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
@@ -79,6 +80,23 @@ template<unsigned int dim> class QGauss;
  * 2) actualize_solution - this is for iterative nonlinear solvers
  *
  */
+
+
+/**
+ * This should contain target large algebra object to be assembled.
+ * Since this should be passed only once per the whole assembly and may be equation specific
+ * this structure is passed with the data
+ */
+class RichardsSystem {
+public:
+    // temporary solution how to pass information about dirichlet BC on edges
+    // should be done better when we move whole assembly into assembly classes
+    // the vector is set in assembly_mh_matrix and used in LMH assembly of the time term
+    std::vector<unsigned int> dirichlet_edge;
+    std::shared_ptr<arma::mat> local_matrix;
+    std::shared_ptr<Balance> balance;
+    LinSys *lin_sys;
+};
 
 
 /**
@@ -126,6 +144,8 @@ public:
             << "Diverged nonlinear solver. Reason: " << EI_Reason::val
              );
 
+    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembler;
+
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
@@ -171,6 +191,11 @@ public:
          */
         arma::vec4 gravity_;
 
+        Mesh *mesh;
+        MH_DofHandler *mh_dh;
+
+        RichardsSystem system_;
+        uint water_balance_idx_;
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;
@@ -189,11 +214,9 @@ public:
 
 
 
-
-
-
     DarcyMH(Mesh &mesh, const Input::Record in_rec);
 
+    static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
     const MH_DofHandler &get_mh_dofhandler() {
@@ -213,13 +236,17 @@ public:
        return mh_dh;
     }
 
-    void update_solution() override;
+    void init_eq_data();
+    void initialize() override;
+    virtual void initialize_specific();
     void zero_time_step() override;
+    void update_solution() override;
 
     void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     void get_parallel_solution_vector(Vec &vector) override;
     
     /// postprocess velocity field (add sources)
+    virtual void prepare_new_time_step();
     virtual void postprocess();
     virtual void output_data() override;
 
@@ -227,89 +254,21 @@ public:
 
 
 protected:
-    //class AssemblyBase;
-    //template<unsigned int dim> class Assembly;
-    
-    struct AssemblyData
-    {
-        Mesh *mesh;
-        EqData* data;
-        MH_DofHandler *mh_dh;
-    };
-    
-    class AssemblyBase
-    {
-    public:
-        // assembly just A block of local matrix
-        virtual void assembly_local_matrix(arma::mat &local_matrix, 
-                                           ElementFullIter ele) = 0;
 
-        // assembly compatible neighbourings
-        virtual void assembly_local_vb(double *local_vb, 
-                                       ElementFullIter ele,
-                                       Neighbour *ngh) = 0;
-
-        // compute velocity value in the barycenter
-        // TOTO: implement and use general interpolations between discrete spaces
-        virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
-    };
-    
-    template<unsigned int dim>
-    class Assembly : public AssemblyBase
-    {
-    public:
-        Assembly<dim>(AssemblyData ad);
-        ~Assembly<dim>();
-        void assembly_local_matrix(arma::mat &local_matrix, 
-                                   ElementFullIter ele) override;
-        void assembly_local_vb(double *local_vb, 
-                               ElementFullIter ele,
-                               Neighbour *ngh
-                              ) override;
-        arma::vec3 make_element_vector(ElementFullIter ele) override;
-
-        // assembly volume integrals
-        FE_RT0<dim,3> fe_rt_;
-        MappingP1<dim,3> map_;
-        QGauss<dim> quad_;
-        FEValues<dim,3> fe_values_;
-        
-        // assembly face integrals (BC)
-        QGauss<dim-1> side_quad_;
-        FE_P_disc<0,dim,3> fe_p_disc_;
-        FESideValues<dim,3> fe_side_values_;
-
-        // Interpolation of velocity into barycenters
-        QGauss<dim> velocity_interpolation_quad_;
-        FEValues<dim,3> velocity_interpolation_fv_;
-
-        // data shared by assemblers of different dimension
-        AssemblyData ad_;
-
-    };
-    
-    /*
-    void setup_velocity_vector() {
-        double *velocity_array;
-        unsigned int size;
-
-        get_solution_vector(velocity_array, size);
-        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
-
-    }*/
+    virtual bool zero_time_term();
 
 
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
     void make_serial_scatter();
-    virtual void modify_system();
+    void modify_system();
     virtual void setup_time_term();
 
 
-    void prepare_parallel();
-    void make_row_numberings();
+    //void prepare_parallel();
+    //void make_row_numberings();
     /// Initialize global_row_4_sub_row.
-    void prepare_parallel_bddc();
+    //void prepare_parallel_bddc();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
@@ -326,16 +285,25 @@ protected:
     virtual void read_initial_condition();
 
     /**
+     * Part of per element assembly that is specific for MH and LMH respectively.
+     *
+     * This implemnets MH case:
+     * - compute conductivity scaling
+     * - assembly source term
+     * - no time term, managed by diagonal extraction etc.
+     */
+    //virtual void local_assembly_specific(AssemblyData &local_data);
+
+    /**
      * Abstract assembly method used for both assembly and preallocation.
      * Assembly only steady part of the equation.
      * TODO:
      * - use general preallocation methods in DofHandler
-     * - include alos time term
+     * - include time term
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
-     *
      */
-    void assembly_steady_mh_matrix();
+    void assembly_mh_matrix( MultidimAssembler ma);
     
 
     /// Source term is implemented differently in LMH version.
@@ -344,7 +312,7 @@ protected:
     /**
      * Assembly or update whole linear system.
      */
-    void assembly_linear_system();
+    virtual void assembly_linear_system();
 
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     /**
@@ -360,6 +328,7 @@ protected:
 
     MortarMethod mortar_method_;
 
+    std::shared_ptr<Balance> balance_;
     /// index of water balance within the Balance object.
     unsigned int water_balance_idx_;
 
@@ -382,27 +351,13 @@ protected:
 
 	LinSys *schur0;  		//< whole MH Linear System
 
-	//AssemblyData *assembly_data_;
-	std::vector<AssemblyBase *> assembly_;
-	
-	// parallel
-	Distribution *edge_ds;          //< optimal distribution of edges
-	Distribution *el_ds;            //< optimal distribution of elements
-	Distribution *side_ds;          //< optimal distribution of elements
-	boost::shared_ptr<Distribution> rows_ds;          //< final distribution of rows of MH matrix
 
-	int *el_4_loc;		        //< array of idexes of local elements (in ordering matching the optimal global)
-	int *row_4_el;		        //< element index to matrix row
-	int *side_id_4_loc;		//< array of ids of local sides
-	int	*side_row_4_id;		//< side id to matrix row
-	int *edge_4_loc;		//< array of indexes of local edges
-	int	*row_4_edge;		//< edge index to matrix row
+	
+
 
 	/// Idicator of dirichlet or neumann type of switch boundary conditions.
 	std::vector<char> bc_switch_dirichlet;
 
-	/// Necessary only for BDDC solver.
-    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
@@ -413,7 +368,7 @@ protected:
     Vec new_diagonal;
     Vec previous_solution;
 
-	EqData data_;
+	std::shared_ptr<EqData> data_;
 
     friend class DarcyFlowMHOutput;
     friend class P0_CouplingAssembler;

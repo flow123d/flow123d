@@ -59,7 +59,7 @@ public:
         ASSERT(false).error("Not implemented.");
     }
 
-    void print_all_yaml(ostream &out_stream) override
+    void print_all_yaml(ostream &out_stream, unsigned int precision) override
     {}
 };
 

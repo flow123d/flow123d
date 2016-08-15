@@ -88,7 +88,7 @@ protected:
      * Output the observe point information into a YAML formated stream, indent by
      * given number of spaces + "- ".
      */
-    void output(ostream &out, unsigned int indent_spaces);
+    void output(ostream &out, unsigned int indent_spaces, unsigned int precision);
 
     /// Index in the input array.
     Input::Record in_rec_;
@@ -149,7 +149,7 @@ public:
      * mesh - the mesh used for search for the observe points
      * in_array - the array of observe points
      */
-    Observe(string observe_name, Mesh &mesh, Input::Array in_array);
+    Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision);
 
     /// Destructor, must close the file.
     ~Observe();
@@ -166,7 +166,7 @@ public:
      * This can be used to evaluate derived fields only on these elements in the times not selected to
      * full output.
      */
-    inline const std::set<unsigned int> &observed_elements() const
+    inline const std::vector<unsigned int> &observed_elements() const
             { return observed_element_indices_;}
 
     /**
@@ -182,18 +182,26 @@ public:
 
 
 protected:
+    // MPI rank.
+    int rank_;
+
+    // Mesh used for search of points.
     Mesh *mesh_;
 
     /// Full information about observe points.
     std::vector<ObservePoint> points_;
     /// Elements of the o_points.
-    std::set<unsigned int> observed_element_indices_;
+    std::vector<unsigned int> observed_element_indices_;
 
     typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
     typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
 
     /// Stored field values.
     OutputDataFieldMap observe_field_values_;
+
+
+    /// Time of fields when the observe values were computed
+    double observe_values_time_;
 
     /// Output file stream.
     std::ofstream observe_file_;
@@ -202,7 +210,8 @@ protected:
     std::string time_unit_str_;
     /// Time unit in seconds.
     double time_unit_seconds_;
-
+    /// Precision of float output
+    unsigned int precision_;
 
 };
 

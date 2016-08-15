@@ -90,8 +90,10 @@ public:
 
 
 private:
+    typedef const vector<unsigned int> & ElementSetRef;
+
     void make_side_flux();
-    void make_element_scalar();
+    void make_element_scalar(ElementSetRef element_indices);
     
     /** Computes fluxes at the barycenters of elements.
      *  TODO:
@@ -99,17 +101,17 @@ private:
      *  but we still use MHDofHandler. Once we are able to make output routines
      *  parallel, we can use simply FieldFE for velocity here.
      */
-    void make_element_vector();
+    void make_element_vector(ElementSetRef element_indices);
 
-    void make_sides_scalar();
+    //void make_sides_scalar();
     /**
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param();
-    void make_node_scalar();
+    void make_node_scalar_param(ElementSetRef element_indices);
+    //void make_node_scalar();
     void make_corner_scalar(vector<double> &node_scalar);
-    void make_neighbour_flux();
+    //void make_neighbour_flux();
     void output_internal_flow_data();
 
     /**
@@ -146,6 +148,9 @@ private:
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
     VectorSeqDouble ele_flux;
+
+    // A vector of all element indexes
+    std::vector<unsigned int> all_element_idx_;
 
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;

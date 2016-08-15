@@ -33,7 +33,7 @@ public:
     void print_binary_all(std::ostream& out_stream) override;
 
     /// Prints the whole data vector into stream. UNSUPPORTED.
-    void print_all_yaml(std::ostream& out_stream) override;
+    void print_all_yaml(std::ostream& out_stream, unsigned int precision) override;
 
     /// Access i-th element in the data vector.
     T& operator[](unsigned int i);

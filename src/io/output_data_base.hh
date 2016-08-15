@@ -76,7 +76,7 @@ public:
      * Print stored values in the YAML format (using JSON like arrays).
      * Used for output of observe values.
      */
-    virtual void print_all_yaml(ostream &out_stream) = 0;
+    virtual void print_all_yaml(ostream &out_stream, unsigned int precision) = 0;
 
     /**
      * Data copied from Field.

@@ -145,7 +145,7 @@ IT::Record ConcentrationTransportModel::get_input_type(const string &implementat
 				description + " for solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
 			.declare_key("solvent_density", IT::Double(0), IT::Default("1.0"),
-					"Density of the solvent [kg.m^(-3)].");
+					"Density of the solvent [ (($kg.m^(-3)$)) ].");
 }
 
 IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()

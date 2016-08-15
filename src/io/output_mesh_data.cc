@@ -49,7 +49,7 @@ void MeshData<T>::print_binary_all(std::ostream& out_stream)
 
 /// Prints the whole data vector into stream.
 template <class T>
-void MeshData<T>::print_all_yaml(std::ostream& out_stream)
+void MeshData<T>::print_all_yaml(std::ostream& out_stream, unsigned int precision)
 {
     ASSERT(false).error("Unsupported output of the mesh data to YAML format.");
 }
