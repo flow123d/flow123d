@@ -53,11 +53,11 @@ project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.8.8)
-if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
-  cmake_policy(VERSION 2.8.4)
-  cmake_policy(SET CMP0017 NEW)
+    
+cmake_policy(SET CMP0017 NEW)
+if (${CMAKE_VERSION} VERSION_GREATER 3.0)
+    cmake_policy(SET CMP0037 OLD)
 endif()
-
 
 
 # allow duplicate custom targets for makefiles
@@ -838,7 +838,7 @@ if( PETSC_FOUND )
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  add_dependencies(bin/flow123d update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
@@ -868,6 +868,8 @@ message(STATUS "===========================================")
 ####################################################################################
 # Install and Packaging
 
+set(CMAKE_INSTALL_MESSAGE ALWAYS)
+
 # Cache PLATFORM_NAME
 set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
 
@@ -875,6 +877,16 @@ if (UNIX)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
 endif()
 
+if (CYGWIN)
+    set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/CYGWIN/NSIS/Flow123d-2.0.0_rc-CYGWIN/Unspecified)
+else()
+    set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux)  
+endif()
+
+macro(ls DIR)
+    install(CODE "execute_process(COMMAND echo LS ${DIR})")
+    install(CODE "execute_process(COMMAND ls ${_CPACK_INSTALL_ROOT}/${DIR} )")
+endmacro()
 
 # install bin directory
 install(DIRECTORY bin/config              DESTINATION bin/)
@@ -890,9 +902,11 @@ install(PROGRAMS  bin/time_limit.sh       DESTINATION bin/)
 # install shared libraries
 if (CYGWIN)
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" cygwin WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    # install DLL, must be in the same dir as the binary
     install(DIRECTORY build_tree/bin/            
         DESTINATION bin/
         PATTERN mpiexec EXCLUDE
+        PATTERN flow* EXCLUDE
         )
     
     # replace path separator and make path relative
@@ -904,25 +918,39 @@ if (CYGWIN)
     configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.bat @ONLY)
 else()
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
-    install(DIRECTORY build_tree/lib/            
-        DESTINATION lib/
-        PATTERN lib/python* EXCLUDE
-        PATTERN *.a EXCLUDE
-        )
+    #install(CODE "execute_process(COMMAND ls /home/jb/workspace/build-master/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux )")
+        
     # configure wrapper file
     configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh @ONLY)
 endif()        
 
+ls( lib )
+ls( bin)
+install(DIRECTORY build_tree/lib/           
+    DESTINATION lib/
+    #PATTERN lib/python* EXCLUDE
+    PATTERN *.a EXCLUDE
+    )
+
+ls( lib )
+ls( bin)
+
+
 # install python modules and system libs
 if (PYTHON_COPY)
     # install lib folder of Python to lib
-    install(DIRECTORY ${PY_BUILD_PREFIX}/lib
-            DESTINATION lib
-            OPTIONAL)
+    #install(DIRECTORY ${PY_BUILD_PREFIX}/lib
+    #        DESTINATION lib
+    #        OPTIONAL)
+    
     # copy Python's include
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
             DESTINATION include)
+            
 endif()
+
+ls( lib )
+ls( bin)
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
 if (CYGWIN)
@@ -938,6 +966,9 @@ else()
     install(PROGRAMS    build_tree/bin/ld-linux-loader.so  DESTINATION bin/)
 endif()
 
+
+ls( lib )
+ls( bin)
 
 install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
@@ -971,6 +1002,7 @@ SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
 SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
+SET(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE On)
 
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 
@@ -1009,6 +1041,7 @@ if (CYGWIN)
     # 1. Page
     # Displayed name of the software, and target subdirectory of installation prefix.
     SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Flow123d ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH}")
+    
     
     # 2. Page
     # Software banner in installer.
@@ -1151,6 +1184,10 @@ endif()
 #  SET(CPACK_SOURCE_STRIP_FILES "")
 #ENDIF(WIN32 AND NOT UNIX)
 #SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+
+add_custom_target(package_debug
+              COMMAND ${CMAKE_CPACK_COMMAND} --debug --verbose --config CPackConfig.cmake
+              COMMENTS "Build package with debug and verbose output")
 
 INCLUDE(CPack)
 

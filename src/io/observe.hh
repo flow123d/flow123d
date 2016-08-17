@@ -88,7 +88,7 @@ protected:
      * Output the observe point information into a YAML formated stream, indent by
      * given number of spaces + "- ".
      */
-    void output(ostream &out, unsigned int indent_spaces);
+    void output(ostream &out, unsigned int indent_spaces, unsigned int precision);
 
     /// Index in the input array.
     Input::Record in_rec_;
@@ -149,7 +149,7 @@ public:
      * mesh - the mesh used for search for the observe points
      * in_array - the array of observe points
      */
-    Observe(string observe_name, Mesh &mesh, Input::Array in_array);
+    Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision);
 
     /// Destructor, must close the file.
     ~Observe();
@@ -210,7 +210,8 @@ protected:
     std::string time_unit_str_;
     /// Time unit in seconds.
     double time_unit_seconds_;
-
+    /// Precision of float output
+    unsigned int precision_;
 
 };
 

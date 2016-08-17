@@ -53,7 +53,7 @@ public:
      */
     void print_all(ostream &out_stream) override;
 
-    void print_all_yaml(ostream &out_stream) override;
+    void print_all_yaml(ostream &out_stream, unsigned int precision) override;
 
     /**
      * Store data element of given data value under given index.

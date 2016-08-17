@@ -210,21 +210,22 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
 
 
-void ObservePoint::output(ostream &out, unsigned int indent_spaces)
+void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int precision)
 {
     out << setw(indent_spaces) << "" << "- name: " << name_ << endl;
     out << setw(indent_spaces) << "" << "  init_point: " << field_value_to_yaml(input_point_) << endl;
     out << setw(indent_spaces) << "" << "  snap_dim: " << snap_dim_ << endl;
     out << setw(indent_spaces) << "" << "  snap_region: " << snap_region_name_ << endl;
-    out << setw(indent_spaces) << "" << "  observe_point: " << field_value_to_yaml(global_coords_) << endl;
+    out << setw(indent_spaces) << "" << "  observe_point: " << field_value_to_yaml(global_coords_, precision) << endl;
 }
 
 
 
 
-Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array)
+Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision)
 : mesh_(&mesh),
-  observe_values_time_(numeric_limits<double>::signaling_NaN())
+  observe_values_time_(numeric_limits<double>::signaling_NaN()),
+  precision_(precision)
 {
     // in_rec is Output input record.
 
@@ -308,7 +309,7 @@ void Observe::output_header(string observe_name) {
     observe_file_ << "time_unit_in_secodns: " << time_unit_seconds_ << endl;
     observe_file_ << "points:" << endl;
     for(auto &point : points_)
-        point.output(observe_file_, indent);
+        point.output(observe_file_, indent, precision_);
     observe_file_ << "data:" << endl;
 
 }
@@ -321,7 +322,7 @@ void Observe::output_time_frame(double time) {
         observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
         for(auto &field_data : observe_field_values_) {
             observe_file_ << setw(indent) << "" << "  " << field_data.second->field_name << ": ";
-            field_data.second->print_all_yaml(observe_file_);
+            field_data.second->print_all_yaml(observe_file_, precision_);
             observe_file_ << endl;
         }
     }

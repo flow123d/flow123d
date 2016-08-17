@@ -96,16 +96,16 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 
 		if (dh_->fe<1>()->is_scalar()) {
 			double value = 0;
-			for (int i=0; i<dh_->fe<1>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values1.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
-			for (int i=0; i<dh_->fe<1>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values1.shape_vector(i, 0);
-			for (int i=0; i<3; i++)
+			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
 		}
 	}
@@ -125,16 +125,16 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 
 		if (dh_->fe<2>()->is_scalar()) {
 			double value = 0;
-			for (int i=0; i<dh_->fe<2>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values2.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
-			for (int i=0; i<dh_->fe<2>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values2.shape_vector(i, 0);
-			for (int i=0; i<3; i++)
+			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
 		}	}
 	else {
@@ -154,16 +154,16 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 
 		if (dh_->fe<3>()->is_scalar()) {
 			double value = 0;
-			for (int i=0; i<dh_->fe<3>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values3.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
-			for (int i=0; i<dh_->fe<3>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values3.shape_vector(i, 0);
-			for (int i=0; i<3; i++)
+			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
 		}
 	}

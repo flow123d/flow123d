@@ -51,6 +51,18 @@ set(DEAL_II_WITH_LAPACK ON)
 set(LAPACK_FOUND "true")
 set(LAPACK_LIBRARIES "${PETSC_EXTERNAL_LIB}")
 set(LAPACK_LINKER_FLAGS ${PETSC_VAR_BLASLAPACK_LIB})
+unset(DEAL_II_COMPONENT_PACKAGE  CACHE)
+
+set(DEAL_II_COMPONENT_EXAMPLES OFF)
+set(DEAL_II_COMPONENT_COMPAT_FILES OFF)
+set(DEAL_II_COMPONENT_DOCUMENTATION OFF)
+set(DEAL_II_COMPONENT_MESH_CONVERTER OFF)
+set(DEAL_II_COMPONENT_PARAMETER_GUI OFF)
+
+
+
+
+
 add_subdirectory("dealii")
 set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
 message(STATUS "===========================================")
@@ -331,5 +343,5 @@ target_link_libraries(flow123d_lib
 set_target_properties(flow123d_lib 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
-add_dependencies(flow123d_lib tbb)
+#add_dependencies(flow123d_lib tbb)
 
