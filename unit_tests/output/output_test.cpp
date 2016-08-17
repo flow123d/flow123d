@@ -241,7 +241,7 @@ public:
 	    FieldType field("test_field", false); // bulk field
 		field.input_default(init);
 		field.set_components(component_names);
-		field.input_selection(&get_test_selection());
+		field.input_selection( get_test_selection() );
 
 		field.set_mesh(*my_mesh);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);

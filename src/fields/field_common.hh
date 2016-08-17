@@ -123,7 +123,7 @@ public:
      *
      * We must save raw pointer since selection may not be yet initialized (during static initialization phase).
      */
-    FieldCommon & input_selection(const Input::Type::Selection *element_selection)
+    FieldCommon & input_selection(Input::Type::Selection element_selection)
     {
       shared_->input_element_selection_=element_selection;
       return *this;
@@ -429,10 +429,8 @@ protected:
          * to read possible values of the field (e.g. for FieldConstant the key 'value' has this selection input type).
          *
          * Is empty selection for for non-enum values fields.
-         *
-         * In fact we must use raw pointer since selection may not be constructed yet (static variable).
          */
-        const IT::Selection *input_element_selection_;
+        IT::Selection input_element_selection_;
         /**
          * Possible default value of the field.
          */

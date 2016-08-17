@@ -93,7 +93,7 @@ public:
         * Returns parameterized whole tree of input types for FieldBase with all descendants based on element input type (namely
         * for FieldConstant) given by element_input_type pointer.
         */
-       static const Input::Type::Instance & get_input_type_instance(const Input::Type::Selection *value_selection=NULL);
+       static const Input::Type::Instance & get_input_type_instance( Input::Type::Selection value_selection=Input::Type::Selection() );
 
        /**
         * This static method gets accessor to abstract record with function input,

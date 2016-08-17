@@ -80,7 +80,7 @@ public:
 						.description("")
 						.units( UnitSI::dimensionless() )
 						.flags_add(in_main_matrix)
-						.input_selection(&reaction_type_sel);
+						.input_selection(reaction_type_sel);
 		}
 
 		// fields
