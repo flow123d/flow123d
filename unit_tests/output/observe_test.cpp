@@ -106,7 +106,7 @@ public:
 class TestObserve : public Observe {
 public:
     TestObserve(Mesh &mesh, Input::Array in_array)
-    : Observe("test_eq", mesh, in_array)
+    : Observe("test_eq", mesh, in_array, 5)
     {
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
@@ -261,9 +261,14 @@ TEST(Observe, all) {
     obs.compute_field_values(field_set.enum_field);
     obs.compute_field_values(field_set.vector_field);
     obs.compute_field_values(field_set.tensor_field);
-
     obs.output_time_frame( tg.t() );
+
     tg.next_time();
+    field_set.set_time( tg.step(), LimitSide::right);
+    obs.compute_field_values(field_set.scalar_field);
+    obs.compute_field_values(field_set.enum_field);
+    obs.compute_field_values(field_set.vector_field);
+    obs.compute_field_values(field_set.tensor_field);
     obs.output_time_frame( tg.t() );
     }
     // closed observe file 'test_eq_observe.yaml'

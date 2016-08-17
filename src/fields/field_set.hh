@@ -227,10 +227,6 @@ public:
     bool is_jump_time() const;
 
 
-    /**
-     * Collective interface to @p FieldCommonBase::output().
-     */
-    void output(std::shared_ptr<OutputTime> stream);
 
     /**
      * OBSOLETE

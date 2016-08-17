@@ -17,6 +17,7 @@
 #include "fields/field_constant.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
+#include <io/equation_output.hh>
 #include "fields/field_common.hh"
 #include "input/input_type.hh"
 
@@ -120,7 +121,7 @@ const string input = R"INPUT(
        //value="x+y+z"
    },
    output_stream = {
-    file = "./output/test1.pvd",
+    file = "test1.pvd", 
     format = {
         TYPE = "vtk", 
         variant = "ascii"
@@ -131,6 +132,7 @@ const string input = R"INPUT(
         error_control_field = "conc"
     }
   }
+  ,output = {fields = ["conc"]}
 }
 )INPUT";
 
@@ -141,10 +143,10 @@ TEST(OutputMesh, write_on_output_mesh) {
     typedef Field<3,FieldValue<3>::Scalar> ScalarField;
   
     // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
 
     // read mesh - simplset cube from test1
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+    FilePath mesh_file( "../mesh/simplest_cube.msh", FilePath::input_file);
     Mesh* mesh = new Mesh();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
@@ -155,14 +157,16 @@ TEST(OutputMesh, write_on_output_mesh) {
     scalar_field.set_mesh(*mesh);
     
     // create field set of output fields
-    FieldSet output_fields;
+    EquationOutput output_fields;
     output_fields += scalar_field.name("conc").units(UnitSI::dimensionless()).flags_add(FieldFlag::allow_output);
     
     // create input record
     Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
         .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
+        .declare_key("output", output_fields.make_output_type("test_eq"), Input::Type::Default::obligatory(), "")
         .close();
+
 
     // read input string
     Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
@@ -181,10 +185,14 @@ TEST(OutputMesh, write_on_output_mesh) {
     
     // create output
     std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
-    output->init_from_input("dummy_equation", in_rec.val<Input::Record>("output_stream"));
+    output->init_from_input("dummy_equation", *mesh, in_rec.val<Input::Record>("output_stream"));
+    output_fields.initialize(output, in_rec.val<Input::Record>("output"), TimeGovernor());
+    
+    EXPECT_EQ(1,output_fields.size());
+    EXPECT_TRUE(output_fields.is_field_output_time(*output_fields.field("conc"), 0.0));
     
     // register output fields, compute and write data
-    output_fields.output(output);
+    output_fields.output(0.0);
     output->write_time_frame();
 
     delete mesh;
@@ -335,7 +343,7 @@ TEST_F(TestOutputMesh, read_input) {
     Field<3,FieldValue<3>::Scalar> scalar_field;
     
     // create field set of output fields
-    FieldSet output_fields;
+    EquationOutput output_fields;
     output_fields += scalar_field.name("conc");
     this->select_error_control_field(output_fields);
     
@@ -373,10 +381,9 @@ const string input_refine = R"INPUT(
    conc={ // formula on 3d 
        TYPE="FieldFormula",
        value="if((x^2+y^2+z^2)^0.5 > 0.01, log((x^2+y^2+z^2)^0.5), log(0.01))"
-       // value="x+y+z"
    },
    output_stream = {
-    file = "./output/test_refine.pvd",
+    file = "test_refine.pvd",
     format = {
         TYPE = "vtk", 
         variant = "ascii"
@@ -387,6 +394,7 @@ const string input_refine = R"INPUT(
         error_control_field = "conc"
     }
   }
+  ,output = {fields = ["conc"]}
 }
 )INPUT";
 
@@ -415,7 +423,7 @@ TEST(OutputMesh, write_on_refined_mesh) {
     typedef Field<3,FieldValue<3>::Scalar> ScalarField;
   
     // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
 
     // read mesh - simplset cube from test1
     Mesh* mesh = new Mesh();
@@ -427,13 +435,14 @@ TEST(OutputMesh, write_on_refined_mesh) {
     scalar_field.set_mesh(*mesh);
     
     // create field set of output fields
-    FieldSet output_fields;
+    EquationOutput output_fields;
     output_fields += scalar_field.name("conc").units(UnitSI::dimensionless()).flags_add(FieldFlag::allow_output);
     
     // create input record
     Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
         .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
+        .declare_key("output", output_fields.make_output_type("test_eq"), Input::Type::Default::obligatory(), "")
         .close();
 
     // read input string
@@ -453,10 +462,14 @@ TEST(OutputMesh, write_on_refined_mesh) {
     
     // create output
     std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
-    output->init_from_input("dummy_equation", in_rec.val<Input::Record>("output_stream"));
+    output->init_from_input("dummy_equation", *mesh, in_rec.val<Input::Record>("output_stream"));
+    output_fields.initialize(output, in_rec.val<Input::Record>("output"), TimeGovernor());
+    
+    EXPECT_EQ(1,output_fields.size());
+    EXPECT_TRUE(output_fields.is_field_output_time(*output_fields.field("conc"), 0.0));
     
     // register output fields, compute and write data
-    output_fields.output(output);
+    output_fields.output(0.0);
     output->write_time_frame();
 
     delete mesh;
