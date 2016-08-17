@@ -259,7 +259,7 @@ public:
      */
     bool changed() const
     {
-    	OLD_ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
+    	ASSERT( set_time_result_ != TimeStatus::unknown ).error("Invalid time status.");
         return ( (set_time_result_ == TimeStatus::changed) );
     }
 
