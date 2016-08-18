@@ -128,6 +128,8 @@ SchurComplement::SchurComplement(SchurComplement &other)
 
 void SchurComplement::form_schur()
 {
+    START_TIMER("form schur complement");
+
     PetscErrorCode ierr = 0;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
     PetscScalar *rhs_array, *sol_array;
@@ -217,20 +219,6 @@ void SchurComplement::form_rhs()
 }
 
 
-/**
- * COMPUTE ELIMINATED PART OF THE ORIG. SYS. & RESTORE RHS and SOLUTION VECTORS
- *  x_1 = IA * RHS_1 - IAB * x_2
- */
-
-void SchurComplement::resolve()
-{
-    MatMult(IAB,Compl->get_solution(),Sol1);
-
-    VecScale(Sol1,-1);
-
-    MatMultAdd(IA,RHS1,Sol1,Sol1);
-
-}
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
@@ -328,21 +316,38 @@ double SchurComplement::get_solution_precision()
 
 int SchurComplement::solve() {
     START_TIMER("SchurComplement::solve");
-    {
-        START_TIMER("form schur complement");
-        this->form_schur();
-    }
-
-    //START_TIMER("complement solve");
+    this->form_schur();
     int converged_reason = Compl->solve();
-    //END_TIMER("complement solve");
 
-    {
-        START_TIMER("schur back resolve");
-        this->resolve();
-    }
+    // TODO: Resolve step is not necessary inside of nonlinear solver. Can optimize.
+    this->resolve();
 	return converged_reason;
 }
+
+
+/**
+ * COMPUTE ELIMINATED PART OF THE ORIG. SYS. & RESTORE RHS and SOLUTION VECTORS
+ *  x_1 = IA * RHS_1 - IAB * x_2
+ */
+
+void SchurComplement::resolve()
+{
+    this->form_schur();
+
+    START_TIMER("SchurComplemet::resolve without form schur");
+
+    MatMult(IAB,Compl->get_solution(),Sol1);
+    VecScale(Sol1,-1);
+    MatMultAdd(IA,RHS1,Sol1,Sol1);
+}
+
+
+double SchurComplement::compute_residual()
+{
+    resolve();
+    return LinSys_PETSC::compute_residual();
+}
+
 
 
 /**

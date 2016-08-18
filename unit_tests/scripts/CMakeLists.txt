@@ -3,7 +3,7 @@
   # target to compile tester_mpi.cc
   add_executable(tester_mpi EXCLUDE_FROM_ALL tester_mpi.cc) 
   target_link_libraries(tester_mpi ${MPI_CXX_LIBRARIES})
-  add_dependencies(tester_mpi mpiexec_link)      # need mpiexec link compatible with MPI lib
+  # add_dependencies(tester_mpi mpiexec_link)      # need mpiexec link compatible with MPI lib
 
   #message(STATUS "flow123d.sh test: ${CMAKE_CURRENT_BINARY_DIR}")
   # copy flow123d.sh and its test to testing build dir

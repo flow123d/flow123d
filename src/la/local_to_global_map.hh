@@ -21,9 +21,6 @@
 #include <set>
 #include <vector>
 
-/// Using Boost shared pointer.
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <boost/smart_ptr/make_shared.hpp>
 
 #include "system/system.hh"
 #include "system/global_defs.h"
@@ -84,11 +81,9 @@ public:
 
    /**
     * Same as the previous constructor, but just takes copy of shared pointer. This assumes that Distribution is allocated on the heap
-    * by something like:
-    *
-    * boost::smart_ptr<Distribution> distr(new Distribution(...));
+    * by: std::make_shared<Distribution>
     */
-   LocalToGlobalMap(boost::shared_ptr<Distribution> distr);
+   LocalToGlobalMap(std::shared_ptr<Distribution> distr);
 
    /**
     * Insert a global index to the mapping.
@@ -120,7 +115,7 @@ public:
    /**
     * Returns smart_ptr to the Distribution of the global indices. Allow share this among many objects.
     */
-   boost::shared_ptr<Distribution> &get_distr()
+   std::shared_ptr<Distribution> get_distr()
         { return distr_; }
 
    /**
@@ -135,7 +130,7 @@ private:
    /// auxiliary set of non-local part of the map
    std::set<unsigned int> *nonlocal_indices_;
    /// distribution of the global indices
-   boost::shared_ptr<Distribution> distr_;
+   std::shared_ptr<Distribution> distr_;
    /// mapping for all local indices
    std::vector<unsigned int> global_indices_;
 };

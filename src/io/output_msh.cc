@@ -54,7 +54,7 @@ public:
         for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
     }
 
-    void print_all_yaml(ostream &out_stream) override
+    void print_all_yaml(ostream &out_stream, unsigned int precision) override
     {}
 };
 
@@ -281,8 +281,7 @@ void OutputMSH::write_field_data(OutputTime::DiscreteSpace type_idx, void (Outpu
 
 int OutputMSH::write_head(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
-            this->_base_filename.c_str());
+	LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
     this->write_msh_header();
 
@@ -290,29 +289,26 @@ int OutputMSH::write_head(void)
 
     this->write_msh_topology();
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 
     return 1;
 }
 
 int OutputMSH::write_data(void)
 {
-
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
         if(this->rank == 0) {
             this->fix_main_file_extension(".msh");
-            this->_base_file.open(this->_base_filename.c_str());
-            INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
-            xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
+            this->_base_file.open(string(this->_base_filename).c_str());
+            INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
         }
 
         this->write_head();
         this->header_written = true;
     }
 
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
-            this->_base_filename.c_str());
+    LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
 
     this->write_field_data(NODE_DATA, &OutputMSH::write_node_data);
@@ -322,7 +318,7 @@ int OutputMSH::write_data(void)
     // Flush stream to be sure everything is in the file now
     this->_base_file.flush();
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 
     return 1;
 }
@@ -333,7 +329,6 @@ int OutputMSH::write_tail(void)
 {
     return 1;
 }
-
 
 
 
