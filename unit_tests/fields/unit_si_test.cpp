@@ -77,3 +77,48 @@ TEST(UnitSI, division_operator) {
 	UnitSI pressure2 = UnitSI::N() / area;
 	EXPECT_EQ( UnitSI::Pa().format_latex(), pressure2.format_latex() );
 }
+
+TEST(UnitSI, user_defined_units) {
+	{
+		UnitSI unit = UnitSI("m");
+		EXPECT_TRUE( unit == UnitSI().m() );
+		EXPECT_DOUBLE_EQ(unit.coef(), 1);
+	}
+
+	{
+		UnitSI unit = UnitSI("h");
+		EXPECT_TRUE( unit == UnitSI().s() );
+		EXPECT_DOUBLE_EQ(unit.coef(), 3600);
+	}
+
+	{
+		UnitSI unit = UnitSI("kg.m^-3");
+		EXPECT_TRUE( unit == UnitSI().m(-3).kg() );
+		EXPECT_DOUBLE_EQ(unit.coef(), 1);
+	}
+
+	{
+		UnitSI unit = UnitSI("g.cm^-3");
+		EXPECT_TRUE( unit == UnitSI().m(-3).kg() );
+		EXPECT_DOUBLE_EQ(unit.coef(), 1000);
+	}
+
+	{
+		UnitSI unit = UnitSI("m.kg.s^-2");
+		EXPECT_TRUE( unit == UnitSI().m().kg().s(-2) );
+		EXPECT_DOUBLE_EQ(unit.coef(), 1);
+	}
+
+	{
+		UnitSI unit = UnitSI("N.m^-2");
+		EXPECT_TRUE( unit == UnitSI::Pa() );
+		EXPECT_DOUBLE_EQ(unit.coef(), 1);
+	}
+
+	// Invalid representations of units
+	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m.s^-1^2"); }, UnitSI::ExcInvalidUnitString, "invalid value of unit" );
+	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("ab^2"); }, UnitSI::ExcInvalidUnitString, "invalid symbol of unit 'ab'" );
+	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^a"); }, UnitSI::ExcInvalidUnitString, "invalid exponent 'a'" );
+	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^2a"); }, UnitSI::ExcInvalidUnitString, "invalid exponent '2a'" );
+	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^1.5"); }, UnitSI::ExcInvalidUnitString, "invalid symbol of unit '5'" );
+}
