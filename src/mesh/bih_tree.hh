@@ -1,6 +1,6 @@
 /*!
  *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -88,6 +88,9 @@ public:
      * @return elements_ vector
      */
     std::vector<BoundingBox> &get_elements() { return elements_; }
+    
+    /// Gets bounding box of element of given index @p ele_index.
+    const BoundingBox & ele_bounding_box(unsigned int ele_idx) const;
 
 protected:
     /// required reduction in size of box to allow further splitting

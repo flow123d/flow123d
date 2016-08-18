@@ -14,6 +14,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/bih_tree.hh"
 
 namespace computeintersection {
 
@@ -67,8 +68,10 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
                                             std::vector< IntersectionLocal<dim,3>>& storage)
 {
     START_TIMER("Intersection algorithm");
-    iea.compute_intersections();
-//     iea.compute_intersections_BIHtree();
+    ASSERT_PTR_DBG(bih_);
+    
+    iea.compute_intersections(bih_);
+//     iea.compute_intersections_BIHtree(bih_);    
 //     iea.compute_intersections_BB();
     END_TIMER("Intersection algorithm");
     
@@ -201,12 +204,58 @@ void InspectElements::compute_intersections_12(vector< IntersectionLocal< 1, 2 >
 //     END_TIMER("Intersection into storage");
 }
 
+void InspectElements::compute_intersections_12_2(vector< IntersectionLocal< 1, 2 > >& storage)
+{
+    START_TIMER("Intersection algorithm");
+    algorithm12_.compute_intersections_2(bih_);
+    END_TIMER("Intersection algorithm");
+    
+    START_TIMER("Intersection into storage");
+    storage.reserve(algorithm12_.intersectionaux_storage12_.size());
+    
+    for(IntersectionAux<1,2> &is : algorithm12_.intersectionaux_storage12_) {
+        unsigned int abscissa_idx = is.component_ele_idx();
+        unsigned int triangle_idx = is.bulk_ele_idx();
+
+        storage.push_back(IntersectionLocal<1,2>(is));
+        intersection_map_[abscissa_idx].push_back(std::make_pair(
+                                                    triangle_idx,
+                                                    &(storage.back())
+                                                ));
+        intersection_map_[triangle_idx].push_back(std::make_pair(
+                                                    abscissa_idx,
+                                                    &(storage.back())
+                                                ));
+//         DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+//         for(const IntersectionPointAux<1,2>& ip : is.points()) {
+//             //cout << ip;
+//             auto p = ip.coords(mesh->element(is.component_ele_idx()));
+//             cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+//         }
+    }
+    END_TIMER("Intersection into storage");
+}
+
+
 void InspectElements::compute_intersections(computeintersection::IntersectionType d)
 {
     intersection_map_.resize(mesh->n_elements());
     
-    if(d & (IntersectionType::d12 | IntersectionType::d12_1 | IntersectionType::d12_2)){
+    // for algorithms BIHSearch and BIHonly
+    //TODO: select algorithms, create BIH accordingly
+    if(bih_ == nullptr){
+        START_TIMER("BIHTree");
+        bih_ = std::make_shared<BIHTree>(mesh, 20);
+    }
+    
+    if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
         ASSERT(0).error("NOT IMPLEMENTED.");
+    }
+    
+    if(d & IntersectionType::d12_2){
+        START_TIMER("Intersections 1D-2D (2)");
+        compute_intersections_12_2(intersection_storage12_);
+        END_TIMER("Intersections 1D-2D (2)");
     }
     
     if(d & (IntersectionType::d13 | IntersectionType::d12_3)){
