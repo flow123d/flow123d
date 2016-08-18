@@ -342,66 +342,41 @@ void OutputVTK::write_vtk_vtu(void)
     /* Write header */
     this->write_vtk_vtu_head();
 
-    /* When there is no discontinuous data, then write classical vtu */
-    if ( this->output_data_vec_[CORNER_DATA].empty() )
-    {
-        /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << output_mesh_->n_nodes()
-                  << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
-
-        /* Write VTK Geometry */
-        file << "<Points>" << endl;
-            write_vtk_data_ascii(output_mesh_->nodes_, VTK_FLOAT64 );
-        file << "</Points>" << endl;
-    
-        
-        /* Write VTK Topology */
-        file << "<Cells>" << endl;
-            write_vtk_data_ascii(output_mesh_->connectivity_, VTK_INT32 );
-            write_vtk_data_ascii(output_mesh_->offsets_, VTK_INT32 );
-            auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_, output_mesh_);
-            write_vtk_data_ascii(types, VTK_UINT8 );
-        file << "</Cells>" << endl;
-
-        /* Write VTK scalar and vector data on nodes to the file */
-        this->write_vtk_node_data();
-
-        /* Write VTK data on elements */
-        this->write_vtk_element_data();
-
-        /* Write Piece end */
-        file << "</Piece>" << endl;
-
-    } else {
-        /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << output_mesh_discont_->n_nodes()
-                  << "\" NumberOfCells=\"" << output_mesh_discont_->n_elements() <<"\">" << endl;
-
-        /* Write VTK Geometry */
-        file << "<Points>" << endl;
-            write_vtk_data_ascii(output_mesh_discont_->nodes_, VTK_FLOAT64 );
-        file << "</Points>" << endl;
-
-        /* Write VTK Topology */
-        file << "<Cells>" << endl;
-            write_vtk_data_ascii(output_mesh_discont_->connectivity_, VTK_INT32 );
-            write_vtk_data_ascii(output_mesh_discont_->offsets_, VTK_INT32 );
-            auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_, output_mesh_discont_);
-            write_vtk_data_ascii(types, VTK_UINT8 );
-        file << "</Cells>" << endl;
-
-        /* Write VTK scalar and vector data on nodes to the file */
-        this->write_vtk_node_data();
-
-        /* Write VTK data on elements */
-        this->write_vtk_element_data();
-
-        /* Write Piece end */
-        file << "</Piece>" << endl;
+    // select which output mesh to use
+    std::shared_ptr<OutputMeshBase> om;
+    if(output_mesh_discont_->is_refined() || ! this->output_data_vec_[CORNER_DATA].empty()){
+        om = output_mesh_discont_;
     }
+    else om = output_mesh_;
+    
+    /* Write Piece begin */
+    file << "<Piece NumberOfPoints=\"" << om->n_nodes()
+                << "\" NumberOfCells=\"" << om->n_elements() <<"\">" << endl;
 
+    /* Write VTK Geometry */
+    file << "<Points>" << endl;
+        write_vtk_data_ascii(om->nodes_, VTK_FLOAT64 );
+    file << "</Points>" << endl;
+
+    
+    /* Write VTK Topology */
+    file << "<Cells>" << endl;
+        write_vtk_data_ascii(om->connectivity_, VTK_INT32 );
+        write_vtk_data_ascii(om->offsets_, VTK_INT32 );
+        auto types = std::make_shared<MeshData<unsigned int>>("types");
+        fill_element_types_vector(types->data_, om);
+        write_vtk_data_ascii(types, VTK_UINT8 );
+    file << "</Cells>" << endl;
+
+    /* Write VTK scalar and vector data on nodes to the file */
+    this->write_vtk_node_data();
+
+    /* Write VTK data on elements */
+    this->write_vtk_element_data();
+
+    /* Write Piece end */
+    file << "</Piece>" << endl;
+        
     /* Write tail */
     this->write_vtk_vtu_tail();
 }

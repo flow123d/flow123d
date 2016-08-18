@@ -120,11 +120,18 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     if(space_type == CORNER_DATA)
         compute_discontinuous_output_mesh();
     
+    std::shared_ptr<OutputMeshBase> om;
+    if(output_mesh_discont_->is_refined()){
+        ASSERT(space_type != NODE_DATA).error("Refined output mesh not implemented for NODE DATA!");
+        om = output_mesh_discont_;
+    }
+    else om = output_mesh_;
+    
     // get possibly existing data for the same field, check both name and type
     std::vector<unsigned int> size(N_DISCRETE_SPACES);
-    size[NODE_DATA] = output_mesh_->n_nodes();
-    size[ELEM_DATA] = output_mesh_->n_elements();
-    size[CORNER_DATA] = output_mesh_discont_->n_nodes();
+    size[NODE_DATA] = om->n_nodes();
+    size[ELEM_DATA] = om->n_elements();
+    size[CORNER_DATA] = om->n_nodes();
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
@@ -144,7 +151,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
         for(unsigned int idx=0; idx < output_data.n_values; idx++)
             output_data.zero(idx);
 
-        for(const auto & ele : *output_mesh_)
+        for(const auto & ele : *om)
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
             for(unsigned int i=0; i < ele.n_nodes(); i++)
@@ -166,7 +173,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     break;
     case CORNER_DATA: {
-        for(const auto & ele : *output_mesh_discont_)
+        for(const auto & ele : *om)
         {
             DBGMSG("ele %d\n",ele.idx());
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
@@ -185,7 +192,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     break;
     case ELEM_DATA: {
-        for(const auto & ele : *output_mesh_)
+        for(const auto & ele : *om)
         {
             unsigned int ele_index = ele.idx();
             const Value &ele_value =
