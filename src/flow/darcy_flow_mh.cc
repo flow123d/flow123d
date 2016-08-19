@@ -192,7 +192,7 @@ DarcyMH::EqData::EqData()
     
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
     	// TODO: temporary solution, we should try to get rid of pointer to the selection after having generic types
-        bc_type.input_selection( &get_bc_type_selection() );
+        bc_type.input_selection( get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' save the bc_type='none'."

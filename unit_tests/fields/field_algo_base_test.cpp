@@ -52,7 +52,7 @@ public:
 
 
 	    field_.name("test_field");
-	    field_.input_selection( &get_test_selection() );
+	    field_.input_selection( get_test_selection() );
 
 		auto a_rec_type = this->field_.get_input_type();
 		test_field_descriptor = make_shared<Input::Type::Record>(
@@ -588,7 +588,7 @@ TEST(Field, init_from_input) {
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
 
 
-    sorption_type.input_selection( &get_sorption_type_selection() );
+    sorption_type.input_selection( get_sorption_type_selection() );
     //init_conc.set_components(component_names);
 
     it::Record main_record =
@@ -820,7 +820,7 @@ TEST(Field, init_from_default) {
     {
         Field<3, FieldValue<3>::Enum > enum_field("any", true);
 
-        enum_field.input_selection( &get_test_type_selection() );
+        enum_field.input_selection( get_test_type_selection() );
         enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
 
