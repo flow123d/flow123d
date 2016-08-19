@@ -23,7 +23,9 @@
 #include "reader_to_storage.hh"
 #include "input/path_json.hh"
 #include "input/path_yaml.hh"
+#include "input/input_type.hh"
 #include "input/accessors.hh"
+
 
 namespace Input {
 using namespace std;
@@ -218,6 +220,13 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
 
             if ( !effectively_null && p.down(it->key_) ) {
                 // key on input => check & use it
+                // check for obsolete key
+
+                auto obsolete_it = it->attributes.find( Type::Attribute::obsolete() );
+                if ( obsolete_it != it->attributes.end()) {
+                    WarningOut() << "Usage of the obsolete key: '" << it->key_ << "'\n" << obsolete_it -> second;
+                }
+
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
                 	delete storage;

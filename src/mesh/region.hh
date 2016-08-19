@@ -346,6 +346,8 @@ public:
      * @p dim is dimension of reference elements in the region, @p boundary is true if the region consist of boundary elements
      * (where one can apply boundary condition) and @p address contains source of region (address in input file or section in
      * mesh file).
+     *
+     * When called from GMSH reader the default region name have a form "region_ID".
      */
     Region add_region(unsigned int id, const std::string &label, unsigned int dim, const std::string &address ="implicit");
 
