@@ -239,7 +239,8 @@ public:
      * Other possible results are: result_zeros, result_eye, result_ones, result_constant, result_other
      * see @p FieldResult for explanation.
      */
-    inline FieldResult field_result( RegionSet region_set) const;
+    FieldResult field_result( RegionSet region_set) const;
+
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

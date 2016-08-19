@@ -33,14 +33,18 @@ macro(install_python_lib package_name package_dir)
         execute_process(
             COMMAND pip install --target=${PYTHON_3RD_PARTY} ${package_name}
             WORKING_DIRECTORY ${Flow123d_SOURCE_DIR}/CMake/Modules/python
-            RESULT_VARIABLE RETURNCODE)
+            RESULT_VARIABLE RETURNCODE
+            OUTPUT_FILE ${CMAKE_BINARY_DIR}/python_install.log
+            ERROR_FILE ${CMAKE_BINARY_DIR}/python_install.log)
         
         # if installation fails we run pip from current dir and do not override 
         # any configuration
         if(NOT RETURNCODE EQUAL 0)
             execute_process(
                 COMMAND pip install --target=${PYTHON_3RD_PARTY} ${package_name}
-                RESULT_VARIABLE RETURNCODE)
+                RESULT_VARIABLE RETURNCODE
+                OUTPUT_FILE ${CMAKE_BINARY_DIR}/python_install.log
+                ERROR_FILE ${CMAKE_BINARY_DIR}/python_install.log)
         endif()
         # could not install package
         if(NOT RETURNCODE EQUAL 0)

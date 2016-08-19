@@ -25,7 +25,7 @@ void armadillo_setup();
  * Format field_value (i.e. matrix, vector scalar of double or int) into YAML string.
  */
 template<class T>
-std::string field_value_to_yaml(const T &mat);
+std::string field_value_to_yaml(const T &mat, unsigned int prec = 5);
 
 
 #endif /* SRC_SYSTEM_ARMADILLO_TOOLS_HH_ */

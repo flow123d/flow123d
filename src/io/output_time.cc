@@ -33,28 +33,30 @@ FLOW123D_FORCE_LINK_IN_PARENT(vtk)
 FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 
 
-using namespace Input::Type;
+namespace IT = Input::Type;
 
-const Record & OutputTime::get_input_type() {
-    return Record("OutputStream", "Parameters of output.")
+const IT::Record & OutputTime::get_input_type() {
+    return IT::Record("OutputStream", "Parameters of output.")
 		// The stream
-		.declare_key("file", FileName::output(), Default::read_time("Name of the equation associated with the output stream."),
+		.declare_key("file", IT::FileName::output(), IT::Default::read_time("Name of the equation associated with the output stream."),
 				"File path to the connected output file.")
 				// The format
-		.declare_key("format", OutputTime::get_input_format_type(), Default("{}"),
+		.declare_key("format", OutputTime::get_input_format_type(), IT::Default("{}"),
 				"Format of output stream and possible parameters.")
-		.declare_key("times", OutputTimeSet::get_input_type(), Default::optional(),
+		.declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
 		        "Output times used for equations without is own output times key.")
-        .declare_key("output_mesh", OutputMeshBase::get_input_type(), Default::optional(),
+        .declare_key("output_mesh", OutputMeshBase::get_input_type(), IT::Default::optional(),
                 "Output mesh record enables output on a refined mesh.")
+        .declare_key("precision", IT::Integer(0), IT::Default("5"),
+                "The number of decimal digits used in output of floating point values.")
         .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
                 "Array of observe points.")
 		.close();
 }
 
 
-Abstract & OutputTime::get_input_format_type() {
-	return Abstract("OutputTime", "Format of output stream and possible parameters.")
+IT::Abstract & OutputTime::get_input_format_type() {
+	return IT::Abstract("OutputTime", "Format of output stream and possible parameters.")
 	    .allow_auto_conversion("vtk")
 		.close();
 }
@@ -71,8 +73,10 @@ OutputTime::OutputTime()
 
 
 
-void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec)
+void OutputTime::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
 {
+    _mesh = &mesh;
+
     input_record_ = in_rec;
     equation_name_ = equation_name;
 
@@ -104,28 +108,22 @@ Input::Iterator<Input::Array> OutputTime::get_time_set_array() {
 }
 
 
-void OutputTime::make_output_mesh(Mesh &mesh, FieldSet &output_fields)
+void OutputTime::make_output_mesh(FieldSet &output_fields)
 {
 
-    // create observe object at first call
-    if (! observe_) {
-        auto observe_points = input_record_.val<Input::Array>("observe_points");
-        observe_ = std::make_shared<Observe>(this->equation_name_, mesh, observe_points);
-    }
-
+    // make observe points if not already done
+    observe();
 
     // already computed
     if(output_mesh_) return;
-    
-    _mesh = &mesh;
 
     // Read optional error control field name
     auto it = input_record_.find<Input::Record>("output_mesh");
     
     if(enable_refinement_) {
         if(it) {
-            output_mesh_ = std::make_shared<OutputMesh>(mesh, *it);
-            output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh, *it);
+            output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *it);
+            output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *it);
             output_mesh_->select_error_control_field(output_fields);
             output_mesh_discont_->select_error_control_field(output_fields);
             
@@ -141,8 +139,8 @@ void OutputTime::make_output_mesh(Mesh &mesh, FieldSet &output_fields)
     }
     
     
-    output_mesh_ = std::make_shared<OutputMesh>(mesh);
-    output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(mesh);
+    output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
+    output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
     
     output_mesh_->create_identical_mesh();
 }
@@ -186,13 +184,12 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
 {
-	std::shared_ptr<OutputTime> output_time;
 
     Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
-  	output_time = format.factory< OutputTime >();
-    output_time->init_from_input(equation_name, in_rec);
+    std::shared_ptr<OutputTime> output_time = format.factory< OutputTime >();
+    output_time->init_from_input(equation_name, mesh, in_rec);
 
     return output_time;
 }
@@ -205,12 +202,14 @@ void OutputTime::write_time_frame()
 {
 	START_TIMER("OutputTime::write_time_frame");
     /* TODO: do something, when support for Parallel VTK is added */
+    if (observe_)
+        observe_->output_time_frame(time);
+
     if (this->rank == 0) {
+
     	// Write data to output stream, when data registered to this output
 		// streams were changed
 		if(write_time < time) {
-		    if (observe_)
-		        observe_->output_time_frame(time);
 
 			LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
 			write_data();
@@ -230,7 +229,13 @@ void OutputTime::write_time_frame()
 
 std::shared_ptr<Observe> OutputTime::observe()
 {
-    ASSERT(observe_).error("The 'make_output_mesh' must be called before the 'observe' getter.\n");
+    ASSERT_PTR(_mesh);
+    // create observe object at first call
+    if (! observe_) {
+        auto observe_points = input_record_.val<Input::Array>("observe_points");
+        unsigned int precision = input_record_.val<unsigned int>("precision");
+        observe_ = std::make_shared<Observe>(this->equation_name_, *_mesh, observe_points, precision);
+    }
     return observe_;
 }
 

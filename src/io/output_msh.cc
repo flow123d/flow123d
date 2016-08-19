@@ -54,7 +54,7 @@ public:
         for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
     }
 
-    void print_all_yaml(ostream &out_stream) override
+    void print_all_yaml(ostream &out_stream, unsigned int precision) override
     {}
 };
 

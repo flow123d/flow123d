@@ -98,12 +98,12 @@ Balance::~Balance()
 	}
 	for (unsigned int c=0; c<quantities_.size(); ++c)
 	{
-		MatDestroy(&(region_mass_matrix_[c]));
-		MatDestroy(&(be_flux_matrix_[c]));
-		MatDestroy(&(region_source_matrix_[c]));
-		MatDestroy(&(region_source_rhs_[c]));
-		VecDestroy(&(be_flux_vec_[c]));
-		VecDestroy(&(region_source_vec_[c]));
+		chkerr(MatDestroy(&(region_mass_matrix_[c])));
+		chkerr(MatDestroy(&(be_flux_matrix_[c])));
+		chkerr(MatDestroy(&(region_source_matrix_[c])));
+		chkerr(MatDestroy(&(region_source_rhs_[c])));
+		chkerr(VecDestroy(&(be_flux_vec_[c])));
+		chkerr(VecDestroy(&(region_source_vec_[c])));
 	}
 	delete[] region_mass_matrix_;
 	delete[] be_flux_matrix_;
@@ -112,9 +112,9 @@ Balance::~Balance()
 	delete[] region_source_rhs_;
 	delete[] region_source_vec_;
 
-	MatDestroy(&region_be_matrix_);
-	VecDestroy(&ones_);
-	VecDestroy(&ones_be_);
+	chkerr(MatDestroy(&region_be_matrix_));
+	chkerr(VecDestroy(&ones_));
+	chkerr(VecDestroy(&ones_be_));
 }
 
 
@@ -268,6 +268,7 @@ void Balance::lazy_initialize()
 	be_flux_matrix_ = new Mat[n_quant];
 	region_source_matrix_ = new Mat[n_quant];
 	region_source_rhs_ = new Mat[n_quant];
+    region_mass_vec_ = new Vec[n_quant];
 	be_flux_vec_ = new Vec[n_quant];
 	region_source_vec_ = new Vec[n_quant];
 
@@ -316,6 +317,11 @@ void Balance::lazy_initialize()
                0,
                0,
                &(be_flux_matrix_[c])));
+        
+        chkerr(VecCreateMPI(PETSC_COMM_WORLD,
+                (rank_==0)?mesh_->region_db().bulk_size():0,
+                PETSC_DECIDE,
+                &(region_mass_vec_[c])));
 
 		chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 				be_regions_.size(),
@@ -397,6 +403,7 @@ void Balance::start_mass_assembly(unsigned int quantity_idx)
     lazy_initialize();
     if (! balance_on_) return;
 	chkerr(MatZeroEntries(region_mass_matrix_[quantity_idx]));
+    chkerr(VecZeroEntries(region_mass_vec_[quantity_idx]));
 }
 
 
@@ -426,6 +433,8 @@ void Balance::finish_mass_assembly(unsigned int quantity_idx)
 
 	chkerr(MatAssemblyBegin(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
+    chkerr(VecAssemblyBegin(region_mass_vec_[quantity_idx]));
+    chkerr(VecAssemblyEnd(region_mass_vec_[quantity_idx]));
 }
 
 void Balance::finish_flux_assembly(unsigned int quantity_idx)
@@ -513,6 +522,17 @@ void Balance::add_source_matrix_values(unsigned int quantity_idx,
 }
 
 
+void Balance::add_mass_vec_value(unsigned int quantity_idx,
+        unsigned int region_idx,
+        double value)
+{
+  chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
+            region_idx,
+            value,
+            ADD_VALUES));
+}
+
+
 void Balance::add_flux_vec_value(unsigned int quantity_idx,
 		unsigned int elem_idx,
 		double value)
@@ -527,7 +547,7 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 }
 
 
-void Balance::add_source_rhs_values(unsigned int quantity_idx,
+void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
 		const vector<int> &dof_indices,
 		const vector<double> &values)
@@ -643,7 +663,10 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 
 	// compute mass on regions: M'.u
 	chkerr(VecZeroEntries(bulk_vec));
-	chkerr(MatMultTranspose(region_mass_matrix_[quantity_idx], solution, bulk_vec));
+	chkerr(MatMultTransposeAdd(region_mass_matrix_[quantity_idx], 
+                               solution, 
+                               region_mass_vec_[quantity_idx], 
+                               bulk_vec));
 	VecDestroy(&bulk_vec);
 }
 

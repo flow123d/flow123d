@@ -208,9 +208,13 @@
           make -C flow123d clean-tests
           cd flow123d/build_tree
           rm -rf _CPack_Packages
-          make -i package
+          pwd
+          ls
+          make -i package_debug
           make post_package
           rm -rf _CPack_Packages
+          pwd
+          ls
           make package_source
       - shell: |
           cd flow123d
@@ -301,6 +305,11 @@
           condition: COMPLETED
           projects:
             - { name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$", kill-phase-on: NEVER }
+      - multijob:
+          name: "Make Docs"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-debug-make-doc"
             
 
 
