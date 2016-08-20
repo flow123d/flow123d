@@ -2,4 +2,4 @@
 0	"center"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"region_20"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"region_24"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
-0	"IMPLICIT BOUNDARY"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0

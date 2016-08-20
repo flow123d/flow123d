@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
       linear_solver: !Petsc
         a_tol: 1.0e-07
     input_fields:
-      - region: IMPLICIT BOUNDARY
+      - region: .IMPLICIT_BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: !FieldInterpolatedP0
           gmsh_file: ${INPUT}/large_cube_solution.msh
