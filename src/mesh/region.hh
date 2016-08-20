@@ -418,8 +418,7 @@ public:
 
     /**
      * Returns implicit boundary region. Is used for boundary elements created by Flow123d itself.
-     * This region has label "IMPLICIT_BOUNDARY" and it is obsolete, the name is not consistent
-     * with boundary label notation.
+     * This region has label ".IMPLICIT_BOUNDARY".
      */
     Region implicit_boundary_region();
 
@@ -443,7 +442,7 @@ public:
      * Get region set of specified name. Three sets are defined by default:
      * "ALL" - set of all regions both bulk and boundary.
      * "BULK" - set of all bulk regions
-     * "BOUNDARY" - set of all boundary regions
+     * ".BOUNDARY" - set of all boundary regions
      *
      * @param set_name Name of set
      * @return RegionSet of specified name. Returns Empty vector if the set of given name doesn't exist.
