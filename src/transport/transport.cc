@@ -515,14 +515,14 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
         cfl_changed = true;
-        DBGMSG("CFL changed - flow.\n");
+        DebugOut() << "CFL changed - flow.\n";
     }
     
     if (is_mass_diag_changed)
     {
         create_mass_matrix();
         cfl_changed = true;
-        DBGMSG("CFL changed - mass matrix.\n");
+        DebugOut() << "CFL changed - mass matrix.\n";
     }
     
     // if DATA changed ---------------------> recompute concentration sources (rhs and matrix diagonal)
@@ -532,7 +532,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         compute_concentration_sources();
         is_src_term_scaled = false;
         cfl_changed = true;
-        DBGMSG("CFL changed - source.\n");
+        DebugOut() << "CFL changed - source.\n";
     }
     
     // now resolve the CFL condition
@@ -545,7 +545,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         VecMaxPointwiseDivide(cfl,mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
         cfl_max_step = 1 / cfl_max_step;
-        DBGMSG("CFL constraint (transport): %g\n", cfl_max_step);
+        DebugOut().fmt("CFL constraint (transport): {}\n", cfl_max_step);
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled
@@ -581,7 +581,7 @@ void ConvectionTransport::update_solution() {
     // if FLOW or DATA or BC or DT changed ---------------------> rescale boundary condition
     if( ! is_bc_term_scaled || time_->is_changed_dt() )
     {
-        DBGMSG("BC - rescale dt.\n");
+    	DebugOut() << "BC - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_bc_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int  sbi=0; sbi<n_substances(); sbi++)
@@ -592,7 +592,7 @@ void ConvectionTransport::update_solution() {
 
     // if DATA or TIME STEP changed -----------------------> rescale source term
     if( !is_src_term_scaled || time_->is_changed_dt()) {
-        DBGMSG("SRC - rescale dt.\n");
+    	DebugOut() << "SRC - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_src_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
@@ -605,7 +605,7 @@ void ConvectionTransport::update_solution() {
     
     // if DATA or TIME STEP changed -----------------------> rescale transport matrix
     if ( !is_convection_matrix_scaled || time_->is_changed_dt()) {
-        DBGMSG("TM - rescale dt.\n");
+    	DebugOut() << "TM - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_convection_matrix_scaled) ? dt_new : dt_scaled;
         

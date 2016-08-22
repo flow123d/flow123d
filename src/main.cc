@@ -112,14 +112,10 @@ void Application::display_version() {
             + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n",
-            rev_num_data.version.c_str(),
-            rev_num_data.revision.c_str());
-    xprintf(Msg,
-    	 "Branch: %s\n"
-		 "Build: %s\n"
-		 "Fetch URL: %s\n",
-		 rev_num_data.branch.c_str(), build.c_str() , rev_num_data.url.c_str() );
+    MessageOut().fmt("This is Flow123d, version {} revision: {}\n",
+            rev_num_data.version, rev_num_data.revision);
+    MessageOut().fmt("Branch: {}\nBuild: {}\nFetch URL: {}\n",
+		 rev_num_data.branch, build, rev_num_data.url );
     Profiler::instance()->set_program_info("Flow123d",
             rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 }
@@ -313,8 +309,8 @@ void Application::run() {
         }
 
         if ( iver_fields[0] != ver_fields[0] || iver_fields[1] > ver_fields[1] ) {
-            xprintf(Warn, "Input file with version: '%s' is no compatible with the program version: '%s' \n",
-                    input_version.c_str(), version.c_str());
+        	WarningOut().fmt("Input file with version: '{}' is no compatible with the program version: '{}' \n",
+                    input_version, version);
         }
 
         // should flow123d wait for pressing "Enter", when simulation is completed

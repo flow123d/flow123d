@@ -192,7 +192,7 @@ void HC_ExplicitSequential::run_simulation()
         velocity_interpolation_time= theta * secondary_eq->planned_time() + (1-theta) * secondary_eq->solved_time();
         
         // printing water and transport times every step
-        //xprintf(Msg,"HC_EXPL_SEQ: velocity_interpolation_time: %f, water_time: %f transport time: %f\n", 
+        //MessageOut().fmt("HC_EXPL_SEQ: velocity_interpolation_time: {}, water_time: {} transport time: {}\n",
         //        velocity_interpolation_time, water->time().t(), transport_reaction->time().t());
          
         // if transport is off, transport should return infinity solved and planned times so that
@@ -216,7 +216,7 @@ void HC_ExplicitSequential::run_simulation()
             // is not close to the solved_time of the water module
             // for simplicity we use only last velocity field
             if (velocity_changed) {
-                //DBGMSG("velocity update\n");
+                //DebugOut() << "velocity update\n";
                 secondary_eq->set_velocity_field( water->get_mh_dofhandler() );
                 velocity_changed = false;
             }
@@ -230,7 +230,7 @@ void HC_ExplicitSequential::run_simulation()
         }
 
     }
-    xprintf(Msg, "End of simulation at time: %f\n", secondary_eq->solved_time());
+    MessageOut().fmt("End of simulation at time: {}\n", secondary_eq->solved_time());
 }
 
 

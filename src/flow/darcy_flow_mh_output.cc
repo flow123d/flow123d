@@ -147,7 +147,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             // optionally open raw output file
             FilePath raw_output_file_path;
             if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-                xprintf(Msg, "Opening raw output: %s\n", string(raw_output_file_path).c_str() );
+            	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
                 raw_output_file = xfopen(raw_output_file_path, "wt");
             }
 
@@ -598,7 +598,7 @@ void l2_diff_local(ElementFullIter &ele,
 
 
 void DarcyFlowMHOutput::compute_l2_difference() {
-    DBGMSG("l2 norm output\n");
+	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
 
     const unsigned int order = 4; // order of Gauss quadrature

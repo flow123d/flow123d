@@ -271,7 +271,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     // create finite element structures and distribute DOFs
     feo = new FEObjects(Model::mesh_, dg_order);
-    //DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
+    //DebugOut().fmt("TDG: solution size {}\n", feo->dh()->n_global_dofs());
 
 }
 
