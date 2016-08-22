@@ -121,7 +121,7 @@ const string input = R"INPUT(
        value="x+y+z"
    },
    output_stream = {
-    file = "./test1.pvd", 
+    file = "test1.pvd", 
     format = {
         TYPE = "vtk", 
         variant = "ascii"
@@ -132,7 +132,7 @@ const string input = R"INPUT(
         error_control_field = "conc"
     }*/
   }
-  ,output = {} //["conc"]
+  ,output = {fields = ["conc"]}
 }
 )INPUT";
 
@@ -164,8 +164,7 @@ TEST(OutputMesh, write_on_output_mesh) {
     Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
         .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
-        .declare_key("output", EquationOutput().make_output_type("test_eq"), Input::Type::Default::obligatory(), "")
-        //             Input::Type::Default::obligatory(), "")
+        .declare_key("output", output_fields.make_output_type("test_eq"), Input::Type::Default::obligatory(), "")
         .close();
 
 
@@ -187,7 +186,9 @@ TEST(OutputMesh, write_on_output_mesh) {
     std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
     output->init_from_input("dummy_equation", *mesh, in_rec.val<Input::Record>("output_stream"));
     output_fields.initialize(output, in_rec.val<Input::Record>("output"), TimeGovernor());
-    //output->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+    
+    EXPECT_EQ(1,output_fields.size());
+    EXPECT_TRUE(output_fields.is_field_output_time(*output_fields.field("conc"), 0.0));
     
     // register output fields, compute and write data
     output_fields.output(0.0);

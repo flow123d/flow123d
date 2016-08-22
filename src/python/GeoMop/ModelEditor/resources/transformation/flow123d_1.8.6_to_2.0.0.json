@@ -871,7 +871,62 @@
           "old_value" : "false",
           "new_value" : "{add_output_times: false}"
         }
-    }        
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY, hack to deal with substitution matching the substrings",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    }
+            
              
   ]
 }

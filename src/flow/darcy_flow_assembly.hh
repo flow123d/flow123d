@@ -100,6 +100,7 @@
             unsigned int qsize = fe_values_.get_quadrature()->size();
             arma::mat::fixed<dim+1,dim+1> local_matrix;
             local_matrix.zeros();
+            arma::vec3 &gravity_vec = ad_->gravity_vec_;
 
             for (unsigned int k=0; k<qsize; k++)
             {
@@ -112,8 +113,14 @@
                                              * fe_values_.shape_vector(j,k)
                                            )
                                 * fe_values_.JxW(k);
+                     ad_->system_.loc_side_rhs[i] +=
+                             arma::dot(
+                                     gravity_vec,
+                                     fe_values_.shape_vector(i,k)
+                                     ) * fe_values_.JxW(k);
                 }
             }
+
             return local_matrix;
         }
 
