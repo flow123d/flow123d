@@ -220,7 +220,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
             proc_to_check=part_to_check[vtx];
             // check if the processor is still unvisited
             if ( checked_proc[proc_to_check] )
-                xprintf(Warn, "Disconnected subgraph %d detected at vertex %d.\n",part_to_check[vtx],vtx);
+            	WarningOut().fmt("Disconnected subgraph {} detected at vertex {}.\n", part_to_check[vtx], vtx);
             // DFS unvisited vertex
             checked_vtx[vtx]=1;
             DFS(vtx);
@@ -230,7 +230,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
     }
     checked_vtx.clear();
 
-    DBGMSG("Connectivity of subgraphs is OK.\n");
+    DebugOut() << "Connectivity of subgraphs is OK.\n";
     return (true);
 }
 
@@ -257,11 +257,11 @@ void SparseGraph::view()
 {
 	OLD_ASSERT( adj,"Can not view non finalized graph.\n");
     int row,col;
-    xprintf(Msg,"SparseGraph\n");
+    MessageOut() << "SparseGraph\n";
     for(row=0; row < (int) vtx_distr.lsize(); row++) {
-        xprintf(Msg,"edges from this vertex: %d\n",rows[row+1]);
+    	MessageOut().fmt("edges from this vertex: {}\n", rows[row+1]);
         for(col=rows[row]; col<rows[row+1]; col++) {
-            xprintf(Msg,"edge (v1, v2): %d %d\n",row+vtx_distr.begin(), adj[col]);
+        	MessageOut().fmt("edge (v1, v2): {} {}\n", row+vtx_distr.begin(), adj[col]);
         }
     }
 }
