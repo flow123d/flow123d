@@ -81,7 +81,7 @@ void OutputTimeSet::add(double time, TimeMark::Type mark_type)
 
 void OutputTimeSet::add(double begin, double step, double end, TimeMark::Type mark_type)
 {
-    //DBGMSG("set add: %f %f %f %x\n", begin, step, end, mark_type);
+    //DebugOut().fmt("set add: {} {} {} {}\n", begin, step, end, mark_type);
     ASSERT_GE( step, 2*numeric_limits<double>::epsilon());
     ASSERT_LE( begin, end);
     ASSERT_LT( end, TimeGovernor::inf_time );
@@ -92,6 +92,6 @@ void OutputTimeSet::add(double begin, double step, double end, TimeMark::Type ma
         auto mark = TimeMark(begin + i * step, output_mark_type);
         double time = TimeGovernor::marks().add(mark).time();
         times_.insert( time );
-        //DBGMSG("add time: %f size: %d\n", time, times_.size());
+        //DebugOut().fmt("add time: {} size: {}\n", time, times_.size());
     }
 }
