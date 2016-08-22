@@ -106,7 +106,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // Need explicit template types here, since reference is used (automatically passing by value)
     water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
     water->initialize();
-    FieldCommon *wc_sat = water->data()["water_content_saturated"];
+    FieldCommon *wc_sat = water->data().field("water_content_saturated");
 
     // TODO: optionally setup transport object
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("solute_equation");
@@ -118,7 +118,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         		.copy_from(water->data()["cross_section"]);
                 
         if (wc_sat) // only for Richards water model
-            solute->data()["porosity"].copy_from(wc_sat);
+            solute->data()["porosity"].copy_from(*wc_sat);
 
         solute->initialize();
     } else {
@@ -135,7 +135,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
                 .copy_from(water->data()["cross_section"]);
         
         if (wc_sat) // only for Richards water model
-            heat->data()["porosity"].copy_from(wc_sat);
+            heat->data()["porosity"].copy_from(*wc_sat);
                 
         heat->initialize();
     } else {

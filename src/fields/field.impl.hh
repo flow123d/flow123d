@@ -312,7 +312,7 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 	// do not use copy if the field have its own input
 	if ( flags().match(FieldFlag::declare_input)
-	     && data_->input_list_.size() != 0 ) return;
+	     && this->shared_->input_list_.size() != 0 ) return;
 
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);
