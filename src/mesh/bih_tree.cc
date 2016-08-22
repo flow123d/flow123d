@@ -198,7 +198,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 	node_stack.push(0);
 	while (! node_stack.empty()) {
 		const BIHNode &node = nodes_[node_stack.top()];
-		//DBGMSG("node: %d\n", node_stack.top() );
+		//DebugOut().fmt("node: {}\n", node_stack.top() );
 		node_stack.pop();
 
 

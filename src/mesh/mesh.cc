@@ -266,7 +266,7 @@ void Mesh::setup_topology() {
 
     // check mesh quality
     FOR_ELEMENTS(this, ele)
-        if (ele->quality_measure_smooth() < 0.001) xprintf(Warn, "Bad quality (<0.001) of the element %u.\n", ele.id());
+        if (ele->quality_measure_smooth() < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.id());
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -405,7 +405,8 @@ void Mesh::make_neighbours_and_edges()
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
-                xprintf(Warn, "Lonely boundary element, id: %d, region: %d, dimension %d.\n", bc_ele.id(), bc_ele->region().id(), bc_ele->dim());
+            	WarningOut().fmt("Lonely boundary element, id: {}, region: {}, dimension {}.\n",
+            			bc_ele.id(), bc_ele->region().id(), bc_ele->dim());
                 continue; // skip the boundary element
             }
             last_edge_idx=edges.size();
@@ -547,7 +548,7 @@ void Mesh::make_neighbours_and_edges()
 		} // for element sides
 	}   // for elements
 
-	xprintf( Msg, "Created %d edges and %d neighbours.\n", edges.size(), vb_neighbours_.size() );
+	MessageOut().fmt( "Created {} edges and {} neighbours.\n", edges.size(), vb_neighbours_.size() );
 }
 
 
@@ -626,7 +627,7 @@ void Mesh::make_edge_permutations()
 void Mesh::element_to_neigh_vb()
 {
 
-    xprintf( MsgVerb, "   Element to neighbours of vb2 type... ")/*orig verb 5*/;
+	//MessageOut() << "Element to neighbours of vb2 type... "/*orig verb 5*/;
 
     FOR_ELEMENTS(this,ele) ele->n_neighs_vb =0;
 
@@ -647,7 +648,7 @@ void Mesh::element_to_neigh_vb()
         ele->neigh_vb[ ele->n_neighs_vb++ ] = &( *ngh );
     }
 
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+    //MessageOut() << "... O.K.\n"/*orig verb 6*/;
 }
 
 
