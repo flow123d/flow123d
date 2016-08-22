@@ -28,13 +28,13 @@
 
 #include <armadillo>
 
-template<int dim, typename S> class SingularityCRTP;
+template<unsigned int dim, typename S> class SingularityCRTP;
 
 /**
  * CRTP - Curiously recurring template pattern.
  * - avoids virtual member calls for @p val, @p grad, @p div
  */
-template<int dim, template<int> class S, int spacedim>
+template<unsigned int dim, template<unsigned int> class S, unsigned int spacedim>
 class SingularityCRTP< dim, S<spacedim> > : public GlobalEnrichmentFunc<dim,spacedim>
 {
 public:
@@ -72,7 +72,7 @@ public:
  *   (we suppose always circular cross section of 1D-2D)
  * 
  */
-template<int spacedim>
+template<unsigned int spacedim>
 class Singularity0D : public SingularityCRTP<2,Singularity0D<spacedim>>
 {
 public:
@@ -115,25 +115,25 @@ private:
     std::vector<Point> q_points_;
 };
 
-template<int spacedim>
+template<unsigned int spacedim>
 Singularity0D<spacedim>::Singularity0D(const Point& center, double radius)
 :   center_(center), radius_(radius)
 {}
 
-template<int spacedim>
+template<unsigned int spacedim>
 inline typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::center() const
 {   return center_;}
 
-template<int spacedim>
+template<unsigned int spacedim>
 inline double Singularity0D<spacedim>::radius() const
 {   return radius_;}
 
-template<int spacedim>
+template<unsigned int spacedim>
 inline const std::vector<typename Singularity0D<spacedim>::Point>& Singularity0D<spacedim>::q_points() const
 {   return q_points_;}
 
 
-template<int spacedim>
+template<unsigned int spacedim>
 double Singularity0D<spacedim>::value(const Point& x) const
 {
     double distance = arma::norm(center_-x,2);
@@ -143,7 +143,7 @@ double Singularity0D<spacedim>::value(const Point& x) const
     return std::log(radius_);
 }
 
-template<int spacedim>
+template<unsigned int spacedim>
 typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Point &x) const
 {
     Point grad; //initialize all entries with zero
@@ -158,19 +158,19 @@ typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Poin
     return grad;  //returns zero if  (distance <= radius)
 }
 
-template<int spacedim>
+template<unsigned int spacedim>
 typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::vector(const Point &x) const
 {
     return this->grad(x);
 }
 
-template<int spacedim>
+template<unsigned int spacedim>
 double Singularity0D<spacedim>::div(const Point& x) const
 {
     return 0;
 }
 
-template<int spacedim>
+template<unsigned int spacedim>
 inline double Singularity0D<spacedim>::circumference() const
 {
     return 2*M_PI*radius_;
