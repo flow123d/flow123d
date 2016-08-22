@@ -51,7 +51,7 @@ double AdaptiveSimpson::SimpsonAd(FunctorBase<double> &func,
   }
   else
   {
-    //DBGMSG("simpsonad, recursion:  %10d \t %E\n", recursion, err_est);
+    //DebugOut().fmt("simpsonad, recursion:  {} \t {}\n", recursion, err_est);
     //std::cout << "simpsonad -else " << recursion << std::endl;
     //std::cout << h2 << "  " << a << "  " << ca << "  " << c << "  " << fa  << "  " << fca  << "  " << fc  << "  " << sa << std::endl;
     return SimpsonAd(func,h2,a,ca,c,fa,fca,fc,sa,tol,recursion) 
@@ -63,7 +63,7 @@ double AdaptiveSimpson::AdaptSimpson( FunctorBase<double> &func,
 				      const double& a, const double& b, 
 				      const double& tol )
 {
-  //DBGMSG("AdaptiveSimpson: a(%f) b(%f)\n",a,b);
+  //DebugOut().fmt("AdaptiveSimpson: a({}) b({})\n",a,b);
   double c = 0.5*(b+a);
   double fa,fb,fc;
   double sx,res;
@@ -71,10 +71,10 @@ double AdaptiveSimpson::AdaptSimpson( FunctorBase<double> &func,
   fb = func(b);
   fc = func(c);
   long recursion = 0;
-  //DBGMSG("fa=%f \tfb=%f \tfc=%f\n",fa,fb,fc);
+  //DebugOut().fmt("fa={} \tfb={} \tfc={}\n",fa,fb,fc);
   sx = Simpson(b-a, fa, fc, fb);
   res = SimpsonAd(func,b-a,a,c,b,fa,fc,fb,sx,tol,recursion);
-  //DBGMSG("\trecursions: %f\n",recursion);
+  //DebugOut().fmt("\trecursions: {}\n",recursion);
   return res;
 }
 
