@@ -23,7 +23,7 @@ problem: !Coupling_Sequential
     input_fields:
       - region: rectangle
         conductivity: 0.125
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
@@ -44,7 +44,7 @@ problem: !Coupling_Sequential
         - region: ALL
           init_conc: 0
           porosity: 0.25
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc: !FieldFormula
             value: 0.05*t
     substances:

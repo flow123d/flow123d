@@ -70,7 +70,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
             "Type of boundary condition.")
             .units( UnitSI::dimensionless() )
             .input_default("\"inflow\"")
-            .input_selection( &get_bc_type_selection() )
+            .input_selection( get_bc_type_selection() )
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=bc_dirichlet_value
             .name("bc_temperature")

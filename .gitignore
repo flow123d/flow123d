@@ -1,6 +1,8 @@
 config.cmake
 profiler_info*.log
 flow*.log
+*.orig.*
+*.orig
 unit_tests/*/makefile
 unit_tests/makefile
 unit_tests/fields/speed_test_*.log

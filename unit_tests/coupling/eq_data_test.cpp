@@ -75,7 +75,7 @@ protected:
             anisotropy.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
-                      bc_type.input_selection(&get_bc_type_selection());
+                      bc_type.input_selection(get_bc_type_selection());
             bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );

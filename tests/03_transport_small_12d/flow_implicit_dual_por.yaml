@@ -19,7 +19,7 @@ problem: !Coupling_Sequential
       sigma: 0.9
     - region: 2d
       conductivity: 1.0e-07
-    - region: BOUNDARY
+    - region: .BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
         value: x+y
@@ -55,7 +55,7 @@ problem: !Coupling_Sequential
         - 0.25
         - 0
         # source is in the whole volume (l+s) -> times porosity
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_conc:
         - 0.0
         - 1.0

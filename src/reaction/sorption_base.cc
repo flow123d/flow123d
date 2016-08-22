@@ -78,7 +78,7 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     	rock_density.units( UnitSI().kg().m(-3) );
 
     ADD_FIELD(sorption_type,"Considered sorption is described by selected isotherm. If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically."); //
-        sorption_type.input_selection(&get_sorption_type_selection());
+        sorption_type.input_selection(get_sorption_type_selection());
         sorption_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(isotherm_mult,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");

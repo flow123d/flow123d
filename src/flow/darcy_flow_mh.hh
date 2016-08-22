@@ -94,6 +94,7 @@ public:
     // the vector is set in assembly_mh_matrix and used in LMH assembly of the time term
     std::vector<unsigned int> dirichlet_edge;
     std::shared_ptr<arma::mat> local_matrix;
+    double loc_side_rhs[4];
     std::shared_ptr<Balance> balance;
     LinSys *lin_sys;
 };
@@ -193,6 +194,7 @@ public:
          * to pressure head and vice versa.
          */
         arma::vec4 gravity_;
+        arma::vec3 gravity_vec_;
 
         Mesh *mesh;
         MH_DofHandler *mh_dh;

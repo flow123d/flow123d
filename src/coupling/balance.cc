@@ -833,7 +833,7 @@ void Balance::output(double time)
 		sum_sources_out_.assign(n_quant, 0);
 
 		// sum all boundary fluxes
-		const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
+		const RegionSet & b_set = mesh_->region_db().get_region_set(".BOUNDARY");
 		for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 		{
 			for (unsigned int qi=0; qi<n_quant; qi++)
@@ -942,7 +942,7 @@ void Balance::output_legacy(double time)
 	output_ << "# " << setw(w*c+wl) << setfill('-') << "" << setfill(' ') << endl;
 
 	// print mass fluxes over boundaries
-	const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
+	const RegionSet & b_set = mesh_->region_db().get_region_set(".BOUNDARY");
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
 		for (unsigned int qi=0; qi<n_quant; qi++) {
 			output_ << setw(2)  << ""
@@ -1093,7 +1093,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 	}
 
 	// print mass fluxes over boundaries
-	const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
+	const RegionSet & b_set = mesh_->region_db().get_region_set(".BOUNDARY");
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++) {
@@ -1231,7 +1231,7 @@ void Balance::output_yaml(double time)
 	}
 
 	// print mass fluxes over boundaries
-	const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
+	const RegionSet & b_set = mesh_->region_db().get_region_set(".BOUNDARY");
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++) {

@@ -24,7 +24,7 @@ problem: !Coupling_Sequential
     - bc_pressure: !FieldFormula
         value: x+y
       bc_type: dirichlet
-      r_set: BOUNDARY
+      r_set: .BOUNDARY
     output:
       fields:
       - pressure_p0
@@ -52,7 +52,7 @@ problem: !Coupling_Sequential
     - bc_conc:
       - 0.0
       - 1.0
-      r_set: BOUNDARY
+      r_set: .BOUNDARY
     output_stream:
       file: transport.pvd
       format: !vtk
