@@ -144,7 +144,9 @@ const it::Record & DarcyMH::get_input_type() {
 
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
-        .declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
+        .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
+                "Vector of the gravitational acceleration (divided by the acceleration). Dimensionless, magnitude one for the Earth conditions.")
+		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
                 "Non-linear solver for MH problem.")
@@ -290,8 +292,14 @@ void DarcyMH::init_eq_data()
     data_->mesh = mesh_;
     data_->mh_dh = &mh_dh;
     data_->set_mesh(*mesh_);
-    //data_->gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
-    data_->gravity_ =  arma::vec4(" 0 0 -1 0");
+
+    auto gravity_array = input_record_.val<Input::Array>("gravity");
+    std::vector<double> gvec;
+    gravity_array.copy_to(gvec);
+    gvec.push_back(0.0); // zero pressure shift
+    data_->gravity_ =  arma::vec(gvec);
+    data_->gravity_vec_ = data_->gravity_.subvec(0,2);
+
     data_->bc_pressure.add_factory(
         std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
         (data_->gravity_, "bc_piezo_head") );
@@ -645,7 +653,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     for(int i=0; i<1000; i++) zeros[i]=0.0;
 
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
-    double loc_side_rhs[4];
+    double * loc_side_rhs = data_->system_.loc_side_rhs;
 
     arma::mat &local_matrix = *(data_->system_.local_matrix);
 
@@ -673,7 +681,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
             bcd=ele_ac.side(i)->cond();
 
             // gravity term on RHS
-            loc_side_rhs[i] = (ele_ac.centre()[ 2 ] - ele_ac.side(i)->centre()[ 2 ]);
+            //
+            loc_side_rhs[i] = 0;
 
             // set block C and C': side-edge, edge-side
             double c_val = 1.0;
@@ -831,7 +840,6 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                    static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_rows[i], val_edge );
                }
             }
-
         }
 
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
