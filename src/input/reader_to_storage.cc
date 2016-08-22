@@ -486,7 +486,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
         }
 
 		if ( arr_size > (int)tuple->size() ) {
-            xprintf(Warn, "Unprocessed keys in tuple '%s', tuple has %d keys but the input is specified by %d values.\n",
+			WarningOut().fmt("Unprocessed keys in tuple '{}', tuple has {} keys but the input is specified by {} values.\n",
                     p.as_string().c_str(), tuple->size(), arr_size );
 		}
 

@@ -55,7 +55,7 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
         module_name = fname;
 
     // cout << "python module: " << module_name <<endl;
-    // DBGMSG("%s\n", buffer.str().c_str());
+    // DebugOut() << buffer.str() << "\n";
     // TODO: use exceptions and catch it here to produce shorter and more precise error message
     return load_module_from_string(module_name, buffer.str() );
 }
