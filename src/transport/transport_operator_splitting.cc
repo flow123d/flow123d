@@ -108,7 +108,7 @@ TransportEqData::TransportEqData()
 {
 
 	ADD_FIELD(porosity, "Mobile porosity", "1");
-	porosity.units( UnitSI::dimensionless() ).flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
+	porosity.units( UnitSI::dimensionless() ).flags_add(in_time_term & in_main_matrix & in_rhs);
 
 	ADD_FIELD(cross_section, "");
 	cross_section.flags( FieldFlag::input_copy ).flags_add(in_time_term & in_main_matrix & in_rhs);
