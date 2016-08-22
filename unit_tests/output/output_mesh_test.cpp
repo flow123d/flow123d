@@ -59,17 +59,17 @@ TEST(OutputMesh, create_identical)
     
     for(const auto &ele : *output_mesh)
     {
-        xprintf(Msg,"%d %dD n_%d |",ele.idx(), ele.dim(), ele.n_nodes());
+    	std::cout << ele.idx() << " " << ele.dim() << "D n_" << ele.n_nodes() << " |";
         for(unsigned int i=0; i < ele.n_nodes(); i++)
         {
-            xprintf(Msg," %d",ele.node_index(i));
+        	std::cout << " " << ele.node_index(i);
         }
-        xprintf(Msg," |");
+        std::cout << " |";
         for(auto& v : ele.vertex_list())
         {
-            xprintf(Msg," %f %f %f #",v[0], v[1], v[2]);
+        	std::cout << " " << v[0] << " " << v[1] << " " << v[2] << " #";
         }
-        xprintf(Msg,"\n");
+        std::cout << endl;
         
         ElementAccessor<3> ele_acc = ele.element_accessor();
         EXPECT_EQ(ele.dim(), ele_acc.dim());
@@ -81,20 +81,20 @@ TEST(OutputMesh, create_identical)
     auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
     output_mesh_discont->create_mesh(output_mesh);
     
-    xprintf(Msg,"DISCONTINUOUS\n");
+    MessageOut() << "DISCONTINUOUS\n";
     for(const auto &ele : *output_mesh_discont)
     {
-        xprintf(Msg,"%d %dD n_%d |",ele.idx(), ele.dim(), ele.n_nodes());
+    	std::cout << ele.idx() << " " << ele.dim() << "D n_" << ele.n_nodes() << " |";
         for(unsigned int i=0; i < ele.n_nodes(); i++)
         {
-            xprintf(Msg," %d",ele.node_index(i));
+        	std::cout << " " << ele.node_index(i);
         }
-        xprintf(Msg," |");
+        std::cout << " |";
         for(auto& v : ele.vertex_list())
         {
-            xprintf(Msg," %f %f %f #",v[0], v[1], v[2]);
+        	std::cout << " " << v[0] << " " << v[1] << " " << v[2] << " #";
         }
-        xprintf(Msg,"\n");
+        std::cout << endl;
         
         ElementAccessor<3> ele_acc = ele.element_accessor();
         EXPECT_EQ(ele.dim(), ele_acc.dim());

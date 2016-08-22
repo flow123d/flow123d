@@ -186,7 +186,7 @@ protected:
             $EndPhysicalNames
          */
 
-        DBGMSG("init\n");
+        DebugOut() << "init\n";
 
         static std::vector<Input::Array> inputs;
         unsigned int input_last = inputs.size(); // position of new item
@@ -280,7 +280,7 @@ TEST_F(SomeEquation, values) {
     Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
-    DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
+    DebugOut().fmt("elements size: {} {}\n", mesh->element.size(), mesh->bc_elements.size());
 
     // check element accessors
     ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"

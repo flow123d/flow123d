@@ -208,7 +208,7 @@ TEST (Functors, make_interpolation)
   //interpolant->set_size_automatic(0.1,10,1e5);
   interpolant->interpolate();
   
-  //DBGMSG("Error of interpolation: %f\n", interpolant->error());
+  //DebugOut().fmt("Error of interpolation: {}\n", interpolant->error());
 
   EQUAL(interpolant->val(-7), -343);    //out of interval
   EQUAL(interpolant->statistics().min, -7.0);
@@ -258,7 +258,6 @@ TEST (Functors, make_interpolation)
   //this should remake the table
   for(unsigned int i=0; i < 100; i++)
   {
-    //DBGMSG("i: %d\n",i);
     interpolant->val(-20);
     interpolant->val(15);
   }
@@ -267,9 +266,9 @@ TEST (Functors, make_interpolation)
   //interpolant->check_stats_and_reinterpolate(0.5);
   
   //statistics
-  //DBGMSG("bound_a: %f\n",interpolant->bound_a());
-  //DBGMSG("bound_b: %f\n",interpolant->bound_b());
-  //DBGMSG("total: %d\n",interpolant->statistics().total_calls);
+  //DebugOut().fmt("bound_a: {}\n", interpolant->bound_a());
+  //DebugOut().fmt("bound_b: {}\n", interpolant->bound_b());
+  //DebugOut().fmt("total: {}\n", interpolant->statistics().total_calls);
   EQUAL(interpolant->bound_a(),-20);
   EQUAL(interpolant->bound_b(),15);
   
@@ -317,7 +316,7 @@ TEST (Functors, interpolation_error)
   //interpolant->set_functor<Linear, double>(&lin_func);
   interpolant->interpolate();
   //linear function is interpolated by linear aproximation accurately
-  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
+  //DebugOut().fmt("Error of interpolation: {}\n", interpolant->error());
   //cout << "Error of interpolation: " << interpolant->error() << endl;
   //EQUAL(interpolant->error(), 0);
   EXPECT_TRUE(interpolant->error() < 1e-15);

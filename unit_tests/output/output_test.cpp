@@ -306,7 +306,6 @@ public:
 		EXPECT_EQ(1, elem_data.size());
 		check_elem_data( elem_data[0], result);
 */
-		DBGMSG("end\n");
 	}
 
 	Mesh * my_mesh;
