@@ -464,9 +464,9 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     		                .push_front(HistoryPoint( 0.0, field_ptr) );
     		region_list+=" "+reg.label();
         }
-        xprintf(Warn, "Using default value '%s' for part of the input field '%s' ('%s').\n"
-                "regions: %s\n",
-                input_default().c_str(), input_name().c_str(), name().c_str(), region_list.c_str());
+        WarningOut().fmt("Using default value '{}' for part of the input field '{}' ('{}').\n"
+                "regions: {}\n",
+                input_default(), input_name(), name(), region_list);
 
     }
     shared_->is_fully_initialized_ = true;
