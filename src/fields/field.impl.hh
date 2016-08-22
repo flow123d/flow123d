@@ -93,7 +93,7 @@ Field<spacedim,Value>::Field(const Field &other)
 template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
-	OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	//OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
 	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between fields with different meshes.\n");
@@ -307,8 +307,8 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
-	ASSERT( flags().match(FieldFlag::input_copy))(other.name().c_str())(this->name().c_str())
-	        .error("Can not copy to the non-copy field.");
+	ASSERT( flags().match(FieldFlag::equation_input))(other.name().c_str())(this->name().c_str())
+	        .error("Can not copy to the non-input field.");
 
 	// do not use copy if the field have its own input
 	if ( flags().match(FieldFlag::declare_input)

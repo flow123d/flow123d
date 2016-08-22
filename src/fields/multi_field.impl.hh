@@ -57,7 +57,7 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
 template<int spacedim, class Value>
 MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiField<spacedim,Value> &other)
 {
-	OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	//OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
 	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between multi fields with different meshes.\n");
@@ -168,7 +168,7 @@ void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
-    ASSERT( flags().match(FieldFlag::input_copy))(other.name().c_str())(this->name().c_str())
+    ASSERT( flags().match(FieldFlag::equation_input))(other.name().c_str())(this->name().c_str())
             .error("Can not copy to the non-copy field.");
 
     // do not use copy if the field have its own input

@@ -117,8 +117,8 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         solute->data()["cross_section"]
         		.copy_from(water->data()["cross_section"]);
                 
-        if (wc_sat) // only for Richards water model
-            solute->data()["porosity"].copy_from(*wc_sat);
+        //if (wc_sat) // only for Richards water model
+        //    solute->data()["porosity"].copy_from(*wc_sat);
 
         solute->initialize();
     } else {
@@ -134,8 +134,8 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         heat->data()["cross_section"]
                 .copy_from(water->data()["cross_section"]);
         
-        if (wc_sat) // only for Richards water model
-            heat->data()["porosity"].copy_from(*wc_sat);
+        //if (wc_sat) // only for Richards water model
+        //    heat->data()["porosity"].copy_from(*wc_sat);
                 
         heat->initialize();
     } else {
