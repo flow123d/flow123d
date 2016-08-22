@@ -27,7 +27,8 @@ namespace feal {
  */
 
 Exc_assert::Exc_assert()
-: what_type_msg_("Program Error: Violated assert! ") {}
+: line_(0),
+  what_type_msg_("Program Error: Violated assert! ") {}
 
 
 void Exc_assert::print_info(std::ostringstream &out) const

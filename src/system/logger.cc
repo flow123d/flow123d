@@ -63,7 +63,7 @@ int StreamMask::operator()(void)
 
 
 Logger::Logger(MsgType type)
-: type_(type), every_process_(false)
+: type_(type), every_process_(false), line_(0)
 {
 	// set actual time
 	date_time_ = LoggerOptions::format_hh_mm_ss();

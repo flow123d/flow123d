@@ -40,7 +40,8 @@ using namespace internal;
 ReaderToStorage::ReaderToStorage()
 : storage_(nullptr),
   root_type_(nullptr),
-  try_transpose_read_(false)
+  try_transpose_read_(false),
+  transpose_index_(0)
 {}
 
 
