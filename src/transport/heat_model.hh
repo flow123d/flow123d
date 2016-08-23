@@ -25,8 +25,11 @@
 #include "fields/bc_multi_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "fields/field_set.hh"
+#include "transport/advection_process_base.hh"
+#include "transport/substance.hh"
 
-
+/*
 class HeatProcessBase : public EquationBase
 {
 public:
@@ -43,7 +46,7 @@ public:
      * We just keep the pointer, but do not destroy the object.
      *
      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
-     */
+     *
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
 
     /// Common specification of the input record for secondary equations.
@@ -52,9 +55,9 @@ public:
                 "Equation for heat transfer.")
                 .close();
     }
-};
+};*/
 
-
+/*
 class HeatNothing : public HeatProcessBase {
 public:
     inline HeatNothing(Mesh &mesh_in)
@@ -74,9 +77,9 @@ public:
     inline virtual void output_data() override {};
 
 };
+*/
 
-
-class HeatTransferModel : public AdvectionDiffusionModel, public HeatProcessBase {
+class HeatTransferModel : public AdvectionDiffusionModel, public AdvectionProcessBase {
 public:
 
 	class ModelEqData : public FieldSet {
@@ -149,6 +152,7 @@ public:
 		static IT::Selection get_output_selection();
 	};
 
+	typedef AdvectionProcessBase FactoryBaseType;
 
 
 	HeatTransferModel(Mesh &mesh, const Input::Record in_rec);

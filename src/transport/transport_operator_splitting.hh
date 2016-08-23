@@ -208,6 +208,8 @@ public:
 
 class TransportOperatorSplitting : public AdvectionProcessBase {
 public:
+    typedef AdvectionProcessBase FactoryBaseType;
+
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
      *

@@ -19,7 +19,7 @@
 #include "input/input_type.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-#include "transport/transport_operator_splitting.hh"
+//#include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
 #include "fields/unit_si.hh"
 #include "coupling/balance.hh"
@@ -104,7 +104,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Porosity.")
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
-            .flags_add(input_copy & in_main_matrix & in_time_term);
+            .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_density
             .name("fluid_density")
@@ -238,7 +238,7 @@ IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 
 
 HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
-		HeatProcessBase(mesh, in_rec),
+		AdvectionProcessBase(mesh, in_rec),
 		flux_changed(true),
 		mh_dh(nullptr)
 {

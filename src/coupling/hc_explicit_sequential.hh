@@ -55,7 +55,12 @@ public:
 
 private:
 
+    std::shared_ptr<AdvectionProcessBase> make_advection_process(std::string process_key);
+
     static const int registrar;
+
+    ///
+    Input::Record in_record_;
 
     /// mesh common to darcy flow and transport
     Mesh *mesh;
@@ -67,7 +72,7 @@ private:
     std::shared_ptr<AdvectionProcessBase> solute;
     
     /// heat transport
-    std::shared_ptr<HeatProcessBase> heat;
+    std::shared_ptr<AdvectionProcessBase> heat;
 
 };
 

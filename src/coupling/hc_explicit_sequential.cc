@@ -76,11 +76,34 @@ const int HC_ExplicitSequential::registrar = HC_ExplicitSequential::get_input_ty
 
 
 
+std::shared_ptr<AdvectionProcessBase> HC_ExplicitSequential::make_advection_process(string process_key)
+{
+    using namespace Input;
+    // setup heat object
+    Iterator<AbstractRecord> it = in_record_.find<AbstractRecord>(process_key);
+
+    if (it) {
+        auto process = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record >(*mesh, *it);
+
+        // setup fields
+        process->data()["cross_section"]
+                .copy_from(water->data()["cross_section"]);
+
+        //if (wc_sat) // only for Richards water model
+        //    heat->data()["porosity"].copy_from(*wc_sat);
+
+        process->initialize();
+        return process;
+    } else {
+        return std::make_shared<TransportNothing>(*mesh);
+    }
+}
 
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
+: in_record_(in_record)
 {
 	START_TIMER("HC constructor");
     using namespace Input;
@@ -108,39 +131,8 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     water->initialize();
     FieldCommon *wc_sat = water->data().field("water_content_saturated");
 
-    // TODO: optionally setup transport object
-    Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("solute_equation");
-    if (it) {
-    	solute = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record >(*mesh, *it);
-
-        // setup fields
-        solute->data()["cross_section"]
-        		.copy_from(water->data()["cross_section"]);
-                
-        //if (wc_sat) // only for Richards water model
-        //    solute->data()["porosity"].copy_from(*wc_sat);
-
-        solute->initialize();
-    } else {
-        solute = std::make_shared<TransportNothing>(*mesh);
-    }
-    
-    // setup heat object
-    it = in_record.find<AbstractRecord>("heat_equation");
-    if (it) {
-        heat = (*it).factory< HeatProcessBase, Mesh &, const Input::Record >(*mesh, *it);
-
-        // setup fields
-        heat->data()["cross_section"]
-                .copy_from(water->data()["cross_section"]);
-        
-        //if (wc_sat) // only for Richards water model
-        //    heat->data()["porosity"].copy_from(*wc_sat);
-                
-        heat->initialize();
-    } else {
-        heat = std::make_shared<HeatNothing>(*mesh);
-    }
+    solute = make_advection_process("solute_equation");
+    heat = make_advection_process("heat_equation");
 }
 
 
@@ -226,7 +218,8 @@ void HC_ExplicitSequential::run_simulation()
             velocity_changed_solute = true;
             velocity_changed_heat = true;
         } else {
-            if (water->solved_time() >= velocity_interpolation_time_solute) {
+            if (water->solved_time() >= velocity_interpolation_time_solute
+                    && ! solute->time().is_end()) {
                 // having information about velocity field we can perform transport step
 
                 // here should be interpolation of the velocity at least if the interpolation time
@@ -246,7 +239,8 @@ void HC_ExplicitSequential::run_simulation()
                 solute->output_data();
             }
             
-            if (water->solved_time() >= velocity_interpolation_time_heat) {
+            if (water->solved_time() >= velocity_interpolation_time_heat
+                    && ! heat->time().is_end()) {
                 // having information about velocity field we can perform heat step
 
                 if (velocity_changed_heat) {
