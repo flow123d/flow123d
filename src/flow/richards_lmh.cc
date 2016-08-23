@@ -287,7 +287,7 @@ void RichardsLMH::postprocess() {
     //VecGetArray(previous_solution, &loc_prev_sol);
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
       auto ele_ac = mh_dh.accessor(i_loc);
-      multidim_assembler[ele_ac.dim()]->update_water_content(ele_ac);
+      multidim_assembler[ele_ac.dim()-1]->update_water_content(ele_ac);
 
       double ele_scale = ele_ac.measure() *
               data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) / ele_ac.n_sides();
