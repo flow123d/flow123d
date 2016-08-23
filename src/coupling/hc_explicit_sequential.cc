@@ -131,10 +131,32 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     water->initialize();
     FieldCommon *wc_sat = water->data().field("water_content_saturated");
 
-    solute = make_advection_process("solute_equation");
-    heat = make_advection_process("heat_equation");
+    processes_.push_back(AdvectionData(make_advection_process("solute_equation")));
+    processes_.push_back(AdvectionData(make_advection_process("heat_equation")));
 }
 
+void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
+{
+    if (pdata.process->time().is_end()) return;
+
+    is_end_all_=false;
+    if ( pdata.process->time().step().le(pdata.velocity_time) ) {
+        // having information about velocity field we can perform transport step
+
+        // here should be interpolation of the velocity at least if the interpolation time
+        // is not close to the solved_time of the water module
+        // for simplicity we use only last velocity field
+        if (pdata.velocity_changed) {
+            //DBGMSG("velocity update\n");
+            pdata.process->set_velocity_field( water->get_mh_dofhandler() );
+            pdata.velocity_changed = false;
+        }
+        if (pdata.process->time().tlevel() == 0) pdata.process->zero_time_step();
+
+        pdata.process->update_solution();
+        pdata.process->output_data();
+   }
+}
 
 
 /**
@@ -156,12 +178,6 @@ void HC_ExplicitSequential::run_simulation()
     // theta = 0.5   velocity from center of transport interval ( mimic Crank-Nicholson)
     // theta = 1.0   velocity from end of transport interval (partialy explicit scheme)
     const double theta=0.5;
-    
-
-    double velocity_interpolation_time_solute,
-           velocity_interpolation_time_heat;
-    bool velocity_changed_solute=true,
-         velocity_changed_heat=true;
 
     {
         START_TIMER("HC water zero time step");
@@ -183,87 +199,65 @@ void HC_ExplicitSequential::run_simulation()
     // The question is how to choose intervals t_dt. That should depend on variability of the velocity field in time.
     // Currently we simply use t_dt == w_dt.
 
-    while (! (water->time().is_end() && solute->time().is_end() && heat->time().is_end() ) ) {
+    is_end_all_=false;
+    while (! is_end_all_) {
+        is_end_all_ = true;
 
-        if (! water->time().is_end()) {
-            double water_dt=water->time().estimate_dt();
-            solute->set_time_upper_constraint(water_dt, "Time discretisation of flow.");
-            heat->set_time_upper_constraint(water_dt, "Time discretisation of flow.");
-        }
+        double water_dt=water->time().estimate_dt();
+        if (water->time().is_end()) water_dt = TimeGovernor::inf_time;
 
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
         // in time 3*w_dt we can reconsider value of t_dt to better capture changing velocity.
-        velocity_interpolation_time_solute= theta * solute->planned_time() + (1-theta) * solute->solved_time();
-        velocity_interpolation_time_heat= theta * heat->planned_time() + (1-theta) * heat->solved_time();
-        
+        min_velocity_time = TimeGovernor::inf_time;
+        for(auto &pdata : processes_) {
+            pdata.process->set_time_upper_constraint(water_dt, "Flow time step");
+            pdata.velocity_time = theta * pdata.process->planned_time() + (1-theta) * pdata.process->solved_time();
+            min_velocity_time = min(min_velocity_time, pdata.velocity_time);
+        }
+
         // printing water and transport times every step
         //xprintf(Msg,"HC_EXPL_SEQ: velocity_interpolation_time: %f, water_time: %f transport time: %f\n", 
         //        velocity_interpolation_time, water->time().t(), transport_reaction->time().t());
          
         // if transport is off, transport should return infinity solved and planned times so that
         // only water branch takes the place
-        if (water->solved_time() < min(velocity_interpolation_time_solute,velocity_interpolation_time_heat)) {
-            // solve water over the nearest transport interval
-            water->update_solution();
 
-            // here possibly save solution from water for interpolation in time
+        if (! water->time().is_end() ) {
+            is_end_all_=false;
+            if (water->solved_time() < min_velocity_time) {
 
-            //water->time().view("WATER");     //show water time governor
-            
-            //water->output_data();
-            water->choose_next_time();
+                // solve water over the nearest transport interval
+                water->update_solution();
 
-            velocity_changed_solute = true;
-            velocity_changed_heat = true;
-        } else {
-            if (water->solved_time() >= velocity_interpolation_time_solute
-                    && ! solute->time().is_end()) {
-                // having information about velocity field we can perform transport step
+                // here possibly save solution from water for interpolation in time
 
-                // here should be interpolation of the velocity at least if the interpolation time
-                // is not close to the solved_time of the water module
-                // for simplicity we use only last velocity field
-                if (velocity_changed_solute) {
-                    //DBGMSG("velocity update\n");
-                    solute->set_velocity_field( water->get_mh_dofhandler() );
-                    velocity_changed_solute = false;
-                }
-                if (solute->time().tlevel() == 0) solute->zero_time_step();
+                //water->time().view("WATER");     //show water time governor
 
-                solute->update_solution();
-                
-                //transport_reaction->time().view("TRANSPORT");        //show transport time governor
-                
-                solute->output_data();
-            }
-            
-            if (water->solved_time() >= velocity_interpolation_time_heat
-                    && ! heat->time().is_end()) {
-                // having information about velocity field we can perform heat step
+                //water->output_data();
+                water->choose_next_time();
 
-                if (velocity_changed_heat) {
-                    heat->set_velocity_field( water->get_mh_dofhandler() );
-                    velocity_changed_heat = false;
-                }
-                if (heat->time().tlevel() == 0) heat->zero_time_step();
+                for(auto &process : processes_) process.velocity_changed = true;
 
-                heat->update_solution();
-                
-                heat->output_data();                
             }
         }
-
+        DebugOut().fmt("is_end_all: {}\n", is_end_all_);
+        DebugOut() << endl;
+        advection_process_step(processes_[0]); // solute
+        DebugOut().fmt("is_end_all: {}\n", is_end_all_);
+        DebugOut() << endl;
+        advection_process_step(processes_[1]); // heat
+        DebugOut().fmt("is_end_all: {}\n", is_end_all_);
+        DebugOut() << endl;
     }
-    xprintf(Msg, "End of simulation at time: %f\n", max(solute->solved_time(), heat->solved_time()));
+    //xprintf(Msg, "End of simulation at time: %f\n", max(solute->solved_time(), heat->solved_time()));
 }
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
 	water.reset();
-	solute.reset();
-    heat.reset();
+	for(auto &pdata : processes_) pdata.process.reset();
     delete mesh;
 }
 

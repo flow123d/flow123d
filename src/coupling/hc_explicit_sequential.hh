@@ -54,8 +54,27 @@ public:
     ~HC_ExplicitSequential();
 
 private:
+    typedef std::shared_ptr<AdvectionProcessBase> AdvectionPtr;
 
-    std::shared_ptr<AdvectionProcessBase> make_advection_process(std::string process_key);
+    struct AdvectionData {
+        AdvectionData(AdvectionPtr p)
+        : process(p), velocity_changed(false), velocity_time(0.0)
+        {}
+
+        AdvectionPtr process;
+        bool velocity_changed;
+        double velocity_time;
+    };
+
+    /**
+     * Create an advection process for given input key.
+     */
+    AdvectionPtr make_advection_process(std::string process_key);
+
+    /**
+     * Perform a single time step of given advection process.
+     */
+    void advection_process_step(AdvectionData &pdata);
 
     static const int registrar;
 
@@ -69,11 +88,12 @@ private:
     std::shared_ptr<DarcyFlowInterface> water;
 
     /// solute transport with chemistry through operator splitting
-    std::shared_ptr<AdvectionProcessBase> solute;
-    
-    /// heat transport
-    std::shared_ptr<AdvectionProcessBase> heat;
+    std::vector<AdvectionData> processes_;
 
+    ///
+    double min_velocity_time;
+
+    bool is_end_all_;
 };
 
 #endif /* HC_EXPLICIT_SEQUENTIAL_HH_ */
