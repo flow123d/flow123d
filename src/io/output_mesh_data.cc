@@ -42,6 +42,10 @@ void MeshData<T>::print_ascii_all(std::ostream& out_stream)
 template <class T>
 void MeshData<T>::print_binary_all(std::ostream& out_stream)
 {
+	// write size of data
+	unsigned long long int data_byte_size = data_.size() * sizeof(T);
+	out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
+	// write data
     for(auto &d : data_)
     	out_stream.write(reinterpret_cast<const char*>(&d), sizeof(T));
 }

@@ -338,7 +338,8 @@ void OutputVTK::write_vtk_vtu_tail(void)
     	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB )
     			WarningOut() << "Zlib library is not supported yet. Appended output is not compressed." << endl;
     	file << "<AppendedData encoding=\"raw\">" << endl;
-    	file << appended_data_.str() << endl;
+    	// appended data starts with '_' character
+    	file << "_" << appended_data_.str() << endl;
     	file << "</AppendedData>" << endl;
     }
     file << "</VTKFile>" << endl;
