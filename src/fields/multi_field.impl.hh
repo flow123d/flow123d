@@ -213,6 +213,28 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 	return const_all;
 }
 
+template<int spacedim, class Value>
+FieldResult MultiField<spacedim, Value>::field_result( RegionSet region_set) const
+{
+    ASSERT_DBG(true).error("Not used yet. Test it.");
+
+    FieldResult result_all = result_none;
+    for(auto &field : sub_fields_) {
+        FieldResult sub_result = field.field_result(region_set);
+        if (sub_result == result_none) return result_none;
+
+        if (result_all == result_none) // first subfield
+            result_all = sub_result;
+        else if (sub_result == result_other || result_all == result_other)
+            result_all = result_other;
+        else if (sub_result != result_all)
+            result_all = result_constant; // all subfields are (possibly different) constants
+    }
+
+    return result_all;
+
+}
+
 
 
 template<int spacedim, class Value>

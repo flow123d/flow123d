@@ -350,7 +350,7 @@ FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
             if (result_all == result_none) // first region
                 result_all = fr;
             else if (fr != result_all)
-                return result_other; // if results from individual regions are different
+                result_all = result_other; // if results from individual regions are different
         } else return result_none; // if field is undefined on any region of the region set
     }
 
