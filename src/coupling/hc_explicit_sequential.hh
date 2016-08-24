@@ -29,6 +29,7 @@ class Mesh;
 class EquationBase;
 class AdvectionProcessBase;
 class HeatProcessBase;
+class FieldCommon;
 
 
 /**
@@ -94,6 +95,9 @@ private:
     double min_velocity_time;
 
     bool is_end_all_;
+
+    FieldCommon *water_content_saturated_;
+    FieldCommon *water_content_p0_;
 };
 
 #endif /* HC_EXPLICIT_SEQUENTIAL_HH_ */

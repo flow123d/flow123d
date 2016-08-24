@@ -24,7 +24,9 @@
 // make TransportNoting default for AdvectionProcessBase abstract
 // use default "{}" for secondary equation.
 // Then we can remove following include.
+
 #include "transport/transport_operator_splitting.hh"
+#include "fields/field_common.hh"
 #include "transport/heat_model.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -88,9 +90,19 @@ std::shared_ptr<AdvectionProcessBase> HC_ExplicitSequential::make_advection_proc
         // setup fields
         process->data()["cross_section"]
                 .copy_from(water->data()["cross_section"]);
+        /*
+        if (water_content_saturated_) // only for unsteady Richards water model
+            process->data()["porosity"].copy_from(*water_content_saturated_);
 
-        //if (wc_sat) // only for Richards water model
-        //    heat->data()["porosity"].copy_from(*wc_sat);
+        if (water_content_p0_)
+            process->data()["water_content"].copy_from(*water_content_p0_);
+        else {
+
+        }
+
+        FieldCommon *porosity = process->data().field("porosity");
+        process->data()["water_content"].copy_from( *porosity );
+        */
 
         process->initialize();
         return process;
@@ -129,7 +141,15 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // Need explicit template types here, since reference is used (automatically passing by value)
     water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
     water->initialize();
-    FieldCommon *wc_sat = water->data().field("water_content_saturated");
+
+    RegionSet bulk_set = mesh->region_db().get_region_set("BULK");
+    water_content_saturated_ = water->data().field("water_content_saturated");
+    if (water_content_saturated_ && water_content_saturated_->field_result( bulk_set ) == result_zeros )
+        water_content_saturated_ = nullptr;
+
+    water_content_p0_ = water->data().field("water_content_p0");
+    if (water_content_p0_ && water_content_p0_->field_result( bulk_set ) == result_zeros )
+        water_content_p0_ = nullptr;
 
     processes_.push_back(AdvectionData(make_advection_process("solute_equation")));
     processes_.push_back(AdvectionData(make_advection_process("heat_equation")));
@@ -242,14 +262,8 @@ void HC_ExplicitSequential::run_simulation()
 
             }
         }
-        DebugOut().fmt("is_end_all: {}\n", is_end_all_);
-        DebugOut() << endl;
         advection_process_step(processes_[0]); // solute
-        DebugOut().fmt("is_end_all: {}\n", is_end_all_);
-        DebugOut() << endl;
         advection_process_step(processes_[1]); // heat
-        DebugOut().fmt("is_end_all: {}\n", is_end_all_);
-        DebugOut() << endl;
     }
     //xprintf(Msg, "End of simulation at time: %f\n", max(solute->solved_time(), heat->solved_time()));
 }
