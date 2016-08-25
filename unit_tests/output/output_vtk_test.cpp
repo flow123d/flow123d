@@ -8,6 +8,8 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <fstream>
+
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "io/output_mesh.hh"
@@ -89,6 +91,22 @@ public:
 		this->compute_field_data(ELEM_DATA, field);
 	}
 
+	// check result
+	void check_result_file(std::string result_file, std::string ref_file)
+	{
+	    std::ifstream  vtk_file(result_file);
+	    std::stringstream str_vtk_file;
+	    str_vtk_file << vtk_file.rdbuf();
+	    vtk_file.close();
+
+	    std::ifstream  vtk_file_ref(ref_file);
+	    std::stringstream str_vtk_file_ref;
+	    str_vtk_file_ref << vtk_file_ref.rdbuf();
+	    vtk_file_ref.close();
+
+	    EXPECT_EQ(str_vtk_file_ref.str(), str_vtk_file.str());
+	}
+
 	std::vector<string> component_names;
 };
 
@@ -100,6 +118,8 @@ TEST_F(TestOutputVTK, write_data_ascii) {
     EXPECT_EQ("./test1.pvd", string(this->_base_filename));
     EXPECT_EQ("test1", this->main_output_basename_);
     EXPECT_EQ(".", this->main_output_dir_);
+
+    check_result_file("test1/test1-000001.vtu", "test_output_vtk_ascii_ref.vtu");
 }
 
 
@@ -110,5 +130,7 @@ TEST_F(TestOutputVTK, write_data_binary) {
     set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
     set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
     this->write_data();
+
+    check_result_file("test1/test1-000000.vtu", "test_output_vtk_binary_ref.vtu");
 }
 
