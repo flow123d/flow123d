@@ -243,8 +243,9 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     	file << "\n</DataArray>" << endl;
     } else {
     	// binary output is stored to appended_data_ stream
-    	file    << " offset=\"" << appended_data_.tellp() << "\"/>" << endl;
-    	output_data->print_binary_all( appended_data_ );
+    	file    << " offset=\"" << appended_data_.tellp() << "\" ";
+    	output_data->print_binary_all( appended_data_, file );
+    	file    << "/>" << endl;
     }
 
 }

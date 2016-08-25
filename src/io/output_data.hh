@@ -10,6 +10,7 @@
 
 #include "io/output_data_base.hh"
 #include "system/asserts.hh"
+#include <type_traits>
 
 
 class FieldCommon;
@@ -45,7 +46,7 @@ public:
     void print_ascii(ostream &out_stream, unsigned int idx) override;
 
     /**
-     * \brief Print all data stored in output data
+     * \brief Print all data stored in output data ro ascii format
      *
      * TODO: indicate if the tensor data are output in column-first or raw-first order
      *       and possibly implement transposition. Set such property for individual file formats.
@@ -54,13 +55,12 @@ public:
     void print_ascii_all(ostream &out_stream) override;
 
     /**
-     * \brief Print all data stored in output data
+     * \brief Print all data stored in output data to appended binary format
      *
-     * TODO: indicate if the tensor data are output in column-first or raw-first order
-     *       and possibly implement transposition. Set such property for individual file formats.
-     *       Class OutputData stores always in raw-first order.
+     * Output is slightly different for floating point and non-floating point data types. This
+     * method calls \p print_binary_inner method, that allows to distinguish data type.
      */
-    void print_binary_all(ostream &out_stream) override;
+    void print_binary_all(ostream &, ostream &) override;
 
     void print_all_yaml(ostream &out_stream, unsigned int precision) override;
 
@@ -103,6 +103,20 @@ private:
             }
         }
     };
+
+
+    /**
+     * Print binary data of floating point types. Set min and max range.
+     */
+    template<class Q = Value>
+    void print_binary_inner(ostream &, ostream &, typename std::enable_if<std::is_floating_point<typename Q::element_type>::value >::type* = 0 );
+
+
+    /**
+     * Print binary data of non-floating point types. Not calculate min and max range.
+     */
+    template<class Q = Value>
+    void print_binary_inner(ostream &, ostream &, typename std::enable_if<!std::is_floating_point<typename Q::element_type>::value >::type* = 0 );
 
 
     /**

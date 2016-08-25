@@ -12,6 +12,7 @@
 #include <string>
 #include "system/asserts.hh"
 #include "io/output_data_base.hh"
+#include <type_traits>
 
 /// Class representing data vector of geometry and topology information (especially for VTK).
 /// Filling the vector is the users responsibility.
@@ -29,8 +30,13 @@ public:
     /// Prints the whole data vector into stream.
     void print_ascii_all(std::ostream& out_stream) override;
 
-    /// Prints the whole data vector into stream.
-    void print_binary_all(std::ostream& out_stream) override;
+    /**
+     * Prints the whole data vector into stream in appended binary format.
+     *
+     * Output is slightly different for floating point and non-floating point data types. This
+     * method calls \p print_binary_inner method, that allows to distinguish data type.
+     */
+    void print_binary_all(ostream &, ostream &) override;
 
     /// Prints the whole data vector into stream. UNSUPPORTED.
     void print_all_yaml(std::ostream& out_stream, unsigned int precision) override;
@@ -40,6 +46,21 @@ public:
 
     /// Data vector.
     std::vector<T> data_;
+
+private:
+    /**
+     * Print binary data of floating point types. Set min and max range.
+     */
+    template<class Q = T>
+    void print_binary_inner(ostream &, ostream &, typename std::enable_if<std::is_floating_point<Q>::value >::type* = 0 );
+
+    /**
+     * Print binary data of non-floating point types. Not calculate min and max range.
+     */
+    template<class Q = T>
+    void print_binary_inner(ostream &, ostream &, typename std::enable_if<!std::is_floating_point<Q>::value >::type* = 0 );
+
+
 };
 
 
