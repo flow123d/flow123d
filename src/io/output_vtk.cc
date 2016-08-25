@@ -238,7 +238,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
     	// ascii output
     	file << ">" << endl;
-    	file.precision(std::numeric_limits<double>::digits10); // Set precision to max
+    	file << std::fixed << std::setprecision(10); // Set precision to max
     	output_data->print_ascii_all(file);
     	file << "\n</DataArray>" << endl;
     } else {
