@@ -36,14 +36,24 @@ void QXFEMFactory< dim, spacedim >::clear()
     level_offset_ = 0;
 }
 
-
-template<int dim, int spacedim>
-std::shared_ptr< QXFEM< dim, spacedim > > QXFEMFactory<dim,spacedim>::create_singular(
-                                                const std::vector<Singularity0D<spacedim>> & sing,
+template<>
+std::shared_ptr< QXFEM< 2, 2 > > QXFEMFactory<2,2>::create_singular(
+                                                const std::vector<Singularity0D<2>> & sing,
                                                 ElementFullIter ele)
 {
     clear();
-    std::shared_ptr<QXFEM<dim,spacedim>> qxfem = make_shared<QXFEM<dim,spacedim>>();
+    std::shared_ptr<QXFEM<2,2>> qxfem = make_shared<QXFEM<2,2>>();
+    ASSERT(0).error("Not implemented!");
+    return qxfem;
+}
+
+template<>
+std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
+                                                const std::vector<Singularity0D<3>> & sing,
+                                                ElementFullIter ele)
+{
+    clear();
+    std::shared_ptr<QXFEM<2,3>> qxfem = make_shared<QXFEM<2,3>>();
     
     //create first auxsimplex:
     AuxSimplex s;
@@ -59,6 +69,10 @@ std::shared_ptr< QXFEM< dim, spacedim > > QXFEMFactory<dim,spacedim>::create_sin
         std::swap(s.nodes[0],s.nodes[1]);
     }
     
+    // WORKS only for single well
+    // project the simplex into the plane of the circle
+    sing[0].geometry().project_to_circle_plane(s.nodes);
+    
     s.active = true;
     simplices_.push_back(s);
     
@@ -71,6 +85,11 @@ std::shared_ptr< QXFEM< dim, spacedim > > QXFEMFactory<dim,spacedim>::create_sin
         refine_level(n_to_refine);
     }
     refine_edge(sing);
+    
+    // project the simplices back to the plane of the ellipse
+    for(AuxSimplex& simp : simplices_){
+        sing[0].geometry().project_to_ellipse_plane(simp.nodes);
+    }
     
     distribute_qpoints(qxfem->real_points_, qxfem->weights, sing);
     map_real_to_unit_points(qxfem->real_points_, qxfem->quadrature_points, ele);
@@ -417,7 +436,7 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                 //skip points inside singularity
                 if(check_qpoint_inside_sing)   //simplex is intersecting singularity
                 {
-                    if(arma::norm(sing[s.sing_id].center() - p,2) < sing[s.sing_id].radius()) continue;
+                    if(sing[s.sing_id].geometry().point_in_ellipse(p)) continue;
                 }
                 
                 real_points.push_back(p);
@@ -559,25 +578,22 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
     strs << "set style line 1 lt 2 lw 2 lc rgb 'blue'\n"
             << "set style line 2 lt 1 lw 2 lc rgb '#66A61E'\n";
     strs << "splot "; 
-                
-    Point u;   //first unit directional vector in the plane of singularity
-    Point v;   //second unit directional vector in the plane of singularity
-    Point n;   //normal to element
-    //directional vectors of triangle sides
-    Point e1 = ele->node[1]->point() - ele->node[0]->point();
-    Point e2 = ele->node[2]->point() - ele->node[0]->point();
-    n = arma::cross(e1,e2);
-    v = arma::cross(n,e1);
-    u = e1/arma::norm(e1,2);
-    v = v/arma::norm(v,2);
     
     for(unsigned int j = 0; j < sing.size(); j++)
     {
-        const Singularity0D<spacedim>& w = sing[j];
+        //print ellipse
+        const CircleEllipseProjection& g = sing[j].geometry();
         strs << "[t=0:2*pi] " 
-            << w.center()[0] << " + " << w.radius()*u[0] << "*cos(t) + " <<  w.radius()*v[0] << "*sin(t), "
-            << w.center()[1] << " + " << w.radius()*u[1] << "*cos(t) + " <<  w.radius()*v[1] << "*sin(t), "
-            << w.center()[2] << " + " << w.radius()*u[2] << "*cos(t) + " <<  w.radius()*v[2] << "*sin(t) ls 1 ,\\\n";
+            << g.center()[0] << " + " << g.ellipse_b()[0] << "*cos(t) + " <<  g.ellipse_a()[0] << "*sin(t), "
+            << g.center()[1] << " + " << g.ellipse_b()[1] << "*cos(t) + " <<  g.ellipse_a()[1] << "*sin(t), "
+            << g.center()[2] << " + " << g.ellipse_b()[2] << "*cos(t) + " <<  g.ellipse_a()[2] << "*sin(t) ls 1 ,\\\n";
+        
+        //print circle
+        CircleEllipseProjection gg(g.center(),g.radius(),g.direction_vector(),g.direction_vector());
+        strs << "[t=0:2*pi] " 
+            << gg.center()[0] << " + " << gg.ellipse_b()[0] << "*cos(t) + " <<  gg.ellipse_a()[0] << "*sin(t), "
+            << gg.center()[1] << " + " << gg.ellipse_b()[1] << "*cos(t) + " <<  gg.ellipse_a()[1] << "*sin(t), "
+            << gg.center()[2] << " + " << gg.ellipse_b()[2] << "*cos(t) + " <<  gg.ellipse_a()[2] << "*sin(t) ls 1 ,\\\n";
     }
     
     strs << "'" << fgnuplot_qpoints << "' using 1:2:3 with points lc rgb 'light-blue' title 'quadrature points' ,\\\n";
