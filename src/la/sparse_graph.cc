@@ -198,7 +198,7 @@ void SparseGraph::finalize()
 
    }
 
-   xfree(recvbuf);
+   delete [] recvbuf;
 }
 
 

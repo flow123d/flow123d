@@ -1505,7 +1505,7 @@ DarcyMH::~DarcyMH() {
 
 	if (solution != NULL) {
 	    chkerr(VecDestroy(&sol_vec));
-		xfree(solution);
+		delete [] solution;
 	}
 
 	delete output_object;
