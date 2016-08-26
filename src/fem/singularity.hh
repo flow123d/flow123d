@@ -26,6 +26,66 @@
 
 #include <armadillo>
 
+
+
+///@brief Auxilliary class with geometric data and operations for singularity.
+class CircleEllipseProjection
+{
+public:
+    typedef Space<3>::Point Point;
+    CircleEllipseProjection(const Point& center, const double& radius,
+                            const Point& direction_vector,
+                            const Point& normal_vector);
+    
+    Point center() const
+    { return center_;}
+    
+    double radius() const
+    { return radius_;}
+    
+    Point direction_vector() const
+    { return direction_vector_;}
+    
+    Point normal_vector() const
+    { return normal_vector_;}
+    
+    double circle_area() const
+    { return M_PI*radius_*radius_;}
+    
+    double ellipse_area() const
+    { return std::abs(M_PI*a_*b_);}
+    
+    Point ellipse_a() const
+    { return a_*ea_;}
+    
+    Point ellipse_b() const
+    { return b_*eb_;}
+    
+    /// Projects points from circle plane to ellipse plane.
+    void project_to_ellipse_plane(std::vector<Point>& points) const;
+    /// Projects points from ellipse plane tot circle plane.
+    void project_to_circle_plane(std::vector<Point>& points) const;
+    
+    /// Returns true if the point @p p lies in the circle (suppose @p p is lying in the circle plane).
+    bool point_in_circle(const Point& p) const;
+    /// Returns true if the point @p p lies in the ellipse (suppose @p p is lying in the ellipse plane).
+    bool point_in_ellipse(const Point& p) const;
+    
+protected:
+    
+    Point center_,          ///< Center of the circle.
+        direction_vector_,  ///< Direction vector of the singularity (1d element).
+        normal_vector_;     ///< Normal vector of the plain (2d element).
+        
+    double radius_;         ///< Radius of the circle.
+    double a_,b_;           ///< Axes sizes of the ellipse.
+    Point ea_,eb_;          ///< Unit vectors defining axes of the ellipse.
+    
+    /// Auxilliary precomputed values for projection; angle between direction and normal vector.
+    double cos_a, sin_a, tan_a;
+};
+
+
 /** @brief Point singularity in 2D plane in 2D or 3D ambient space.
  * 
  * Singularity is defined by its center point and radius.
@@ -50,6 +110,7 @@ public:
     typedef typename Space<spacedim>::Point Point;
     
     Singularity0D(const Point& center, double radius);
+    Singularity0D(const Point& center, double radius, const Point& direction_vector, const Point& normal_vector);
     
     Point center() const;
     double radius() const;
@@ -57,35 +118,45 @@ public:
     double val(const Point &x) const;
     Point grad(const Point &x) const;
     
+    const CircleEllipseProjection & geometry() const;
+    
     /// Computes circumference along edge.
     double circumference() const;
     
     /// Computes @p n points equally distributed along the eqge in 2D ambient space.
     void evaluate_q_points(unsigned int count);
     
-    /** Computes @p n points equally distributed along the eqge in 3D ambient space.
-     * 
-     * @param ele - element in which the singularity lies; defines the plane in 3D ambient space.
-     */
-    void evaluate_q_points(unsigned int count, ElementFullIter ele);
-    
     /// Quadrature points on the edge
     const std::vector<Point>& q_points() const;
     
 private:
+    
     /// center of the singularity
     Point center_;
     
-    /// radius of singularity
+    /// radius of the singularity
     double radius_;
     
     /// points placed around the circle by @p evaluate_q_points function
     std::vector<Point> q_points_;
+    
+    /// Geometry fucnctionality - plane projections.
+    CircleEllipseProjection geom_;
 };
 
-template<int spacedim>
-Singularity0D<spacedim>::Singularity0D(const Point& center, double radius)
-:   center_(center), radius_(radius)
+
+template<>
+inline Singularity0D<2>::Singularity0D(const Point& center, double radius)
+:   center_(center), radius_(radius),
+    geom_({center[0],center[1],0},radius, {0,0,1}, {0,0,1})
+{
+}
+
+template<>
+inline Singularity0D<3>::Singularity0D(const Point& center, double radius,
+                                       const Point& direction_vector, const Point& normal_vector)
+:   center_(center), radius_(radius),
+    geom_(center,radius, direction_vector, normal_vector)
 {}
 
 template<int spacedim>
@@ -95,6 +166,10 @@ inline typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::center()
 template<int spacedim>
 inline double Singularity0D<spacedim>::radius() const
 {   return radius_;}
+
+template<int spacedim>
+inline const CircleEllipseProjection & Singularity0D<spacedim>::geometry() const
+{   return geom_;}
 
 template<int spacedim>
 inline const std::vector<typename Singularity0D<spacedim>::Point>& Singularity0D<spacedim>::q_points() const
@@ -122,7 +197,7 @@ typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Poin
     if (distance >= radius_)
     {   
         distance = distance * distance;
-        grad = (x-center_) / distance;
+        grad = (x - center_) / distance;
     }
     return grad;  //returns zero if  (distance <= radius)
 }
@@ -130,7 +205,7 @@ typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Poin
 template<int spacedim>
 inline double Singularity0D<spacedim>::circumference() const
 {
-    return 2*M_PI*radius_;
+    return 2 * M_PI * radius_;
 }
 
 template<>
@@ -143,34 +218,21 @@ inline void Singularity0D<2>::evaluate_q_points(unsigned int count)
     double offset = 1e-10;
     
     for(unsigned int i=0; i < count; i++)
-        q_points_[i] = {center_[0]+radius_*std::cos(i*phi+offset),
-                        center_[1]+radius_*std::sin(i*phi+offset)};
+        q_points_[i] = {center_[0] + radius_*std::cos(i*phi+offset),
+                        center_[1] + radius_*std::sin(i*phi+offset)};
 }
 
 template<>
-inline void Singularity0D<3>::evaluate_q_points(unsigned int count, ElementFullIter ele)
+inline void Singularity0D<3>::evaluate_q_points(unsigned int count)
 {
-    ASSERT_DBG(ele->dim() == 2);
-    
     //q_points_.clear();
-    q_points_.resize(count);
- 
-    Point u;   //first unit directional vector in the plane of singularity
-    Point v;   //second unit directional vector in the plane of singularity
-    Point n;   //normal to element
-    //directional vectors of triangle sides
-    Point e1 = ele->node[1]->point() - ele->node[0]->point();
-    Point e2 = ele->node[2]->point() - ele->node[0]->point();
-    n = arma::cross(e1,e2);
-    v = arma::cross(n,e1);
-    u = e1/arma::norm(e1,2);
-    v = v/arma::norm(v,2);
-    
+    q_points_.resize(count);  
+
     double phi = 2*M_PI / count;
     double offset = 1e-10;
     
     for(unsigned int i=0; i < count; i++)
-        q_points_[i] = center_ + radius_*(std::cos(i*phi+offset)*u + std::sin(i*phi+offset)*v);
+        q_points_[i] = center_ + std::cos(i*phi+offset)*geom_.ellipse_b() + std::sin(i*phi+offset)*geom_.ellipse_a();
 }
 
 

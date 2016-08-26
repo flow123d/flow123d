@@ -223,6 +223,7 @@ add_library(fem_lib
     fem/fe_values.cc
     fem/finite_element.cc
     fem/mapping_p1.cc
+    fem/singularity.cc
 )
 target_link_libraries(fem_lib
     system_lib mesh_lib 
