@@ -70,13 +70,18 @@ public:
     /**
      * Print all data in binary format at once stored in database
      */
-    virtual void print_binary_all(ostream &, ostream &) = 0;
+    virtual void print_binary_all(ostream &out_stream) = 0;
 
     /**
      * Print stored values in the YAML format (using JSON like arrays).
      * Used for output of observe values.
      */
     virtual void print_all_yaml(ostream &out_stream, unsigned int precision) = 0;
+
+    /**
+     * Find minimal and maximal range of stored data
+     */
+    virtual void get_min_max_range(double &min, double &max) = 0;
 
     /**
      * Data copied from Field.

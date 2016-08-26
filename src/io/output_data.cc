@@ -96,52 +96,18 @@ void OutputData<Value>::print_ascii_all(ostream &out_stream)
 
 /// Prints the whole data vector into stream.
 template <class Value>
-void OutputData<Value>::print_binary_all(std::ostream &append_stream, std::ostream &out_stream)
+void OutputData<Value>::print_binary_all(ostream &out_stream)
 {
-    print_binary_inner(append_stream, out_stream);
-}
-
-
-template<class Value>
-template<class Q>
-void OutputData<Value>::print_binary_inner(ostream &append_stream, ostream &out_stream,
-		typename std::enable_if<std::is_floating_point<typename Q::element_type>::value >::type* )
-{
-	// variables storing range of data array
-	ElemType range_min = std::numeric_limits<ElemType>::max();
-	ElemType range_max = std::numeric_limits<ElemType>::min();
 	// write size of data
 	unsigned long long int data_byte_size = this->n_values * n_elem_ * sizeof(ElemType);
-	append_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
+	out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
     // write data
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
-        	append_stream.write(reinterpret_cast<const char*>(ptr), sizeof(ElemType));
-           	if (*ptr < range_min) range_min = *ptr;
-           	if (*ptr > range_max) range_max = *ptr;
+        	out_stream.write(reinterpret_cast<const char*>(ptr), sizeof(ElemType));
         }
     }
-    out_stream << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\" ";
-}
-
-
-template<class Value>
-template<class Q>
-void OutputData<Value>::print_binary_inner(ostream &append_stream, ostream &out_stream,
-		typename std::enable_if<!std::is_floating_point<typename Q::element_type>::value >::type* )
-{
-	// write size of data
-	unsigned long long int data_byte_size = this->n_values * n_elem_ * sizeof(ElemType);
-	append_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
-    // write data
-    for(unsigned int idx = 0; idx < this->n_values; idx++) {
-        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
-        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
-        	append_stream.write(reinterpret_cast<const char*>(ptr), sizeof(ElemType));
-        }
-    }
-    out_stream << "RangeMin=\"\" RangeMax=\"\" ";
 }
 
 
@@ -156,6 +122,21 @@ void OutputData<Value>::print_all_yaml(ostream &out_stream, unsigned int precisi
         out_stream << field_value_to_yaml( Value::from_raw(value, ptr_begin), precision );
     }
     out_stream << " ]";
+}
+
+
+template <class Value>
+void OutputData<Value>::get_min_max_range(double &min, double &max)
+{
+	min = std::numeric_limits<double>::max();
+	max = std::numeric_limits<double>::min();
+    for(unsigned int idx = 0; idx < this->n_values; idx++) {
+        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
+           	if ((double)(*ptr) < min) min = (double)(*ptr);
+           	if ((double)(*ptr) > max) max = (double)(*ptr);
+        }
+    }
 }
 
 

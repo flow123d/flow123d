@@ -32,34 +32,22 @@ public:
 
     /**
      * Prints the whole data vector into stream in appended binary format.
-     *
-     * Output is slightly different for floating point and non-floating point data types. This
-     * method calls \p print_binary_inner method, that allows to distinguish data type.
      */
-    void print_binary_all(ostream &, ostream &) override;
+    void print_binary_all(ostream &out_stream) override;
 
     /// Prints the whole data vector into stream. UNSUPPORTED.
     void print_all_yaml(std::ostream& out_stream, unsigned int precision) override;
+
+    /**
+     * Find minimal and maximal range of stored data
+     */
+    void get_min_max_range(double &min, double &max) override;
 
     /// Access i-th element in the data vector.
     T& operator[](unsigned int i);
 
     /// Data vector.
     std::vector<T> data_;
-
-private:
-    /**
-     * Print binary data of floating point types. Set min and max range.
-     */
-    template<class Q = T>
-    void print_binary_inner(ostream &, ostream &, typename std::enable_if<std::is_floating_point<Q>::value >::type* = 0 );
-
-    /**
-     * Print binary data of non-floating point types. Not calculate min and max range.
-     */
-    template<class Q = T>
-    void print_binary_inner(ostream &, ostream &, typename std::enable_if<!std::is_floating_point<Q>::value >::type* = 0 );
-
 
 };
 

@@ -56,11 +56,8 @@ public:
 
     /**
      * \brief Print all data stored in output data to appended binary format
-     *
-     * Output is slightly different for floating point and non-floating point data types. This
-     * method calls \p print_binary_inner method, that allows to distinguish data type.
      */
-    void print_binary_all(ostream &, ostream &) override;
+    void print_binary_all(ostream &out_stream) override;
 
     void print_all_yaml(ostream &out_stream, unsigned int precision) override;
 
@@ -84,6 +81,11 @@ public:
      */
     void normalize(unsigned int idx, unsigned int divisor);
 
+    /**
+     * Find minimal and maximal range of stored data
+     */
+    void get_min_max_range(double &min, double &max) override;
+
 private:
 
     /**
@@ -103,20 +105,6 @@ private:
             }
         }
     };
-
-
-    /**
-     * Print binary data of floating point types. Set min and max range.
-     */
-    template<class Q = Value>
-    void print_binary_inner(ostream &, ostream &, typename std::enable_if<std::is_floating_point<typename Q::element_type>::value >::type* = 0 );
-
-
-    /**
-     * Print binary data of non-floating point types. Not calculate min and max range.
-     */
-    template<class Q = Value>
-    void print_binary_inner(ostream &, ostream &, typename std::enable_if<!std::is_floating_point<typename Q::element_type>::value >::type* = 0 );
 
 
     /**

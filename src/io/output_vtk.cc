@@ -243,9 +243,11 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     	file << "\n</DataArray>" << endl;
     } else {
     	// binary output is stored to appended_data_ stream
+    	double range_min, range_max;
+    	output_data->get_min_max_range(range_min, range_max);
     	file    << " offset=\"" << appended_data_.tellp() << "\" ";
-    	output_data->print_binary_all( appended_data_, file );
-    	file    << "/>" << endl;
+    	file    << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\"/>" << endl;
+    	output_data->print_binary_all( appended_data_ );
     }
 
 }

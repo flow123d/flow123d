@@ -40,9 +40,14 @@ void MeshData<T>::print_ascii_all(std::ostream& out_stream)
 
 /// Prints the whole data vector into stream.
 template <class T>
-void MeshData<T>::print_binary_all(ostream &append_stream, ostream &out_stream)
+void MeshData<T>::print_binary_all(ostream &out_stream)
 {
-    print_binary_inner(append_stream, out_stream);
+	// write size of data
+	unsigned long long int data_byte_size = data_.size() * sizeof(T);
+	out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
+	// write data
+    for(auto &d : data_)
+    	out_stream.write(reinterpret_cast<const char*>(&d), sizeof(T));
 }
 
 
@@ -54,39 +59,15 @@ void MeshData<T>::print_all_yaml(std::ostream& out_stream, unsigned int precisio
 }
 
 
-template<class T>
-template<class Q>
-void MeshData<T>::print_binary_inner(ostream &append_stream, ostream &out_stream,
-		typename std::enable_if<std::is_floating_point<Q>::value >::type* )
+template <class T>
+void MeshData<T>::get_min_max_range(double &min, double &max)
 {
-	// variables storing range of data array
-	Q range_min = std::numeric_limits<Q>::max();
-	Q range_max = std::numeric_limits<Q>::min();
-	// write size of data
-	unsigned long long int data_byte_size = data_.size() * sizeof(Q);
-	append_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
-	// write data
-    for(auto &d : data_) {
-    	append_stream.write(reinterpret_cast<const char*>(&d), sizeof(Q));
-       	if (d < range_min) range_min = d;
-       	if (d > range_max) range_max = d;
+	min = std::numeric_limits<double>::max();
+	max = std::numeric_limits<double>::min();
+	for(auto &d : data_) {
+		if ((double)d < min) min = (double)d;
+		if ((double)d > max) max = (double)d;
     }
-    out_stream << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\" ";
-}
-
-
-template<class T>
-template<class Q>
-void MeshData<T>::print_binary_inner(ostream &append_stream, ostream &out_stream,
-		typename std::enable_if<!std::is_floating_point<Q>::value >::type* )
-{
-	// write size of data
-	unsigned long long int data_byte_size = data_.size() * sizeof(Q);
-	append_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
-	// write data
-    for(auto &d : data_)
-    	append_stream.write(reinterpret_cast<const char*>(&d), sizeof(Q));
-    out_stream << "RangeMin=\"\" RangeMax=\"\" ";
 }
 
 
