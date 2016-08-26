@@ -252,7 +252,12 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // assumes working directory "."
-    main_input_filename_ = FilePath::set_dirs_from_input(input_filename, input_dir, output_dir );
+    try {
+        main_input_filename_ = FilePath::set_dirs_from_input(input_filename, input_dir, output_dir );
+    } catch (FilePath::ExcMkdirFail &e) {
+        use_profiler = false; // avoid profiler output
+        throw e;
+    }
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();

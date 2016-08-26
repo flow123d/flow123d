@@ -116,15 +116,16 @@ void FilePath::set_dirs(const string root, const string input, const string outp
     if ( !boost::filesystem::path( convert_for_check_absolute(output) ).is_absolute() ) {
     	if (boost::filesystem::path( convert_for_check_absolute(root) ).is_absolute()) {
     		full_output_path = boost::filesystem::path(root) / output;
-    	    boost::filesystem::create_directories(full_output_path);
+
+    		create_dir(full_output_path);
     	} else {
     		boost::filesystem::path output_path = boost::filesystem::path(root) / output;
-    		boost::filesystem::create_directories( output_path );
+    		create_dir( output_path );
     		full_output_path = boost::filesystem::canonical( boost::filesystem::current_path() / output_path);
     	}
     } else {
     	full_output_path = boost::filesystem::path(output);
-        boost::filesystem::create_directories(full_output_path);
+    	create_dir(full_output_path);
     }
 	output_dir = std::make_shared<boost::filesystem::path>( full_output_path );
 
@@ -168,12 +169,9 @@ const string FilePath::get_absolute_working_dir() {
 }
 
 
-
 void FilePath::create_output_dir() {
     if (file_type_ == output_file) {
-        boost::filesystem::create_directories(
-                abs_file_path_->parent_path()
-                );
+        create_dir( abs_file_path_->parent_path() );
     }
 }
 
@@ -215,7 +213,7 @@ void FilePath::open_stream(Stream &stream) const
         stream.open(abs_file_path_->string().c_str(), ios_base::out);
 
     if (! stream.is_open())
-        THROW(ExcFileOpen() << EI_FileName(abs_file_path_->string()));
+        THROW(ExcFileOpen() << EI_Path(abs_file_path_->string()));
 
 }
 
@@ -237,6 +235,16 @@ string FilePath::convert_for_check_absolute(const string path) {
 
 FilePath::operator string() const {
 	return abs_file_path_->string();
+}
+
+
+void FilePath::create_dir(const boost::filesystem::path &dir)
+{
+    try {
+        boost::filesystem::create_directories(dir);
+    } catch (boost::filesystem::filesystem_error &e) {
+        THROW(ExcMkdirFail() << EI_Path( dir.string() ) << make_nested_message(e) );
+    }
 }
 
 

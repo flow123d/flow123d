@@ -51,11 +51,10 @@ public:
     /**
      * Reporting failure when openning a file.
      */
-    TYPEDEF_ERR_INFO( EI_FileName, std::string);
-    DECLARE_EXCEPTION( ExcFileOpen, << "Can not open file: " << EI_FileName::qval );
-
     TYPEDEF_ERR_INFO( EI_Path, string);
+    DECLARE_EXCEPTION( ExcFileOpen, << "Can not open file: " << EI_Path::qval );
     DECLARE_EXCEPTION( ExcAbsOutputPath, << "Can not set absolute path " << EI_Path::qval << " for an output file."  );
+    DECLARE_EXCEPTION( ExcMkdirFail, << "Can not create directory: " << EI_Path::qval );
 
     /// Possible types of file.
     enum FileType {
@@ -192,6 +191,11 @@ public:
     void open_stream(Stream &stream) const;
 
 private:
+    /**
+     * Create a directory, and check for exceptions.
+     */
+    static void create_dir(const boost::filesystem::path &dir);
+
     /**
      * Substitutes placeholders in @p path.
      */
