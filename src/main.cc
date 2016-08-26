@@ -78,8 +78,8 @@ it::Record & Application::get_input_type() {
 Application::Application( int argc,  char ** argv)
 : ApplicationBase(argc, argv),
   main_input_filename_(""),
-  passed_argc_(0),
-  passed_argv_(0),
+  //passed_argc_(0),
+  //passed_argv_(0),
   use_profiler(true),
   yaml_balance_output_(false)
 {
@@ -175,6 +175,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // get unknown options
     vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
+    /*
     passed_argc_ = to_pass_further.size();
     passed_argv_ = new char * [passed_argc_+1];
 
@@ -186,6 +187,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         passed_argv_[arg_i++] = xstrcpy( to_pass_further[i].c_str() );
     }
     passed_argc_ = arg_i;
+    */
 
     // if there is "help" option
     if (vm.count("help")) {

@@ -20,7 +20,7 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include "system/xio.h"
+//#include "system/xio.h"
 
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
@@ -138,7 +138,7 @@ TransportEqData::TransportEqData()
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : AdvectionProcessBase(init_mesh, in_rec),
-  Semchem_reactions(NULL),
+//  Semchem_reactions(NULL),
   cfl_convection(numeric_limits<double>::max()),
   cfl_reaction(numeric_limits<double>::max())
 {
@@ -197,7 +197,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	} else {
 		reaction = nullptr;
-		Semchem_reactions = nullptr;
+		//Semchem_reactions = nullptr;
 	}
         
   //coupling - passing fields
@@ -213,7 +213,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 TransportOperatorSplitting::~TransportOperatorSplitting()
 {
     //delete field_output;
-    if (Semchem_reactions) delete Semchem_reactions;
+    //if (Semchem_reactions) delete Semchem_reactions;
     delete time_;
 }
 
@@ -313,7 +313,7 @@ void TransportOperatorSplitting::update_solution() {
         else
         	convection->update_after_reactions(false);
 
-	    if(Semchem_reactions) Semchem_reactions->update_solution();
+	    //if(Semchem_reactions) Semchem_reactions->update_solution();
 
 
 

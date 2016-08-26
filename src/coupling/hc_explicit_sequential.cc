@@ -25,6 +25,8 @@
 // use default "{}" for secondary equation.
 // Then we can remove following include.
 #include "transport/transport_operator_splitting.hh"
+
+#include "fields/field_set.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 #include "system/sys_profiler.hh"

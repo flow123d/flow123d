@@ -31,6 +31,8 @@
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
 #include "coupling/balance.hh"
+
+#include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
 #include "io/equation_output.hh"

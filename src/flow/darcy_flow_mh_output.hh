@@ -171,7 +171,7 @@ private:
     /// Temporary solution for writing balance into separate file.
     //FILE *balance_output_file;
     /// Raw data output file.
-    FILE *raw_output_file;
+    fstream raw_output_file;
 };
 
 

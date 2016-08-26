@@ -1528,13 +1528,13 @@ void DarcyMH::make_serial_scatter() {
             int i, *loc_idx; //, si;
 
             // create local solution vector
-            solution = (double *) xmalloc(size * sizeof(double));
+            solution = new double[size];
             VecCreateSeqWithArray(PETSC_COMM_SELF,1, size, solution,
                     &(sol_vec));
 
             // create seq. IS to scatter par solutin to seq. vec. in original order
             // use essentialy row_4_id arrays
-            loc_idx = (int *) xmalloc(size * sizeof(int));
+            loc_idx = new int [size];
             i = 0;
             FOR_ELEMENTS(mesh_, ele) {
                 FOR_ELEMENT_SIDES(ele,si) {
@@ -1550,7 +1550,7 @@ void DarcyMH::make_serial_scatter() {
             OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
             //DBGPRINT_INT("loc_idx",size,loc_idx);
             ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
-            xfree(loc_idx);
+            delete [] loc_idx;
             VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
                     PETSC_NULL, &par_to_all);
             ISDestroy(&(is_loc));

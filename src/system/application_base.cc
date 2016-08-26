@@ -50,7 +50,7 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     sys_info.comm=comm;
 
 
-    Xio::init(); //Initialize XIO library
+    //Xio::init(); //Initialize XIO library
 
     // TODO : otevrit docasne log file jeste pred ctenim vstupu (kvuli zachyceni chyb), po nacteni dokoncit
     // inicializaci systemu
@@ -69,9 +69,11 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     	LoggerOptions::get_instance().set_log_file("");
     } else	{
     	// construct full log name
-    	log_name << log_filename <<  "." << sys_info.my_proc << ".old.log";
-    	sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file);
-    	sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
+    	//log_name << log_filename <<  "." << sys_info.my_proc << ".old.log";
+
+    	//sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file);
+    	//sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
+
     	LoggerOptions::get_instance().set_log_file(log_filename);
     }
 
@@ -164,7 +166,7 @@ void ApplicationBase::init(int argc, char ** argv) {
 
 
 ApplicationBase::~ApplicationBase() {
-	if (sys_info.log) xfclose(sys_info.log);
+	//if (sys_info.log) xfclose(sys_info.log);
 	petcs_finalize();
 }
 
