@@ -347,11 +347,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 #define FV FieldValue
 TEST_F(TestOutputTime, compute_field_data) {
 	test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
-	//EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::Vector> > ("[1, 2, 3]", "1.3 ") );} ,
-	//        OutputTime::ExcOutputVariableVector);
 	test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
-	//EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::EnumVector> > ("[\"white\", \"black\", \"white\"]", "1.3 ") );},
-	//        OutputTime::ExcOutputVariableVector);
 	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
 	test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
 	//test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");

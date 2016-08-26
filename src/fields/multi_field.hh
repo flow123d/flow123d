@@ -56,7 +56,6 @@ class MultiField : public FieldCommon {
 public:
     typedef FieldAlgorithmBase<spacedim, Value> SubFieldBaseType;
     typedef Field<spacedim, Value> SubFieldType;
-    typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldValue_<0,1,typename Value::element_type> MultiFieldValue;
 

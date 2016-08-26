@@ -104,33 +104,6 @@ TEST(FieldPython, vector_2D) {
     }
 }
 
-/*
-TEST(FieldPython, vector_variable) {
-
-    double pi = 4.0 * atan(1);
-
-    Space<2>::Point point_1, point_2;
-    point_1(0)=1.0; point_1(1)= pi / 2.0;
-    point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
-
-    FieldPython<2, FieldValue<2>::Vector> vec_func(2);
-    vec_func.set_python_field_from_string(python_function, "func_circle");
-    ElementAccessor<2> elm;
-
-    arma::vec result;
-    {
-    result = vec_func.value( point_1, elm);
-    EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
-    EXPECT_DOUBLE_EQ( 1, result[1]);
-    }
-
-    {
-    result = vec_func.value( point_2, elm);
-    EXPECT_DOUBLE_EQ( -1, result[0]);
-    EXPECT_DOUBLE_EQ( 1, result[1]);
-    }
-}
-*/
 
 TEST(FieldPython, double_3D) {
     Space<3>::Point point_1, point_2;
