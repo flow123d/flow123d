@@ -110,8 +110,7 @@ void LoggerOptions::set_log_file(std::string log_file_base) {
 		}
 		std::stringstream file_name;
 		file_name << log_file_base << "." << mpi_rank << ".log";
-		string full_file_name = FilePath(file_name.str(), FilePath::output_file);
-		file_stream_.open( full_file_name.c_str(), std::ofstream::out );
+		FilePath(file_name.str(), FilePath::output_file).open_stream(file_stream_);
 	}
 	init_ = true;
 }

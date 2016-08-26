@@ -59,10 +59,8 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &
 		THROW(ExcInputMessage() << EI_Message("Invalid extension of file " + fname + ".\nMust be 'con' or 'yaml'."));
 	}
 
-	std::ifstream in(fname.c_str());
-    if (! in) {
-    	THROW(ExcInputMessage() << EI_Message("Can not open main input file: '" + fname + "'.\n"));
-    }
+	std::ifstream in;
+	in_file.open_stream(in);
 
     // finish all lazy input types
     Input::Type::TypeBase::lazy_finish();

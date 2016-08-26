@@ -149,7 +149,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             FilePath raw_output_file_path;
             if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
             	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
-            	raw_output_file.open( string(raw_output_file_path).c_str(), ios_base::out);
+            	raw_output_file_path.open_stream(raw_output_file);
             }
 
         }

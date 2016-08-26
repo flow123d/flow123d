@@ -48,6 +48,11 @@ namespace boost {
 class FilePath {
 public:
 
+    /**
+     * Reporting failure when openning a file.
+     */
+    TYPEDEF_ERR_INFO( EI_FileName, std::string);
+    DECLARE_EXCEPTION( ExcFileOpen, << "Can not open file: " << EI_FileName::qval );
 
     TYPEDEF_ERR_INFO( EI_Path, string);
     DECLARE_EXCEPTION( ExcAbsOutputPath, << "Can not set absolute path " << EI_Path::qval << " for an output file."  );
@@ -177,6 +182,14 @@ public:
      * Return path to file with filename without extension.
      */
     string cut_extension() const;
+
+
+    /**
+     * Open stream for this FilePath.
+     * Open mode is determined from the FilePath type.
+     */
+    template <class Stream>
+    void open_stream(Stream &stream) const;
 
 private:
     /**

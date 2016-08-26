@@ -212,18 +212,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "JSON_machine" option
     if (vm.count("JSON_machine")) {
         // write ist to json file
-        string json_filename = vm["JSON_machine"].as<string>();
-        ofstream json_stream(json_filename);
-        // check open operation
-        if (json_stream.fail()) {
-    		cerr << "Failed to open file '" << json_filename << "'" << endl;
-        } else {
-            // create the root Record
-            it::Record root_type = get_input_type();
-            Input::Type::TypeBase::lazy_finish();
-            json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
-            json_stream.close();
-        }
+        ofstream json_stream;
+        FilePath(vm["JSON_machine"].as<string>(), FilePath::output_file).open_stream(json_stream);
+        // create the root Record
+        it::Record root_type = get_input_type();
+        Input::Type::TypeBase::lazy_finish();
+        json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
+        json_stream.close();
         exit( exit_output );
     }
 

@@ -109,6 +109,8 @@ void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 #ifdef FLOW123D_HAVE_PETSC
     if (petsc_redirect_file_ != "") {
         petsc_output_ = fopen(petsc_redirect_file_.c_str(), "w");
+        if (! petsc_output_)
+            THROW(FilePath::ExcFileOpen() << FilePath::EI_FileName(petsc_redirect_file_));
         PetscVFPrintf = this->petscvfprintf;
     }
 

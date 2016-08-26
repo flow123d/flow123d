@@ -376,10 +376,10 @@ void Balance::lazy_initialize()
 
 
     if (rank_ == 0) {
-        output_.open(string( balance_output_file_ ).c_str());
+        balance_output_file_.open_stream(output_);
         // set file name of YAML output
         string yaml_file_name = file_prefix_ + "_balance.yaml";
-        output_yaml_.open(string(FilePath(yaml_file_name, FilePath::output_file)).c_str());
+        FilePath(yaml_file_name, FilePath::output_file).open_stream(output_yaml_);
     }
 
     allocation_done_ = true;

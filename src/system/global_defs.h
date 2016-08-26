@@ -48,7 +48,7 @@
  *
  *  @{
  */
-#define INPUT_CHECK(i,...)   do { if (!(i))   xprintf(UsrErr,__VA_ARGS__); } while (0)
+ #define INPUT_CHECK(i,...)   do { if (!(i))   xprintf(UsrErr,__VA_ARGS__); } while (0)
 
 /**
  * Actually there are following debugging switches
@@ -106,7 +106,7 @@
         THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
     }} while (0)
 
-#define OLD_WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
+//#define OLD_WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
 
 #define OLD_ASSERT_EQUAL( a, b)  do {\
     stringstream ss; ss << (a) << " != " << (b); \

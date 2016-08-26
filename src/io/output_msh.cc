@@ -300,8 +300,7 @@ int OutputMSH::write_data(void)
     if(this->header_written == false) {
         if(this->rank == 0) {
             this->fix_main_file_extension(".msh");
-            this->_base_file.open(string(this->_base_filename).c_str());
-            INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
+            this->_base_filename.open_stream( this->_base_file );
         }
 
         this->write_head();
