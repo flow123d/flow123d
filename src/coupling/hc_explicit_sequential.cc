@@ -100,11 +100,11 @@ std::shared_ptr<AdvectionProcessBase> HC_ExplicitSequential::make_advection_proc
             process->data()["water_content"].copy_from(*water_content_p0_);
         else {
 
-        }
+        }*/
 
         FieldCommon *porosity = process->data().field("porosity");
         process->data()["water_content"].copy_from( *porosity );
-        */
+
 
         process->initialize();
         return process;

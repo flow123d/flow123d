@@ -551,6 +551,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     // although it does not influence CFL, compute BC so the full system is assembled
     if ( (mh_dh->time_changed() > transport_bc_time)
         || data_.porosity.changed()
+        || data_.water_content.changed()
         || data_.bc_conc.changed() )
     {
         set_boundary_conditions();
@@ -617,7 +618,7 @@ void ConvectionTransport::update_solution() {
     
     
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
-    if (data_.cross_section.changed() || data_.porosity.changed())
+    if (data_.cross_section.changed() || data_.water_content.changed() || data_.porosity.changed())
     {
         VecCopy(mass_diag, vpmass_diag);
         create_mass_matrix();
@@ -702,7 +703,8 @@ void ConvectionTransport::create_mass_matrix()
         elm = mesh_->element(el_4_loc[loc_el]);
 
         double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
-        double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
+        //double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
+        double por_m = data_.water_content.value(elm->centre(), elm->element_accessor());
 
         if (balance_ != nullptr)
         {

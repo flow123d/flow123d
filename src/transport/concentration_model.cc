@@ -254,21 +254,20 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	const unsigned int qsize = point_list.size();
 	const unsigned int n_subst = dif_coef.size();
 	std::vector<arma::vec> Dm(qsize, arma::vec(n_subst) ), alphaL(qsize, arma::vec(n_subst) ), alphaT(qsize, arma::vec(n_subst) );
-	std::vector<double> por_m(qsize), csection(qsize), eff_wc(qsize);
+	std::vector<double> por_m(qsize), csection(qsize), wc(qsize);
 
 	data().diff_m.value_list(point_list, ele_acc, Dm);
 	data().disp_l.value_list(point_list, ele_acc, alphaL);
 	data().disp_t.value_list(point_list, ele_acc, alphaT);
 	data().porosity.value_list(point_list, ele_acc, por_m);
-	//data().effective_water_content.value_list(point_list, ele_acc, eff_wc);
+	data().water_content.value_list(point_list, ele_acc, wc);
 	data().cross_section.value_list(point_list, ele_acc, csection);
 
 	for (unsigned int i=0; i<qsize; i++) {
-	    double water_content = por_m[i];
 		for (unsigned int sbi=0; sbi<n_subst; sbi++) {
 			ad_coef[sbi][i] = velocity[i];
 			calculate_dispersivity_tensor(velocity[i],
-					Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], water_content, por_m[i], csection[i],
+					Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], wc[i], por_m[i], csection[i],
 					dif_coef[sbi][i]);
 		}
 	}
