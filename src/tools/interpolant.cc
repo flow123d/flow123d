@@ -18,7 +18,7 @@
 #include "adaptivesimpson.hh"
 #include "functors_impl.hh"
 #include "interpolant_impl.hh"
-
+#include "system/logger.hh"
 //#include "system/sys_profiler.hh"
 
 #include <limits>

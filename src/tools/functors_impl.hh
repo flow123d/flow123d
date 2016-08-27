@@ -19,6 +19,7 @@
 #define FUNCTORBASE_IMPL_H
 
 #include "tools/functors.hh"
+#include "system/global_defs.h"
 
 /**************************************** FunctorCommon *****************************************/
 template<class Type>
