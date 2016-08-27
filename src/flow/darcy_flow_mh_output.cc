@@ -32,7 +32,6 @@
 #include "io/observe.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include "system/xio.h"
 
 #include "fields/field_set.hh"
 #include "fem/dofhandler.hh"

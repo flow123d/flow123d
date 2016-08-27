@@ -29,7 +29,6 @@
 #include "mpi.h"
 
 #include "system/system.hh"
-#include "system/xio.h"
 #include "system/file_path.hh"
 #include "system/sys_profiler.hh"
 

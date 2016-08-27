@@ -24,7 +24,6 @@
 #include <mpi.h>
 
 #include "global_defs.h"
-#include "system/xio.h"
 #include "system/file_path.hh"
 
 #ifdef FLOW123D_HAVE_PETSC

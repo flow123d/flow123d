@@ -21,7 +21,6 @@
 
 
 #include "system/system.hh"
-#include "system/xio.h"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"

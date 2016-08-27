@@ -21,7 +21,6 @@
 #include <cmath>
 
 #include "interpolant.hh"
-#include "system/xio.h"
 
 /********************************** InterpolantBase ********************************/
 
