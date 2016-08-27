@@ -152,8 +152,11 @@ public:
 	TransportEqData();
 	inline virtual ~TransportEqData() {};
 
-	/// Mobile porosity
+	/// Mobile porosity - usually saturated water content in the case of unsaturated flow model
 	Field<3, FieldValue<3>::Scalar> porosity;
+
+	/// Water content - result of unsaturated water flow model or porosity
+	Field<3, FieldValue<3>::Scalar> water_content;
 
 	/// Pointer to DarcyFlow field cross_section
 	Field<3, FieldValue<3>::Scalar > cross_section;
