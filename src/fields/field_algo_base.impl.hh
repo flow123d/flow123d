@@ -168,10 +168,6 @@ template class field<dim_from, FieldValue<0>::Scalar >;                       \
 INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
 
 
-//template class field<dim_from, FieldValue<0>::EnumVector >;                \
-//template class field<dim_from, FieldValue<0>::Vector >;                         \
-
-
 // All instances of one field class template @p field.
 // currently we need only fields on 3D ambient space (and 2D for some tests)
 // so this is to save compilation time and avoid memory problems on the test server

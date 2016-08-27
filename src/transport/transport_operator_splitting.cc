@@ -20,7 +20,6 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include "system/xio.h"
 
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
@@ -138,7 +137,7 @@ TransportEqData::TransportEqData()
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : AdvectionProcessBase(init_mesh, in_rec),
-  Semchem_reactions(NULL),
+//  Semchem_reactions(NULL),
   cfl_convection(numeric_limits<double>::max()),
   cfl_reaction(numeric_limits<double>::max())
 {
@@ -197,14 +196,14 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	} else {
 		reaction = nullptr;
-		Semchem_reactions = nullptr;
+		//Semchem_reactions = nullptr;
 	}
 }
 
 TransportOperatorSplitting::~TransportOperatorSplitting()
 {
     //delete field_output;
-    if (Semchem_reactions) delete Semchem_reactions;
+    //if (Semchem_reactions) delete Semchem_reactions;
     delete time_;
 }
 
@@ -248,7 +247,7 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::zero_time_step()
 {
-    //DBGMSG("tos ZERO TIME STEP.\n");
+    //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream()->write_time_frame();
@@ -317,7 +316,7 @@ void TransportOperatorSplitting::update_solution() {
         else
         	convection->update_after_reactions(false);
 
-	    if(Semchem_reactions) Semchem_reactions->update_solution();
+	    //if(Semchem_reactions) Semchem_reactions->update_solution();
 
 
 
@@ -340,7 +339,7 @@ void TransportOperatorSplitting::update_solution() {
 	    }
 	}
 
-    xprintf( MsgLog, "    CONVECTION: steps: %d\n",steps);
+    LogOut().fmt("CONVECTION: steps: {}\n", steps);
 }
 
 

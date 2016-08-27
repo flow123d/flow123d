@@ -254,7 +254,7 @@ void MatInverse(int n,double **a) {
 // solve equation system - gauss; returns 1 - one result 0 - system doesn't have result; 2 - oo results
 // !!! THIS FUNCTION IS NOT USED and probably is WRONG !!!
 //=============================================================================
-
+/*
 int gauss(double *A, double *B,int s,double *R)
 {
   int res=1,i,j,k,size;
@@ -326,11 +326,13 @@ int gauss(double *A, double *B,int s,double *R)
   xfree(M);
   return res;
 }
+*/
+
 //=============================================================================
 // ANGLE BETWEEN TWO VECTORS
 // !!! THIS FUNCTION IS NOT USED !!!
 //=============================================================================
-
+/*
 double get_vectors_angle( double u[ 3 ], double v[ 3 ] )
 {
   double a,b,fi,p;
@@ -342,11 +344,13 @@ double get_vectors_angle( double u[ 3 ], double v[ 3 ] )
   fi = acos( p );
   return fi * 180 / M_PI;
 }
+*/
+
 //=============================================================================
 // MATRIX TIMES MATRIX
 // !!! THIS FUNCTION IS NOT USED !!!
 //=============================================================================
-
+/*
 void matrix_x_matrix(double *A,int ra, int ca,
                      double *B, int rb, int cb, double *X)
 {
@@ -361,5 +365,7 @@ void matrix_x_matrix(double *A,int ra, int ca,
     }
   return;
 }
+*/
+
 //-----------------------------------------------------------------------------
 // vim: set cindent:

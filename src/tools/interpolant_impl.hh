@@ -21,7 +21,6 @@
 #include <cmath>
 
 #include "interpolant.hh"
-#include "system/xio.h"
 
 /********************************** InterpolantBase ********************************/
 
@@ -95,7 +94,7 @@ inline double Interpolant::val(double x)
   //return value
   if(x < bound_a_)     //left miss
   {
-    //DBGMSG("test\n");
+    //DebugOut() << "test\n";
     //std::cout << "test a" << std::endl;
     stats.interval_miss_a++;
     stats.min = std::min(stats.min, x);
@@ -113,7 +112,7 @@ inline double Interpolant::val(double x)
   }
   else if(x > bound_b_)     //right miss
   {
-    //DBGMSG("test\n");
+    //DebugOut() << "test\n";
     //std::cout << "test b" << std::endl;
     stats.interval_miss_b++;
     stats.max = std::max(stats.max, x);

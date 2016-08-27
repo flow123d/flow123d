@@ -28,6 +28,8 @@
 #include "transport/transport_operator_splitting.hh"
 #include "fields/field_common.hh"
 #include "transport/heat_model.hh"
+
+#include "fields/field_set.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 #include "system/sys_profiler.hh"
@@ -238,7 +240,7 @@ void HC_ExplicitSequential::run_simulation()
         }
 
         // printing water and transport times every step
-        //xprintf(Msg,"HC_EXPL_SEQ: velocity_interpolation_time: %f, water_time: %f transport time: %f\n", 
+        //MessageOut().fmt("HC_EXPL_SEQ: velocity_interpolation_time: {}, water_time: {} transport time: {}\n",
         //        velocity_interpolation_time, water->time().t(), transport_reaction->time().t());
          
         // if transport is off, transport should return infinity solved and planned times so that
@@ -265,7 +267,7 @@ void HC_ExplicitSequential::run_simulation()
         advection_process_step(processes_[0]); // solute
         advection_process_step(processes_[1]); // heat
     }
-    //xprintf(Msg, "End of simulation at time: %f\n", max(solute->solved_time(), heat->solved_time()));
+    //MessageOut().fmt("End of simulation at time: {}\n", max(solute->solved_time(), heat->solved_time()));
 }
 
 

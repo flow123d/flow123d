@@ -134,19 +134,31 @@ void Logger::set_mask()
 		else
 			streams_mask_ = StreamMask::cout | StreamMask::log;
 		break;
-#ifndef FLOW123D_DEBUG
+	case MsgType::log:
+        if (LoggerOptions::get_instance().no_log_)
+            streams_mask_ = StreamMask();
+        else if (LoggerOptions::get_instance().is_init())
+            streams_mask_ = StreamMask::log;
+        else
+            streams_mask_ = StreamMask::cout;
+        break;
+#ifdef FLOW123D_DEBUG
+    case MsgType::debug: // for debug build
+        if (LoggerOptions::get_instance().no_log_)
+            streams_mask_ = StreamMask();
+        else if (LoggerOptions::get_instance().is_init())
+            streams_mask_ = StreamMask::log | StreamMask::cout;
+        else
+            streams_mask_ = StreamMask::cout;
+        break;
+#else
 	case MsgType::debug: // for release build
 		streams_mask_ = StreamMask();
 		break;
+
 #endif
-	default: //MsgType::log + MsgType::debug (only for debug build)
-		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = StreamMask();
-		else if (LoggerOptions::get_instance().is_init())
-			streams_mask_ = StreamMask::log;
-		else
-			streams_mask_ = StreamMask::cerr;
-		break;
+	default:
+	    ASSERT(false);
 	}
 
 	full_streams_mask_ = full_streams_mask_ | streams_mask_;

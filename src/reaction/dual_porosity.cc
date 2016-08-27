@@ -117,15 +117,18 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 DualPorosity::~DualPorosity(void)
 {
   VecScatterDestroy(&(vconc_out_scatter));
-  VecDestroy(vconc_immobile);
+
 
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
+
       //no mpi vectors
-      xfree(conc_immobile[sbi]);
+      VecDestroy(&(vconc_immobile[sbi]));
+      delete [] conc_immobile[sbi];
   }
 
-  xfree(conc_immobile);
+  delete [] vconc_immobile;
+  delete [] conc_immobile;
 }
 
 
@@ -162,12 +165,12 @@ void DualPorosity::initialize()
   OLD_ASSERT_LESS(0, substances_.size());
   
   //allocating memory for immobile concentration matrix
-  conc_immobile = (double**) xmalloc(substances_.size() * sizeof(double*));
+  conc_immobile = new double* [substances_.size()];
   conc_immobile_out.clear();
   conc_immobile_out.resize( substances_.size() );
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
-    conc_immobile[sbi] = (double*) xmalloc(distribution_->lsize() * sizeof(double));
+    conc_immobile[sbi] = new double [distribution_->lsize()];
     conc_immobile_out[sbi].resize( distribution_->size() );
   }
   allocate_output_mpi();
@@ -363,7 +366,7 @@ void DualPorosity::allocate_output_mpi(void )
     int sbi, n_subst;
     n_subst = substances_.size();
 
-    vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+    vconc_immobile = new Vec [n_subst];
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {

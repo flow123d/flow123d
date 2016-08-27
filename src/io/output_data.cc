@@ -143,10 +143,8 @@ void OutputData<Value>::normalize(unsigned int idx, unsigned int divisor) {
 
 // Instantiation of OutputData template.
 template class OutputData< FieldValue<0>::Enum >;
-template class OutputData< FieldValue<0>::EnumVector >;
 template class OutputData< FieldValue<0>::Integer >;
 template class OutputData< FieldValue<0>::Scalar >;
-template class OutputData< FieldValue<0>::Vector >;
 
 template class OutputData< FieldValue<2>::VectorFixed >;
 template class OutputData< FieldValue<2>::TensorFixed >;
