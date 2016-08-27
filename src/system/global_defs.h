@@ -41,18 +41,18 @@
  *  The macro INPUT_CHECK should be used for assertions about user input. So
  *  they produce User Error instead of Program error.
  *
- *  The macro DBGMSG should be used for debugging messages,
+ *  The macro DBGCOUT should be used for debugging messages,
  *  so they can be removed in production version.
  *
  *  OLD_WARN_ASSERT - can be used for consistency tests in debugging version.
  *
  *  @{
  */
-#define INPUT_CHECK(i,...)   do { if (!(i))   xprintf(UsrErr,__VA_ARGS__); } while (0)
+ #define INPUT_CHECK(i,...)   do { if (!(i))   xprintf(UsrErr,__VA_ARGS__); } while (0)
 
 /**
  * Actually there are following debugging switches
- * FLOW123D_DEBUG_MESSAGES  - use various debugging messages introduced by DBGMSG
+ * FLOW123D_DEBUG_MESSAGES  - use various debugging messages introduced by DBGCOUT
  * FLOW123D_DEBUG_ASSERTS - use assertion checks introduced by ASSERT
  * FLOW123D_DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
  *
@@ -106,7 +106,7 @@
         THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
     }} while (0)
 
-#define OLD_WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
+//#define OLD_WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
 
 #define OLD_ASSERT_EQUAL( a, b)  do {\
     stringstream ss; ss << (a) << " != " << (b); \
@@ -142,9 +142,6 @@
 
 #ifdef FLOW123D_DEBUG_MESSAGES
 
-#define DBGMSG(...) do { xprintf(MsgDbg,__VA_ARGS__); fflush(NULL); } while (0)
-
-
 /**
  * Usage:
  * DBGCOUT( << "xy" <<endl );
@@ -164,7 +161,6 @@
 
 #else
 
-#define DBGMSG(...)
 #define DBGCOUT(...)
 #define DBGVAR(var)
 

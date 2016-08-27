@@ -61,7 +61,7 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
     // add value for each field excluding boundary fields
     for( FieldCommon * field : field_list)
     {
-        //DBGMSG("type for field: %s\n",field->name().c_str());
+        //DebugOut().fmt("type for field: {}\n", field->name());
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
         {
             string desc = "Output of the field " + field->name() + " (($[" + field->units().format_latex()+"]$))";

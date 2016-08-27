@@ -22,6 +22,7 @@
 #include "system/python_loader.hh"
 
 #include "system/system.hh"
+#include "system/file_path.hh"
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -39,9 +40,9 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
     initialize();
 
     // don't know direct way how to load module form file, so we read it into string and use load_module_from_string
-    std::ifstream file_stream( fname.c_str() );
+    std::ifstream file_stream;
     // check correct openning
-    INPUT_CHECK(! file_stream.fail(), "Can not open input file '%s'.\n", fname.c_str() );
+    FilePath(fname, FilePath::input_file).open_stream(file_stream);
     file_stream.exceptions ( ifstream::failbit | ifstream::badbit );
 
     std::stringstream buffer;
@@ -55,7 +56,7 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
         module_name = fname;
 
     // cout << "python module: " << module_name <<endl;
-    // DBGMSG("%s\n", buffer.str().c_str());
+    // DebugOut() << buffer.str() << "\n";
     // TODO: use exceptions and catch it here to produce shorter and more precise error message
     return load_module_from_string(module_name, buffer.str() );
 }

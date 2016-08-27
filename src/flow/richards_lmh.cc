@@ -181,9 +181,9 @@ void RichardsLMH::read_initial_condition()
     postprocess();
     VecSwap(schur0->get_solution(), previous_solution); // restore solution vector
 
-    //DBGMSG("init sol:\n");
+    //DebugOut() << "init sol:\n";
     //VecView( schur0->get_solution(),   PETSC_VIEWER_STDOUT_WORLD);
-    //DBGMSG("init water content:\n");
+    //DebugOut() << "init water content:\n";
     //VecView( data_->water_content_previous_it.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
 
     solution_changed_for_scatter=true;
@@ -214,7 +214,7 @@ void RichardsLMH::assembly_linear_system()
     is_linear_ = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
     bool is_steady = zero_time_term();
-    //DBGMSG("Assembly linear system\n");
+    //DebugOut() << "Assembly linear system\n";
         START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
             schur0->start_add_assembly(); // finish allocation and create matrix
@@ -246,7 +246,7 @@ void RichardsLMH::assembly_linear_system()
 
         if (! is_steady) {
             START_TIMER("fix time term");
-            //DBGMSG("    setup time term\n");
+            //DebugOut() << "setup time term\n";
             // assembly time term and rhs
             solution_changed_for_scatter=true;
         }

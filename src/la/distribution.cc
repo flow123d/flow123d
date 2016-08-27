@@ -36,7 +36,7 @@ lsizes(NULL)
 // TODO: zavest odchytavani vyjimek a pouzivat new a delete
 
     // communicate global sizes array
-    starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));
+    starts= new unsigned int [np()+1];
     unsigned int lsize=size; // since size is const
     MPI_Allgather(&lsize,1,MPI_INT,starts+1,1,MPI_INT,communicator);
     // count starts
@@ -58,7 +58,7 @@ Distribution::Distribution(const unsigned int * const sizes, MPI_Comm comm)
     ierr=MPI_Comm_size(communicator, &(num_of_procs));
     OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
 // TODO: zavest odchytavani vyjimek a pouzivat new a delete
-    starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));
+    starts= new unsigned int [np()+1];
     starts[0]=0;
     for(unsigned  int i=0 ; i<np(); i++) starts[i+1]=starts[i]+sizes[i];
 }
@@ -81,7 +81,7 @@ Distribution::Distribution(const Vec &petsc_vector)
     VecGetOwnershipRanges(petsc_vector,&petsc_starts);
     OLD_ASSERT( ! ierr , "Can not get vector ownership range.\n" );
 
-    starts=(unsigned int *)xmalloc((np()+1)*sizeof(int));
+    starts= new unsigned int [np()+1];
     for(unsigned  int i=0 ; i<=np(); i++) starts[i]=petsc_starts[i];
 }
 
@@ -105,14 +105,14 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
 
         reminder=global_size % np(); per_proc=global_size / np();
         // set perproc rows to each proc, but for first "reminder" procs set one row more
-        starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));
+        starts= new unsigned int [np()+1];
         starts[0]=0;
         for(unsigned int i=0; i<np(); i++)
             starts[i+1]=starts[i]+per_proc+(i<reminder?1:0);
 
     } else if (type.type_ == Localized) {
 
-        starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));
+        starts= new unsigned int [np()+1];
         starts[0]=0;
         for(unsigned int i=1; i<=np(); i++) starts[i]=global_size;
     }
@@ -129,7 +129,7 @@ Distribution::Distribution(const Distribution &distr)
 {
     num_of_procs=distr.num_of_procs;
     my_proc=distr.my_proc;
-    starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));
+    starts= new unsigned int [np()+1];
     memcpy(starts,distr.starts,(np()+1) * sizeof(unsigned int));
     lsizes=NULL;
 }
@@ -155,7 +155,7 @@ unsigned int Distribution::get_proc(unsigned  int idx) const
 const unsigned int * Distribution::get_lsizes_array()
 {
     if ( lsizes == NULL ) {
-        lsizes=(unsigned int *) xmalloc(np()*sizeof(int));
+        lsizes= new unsigned int [np()];
         for(unsigned int i=0;i<np();i++) lsizes[i]=lsize(i);
     }
 
@@ -183,7 +183,7 @@ void Distribution::view(std::ostream &stream) const
 Distribution::~Distribution()
 {
 // TODO: zavest odchytavani vyjimek a pouzivat new a delete
-    xfree(starts);
-    if (lsizes) xfree(lsizes);
+    delete [] starts;
+    if (lsizes) delete [] lsizes;
 }
 

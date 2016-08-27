@@ -133,7 +133,7 @@ Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
             item);
 
 	if (old_boundary_flag != reg.is_boundary()) { // move region between BULK and .BOUNDARY sets
-		xprintf(Warn, "Change boundary flag of region with id %d and label %s.\n", reg.id(), new_label.c_str());
+		WarningOut().fmt("Change boundary flag of region with id {} and label {}.\n", reg.id(), new_label);
 		if (old_boundary_flag) {
 			erase_from_set(".BOUNDARY", reg );
 			add_to_set("BULK", reg );
