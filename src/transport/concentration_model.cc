@@ -217,41 +217,33 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 		double Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut, arma::mat33 &K)
 {
     double vnorm = arma::norm(velocity, 2);
-/*
-	if (fabs(vnorm) > 0)
-		for (int i=0; i<3; i++)
-			for (int j=0; j<3; j++)
-				K(i,j) = (velocity[i])*(velocity[j]);
-	else
-		K.zeros();
-
-	arma::mat33 kk = arma::kron(velocity.t(), velocity);
-
-	arma::mat33 abs_diff_mat = arma::abs(K -  kk);
-	double diff = arma::min( arma::min(abs_diff_mat) );
-	ASSERT(  diff < 1e-12 )(diff)(K)(kk);
 
 
-
-	// used tortuosity model dues to Millington and Quirk(1961)
+	// used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
 	// for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
-	double tortuosity = pow(water_content, 10.0 / 3.0)/ (porosity * porosity);
+	double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
 
     // Note that the velocity vector is in fact the Darcian flux,
     // so we need not to multiply vnorm by water_content and cross_section.
-	K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
-*/
-    if (fabs(vnorm) > 0)
+	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
+
+    if (fabs(vnorm) > 0) {
+        /*
         for (int i=0; i<3; i++)
             for (int j=0; j<3; j++)
-               K(i,j) = (velocity[i]/vnorm)*(velocity[j]/vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
-//               K(i,j) = (velocity[i])*(velocity[j]);
-    else
+               K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
+        */
+        K = ((alphaL - alphaT) / vnorm) * arma::kron(velocity.t(), velocity);
+
+        //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
+        //double diff = arma::min( arma::min(abs_diff_mat) );
+        //ASSERT(  diff < 1e-12 )(diff)(K)(kk);
+    } else
         K.zeros();
 
    // Note that the velocity vector is in fact the Darcian flux,
    // so to obtain |v| we have to divide vnorm by porosity and cross_section.
-   K = (vnorm*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3));
+   K += (alphaT * vnorm + Dm*tortuosity*cross_cut*water_content)*arma::eye(3,3);
 
 }
 
