@@ -217,7 +217,7 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 		double Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut, arma::mat33 &K)
 {
     double vnorm = arma::norm(velocity, 2);
-
+/*
 	if (fabs(vnorm) > 0)
 		for (int i=0; i<3; i++)
 			for (int j=0; j<3; j++)
@@ -240,6 +240,19 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
     // Note that the velocity vector is in fact the Darcian flux,
     // so we need not to multiply vnorm by water_content and cross_section.
 	K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
+*/
+    if (fabs(vnorm) > 0)
+        for (int i=0; i<3; i++)
+            for (int j=0; j<3; j++)
+               K(i,j) = (velocity[i]/vnorm)*(velocity[j]/vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
+//               K(i,j) = (velocity[i])*(velocity[j]);
+    else
+        K.zeros();
+
+   // Note that the velocity vector is in fact the Darcian flux,
+   // so to obtain |v| we have to divide vnorm by porosity and cross_section.
+   K = (vnorm*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3));
+
 }
 
 
