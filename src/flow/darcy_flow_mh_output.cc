@@ -92,8 +92,7 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
-  compute_errors_(false),
-  raw_output_file(NULL)
+  compute_errors_(false)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     

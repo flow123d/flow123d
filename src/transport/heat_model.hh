@@ -104,6 +104,8 @@ public:
 		Field<3, FieldValue<3>::Scalar> init_temperature;
 		/// Porosity of solid.
 		Field<3, FieldValue<3>::Scalar> porosity;
+		/// Water content passed from Darcy flow model
+		Field<3, FieldValue<3>::Scalar> water_content;
 		/// Density of fluid.
 		Field<3, FieldValue<3>::Scalar> fluid_density;
 		/// Heat capacity of fluid.

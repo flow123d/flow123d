@@ -106,6 +106,12 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .input_default("1.0")
             .flags_add(in_main_matrix & in_time_term);
 
+    *this+=water_content
+            .name("water_content")
+            .units( UnitSI::dimensionless() )
+            .input_default("1.0")
+            .flags_add(input_copy & in_main_matrix & in_time_term);
+
     *this+=fluid_density
             .name("fluid_density")
             .description("Density of fluid.")
