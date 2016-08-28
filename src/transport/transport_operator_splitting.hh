@@ -152,8 +152,11 @@ public:
 	TransportEqData();
 	inline virtual ~TransportEqData() {};
 
-	/// Mobile porosity
+	/// Mobile porosity - usually saturated water content in the case of unsaturated flow model
 	Field<3, FieldValue<3>::Scalar> porosity;
+
+	/// Water content - result of unsaturated water flow model or porosity
+	Field<3, FieldValue<3>::Scalar> water_content;
 
 	/// Pointer to DarcyFlow field cross_section
 	Field<3, FieldValue<3>::Scalar > cross_section;
@@ -208,6 +211,8 @@ public:
 
 class TransportOperatorSplitting : public AdvectionProcessBase {
 public:
+    typedef AdvectionProcessBase FactoryBaseType;
+
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
      *
@@ -224,6 +229,7 @@ public:
 
     virtual void set_velocity_field(const MH_DofHandler &dh) override;
 
+    void initialize() override;
     void zero_time_step() override;
     void update_solution() override;
 

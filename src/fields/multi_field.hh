@@ -152,6 +152,18 @@ public:
     bool is_constant(Region reg) override;
 
     /**
+     * @brief Indicates special field states.
+     *
+     * Return possible values from the enum @p FieldResult, see description there.
+     *
+     * Only difference to Field<>::field_result is meaning of @p result_constant. Here we return this value if
+     * all subfields are (possibly different) constants.
+     *
+     * Not used yet. Possibly tune behavior after usage.
+     */
+    FieldResult field_result( RegionSet region_set) const override;
+
+    /**
      * Virtual destructor.
      */
     inline virtual ~MultiField() {}

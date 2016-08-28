@@ -95,6 +95,8 @@ Balance::~Balance()
 		output_.close();
 		output_yaml_.close();
 	}
+	if (! allocation_done_) return;
+
 	for (unsigned int c=0; c<quantities_.size(); ++c)
 	{
 		chkerr(MatDestroy(&(region_mass_matrix_[c])));

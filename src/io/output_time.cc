@@ -82,7 +82,7 @@ void OutputTime::init_from_input(const std::string &equation_name, Mesh &mesh, c
 
     // Read output base file name
     // TODO: remove dummy ".xyz" extension after merge with DF
-    FilePath output_file_path(equation_name+".xyz", FilePath::output_file);
+    FilePath output_file_path(equation_name+"_fields", FilePath::output_file);
     input_record_.opt_val("file", output_file_path);
     this->_base_filename = output_file_path;
 }
