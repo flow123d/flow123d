@@ -48,3 +48,5 @@ doc/reference_manual/flow_version.tex
 bin/pythonenv.sh
 tests/runtest.sh
 bin/runtest.sh
+
+/config/jenkins.ini

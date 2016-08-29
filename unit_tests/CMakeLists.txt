@@ -195,14 +195,14 @@ add_custom_target(test-list
 # Rule to create XML definitions of Jenkins jobs and upload them to the server.
 set(JENKINS_JOBS_FILE ${CMAKE_CURRENT_BINARY_DIR}/jenkins-jobs-config.yaml)
 add_custom_target(jenkins-upload
-                  COMMAND jenkins-jobs --ignore-cache update ${JENKINS_JOBS_FILE} 
+                  COMMAND jenkins-jobs --ignore-cache --conf ${CMAKE_SOURCE_DIR}/config/jenkins.ini update ${JENKINS_JOBS_FILE} 
                   DEPENDS ${JENKINS_JOBS_FILE}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
 
 # Rule to create XML definitions of Jenkins jobs in local directory. (for testing)
 add_custom_target(jenkins-test
-                  COMMAND jenkins-jobs test ${JENKINS_JOBS_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}                 
+                  COMMAND jenkins-jobs --conf ${CMAKE_SOURCE_DIR}/config/jenkins.ini test ${JENKINS_JOBS_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}                 
                   DEPENDS ${JENKINS_JOBS_FILE}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
