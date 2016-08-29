@@ -12,7 +12,7 @@
           "old_value" : "2.0.0_rc",
           "new_value" : "2.0.0"
       }
-    }
+    },
     {
       "NAME": "Make output-specific key.",
       "action": "add-key",
