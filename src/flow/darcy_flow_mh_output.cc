@@ -32,8 +32,8 @@
 #include "io/observe.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include "system/xio.h"
 
+#include "fields/field_set.hh"
 #include "fem/dofhandler.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
@@ -92,8 +92,7 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
-  compute_errors_(false),
-  raw_output_file(NULL)
+  compute_errors_(false)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
@@ -147,8 +146,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             // optionally open raw output file
             FilePath raw_output_file_path;
             if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-                xprintf(Msg, "Opening raw output: %s\n", string(raw_output_file_path).c_str() );
-                raw_output_file = xfopen(raw_output_file_path, "wt");
+            	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
+            	raw_output_file_path.open_stream(raw_output_file);
             }
 
         }
@@ -159,8 +158,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {
-
-    if (raw_output_file != NULL) xfclose(raw_output_file);
     chkerr(VecDestroy(&vec_corner_pressure));
 
     delete dh;
@@ -422,43 +419,40 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
-    if (raw_output_file == NULL) return;
+    if (! raw_output_file.is_open()) return;
     
-    char dbl_fmt[ 16 ]= "%.8g ";
+    //char dbl_fmt[ 16 ]= "%.8g ";
     // header
-    xfprintf( raw_output_file, "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n");
-    xfprintf( raw_output_file, "$FlowField\nT=");
-    xfprintf( raw_output_file, dbl_fmt, darcy_flow->time().t());
-    xfprintf( raw_output_file, "\n%d\n", mesh_->n_elements() );
+    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
+    raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
+    raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
-    unsigned int i;
+    ;
     int cit = 0;
     FOR_ELEMENTS( mesh_,  ele ) {
-        xfprintf( raw_output_file, "%d ", ele.id());
-        // pressure and velocity in barycenter
-        xfprintf( raw_output_file, dbl_fmt, ele_pressure[cit]);
-        for (i = 0; i < 3; i++)
-            xfprintf( raw_output_file, dbl_fmt, ele_flux[3*cit+i]);
+        raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
+        for (unsigned int i = 0; i < 3; i++)
+            raw_output_file << ele_flux[3*cit+i] << " ";
 
-        xfprintf( raw_output_file, " %d ", ele->n_sides());
+        raw_output_file << ele->n_sides() << " ";
         std::vector< std::vector<unsigned int > > old_to_new_side =
         { {0, 1},
           {0, 1, 2},
           {0, 1, 2, 3}
         };
-        for (i = 0; i < ele->n_sides(); i++) {
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
             unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            xfprintf( raw_output_file, dbl_fmt, dh.side_scalar( *(ele->side(i_new_side) ) ) );
+            raw_output_file << dh.side_scalar( *(ele->side(i_new_side) ) ) << " ";
         }
-        for (i = 0; i < ele->n_sides(); i++) {
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
             unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            xfprintf( raw_output_file, dbl_fmt, dh.side_flux( *(ele->side(i_new_side) ) ) );
+            raw_output_file << dh.side_flux( *(ele->side(i_new_side) ) ) << " ";
         }
 
-        xfprintf( raw_output_file, "\n" );
+        raw_output_file << endl;
         cit ++;
     }
-    xfprintf( raw_output_file, "$EndFlowField\n\n" );
+    raw_output_file << "$EndFlowField\n" << endl;
 }
 
 
@@ -598,7 +592,7 @@ void l2_diff_local(ElementFullIter &ele,
 
 
 void DarcyFlowMHOutput::compute_l2_difference() {
-    DBGMSG("l2 norm output\n");
+	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
 
     const unsigned int order = 4; // order of Gauss quadrature

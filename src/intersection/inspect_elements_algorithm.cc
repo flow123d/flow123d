@@ -130,7 +130,7 @@ bool InspectElementsAlgorithm<dim>::intersection_exists(unsigned int component_e
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::compute_intersections(std::shared_ptr<BIHTree> bih)
 {
-    xprintf(Msg,"#########   ALGORITHM: compute_intersections   #########\n");
+    DebugOut() << "#########   ALGORITHM: compute_intersections   #########\n";
     ASSERT_PTR_DBG(bih);
     init();
     
@@ -150,7 +150,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(std::shared_ptr<BIHTre
             END_TIMER("BIHtree find");
 
 //             component_counter_++;
-//             DBGMSG("comp: %d\n", component_counter_);
+//             DebugOut().fmt("comp: {}\n", component_counter_);
             
             START_TIMER("Bounding box element iteration");
             
@@ -203,9 +203,9 @@ void InspectElementsAlgorithm<dim>::compute_intersections(std::shared_ptr<BIHTre
                     
                     if(found){
                         component_counter_++;
-                        DBGMSG("comp: %d\n", component_counter_);
+                        DebugOut().fmt("comp: {}\n", component_counter_);
                         
-                        DBGMSG("start component with elements %d %d\n",component_ele_idx, bulk_ele_idx);
+                        DebugOut().fmt("start component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
                         
                         prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back(), prolongation_table);
                         
@@ -216,11 +216,11 @@ void InspectElementsAlgorithm<dim>::compute_intersections(std::shared_ptr<BIHTre
                             
                             while(!bulk_queue_.empty()){
                                 Prolongation pr = bulk_queue_.front();
-                                DBGMSG("Bulk queue: ele_idx %d.\n",pr.elm_3D_idx);
+                                DebugOut().fmt("Bulk queue: ele_idx {}.\n",pr.elm_3D_idx);
                                 
                                 if( pr.elm_3D_idx == undefined_elm_idx_)
                                 {
-                                    DBGMSG("Open intersection component element: %d\n",current_component_element_idx);
+                                    DebugOut().fmt("Open intersection component element: {}\n",current_component_element_idx);
                                     element_covered = false;
                                 }
                                 else prolongate(pr);
@@ -237,7 +237,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(std::shared_ptr<BIHTre
 
                                 // note the component element index
                                 current_component_element_idx = pr.component_elm_idx;
-                                DBGMSG("Component queue: ele_idx %d.\n",current_component_element_idx);
+                                DebugOut().fmt("Component queue: ele_idx {}.\n",current_component_element_idx);
                                 
                                 prolongate(pr);
                                 component_queue_.pop();
@@ -261,14 +261,14 @@ void InspectElementsAlgorithm<dim>::compute_intersections(std::shared_ptr<BIHTre
     
     // DBG write which elements are closed
 //     FOR_ELEMENTS(mesh, ele) {
-//         DBGMSG("Element[%3d] closed: %d\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
+//         DebugOut().fmt("Element[{}] closed: {}\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
 //     }
 }
   
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(std::shared_ptr<BIHTree> bih)
 {
-    xprintf(Msg,"#########   ALGORITHM: compute_intersections_BIHtree   #########\n");
+    DebugOut() << "#########   ALGORITHM: compute_intersections_BIHtree   #########\n";
     ASSERT_PTR_DBG(bih);
     init();
     
@@ -330,7 +330,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(std::shared_pt
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::compute_intersections_BB()
 {
-    xprintf(Msg,"#########   ALGORITHM: compute_intersections_BB   #########\n");
+    DebugOut() << "#########   ALGORITHM: compute_intersections_BB   #########\n";
     init();
     compute_bounding_boxes();
     
@@ -397,9 +397,9 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                     
                     if(found){
                         component_counter_++;
-                        DBGMSG("comp: %d\n", component_counter_);
+                        DebugOut().fmt("comp: {}\n", component_counter_);
                         
-                        DBGMSG("start component with elements %d %d\n",component_ele_idx, bulk_ele_idx);
+                        DebugOut().fmt("start component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
                         
                         prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back(), prolongation_table);
                         
@@ -410,11 +410,11 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                             
                             while(!bulk_queue_.empty()){
                                 Prolongation pr = bulk_queue_.front();
-                                DBGMSG("Bulk queue: ele_idx %d.\n",pr.elm_3D_idx);
+                                DebugOut().fmt("Bulk queue: ele_idx {}.\n",pr.elm_3D_idx);
                                 
                                 if( pr.elm_3D_idx == undefined_elm_idx_)
                                 {
-                                    DBGMSG("Open intersection component element: %d\n",current_component_element_idx);
+                                    DebugOut().fmt("Open intersection component element: {}\n",current_component_element_idx);
                                     element_covered = false;
                                 }
                                 else prolongate(pr);
@@ -431,7 +431,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
 
                                 // note the component element index
                                 current_component_element_idx = pr.component_elm_idx;
-                                DBGMSG("Component queue: ele_idx %d.\n",current_component_element_idx);
+                                DebugOut().fmt("Component queue: ele_idx {}.\n",current_component_element_idx);
                                 
                                 prolongate(pr);
                                 component_queue_.pop();
@@ -455,7 +455,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
     
     // DBG write which elements are closed
 //     FOR_ELEMENTS(mesh, ele) {
-//         DBGMSG("Element[%3d] closed: %d\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
+//         DebugOut().fmt("Element[{}] closed: {}\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
 //     }
 }
 
@@ -473,18 +473,18 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_bulk_element_edge
         // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
         case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
                     edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
-                DBGMSG("3d prolong (node)\n");
+                DebugOut() << "3d prolong (node)\n";
                 break;
         
         // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
         case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
                     edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
-                DBGMSG("3d prolong (edge)\n");
+                DebugOut() << "3d prolong (edge)\n";
                 break;
                 
         // IP is on a side of tetrahedron; only possible edge is from the given side (1)
         case 2: edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[IP.idx_B()]]));
-                DBGMSG("3d prolong (side)\n");
+                DebugOut() << "3d prolong (side)\n";
                 break;
         default: ASSERT_LT_DBG(IP.dim_B(),3);
     }
@@ -517,7 +517,7 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongations_over_bulk_eleme
         {
             last_slave_for_3D_elements[bulk_neighbor_idx] = component_ele_idx;
         
-            DBGMSG("3d prolong %d in %d\n",component_ele_idx,bulk_neighbor_idx);
+            DebugOut().fmt("3d prolong {} in {}\n",component_ele_idx,bulk_neighbor_idx);
             
             // Vytvoření průniku bez potřeby počítání
             IntersectionAux<dim,3> il_other(component_ele_idx, bulk_neighbor_idx);
@@ -539,14 +539,14 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& com
                                                       const IntersectionAux<1,3> &is,
                                                       const std::vector<unsigned int> &prolongation_table)
 {
-    DBGMSG("DECIDE\n");
+    DebugOut() << "DECIDE\n";
     // number of IPs that are at vertices of component element (counter used for closing element)
     unsigned int n_ip_vertices = 0;
     
     for(const IntersectionPointAux<1,3> &IP : is.points()) {
         if(IP.dim_A() == 0) { // if IP is the end of the 1D element
             n_ip_vertices++;
-            DBGMSG("1D end\n");
+            DebugOut() << "1D end\n";
             
             // there are two possibilities:
             // 1] IP is inside the bulk element
@@ -567,7 +567,7 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& com
 
                         unsigned int component_neighbor_idx = other_side->element()->index();
                         if(!intersection_exists(component_neighbor_idx,bulk_ele->index())){
-                            DBGMSG("1d prolong %d in %d\n", component_neighbor_idx, bulk_ele->index());
+                            DebugOut().fmt("1d prolong {} in {}\n", component_neighbor_idx, bulk_ele->index());
                             
                                 // Vytvoření průniku bez potřeby počítání
                                 IntersectionAux<1,3> il_other(component_neighbor_idx, bulk_ele->index());
@@ -620,7 +620,7 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& com
 
             unsigned int n_prolongations = create_prolongations_over_bulk_element_edges(bulk_neighbors,comp_ele->index());
             
-            DBGMSG("cover: %d %d\n", is.size(), n_prolongations);
+            DebugOut().fmt("cover: {} {}\n", is.size(), n_prolongations);
             // if there are no sides of any edge that we can continue to prolongate over,
             // it means we are at the boundary and cannot prolongate further
             if(bulk_neighbors.size() != 1 && n_prolongations == 0)
@@ -643,7 +643,7 @@ void InspectElementsAlgorithm<2>::assert_same_intersection(unsigned int comp_ele
     {
         if(intersection_list_[comp_ele_idx][i].bulk_ele_idx() == bulk_ele_idx)
         {
-            DBGMSG("intersection comp-bulk: %d %d\n", comp_ele_idx, bulk_ele_idx);
+            DebugOut().fmt("intersection comp-bulk: {} {}\n", comp_ele_idx, bulk_ele_idx);
             ASSERT_DBG(0).add_value(bulk_ele_idx,"bulk_ele_idx").error("Want to add the same intersection!");
         }
     }
@@ -656,7 +656,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                                                       const std::vector<unsigned int> &prolongation_table
                                                      )
 {
-    DBGMSG("DECIDE\n");
+    DebugOut() << "DECIDE\n";
     // in case there are more than 2 IPs, the prolongation table is filled
     for(unsigned int i = 0; i < prolongation_table.size();i++){
 
@@ -670,7 +670,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
             is_triangle_side = false;
         }
 
-        DBGMSG("prolongation table: %d %d\n", side, is_triangle_side);
+        DebugOut().fmt("prolongation table: {} {}\n", side, is_triangle_side);
 
         if(is_triangle_side){
             // prolongation through the triangle side
@@ -683,7 +683,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                 if (other_side != elm_side) {
                     unsigned int sousedni_element = other_side->element()->index(); // 2D element
 
-                    DBGMSG("2d sousedni_element %d\n", sousedni_element);
+                    DebugOut().fmt("2d sousedni_element {}\n", sousedni_element);
 
                         if(!intersection_exists(sousedni_element,bulk_ele->index())){
 
@@ -691,11 +691,11 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                             if(edg->n_sides > 2)
                             {
                                 component_counter_++;
-                                DBGMSG("COMPONENT COUNTER: %d\n", component_counter_);
+                                DebugOut().fmt("COMPONENT COUNTER: {}\n", component_counter_);
                                 component_idx = component_counter_;
                             }
                             
-                            DBGMSG("2d prolong\n");
+                            DebugOut() << "2d prolong\n";
                             assert_same_intersection(sousedni_element, bulk_ele->index());
                             // Vytvoření průniku bez potřeby počítání
                             IntersectionAux<2,3> il_other(sousedni_element, bulk_ele->index(), component_idx);
@@ -720,7 +720,7 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
 
                     unsigned int sousedni_element = other_side->element()->index();
 
-                    DBGMSG("3d sousedni_element %d\n", sousedni_element);
+                    DebugOut().fmt("3d sousedni_element {}\n", sousedni_element);
 
                     // TODO:
                     // - rename it, describe it and test that it is really useful !!
@@ -735,8 +735,8 @@ void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& com
                         
                         last_slave_for_3D_elements[sousedni_element] = comp_ele->index();
 
-                        DBGMSG("3d prolong\n");
-                        DBGMSG("last_slave_for_3D_elements: %d, exists: %d\n", last_slave_for_3D_elements[sousedni_element], intersection_exists(comp_ele->index(),sousedni_element));
+                        DebugOut() << "3d prolong\n";
+                        DebugOut().fmt("last_slave_for_3D_elements: {}, exists: {}\n", last_slave_for_3D_elements[sousedni_element], intersection_exists(comp_ele->index(),sousedni_element));
                         assert_same_intersection(comp_ele->index(), sousedni_element);
                         // Vytvoření průniku bez potřeby počítání
                         IntersectionAux<2,3> il_other(comp_ele->index(), sousedni_element, is.component_idx());
@@ -760,7 +760,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     ElementFullIter elm = mesh->element(pr.component_elm_idx);
     ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
     
-    DBGMSG("Prolongate %dD: %d in %d.\n", dim, pr.component_elm_idx, pr.elm_3D_idx);
+    DebugOut().fmt("Prolongate {}D: {} in {}.\n", dim, pr.component_elm_idx, pr.elm_3D_idx);
 
     //TODO: optimization: this might be called before and not every time 
     //(component element is not changing when emptying bulk queue)
@@ -780,7 +780,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     
     if(is.size() > 0){
 //         for(unsigned int j=0; j < is.size(); j++) 
-//             cout << is[j];
+//             DebugOut() << is[j];
         
         prolongation_decide(elm, ele_3D,is,prolongation_table);
         n_intersections_++;
@@ -797,7 +797,7 @@ InspectElementsAlgorithm22::InspectElementsAlgorithm22(Mesh* input_mesh)
 
 void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::vector<ILpair>>& intersection_map_)
 {
-    DBGMSG("Intersections 2d-2d\n");
+    DebugOut() << "Intersections 2d-2d\n";
     
     FOR_ELEMENTS(mesh, ele) {
     if (ele->dim() == 3)
@@ -808,7 +808,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
         
         const std::vector<ILpair> &local_map = intersection_map_[ele_idx];
         
-        //DBGMSG("more than 2 intersections in tetrahedron found\n");
+        //DebugOut() << "more than 2 intersections in tetrahedron found\n";
         for(unsigned int i=0; i < local_map.size(); i++)
         {
             //TODO: 1] compute all plucker coords at once
@@ -819,7 +819,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
             unsigned int componentA_idx = local_map[i].second->component_idx();
             
             IntersectionLocalBase * ilb = local_map[i].second;
-            DBGMSG("2d-2d ILB: %d %d %d\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), ilb->component_idx());
+            DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), ilb->component_idx());
             
             for(unsigned int j=i+1; j < local_map.size(); j++)
             {
@@ -844,7 +844,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
 //                 }
 //                 if(is_not_neighbor) continue;
                 
-                DBGMSG("compute intersection 2d-2d: e_%d e_%d c_%d c_%d\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
+                DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
                 compute_single_intersection(eleA,
                                             eleB);
             }
@@ -886,7 +886,7 @@ InspectElementsAlgorithm12::InspectElementsAlgorithm12(Mesh* input_mesh)
 void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<ILpair>>& intersection_map,
                                                        std::vector<IntersectionLocal<1,2>> &storage)
 {
-    DBGMSG("Intersections 1d-2d\n");
+    DebugOut() << "Intersections 1d-2d\n";
     
     FOR_ELEMENTS(mesh, ele) {
     if (ele->dim() == 3)
@@ -897,7 +897,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
         
         const std::vector<ILpair> &local_map = intersection_map[ele_idx];
         
-        //DBGMSG("more than 2 intersections in tetrahedron found\n");
+        //DebugOut() << "more than 2 intersections in tetrahedron found\n";
         for(unsigned int i=0; i < local_map.size(); i++)
         {
             //TODO: 1] compute all plucker coords at once
@@ -926,7 +926,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
                 
                 if(skip) continue;
                 
-                DBGMSG("compute intersection 1d-2d: %d %d\n",eleA.index(), eleB.index());
+                DebugOut().fmt("compute intersection 1d-2d: {} {}\n",eleA.index(), eleB.index());
 //                 compute_single_intersection(eleA,
 //                                             eleB);
                 
@@ -950,7 +950,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
                                                          &(storage.back())
                                                          ));
                     
-                    DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+                    DebugOut().fmt("1D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
                 }
             }
         }
@@ -960,11 +960,11 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
     // just dbg output
     for(IntersectionLocal<1,2> &is : storage)
     {
-        DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+        DebugOut().fmt("1D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
         for(const IntersectionPoint<1,2>& ip : is.points()) {
-            //cout << ip;
+            //DebugOut() << ip;
             auto p = ip.coords(mesh->element(is.component_ele_idx()));
-            cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+            DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
         }
     }
 }
@@ -986,7 +986,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
 //     
 //     if(n_local_intersection > 0)
 //     {
-//         DBGMSG("found: %d\n",n_local_intersection);
+//         DebugOut().fmt("found: {}\n",n_local_intersection);
 //         intersectionaux_storage12_.push_back(is);
 //     }
 // }
@@ -995,7 +995,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
 
 void InspectElementsAlgorithm12::compute_intersections_2(std::shared_ptr<BIHTree> bih)
 {
-    DBGMSG("Intersections 1d-2d (2-bihtree)\n");
+    DebugOut() << "Intersections 1d-2d (2-bihtree)\n";
     ASSERT_PTR_DBG(bih);
     
     START_TIMER("Element iteration");

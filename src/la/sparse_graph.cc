@@ -108,8 +108,8 @@ void SparseGraph::finalize()
    // communicate inserted edges
 
    // unroll data in adj_of_proc into send buffer
-   int * sdispls = (int *) xmalloc( vtx_distr.np() * sizeof(int) );
-   int * scounts = (int *) xmalloc( vtx_distr.np() * sizeof(int) );
+   int * sdispls = new int [vtx_distr.np()];
+   int * scounts = new int [vtx_distr.np()];
 
    total_size=0;
    for(proc=0, s=adj_of_proc.begin(); s!=adj_of_proc.end();++s, ++proc)
@@ -118,7 +118,7 @@ void SparseGraph::finalize()
        scounts[proc] = edge_size * (s)->size(); 
        total_size += edge_size * ((s)->size)();
    }
-   int * sendbuf = (int *) xmalloc( (total_size+1) * sizeof(int ) );
+   int * sendbuf = new int [(total_size+1)];
 
    Edge edge;
    int buf_pos=0;
@@ -136,8 +136,8 @@ void SparseGraph::finalize()
    }
 
    // communicate send sizes
-   int * rcounts = (int *) xmalloc( vtx_distr.np() * sizeof(int) );
-   int * rdispls = (int *) xmalloc( vtx_distr.np() * sizeof(int) );
+   int * rcounts = new int [vtx_distr.np()];
+   int * rdispls = new int [vtx_distr.np()];
    MPI_Alltoall( scounts, 1, MPI_INT, rcounts, 1, MPI_INT, vtx_distr.get_comm());
 
    // prepare receiving buffers
@@ -148,18 +148,18 @@ void SparseGraph::finalize()
        total_size += rcounts[proc];
    }
 
-   int * recvbuf = (int *) xmalloc( (total_size+1) * sizeof(int ) );
+   int * recvbuf = new int [total_size+1];
 
    MPI_Alltoallv (
            sendbuf, scounts, sdispls, MPI_INT,
            recvbuf,  rcounts, rdispls, MPI_INT,
            vtx_distr.get_comm() );
 
-   xfree(sendbuf);
-   xfree(scounts);
-   xfree(sdispls);
-   xfree(rcounts);
-   xfree(rdispls);
+   delete [] sendbuf;
+   delete [] scounts;
+   delete [] sdispls;
+   delete [] rcounts;
+   delete [] rdispls;
 
    /////////////////////////////////////
    // construct local adj and rows arrays
@@ -198,7 +198,7 @@ void SparseGraph::finalize()
 
    }
 
-   xfree(recvbuf);
+   delete [] recvbuf;
 }
 
 
@@ -220,7 +220,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
             proc_to_check=part_to_check[vtx];
             // check if the processor is still unvisited
             if ( checked_proc[proc_to_check] )
-                xprintf(Warn, "Disconnected subgraph %d detected at vertex %d.\n",part_to_check[vtx],vtx);
+            	WarningOut().fmt("Disconnected subgraph {} detected at vertex {}.\n", part_to_check[vtx], vtx);
             // DFS unvisited vertex
             checked_vtx[vtx]=1;
             DFS(vtx);
@@ -230,7 +230,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
     }
     checked_vtx.clear();
 
-    DBGMSG("Connectivity of subgraphs is OK.\n");
+    DebugOut() << "Connectivity of subgraphs is OK.\n";
     return (true);
 }
 
@@ -257,11 +257,11 @@ void SparseGraph::view()
 {
 	OLD_ASSERT( adj,"Can not view non finalized graph.\n");
     int row,col;
-    xprintf(Msg,"SparseGraph\n");
+    MessageOut() << "SparseGraph\n";
     for(row=0; row < (int) vtx_distr.lsize(); row++) {
-        xprintf(Msg,"edges from this vertex: %d\n",rows[row+1]);
+    	MessageOut().fmt("edges from this vertex: {}\n", rows[row+1]);
         for(col=rows[row]; col<rows[row+1]; col++) {
-            xprintf(Msg,"edge (v1, v2): %d %d\n",row+vtx_distr.begin(), adj[col]);
+        	MessageOut().fmt("edge (v1, v2): {} {}\n", row+vtx_distr.begin(), adj[col]);
         }
     }
 }

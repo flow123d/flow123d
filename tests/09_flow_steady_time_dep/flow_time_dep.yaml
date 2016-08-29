@@ -11,17 +11,17 @@ problem: !Coupling_Sequential
     input_fields:
       - region: plane
         conductivity: 1
-      - region: BOUNDARY
+      - region: .BOUNDARY
         time: 0
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: '0'
-      - region: BOUNDARY
+      - region: .BOUNDARY
         time: 1
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
-      - region: BOUNDARY
+      - region: .BOUNDARY
         time: 2
         bc_type: dirichlet
         bc_pressure: !FieldFormula

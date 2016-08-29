@@ -29,9 +29,9 @@ namespace computeintersection{
     
 void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
     
-//     DBGMSG("%d intersections:\n",p.size());
+//     DebugOut().fmt("{} intersections:\n",p.size());
 //     for(IntersectionPointAux<2,3> &ip : p.points())
-//         cout << ip;
+//         DebugOut() << ip;
     
     // avoid tracing (none is needed) if the intersection is just single point
     if(p.points().size() < 2) return;
@@ -73,16 +73,16 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                 // IP is the vertex of triangle,
                 // the directions of triangle edges determines the directions of polygon edges
                 unsigned int vertex_index = ip.idx_A();
-                DBGMSG("Intersection type E-E. (Vertex_index: %d)\n", vertex_index);
+                DebugOut() << "Intersection type E-E. (Vertex_index: " << vertex_index << ")\n";
                 
                 row = 4 + RefElement<2>::interact<1,0>(vertex_index)[0];
                 object_index = 4 + RefElement<2>::interact<1,0>(vertex_index)[1];
-                DBGMSG("E-E: row: %d, to edge: %d, ip: %d \n",row, object_index, i);
+                DebugOut().fmt("E-E: row: {}, to edge: {}, ip: {} \n",row, object_index, i);
 
             } break;
             case 1: // if the ip is on the side of triangle -> intersection S-E or E-S
             {
-                DBGMSG("Intersection type E%d - S%d, ori %d.\n",ip.idx_A(),ip.idx_B(),ip.orientation());
+                DebugOut().fmt("Intersection type E{} - S{}, ori {}.\n",ip.idx_A(),ip.idx_B(),ip.orientation());
                 // IP is not a vertex of triangle -> cannot be E-E
                 /* directions of polygon edges depends on three aspects:
                  * - normal orientation of the tetrahedron side (OUT...0, IN...1)
@@ -105,7 +105,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                  * if RES == 1 -> intersection direction is E-S
                  * if RES == 0 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
                  */
-//                 DBGMSG("S=%d P=%d, E=%d.\n",RefElement<3>::normal_orientation(ip.idx_B()), 
+//                 DebugOut().fmt("S={} P={}, E={}.\n",RefElement<3>::normal_orientation(ip.idx_B()), 
 //                        RefElement<2>::normal_orientation(ip.idx_A()), ip.orientation());
                 unsigned int j = (RefElement<3>::normal_orientation(ip.idx_B()) +
                                   RefElement<2>::normal_orientation(ip.idx_A()) +
@@ -116,18 +116,18 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                     row = ip.idx_B();
                     object_index = 4 + ip.idx_A();
 
-                    DBGMSG("S-E: row: %d, to edge: %d, ip: %d \n",row, object_index, i);
+                    DebugOut().fmt("S-E: row: {}, to edge: {}, ip: {} \n",row, object_index, i);
                 }else{
                     // direction: Edge -> IP -> Side
                     row = 4 + ip.idx_A();
                     object_index = ip.idx_B();
 
-                    DBGMSG("E-S: row: %d, to side: %d, ip: %d \n",row, object_index, i);
+                    DebugOut().fmt("E-S: row: {}, to side: {}, ip: {} \n",row, object_index, i);
                 }
             } break;
             case 2: // type S-S, IP is on the edge between two sides
             {
-                DBGMSG("Intersection type S-S, ori %d.\n", ip.orientation());
+                DebugOut().fmt("Intersection type S-S, ori {}.\n", ip.orientation());
                 /** here the idx_B contains number of edge of the tetrahedron where the IP lies
                  * sides: let edge be oriented up and let us see the tetrahedron from outside ->
                  *  then the right side [0] is in and left side [1] is out
@@ -138,7 +138,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                 row = RefElement<3>::interact<2,1>(tetrahedron_line)[1-first_side];
                 object_index = RefElement<3>::interact<2,1>(tetrahedron_line)[first_side];
 
-                DBGMSG("S-S: row: %d, to side: %d, ip: %d \n",row, object_index, i);
+                DebugOut().fmt("S-S: row: {}, to side: {}, ip: {} \n",row, object_index, i);
             } break;
             default:
                 ASSERT_DBG(0).error("Unsupported dimension of intersection object A.");
@@ -153,12 +153,12 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
         trace_table_x[row][1] = i;
     }
     
-//     DBGMSG("Trace table:\n");
+//     DebugOut() << "Trace table:\n";
 //     for(unsigned int i = 0; i < 7;i++){
-//         cout << "i=" << i << "  ";
+//         DebugOut() << "i=" << i << "  ";
 //         for(unsigned int j = 0; j < 2;j++)
-//             std::cout << trace_table_x[i][j] << "  ";
-//         cout << endl;
+//             DebugOut() << trace_table_x[i][j] << "  ";
+//         DebugOut() << endl;
 //     }
     ASSERT_LT_DBG(first_row_index, tt_size);
     
@@ -180,7 +180,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     // jump from row to row until we get back to the first row 
     // (i.e. go through polygonal vertices until we get back to starting point)
     while(next_row != first_row_index){
-//         DBGMSG("next_row = %d\n",next_row);
+//         DebugOut().fmt("next_row = {}\n",next_row);
         unsigned int i_ip_orig = (unsigned int)trace_table_x[next_row][1];
         ASSERT_LT_DBG(i_ip_orig, p.points().size());
         
@@ -207,7 +207,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
 void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
 
     START_TIMER("CI trace convex hull");
-    DBGMSG("convex hull tracing\n");
+    DebugOut() << "convex hull tracing\n";
 
     prolongation_table.clear();
     

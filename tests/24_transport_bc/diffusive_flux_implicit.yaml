@@ -10,7 +10,7 @@ problem: !Coupling_Sequential
         a_tol: 1.0e-12
         r_tol: 1.0e-12
     input_fields:
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0
     output:

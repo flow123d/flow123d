@@ -22,6 +22,10 @@ Filter:
     - path-type-filter and path-type-filter-path are optional filter parameters 
       similar as type-filter but for data in set path (path-type-filter-path) and
       set type
+    - key-exists-filter -  is a optional parameter for a key in possition path or source_path.
+      If is the parameter set, a opperation is processed only for the key with set child .
+    - key-not-exists-filter  -  is a optional parameter for a key in possition path or source_path.
+      If is the parameter set, a opperation is processed only for the key without set child .
     
 Actions:
     - move-key - Move value of set key from source_path to destination_path.
@@ -33,7 +37,8 @@ Actions:
       placed in source_path cause exception. If source_path not exist action si skipped.
       Refference or anchors is moved and if its relative possition is changed,
       result must be fixed by user. In this action can be used parameters
-      set_type_path and new_type for replacing tag new_type in path "set_type_path"      
+      set_type_path and new_type for replacing tag new_type in path "set_type_path".
+      If optional parameter keep-source is set to true, old key is kept.
     - delete-key - Delete key on set path. If key contains anchor or refference,
       transporter try resolve reference. If path not exist, or contains some children
       action si skipped. If parameter deep is set to true, key is delete with containing 
@@ -160,6 +165,8 @@ class Transformator:
                 self._check_parameter("source_path", action['parameters'], action['action'], i)
                 if 'create_path' not in action['parameters']:
                     action['parameters']['create_path'] = False
+                if 'keep-source' not in action['parameters']:
+                    action['parameters']['keep-source'] = False
                 if "set_type_path" in action['parameters'] or "new_type" in action['parameters']:
                     self._check_parameter("set_type_path", action['parameters'], action['action'], i)
                     self._check_parameter("new_type", action['parameters'], action['action'], i)                
@@ -295,6 +302,7 @@ class Transformator:
                         if changes: 
                             yaml = "\n".join(lines)
                             root, lines = self.refresh(root_input_type, yaml, notification_handler, loader)
+                        action['parameters']['keep-source'] = False
                         changes = self._move_key(root, lines, action)
                 elif action['action'] == "add-key":
                     changes = self._add_key(root, lines, action)
@@ -394,6 +402,21 @@ class Transformator:
                     return False
             except:
                 return False
+        if 'key-exists-filter' in action['parameters']:
+            try:
+                parent = re.search(r'^(.*)/([^/]*)$', path)
+                node = root.get_node_at_path(
+                    parent.group(1)+"/"+action['parameters']['key-exists-filter'])
+            except:
+                return False
+        if 'key-not-exists-filter' in action['parameters']:
+            try:
+                parent = re.search(r'^(.*)/([^/]*)$', path)
+                node = root.get_node_at_path(
+                    parent.group(1)+"/"+action['parameters']['key-not-exists-filter'])
+                return False
+            except:
+                pass
         return True
         
 
@@ -701,7 +724,8 @@ class Transformator:
                     ") must exist")
         sl1, sc1, sl2, sc2 = StructureChanger.node_pos(node1)
         dl1, dc1, dl2, dc2 = StructureChanger.node_pos(node2)
-        if parent1.group(1) == parent2.group(1) and len(node_struct) == 0:
+        if parent1.group(1) == parent2.group(1) and len(node_struct) == 0 and \
+            not action['parameters']['keep-source']:
             # rename
             i = node1.key.span.start.line-1
             lines[i] = re.sub(parent1.group(2) + r"\s*:", parent2.group(2) + ":", lines[i])
@@ -729,7 +753,7 @@ class Transformator:
                 "Destination block (" + self._get_paths_str(action, 'destination_path') +
                 ") and source block (" + self._get_paths_str(action, 'source_path') +
                 " is overlapped")
-        if sl1 < dl2:
+        if sl1 < dl2 or action['parameters']['keep-source']:
             # source before dest, first copy
             indentation2 = re.search(r'^(\s*)(\S.*)$', lines[dl2])
             #if indentation2 == None:
@@ -740,7 +764,8 @@ class Transformator:
             StructureChanger.paste_structure(lines, dl2, add, non_space_size < dc2)
             action['parameters']['path'] = action['parameters']['source_path']
             action['parameters']['deep'] = True
-            self._delete_key(root, lines, action)
+            if  not action['parameters']['keep-source']:
+                self._delete_key(root, lines, action)
         else:
             # source after dest, first delete
             action['parameters']['path'] = action['parameters']['source_path']

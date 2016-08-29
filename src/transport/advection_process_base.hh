@@ -23,9 +23,6 @@ class SubstanceList;
 class AdvectionProcessBase : public EquationBase {
 
 public:
-    typedef AdvectionProcessBase FactoryBaseType;
-
-
     AdvectionProcessBase(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec)
     {};
@@ -41,8 +38,8 @@ public:
 
     /// Common specification of the input record for secondary equations.
     static Input::Type::Abstract & get_input_type() {
-        return Input::Type::Abstract("Transport",
-                "Secondary equation for transport of substances or heat transfer.")
+        return Input::Type::Abstract("AdvectionProcess",
+                "Abstract advection process. In particular: transport of substances or heat transfer.")
                 .close();
     }
 

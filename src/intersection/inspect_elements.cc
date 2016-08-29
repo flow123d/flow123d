@@ -11,6 +11,7 @@
 #include "intersection_aux.hh"
 #include "intersection_local.hh"
 
+#include "system/global_defs.h"
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
@@ -39,10 +40,10 @@ double InspectElements::measure_13()
         {
         arma::vec3 from = intersection_storage13_[i][0].coords(ele);
         arma::vec3 to = intersection_storage13_[i][1].coords(ele);
-        DBGMSG("sublength from [%f %f %f] to [%f %f %f] = %f\n",
-               from[0], from[1], from[2], 
-               to[0], to[1], to[2],
-               local_length*t1d_length);
+//         DebugOut().fmt("sublength from [{} {} {}] to [{} {} {}] = %f\n",
+//                from[0], from[1], from[2],
+//                to[0], to[1], to[2],
+//                local_length*t1d_length);
         }
         subtotal += local_length*t1d_length;
     }
@@ -87,7 +88,6 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
                 intersection_map_[idx].resize(iea.intersection_list_[idx].size());
                 for(unsigned int j = 0; j < iea.intersection_list_[idx].size(); j++){
                     bulk_idx = iea.intersection_list_[idx][j].bulk_ele_idx();
-//                     DBGMSG("cidx %d bidx %d: n=%d\n",idx, bulk_idx, iea_13.intersection_list_[idx][j].size());
                     storage.push_back(IntersectionLocal<dim,3>(iea.intersection_list_[idx][j]));
                     
                     // create map for component element
@@ -99,9 +99,9 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
 //                  // write down intersections
 //                     IntersectionLocal<dim,3>* il = 
 //                         static_cast<IntersectionLocal<dim,3>*> (intersection_map_[idx][j].second);
-//                     cout << il;
+//                     DebugOut() << il;
 //                     for(IntersectionPoint<dim,3> &ip : il->points())
-//                         ip.coords(mesh->element(idx)).print(cout);
+//                         ip.coords(mesh->element(idx)).print(DebugOut());
 
                     // create map for bulk element
                     intersection_map_[bulk_idx].push_back(
@@ -115,7 +115,7 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
     END_TIMER("Intersection into storage");
     
 //     for(IntersectionLocal<2,3> &is : intersection_storage23_) {
-//         xprintf(Msg, "comp-bulk: %4d %4d\n", is.component_ele_idx(), is.bulk_ele_idx());
+//         DebugOut().fmt("comp-bulk: {} {}\n", is.component_ele_idx(), is.bulk_ele_idx());
 //     }
 }
 
@@ -150,11 +150,11 @@ void InspectElements::compute_intersections_22(vector< IntersectionLocal< 2, 2 >
                                                         &(storage.back())
                                                     ));
         
-            DBGMSG("2D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+            DebugOut().fmt("2D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
             for(const IntersectionPointAux<2,2>& ip : is.points()) {
-                //cout << ip;
+//                 DebugOut() << ip;
                 auto p = ip.coords(mesh->element(is.component_ele_idx()));
-                cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+//                 DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
             }
         }
     }
@@ -193,11 +193,11 @@ void InspectElements::compute_intersections_12(vector< IntersectionLocal< 1, 2 >
 //                                                         abscissa_idx,
 //                                                         &(storage.back())
 //                                                     ));
-//             DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+//             DebugOut().fmt("1D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
 //             for(const IntersectionPointAux<1,2>& ip : is.points()) {
-//                 //cout << ip;
+//                 //DebugOut() << ip;
 //                 auto p = ip.coords(mesh->element(is.component_ele_idx()));
-//                 cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+//                 DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
 //             }
 //         }
 //     }
@@ -226,11 +226,11 @@ void InspectElements::compute_intersections_12_2(vector< IntersectionLocal< 1, 2
                                                     abscissa_idx,
                                                     &(storage.back())
                                                 ));
-//         DBGMSG("1D-2D intersection [%d - %d]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+//         DebugOut().fmt("1D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
 //         for(const IntersectionPointAux<1,2>& ip : is.points()) {
-//             //cout << ip;
+//             //DebugOut() << ip;
 //             auto p = ip.coords(mesh->element(is.component_ele_idx()));
-//             cout << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+//             DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
 //         }
     }
     END_TIMER("Intersection into storage");

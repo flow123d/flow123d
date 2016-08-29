@@ -31,6 +31,8 @@
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
 #include "coupling/balance.hh"
+
+#include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
 #include "io/equation_output.hh"
@@ -271,7 +273,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     // create finite element structures and distribute DOFs
     feo = new FEObjects(Model::mesh_, dg_order);
-    //DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
+    //DebugOut().fmt("TDG: solution size {}\n", feo->dh()->n_global_dofs());
 
 }
 
@@ -375,35 +377,32 @@ TransportDG<Model>::~TransportDG()
 {
     delete Model::time_;
 
-    if (Model::mesh_->get_el_ds()->myp() == 0)
-    {
-		for (unsigned int i=0; i<Model::n_substances(); i++)
-		{
-			VecDestroy(&output_vec[i]);
-			//delete[] output_solution[i];
-		}
+    if (gamma.size() > 0) {
+        // initialize called
+
+        for (auto &vec : output_vec) VecDestroy(&vec);
+
+        for (unsigned int i=0; i<Model::n_substances(); i++)
+        {
+            delete ls[i];
+            delete[] solution_elem_[i];
+            delete ls_dt[i];
+            MatDestroy(&stiffness_matrix[i]);
+            MatDestroy(&mass_matrix[i]);
+            VecDestroy(&rhs[i]);
+            VecDestroy(&mass_vec[i]);
+        }
+        delete[] ls;
+        delete[] solution_elem_;
+        delete[] ls_dt;
+        delete[] stiffness_matrix;
+        delete[] mass_matrix;
+        delete[] rhs;
+        delete[] mass_vec;
+        delete feo;
+
     }
 
-    for (unsigned int i=0; i<Model::n_substances(); i++)
-    {
-    	delete ls[i];
-    	delete[] solution_elem_[i];
-    	delete ls_dt[i];
-    	MatDestroy(&stiffness_matrix[i]);
-    	MatDestroy(&mass_matrix[i]);
-    	VecDestroy(&rhs[i]);
-    	VecDestroy(&mass_vec[i]);
-    }
-    delete[] ls;
-    delete[] solution_elem_;
-    delete[] ls_dt;
-    delete[] stiffness_matrix;
-    delete[] mass_matrix;
-    delete[] rhs;
-    delete[] mass_vec;
-    delete feo;
-
-    gamma.clear();
 }
 
 

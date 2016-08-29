@@ -168,10 +168,8 @@ private:
 
     std::shared_ptr<OutputTime> output_stream;
 
-    /// Temporary solution for writing balance into separate file.
-    //FILE *balance_output_file;
     /// Raw data output file.
-    FILE *raw_output_file;
+    ofstream raw_output_file;
 };
 
 

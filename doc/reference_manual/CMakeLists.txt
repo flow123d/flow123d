@@ -12,6 +12,7 @@ cmake_minimum_required(VERSION 2.8)
   set(doc_inputs 
        flow_doc.sty
        ./packages/etoolbox.sty
+       ./packages/multirow.sty
        convection.tex
        darcy_flow.tex
        chemistry.tex

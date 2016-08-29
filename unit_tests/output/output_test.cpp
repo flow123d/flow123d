@@ -241,7 +241,7 @@ public:
 	    FieldType field("test_field", false); // bulk field
 		field.input_default(init);
 		field.set_components(component_names);
-		field.input_selection(&get_test_selection());
+		field.input_selection( get_test_selection() );
 
 		field.set_mesh(*my_mesh);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
@@ -306,7 +306,6 @@ public:
 		EXPECT_EQ(1, elem_data.size());
 		check_elem_data( elem_data[0], result);
 */
-		DBGMSG("end\n");
 	}
 
 	Mesh * my_mesh;
@@ -347,11 +346,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 #define FV FieldValue
 TEST_F(TestOutputTime, compute_field_data) {
 	test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
-	//EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::Vector> > ("[1, 2, 3]", "1.3 ") );} ,
-	//        OutputTime::ExcOutputVariableVector);
 	test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
-	//EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::EnumVector> > ("[\"white\", \"black\", \"white\"]", "1.3 ") );},
-	//        OutputTime::ExcOutputVariableVector);
 	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
 	test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
 	//test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
