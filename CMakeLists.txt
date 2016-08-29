@@ -321,7 +321,9 @@ flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 #   Boost_${COMPONENT}_FOUND            True IF the Boost library "component" was found.
 #   Boost_${COMPONENT}_LIBRARY          Contains the libraries for the specified Boost
 
-message(STATUS "\n =======================================================")
+message(STATUS "=======================================================")
+message(STATUS "====== BOOST ==========================================")
+message(STATUS "=======================================================")
 set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
@@ -389,10 +391,13 @@ if (NOT Boost_FOUND)
    
 endif()
 
-message(STATUS "BOOST_ROOT: ${BOOST_ROOT}")
-message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
-message(STATUS "Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")   
-message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Boost_FOUND = ${Boost_FOUND}")
+message(STATUS "BOOST_ROOT = ${BOOST_ROOT}")
+message(STATUS "Boost_LIBRARIES = ${Boost_LIBRARIES}")
+message(STATUS "Boost_LIBRARY_DIRS = ${Boost_LIBRARY_DIRS}")
+message(STATUS "Boost_INCLUDE_DIR = ${Boost_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
 
 
 # We are looking for PETSC, f succed this module set:
