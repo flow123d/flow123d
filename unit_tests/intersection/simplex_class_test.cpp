@@ -1,6 +1,6 @@
 #define TEST_USE_MPI
 #include <flow_gtest_mpi.hh>
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/sys_profiler.hh"
 
 #include "intersection/simplex.hh"
@@ -29,7 +29,7 @@ TEST(simplex, all) {
     Simplex<2> s2d(pole_p);
     Simplex<3> s3d(pole_pp);
     
-    cout << s0d << "\n\n" << s2d << "\n\n" << s3d << endl;
+    MessageOut() << s0d << "\n\n" << s2d << "\n\n" << s3d << endl;
     
     // check point
     EXPECT_EQ(PointA[0], s0d.point_coordinates()[0]);
@@ -51,7 +51,7 @@ TEST(simplex, all) {
     b[0]=4; b[1]=-5; b[2]=6;
     
     Plucker pc1, pc2(a,b), pc3(pc2);
-    cout << pc1 << "\n" << pc2 << "\n" << pc3 << endl;
+    MessageOut() << pc1 << "\n" << pc2 << "\n" << pc3 << endl;
     
     EXPECT_FALSE(pc1.is_computed());
     EXPECT_TRUE(pc2.is_computed());
@@ -77,7 +77,7 @@ TEST(simplex, all) {
     
     pc1.compute(a,b);
     EXPECT_TRUE(pc2.is_computed());
-    cout << pc1 << endl;
+    MessageOut() << pc1 << endl;
     
     EXPECT_EQ(pc2[1], pc1[1]);
     EXPECT_EQ(pc2[4], pc1[4]);
@@ -87,7 +87,3 @@ TEST(simplex, all) {
     
     Profiler::uninitialize();
 }
-
-
-
-

@@ -9,7 +9,7 @@
 
 #include <armadillo>
 
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -56,18 +56,16 @@ bool compare_is12(const computeintersection::IntersectionLocal<1,2>& a,
 void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 {
     // compute intersection
-    DBGMSG("Computing intersection length by NEW algorithm\n");
-    
     InspectElements ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d12_2);
     //ie.print_mesh_to_file_13("output_intersection_13");
     
-    DBGMSG("N intersections %d\n",ie.intersection_storage12_.size());
+    MessageOut().fmt("N intersections {}\n",ie.intersection_storage12_.size());
     
 //    // write computed intersections
 //     for(unsigned int i = 0; i < ie.intersection_storage12_.size(); i++)
 //     {
-//         cout << ie.intersection_storage12_[i];
+//         DebugOut() << ie.intersection_storage12_[i];
 //     }
 //     
 //     //write the first intersection
@@ -80,7 +78,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 //             if(il12 != nullptr)
 //             {
 // //                 DBGMSG("comp idx %d, bulk idx %d, \n",elm->index(),ie.intersection_map_[elm->index()][0].first);
-//                 cout << *il12;
+//                 DebugOut() << *il12;
 //                 break;
 //             }
 //         }
@@ -97,9 +95,9 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
     
     for(unsigned int i=0; i < ilc.size(); i++)
     {
-        DBGMSG("---------- check IP[%d] ----------\n",i);
+        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
         arma::vec3 ip = ilc[i][0].coords(mesh->element(ilc[i].component_ele_idx()));
-//         ip.print(cout,"real ip");
+//         ip.print(DebugOut(),"real ip");
         EXPECT_NEAR(ip[0], il[i][0], 1e-14);
         EXPECT_NEAR(ip[1], il[i][1], 1e-14);
         EXPECT_NEAR(ip[2], il[i][2], 1e-14);
@@ -121,7 +119,7 @@ TEST(intersection_prolongation_12d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s<filenames.size(); s++)
     {
-        xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
+        MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
         FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
         Mesh mesh;

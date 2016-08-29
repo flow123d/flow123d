@@ -52,13 +52,12 @@ void read_files_form_dir(const string &dir_name,
                          std::vector<string> &filenames,
                          bool sort_filenames = true)
 {
-    cout << dir_name <<endl;
     // read mesh file names
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir (dir_name.c_str())) != NULL) {
         // print all the files and directories within directory 
-        xprintf(Msg,"Testing mesh files: \n");
+        MessageOut() << "Testing mesh files: \n";
         while ((ent = readdir (dir)) != NULL) {
             string fname = ent->d_name;
             // test extension ".msh"
@@ -68,7 +67,7 @@ void read_files_form_dir(const string &dir_name,
 //                 xprintf(Msg,"%s\n",ext.c_str());
                 if(ext == extension){
                     filenames.push_back(ent->d_name);
-                    xprintf(Msg,"%s\n",ent->d_name);
+                    MessageOut() << ent->d_name << "\n";
                 }
             }
         }

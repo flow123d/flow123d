@@ -8,7 +8,7 @@
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -27,7 +27,6 @@ using namespace computeintersection;
 /// Create results for the meshes in directory 'simple_meshes_13d'.
 void fill_13d_solution(std::vector<computeintersection::IntersectionLocal<1,3>> &ils)
 {
-    DBGMSG("fill solution\n");
     ils.clear();
     ils.resize(12);
     // ils[0] is empty
@@ -89,7 +88,6 @@ computeintersection::IntersectionLocal<1,3> permute_coords(computeintersection::
 void compute_intersection_13d(Mesh *mesh, const computeintersection::IntersectionLocal<1,3> &il)
 {
     // compute intersection
-    DBGMSG("Computing intersection\n");
     Simplex<1> line = create_simplex<1>(mesh->element(1));
     Simplex<3> tetra = create_simplex<3>(mesh->element(0));
     
@@ -99,10 +97,10 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     CI.init();
     CI.compute(is, prolong_table);
     
-//     cout << is;
+//     DebugOut() << is;
 //     for(IntersectionPointAux<1,3> &ip: is.points())
 //     {
-//         ip.coords(mesh->element(0)).print();
+//         ip.coords(mesh->element(0)).print(DebugOut(),"ip");
 //     }
 
     computeintersection::IntersectionLocal<1,3> ilc(is);
@@ -110,7 +108,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     
     for(unsigned int i=0; i < ilc.size(); i++)
     {
-        DBGMSG("---------- check IP[%d] ----------\n",i);
+        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
         EXPECT_DOUBLE_EQ(ilc[i].comp_coords()[0], il[i].comp_coords()[0]);
         EXPECT_DOUBLE_EQ(ilc[i].bulk_coords()[0], il[i].bulk_coords()[0]);
         EXPECT_DOUBLE_EQ(ilc[i].bulk_coords()[1], il[i].bulk_coords()[1]);
@@ -137,7 +135,7 @@ TEST(intersections_13d, all) {
         const unsigned int np = permutations_tetrahedron.size();
         for(unsigned int p=0; p<np; p++)
         {
-            xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
+            MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
             Mesh mesh;

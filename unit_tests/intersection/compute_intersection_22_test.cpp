@@ -7,7 +7,7 @@
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -26,7 +26,6 @@ using namespace computeintersection;
 /// Create results for the meshes in directory 'simple_meshes_22d'.
 void fill_22d_solution(std::vector<computeintersection::IntersectionLocal<2,2>> &ils)
 {
-    DBGMSG("fill solution\n");
     ils.clear();
     ils.resize(9);
     
@@ -90,7 +89,7 @@ void compute_intersection_22d(Mesh *mesh, const computeintersection::Intersectio
     CI.init();
     CI.compute(is, prolong_table);
     
-//     cout << is;
+//     DebugOut() << is;
 //     for(IntersectionPointAux<2,2> &ip: is.points())
 //     {
 //         ip.coords(mesh->element(0)).print();
@@ -102,7 +101,7 @@ void compute_intersection_22d(Mesh *mesh, const computeintersection::Intersectio
     
     for(unsigned int i=0; i < is.size(); i++)
     {
-        DBGMSG("---------- check IP[%d] ----------\n",i);
+        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
         EXPECT_DOUBLE_EQ(il[i].comp_coords()[0], ilc[i].comp_coords()[0]);
         EXPECT_DOUBLE_EQ(il[i].comp_coords()[1], ilc[i].comp_coords()[1]);
         EXPECT_DOUBLE_EQ(il[i].bulk_coords()[0], ilc[i].bulk_coords()[0]);
@@ -128,7 +127,7 @@ TEST(intersections_22d, all) {
 //         const unsigned int np = permutations_triangle.size();
 //         for(unsigned int p=0; p<np; p++)
 //         {
-            xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
+            MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
             Mesh mesh;

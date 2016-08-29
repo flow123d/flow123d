@@ -5,7 +5,7 @@
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -62,7 +62,6 @@ void compute_intersection(Mesh *mesh)
 {
 
     // compute intersection
-    DBGMSG("Computing intersection area by NEW algorithm\n");
     InspectElements ie(mesh);
     ie.compute_intersections(IntersectionType(IntersectionType::d12_3
                                             | IntersectionType::d22));
@@ -133,7 +132,7 @@ TEST(intersection_prolongation_23d, all) {
     
 
     
-    xprintf(Msg,"Computing intersection on mesh: %s\n",filename.c_str());
+    MessageOut() << "Computing intersection on mesh: " << filename << "\n";
     FilePath mesh_file(filename, FilePath::input_file);
     
     Mesh mesh;
