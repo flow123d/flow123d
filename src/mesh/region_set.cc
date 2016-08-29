@@ -114,7 +114,7 @@ RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 			throw;
 		}
 	} else {
-		xprintf(Warn, "Unknown region in mesh with label '%s'\n", mesh_label.c_str());
+		WarningOut().fmt("Unknown region in mesh with label '%s'\n", mesh_label);
 	}
 }
 
@@ -176,7 +176,7 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 	        ++it_element) {
 		std::map<unsigned int, unsigned int>::iterator it_map = el_to_reg_map_.find((*it_element));
 		if (it_map != el_to_reg_map_.end()) {
-			xprintf(Warn, "Region assigned to element with id %u will be rewritten.\n", (*it_element));
+			WarningOut().fmt("Region assigned to element with id {} will be rewritten.\n", (*it_element));
 		}
 		el_to_reg_map_.insert( std::make_pair((*it_element), region_id) );
 

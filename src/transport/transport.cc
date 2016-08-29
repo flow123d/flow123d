@@ -67,7 +67,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 			        "")
             .declare_key("output",
                     EqData().output_fields.make_output_type(_equation_name, ""),
-                    IT::Default("{ fields: [ \"conc\" ] }"),
+                    IT::Default("{ \"fields\": [ \"conc\" ] }"),
                     "Setting of the fields output.")
 			.close();
 }
@@ -140,9 +140,9 @@ void ConvectionTransport::initialize()
 	//cout << "Transport." << endl;
 	//cout << time().marks();
 
-
     if (balance_ != nullptr)
-    	balance_->allocate(el_ds->lsize(), 1);
+       balance_->allocate(el_ds->lsize(), 1);
+
 }
 
 
@@ -458,7 +458,7 @@ void ConvectionTransport::compute_concentration_sources() {
                 {
                     balance_->add_source_matrix_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
                                                        {- src_sigma(sbi) * ele->measure() * csection});
-                    balance_->add_source_rhs_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
+                    balance_->add_source_vec_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
                                                     {source * ele->measure()});
                 }
             }
@@ -515,14 +515,14 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
         cfl_changed = true;
-        DBGMSG("CFL changed - flow.\n");
+        DebugOut() << "CFL changed - flow.\n";
     }
     
     if (is_mass_diag_changed)
     {
         create_mass_matrix();
         cfl_changed = true;
-        DBGMSG("CFL changed - mass matrix.\n");
+        DebugOut() << "CFL changed - mass matrix.\n";
     }
     
     // if DATA changed ---------------------> recompute concentration sources (rhs and matrix diagonal)
@@ -532,7 +532,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         compute_concentration_sources();
         is_src_term_scaled = false;
         cfl_changed = true;
-        DBGMSG("CFL changed - source.\n");
+        DebugOut() << "CFL changed - source.\n";
     }
     
     // now resolve the CFL condition
@@ -545,12 +545,13 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         VecMaxPointwiseDivide(cfl,mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
         cfl_max_step = 1 / cfl_max_step;
-        DBGMSG("CFL constraint (transport): %g\n", cfl_max_step);
+        DebugOut().fmt("CFL constraint (transport): {}\n", cfl_max_step);
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled
     if ( (mh_dh->time_changed() > transport_bc_time)
         || data_.porosity.changed()
+        || data_.water_content.changed()
         || data_.bc_conc.changed() )
     {
         set_boundary_conditions();
@@ -581,7 +582,7 @@ void ConvectionTransport::update_solution() {
     // if FLOW or DATA or BC or DT changed ---------------------> rescale boundary condition
     if( ! is_bc_term_scaled || time_->is_changed_dt() )
     {
-        DBGMSG("BC - rescale dt.\n");
+    	DebugOut() << "BC - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_bc_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int  sbi=0; sbi<n_substances(); sbi++)
@@ -592,7 +593,7 @@ void ConvectionTransport::update_solution() {
 
     // if DATA or TIME STEP changed -----------------------> rescale source term
     if( !is_src_term_scaled || time_->is_changed_dt()) {
-        DBGMSG("SRC - rescale dt.\n");
+    	DebugOut() << "SRC - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_src_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
@@ -605,7 +606,7 @@ void ConvectionTransport::update_solution() {
     
     // if DATA or TIME STEP changed -----------------------> rescale transport matrix
     if ( !is_convection_matrix_scaled || time_->is_changed_dt()) {
-        DBGMSG("TM - rescale dt.\n");
+    	DebugOut() << "TM - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_convection_matrix_scaled) ? dt_new : dt_scaled;
         
@@ -617,7 +618,7 @@ void ConvectionTransport::update_solution() {
     
     
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
-    if (data_.cross_section.changed() || data_.porosity.changed())
+    if (data_.cross_section.changed() || data_.water_content.changed() || data_.porosity.changed())
     {
         VecCopy(mass_diag, vpmass_diag);
         create_mass_matrix();
@@ -702,7 +703,8 @@ void ConvectionTransport::create_mass_matrix()
         elm = mesh_->element(el_4_loc[loc_el]);
 
         double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
-        double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
+        //double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
+        double por_m = data_.water_content.value(elm->centre(), elm->element_accessor());
 
         if (balance_ != nullptr)
         {
@@ -881,9 +883,9 @@ void ConvectionTransport::calculate_instant_balance()
 void ConvectionTransport::output_data() {
 
     data_.output_fields.set_time(time().step(), LimitSide::right);
-    if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
-        output_vector_gather();
-    }
+    //if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
+    output_vector_gather();
+    //}
 
 	data_.output_fields.output(time().step());
 }
@@ -891,5 +893,5 @@ void ConvectionTransport::output_data() {
 void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
-	subst_idx = balance_->add_quantities(substances_.names());
+    subst_idx = balance_->add_quantities(substances_.names());
 }

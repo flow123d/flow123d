@@ -19,7 +19,7 @@
 #include "input/input_type.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-#include "transport/transport_operator_splitting.hh"
+//#include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
 #include "fields/unit_si.hh"
 #include "coupling/balance.hh"
@@ -70,7 +70,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
             "Type of boundary condition.")
             .units( UnitSI::dimensionless() )
             .input_default("\"inflow\"")
-            .input_selection( &get_bc_type_selection() )
+            .input_selection( get_bc_type_selection() )
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=bc_dirichlet_value
             .name("bc_temperature")
@@ -105,6 +105,12 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(in_main_matrix & in_time_term);
+
+    *this+=water_content
+            .name("water_content")
+            .units( UnitSI::dimensionless() )
+            .input_default("1.0")
+            .flags_add(input_copy & in_main_matrix & in_time_term);
 
     *this+=fluid_density
             .name("fluid_density")
@@ -245,11 +251,12 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	substances_.initialize({""});
 
-    output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"));
+    output_stream_ = OutputTime::create_output_stream("heat", *mesh_, in_rec.val<Input::Record>("output_stream"));
     //output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
+    balance_ = std::make_shared<Balance>("energy", mesh_);
+    balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-    balance_ = Balance::make_balance("energy", mesh_, in_rec.val<Input::Record>("balance"), time());
     if (balance_)
     {
     	subst_idx = {balance_->add_quantity("energy")};
@@ -258,18 +265,15 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 }
 
 
-void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
-{
-	substances.initialize({""});
-}
-
 void HeatTransferModel::output_data()
 {
 	output_stream_->write_time_frame();
 	if (balance_ != nullptr)
 	{
-		calculate_instant_balance();
-		balance_->output(time_->t());
+	    if (balance_->is_current(time_->step())) {
+            calculate_instant_balance();
+            balance_->output(time_->t());
+	    }
 	}
 }
 

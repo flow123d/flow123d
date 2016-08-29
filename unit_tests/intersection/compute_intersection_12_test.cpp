@@ -6,8 +6,9 @@
  */
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
+#include "arma_expect.hh"
 
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -67,8 +68,6 @@ std::vector<computeintersection::IntersectionPoint<1,2>> permute_coords(std::vec
 
 void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection::IntersectionPoint<1,2>> &ips)
 {
-    DBGMSG("Computing 1d-2d intersections.\n");
-    
     Simplex<1> line = create_simplex<1>(mesh->element(1));
     Simplex<2> tria = create_simplex<2>(mesh->element(0));
     
@@ -78,12 +77,12 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
     
     computeintersection::IntersectionLocal<1,2> ilc(is);
     
-//     cout << ilc;
+//     DebugOut() << ilc;
     
     auto ipc = ilc.points();
 //     for(computeintersection::IntersectionPoint<1,2> &ip: ipc)
 //     {
-//         ip.coords(mesh->element(1)).print();
+//         ip.coords(mesh->element(1)).print(DebugOut(),"ip");
 //     }
 
     
@@ -91,10 +90,9 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
     
     for(unsigned int i=0; i < ipc.size(); i++)
     {
-        DBGMSG("---------- check IP[%d] ----------\n",i);
-        EXPECT_DOUBLE_EQ(ipc[i].comp_coords()[0], ips[i].comp_coords()[0]);
-        EXPECT_DOUBLE_EQ(ipc[i].bulk_coords()[0], ips[i].bulk_coords()[0]);
-        EXPECT_DOUBLE_EQ(ipc[i].bulk_coords()[1], ips[i].bulk_coords()[1]);
+        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
+        EXPECT_ARMA_EQ(ipc[i].comp_coords(), ips[i].comp_coords());
+        EXPECT_ARMA_EQ(ipc[i].bulk_coords(), ips[i].bulk_coords());
     }
 }
 
@@ -102,6 +100,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
 TEST(intersections_12d, all) {
  
     // directory with testing meshes
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_12d/";
     std::vector<string> filenames;
     
@@ -117,8 +116,7 @@ TEST(intersections_12d, all) {
         
         for(unsigned int p=0; p<np; p++)
         {
-            xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
-            FilePath::set_io_dirs(".","","",".");
+            MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
             Mesh mesh;

@@ -58,6 +58,12 @@ BIHTree::~BIHTree() {
 
 }
 
+const BoundingBox& BIHTree::ele_bounding_box(unsigned int ele_idx) const
+{
+    ASSERT_DBG(ele_idx < elements_.size());
+    return elements_[ele_idx];
+}
+
 
 void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	BIHNode &node = nodes_[node_idx];
@@ -219,7 +225,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 	node_stack.push(0);
 	while (! node_stack.empty()) {
 		const BIHNode &node = nodes_[node_stack.top()];
-		//DBGMSG("node: %d\n", node_stack.top() );
+		//DebugOut().fmt("node: {}\n", node_stack.top() );
 		node_stack.pop();
 
 

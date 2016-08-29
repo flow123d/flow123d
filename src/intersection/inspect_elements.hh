@@ -109,6 +109,7 @@ public:
 private:
     /// Mesh pointer.
     Mesh * mesh;
+    std::shared_ptr<BIHTree> bih_;
     
     InspectElementsAlgorithm<1> algorithm13_;
     InspectElementsAlgorithm<2> algorithm23_;
@@ -120,6 +121,7 @@ private:
                                                           std::vector<IntersectionLocal<dim,3>> &storage);
     void compute_intersections_22(std::vector<IntersectionLocal<2,2>> &storage);
     void compute_intersections_12(std::vector<IntersectionLocal<1,2>> &storage);
+    void compute_intersections_12_2(std::vector<IntersectionLocal<1,2>> &storage);
 };
 
     

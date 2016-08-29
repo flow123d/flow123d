@@ -25,13 +25,15 @@
 #include <system/global_defs.h>
 
 #include "flow/darcy_flow_mh.hh"
+#include "flow/darcy_flow_assembly.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
 #include "io/output_time.hh"
+#include "io/observe.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include "system/xio.h"
 
+#include "fields/field_set.hh"
 #include "fem/dofhandler.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
@@ -90,8 +92,7 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
-  compute_errors_(false),
-  raw_output_file(NULL)
+  compute_errors_(false)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
@@ -99,6 +100,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	// we need to add data from the flow equation at this point, not in constructor of OutputFields
 	output_fields += darcy_flow->data();
 	output_fields.set_mesh(*mesh_);
+
+	all_element_idx_.resize(mesh_->n_elements());
+	for(unsigned int i=0; i<all_element_idx_.size(); i++) all_element_idx_[i] = i;
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
@@ -127,7 +131,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"));
+	output_stream = OutputTime::create_output_stream("flow", *mesh_, main_mh_in_rec.val<Input::Record>("output_stream"));
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
     output_fields.initialize(output_stream, in_rec_output, darcy_flow->time() );
@@ -142,8 +146,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             // optionally open raw output file
             FilePath raw_output_file_path;
             if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-                xprintf(Msg, "Opening raw output: %s\n", string(raw_output_file_path).c_str() );
-                raw_output_file = xfopen(raw_output_file_path, "wt");
+            	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
+            	raw_output_file_path.open_stream(raw_output_file);
             }
 
         }
@@ -154,9 +158,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {
-
-    if (raw_output_file != NULL) xfclose(raw_output_file);
-    VecDestroy(&vec_corner_pressure);
+    chkerr(VecDestroy(&vec_corner_pressure));
 
     delete dh;
 };
@@ -174,20 +176,27 @@ void DarcyFlowMHOutput::output()
 {
     START_TIMER("Darcy fields output");
 
+    ElementSetRef observed_elements = output_stream->observe()->observed_elements();
     {
         START_TIMER("post-process output fields");
 
         output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
 
-        if ( output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) ||
-             output_fields.is_field_output_time(output_fields.field_ele_piezo_head,darcy_flow->time().step()) )
-                  make_element_scalar();
+        if (output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) ||
+            output_fields.is_field_output_time(output_fields.field_ele_piezo_head,darcy_flow->time().step()) )
+                make_element_scalar(all_element_idx_);
+        else
+                make_element_scalar(observed_elements);
 
         if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) )
-                  make_element_vector();
+                make_element_vector(all_element_idx_);
+        else
+                make_element_vector(observed_elements);
 
         if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
-                  make_node_scalar_param();
+                make_node_scalar_param(all_element_idx_);
+        //else
+        //        make_node_scalar_param(observed_elements);
 
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
@@ -215,18 +224,18 @@ void DarcyFlowMHOutput::output()
 // FILL TH "SCALAR" FIELD FOR ALL ELEMENTS IN THE MESH
 //=============================================================================
 
-void DarcyFlowMHOutput::make_element_scalar() {
+void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
+{
     START_TIMER("DarcyFlowMHOutput::make_element_scalar");
     unsigned int sol_size;
     double *sol;
 
     darcy_flow->get_solution_vector(sol, sol_size);
     unsigned int soi = mesh_->n_sides();
-    unsigned int i = 0;
-    FOR_ELEMENTS(mesh_,ele) {
-        ele_pressure[i] = sol[ soi];
-        ele_piezo_head[i] = sol[soi ] + ele->centre()[Mesh::z_coord];
-        i++; soi++;
+    for(unsigned int i_ele : element_indices) {
+        ElementFullIter ele = mesh_->element(i_ele);
+        ele_pressure[i_ele] = sol[ soi + i_ele];
+        ele_piezo_head[i_ele] = sol[soi + i_ele ] + ele->centre()[Mesh::z_coord];
     }
 }
 
@@ -236,20 +245,20 @@ void DarcyFlowMHOutput::make_element_scalar() {
  * compute Darcian velocity in centre of elements
  *
  */
-void DarcyFlowMHOutput::make_element_vector() {
+void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     START_TIMER("DarcyFlowMHOutput::make_element_vector");
     // need to call this to create mh solution vector
     darcy_flow->get_mh_dofhandler();
 
-    unsigned int i=0;
+    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
-    FOR_ELEMENTS(mesh_, ele) {
-        flux_in_center = darcy_flow->assembly_[ele->dim() -1]->make_element_vector(ele);
+    for(unsigned int i_ele : element_indices) {
+        ElementFullIter ele = mesh_->element(i_ele);
+
+        flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
 
         // place it in the sequential vector
-        for(unsigned int j=0; j<3; j++) ele_flux[3*i+j]=flux_in_center[j];
-
-        i++;
+        for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];
     }
 }
 
@@ -285,7 +294,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_node_scalar_param() {
+void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     START_TIMER("DarcyFlowMHOutput::make_node_scalar_param");
 
 	vector<double> scalars(mesh_->n_nodes());
@@ -410,43 +419,40 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
-    if (raw_output_file == NULL) return;
+    if (! raw_output_file.is_open()) return;
     
-    char dbl_fmt[ 16 ]= "%.8g ";
+    //char dbl_fmt[ 16 ]= "%.8g ";
     // header
-    xfprintf( raw_output_file, "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n");
-    xfprintf( raw_output_file, "$FlowField\nT=");
-    xfprintf( raw_output_file, dbl_fmt, darcy_flow->time().t());
-    xfprintf( raw_output_file, "\n%d\n", mesh_->n_elements() );
+    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
+    raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
+    raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
-    unsigned int i;
+    ;
     int cit = 0;
     FOR_ELEMENTS( mesh_,  ele ) {
-        xfprintf( raw_output_file, "%d ", ele.id());
-        // pressure and velocity in barycenter
-        xfprintf( raw_output_file, dbl_fmt, ele_pressure[cit]);
-        for (i = 0; i < 3; i++)
-            xfprintf( raw_output_file, dbl_fmt, ele_flux[3*cit+i]);
+        raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
+        for (unsigned int i = 0; i < 3; i++)
+            raw_output_file << ele_flux[3*cit+i] << " ";
 
-        xfprintf( raw_output_file, " %d ", ele->n_sides());
+        raw_output_file << ele->n_sides() << " ";
         std::vector< std::vector<unsigned int > > old_to_new_side =
         { {0, 1},
           {0, 1, 2},
           {0, 1, 2, 3}
         };
-        for (i = 0; i < ele->n_sides(); i++) {
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
             unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            xfprintf( raw_output_file, dbl_fmt, dh.side_scalar( *(ele->side(i_new_side) ) ) );
+            raw_output_file << dh.side_scalar( *(ele->side(i_new_side) ) ) << " ";
         }
-        for (i = 0; i < ele->n_sides(); i++) {
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
             unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            xfprintf( raw_output_file, dbl_fmt, dh.side_flux( *(ele->side(i_new_side) ) ) );
+            raw_output_file << dh.side_flux( *(ele->side(i_new_side) ) ) << " ";
         }
 
-        xfprintf( raw_output_file, "\n" );
+        raw_output_file << endl;
         cit ++;
     }
-    xfprintf( raw_output_file, "$EndFlowField\n\n" );
+    raw_output_file << "$EndFlowField\n" << endl;
 }
 
 
@@ -586,7 +592,7 @@ void l2_diff_local(ElementFullIter &ele,
 
 
 void DarcyFlowMHOutput::compute_l2_difference() {
-    DBGMSG("l2 norm output\n");
+	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
 
     const unsigned int order = 4; // order of Gauss quadrature
@@ -659,7 +665,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     result.dh = &( darcy_flow->get_mh_dofhandler());
     result.darcy = darcy_flow;
-    result.data_ = &(darcy_flow->data_);
+    result.data_ = darcy_flow->data_.get();
 
     FOR_ELEMENTS( mesh_, ele) {
 

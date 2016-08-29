@@ -102,9 +102,9 @@ public:
     /// Runs the core algorithm for computing dimD-3D intersection.
     //@{ 
     /// Uses BIHtree to find the initial candidate of a component and then prolongates the component intersetion.
-    void compute_intersections();
+    void compute_intersections(std::shared_ptr<BIHTree> bih);
     /// Uses only BIHtree to find intersection candidates. (No prolongation).
-    void compute_intersections_BIHtree();
+    void compute_intersections_BIHtree(std::shared_ptr<BIHTree> bih);
     /// Tests bounding boxes intersectioss to find the initial candidate of a component
     /// and then prolongates the component intersetion. (No BIHtree).
     void compute_intersections_BB();
@@ -144,6 +144,9 @@ private:
     /// Initialization.
     /// Sets vector sizes and computes bulk bounding box.
     void init();
+    
+    /// Computes bounding boxes of all elements. Fills @p elements_bb and @p mesh_3D_bb.
+    void compute_bounding_boxes();
     
     void assert_same_intersection(unsigned int comp_ele_idx, unsigned int bulk_ele_idx);
     
@@ -237,11 +240,16 @@ public:
      */
     void compute_intersections(std::vector<std::vector<ILpair>> &intersection_map,
                                std::vector<IntersectionLocal<1,2>> &storage);
+    
+    /** @brief Runs the algorithm (2): compute 1D-2D intersection in 3D ambient space
+     * BIH is used to find intersection candidates.
+     */
+    void compute_intersections_2(std::shared_ptr<BIHTree> bih);
 private:
     Mesh *mesh;
     
     /// Stores temporarily 1D-2D intersections.
-//     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
+    std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
     
     /// Object representing a line element.
     Simplex<1> abscissa_;

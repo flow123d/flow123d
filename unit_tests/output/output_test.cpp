@@ -204,27 +204,29 @@ static const Input::Type::Selection & get_test_selection() {
 		.close();
 }
 
-class TestOutputTime : public testing::Test, public OutputTime {
+class TestOutputTime : public testing::Test,
+                       public OutputTime
+{
 public:
 	TestOutputTime()
 	: OutputTime()
 
 	{
+	    my_mesh = new Mesh();
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
-	    this->init_from_input("dummy_equation", in_rec);
+	    this->init_from_input("dummy_equation", *my_mesh, in_rec);
 	    Profiler::initialize();
 		// read simple mesh
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    my_mesh = new Mesh();
 	    ifstream in(string(mesh_file).c_str());
 	    my_mesh->read_gmsh_from_stream(in);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 	}
 	virtual ~TestOutputTime() {
-		delete my_mesh;
+	    delete my_mesh;
 	}
 	int write_data(void) override {return 0;};
 	//int write_head(void) override {return 0;};
@@ -239,7 +241,7 @@ public:
 	    FieldType field("test_field", false); // bulk field
 		field.input_default(init);
 		field.set_components(component_names);
-		field.input_selection(&get_test_selection());
+		field.input_selection( get_test_selection() );
 
 		field.set_mesh(*my_mesh);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
@@ -304,7 +306,6 @@ public:
 		EXPECT_EQ(1, elem_data.size());
 		check_elem_data( elem_data[0], result);
 */
-		DBGMSG("end\n");
 	}
 
 	Mesh * my_mesh;
@@ -315,29 +316,29 @@ public:
 
 TEST_F(TestOutputTime, fix_main_file_extension)
 {
-    this->_base_filename="test.pvd";
+    this->_base_filename=FilePath("test.pvd", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.pvd", this->_base_filename);
+    EXPECT_EQ("test.pvd", string(this->_base_filename));
 
-    this->_base_filename="test";
+    this->_base_filename=FilePath("test", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.pvd", this->_base_filename);
+    EXPECT_EQ("test.pvd", string(this->_base_filename));
 
-    this->_base_filename="test.msh";
+    this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.msh.pvd", this->_base_filename);
+    EXPECT_EQ("test.msh.pvd", string(this->_base_filename));
 
-    this->_base_filename="test.msh";
+    this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.msh", this->_base_filename);
+    EXPECT_EQ("test.msh", string(this->_base_filename));
 
-    this->_base_filename="test";
+    this->_base_filename=FilePath("test", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.msh", this->_base_filename);
+    EXPECT_EQ("test.msh", string(this->_base_filename));
 
-    this->_base_filename="test.pvd";
+    this->_base_filename=FilePath("test.pvd", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.pvd.msh", this->_base_filename);
+    EXPECT_EQ("test.pvd.msh", string(this->_base_filename));
 
 }
 
@@ -345,11 +346,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 #define FV FieldValue
 TEST_F(TestOutputTime, compute_field_data) {
 	test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
-	//EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::Vector> > ("[1, 2, 3]", "1.3 ") );} ,
-	//        OutputTime::ExcOutputVariableVector);
 	test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
-	//EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::EnumVector> > ("[\"white\", \"black\", \"white\"]", "1.3 ") );},
-	//        OutputTime::ExcOutputVariableVector);
 	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
 	test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
 	//test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");

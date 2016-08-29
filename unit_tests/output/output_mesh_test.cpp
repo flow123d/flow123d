@@ -17,6 +17,7 @@
 #include "fields/field_constant.hh"
 #include <fields/field.hh>
 #include <fields/field_set.hh>
+#include <io/equation_output.hh>
 #include <fields/field_common.hh>
 #include "input/input_type.hh"
 
@@ -58,17 +59,17 @@ TEST(OutputMesh, create_identical)
     
     for(const auto &ele : *output_mesh)
     {
-        xprintf(Msg,"%d %dD n_%d |",ele.idx(), ele.dim(), ele.n_nodes());
+    	std::cout << ele.idx() << " " << ele.dim() << "D n_" << ele.n_nodes() << " |";
         for(unsigned int i=0; i < ele.n_nodes(); i++)
         {
-            xprintf(Msg," %d",ele.node_index(i));
+        	std::cout << " " << ele.node_index(i);
         }
-        xprintf(Msg," |");
+        std::cout << " |";
         for(auto& v : ele.vertex_list())
         {
-            xprintf(Msg," %f %f %f #",v[0], v[1], v[2]);
+        	std::cout << " " << v[0] << " " << v[1] << " " << v[2] << " #";
         }
-        xprintf(Msg,"\n");
+        std::cout << endl;
         
         ElementAccessor<3> ele_acc = ele.element_accessor();
         EXPECT_EQ(ele.dim(), ele_acc.dim());
@@ -80,20 +81,20 @@ TEST(OutputMesh, create_identical)
     auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
     output_mesh_discont->create_mesh(output_mesh);
     
-    xprintf(Msg,"DISCONTINUOUS\n");
+    MessageOut() << "DISCONTINUOUS\n";
     for(const auto &ele : *output_mesh_discont)
     {
-        xprintf(Msg,"%d %dD n_%d |",ele.idx(), ele.dim(), ele.n_nodes());
+    	std::cout << ele.idx() << " " << ele.dim() << "D n_" << ele.n_nodes() << " |";
         for(unsigned int i=0; i < ele.n_nodes(); i++)
         {
-            xprintf(Msg," %d",ele.node_index(i));
+        	std::cout << " " << ele.node_index(i);
         }
-        xprintf(Msg," |");
+        std::cout << " |";
         for(auto& v : ele.vertex_list())
         {
-            xprintf(Msg," %f %f %f #",v[0], v[1], v[2]);
+        	std::cout << " " << v[0] << " " << v[1] << " " << v[2] << " #";
         }
-        xprintf(Msg,"\n");
+        std::cout << endl;
         
         ElementAccessor<3> ele_acc = ele.element_accessor();
         EXPECT_EQ(ele.dim(), ele_acc.dim());
@@ -120,7 +121,7 @@ const string input = R"INPUT(
        value="x+y+z"
    },
    output_stream = {
-    file = "./test1.pvd", 
+    file = "test1.pvd", 
     format = {
         TYPE = "vtk", 
         variant = "ascii"
@@ -131,7 +132,7 @@ const string input = R"INPUT(
         error_control_field = "conc"
     }*/
   }
-  //,output_fields = ["conc"]
+  ,output = {fields = ["conc"]}
 }
 )INPUT";
 
@@ -142,10 +143,10 @@ TEST(OutputMesh, write_on_output_mesh) {
     typedef Field<3,FieldValue<3>::Scalar> ScalarField;
   
     // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
 
     // read mesh - simplset cube from test1
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+    FilePath mesh_file( "../mesh/simplest_cube.msh", FilePath::input_file);
     Mesh* mesh = new Mesh();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
@@ -156,16 +157,16 @@ TEST(OutputMesh, write_on_output_mesh) {
     scalar_field.set_mesh(*mesh);
     
     // create field set of output fields
-    FieldSet output_fields;
+    EquationOutput output_fields;
     output_fields += scalar_field.name("conc").units(UnitSI::dimensionless()).flags_add(FieldFlag::allow_output);
     
     // create input record
     Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
         .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
-        //.declare_key("output_fields", Input::Type::Array(output_fields.make_output_field_selection("output_fields", "output").close()),
-        //             Input::Type::Default::obligatory(), "")
+        .declare_key("output", output_fields.make_output_type("test_eq"), Input::Type::Default::obligatory(), "")
         .close();
+
 
     // read input string
     Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
@@ -183,11 +184,14 @@ TEST(OutputMesh, write_on_output_mesh) {
     
     // create output
     std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
-    output->init_from_input("dummy_equation", in_rec.val<Input::Record>("output_stream"));
-    //output->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
+    output->init_from_input("dummy_equation", *mesh, in_rec.val<Input::Record>("output_stream"));
+    output_fields.initialize(output, in_rec.val<Input::Record>("output"), TimeGovernor());
+    
+    EXPECT_EQ(1,output_fields.size());
+    EXPECT_TRUE(output_fields.is_field_output_time(*output_fields.field("conc"), 0.0));
     
     // register output fields, compute and write data
-    output_fields.output(output);
+    output_fields.output(0.0);
     output->write_time_frame();
 
     delete mesh;
@@ -232,7 +236,7 @@ TEST_F(TestOutputMesh, read_input) {
     Field<3,FieldValue<3>::Scalar> scalar_field;
     
     // create field set of output fields
-    FieldSet output_fields;
+    EquationOutput output_fields;
     output_fields += scalar_field.name("conc");
     this->select_error_control_field(output_fields);
     
@@ -242,10 +246,8 @@ TEST_F(TestOutputMesh, read_input) {
                   FieldSet::ExcUnknownField);
     
     // 'conc' field is now vector field
-    /*
-    Field<3,FieldValue<3>::Vector> vector_field;
+    Field<3,FieldValue<3>::VectorFixed> vector_field;
     output_fields += vector_field.name("conc");
-    EXPECT_THROW( this->select_error_control_field(&output_fields); ,
+    EXPECT_THROW( this->select_error_control_field(output_fields); ,
                   OutputMeshBase::ExcFieldNotScalar);
-    */
 }

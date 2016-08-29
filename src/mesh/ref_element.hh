@@ -257,6 +257,18 @@ public:
 	 */
 	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
 
+    /** @brief Converts from local to barycentric coordinates.
+     * @param lp point in local coordinates
+     * @return point in barycentric coordinates
+     */
+    static BaryPoint local_to_bary(const LocalPoint& lp);
+    
+    /** @brief Converts from barycentric to local coordinates.
+     * @param bp point in barycentric coordinates
+     * @return point in local coordinates
+     */
+    static LocalPoint bary_to_local(const BaryPoint& bp);
+    
 	typedef std::vector<BaryPoint> BarycentricUnitVec;
 
 	/**

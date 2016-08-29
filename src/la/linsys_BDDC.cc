@@ -268,9 +268,9 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 		bddcml_ -> solveSystem( r_tol_, number_of_levels_, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
 
 
-		xprintf(MsgLog,"BDDCML converged reason: %d ( 0 means OK ) \n", bddcml_ -> giveConvergedReason() );
-		xprintf(MsgLog,"BDDCML converged in %d iterations. \n", bddcml_ -> giveNumIterations() );
-		xprintf(MsgLog,"BDDCML estimated condition number is %f \n", bddcml_ -> giveCondNumber() );
+		LogOut().fmt("BDDCML converged reason: {} ( 0 means OK ) \n", bddcml_ -> giveConvergedReason() );
+		LogOut().fmt("BDDCML converged in {} iterations. \n", bddcml_ -> giveNumIterations() );
+		LogOut().fmt("BDDCML estimated condition number is {} \n", bddcml_ -> giveCondNumber() );
 		ADD_CALLS(bddcml_ -> giveNumIterations());
     }
 

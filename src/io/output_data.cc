@@ -94,14 +94,14 @@ void OutputData<Value>::print_all(ostream &out_stream)
 
 
 template <class Value>
-void OutputData<Value>::print_all_yaml(ostream &out_stream)
+void OutputData<Value>::print_all_yaml(ostream &out_stream, unsigned int precision)
 {
     out_stream << "[ ";
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
         if (idx != 0) out_stream << ", ";
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         typename Value::return_type value;
-        out_stream << field_value_to_yaml( Value::from_raw(value, ptr_begin) );
+        out_stream << field_value_to_yaml( Value::from_raw(value, ptr_begin), precision );
     }
     out_stream << " ]";
 }
@@ -143,10 +143,8 @@ void OutputData<Value>::normalize(unsigned int idx, unsigned int divisor) {
 
 // Instantiation of OutputData template.
 template class OutputData< FieldValue<0>::Enum >;
-template class OutputData< FieldValue<0>::EnumVector >;
 template class OutputData< FieldValue<0>::Integer >;
 template class OutputData< FieldValue<0>::Scalar >;
-template class OutputData< FieldValue<0>::Vector >;
 
 template class OutputData< FieldValue<2>::VectorFixed >;
 template class OutputData< FieldValue<2>::TensorFixed >;

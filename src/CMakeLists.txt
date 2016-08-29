@@ -51,6 +51,18 @@ set(DEAL_II_WITH_LAPACK ON)
 set(LAPACK_FOUND "true")
 set(LAPACK_LIBRARIES "${PETSC_EXTERNAL_LIB}")
 set(LAPACK_LINKER_FLAGS ${PETSC_VAR_BLASLAPACK_LIB})
+unset(DEAL_II_COMPONENT_PACKAGE  CACHE)
+
+set(DEAL_II_COMPONENT_EXAMPLES OFF)
+set(DEAL_II_COMPONENT_COMPAT_FILES OFF)
+set(DEAL_II_COMPONENT_DOCUMENTATION OFF)
+set(DEAL_II_COMPONENT_MESH_CONVERTER OFF)
+set(DEAL_II_COMPONENT_PARAMETER_GUI OFF)
+
+
+
+
+
 add_subdirectory("dealii")
 set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
 message(STATUS "===========================================")
@@ -81,11 +93,11 @@ add_library(system_lib
     system/sys_profiler.cc
     system/time_point.cc
     system/system.cc
-    system/xio.cc
+#    system/xio.cc
     system/exceptions.cc
     system/stack_trace.cc
     system/asserts.cc
-    io/read_ini.cc
+#    io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
     system/application_base.cc
@@ -274,13 +286,13 @@ target_link_libraries(coupling_lib
 
 
 # make separate library for Semchem (God save us!)
-add_library(semchem 
-    semchem/che_semchem.cc
-    semchem/che_read.cc
-)
-set_target_properties(semchem 
-    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
-)
+#add_library(semchem 
+#    semchem/che_semchem.cc
+#    semchem/che_read.cc
+#)
+#set_target_properties(semchem 
+#    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+#)
 
 
 
@@ -291,6 +303,7 @@ add_library(flow123d_lib
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
+    flow/soil_models.cc
     flow/richards_lmh.cc
 
     reaction/reaction_term.cc
@@ -304,7 +317,7 @@ add_library(flow123d_lib
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
     reaction/linear_ode_analytic.cc
-    semchem/semchem_interface.cc
+    #semchem/semchem_interface.cc
 
     transport/concentration_model.cc
     transport/heat_model.cc
@@ -318,7 +331,7 @@ add_library(flow123d_lib
 )    
     
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib system_lib intersections_lib
+    fem_lib mesh_lib la_lib input_lib system_lib intersections_lib
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 
@@ -332,5 +345,5 @@ target_link_libraries(flow123d_lib
 set_target_properties(flow123d_lib 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
-add_dependencies(flow123d_lib tbb)
+#add_dependencies(flow123d_lib tbb)
 

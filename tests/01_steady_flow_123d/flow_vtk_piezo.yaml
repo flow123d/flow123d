@@ -27,7 +27,7 @@ problem: !Coupling_Sequential
         sigma: 0.5
       - region: 3d_cube
         anisotropy: 0.1
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: !FieldFormula
           value: x

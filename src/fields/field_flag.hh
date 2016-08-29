@@ -37,7 +37,10 @@ public:
     static constexpr Mask allow_output{1 << 2};
 
 
-    /// A field that is input of its equation and can not read from input, thus must be set by copy.
+    /**
+     *  A field that is input of its equation and can not read from input, thus must be set by copy.
+     *  Disabled flag 'declare_input' still allow initialization of the field from a default value.
+     */
     static constexpr Mask input_copy = ~declare_input & equation_input;
 
     /// A field is part of time term of the equation.

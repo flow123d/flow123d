@@ -93,7 +93,7 @@ public:
         * Returns parameterized whole tree of input types for FieldBase with all descendants based on element input type (namely
         * for FieldConstant) given by element_input_type pointer.
         */
-       static const Input::Type::Instance & get_input_type_instance(const Input::Type::Selection *value_selection=NULL);
+       static const Input::Type::Instance & get_input_type_instance( Input::Type::Selection value_selection=Input::Type::Selection() );
 
        /**
         * This static method gets accessor to abstract record with function input,
@@ -153,7 +153,7 @@ public:
         * TODO: think what kind of information we may need, is the next time value enough?
         */
        virtual double next_change_time()
-       { OLD_ASSERT(0, "Not implemented yet."); return 0.0; }
+       { ASSERT(false).error("Not implemented yet."); return 0.0; }
 
        /**
         * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

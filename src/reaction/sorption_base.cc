@@ -78,7 +78,7 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     	rock_density.units( UnitSI().kg().m(-3) );
 
     ADD_FIELD(sorption_type,"Considered sorption is described by selected isotherm. If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically."); //
-        sorption_type.input_selection(&get_sorption_type_selection());
+        sorption_type.input_selection(get_sorption_type_selection());
         sorption_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(isotherm_mult,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
@@ -120,14 +120,16 @@ SorptionBase::~SorptionBase(void)
 
   VecScatterDestroy(&(vconc_out_scatter));
   if (vconc_solid != NULL) {
-	  VecDestroy(vconc_solid);
+
 
 	  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
 	  {
 		//no mpi vectors
-		xfree(conc_solid[sbi]);
+	    VecDestroy( &(vconc_solid[sbi]) );
+		delete [] conc_solid[sbi];
 	  }
-	  xfree(conc_solid);
+	  delete [] vconc_solid;
+	  delete [] conc_solid;
   }
 }
 
@@ -181,12 +183,12 @@ void SorptionBase::initialize()
   }   
   
   //allocating new array for sorbed concentrations
-  conc_solid = (double**) xmalloc(substances_.size() * sizeof(double*));//new double * [n_substances_];
+  conc_solid = new double* [substances_.size()];
   conc_solid_out.clear();
   conc_solid_out.resize( substances_.size() );
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
-    conc_solid[sbi] = (double*) xmalloc(distribution_->lsize() * sizeof(double));//new double[ nr_of_local_elm ];
+    conc_solid[sbi] = new double [distribution_->lsize()];
     conc_solid_out[sbi].resize( distribution_->size() );
     //zero initialization of solid concentration for all substances
     for(unsigned int i=0; i < distribution_->lsize(); i++)
@@ -481,7 +483,7 @@ void SorptionBase::allocate_output_mpi(void )
     int sbi, n_subst;
     n_subst = substances_.size();
 
-    vconc_solid = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+    vconc_solid = new Vec [n_subst];
 
     for (sbi = 0; sbi < n_subst; sbi++) {
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_solid[sbi],
