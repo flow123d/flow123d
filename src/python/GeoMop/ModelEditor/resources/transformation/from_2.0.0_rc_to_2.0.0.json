@@ -1,7 +1,7 @@
 {
 "name": "Main transformation file",
 "description": "Template for creating transformation file",
-"old_format": "1.8.2",
+"old_format": "2.0.0_rc",
 "new_format": "2.0.0",
 "actions":
   [

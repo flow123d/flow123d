@@ -1,7 +1,7 @@
 { "version" :{
-"flow123d_commit" : "release_1.8.2-2072-gd803bcc",
-"flow123d_version" : "2.0.0_rc",
-"date" : "Aug 19 2016, 20:50:57"
+"flow123d_commit" : "release_1.8.2-2142-g553d19d",
+"flow123d_version" : "2.0.0",
+"date" : "Aug 29 2016, 14:25:36"
 },
 "ist_nodes" : [
 {
@@ -40,8 +40,8 @@
 "attributes" : {},
 "description" : "The root record of description of particular the problem to solve.",
 "implementations" : [
-"6d2965f0bda872a6"]},{
-"id" : "6d2965f0bda872a6",
+"90a91c4c5a3a2b93"]},{
+"id" : "90a91c4c5a3a2b93",
 "input_type" : "Record",
 "name" : "Coupling_Sequential",
 "attributes" : {},
@@ -82,13 +82,13 @@
 "description" : "Transport of soluted substances, depends on the velocity field from a Flow equation.",
 "default" : { "type" : "optional",
 "value" : "OPTIONAL" },
-"type" : "831e2c5f158fb16c",
+"type" : "c20b6cad3d254b33",
 "attributes" : {}},
 { "key" : "heat_equation",
 "description" : "Heat transfer, depends on the velocity field from a Flow equation.",
 "default" : { "type" : "optional",
 "value" : "OPTIONAL" },
-"type" : "831e2c5f158fb16c",
+"type" : "c20b6cad3d254b33",
 "attributes" : {}}]
 },{
 "id" : "342a8c4bac73fd10",
@@ -474,9 +474,9 @@
 "attributes" : {},
 "description" : "Darcy flow model. Abstraction of various porous media flow models.",
 "implementations" : [
-"d4c31208c6aa9bf",
-"6509be8a3059c473"]},{
-"id" : "d4c31208c6aa9bf",
+"ab621b1a711a0bbd",
+"c80546410cdf3ed1"]},{
+"id" : "ab621b1a711a0bbd",
 "input_type" : "Record",
 "name" : "Flow_Darcy_MH",
 "attributes" : {},
@@ -488,6 +488,12 @@
 "default" : { "type" : "value at declaration",
 "value" : "Flow_Darcy_MH" },
 "type" : "29b5533100b6f60f",
+"attributes" : {}},
+{ "key" : "gravity",
+"description" : "Vector of the gravitational acceleration (divided by the acceleration). Dimensionless, magnitude one for the Earth conditions.",
+"default" : { "type" : "value at declaration",
+"value" : [ 0, 0, -1] },
+"type" : "cba11500fe114d7b",
 "attributes" : {}},
 { "key" : "input_fields",
 "description" : "Input data for Darcy flow model.",
@@ -544,6 +550,14 @@
 "type" : "77e8d459d5c35386",
 "attributes" : {}}]
 },{
+"id" : "cba11500fe114d7b",
+"input_type" : "Array",
+"name" : "array_of_Double",
+"attributes" : {},
+"range" : [3, 3],
+"subtype" : "47484ede475775e6"
+},
+{
 "id" : "52bbe1e4167e9c99",
 "input_type" : "Array",
 "name" : "array_of_Flow_Darcy_MH_Data",
@@ -1448,14 +1462,6 @@
 "type" : "151ce92d5201d44f",
 "attributes" : {}}]
 },{
-"id" : "cba11500fe114d7b",
-"input_type" : "Array",
-"name" : "array_of_Double",
-"attributes" : {},
-"range" : [3, 3],
-"subtype" : "47484ede475775e6"
-},
-{
 "id" : "151ce92dd201d448",
 "input_type" : "Integer",
 "name" : "Integer",
@@ -1658,7 +1664,7 @@
 { "name" : "P1",
 "description" : "Mortar space: P1 on intersections, using non-conforming pressures." }]
 },{
-"id" : "6509be8a3059c473",
+"id" : "c80546410cdf3ed1",
 "input_type" : "Record",
 "name" : "Flow_Richards_LMH",
 "attributes" : {},
@@ -1670,6 +1676,12 @@
 "default" : { "type" : "value at declaration",
 "value" : "Flow_Richards_LMH" },
 "type" : "29b5533100b6f60f",
+"attributes" : {}},
+{ "key" : "gravity",
+"description" : "Vector of the gravitational acceleration (divided by the acceleration). Dimensionless, magnitude one for the Earth conditions.",
+"default" : { "type" : "value at declaration",
+"value" : [ 0, 0, -1] },
+"type" : "cba11500fe114d7b",
 "attributes" : {}},
 { "key" : "input_fields",
 "description" : "Input data for Darcy flow model.",
@@ -1924,20 +1936,20 @@
 { "name" : "irmay",
 "description" : "Irmay model for conductivity, Van Genuchten model for the water content. Suitable for bentonite." }]
 },{
-"id" : "831e2c5f158fb16c",
+"id" : "c20b6cad3d254b33",
 "input_type" : "Abstract",
-"name" : "Transport",
+"name" : "AdvectionProcess",
 "attributes" : {},
-"description" : "Secondary equation for transport of substances or heat transfer.",
+"description" : "Abstract advection process. In particular: transport of substances or heat transfer.",
 "implementations" : [
 "3c3b8fd8095256d7",
-"137d1f7ffb391dcc"]},{
+"ffbe203e0e94b873"]},{
 "id" : "3c3b8fd8095256d7",
 "input_type" : "Record",
 "name" : "Coupling_OperatorSplitting",
 "attributes" : {},
 "description" : "Transport by convection and/or diffusion\ncoupled with reaction and adsorption model (ODE per element)\n via operator splitting.",
-"implements" : [ "831e2c5f158fb16c" ],
+"implements" : [ "c20b6cad3d254b33" ],
 "keys" : [
 { "key" : "TYPE",
 "description" : "Sub-record Selection.",
@@ -2016,9 +2028,9 @@
 "attributes" : {},
 "description" : "Transport of soluted  substances.",
 "implementations" : [
-"2e1c56252d5a3612",
-"21b4e8040a7fb831"]},{
-"id" : "2e1c56252d5a3612",
+"4b98a75c07b395b1",
+"1082b9f9975d6e9d"]},{
+"id" : "4b98a75c07b395b1",
 "input_type" : "Record",
 "name" : "Solute_Advection_FV",
 "attributes" : {},
@@ -2041,7 +2053,7 @@
 "description" : "Setting of the fields output.",
 "default" : { "type" : "value at declaration",
 "value" : { "fields": [ "conc" ] } },
-"type" : "5fd5b966998b2547",
+"type" : "873d055e3c3ecd7b",
 "attributes" : {}}]
 },{
 "id" : "febdd0875acf2a16",
@@ -2135,11 +2147,11 @@
 "subtype" : "d0d53234dbe7535f"
 },
 {
-"id" : "5fd5b966998b2547",
+"id" : "873d055e3c3ecd7b",
 "input_type" : "Record",
 "name" : "EquationOutput",
 "generic_type" : "d26f5c9651fbe82",
-"parameters" : {"output_field_selection" : "eef20ab0a42f53df"},
+"parameters" : {"output_field_selection" : "bdd08373a151656d"},
 "attributes" : {},
 "description" : "Output of the equation's fields.The output is done through the output stream of the associated balance law equation.The stream defines output format for the full space information in selected times and observe points for the full time information. The key 'fields' select the fields for the full spatial output.The set of output times may be specified  per field otherwise common time set 'times' is used. If even this is not providedthe time set of the output_stream is used. The initial time of the equation is automatically added to the time set of every selected field. The end time of the equation is automatically added to the common output time set.",
 "keys" : [
@@ -2159,30 +2171,30 @@
 "description" : "Array of output fields and their individual output settings.",
 "default" : { "type" : "value at declaration",
 "value" : [] },
-"type" : "bb8bd6be90959c3a",
+"type" : "5b72a962f7b714cd",
 "attributes" : {}},
 { "key" : "observe_fields",
 "description" : "Array of the fields evaluated in the observe points of the associated output stream.",
 "default" : { "type" : "value at declaration",
 "value" : [] },
-"type" : "2aa59e8d13ce4f11",
+"type" : "fb84274e2eec3ea3",
 "attributes" : {}}]
 },{
-"id" : "bb8bd6be90959c3a",
+"id" : "5b72a962f7b714cd",
 "input_type" : "Array",
 "name" : "array_of_FieldOutputSetting",
 "generic_type" : "dc44bb2d9b30af35",
-"parameters" : {"output_field_selection" : "eef20ab0a42f53df"},
+"parameters" : {"output_field_selection" : "bdd08373a151656d"},
 "attributes" : {},
 "range" : [0, 4294967295],
-"subtype" : "948329b542b162cf"
+"subtype" : "3429f4819bd2eba2"
 },
 {
-"id" : "948329b542b162cf",
+"id" : "3429f4819bd2eba2",
 "input_type" : "Record",
 "name" : "FieldOutputSetting",
 "generic_type" : "b5340646484e31da",
-"parameters" : {"output_field_selection" : "eef20ab0a42f53df"},
+"parameters" : {"output_field_selection" : "bdd08373a151656d"},
 "attributes" : {},
 "description" : "Setting of the field output. The field name, output times, output interpolation (future).",
 "reducible_to_key" : "field",
@@ -2191,7 +2203,7 @@
 "description" : "The field name (from selection).",
 "default" : { "type" : "obligatory",
 "value" : "OBLIGATORY" },
-"type" : "eef20ab0a42f53df",
+"type" : "bdd08373a151656d",
 "attributes" : {}},
 { "key" : "times",
 "description" : "Output times specific to particular field.",
@@ -2200,7 +2212,7 @@
 "type" : "f8d103d0d2e14ac5",
 "attributes" : {}}]
 },{
-"id" : "eef20ab0a42f53df",
+"id" : "bdd08373a151656d",
 "input_type" : "Selection",
 "name" : "Solute_Advection_FV_output_fields",
 "attributes" : {},
@@ -2208,6 +2220,8 @@
 "values" : [
 { "name" : "porosity",
 "description" : "Output of the field porosity (($[-]$)) (Mobile porosity)." },
+{ "name" : "water_content",
+"description" : "Output of the field water_content (($[-]$)) (INTERNAL - water content passed from unsaturated Darcy)." },
 { "name" : "sources_density",
 "description" : "Output of the field sources_density (($[m^{-3}kgs^{-1}]$)) (Density of concentration sources.)." },
 { "name" : "sources_sigma",
@@ -2221,17 +2235,17 @@
 { "name" : "region_id",
 "description" : "Output of the field region_id (($[-]$))." }]
 },{
-"id" : "2aa59e8d13ce4f11",
+"id" : "fb84274e2eec3ea3",
 "input_type" : "Array",
 "name" : "array_of_Solute_Advection_FV_output_fields",
 "generic_type" : "28bfad7f05e39c9a",
-"parameters" : {"output_field_selection" : "eef20ab0a42f53df"},
+"parameters" : {"output_field_selection" : "bdd08373a151656d"},
 "attributes" : {},
 "range" : [0, 4294967295],
-"subtype" : "eef20ab0a42f53df"
+"subtype" : "bdd08373a151656d"
 },
 {
-"id" : "21b4e8040a7fb831",
+"id" : "1082b9f9975d6e9d",
 "input_type" : "Record",
 "name" : "Solute_AdvectionDiffusion_DG",
 "attributes" : {},
@@ -2278,7 +2292,7 @@
 "description" : "Setting of the field output.",
 "default" : { "type" : "value at declaration",
 "value" : { "fields": [ "conc"] } },
-"type" : "2b76975b0c57886b",
+"type" : "104dbb5b776ce1",
 "attributes" : {}}]
 },{
 "id" : "2d07114af5eb014",
@@ -2525,11 +2539,11 @@
 "attributes" : {},
 "range" : [0, 3]
 },{
-"id" : "2b76975b0c57886b",
+"id" : "104dbb5b776ce1",
 "input_type" : "Record",
 "name" : "EquationOutput",
 "generic_type" : "d26f5c9651fbe82",
-"parameters" : {"output_field_selection" : "e74bf5a5f4f64676"},
+"parameters" : {"output_field_selection" : "5c0b1f20998701f8"},
 "attributes" : {},
 "description" : "Output of the equation's fields.The output is done through the output stream of the associated balance law equation.The stream defines output format for the full space information in selected times and observe points for the full time information. The key 'fields' select the fields for the full spatial output.The set of output times may be specified  per field otherwise common time set 'times' is used. If even this is not providedthe time set of the output_stream is used. The initial time of the equation is automatically added to the time set of every selected field. The end time of the equation is automatically added to the common output time set.",
 "keys" : [
@@ -2549,30 +2563,30 @@
 "description" : "Array of output fields and their individual output settings.",
 "default" : { "type" : "value at declaration",
 "value" : [] },
-"type" : "898ff52af63335b0",
+"type" : "d07dcddac564c1c0",
 "attributes" : {}},
 { "key" : "observe_fields",
 "description" : "Array of the fields evaluated in the observe points of the associated output stream.",
 "default" : { "type" : "value at declaration",
 "value" : [] },
-"type" : "dff62c15314c0518",
+"type" : "aab5458fdad3499a",
 "attributes" : {}}]
 },{
-"id" : "898ff52af63335b0",
+"id" : "d07dcddac564c1c0",
 "input_type" : "Array",
 "name" : "array_of_FieldOutputSetting",
 "generic_type" : "dc44bb2d9b30af35",
-"parameters" : {"output_field_selection" : "e74bf5a5f4f64676"},
+"parameters" : {"output_field_selection" : "5c0b1f20998701f8"},
 "attributes" : {},
 "range" : [0, 4294967295],
-"subtype" : "827f48499d4ecc55"
+"subtype" : "b92d11198e82a0a5"
 },
 {
-"id" : "827f48499d4ecc55",
+"id" : "b92d11198e82a0a5",
 "input_type" : "Record",
 "name" : "FieldOutputSetting",
 "generic_type" : "b5340646484e31da",
-"parameters" : {"output_field_selection" : "e74bf5a5f4f64676"},
+"parameters" : {"output_field_selection" : "5c0b1f20998701f8"},
 "attributes" : {},
 "description" : "Setting of the field output. The field name, output times, output interpolation (future).",
 "reducible_to_key" : "field",
@@ -2581,7 +2595,7 @@
 "description" : "The field name (from selection).",
 "default" : { "type" : "obligatory",
 "value" : "OBLIGATORY" },
-"type" : "e74bf5a5f4f64676",
+"type" : "5c0b1f20998701f8",
 "attributes" : {}},
 { "key" : "times",
 "description" : "Output times specific to particular field.",
@@ -2590,7 +2604,7 @@
 "type" : "f8d103d0d2e14ac5",
 "attributes" : {}}]
 },{
-"id" : "e74bf5a5f4f64676",
+"id" : "5c0b1f20998701f8",
 "input_type" : "Selection",
 "name" : "Solute_AdvectionDiffusion_DG_output_fields",
 "attributes" : {},
@@ -2598,6 +2612,8 @@
 "values" : [
 { "name" : "porosity",
 "description" : "Output of the field porosity (($[-]$)) (Mobile porosity)." },
+{ "name" : "water_content",
+"description" : "Output of the field water_content (($[-]$)) (INTERNAL - water content passed from unsaturated Darcy)." },
 { "name" : "sources_density",
 "description" : "Output of the field sources_density (($[m^{-3}kgs^{-1}]$)) (Density of concentration sources.)." },
 { "name" : "sources_sigma",
@@ -2625,14 +2641,14 @@
 { "name" : "region_id",
 "description" : "Output of the field region_id (($[-]$))." }]
 },{
-"id" : "dff62c15314c0518",
+"id" : "aab5458fdad3499a",
 "input_type" : "Array",
 "name" : "array_of_Solute_AdvectionDiffusion_DG_output_fields",
 "generic_type" : "28bfad7f05e39c9a",
-"parameters" : {"output_field_selection" : "e74bf5a5f4f64676"},
+"parameters" : {"output_field_selection" : "5c0b1f20998701f8"},
 "attributes" : {},
 "range" : [0, 4294967295],
-"subtype" : "e74bf5a5f4f64676"
+"subtype" : "5c0b1f20998701f8"
 },
 {
 "id" : "2774b155ff64fb44",
@@ -3698,12 +3714,12 @@
 "subtype" : "10b0636bbbf126a0"
 },
 {
-"id" : "137d1f7ffb391dcc",
+"id" : "ffbe203e0e94b873",
 "input_type" : "Record",
 "name" : "Heat_AdvectionDiffusion_DG",
 "attributes" : {},
 "description" : "DG solver for heat transfer.",
-"implements" : [ "831e2c5f158fb16c" ],
+"implements" : [ "c20b6cad3d254b33" ],
 "keys" : [
 { "key" : "TYPE",
 "description" : "Sub-record Selection.",
@@ -3757,7 +3773,7 @@
 "description" : "Setting of the field output.",
 "default" : { "type" : "value at declaration",
 "value" : { "fields": [ "temperature"] } },
-"type" : "eaa36916b668a720",
+"type" : "5cc4ff89cd9a5a47",
 "attributes" : {}}]
 },{
 "id" : "fa8028568981152e",
@@ -4025,11 +4041,11 @@
 { "name" : "diffusive_flux",
 "description" : "Diffusive flux boundary condition.\nThe prescribed incoming energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), where the absolute flux (($f_N$)) is specified by the field 'bc_flux', the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', and the reference temperature (($T_R$)) by 'bc_temperature'." }]
 },{
-"id" : "eaa36916b668a720",
+"id" : "5cc4ff89cd9a5a47",
 "input_type" : "Record",
 "name" : "EquationOutput",
 "generic_type" : "d26f5c9651fbe82",
-"parameters" : {"output_field_selection" : "8acb87846e5e395"},
+"parameters" : {"output_field_selection" : "4f751ce9eb74e463"},
 "attributes" : {},
 "description" : "Output of the equation's fields.The output is done through the output stream of the associated balance law equation.The stream defines output format for the full space information in selected times and observe points for the full time information. The key 'fields' select the fields for the full spatial output.The set of output times may be specified  per field otherwise common time set 'times' is used. If even this is not providedthe time set of the output_stream is used. The initial time of the equation is automatically added to the time set of every selected field. The end time of the equation is automatically added to the common output time set.",
 "keys" : [
@@ -4049,30 +4065,30 @@
 "description" : "Array of output fields and their individual output settings.",
 "default" : { "type" : "value at declaration",
 "value" : [] },
-"type" : "54ff890706c7108b",
+"type" : "f3028bb05691c3f5",
 "attributes" : {}},
 { "key" : "observe_fields",
 "description" : "Array of the fields evaluated in the observe points of the associated output stream.",
 "default" : { "type" : "value at declaration",
 "value" : [] },
-"type" : "c99985a334c6b179",
+"type" : "252192c9177b037",
 "attributes" : {}}]
 },{
-"id" : "54ff890706c7108b",
+"id" : "f3028bb05691c3f5",
 "input_type" : "Array",
 "name" : "array_of_FieldOutputSetting",
 "generic_type" : "dc44bb2d9b30af35",
-"parameters" : {"output_field_selection" : "8acb87846e5e395"},
+"parameters" : {"output_field_selection" : "4f751ce9eb74e463"},
 "attributes" : {},
 "range" : [0, 4294967295],
-"subtype" : "3daed45bcce2ef60"
+"subtype" : "dbf9d6b2fcad9e9a"
 },
 {
-"id" : "3daed45bcce2ef60",
+"id" : "dbf9d6b2fcad9e9a",
 "input_type" : "Record",
 "name" : "FieldOutputSetting",
 "generic_type" : "b5340646484e31da",
-"parameters" : {"output_field_selection" : "8acb87846e5e395"},
+"parameters" : {"output_field_selection" : "4f751ce9eb74e463"},
 "attributes" : {},
 "description" : "Setting of the field output. The field name, output times, output interpolation (future).",
 "reducible_to_key" : "field",
@@ -4081,7 +4097,7 @@
 "description" : "The field name (from selection).",
 "default" : { "type" : "obligatory",
 "value" : "OBLIGATORY" },
-"type" : "8acb87846e5e395",
+"type" : "4f751ce9eb74e463",
 "attributes" : {}},
 { "key" : "times",
 "description" : "Output times specific to particular field.",
@@ -4090,7 +4106,7 @@
 "type" : "f8d103d0d2e14ac5",
 "attributes" : {}}]
 },{
-"id" : "8acb87846e5e395",
+"id" : "4f751ce9eb74e463",
 "input_type" : "Selection",
 "name" : "Heat_AdvectionDiffusion_DG_output_fields",
 "attributes" : {},
@@ -4100,6 +4116,8 @@
 "description" : "Output of the field init_temperature (($[K]$)) (Initial temperature.)." },
 { "name" : "porosity",
 "description" : "Output of the field porosity (($[-]$)) (Porosity.)." },
+{ "name" : "water_content",
+"description" : "Output of the field water_content (($[-]$))." },
 { "name" : "fluid_density",
 "description" : "Output of the field fluid_density (($[m^{-3}kg]$)) (Density of fluid.)." },
 { "name" : "fluid_heat_capacity",
@@ -4137,14 +4155,14 @@
 { "name" : "region_id",
 "description" : "Output of the field region_id (($[-]$))." }]
 },{
-"id" : "c99985a334c6b179",
+"id" : "252192c9177b037",
 "input_type" : "Array",
 "name" : "array_of_Heat_AdvectionDiffusion_DG_output_fields",
 "generic_type" : "28bfad7f05e39c9a",
-"parameters" : {"output_field_selection" : "8acb87846e5e395"},
+"parameters" : {"output_field_selection" : "4f751ce9eb74e463"},
 "attributes" : {},
 "range" : [0, 4294967295],
-"subtype" : "8acb87846e5e395"
+"subtype" : "4f751ce9eb74e463"
 },
 {
 "id" : "8350a9dda11719b",
@@ -4156,6 +4174,17 @@
 { "name" : "Petsc",
 "description" : "" },
 { "name" : "Bddc",
+"description" : "" }]
+},{
+"id" : "26b7680ea21d6dd3",
+"input_type" : "Selection",
+"name" : "AdvectionProcess_TYPE_selection",
+"attributes" : {},
+"description" : "",
+"values" : [
+{ "name" : "Coupling_OperatorSplitting",
+"description" : "" },
+{ "name" : "Heat_AdvectionDiffusion_DG",
 "description" : "" }]
 },{
 "id" : "4764c82b455ccee9",
@@ -4355,17 +4384,6 @@
 { "name" : "FieldElementwise",
 "description" : "" },
 { "name" : "FieldInterpolatedP0",
-"description" : "" }]
-},{
-"id" : "e2c3e49b64a5f521",
-"input_type" : "Selection",
-"name" : "Transport_TYPE_selection",
-"attributes" : {},
-"description" : "",
-"values" : [
-{ "name" : "Coupling_OperatorSplitting",
-"description" : "" },
-{ "name" : "Heat_AdvectionDiffusion_DG",
 "description" : "" }]
 },{
 "id" : "ead56bb5b36a0999",
@@ -5759,6 +5777,6 @@
 "type" : "6b1c4ede475775aa",
 "attributes" : {}}]
 },{}],
-"IST_hash" : "48353a509d1e71df"
+"IST_hash" : "5db3d08ba8f4c63f"
 }
 

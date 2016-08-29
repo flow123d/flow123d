@@ -26,5 +26,5 @@ do
   fi
 
   #echo $f
-  "${0%/*}/transform_test.sh" $f
+  python3 "${0%/*}/../input_convert.py" $f
 done
