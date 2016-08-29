@@ -403,8 +403,9 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-
-message(STATUS "\n =======================================================")
+message(STATUS "=======================================================")
+message(STATUS "====== PETSC ==========================================")
+message(STATUS "=======================================================")
 include (FindPackageMultipass)
 
 # this export list is for possible BDDCML installation
@@ -413,76 +414,23 @@ set(PETSC_EXPORT_LIST
   METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
   MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB
   UMFPACK_LIB)  
-find_package(PETSc 3.6.0)
 
+message(STATUS "PETSC_DIR = ${PETSC_DIR}")
+message(STATUS "PETSC_ARCH = ${PETSC_ARCH}")
 
-if (NOT PETSC_FOUND)
-    if (PETSC_DIR) 
-        message(STATUS "Can not configure with given PETSC_DIR=${PETSC_DIR}")
-    else()    
-        # Install PETSC
-        # also set PETSC_DIR, PETSC_ARCH
-        set(PETSC_INSTALL_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_3.6_build)
-        set(PETSC_INSTALL_URL \"http://flow.nti.tul.cz/libraries/petsc-lite-3.6.1.tar.gz\")
-        include(InstallPetsc)
-        
-        set(PETSC_CURRENT "NO")
-        find_package(PETSc 3.6.0)
-        
-    endif()    
-        
-       
-    # If we haven't PETSC, we try to find MPI
-        
-    # === Variables ===
-    # This module will set the following variables per language in your project,
-    # where <lang> is one of C, CXX, or Fortran:
-    #   MPI_<lang>_FOUND           TRUE if FindMPI found MPI flags for <lang>
-    #   MPI_<lang>_COMPILER        MPI Compiler wrapper for <lang>
-    #   MPI_<lang>_COMPILE_FLAGS   Compilation flags for MPI programs
-    #   MPI_<lang>_INCLUDE_PATH    Include path(s) for MPI header
-    #   MPI_<lang>_LINK_FLAGS      Linking flags for MPI programs
-    #   MPI_<lang>_LIBRARIES       All libraries to link MPI programs against
-    # Additionally, FindMPI sets the following variables for running MPI
-    # programs from the command line:
-    #   MPIEXEC                    Executable for running MPI programs
-    #   MPIEXEC_NUMPROC_FLAG       Flag to pass to MPIEXEC before giving
-    #                              it the number of processors to run on
-    #   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
-    #                              before the executable to run.
-    #   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
-#
-#    find_package(MPI)
-#  
-#    if (MPI_CXX_FOUND)
-#        flow_define(HAVE_MPI)
-#    else(MPI_CXX_FOUND) 
-        # build single processor replacement taken from PETSc
-#        set(mpiuni_sources    system/mpiuni/mpi.c)
-#        set(MPIUNI_INCLUDES src/system/mpiuni)
-#        flow_define(HAVE_MPI)
-#        flow_define(HAVE_MPIUNI)
-#    
-        # overwrite NOTFOUND status
-#        set(MPI_CXX_LIBRARIES mpiuni_lib)
-#        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
-#    
-#    endif(MPI_CXX_FOUND)
+find_package(MPI REQUIRED)
+find_package(PETSc 3.6.0 REQUIRED)
+flow_define(HAVE_PETSC)
+flow_define(HAVE_MPI)
 
-endif(NOT PETSC_FOUND)
+set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
+set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
 
-if(PETSC_FOUND)
-    flow_define(HAVE_PETSC)
-    flow_define(HAVE_MPI)
-    set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
-    set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
-    
-    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
-endif(PETSC_FOUND)
-
-#find_package(PARMETIS)
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PETSC_FOUND = ${PETSC_FOUND}")
+message(STATUS "PETSC_LIBS = ${PETSC_LIBRARIES}")
+message(STATUS "PETSC_EXTERNAL_LIB = ${PETSC_EXTERNAL_LIB}")
+message(STATUS "=======================================================\n\n")
 
 message(STATUS "\n =======================================================")
 #################################################################################
