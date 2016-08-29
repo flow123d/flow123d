@@ -40,7 +40,7 @@ add_test_directory("${libs}")
     define_mpi_test(speed_simple 1)
     define_mpi_test(speed 1)
     
-    define_mpi_test(simplex_class 1)
+    define_test(simplex_class)
 
 
 

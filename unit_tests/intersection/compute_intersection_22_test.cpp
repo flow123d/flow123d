@@ -6,6 +6,7 @@
  */
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
+#include "arma_expect.hh"
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
@@ -102,10 +103,8 @@ void compute_intersection_22d(Mesh *mesh, const computeintersection::Intersectio
     for(unsigned int i=0; i < is.size(); i++)
     {
         MessageOut().fmt("---------- check IP[{}] ----------\n",i);
-        EXPECT_DOUBLE_EQ(il[i].comp_coords()[0], ilc[i].comp_coords()[0]);
-        EXPECT_DOUBLE_EQ(il[i].comp_coords()[1], ilc[i].comp_coords()[1]);
-        EXPECT_DOUBLE_EQ(il[i].bulk_coords()[0], ilc[i].bulk_coords()[0]);
-        EXPECT_DOUBLE_EQ(il[i].bulk_coords()[1], ilc[i].bulk_coords()[1]);
+        EXPECT_ARMA_EQ(il[i].comp_coords(), ilc[i].comp_coords());
+        EXPECT_ARMA_EQ(il[i].bulk_coords(), ilc[i].bulk_coords());
     }
 }
 

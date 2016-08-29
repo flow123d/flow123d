@@ -6,6 +6,7 @@
  */
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
+#include "arma_expect.hh"
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
@@ -90,9 +91,8 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
     for(unsigned int i=0; i < ipc.size(); i++)
     {
         MessageOut().fmt("---------- check IP[{}] ----------\n",i);
-        EXPECT_DOUBLE_EQ(ipc[i].comp_coords()[0], ips[i].comp_coords()[0]);
-        EXPECT_DOUBLE_EQ(ipc[i].bulk_coords()[0], ips[i].bulk_coords()[0]);
-        EXPECT_DOUBLE_EQ(ipc[i].bulk_coords()[1], ips[i].bulk_coords()[1]);
+        EXPECT_ARMA_EQ(ipc[i].comp_coords(), ips[i].comp_coords());
+        EXPECT_ARMA_EQ(ipc[i].bulk_coords(), ips[i].bulk_coords());
     }
 }
 

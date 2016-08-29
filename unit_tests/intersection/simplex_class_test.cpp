@@ -1,7 +1,7 @@
-#define TEST_USE_MPI
-#include <flow_gtest_mpi.hh>
+#include <flow_gtest.hh>
+#include "arma_expect.hh"
+
 #include "system/global_defs.h"
-#include "system/sys_profiler.hh"
 
 #include "intersection/simplex.hh"
 #include "intersection/plucker.hh"
@@ -10,8 +10,7 @@ using namespace std;
 using namespace computeintersection;
 
 TEST(simplex, all) {
-    Profiler::initialize();
-
+    
 	arma::vec3 Point0;Point0[0] = 1;Point0[1] = 2;Point0[2] = 3;
 	arma::vec3 Point1;Point1[0] = 2;Point1[1] = 3;Point1[2] = 4;
 	arma::vec3 Point2;Point2[0] = 3;Point2[1] = 4;Point2[2] = 1;
@@ -32,15 +31,11 @@ TEST(simplex, all) {
     MessageOut() << s0d << "\n\n" << s2d << "\n\n" << s3d << endl;
     
     // check point
-    EXPECT_EQ(PointA[0], s0d.point_coordinates()[0]);
-    EXPECT_EQ(PointA[1], s0d.point_coordinates()[1]);
-    EXPECT_EQ(PointA[2], s0d.point_coordinates()[2]);
+    EXPECT_ARMA_EQ(PointA, s0d.point_coordinates());
 
     // set and check point
     s0d.set_simplices(pole_pp);
-    EXPECT_EQ(Point0[0], s0d.point_coordinates()[0]);
-    EXPECT_EQ(Point0[1], s0d.point_coordinates()[1]);
-    EXPECT_EQ(Point0[2], s0d.point_coordinates()[2]);
+    EXPECT_ARMA_EQ(Point0, s0d.point_coordinates());
     
     EXPECT_EQ(Point0[0],s3d.abscissa(0)[0].point_coordinates()[0]);
     EXPECT_EQ(Point0[0],s3d.abscissa(1)[0].point_coordinates()[0]);
@@ -63,13 +58,8 @@ TEST(simplex, all) {
     EXPECT_EQ(-18, pc2[4]);
     EXPECT_EQ(3, pc2[5]);
     
-    EXPECT_EQ(5, pc2.get_u_vector()[0]);
-    EXPECT_EQ(-7, pc2.get_u_vector()[1]);
-    EXPECT_EQ(3, pc2.get_u_vector()[2]);
-    
-    EXPECT_EQ(-27, pc2.get_ua_vector()[0]);
-    EXPECT_EQ(-18, pc2.get_ua_vector()[1]);
-    EXPECT_EQ(3, pc2.get_ua_vector()[2]);
+    EXPECT_ARMA_EQ(arma::vec({5,-7,3}), pc2.get_u_vector());
+    EXPECT_ARMA_EQ(arma::vec({-27,-18,3}), pc2.get_ua_vector());
     
     // clear coords
     pc3.clear();
@@ -84,6 +74,4 @@ TEST(simplex, all) {
 
     // test Plucker scalar product
     EXPECT_EQ(0,pc1*pc2);
-    
-    Profiler::uninitialize();
 }
