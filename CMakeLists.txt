@@ -481,69 +481,6 @@ message(STATUS "Armadillo_CONFIGURE_FILE = ${Armadillo_CONFIGURE_FILE}")
 message(STATUS "=======================================================\n\n")
 
 
-
-####################################################################################
-# PYTHON
-# ----------------- Part 0/3 - variables ------------------------------------------
-# where python build starts for now we use build_tree
-set(PY_BUILD_PREFIX ${CMAKE_BINARY_DIR})
-# # define varible for storing this extra module path
-# this variable is used later to update search module path
-# if PYTHON_COPY is present it points to lib/flow123d dir in build tree
-# if not, default location is src/python dir in CMake_SOURCE_DIR location
-if(PYTHON_COPY)
-    # copy python interpret files and 3rd party packages including
-    # python utils files for flow123d
-    set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
-    flow_define(PYTHON_EXTRA_MODULES_PATH ${PY_BUILD_PREFIX}/${PYTHON_EXTRA_MODULES_PATH})
-else()
-    # if python copy is not set we do nothing but export
-    # variable PYTHON_EXTRA_MODULES_PATH so python_loader can add correct path
-    set(PYTHON_EXTRA_MODULES_PATH /src/python)
-    flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
-endif()
-
-# check whether PYTHON_ROOT is set and use default value if not
-if(NOT DEFINED PYTHON_ROOT)
-    message(WARNING "PYTHON_ROOT not set! Using default configuration which may not work on this system")
-    set(PYTHON_ROOT /usr/lib/python2.7)
-endif()
-
-# set default value for PYTHON_COPY_PACKAGES if not defined
-if(NOT DEFINED PYTHON_COPY_PACKAGES)
-    set(PYTHON_COPY_PACKAGES
-        bsddb compiler ctypes curses distutils email encodings hotshot importlib 
-        json lib-dynload lib-tk lib2to3 logging multiprocessing plat-linux2
-        plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
-endif()
-
-# set default value for PYTHON_SYSPATH if not defined
-if(NOT DEFINED PYTHON_SYSPATH)
-    set(PYTHON_SYSPATH
-        plat-x86_64-linux-gnu plat-linux2 lib-tk lib-old lib-dynload
-        dist-packages site-packages)
-endif()
-
-# ----------------- Part 1/3 - PythonLibs ------------------------------------------
-# always detect PythonLibs but set flag HAVE_PYTHON conditionally to user
-# embedded python in flow123d
-include(python/PythonLibs)
-if(USE_PYTHON)
-    flow_define(HAVE_PYTHON)
-endif()
-
-# ----------------- Part 2/3 - PythonCopy ------------------------------------------
-# Copy python libs to ${PY_BUILD_PREFIX}/lib/python2.7
-if(PYTHON_COPY)
-    include(python/PythonCopy)
-endif()
-
-# ----------------- Part 3/3 - PythonScripts ----------------------------------------
-# install 3rd party packages and copy python runtest
-include(python/PythonScripts)
-
-
-
 #################################################################################
 #  YAML_CPP_FOUND - set to true if the library is found
 message(STATUS "=======================================================")
@@ -560,9 +497,46 @@ message(STATUS "YamlCpp_INCLUDE_DIR = ${YamlCpp_INCLUDE_DIR}")
 message(STATUS "=======================================================\n\n")
 
 
+####################################################################################
+# PYTHON
+message(STATUS "=======================================================")
+message(STATUS "====== PYTHON =========================================")
+message(STATUS "=======================================================")
+# # define varible for storing this extra module path
+# this variable is used later to update search module path
+# if PYTHON_COPY is present it points to lib/flow123d dir in build tree
+# if not, default location is src/python dir in CMAKE_SOURCE_DIR location
+if(PYTHON_COPY)
+    # copy python interpret files and 3rd party packages including
+    # python utils files for flow123d
+    set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
+    flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_BINARY_DIR}/${PYTHON_EXTRA_MODULES_PATH})
+else()
+    # if python copy is not set we do nothing but export
+    # variable PYTHON_EXTRA_MODULES_PATH so python_loader can add correct path
+    set(PYTHON_EXTRA_MODULES_PATH /src/python)
+    flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
+endif()
 
+if(USE_PYTHON)
+    flow_define(HAVE_PYTHON)
+endif()
 
-message(STATUS "\n ======================================================= ")
+# find python 
+find_package(PythonInterp 2.7 REQUIRED)
+find_package(PythonLibs 2.7   REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
+message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
+message(STATUS "PYTHON_VERSION_STRING = ${PYTHON_VERSION_STRING}")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PYTHONLIBS_FOUND = ${PYTHONLIBS_FOUND}")
+message(STATUS "PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
+message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "PYTHONLIBS_VERSION_STRING = ${PYTHONLIBS_VERSION_STRING}")
+message(STATUS "=======================================================\n\n")
 
 
 message(STATUS "Installing HTML documentation")
