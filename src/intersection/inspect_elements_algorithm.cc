@@ -165,7 +165,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(std::shared_ptr<BIHTre
                 // check with the last component element computed for the current 3D element
                 // intersection has not been computed already
                 if (ele_3D->dim() == 3 &&
-                    (last_slave_for_3D_elements[bulk_ele_idx] != (int)(component_ele_idx) &&
+                    (last_slave_for_3D_elements[bulk_ele_idx] != component_ele_idx &&
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
@@ -358,7 +358,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                 // check that the bounding boxes intersect
                 // intersection has not been computed already
                 if (ele_3D->dim() == 3 &&
-                    (last_slave_for_3D_elements[bulk_ele_idx] != (int)(component_ele_idx) &&
+                    (last_slave_for_3D_elements[bulk_ele_idx] != component_ele_idx &&
                      elements_bb[component_ele_idx].intersect(elements_bb[bulk_ele_idx]) &&
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ){
