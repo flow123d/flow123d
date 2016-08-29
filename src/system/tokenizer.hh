@@ -217,7 +217,10 @@ private:
     
     /// File name (for better error messages)
     std::string f_name_;
-    /// Pointer to internal stream , if tokenizer is constructed form FilePath object.
+    /**
+     * Internal stream , if tokenizer is constructed form FilePath object.
+     * Automatic destruction.
+     */
     std::ifstream *own_stream_;
     /// Input stream.
     std::istream *in_;
