@@ -437,29 +437,22 @@ message(STATUS "PETSC_LIBS = ${PETSC_LIBRARIES}")
 message(STATUS "PETSC_EXTERNAL_LIB = ${PETSC_EXTERNAL_LIB}")
 message(STATUS "=======================================================\n\n")
 
-message(STATUS "\n =======================================================")
-#################################################################################
+
+################################################################################
 #  BDDCML_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== BDDCML =========================================")
+message(STATUS "=======================================================")
+message(STATUS "BDDCML_ROOT = ${BDDCML_ROOT}")
 
-if (BDDCML_ROOT) 
-    find_package(BDDCML)
+find_package(BDDCML REQUIRED)
+flow_define(HAVE_BDDCML)
 
-    if (NOT BDDCML_FOUND)
-        set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_petsc_3.6_build)
-        include(InstallBLOPEX)
-        set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_petsc_3.6_build)
-        include(InstallBDDCML)
-
-        set(BDDCML_bddcml_config_current "NO")
-        find_package(BDDCML)
-    endif()
-    
-    if (BDDCML_FOUND)
-        flow_define(HAVE_BDDCML)
-    endif()
-else()
-    # set(BDDCML_LIBRARIES "")
-endif()    
+message(STATUS "-------------------------------------------------------")
+message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
+message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
+message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
+message(STATUS "=======================================================\n\n") 
 
 
 #################################################################################
