@@ -167,9 +167,17 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     ;
 
+    // first positional argument interpreted as the main input file
+    po::positional_options_description pos_options;
+    pos_options.add("solve", 1);
+
     // parse the command line
     po::variables_map vm;
-    po::parsed_options parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).allow_unregistered().run();
+    auto parser = po::basic_command_line_parser<char>(argc, argv)
+            .options(desc)
+            .positional(pos_options)
+            .allow_unregistered();
+    po::parsed_options parsed = parser.run();
     po::store(parsed, vm);
     po::notify(vm);
 
