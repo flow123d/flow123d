@@ -614,26 +614,18 @@ include(python/PythonScripts)
 
 #################################################################################
 #  YAML_CPP_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== YAML-CPP =======================================")
+message(STATUS "=======================================================")
+message(STATUS "YamlCpp_ROOT_HINT = ${YamlCpp_ROOT_HINT}")
 
-message(STATUS "\n =======================================================")
-find_package(YamlCpp)
-if (NOT YamlCpp_FOUND)
-    message(STATUS "Try to install our own yaml-cpp library.")
-    set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
-    include(InstallYamlCpp)
+find_package(YamlCpp REQUIRED)
 
-    unset(YamlCpp_FOUND CACHE) 
-    unset(YamlCpp_INCLUDE_DIR CACHE)        # overwrite cache    
-    unset(YamlCpp_LIBRARY CACHE)
-
-    set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
-    find_package(YamlCpp REQUIRED)
-    
-    message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
-endif()
-
-message(STATUS "YamlCpp_LIBRARY: ${YamlCpp_LIBRARY}")
-message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "YamlCpp_FOUND = ${YamlCpp_FOUND}")
+message(STATUS "YamlCpp_LIBRARY = ${YamlCpp_LIBRARY}")
+message(STATUS "YamlCpp_INCLUDE_DIR = ${YamlCpp_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
 
 
 

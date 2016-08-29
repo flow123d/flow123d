@@ -19,7 +19,7 @@
 #endif()
 
 # find the yaml-cpp include directory
-find_path(YamlCpp_INCLUDE_DIR yaml-cpp/yaml.h
+find_path(YamlCpp_INCLUDE_DIR yaml.h
           PATH_SUFFIXES include
           HINTS 
               ${YamlCpp_ROOT_HINT}/include/
