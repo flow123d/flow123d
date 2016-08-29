@@ -458,41 +458,27 @@ message(STATUS "=======================================================\n\n")
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
 #  Armadillo_INCLUDE_DIRS - list of required include directories
-#  Armadillo_LIBRARIES - list of libraries to be linked 
+#  Armadillo_LIBRARIES - list of libraries to be linked
 #  Armadillo_CONFIGURE_CMAKE - path to configure cmake script that introduce target 'armadillo'
 #                              with correctly set dependencies on other libraries
+message(STATUS "=======================================================")
+message(STATUS "====== ARMADILLO ======================================")
+message(STATUS "=======================================================")
+message(STATUS "Armadillo_ROOT_HINT = ${Armadillo_HINT_LIB}, ${Armadillo_HINT_INC}, ${Armadillo_HINT_CONF}")
 
-message(STATUS "\n =======================================================")
-find_package(ArmadilloFlow 3.2.4)
-if (NOT Armadillo_FOUND)
-  message(STATUS "Try to install our own Armadillo.")
-  set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
-  include(InstallArmadillo)
-
-  # we try to erease from the cache everything that can cause failure of the second find_package
-  # however just unsetting Boost_INCLUDE_DIR should be enough
-  unset(Armadillo_FOUND CACHE) 
-  unset(Armadillo_INCLUDE_DIR CACHE)        # overwrite cache    
-  unset(Armadillo_LIBRARY_DIRS CACHE)
-  unset(Armadillo_CONFIGURE_FILE CACHE)
-
-  set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
-  find_package(ArmadilloFlow 3.2.4 REQUIRED)
-
-endif()
-
-
-message(STATUS "Armadillo_LIBRARIES: ${Armadillo_LIBRARIES}")
-message(STATUS "Armadillo_INCLUDE_DIRS: ${Armadillo_INCLUDE_DIRS}")
-message(STATUS "Armadillo_CONFIGURE_FILE: ${Armadillo_CONFIGURE_FILE}")
+find_package(ArmadilloFlow 3.2.4 REQUIRED)
 include("${Armadillo_CONFIGURE_FILE}")   # this introduce target "armadillo" with correct dependencies
-IF (PETSC_FOUND)
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
     # this may be fragile because of _NOCONFIG
-    set_target_properties(armadillo PROPERTIES 
-      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}"
-      ) 
-endif()
+set_target_properties(armadillo PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}")
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Armadillo_FOUND = ${Armadillo_FOUND}")
+message(STATUS "Armadillo_LIBRARIES = ${Armadillo_LIBRARIES}")
+message(STATUS "Armadillo_INCLUDE_DIRS = ${Armadillo_INCLUDE_DIRS}")
+message(STATUS "Armadillo_CONFIGURE_FILE = ${Armadillo_CONFIGURE_FILE}")
+message(STATUS "=======================================================\n\n")
 
 
 
