@@ -102,6 +102,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
 TEST(intersections_12d, all) {
  
     // directory with testing meshes
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_12d/";
     std::vector<string> filenames;
     
@@ -118,7 +119,6 @@ TEST(intersections_12d, all) {
         for(unsigned int p=0; p<np; p++)
         {
             xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
-            FilePath::set_io_dirs(".","","",".");
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
             Mesh mesh;

@@ -74,6 +74,7 @@ void compute_intersection_area_23d(Mesh *mesh)
 
 TEST(area_intersections, all) {
     // directory with testing meshes
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d/";
     std::vector<string> filenames;
     
@@ -86,7 +87,6 @@ TEST(area_intersections, all) {
         for(unsigned int p=0; p<np; p++)
         {
             xprintf(Msg,"Computing intersection on mesh: %s\n",fname.c_str());
-            FilePath::set_io_dirs(".","","",".");
             FilePath mesh_file(dir_name + fname, FilePath::input_file);
             
             Mesh mesh;

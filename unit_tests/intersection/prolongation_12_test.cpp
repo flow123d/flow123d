@@ -109,6 +109,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 
 TEST(intersection_prolongation_12d, all) {
 //     // directory with testing meshes
+    FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_12d/";
     std::vector<string> filenames;
     
@@ -121,7 +122,6 @@ TEST(intersection_prolongation_12d, all) {
     for(unsigned int s=0; s<filenames.size(); s++)
     {
         xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
-        FilePath::set_io_dirs(".","","",".");
         FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
         Mesh mesh;

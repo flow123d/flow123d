@@ -3,6 +3,7 @@
 
 #include <dirent.h>
 
+#include "system/file_path.hh"
 #include "system/system.hh"
 #include "mesh/mesh_types.hh"
 #include "mesh/nodes.hh"
@@ -51,6 +52,7 @@ void read_files_form_dir(const string &dir_name,
                          std::vector<string> &filenames,
                          bool sort_filenames = true)
 {
+    cout << dir_name <<endl;
     // read mesh file names
     DIR *dir;
     struct dirent *ent;

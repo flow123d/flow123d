@@ -97,8 +97,9 @@ void compute_intersection(Mesh *mesh)
 TEST(intersection_prolongation_23d, all) {
     
 //     // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/";
-    string filename = "test1_incomp_coherence.msh";
+    FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
+    string dir_name = "intersection/";
+    string filename = dir_name + "test1_incomp_coherence.msh";
 //     std::vector<string> filenames;
 //     
 //     // read mesh file names
@@ -133,8 +134,7 @@ TEST(intersection_prolongation_23d, all) {
 
     
     xprintf(Msg,"Computing intersection on mesh: %s\n",filename.c_str());
-    FilePath::set_io_dirs(".","","",".");
-    FilePath mesh_file(dir_name + filename, FilePath::input_file);
+    FilePath mesh_file(filename, FilePath::input_file);
     
     Mesh mesh;
     // read mesh with gmshreader
