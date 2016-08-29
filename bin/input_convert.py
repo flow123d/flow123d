@@ -23,6 +23,14 @@ importer_dir = os.path.join(os.path.split(
 sys.path.insert(1, importer_dir)
 
 import importer
+import re
+
+def file_copy(f_in_name, f_out_name):
+    # simple file copy
+    with open(f_in_name, "r") as f_in:
+        with open(f_out_name, "w") as f_out:
+            for line in f_in:
+                f_out.write(line)
 
 
 def convert_file(in_file):
@@ -44,12 +52,7 @@ def convert_file(in_file):
             if not os.path.exists(save_name) :
                 break
             N+=1
-        
-        # simple file copy
-        with open(in_file, "r") as f_in:
-            with open(save_name, "w") as f_out:
-                for line in f_in:
-                    f_out.write(line)
+        file_copy(in_file, save_name)
                     
         yaml_file = save_name            
     else:
@@ -63,8 +66,26 @@ def convert_file(in_file):
     transform_name="from_"+input_version+"_to_"+output_version;                
     
     importer.do_transform(con_file, yaml_file, dest_file, [ transform_name ])
+
     
-    
+    if ext == ".yaml":
+        dest_file_orig = dest_file + ".orig"
+        file_copy(dest_file, dest_file_orig)
+        re_output_specific = re.compile(' *output_specific:')
+        re_boundary = re.compile('\.\.BOUNDARY')
+        # fix multiplicative transformation
+        last_line=None
+        with open(dest_file_orig, "r") as f_in:
+            with open(dest_file, "w") as f_out:
+                for line in f_in:
+                    if last_line == line and re_output_specific.match(line) :
+                        continue # skip duplicate line
+                    line = re_boundary.sub(".BOUNDARY", line)
+                    last_line = line
+                    f_out.write(line)
+        os.remove(dest_file_orig)
+                    
+                    
 for in_file in sys.argv[1:] :
     convert_file(in_file)
     

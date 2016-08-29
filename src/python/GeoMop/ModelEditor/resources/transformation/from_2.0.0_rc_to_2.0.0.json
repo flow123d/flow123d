@@ -14,6 +14,15 @@
       }
     },
     {
+      "NAME": "Change version.",
+      "action": "change-value",
+      "parameters":{
+          "path" : "/flow123d_version",
+          "old_value" : "1.8.9",
+          "new_value" : "2.0.0"
+      }
+    },
+    {
       "NAME": "Make output-specific key.",
       "action": "add-key",
       "parameters": {

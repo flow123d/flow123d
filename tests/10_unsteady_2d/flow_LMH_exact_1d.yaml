@@ -14,7 +14,7 @@
 # 0.3      0.6907                               -0.5424
 # 0.6      0.4770                               -0.3746
 # 1        0.2912                               -0.2287
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
