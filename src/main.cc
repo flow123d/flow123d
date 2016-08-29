@@ -161,7 +161,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_log", "Turn off logging.")
         ("no_signal_handler", "Turn off signal handling. Useful for debugging with valgrind.")
         ("no_profiler", "Turn off profiler output.")
-        ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
+        ("input_format", po::value< string >(), "Writes full structure of the main input file into given file.")
 		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
 		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");
 
@@ -200,20 +200,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     	exit( exit_output );
     }
 
-    // if there is "full_doc" option
-    /*if (vm.count("full_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputText type_output(&get_input_type());
-        type_output.set_filter(":Field:.*");
-        cout << type_output;
-        exit( exit_output );
-    }*/
-
-    // if there is "JSON_machine" option
-    if (vm.count("JSON_machine")) {
+    // if there is "input_format" option
+    if (vm.count("input_format")) {
         // write ist to json file
         ofstream json_stream;
-        FilePath(vm["JSON_machine"].as<string>(), FilePath::output_file).open_stream(json_stream);
+        FilePath(vm["input_format"].as<string>(), FilePath::output_file).open_stream(json_stream);
         // create the root Record
         it::Record root_type = get_input_type();
         Input::Type::TypeBase::lazy_finish();
