@@ -144,7 +144,6 @@ Input::Record Application::read_input() {
 
 
 
-
 void Application::parse_cmd_line(const int argc, char ** argv) {
 	namespace po = boost::program_options;
 
@@ -167,15 +166,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     ;
 
-    // first positional argument interpreted as the main input file
-    po::positional_options_description pos_options;
-    pos_options.add("solve", 1);
+    // Can not use positional arguments together with PETSC options.
+    // Use our own solution trying to use the first unrecognized option as the main input file.
 
     // parse the command line
     po::variables_map vm;
     auto parser = po::basic_command_line_parser<char>(argc, argv)
             .options(desc)
-            .positional(pos_options)
             .allow_unregistered();
     po::parsed_options parsed = parser.run();
     po::store(parsed, vm);
@@ -183,6 +180,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // get unknown options
     vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
+
+
     /*
     passed_argc_ = to_pass_further.size();
     passed_argv_ = new char * [passed_argc_+1];
@@ -199,6 +198,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // if there is "help" option
     if (vm.count("help")) {
+        display_version();
+        cout << endl;
+        cout << "Usage:" << endl;
+        cout << "   flow123d -s <main_input>.yaml <other options> <PETSC options>" << endl;
+        cout << "   flow123d <main_input>.yaml <other options> <PETSC options>" << endl;
         cout << desc << "\n";
         exit( exit_output );
     }
@@ -230,10 +234,24 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // if there is "solve" option
-    string input_filename = ".";
+    string input_filename = "";
+
+    // check for positional main input file
+    if (to_pass_further.size()) {
+        string file_candidate = to_pass_further[0];
+        if (file_candidate[0] != '-') {
+            // pop the first option
+            input_filename = file_candidate;
+            to_pass_further.erase(to_pass_further.begin());
+        }
+    }
+
     if (vm.count("solve")) {
         input_filename = vm["solve"].as<string>();
     }
+
+    if (input_filename == "")
+        THROW(ExcMessage() << EI_Message("Main input file not specified (option -s)."));
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;

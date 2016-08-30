@@ -141,7 +141,11 @@ string FilePath::set_dirs_from_input(const string main_yaml, const string input,
     } else {
     	input_path = boost::filesystem::path(main_yaml);
     }
+    if (! boost::filesystem::exists(input_path))
+        THROW(ExcFileOpen() << EI_Path(input_path.string()));
+
 	FilePath::set_dirs(input_path.parent_path().string(), input, output);
+
 
     return input_path.filename().string();
 }
@@ -201,6 +205,8 @@ string FilePath::cut_extension() const {
 	return path.string();
 }
 
+
+
 template <class Stream>
 void FilePath::open_stream(Stream &stream) const
 {
@@ -216,6 +222,15 @@ void FilePath::open_stream(Stream &stream) const
         THROW(ExcFileOpen() << EI_Path(abs_file_path_->string()));
 
 }
+
+
+
+bool FilePath::exists() const
+{
+    return boost::filesystem::exists( *(this->abs_file_path_) );
+}
+
+
 
 template void FilePath::open_stream(ifstream &stream) const;
 template void FilePath::open_stream(ofstream &stream) const;

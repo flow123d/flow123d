@@ -5,6 +5,7 @@ problem: !Coupling_Sequential
     mesh_file: ./input/channel_unstructured.msh
   flow_equation: !Flow_Richards_LMH
     output_specific:
+      raw_flow_output: ./raw_output.txt
     input_fields:
       - region: ALL
         storativity: 1.0
