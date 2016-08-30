@@ -72,7 +72,7 @@ void GmshMeshReader::read_mesh(Mesh* mesh) {
 
 void GmshMeshReader::read_nodes(Mesh* mesh) {
     using namespace boost;
-    xprintf(Msg, "- Reading nodes...");
+    MessageOut() << "- Reading nodes...";
 
     if (! tok_.skip_to("$Nodes")) THROW(ExcMissingSection() << EI_Section("$Nodes") << EI_GMSHFile(tok_.f_name()) );
     try {
@@ -97,14 +97,14 @@ void GmshMeshReader::read_nodes(Mesh* mesh) {
     } catch (bad_lexical_cast &) {
     	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
     }
-    xprintf(Msg, " %d nodes read. \n", mesh->node_vector.size());
+    MessageOut().fmt("... {} nodes read. \n", mesh->node_vector.size());
 }
 
 
 
 void GmshMeshReader::read_elements(Mesh * mesh) {
     using namespace boost;
-    xprintf(Msg, "- Reading elements...");
+    MessageOut() << "- Reading elements...";
 
     if (! tok_.skip_to("$Elements")) THROW(ExcMissingSection() << EI_Section("$Elements") << EI_GMSHFile(tok_.f_name()) );
     try {
@@ -174,7 +174,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
                 ele = mesh->bc_elements.add_item(id);
             } else {
                 if(dim == 0 )
-                    xprintf(Warn, "Bulk elements of zero size(dim=0) are not supported. Mesh file: %s, Element ID: %d.\n", tok_.f_name().c_str() ,id);
+                	WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Mesh file: {}, Element ID: {}.\n", tok_.f_name() ,id);
                 else
                     ele = mesh->element.add_item(id);
             }
@@ -198,7 +198,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     }
 
     mesh->n_all_input_elements_=mesh->element.size() + mesh->bc_elements.size();
-    xprintf(Msg, " %d bulk elements, %d boundary elements. \n", mesh->element.size(), mesh->bc_elements.size());
+    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->element.size(), mesh->bc_elements.size());
 }
 
 
@@ -305,8 +305,8 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 
 	    // check that the header is valid, try to correct
 	    if (actual_header.n_entities != search_header.n_entities) {
-	        xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of entities: %d, using %d instead.\n",
-	                tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, actual_header.n_entities, search_header.n_entities);
+	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
+	                tok_.f_name(), search_header.field_name, actual_header.time, actual_header.n_entities, search_header.n_entities);
 	        // actual_header.n_entities=search_header.n_entities;
 	    }
 
@@ -319,8 +319,8 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    	// read for Field if more values is stored to one vector
 	    	size_of_cache = 1;
 	    	if (actual_header.n_components != search_header.n_components) {
-		        xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of components: %d, using %d instead.\n",
-		                tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, actual_header.n_components, search_header.n_components);
+	    		WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
+		                tok_.f_name(), search_header.field_name, actual_header.time, actual_header.n_components, search_header.n_components);
 		        actual_header.n_components=search_header.n_components;
 	    	}
 	    }
@@ -347,8 +347,8 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	                ++id_iter; // skip initialization of some rows in data if ID is missing
 	            }
 	            if (id_iter == el_ids.end()) {
-	                xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is not in order. Skipping rest of data.\n",
-	                        tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, id);
+	            	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
+	                        tok_.f_name(), search_header.field_name, actual_header.time, id);
 	                break;
 	            }
 	            // save data from the line if ID was found
@@ -371,8 +371,8 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    // possibly skip remaining lines after break
 	    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
 
-    xprintf(MsgLog, "time: %f; %d entities of field %s read.\n",
-	    		actual_header.time, n_read, actual_header.field_name.c_str());
+	    LogOut().fmt("time: {}; {} entities of field {} read.\n",
+	    		actual_header.time, n_read, actual_header.field_name);
 
 	    search_header.actual = true; // use input header to indicate modification of @p data buffer
 
@@ -401,9 +401,8 @@ void GmshMeshReader::make_header_table()
             	vec.push_back(header);
             	header_table_[header.field_name]=vec;
             } else if ( header.time <= it->second.back().time ) { // time is in wrong order. can't be add
-            	xprintf(Warn,
-            		"Wrong time order: field '%s', time '%d', file '%s'. Skipping this '$ElementData' section.\n",
-            		header.field_name.c_str(), header.time, tok_.f_name().c_str() );
+            	WarningOut().fmt("Wrong time order: field '{}', time '{}', file '{}'. Skipping this '$ElementData' section.\n",
+            		header.field_name, header.time, tok_.f_name() );
             } else {  // add new time step
             	it->second.push_back(header);
             }

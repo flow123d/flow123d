@@ -78,8 +78,8 @@ it::Record & Application::get_input_type() {
 Application::Application( int argc,  char ** argv)
 : ApplicationBase(argc, argv),
   main_input_filename_(""),
-  passed_argc_(0),
-  passed_argv_(0),
+  //passed_argc_(0),
+  //passed_argv_(0),
   use_profiler(true),
   yaml_balance_output_(false)
 {
@@ -112,14 +112,10 @@ void Application::display_version() {
             + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n",
-            rev_num_data.version.c_str(),
-            rev_num_data.revision.c_str());
-    xprintf(Msg,
-    	 "Branch: %s\n"
-		 "Build: %s\n"
-		 "Fetch URL: %s\n",
-		 rev_num_data.branch.c_str(), build.c_str() , rev_num_data.url.c_str() );
+    MessageOut().fmt("This is Flow123d, version {} revision: {}\n",
+            rev_num_data.version, rev_num_data.revision);
+    MessageOut().fmt("Branch: {}\nBuild: {}\nFetch URL: {}\n",
+		 rev_num_data.branch, build, rev_num_data.url );
     Profiler::instance()->set_program_info("Flow123d",
             rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 }
@@ -179,6 +175,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // get unknown options
     vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
+    /*
     passed_argc_ = to_pass_further.size();
     passed_argv_ = new char * [passed_argc_+1];
 
@@ -190,6 +187,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         passed_argv_[arg_i++] = xstrcpy( to_pass_further[i].c_str() );
     }
     passed_argc_ = arg_i;
+    */
 
     // if there is "help" option
     if (vm.count("help")) {
@@ -214,18 +212,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "JSON_machine" option
     if (vm.count("JSON_machine")) {
         // write ist to json file
-        string json_filename = vm["JSON_machine"].as<string>();
-        ofstream json_stream(json_filename);
-        // check open operation
-        if (json_stream.fail()) {
-    		cerr << "Failed to open file '" << json_filename << "'" << endl;
-        } else {
-            // create the root Record
-            it::Record root_type = get_input_type();
-            Input::Type::TypeBase::lazy_finish();
-            json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
-            json_stream.close();
-        }
+        ofstream json_stream;
+        FilePath(vm["JSON_machine"].as<string>(), FilePath::output_file).open_stream(json_stream);
+        // create the root Record
+        it::Record root_type = get_input_type();
+        Input::Type::TypeBase::lazy_finish();
+        json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
+        json_stream.close();
         exit( exit_output );
     }
 
@@ -259,7 +252,12 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // assumes working directory "."
-    main_input_filename_ = FilePath::set_dirs_from_input(input_filename, input_dir, output_dir );
+    try {
+        main_input_filename_ = FilePath::set_dirs_from_input(input_filename, input_dir, output_dir );
+    } catch (FilePath::ExcMkdirFail &e) {
+        use_profiler = false; // avoid profiler output
+        throw e;
+    }
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();
@@ -313,8 +311,8 @@ void Application::run() {
         }
 
         if ( iver_fields[0] != ver_fields[0] || iver_fields[1] > ver_fields[1] ) {
-            xprintf(Warn, "Input file with version: '%s' is no compatible with the program version: '%s' \n",
-                    input_version.c_str(), version.c_str());
+        	WarningOut().fmt("Input file with version: '{}' is no compatible with the program version: '{}' \n",
+                    input_version, version);
         }
 
         // should flow123d wait for pressing "Enter", when simulation is completed

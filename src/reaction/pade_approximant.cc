@@ -54,12 +54,11 @@ const int PadeApproximant::registrar =
 
 PadeApproximant::PadeApproximant(Input::Record in_rec)
 {
-    //DBGMSG("PadeApproximant constructor.\n");
     nominator_degree_ = in_rec.val<int>("pade_nominator_degree");
     denominator_degree_ = in_rec.val<int>("pade_denominator_degree");
     if (nominator_degree_+1 != denominator_degree_ &&
         nominator_degree_+2 != denominator_degree_)
-      xprintf(Warn, "Pade approximation can be unstable since (denominator_degree-nominator_degree) is not 1 or 2.\n");
+    	WarningOut() << "Pade approximation can be unstable since (denominator_degree-nominator_degree) is not 1 or 2.\n";
 }
 
 PadeApproximant::PadeApproximant(unsigned int nominator_degree, unsigned int denominator_degree)

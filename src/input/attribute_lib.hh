@@ -70,7 +70,7 @@ public:
 	 * Format of value: bool
 	 */
 	inline static string obsolete()
-	{ return "_obsolete"; }
+	{ return "obsolete"; }
 
 };
 

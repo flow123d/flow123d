@@ -72,7 +72,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             "Type of boundary condition.")
             .units( UnitSI::dimensionless() )
             .input_default("\"inflow\"")
-            .input_selection( &get_bc_type_selection() )
+            .input_selection( get_bc_type_selection() )
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=bc_dirichlet_value
             .name("bc_conc")
@@ -176,13 +176,14 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vec
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
-	vector<double> elem_csec(point_list.size()), por_m(point_list.size());
+	vector<double> elem_csec(point_list.size()), wc(point_list.size()); //por_m(point_list.size()),
 
 	data().cross_section.value_list(point_list, ele_acc, elem_csec);
-	data().porosity.value_list(point_list, ele_acc, por_m);
+	//data().porosity.value_list(point_list, ele_acc, por_m);
+	data().water_content.value_list(point_list, ele_acc, wc);
 
 	for (unsigned int i=0; i<point_list.size(); i++)
-		mm_coef[i] = elem_csec[i]*por_m[i];
+		mm_coef[i] = elem_csec[i]*wc[i];
 }
 
 
@@ -201,6 +202,7 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const std::vec
 	data().rock_density.value_list(point_list, ele_acc, rho_s);
 	data().sorption_mult.value_list(point_list, ele_acc, sorp_mult);
 
+	// Note: Noe effective water content here, since sorption happen only in the rock (1-porosity).
 	for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
 	{
 		for (unsigned int i=0; i<point_list.size(); i++)
@@ -212,20 +214,37 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const std::vec
 
 
 void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
-		double Dm, double alphaL, double alphaT, double porosity, double cross_cut, arma::mat33 &K)
+		double Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut, arma::mat33 &K)
 {
     double vnorm = arma::norm(velocity, 2);
 
-	if (fabs(vnorm) > 0)
-		for (int i=0; i<3; i++)
-			for (int j=0; j<3; j++)
-				K(i,j) = (velocity[i]/vnorm)*(velocity[j]/vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
-	else
-		K.zeros();
 
-	// Note that the velocity vector is in fact the Darcian flux,
-	// so to obtain |v| we have to divide vnorm by porosity and cross_section.
-	K = (vnorm*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3));
+	// used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
+	// for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
+	double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
+
+    // Note that the velocity vector is in fact the Darcian flux,
+    // so we need not to multiply vnorm by water_content and cross_section.
+	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
+
+    if (fabs(vnorm) > 0) {
+        /*
+        for (int i=0; i<3; i++)
+            for (int j=0; j<3; j++)
+               K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
+        */
+        K = ((alphaL - alphaT) / vnorm) * arma::kron(velocity.t(), velocity);
+
+        //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
+        //double diff = arma::min( arma::min(abs_diff_mat) );
+        //ASSERT(  diff < 1e-12 )(diff)(K)(kk);
+    } else
+        K.zeros();
+
+   // Note that the velocity vector is in fact the Darcian flux,
+   // so to obtain |v| we have to divide vnorm by porosity and cross_section.
+   K += (alphaT * vnorm + Dm*tortuosity*cross_cut*water_content)*arma::eye(3,3);
+
 }
 
 
@@ -240,19 +259,20 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	const unsigned int qsize = point_list.size();
 	const unsigned int n_subst = dif_coef.size();
 	std::vector<arma::vec> Dm(qsize, arma::vec(n_subst) ), alphaL(qsize, arma::vec(n_subst) ), alphaT(qsize, arma::vec(n_subst) );
-	std::vector<double> por_m(qsize), csection(qsize);
+	std::vector<double> por_m(qsize), csection(qsize), wc(qsize);
 
 	data().diff_m.value_list(point_list, ele_acc, Dm);
 	data().disp_l.value_list(point_list, ele_acc, alphaL);
 	data().disp_t.value_list(point_list, ele_acc, alphaT);
 	data().porosity.value_list(point_list, ele_acc, por_m);
+	data().water_content.value_list(point_list, ele_acc, wc);
 	data().cross_section.value_list(point_list, ele_acc, csection);
 
 	for (unsigned int i=0; i<qsize; i++) {
 		for (unsigned int sbi=0; sbi<n_subst; sbi++) {
 			ad_coef[sbi][i] = velocity[i];
 			calculate_dispersivity_tensor(velocity[i],
-					Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i],
+					Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], wc[i], por_m[i], csection[i],
 					dif_coef[sbi][i]);
 		}
 	}

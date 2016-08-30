@@ -347,7 +347,7 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	EXPECT_STREQ( it->second.c_str(), "\"0.5\"" );
 	//EXPECT_TRUE( (it=attributes_->find("parameters")) != attributes_->end() );
 	//EXPECT_STREQ( it->second.c_str(), "[\"a\", \"b\", \"c\"]" );
-	EXPECT_TRUE( (it=attributes_->find("_obsolete")) != attributes_->end() );
+	EXPECT_TRUE( (it=attributes_->find("obsolete")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"true\"" );
 
 	this->add_attribute_("numeric", "\"5\"");

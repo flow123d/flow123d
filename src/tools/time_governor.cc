@@ -371,7 +371,6 @@ double TimeGovernor::estimate_dt() const {
     // this always selects shorter time step,
     // but allows time step larger then constraint by a number close to machine epsilon
     //
-    //DBGMSG("%g %g %g\n",full_step , step_estimate, full_step / step_estimate);
     double n_steps = ceil( full_step / step_estimate - time_step_precision);
     step_estimate = full_step / n_steps;
     
@@ -382,9 +381,12 @@ double TimeGovernor::estimate_dt() const {
     
     // if the step estimate gets by rounding lower than lower constraint program will not crash
     // will just output a user warning.
-    if (step_estimate < lower_constraint_)
-        xprintf(Warn, "Time step estimate is below the lower constraint of time step. The difference is: %.16f.\n", 
+    if (step_estimate < lower_constraint_) {
+    	static char buffer[1024];
+    	sprintf(buffer, "Time step estimate is below the lower constraint of time step. The difference is: %.16f.\n",
                 lower_constraint_ - step_estimate);
+    	WarningOut() << buffer;
+    }
     
     return step_estimate;
 }
@@ -424,9 +426,9 @@ void TimeGovernor::next_time()
         // this is done if end_of_fixed_dt_interval is not set (means it is equal to -infinity)
         double dt=estimate_dt();
         TimeStep step_ = recent_steps_.front().make_next(dt);
-        //DBGMSG("step: %f, end: %f\n", step_.length(), step_.end());
+        //DebugOut().fmt("step: {}, end: {}\n", step_.length(), step_.end());
         recent_steps_.push_front(step_);
-        //DBGMSG("last:%f, new: %f\n",step(-1).length(),step().length());
+        //DebugOut().fmt("last: {}, new: {}\n",step(-1).length(),step().length());
         time_step_changed_= (step(-2).length() != step().length());
     }
 
@@ -445,9 +447,9 @@ double TimeGovernor::reduce_timestep(double factor) {
     double new_upper_constraint = factor * dt();
 
     // Revert time.
-//    DBGMSG("tg idx: %d\n", recent_steps_.front().index());
+//    DebugOut().fmt("tg idx: {}\n", recent_steps_.front().index());
     recent_steps_.pop_front();
-//    DBGMSG("tg idx: %d\n", recent_steps_.back().index());
+//    DebugOut().fmt("tg idx: {}\n", recent_steps_.back().index());
     upper_constraint_ = last_upper_constraint_;
     lower_constraint_ = last_lower_constraint_;
 
@@ -483,14 +485,16 @@ const TimeStep &TimeGovernor::step(int index) const {
 
 void TimeGovernor::view(const char *name) const
 {
-    xprintf(Msg, "\nTG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>",
-            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
+	static char buffer[1024];
 #ifdef FLOW123D_DEBUG_MESSAGES
-    xprintf(Msg, "    end_time: %f end_fixed_time: %f type: 0x%x\n" , end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
+	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>    end_time: %f end_fixed_time: %f type: 0x%x\n",
+	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_, end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
 #else
-    xprintf(Msg,"\n");
+	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
+	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
 #endif
-    xprintf(Msg, "Lower time step constraint [%f]: %s \nUpper time step constraint [%f]: %s \n",
+	MessageOut() << buffer;
+    MessageOut().fmt("Lower time step constraint [{}]: {} \nUpper time step constraint [{}]: {} \n",
             lower_constraint_, lower_constraint_message_.c_str(), 
             upper_constraint_, upper_constraint_message_.c_str() );
 }

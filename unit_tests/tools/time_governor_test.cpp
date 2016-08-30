@@ -333,7 +333,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     //cout << "Estimated time (t+dt): " << tm_tg->estimate_time() << endl;
     //fixing time_step until next fixed mark_type (in time 5.0)
     tm_tg->fix_dt_until_mark();
-    //xprintf(MsgDbg, "Dt fixed. Estimated time (t+dt): %f", tm_tg->estimate_time() );
+    //DebugOut().fmt("Dt fixed. Estimated time (t+dt): {}", tm_tg->estimate_time() );
     
     //-----------------testing TimeGovernor's time stepping
     tm_tg->next_time();

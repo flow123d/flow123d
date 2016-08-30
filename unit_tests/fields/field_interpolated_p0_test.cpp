@@ -62,11 +62,6 @@ string input = R"CODE(
        gmsh_file="fields/simplest_cube_3d.msh",
        field_name="vector_fixed"
    },
-   vector={
-       TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
-       field_name="vector_fixed"
-   },
    tensor_fixed={
        TYPE="FieldInterpolatedP0",
        gmsh_file="fields/simplest_cube_3d.msh",
@@ -120,9 +115,7 @@ public:
     typedef FieldInterpolatedP0<3, FieldValue<3>::Scalar > ScalarField;
     typedef FieldInterpolatedP0<3, FieldValue<3>::Enum > EnumField;
     typedef FieldInterpolatedP0<3, FieldValue<3>::VectorFixed > VecFixField;
-    //typedef FieldInterpolatedP0<3, FieldValue<3>::Vector > VecField;
     typedef FieldInterpolatedP0<3, FieldValue<3>::TensorFixed > TensorField;
-    //typedef FieldInterpolatedP0<3, FieldValue<3>::EnumVector > EnumVector;
 
     virtual void SetUp() {
         // setup FilePath directories
@@ -139,7 +132,6 @@ public:
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("scalar_large", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            //.declare_key("vector", VecField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 

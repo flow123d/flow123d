@@ -98,9 +98,8 @@ int OutputVTK::write_data(void)
 
     if (! this->_base_file.is_open()) {
         this->fix_main_file_extension(".pvd");
+        this->_base_filename.open_stream( this->_base_file );
 
-        this->_base_file.open(string(this->_base_filename).c_str());
-        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
         LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
 
         this->make_subdirectory();
@@ -114,39 +113,33 @@ int OutputVTK::write_data(void)
 
 
     std::string frame_file_name = ss.str();
-    std::string frame_file_path = main_output_dir_ + "/" + main_output_basename_ + "/" + frame_file_name;
+    FilePath frame_file_path({main_output_dir_, main_output_basename_, frame_file_name}, FilePath::output_file);
 
-    _data_file.open(frame_file_path);
-    if(_data_file.is_open() == false) {
-        xprintf(Err, "Could not write output to the file: %s\n", frame_file_path.c_str());
-        return 0;
-    } else {
-        /* Set up data file */
+    /* Set up data file */
+    frame_file_path.open_stream(_data_file);
 
-    	LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
+    LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
+    /* Set floating point precision to max */
+    this->_base_file.precision(std::numeric_limits<double>::digits10);
 
-        /* Set floating point precision to max */
-        this->_base_file.precision(std::numeric_limits<double>::digits10);
+    /* Strip out relative path and add "base/" string */
+    std::string relative_frame_file = main_output_basename_ + "/" + frame_file_name;
+    this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
+            << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
 
-        /* Strip out relative path and add "base/" string */
-        std::string relative_frame_file = main_output_basename_ + "/" + frame_file_name;
-        this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
-                << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
+    LogOut() << "O.K.";
 
-        LogOut() << "O.K.";
+    LogOut() << __func__ << ": Writing output (frame " << this->current_step << ") file " << relative_frame_file << " ... ";
 
-        LogOut() << __func__ << ": Writing output (frame " << this->current_step << ") file " << relative_frame_file << " ... ";
+    this->write_vtk_vtu();
 
-        this->write_vtk_vtu();
+    /* Close stream for file of current frame */
+    _data_file.close();
+    //delete data_file;
+    //this->_data_file = NULL;
 
-        /* Close stream for file of current frame */
-        _data_file.close();
-        //delete data_file;
-        //this->_data_file = NULL;
-
-        LogOut() << "O.K.";
-    }
+    LogOut() << "O.K.";
 
     return 1;
 }

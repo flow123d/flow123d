@@ -266,7 +266,7 @@ void Timer::add_child(int child_index, const Timer &child)
         ASSERT(i!=idx)(tag()).error("Too many children of the timer");
         idx=i;
     }
-    //DBGMSG("Adding child %d at index: %d\n", child_index, idx);
+    //DebugOut().fmt("Adding child {} at index: {}\n", child_index, idx);
     child_timers[idx] = child_index;
 }
 
@@ -348,10 +348,10 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 int  Profiler::start_timer(const CodePoint &cp) {
     unsigned int parent_node = actual_node;
-    //DBGMSG("Start timer: %s\n", cp.tag_);
+    //DebugOut().fmt("Start timer: {}\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
-        //DBGMSG("Adding timer: %s\n", cp.tag_);
+        //DebugOut().fmt("Adding timer: {}\n", cp.tag_);
         // tag not present - create new timer
         child_idx=timers_.size();
         timers_.push_back( Timer(cp, actual_node) );
