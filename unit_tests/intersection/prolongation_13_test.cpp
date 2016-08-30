@@ -9,7 +9,7 @@
 
 #include <armadillo>
 
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -129,20 +129,17 @@ bool compare_is13(const computeintersection::IntersectionLocal<1,3>& a,
 void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il, const double &length)
 {
     double computed_length = 0;
-
-    // compute intersection
-    DBGMSG("Computing intersection length by NEW algorithm\n");
     
     InspectElements ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d13);
     ie.print_mesh_to_file_13("output_intersection_13");
     
-    DBGMSG("N intersections %d\n",ie.intersection_storage13_.size());
+    MessageOut().fmt("N intersections {}\n",ie.intersection_storage13_.size());
     
    // write computed intersections
 //     for(unsigned int i = 0; i < ie.intersection_storage13_.size(); i++)
 //     {
-//         cout << &ie.intersection_storage13_[i] << ie.intersection_storage13_[i];
+//         DebugOut() << &ie.intersection_storage13_[i] << ie.intersection_storage13_[i];
 //     }
     
 //     //write the first intersection
@@ -154,8 +151,8 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
 //                 static_cast<computeintersection::IntersectionLocal<1,3>*> (ie.intersection_map_[elm->index()][0].second);
 //             if(il13 != nullptr)
 //             {
-// //                 DBGMSG("comp idx %d, bulk idx %d, \n",elm->index(),ie.intersection_map_[elm->index()][0].first);
-//                 cout << *il13;
+// //                 DebugOut().fmt("comp idx {}, bulk idx {}, \n",elm->index(),ie.intersection_map_[elm->index()][0].first);
+//                 DebugOut() << *il13;
 //                 break;
 //             }
 //         }
@@ -173,7 +170,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     for(unsigned int i=0; i < ilc.size(); i++)
         for(unsigned int j=0; j < ilc[i].size(); j++)
     {
-        DBGMSG("---------- check IP[%d] ----------\n",i);
+        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
         arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
         EXPECT_NEAR(ip[0], il[i][j][0], 1e-14);
         EXPECT_NEAR(ip[1], il[i][j][1], 1e-14);
@@ -182,13 +179,13 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     
     computed_length = ie.measure_13();
     
-    DBGMSG("Length of intersection line: (intersections) %.16e\n", computed_length);
     EXPECT_NEAR(computed_length, length, 1e-14);
 }
 
 
 TEST(intersection_prolongation_13d, all) {
 //     // directory with testing meshes
+    FilePath::set_dirs(UNIT_TESTS_SRC_DIR, "", ".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_13d/";
     std::vector<string> filenames;
     
@@ -201,8 +198,7 @@ TEST(intersection_prolongation_13d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s<filenames.size(); s++)
     {
-        xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
-        FilePath::set_io_dirs(".","","",".");
+        MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
         FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
         Mesh mesh;

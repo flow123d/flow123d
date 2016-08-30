@@ -7,7 +7,7 @@
 #define TEST_USE_PETSC
 #include <flow_gtest_mpi.hh>
 
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -65,14 +65,13 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<std::vector<arma::ve
     double area = 0;
 
     // compute intersection
-    DBGMSG("Computing intersection area by NEW algorithm\n");
     InspectElements ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d23);
     
     // write computed intersections
 //     for(unsigned int i = 0; i < ie.intersection_storage23_.size(); i++)
 //     {
-//         cout << &ie.intersection_storage23_[i] << ie.intersection_storage23_[i];
+//         DebugOut() << &ie.intersection_storage23_[i] << ie.intersection_storage23_[i];
 //     }
     
     //test solution
@@ -87,7 +86,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<std::vector<arma::ve
     for(unsigned int i=0; i < ilc.size(); i++)
         for(unsigned int j=0; j < ilc[i].size(); j++)
     {
-        DBGMSG("---------- check IP[%d] ----------\n",i);
+        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
         arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
         EXPECT_NEAR(ip[0], il[i][j][0], 1e-14);
         EXPECT_NEAR(ip[1], il[i][j][1], 1e-14);
@@ -96,7 +95,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<std::vector<arma::ve
     
     area = ie.measure_23();
     ie.print_mesh_to_file_23("output_intersection_23");
-    DBGMSG("Area of intersection line: (intersections) %.16e\n", area);
+    MessageOut().fmt("Area of intersection line: (intersections) {}\n", area);
 //     EXPECT_NEAR(length1, length2, 1e-12);
 //     EXPECT_DOUBLE_EQ(length,1.5*std::sqrt(0.27)+0.35+0.2
 //                             + std::sqrt(0.065) + 0.1*std::sqrt(18) + std::sqrt(0.105));
@@ -106,6 +105,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<std::vector<arma::ve
 TEST(intersection_prolongation_23d, all) {
     
 //     // directory with testing meshes
+    FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_23d/";
     std::vector<string> filenames;
     
@@ -117,8 +117,7 @@ TEST(intersection_prolongation_23d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-        xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
-        FilePath::set_io_dirs(".","","",".");
+        MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
         FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
         Mesh mesh;
