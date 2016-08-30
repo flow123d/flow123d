@@ -75,7 +75,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} git clone -b JHy_docker https://github.com/flow123d/flow123d.git ${{FLOW}}
+          docker exec ${{DOCKER_PID}} git clone -b JHy_docker https://github.com/jbrezmorf/flow123d.git ${{FLOW}}
           docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-debug.cmake ${{FLOW}}/config.cmake
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} cmake
 
