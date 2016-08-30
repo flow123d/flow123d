@@ -70,11 +70,11 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
     ea_ = ea_ / arma::norm(ea_,2);
     eb_ = eb_ / arma::norm(eb_,2);
     
-//     (center + u).print(cout,"direction");
-//     (center + n/arma::norm(n,2)).print(cout,"normal");
-//     center.print(cout,"center");
-//     (center+a_*ea_).print(cout,"a");
-//     (center+b_*eb_).print(cout,"b");
+//     (center + u).print(DebugOut(),"direction");
+//     (center + n/arma::norm(n,2)).print(DebugOut(),"normal");
+//     center.print(DebugOut(),"center");
+//     (center+a_*ea_).print(DebugOut(),"a");
+//     (center+b_*eb_).print(DebugOut(),"b");
 }
 
 bool CircleEllipseProjection::point_in_circle(const CircleEllipseProjection::Point& p) const
