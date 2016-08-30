@@ -154,11 +154,11 @@ TEST_F(TestProjection, project_circle_ellipse) {
 //         
 //         this->project_to_circle_plane(points);
 //         print_point(file,points[1]);
-//         print_point(cout << setprecision(15),points[1]);
+//         print_point(MessageOut() << setprecision(15),points[1]);
 //     }
 //     else 
 //     { 
-//         std::cout << "Coud not write for gnuplot.\n";
+//         WarningOut() << "Coud not write for gnuplot.\n";
 //     }
 //     file.close();
 }
@@ -259,7 +259,7 @@ TEST(qxfem, singularity) {
 //     }
 //     else 
 //     { 
-//         std::cout << "Coud not write refinement for gnuplot.\n";
+//         WarningOut() << "Coud not write refinement for gnuplot.\n";
 //     }
 //     q_points_file.close();
 // //     add this to splot: 'q_points.dat' using 1:2:3 with points lc rgb 'green' title 'q_points'
@@ -308,11 +308,11 @@ TEST(qxfem, singularity) {
 //     //double sin_a = std::sqrt(1-cos_a*cos_a);
 //     //double tan_a = sin_a / cos_a;
 //     
-//     (sing.center() + u).print(cout,"direction");
-//     (sing.center() + n/arma::norm(n,2)).print(cout,"normal");
-//     sing.center().print(cout,"center");
-//     (sing.center()+v).print(cout,"a");
-//     (sing.center()+w).print(cout,"b");
+//     (sing.center() + u).print(MessageOut(),"direction");
+//     (sing.center() + n/arma::norm(n,2)).print(MessageOut(),"normal");
+//     sing.center().print(MessageOut(),"center");
+//     (sing.center()+v).print(MessageOut(),"a");
+//     (sing.center()+w).print(MessageOut(),"b");
 //     
 //     a = arma::norm(v,2);
 //     b = arma::norm(w,2);
@@ -347,14 +347,14 @@ TEST(qxfem, qxfem_factory) {
     }
     else 
     { 
-        std::cout << "Coud not write refinement for gnuplot.\n";
+        MessageOut() << "Coud not write refinement for gnuplot.\n";
     }
     q_points_file.close();
     
     double sum=0;
     for(unsigned int q=0; q<qxfem-> size(); q++) sum += qxfem->weight(q);
     
-//     cout << setprecision(15) << "sum weigths diff: " << sum - (ele->measure()-func.geometry().ellipse_area()) << endl;
+//     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - (ele->measure()-func.geometry().ellipse_area()) << "\n";
     EXPECT_NEAR(sum,ele->measure()-func.geometry().ellipse_area(),1e-5);
     
     
@@ -368,7 +368,7 @@ TEST(qxfem, qxfem_factory) {
 //     }
 //     else 
 //     { 
-//         std::cout << "Coud not write refinement for gnuplot.\n";
+//         WarningOut() << "Coud not write refinement for gnuplot.\n";
 //     }
 //     q_points_file.close();
     // add this to splot: 'q_points.dat' using 1:2:3 with points lc rgb 'green' title 'q_points'   
@@ -407,7 +407,7 @@ public:
 //         }
 //         else
 //         {
-//             std::cout << "Coud not write refinement for gnuplot.\n";
+//             WarningOut() << "Coud not write refinement for gnuplot.\n";
 //         }
 //         q_points_file.close();
     }

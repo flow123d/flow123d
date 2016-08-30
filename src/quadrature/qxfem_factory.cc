@@ -65,7 +65,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
           v1 = s.nodes[2] - s.nodes[1];   // 1. edge of triangle
     if(v0[1]*v1[2] - v0[2]*v1[1] + v0[2]*v1[0] - v0[0]*v1[2] + v0[0]*v1[1] - v0[1]*v1[0] < 0)
     {
-        DBGMSG("change node order\n");
+        DebugOut() << "change node order\n";
         std::swap(s.nodes[0],s.nodes[1]);
     }
     
@@ -78,7 +78,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
     
     for(unsigned int i=0; i < max_level_; i++)
     {
-        DBGMSG("QXFEM level: %d\n",i);
+        DebugOut() << "QXFEM level: " << i << "\n";
         unsigned int n_to_refine = refine_edge(sing);
         if(n_to_refine == 0) break; // end refinement
         
@@ -93,7 +93,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
     
     distribute_qpoints(qxfem->real_points_, qxfem->weights, sing);
     map_real_to_unit_points(qxfem->real_points_, qxfem->quadrature_points, ele);
-    DBGMSG("n_real_qpoints %d %d\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
+    DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
     return qxfem;
 }
@@ -109,7 +109,6 @@ void QXFEMFactory<dim,spacedim>::refine_level(unsigned int n_simplices_to_refine
     for(unsigned int i = level_offset_; i<simplices_.size(); i++) {
         AuxSimplex &s = simplices_[i];
         if(s.refine) {
-//             DBGMSG("QXFEM refine simplex %d\n",i);
             refine_simplex(s);
             s.active = false;
         }
@@ -144,7 +143,7 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
         AuxSimplex& s = simplices_[i];
         for(unsigned int j = 0; j < sing.size(); j++)
         {
-//             DBGMSG("QXFEM test simplex %d, singularity %d\n",i,j);
+//             DebugOut().fmt("QXFEM test simplex {}, singularity {}\n",i,j);
             double distance_sqr = -1;
             double max_h;
             int res = simplex_sigularity_intersection(sing[j],s, distance_sqr, max_h);
@@ -188,7 +187,7 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
     
     //we suppose counterclockwise node order
     
-//             DBGMSG("QXFEM refine test1\n");
+//             DebugOut() << "QXFEM refine test1\n";
             // TEST 1: Vertex within circle
             // http://www.phatcode.net/articles.php?id=459
             Point c0 = w.center() - s.nodes[0],
@@ -206,7 +205,7 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
             if (c1sqr <= 0) count_nodes++;
             if (c2sqr <= 0) count_nodes++;
             
-//             DBGMSG("count_nodes %d\n",count_nodes);
+//             DebugOut() << "count_nodes " << count_nodes << "\n";
             if(count_nodes > 0 ){
                 if(count_nodes == 3) { //triangle inside circle
                     return 0;
@@ -216,7 +215,7 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
                 }
             }
             
-//             DBGMSG("QXFEM refine test2\n");
+//             DebugOut() << "QXFEM refine test2\n";
             // TEST 2: Circle centre within triangle
             // http://www.blackpawn.com/texts/pointinpoly/
             // using barycentric coordinates test
@@ -241,13 +240,13 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
             double t0 = (d02*d11 - d12*d01) * invdenom,
                    t1 = (d12*d00 - d02*d01) * invdenom;
             
-//             DBGMSG("t0 = %f t1 = %f\n", t0, t1);
+//             DebugOut().fmt("t0 = {} t1 = {}\n", t0, t1);
             
             if ( (t0 >= 0) && (t1 >= 0) && (t0+t1 <= 1)){
                 return 2;
             }
             
-//             DBGMSG("QXFEM refine test3\n");
+//             DebugOut() << "QXFEM refine test3\n";
             // ; TEST 3: Circle intersects edge
             
             double k0 = arma::dot(c0,v0);
@@ -267,14 +266,14 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
             if( (k2 >= 0) && (k2 <= d22) && (c1sqr * d22 <= k2*k2)){
                 return 5;
             }
-//             DBGMSG("QXFEM simplex not refined\n");
+//             DebugOut() << "QXFEM simplex not refined\n";
             
-//             DBGMSG("d00 = %f\n", d00);
-//             DBGMSG("d11 = %f\n", d11);
-//             DBGMSG("d22 = %f\n", d22);
-//             DBGMSG("k0 = %f  %f\n",k0, k0*k0/d00);
-//             DBGMSG("k1 = %f  %f\n",k1, k1*k1/d11);
-//             DBGMSG("k2 = %f  %f\n",k2, k2*k2/d22);
+//             DebugOut().fmt("d00 = {}\n", d00);
+//             DebugOut().fmt("d11 = {}\n", d11);
+//             DebugOut().fmt("d22 = {}\n", d22);
+//             DebugOut().fmt("k0 = {}  {}\n",k0, k0*k0/d00);
+//             DebugOut().fmt("k1 = {}  {}\n",k1, k1*k1/d11);
+//             DebugOut().fmt("k2 = {}  {}\n",k2, k2*k2/d22);
             
             max_h = std::max(std::max(d00,d11),d22);
             
@@ -282,35 +281,35 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
             if(distance_sqr < 0) 
             {
                 if( (k0 >= 0) && (k0 <= d00) && (t1 < 0)){
-//                     DBGMSG("0 edge\n");
+//                     DebugOut() << "0 edge\n";
                     distance_sqr = arma::dot(c0,c0) - k0*k0/d00;
                     return -1;
                 }
 
                 if( (k1 >= 0) && (k1 <= d11) && (t0 < 0) ){
-//                     DBGMSG("1 edge\n");
+//                     DebugOut() << "1 edge\n";
                     distance_sqr = arma::dot(c0,c0) - k1*k1/d11;
                     return -1;
                 }
                 
                 if( (k2 >= 0) && (k2 <= d22) && (t0+t1 > 1) ){
-//                     DBGMSG("2 edge\n");
+//                     DebugOut() << "2 edge\n";
                     distance_sqr = arma::dot(c1,c1) - k2*k2/d22;
                     return -1;
                 }
                 
                 if( (k0 < 0) && (k1 < 0) ){
-//                     DBGMSG("v0\n");
+//                     DebugOut() << "v0\n";
                     distance_sqr = arma::dot(c0,c0);
                     return -1;
                 }
                 if( (k0 > 0) && (k2 < 0) ){
-//                     DBGMSG("v1\n");
+//                     DebugOut() << "v1\n";
                     distance_sqr = arma::dot(c1,c1);
                     return -1;
                 }
                 if( (k1 > 0) && (k2 > 0) ){
-//                     DBGMSG("v2\n");
+//                     DebugOut() << "v2\n";
                     distance_sqr = arma::dot(c2,c2);
                     return -1;
                 }
@@ -347,7 +346,7 @@ void QXFEMFactory<dim,spacedim>::refine_simplex(const AuxSimplex& aux_simplex)
          4, 7, 5, 9,
          4, 5, 6, 9}
     }; 
-//     DBGMSG("level = %d, %d\n", aux_simplex.level, max_refinement_level_);
+//     DebugOut().fmt("level = {}, {}\n", aux_simplex.level, max_refinement_level_);
  
     ASSERT_DBG(dim == aux_simplex.nodes.size()-1);
     
@@ -405,7 +404,7 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
         }
         bary_points[q][dim] = complement;
     }
-//     DBGMSG("gauss size %d\n", n_gauss);
+//     DebugOut() << "gauss size " << n_gauss << "\n";
     
     //TODO: compute number of active simplices during refinement
     unsigned int n_active_simplices = 0;
@@ -525,7 +524,7 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
     }
     else 
     { 
-        std::cout << "Coud not write refinement for gnuplot.\n";
+        WarningOut() << "Coud not write refinement for gnuplot.\n";
     }
     felements_file.close();
     
@@ -546,7 +545,7 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
     }
     else 
     { 
-        std::cout << "Coud not write refinement for gnuplot.\n";
+        WarningOut() << "Coud not write refinement for gnuplot.\n";
     }
     myfile1.close();
     
@@ -562,7 +561,7 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
     }
     else 
     { 
-        std::cout << "Coud not write qpoints for gnuplot." << std::endl;
+        WarningOut() << "Coud not write qpoints for gnuplot.\n";
     }
     myfile2.close();
     
@@ -618,7 +617,7 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
     }
     else 
     { 
-        std::cout << "Coud not write gnuplot script.\n";
+        WarningOut() << "Coud not write gnuplot script.\n";
     }
     myfile3.close();
 }
