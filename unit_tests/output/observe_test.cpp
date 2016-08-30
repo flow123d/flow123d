@@ -197,7 +197,7 @@ public:
         ADD_FIELD(scalar_field, "").units(UnitSI::one());
         ADD_FIELD(enum_field, "")
             .units(UnitSI::one())
-            .input_selection(&selection);
+            .input_selection(selection);
         ADD_FIELD(vector_field, "").units(UnitSI::one());
         ADD_FIELD(tensor_field, "").units(UnitSI::one());
     }

@@ -23,7 +23,7 @@ TEST(intersection, triangle_tetrahedron) {
 	TPoint pointC(1.50, 0.50, 0.50);
 	TTriangle triangle(pointA, pointB, pointC);
 
-	xprintf(Msg, "Test - triangle is in tetrahedron\n");
+	MessageOut() << "Test - triangle is in tetrahedron\n";
 	GetIntersection(triangle, tetrahedron, it, area);
 	EXPECT_FLOAT_EQ(area, 0.5);
 
@@ -33,7 +33,7 @@ TEST(intersection, triangle_tetrahedron) {
 	pointC.SetCoord(2.0, 2.0, 2.0);
 	triangle.SetPoints(pointA, pointB, pointC);
 
-	xprintf(Msg, "Test - triangle is greater than tetrahedron, intersection is triangle\n");
+	MessageOut() << "Test - triangle is greater than tetrahedron, intersection is triangle\n";
 	GetIntersection(triangle, tetrahedron, it, area);
 	EXPECT_FLOAT_EQ(area, 0.5);
 
@@ -43,7 +43,7 @@ TEST(intersection, triangle_tetrahedron) {
 	pointC.SetCoord(2.00, 3.00, 1.00);
 	triangle.SetPoints(pointA, pointB, pointC);
 
-	xprintf(Msg, "Test - intersection is tetragon\n");
+	MessageOut() << "Test - intersection is tetragon\n";
 	GetIntersection(triangle, tetrahedron, it, area);
 	EXPECT_FLOAT_EQ(area, 0.875);
 
@@ -53,7 +53,7 @@ TEST(intersection, triangle_tetrahedron) {
 	pointC.SetCoord(1.50,-0.5 , 1.00);
 	triangle.SetPoints(pointA, pointB, pointC);
 
-	xprintf(Msg, "Test - intersection is pentagon\n");
+	MessageOut() << "Test - intersection is pentagon\n";
 	GetIntersection(triangle, tetrahedron, it, area);
 	EXPECT_FLOAT_EQ(area, 0.5+0.5+0.5*3.0/4.0);
 
@@ -63,7 +63,7 @@ TEST(intersection, triangle_tetrahedron) {
 	pointC.SetCoord(-1.00, 2.00, 0.50);
 	triangle.SetPoints(pointA, pointB, pointC);
 
-	xprintf(Msg, "Test - intersection is hexagon (plane parallel to x-y)\n");
+	MessageOut() << "Test - intersection is hexagon (plane parallel to x-y)\n";
 	GetIntersection(triangle, tetrahedron, it, area);
 	EXPECT_FLOAT_EQ(area, 2.375);
 
@@ -73,7 +73,7 @@ TEST(intersection, triangle_tetrahedron) {
 	pointC.SetCoord(0.25, -1.00, 3.00);
 	triangle.SetPoints(pointA, pointB, pointC);
 
-	xprintf(Msg, "Test - intersection is hexagon\n");
+	MessageOut() << "Test - intersection is hexagon\n";
 	GetIntersection(triangle, tetrahedron, it, area);
 	EXPECT_FLOAT_EQ(area, 3.477919);
 }

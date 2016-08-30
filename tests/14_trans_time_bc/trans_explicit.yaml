@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
     input_fields:
       - region: BULK
         anisotropy: 0.1
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
@@ -33,16 +33,16 @@ problem: !Coupling_Sequential
       input_fields:
         - region: BULK
           init_conc: 0
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc: 20
           time: 1
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc: 0
           time: 3
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc: 40
           time: 6
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc: 0
           time: 7
     output_stream: 

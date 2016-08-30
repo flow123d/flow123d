@@ -75,7 +75,7 @@ protected:
             anisotropy.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
-                      bc_type.input_selection(&get_bc_type_selection());
+                      bc_type.input_selection(get_bc_type_selection());
             bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
@@ -93,8 +93,8 @@ protected:
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
             bc_robin_sigma.units( UnitSI::dimensionless() );
 
-            //ADD_FIELD(bc_conc, "BC concentration", "0.0" );
-            //bc_conc.units( UnitSI::dimensionless() );
+            ADD_FIELD(bc_conc, "BC concentration", "0.0" );
+            bc_conc.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
@@ -102,7 +102,7 @@ protected:
         BCField<3, FieldValue<3>::Scalar > bc_pressure;
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
-        //BCField<3, FieldValue<3>::Vector > bc_conc;
+        BCField<3, FieldValue<3>::VectorFixed > bc_conc;
 
     };
 
@@ -129,18 +129,18 @@ public:
 
         EqData() : SomeEquationBase::EqData() {
             ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
-            //ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
+            ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
             ADD_FIELD(conc_mobile, "");
 
             init_pressure.units( UnitSI::dimensionless() );
-            //init_conc.units( UnitSI::dimensionless() );
+            init_conc.units( UnitSI::dimensionless() );
             bulk_set_field.units( UnitSI::dimensionless() );
             conc_mobile.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;
-        //Field<3, FieldValue<3>::Vector > init_conc;
+        Field<3, FieldValue<3>::VectorFixed > init_conc;
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
         MultiField<3, FieldValue<3>::Scalar > conc_mobile;
     };
@@ -160,7 +160,7 @@ protected:
         mesh= new Mesh;
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
-        component_names = { "comp_0", "comp_1", "comp_2", "comp_3" };
+        component_names = { "comp_0", "comp_1", "comp_2" };
 
     }
 
@@ -186,7 +186,7 @@ protected:
             $EndPhysicalNames
          */
 
-        DBGMSG("init\n");
+        DebugOut() << "init\n";
 
         static std::vector<Input::Array> inputs;
         unsigned int input_last = inputs.size(); // position of new item
@@ -233,11 +233,11 @@ TEST_F(SomeEquation, values) {
                 TYPE="FieldConstant",
                 value=1.1
               },
-            init_conc = [ 1, 2, 3, 4],
+            init_conc = [ 1, 2, 3 ],
             // MultiField
             conc_mobile = {
                 TYPE="FieldConstant", 
-                value=[1, 2, 3, 4]
+                value=[1, 2, 3]
               }
           },
           { region= ["2D XY diagonal", "3D back"],
@@ -258,11 +258,11 @@ TEST_F(SomeEquation, values) {
             },
             bc_conc={
                 TYPE="FieldFormula",
-                value=["x", "10+x", "20+x", "30+x"]
+                value=["x", "10+x", "20+x"]
             },
             conc_mobile = {
                 TYPE="FieldConstant", 
-                value=[5, 6, 7, 8]
+                value=[5, 6, 7]
               }
           },
           { rid=102,
@@ -280,7 +280,7 @@ TEST_F(SomeEquation, values) {
     Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
-    DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
+    DebugOut().fmt("elements size: {} {}\n", mesh->element.size(), mesh->bc_elements.size());
 
     // check element accessors
     ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"
@@ -320,16 +320,13 @@ TEST_F(SomeEquation, values) {
     for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
         EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );
     }
-/*
-    // init_conc - variable length vector
-    FieldValue<3>::Vector::return_type conc = data.init_conc.value(p, el_1d);
-    EXPECT_EQ(1 ,conc.n_cols);
-    EXPECT_EQ(4 ,conc.n_rows);
+
+    // init_conc - fixed length vector
+    FieldValue<3>::VectorFixed::return_type conc = data.init_conc.value(p, el_1d);
     EXPECT_DOUBLE_EQ(1 ,conc[0]);
     EXPECT_DOUBLE_EQ(2 ,conc[1]);
     EXPECT_DOUBLE_EQ(3 ,conc[2]);
-    EXPECT_DOUBLE_EQ(4 ,conc[3]);
-*/
+
     // bulk_set_filed - test setting on region set, test setting field without default value
     EXPECT_EQ( 5.7, data.bulk_set_field.value(p, el_1d) );
     EXPECT_EQ( 5.7, data.bulk_set_field.value(p, el_2d) );
@@ -342,13 +339,10 @@ TEST_F(SomeEquation, values) {
     EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_bottom) );
     EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, el_bc_bottom) );    // piezo_head
 
-    /*
     arma::vec bc_value = data.bc_conc.value(p, el_bc_bottom);
     EXPECT_DOUBLE_EQ(1.0, bc_value(0) );
     EXPECT_DOUBLE_EQ(11.0, bc_value(1) );
     EXPECT_DOUBLE_EQ(21.0, bc_value(2) );
-    EXPECT_DOUBLE_EQ(31.0, bc_value(3) );
-    */
 }
 
 

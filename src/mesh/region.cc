@@ -78,7 +78,7 @@ Region RegionDB::implicit_boundary_region() {
         return Region(it_id->index, *this);
     }
 
-    return insert_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary, "");
+    return insert_region(Region::undefined-2, ".IMPLICIT_BOUNDARY", undefined_dim, Region::boundary, "");
 }
 
 
@@ -132,14 +132,14 @@ Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
 			region_table_.get<Index>().find(index),
             item);
 
-	if (old_boundary_flag != reg.is_boundary()) { // move region between BULK and BOUNDARY sets
-		xprintf(Warn, "Change boundary flag of region with id %d and label %s.\n", reg.id(), new_label.c_str());
+	if (old_boundary_flag != reg.is_boundary()) { // move region between BULK and .BOUNDARY sets
+		WarningOut().fmt("Change boundary flag of region with id {} and label {}.\n", reg.id(), new_label);
 		if (old_boundary_flag) {
-			erase_from_set("BOUNDARY", reg );
+			erase_from_set(".BOUNDARY", reg );
 			add_to_set("BULK", reg );
 		} else {
 			erase_from_set("BULK", reg );
-			add_to_set("BOUNDARY", reg );
+			add_to_set(".BOUNDARY", reg );
 		}
 	}
 
@@ -365,7 +365,7 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 	this->add_set(reg.label(), region_set);
 	add_to_set("ALL", reg);
     if (reg.is_boundary()) {
-        add_to_set("BOUNDARY", reg );
+        add_to_set(".BOUNDARY", reg );
     } else {
         add_to_set("BULK", reg );
     }

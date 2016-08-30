@@ -269,7 +269,7 @@ void OutputMSH::write_field_data(OutputTime::DiscreteSpace type_idx, void (Outpu
 
     auto data_it = data_list.begin();
     for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
-        DBGMSG("dummty field: %s data field: %s\n", (*dummy_it)->output_field_name.c_str(), (*data_it)->output_field_name.c_str());
+    	DebugOut().fmt("dummy field: {} data field: {}\n", (*dummy_it)->output_field_name, (*data_it)->output_field_name);
         if ((*dummy_it)->output_field_name == (*data_it)->output_field_name) {
             (this->*format_fce)(*data_it); ++data_it;
         } else {
@@ -300,8 +300,7 @@ int OutputMSH::write_data(void)
     if(this->header_written == false) {
         if(this->rank == 0) {
             this->fix_main_file_extension(".msh");
-            this->_base_file.open(string(this->_base_filename).c_str());
-            INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", string(this->_base_filename).c_str() );
+            this->_base_filename.open_stream( this->_base_file );
         }
 
         this->write_head();

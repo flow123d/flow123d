@@ -60,7 +60,7 @@ Profiler::initialize(MPI_COMM_WORLD);
 	        				FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_tetrahedron(ele, tt);
 	        				GetIntersection(ta, tt, iType, measure);
 	        				/*if (iType == line) {
-	        					xprintf(Msg, "%d %d \n",elm.id(),ele.id()); }*/
+	        					MessageOut().fmt("{} {} \n",elm.id(),ele.id());
 	        			}
 	        		}
 	         }
@@ -68,7 +68,7 @@ Profiler::initialize(MPI_COMM_WORLD);
 	END_TIMER("Inter");}
 	Profiler::instance()->output(cout);
 	Profiler::uninitialize();
-	xprintf(Msg, "Test is complete\n");
+	MessageOut() << "Test is complete\n";
 }
 
 

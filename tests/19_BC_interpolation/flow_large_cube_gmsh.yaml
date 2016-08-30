@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
       linear_solver: !Petsc
         a_tol: 1.0e-07
     input_fields:
-      - region: IMPLICIT BOUNDARY
+      - region: .IMPLICIT_BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z

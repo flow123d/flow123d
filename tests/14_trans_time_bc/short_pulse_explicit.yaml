@@ -13,7 +13,7 @@ problem: !Coupling_Sequential
     input_fields:
       - region: bulk
         conductivity: 1
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: 0.1*x

@@ -5,13 +5,42 @@
 "new_format": "",
 "actions":
   [
-   {
-        "NAME": "Change sign in bc_flux in transport and heat (constant value)",
-        "action": "scale-value",
-        "parameters":{
-          "path" : "/problem/secondary_equation/input_fields/*/bc_flux",
-          "scale" : "-1"
-        }
-    }
+		{
+		  "action": "move-key",
+		  "parameters": {
+			"source_path": "/problem/secondary_equation/input_fields/*/porosity",
+			"destination_path": "/problem/primary_equation/_input_fields/$1/porosity",
+			"create_path": "true",
+			"keep-source": "true",
+			"key-exists-filter": "porosity"
+		  }
+		},
+		{
+		  "action": "move-key",
+		  "parameters": {
+			"source_path": "/problem/secondary_equation/_input_fields/*/porosity",
+			"destination_path": "/problem/primary_equation/input_fields/$1/porosity"
+		  }
+		},
+		{
+		  "action": "delete-key",
+		  "parameters": {
+			"path": "/problem/primary_equation/_input_fields/*/region",
+			"key-not-exists-filter": "porosity"
+		  }
+		},
+		{
+		  "action": "merge-arrays",
+		  "parameters": {
+			"source_path": "/problem/primary_equation/input_fields",
+			"addition_path": "/problem/primary_equation/_input_fields"
+		  }
+		},
+		{
+		  "action": "delete-key",
+		  "parameters": {
+			"path": "/problem/primary_equation/_input_fields/*"
+		  }
+		}
   ]
 }

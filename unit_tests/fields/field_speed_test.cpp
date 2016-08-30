@@ -206,20 +206,6 @@ public:
     	value_list= std::vector<ReturnType>(list_size);
 	}
 
-	/*
-	void set_data(FieldValue<3>::Vector::return_type val) {
-		data1_ = arma::vec("1.75 2.75 3.75");
-		data2_ = arma::vec("1.25 2.25 3.25");
-		expect_const_val_ = arma::vec("13.75 22.75 31.75");
-		expect_formula_simple_val_ = arma::vec("9 52 153");
-		expect_formula_full_val_ = arma::vec("250 241 259");
-		expect_elementwise_val_ = arma::vec("9 18 27");
-		test_result_sum_ = arma::vec("0.0 0.0 0.0");
-		input_type_name_ = "vector";
-		value_list= std::vector<ReturnType>(list_size, ReturnType(n_comp_,1));
-	}
-	*/
-
 	void set_data(FieldValue<3>::VectorFixed::return_type val) {
 		data1_ = arma::vec3("1.75 3.75 5.75");
 		data2_ = arma::vec3("1.25 3.25 5.25");
@@ -235,14 +221,6 @@ public:
 	void test_result(FieldValue<3>::Scalar::return_type expected, double multiplicator) {
 		EXPECT_DOUBLE_EQ( this->test_result_sum_, multiplicator * expected * loop_call_count );
 	}
-
-	/*
-	void test_result(FieldValue<3>::Vector::return_type expected, double multiplicator) {
-		for (int i=0; i<3; i++) {
-			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
-		}
-	}
-	*/
 
 	void test_result(FieldValue<3>::VectorFixed::return_type expected, double multiplicator) {
 		for (int i=0; i<3; i++) {

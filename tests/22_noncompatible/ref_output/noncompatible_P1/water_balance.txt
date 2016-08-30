@@ -3,4 +3,4 @@
 0	"2d"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	".1d"	"water_volume"	-28.0149	0	-28.0149	0	0	0	0	0	0	0	0	0
 0	".2d_bottom_top"	"water_volume"	39.3417	39.3417	0	0	0	0	0	0	0	0	0	0
-0	"IMPLICIT BOUNDARY"	"water_volume"	-1.30974e-09	2.26919e-10	-1.53666e-09	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"water_volume"	-1.30974e-09	2.26919e-10	-1.53666e-09	0	0	0	0	0	0	0	0	0

@@ -20,7 +20,6 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include "system/xio.h"
 
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
@@ -107,8 +106,14 @@ const int TransportOperatorSplitting::registrar =
 TransportEqData::TransportEqData()
 {
 
-	ADD_FIELD(porosity, "Mobile porosity", "1");
-	porosity.units( UnitSI::dimensionless() ).flags_add(in_time_term & in_main_matrix & in_rhs);
+	ADD_FIELD(porosity, "Mobile porosity", "1.0");
+	porosity
+	.units( UnitSI::dimensionless() )
+	.flags_add(in_main_matrix & in_rhs);
+
+	add_field(&water_content, "water_content", "INTERNAL - water content passed from unsaturated Darcy", "")
+	.units( UnitSI::dimensionless() )
+	.flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
 
 	ADD_FIELD(cross_section, "");
 	cross_section.flags( FieldFlag::input_copy ).flags_add(in_time_term & in_main_matrix & in_rhs);
@@ -138,7 +143,7 @@ TransportEqData::TransportEqData()
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : AdvectionProcessBase(init_mesh, in_rec),
-  Semchem_reactions(NULL),
+//  Semchem_reactions(NULL),
   cfl_convection(numeric_limits<double>::max()),
   cfl_reaction(numeric_limits<double>::max())
 {
@@ -197,24 +202,28 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	} else {
 		reaction = nullptr;
-		Semchem_reactions = nullptr;
+		//Semchem_reactions = nullptr;
 	}
-        
-  //coupling - passing fields
-  if(reaction)
-  if( typeid(*reaction) == typeid(SorptionSimple) ||
-		  typeid(*reaction) == typeid(DualPorosity)
-		)
-  {
-	reaction->data().set_field("porosity", convection->data()["porosity"]);
-  }
 }
 
 TransportOperatorSplitting::~TransportOperatorSplitting()
 {
     //delete field_output;
-    if (Semchem_reactions) delete Semchem_reactions;
+    //if (Semchem_reactions) delete Semchem_reactions;
     delete time_;
+}
+
+
+void TransportOperatorSplitting::initialize()
+{
+    //coupling - passing fields
+  if(reaction)
+  if( typeid(*reaction) == typeid(SorptionSimple) ||
+          typeid(*reaction) == typeid(DualPorosity)
+        )
+  {
+    reaction->data().set_field("porosity", convection->data()["porosity"]);
+  }
 }
 
 
@@ -244,7 +253,7 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::zero_time_step()
 {
-    //DBGMSG("tos ZERO TIME STEP.\n");
+    //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream()->write_time_frame();
@@ -313,7 +322,7 @@ void TransportOperatorSplitting::update_solution() {
         else
         	convection->update_after_reactions(false);
 
-	    if(Semchem_reactions) Semchem_reactions->update_solution();
+	    //if(Semchem_reactions) Semchem_reactions->update_solution();
 
 
 
@@ -336,7 +345,7 @@ void TransportOperatorSplitting::update_solution() {
 	    }
 	}
 
-    xprintf( MsgLog, "    CONVECTION: steps: %d\n",steps);
+    LogOut().fmt("CONVECTION: steps: {}\n", steps);
 }
 
 

@@ -175,7 +175,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     case CORNER_DATA: {
         for(const auto & ele : *om)
         {
-            DBGMSG("ele %d\n",ele.idx());
+//             DebugOut() << "ele " << ele.idx() << "\n";
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
             for(unsigned int i=0; i < ele.n_nodes(); i++)
             {
@@ -188,7 +188,6 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                 output_data.store_value(node_index,  node_value);
             }
         }
-        DBGMSG("compute field CORNER data END\n");
     }
     break;
     case ELEM_DATA: {
