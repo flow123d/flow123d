@@ -548,6 +548,19 @@
       }
     },
     {
+      "NAME": "Set rename storativity for Steady_MH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/input_fields/*/storativity",
+        "destination_path":"/problem/primary_equation/input_fields/$1/storativity_STEADY",
+        "path-type-filter" : "Steady_MH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true  
+            
+      }
+    },  
+        
+    {
       "NAME": "Use time aware Darcy_MH instead of Steady.",
       "action": "rename-type",
       "parameters": {
