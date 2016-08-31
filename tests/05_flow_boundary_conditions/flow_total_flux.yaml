@@ -1,4 +1,4 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition
   mesh:

@@ -1,4 +1,4 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Steady flow with Seepage face boundary condition
   #      * The test problem use square computational domain and emulate slope of the top surface

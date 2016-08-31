@@ -144,7 +144,6 @@ Input::Record Application::read_input() {
 
 
 
-
 void Application::parse_cmd_line(const int argc, char ** argv) {
 	namespace po = boost::program_options;
 
@@ -161,20 +160,28 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_log", "Turn off logging.")
         ("no_signal_handler", "Turn off signal handling. Useful for debugging with valgrind.")
         ("no_profiler", "Turn off profiler output.")
-        ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
+        ("input_format", po::value< string >(), "Writes full structure of the main input file into given file.")
 		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
 		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");
 
     ;
 
+    // Can not use positional arguments together with PETSC options.
+    // Use our own solution trying to use the first unrecognized option as the main input file.
+
     // parse the command line
     po::variables_map vm;
-    po::parsed_options parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).allow_unregistered().run();
+    auto parser = po::basic_command_line_parser<char>(argc, argv)
+            .options(desc)
+            .allow_unregistered();
+    po::parsed_options parsed = parser.run();
     po::store(parsed, vm);
     po::notify(vm);
 
     // get unknown options
     vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
+
+
     /*
     passed_argc_ = to_pass_further.size();
     passed_argv_ = new char * [passed_argc_+1];
@@ -191,6 +198,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // if there is "help" option
     if (vm.count("help")) {
+        display_version();
+        cout << endl;
+        cout << "Usage:" << endl;
+        cout << "   flow123d -s <main_input>.yaml <other options> <PETSC options>" << endl;
+        cout << "   flow123d <main_input>.yaml <other options> <PETSC options>" << endl;
         cout << desc << "\n";
         exit( exit_output );
     }
@@ -200,20 +212,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     	exit( exit_output );
     }
 
-    // if there is "full_doc" option
-    /*if (vm.count("full_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputText type_output(&get_input_type());
-        type_output.set_filter(":Field:.*");
-        cout << type_output;
-        exit( exit_output );
-    }*/
-
-    // if there is "JSON_machine" option
-    if (vm.count("JSON_machine")) {
+    // if there is "input_format" option
+    if (vm.count("input_format")) {
         // write ist to json file
         ofstream json_stream;
-        FilePath(vm["JSON_machine"].as<string>(), FilePath::output_file).open_stream(json_stream);
+        FilePath(vm["input_format"].as<string>(), FilePath::output_file).open_stream(json_stream);
         // create the root Record
         it::Record root_type = get_input_type();
         Input::Type::TypeBase::lazy_finish();
@@ -231,10 +234,24 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // if there is "solve" option
-    string input_filename = ".";
+    string input_filename = "";
+
+    // check for positional main input file
+    if (to_pass_further.size()) {
+        string file_candidate = to_pass_further[0];
+        if (file_candidate[0] != '-') {
+            // pop the first option
+            input_filename = file_candidate;
+            to_pass_further.erase(to_pass_further.begin());
+        }
+    }
+
     if (vm.count("solve")) {
         input_filename = vm["solve"].as<string>();
     }
+
+    if (input_filename == "")
+        THROW(ExcMessage() << EI_Message("Main input file not specified (option -s)."));
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;
