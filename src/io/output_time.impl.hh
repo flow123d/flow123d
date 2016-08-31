@@ -121,7 +121,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
         compute_discontinuous_output_mesh();
     
     std::shared_ptr<OutputMeshBase> om;
-    if(output_mesh_discont_->is_refined()){
+    if(output_mesh_discont_->is_refined() || space_type == CORNER_DATA){
         ASSERT(space_type != NODE_DATA).error("Refined output mesh not implemented for NODE DATA!");
         om = output_mesh_discont_;
     }
