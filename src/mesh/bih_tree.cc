@@ -206,12 +206,12 @@ double BIHTree::estimate_median(unsigned char axis, const BIHNode &node)
 }
 
 
-unsigned int BIHTree::get_element_count() {
+unsigned int BIHTree::get_element_count() const {
 	return elements_.size();
 }
 
 
-const BoundingBox &BIHTree::tree_box() {
+const BoundingBox &BIHTree::tree_box() const {
 	return main_box_;
 }
 

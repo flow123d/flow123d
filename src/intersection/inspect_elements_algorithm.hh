@@ -102,9 +102,9 @@ public:
     /// Runs the core algorithm for computing dimD-3D intersection.
     //@{ 
     /// Uses BIHtree to find the initial candidate of a component and then prolongates the component intersetion.
-    void compute_intersections(std::shared_ptr<BIHTree> bih);
+    void compute_intersections(const BIHTree& bih);
     /// Uses only BIHtree to find intersection candidates. (No prolongation).
-    void compute_intersections_BIHtree(std::shared_ptr<BIHTree> bih);
+    void compute_intersections_BIHtree(const BIHTree& bih);
     /// Tests bounding boxes intersectioss to find the initial candidate of a component
     /// and then prolongates the component intersetion. (No BIHtree).
     void compute_intersections_BB();
@@ -244,7 +244,7 @@ public:
     /** @brief Runs the algorithm (2): compute 1D-2D intersection in 3D ambient space
      * BIH is used to find intersection candidates.
      */
-    void compute_intersections_2(std::shared_ptr<BIHTree> bih);
+    void compute_intersections_2(const BIHTree& bih);
 private:
     Mesh *mesh;
     

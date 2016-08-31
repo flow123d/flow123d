@@ -15,7 +15,6 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/bih_tree.hh"
 
 namespace computeintersection {
 
@@ -69,10 +68,9 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
                                             std::vector< IntersectionLocal<dim,3>>& storage)
 {
     START_TIMER("Intersection algorithm");
-    ASSERT_PTR_DBG(bih_);
     
-    iea.compute_intersections(bih_);
-//     iea.compute_intersections_BIHtree(bih_);    
+    iea.compute_intersections(mesh->get_bih_tree());
+//     iea.compute_intersections_BIHtree(mesh->get_bih_tree());
 //     iea.compute_intersections_BB();
     END_TIMER("Intersection algorithm");
     
@@ -207,7 +205,7 @@ void InspectElements::compute_intersections_12(vector< IntersectionLocal< 1, 2 >
 void InspectElements::compute_intersections_12_2(vector< IntersectionLocal< 1, 2 > >& storage)
 {
     START_TIMER("Intersection algorithm");
-    algorithm12_.compute_intersections_2(bih_);
+    algorithm12_.compute_intersections_2(mesh->get_bih_tree());
     END_TIMER("Intersection algorithm");
     
     START_TIMER("Intersection into storage");
@@ -240,13 +238,6 @@ void InspectElements::compute_intersections_12_2(vector< IntersectionLocal< 1, 2
 void InspectElements::compute_intersections(computeintersection::IntersectionType d)
 {
     intersection_map_.resize(mesh->n_elements());
-    
-    // for algorithms BIHSearch and BIHonly
-    //TODO: select algorithms, create BIH accordingly
-    if(bih_ == nullptr){
-        START_TIMER("BIHTree");
-        bih_ = std::make_shared<BIHTree>(mesh, 20);
-    }
     
     if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
         ASSERT(0).error("NOT IMPLEMENTED.");
