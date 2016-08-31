@@ -17,7 +17,7 @@
     name: "Multijob project {build-type}"
     platform: ci2runner
     build-type: debug
-    unit-dir: 
+    unit-dir:
       - $PLACEHOLDER_unit_list$
     test-dir:
       - $PLACEHOLDER_test_list$
@@ -92,6 +92,7 @@
           properties-file: prop.file
       - shell: |
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} -j2 all
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests -j2 gtest_mpi_obj 
 
 
 # ---------------------------------------------------------------------------- #
@@ -153,7 +154,7 @@
           browser: githubweb
           browser-url: https://github.com/flow123d/docker-config/
           skip-tag: true
-          
+
     wrappers:
       - inject:
           script-content: |
@@ -161,40 +162,40 @@
             echo "BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
       - build-name:
           name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
-            
-    triggers: 
+
+    triggers:
       - github
-      
+
     builders:
       - multijob:
           name: "Install image"
           condition: SUCCESSFUL
-          projects:  
+          projects:
             - name: "Flow123d-{platform}-{build-type}-install-image"
       - multijob:
           name: "Start image"
           condition: SUCCESSFUL
-          projects:  
+          projects:
             - name: "Flow123d-{platform}-{build-type}-start-image"
       # ---------- START IMAGE ----------------------------------------------- #
       - multijob:
           name: "Configure flow123d Phase"
           condition: SUCCESSFUL
-          projects:  
+          projects:
             - name: "Flow123d-{platform}-{build-type}-configure"
-        
+
       - multijob:
           name: "Build flow123d Phase"
           condition: SUCCESSFUL
-          projects:  
+          projects:
             - name: "Flow123d-{platform}-{build-type}-build"
-        
+
       - multijob:
           name: "Unit tests"
           condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-{build-type}-unit-test-$PLACEHOLDER_unit_list$"
-            
+
       - multijob:
           name: "Integration tests"
           condition: COMPLETED
@@ -205,5 +206,5 @@
       - multijob:
           name: "Stop image"
           condition: SUCCESSFUL
-          projects:  
+          projects:
             - name: "Flow123d-{platform}-{build-type}-stop-image"
