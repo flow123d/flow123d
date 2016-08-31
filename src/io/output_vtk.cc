@@ -337,6 +337,8 @@ void OutputVTK::write_vtk_vtu(void)
 
     // select which output mesh to use
     std::shared_ptr<OutputMeshBase> om;
+    ASSERT_PTR(output_mesh_);
+    ASSERT_PTR(output_mesh_discont_);
     if(output_mesh_discont_->is_refined() || ! this->output_data_vec_[CORNER_DATA].empty()){
         om = output_mesh_discont_;
     }

@@ -33,7 +33,7 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 TEST(OutputMesh, create_identical)
 {
     // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
 
     // read mesh - simplset cube from test1
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
