@@ -109,7 +109,6 @@ public:
 private:
     /// Mesh pointer.
     Mesh * mesh;
-    std::shared_ptr<BIHTree> bih_;
     
     InspectElementsAlgorithm<1> algorithm13_;
     InspectElementsAlgorithm<2> algorithm23_;
