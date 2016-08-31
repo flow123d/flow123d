@@ -59,12 +59,12 @@ public:
 	 *
 	 * @return Count of bounding boxes stored in elements_ member
 	 */
-    unsigned int get_element_count();
+    unsigned int get_element_count() const;
 
     /**
      * Main bounding box of the whole tree.
      */
-    const BoundingBox &tree_box();
+    const BoundingBox &tree_box() const;
 
 	/**
 	 * Gets elements which can have intersection with bounding box
