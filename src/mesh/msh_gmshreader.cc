@@ -199,7 +199,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
             {
                 double jac = ele->tetrahedron_jacobian();
                 if( ! (jac > 0) )
-                    xprintf(Warn, "Tetrahedron element with id %d has wrong numbering or is degenerated (Jacobian = %f).",ele->index(),jac);
+                    WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->index(),jac);
             }
         }
 
