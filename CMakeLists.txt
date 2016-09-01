@@ -625,8 +625,18 @@ if(PETSC_MPIEXEC)
       
       # resolve symlinks
       get_filename_component(RESOLVED_MPIEXEC "${PETSC_MPIEXEC}" REALPATH)
-      message(STATUS "using petsc_mpiexec: ${RESOLVED_MPIEXEC}")
-      set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
+      
+      # we verify that REALPATH of PETSC_MPIEXEC exists
+      # if not, PETSC_MPIEXEC is probably only command 'mpiexec'
+      # in that case we use this value, since PETSc was ok with that
+      if(EXISTS RESOLVED_MPIEXEC)
+          message(STATUS "using petsc_mpiexec: ${RESOLVED_MPIEXEC}")
+          set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
+      else()
+          message(STATUS "path does not point to valid location: ${RESOLVED_MPIEXEC} using ${PETSC_MPIEXEC}")
+          set(MPIEXEC_PATH "${PETSC_MPIEXEC}")
+      endif()
+      
 else()
       find_program(SYSTEM_MPIEXEC mpiexec)
       if(SYSTEM_MPIEXEC)
