@@ -376,7 +376,7 @@ private:
 template<unsigned int dim>
 template<unsigned int subdim> 
 arma::mat::fixed<dim+1,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
-        OLD_ASSERT(subdim < dim, "Dimension mismatch!");
+        ASSERT_LT_DBG(subdim, dim).error("Dimension mismatch!");
         arma::mat::fixed<dim+1,subdim+1> bary_c;
         
         if(subdim == 2)
@@ -406,13 +406,13 @@ IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)
 template <unsigned int Size>
 IdxVector<Size>::IdxVector(std::initializer_list<unsigned int> data_in)
 {
-    OLD_ASSERT(data_in.size() == Size, "Incorrect data size.");
+    ASSERT_EQ_DBG(data_in.size(), Size).error("Incorrect data size.");
     std::copy(data_in.begin(), data_in.end(), data_);
 }
 
 template <unsigned int Size>
 inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
-{   OLD_ASSERT(idx < Size, "Index out of bounds.");
+{   ASSERT_LT_DBG(idx, Size).error("Index out of bounds.");
     return data_[idx]; }
     
 
@@ -437,64 +437,64 @@ unsigned int RefElement<dim>::topology_idx(unsigned int zeros_positions)
     for(unsigned int i=0; i < RefElement<dim>::count<subdim>(); i++){
         if(zeros_positions == topology_zeros_[subdim][i]) return i;
     }
-    OLD_ASSERT(0, "Undefined zero pattern.");
+    ASSERT(0).error("Undefined zero pattern.");
     return -1;
 }
 
 
 /// This function is for "side_nodes" - for given side, give me nodes (0->0, 1->1).
 template<> template<> inline const IdxVector<1> RefElement<1>::interact<0,0>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<1>::n_nodes, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes).error("Index out of bounds.");
     return IdxVector<1>({i});}
 
 /// For line i {0}, give me indices of its nodes.
 template<> template<> inline const IdxVector<2> RefElement<1>::interact<0,1>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<1>::n_lines, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<1>::n_lines).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For line i {0,1,2}, give me indices of its nodes.
 template<> template<> inline const IdxVector<2> RefElement<2>::interact<0,1>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<2>::n_lines, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<2>::n_lines).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For line i {0,1,2,3,4,5}, give me indices of its nodes.
 template<> template<> inline const IdxVector<2> RefElement<3>::interact<0,1>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<3>::n_lines, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<3>::n_lines).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For node i {0,1}, give me indices of lines.
 template<> template<> inline const IdxVector<1> RefElement<1>::interact<1,0>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<1>::n_nodes, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes).error("Index out of bounds.");
     return node_lines_[i];}
 
 /// For node i {0,1,2}, give me indices of lines.
 template<> template<> inline const IdxVector<2> RefElement<2>::interact<1,0>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<2>::n_nodes, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<2>::n_nodes).error("Index out of bounds.");
     return node_lines_[i];}
 
 /// For node i {0,1,2,3}, give me indices of lines.
 template<> template<> inline const IdxVector<3> RefElement<3>::interact<1,0>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<3>::n_nodes, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<3>::n_nodes).error("Index out of bounds.");
     return node_lines_[i];}
     
 /// For side i {0,1,2}, give me indices of its nodes.
 template<> template<> inline const IdxVector<3> RefElement<3>::interact<0,2>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
     return side_nodes_[i];}
 
 /// For node i {0,1,2,3}, give me indices of sides.
 template<> template<> inline const IdxVector<3> RefElement<3>::interact<2,0>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
     return node_sides_[i];}
     
 /// For line i {0,1,2,3}, give me indices of sides.
 template<> template<> inline const IdxVector<2> RefElement<3>::interact<2,1>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<3>::n_lines, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<3>::n_lines).error("Index out of bounds.");
     return line_sides_[i];}
 
 /// For side i {0,1,2}, give me indices of its lines.
 template<> template<> inline const IdxVector<3> RefElement<3>::interact<1,2>(unsigned int i)
-{   OLD_ASSERT(i < RefElement<3>::n_sides, "Index out of bounds.");
+{   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
     return side_lines_[i];}
     
 template<unsigned int dim> template<unsigned int OutDim, unsigned int InDim> 
