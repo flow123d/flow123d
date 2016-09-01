@@ -91,8 +91,8 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} -j2 all
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests -j2 gtest_mpi_obj 
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} -j4 all
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj 
 
 
 # ---------------------------------------------------------------------------- #
