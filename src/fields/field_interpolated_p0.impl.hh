@@ -104,7 +104,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     search_header.time = time.end();
     
     bool boundary_domain_ = false;
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<typename Value::element_type>(search_header,
     		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
 
     return search_header.actual;

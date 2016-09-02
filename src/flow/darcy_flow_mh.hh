@@ -221,7 +221,7 @@ public:
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
-    const MH_DofHandler &get_mh_dofhandler() {
+    const MH_DofHandler &get_mh_dofhandler()  override {
         double *array;
         unsigned int size;
         get_solution_vector(array, size);

@@ -402,6 +402,10 @@ string FileName::type_name() const {
     }
 }
 
+bool FileName::operator==(const TypeBase &other) const
+{ return  typeid(*this) == typeid(other) &&
+                 (type_== static_cast<const FileName *>(&other)->get_file_type() );
+}
 
 
 bool FileName::match(const string &str) const {
