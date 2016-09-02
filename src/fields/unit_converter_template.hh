@@ -53,54 +53,55 @@ public:
 	/// Store structure given by parser
 	struct Factor {
 		/// Constructor
-		Factor() : coef_(1.0), exponent_(1), div_(false) {}
+		Factor() : exponent_(1) {}
 
-		double coef_;         //!< multiplicative coeficient
 		std::string factor_;  //!< string represantation of unit or user defined constant
 		int exponent_;        //!< exponent
-		bool div_;            //!< mark if unit is divided by Factor
 	};
-	typedef std::vector<Factor> Factors;
-	typedef typename std::vector< std::pair<std::string, Factors> > UnitData;
+	struct Formula {
+		/// Constructor
+		Formula() : coef_(1.0) {}
+
+		double coef_;                  //!< multiplicative coeficient
+		std::vector<Factor> factors_;  //!< factors of formula
+	};
+	typedef typename std::map<std::string, Formula> UnitData;
 
 
     Semantic_actions()
-    : full_idx_(0), factor_idx_(-1)
+    : unit_data_key_(""), factor_idx_(-1)
     {
-    	unit_data_.push_back( std::make_pair<std::string, Factors>("", Factors()) );
+    	unit_data_[""] = Formula();
     }
 
     void new_shortcut( Iter_type begin, Iter_type end )
     {
-
-    	unit_data_.push_back( std::make_pair<std::string, Factors>( get_str(begin, end), Factors() ) );
-    	++full_idx_;
+    	std::string key = get_str(begin, end);
+    	unit_data_[key] = Formula();
+    	unit_data_key_ = key;
     	factor_idx_ = -1;
     }
 
     void new_mult_factor( Iter_type begin, Iter_type end )
     {
-    	unit_data_[full_idx_].second.push_back( Factor(1.0, get_str(begin, end), 1, false ) );
+    	unit_data_[unit_data_key_].second.push_back( Factor(get_str(begin, end), 1 ) );
     	++factor_idx_;
     }
 
     void new_div_factor( Iter_type begin, Iter_type end )
     {
-    	unit_data_[full_idx_].second.push_back( Factor(1.0, get_str(begin, end), 1, true ) );
+    	unit_data_[unit_data_key_].second.push_back( Factor(get_str(begin, end), -1 ) );
     	++factor_idx_;
     }
 
     void new_exp( boost::int64_t i )
     {
-    	unit_data_[full_idx_].second[factor_idx_].exponent_ = (int)i;
+    	unit_data_[unit_data_key_].second[factor_idx_].exponent_ *= (int)i;
     }
 
     void new_multipl( double d )
     {
-    	if (d==1.0) return; // skip value 1.0 - no effect
-
-    	unit_data_[full_idx_].second.push_back( Factor(d, "", 1, true ) );
-    	++factor_idx_;
+    	unit_data_[unit_data_key_].second.coef = d;
     }
 private:
 
@@ -113,9 +114,9 @@ private:
     }
 
 
-    UnitData unit_data_;  //!< Full parsed data
-    int full_idx_;        //!< index to actual item of unit_data_
-    int factor_idx_;      //!< index to actual item of subvector of factors of unit_data_
+    UnitData unit_data_;         //!< Full parsed data
+    std::string unit_data_key_;  //!< keyo actual item of unit_data_
+    int factor_idx_;             //!< index to actual item of subvector of factors of unit_data_
 };
 
 
@@ -185,26 +186,17 @@ public:
             constant_
 			    = constant_shortcut_[ new_shortcut ]
 				  >> *space_p >> ( ch_p('=') | eps_p[ &throw_not_equating ] )
-				  >> *space_p >> constant_expr_
+				  >> *space_p >> !(constant_multiplicator_ >> ch_p('*'))
+			      >> formula_
 			    ;
 
             constant_shortcut_
 			    = +alpha_p
 				;
 
-            constant_expr_
-			    = !(constant_multiplicator_ >> ch_p('*'))
-			      >> constant_factor_[ new_mult_factor ] >> !( ch_p('^') >> exp_ )
-				  >> *(ch_p('*') >> constant_factor_[ new_mult_factor ] >> !( ch_p('^') >> exp_ ) )
-			    ;
-
             constant_multiplicator_
 			    = strict_real_p[ new_multipl ]
 			    ;
-
-            constant_factor_
-		        = +alpha_p
-		        ;
 
             exp_
 			    = int64_p[ new_exp ]
@@ -212,8 +204,7 @@ public:
 				;
         }
 
-        spirit_namespace::rule< ScannerT > unit_, formula_, formula_factor_, exp_, constant_, constant_shortcut_,
-											constant_expr_, constant_multiplicator_, constant_factor_;
+        spirit_namespace::rule< ScannerT > unit_, formula_, formula_factor_, exp_, constant_, constant_shortcut_, constant_multiplicator_;
 
         const spirit_namespace::rule< ScannerT >& start() const { return unit_; }
     };
