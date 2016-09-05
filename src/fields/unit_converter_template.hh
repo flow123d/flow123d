@@ -22,6 +22,7 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/version.hpp>
+#include "fields/unit_converter.hh"
 
 #if BOOST_VERSION >= 103800
     #include <boost/spirit/include/classic_core.hpp>
@@ -46,28 +47,11 @@ namespace units_converter
 const spirit_namespace::int_parser < boost::int64_t >  int64_p  = spirit_namespace::int_parser < boost::int64_t  >();
 const spirit_namespace::uint_parser< boost::uint64_t > uint64_p = spirit_namespace::uint_parser< boost::uint64_t >();
 
+
 template< class Iter_type >
 class Semantic_actions
 {
 public:
-	/// Store structure given by parser
-	struct Factor {
-		/// Constructor
-		Factor() : exponent_(1) {}
-
-		std::string factor_;  //!< string represantation of unit or user defined constant
-		int exponent_;        //!< exponent
-	};
-	struct Formula {
-		/// Constructor
-		Formula() : coef_(1.0) {}
-
-		double coef_;                  //!< multiplicative coeficient
-		std::vector<Factor> factors_;  //!< factors of formula
-	};
-	typedef typename std::map<std::string, Formula> UnitData;
-
-
     Semantic_actions()
     : unit_data_key_(""), factor_idx_(-1)
     {
@@ -84,24 +68,24 @@ public:
 
     void new_mult_factor( Iter_type begin, Iter_type end )
     {
-    	unit_data_[unit_data_key_].second.push_back( Factor(get_str(begin, end), 1 ) );
+    	unit_data_[unit_data_key_].factors_.push_back( Factor(get_str(begin, end), 1 ) );
     	++factor_idx_;
     }
 
     void new_div_factor( Iter_type begin, Iter_type end )
     {
-    	unit_data_[unit_data_key_].second.push_back( Factor(get_str(begin, end), -1 ) );
+    	unit_data_[unit_data_key_].factors_.push_back( Factor(get_str(begin, end), -1 ) );
     	++factor_idx_;
     }
 
     void new_exp( boost::int64_t i )
     {
-    	unit_data_[unit_data_key_].second[factor_idx_].exponent_ *= (int)i;
+    	unit_data_[unit_data_key_].factors_[factor_idx_].exponent_ *= (int)i;
     }
 
     void new_multipl( double d )
     {
-    	unit_data_[unit_data_key_].second.coef = d;
+    	unit_data_[unit_data_key_].coef_ = d;
     }
 private:
 
