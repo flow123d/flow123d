@@ -25,6 +25,7 @@
 #define INSPECT_ELEMENTS_H_
 
 #include "inspect_elements_algorithm.hh"
+#include "input/input_type_forward.hh"
 
 class Mesh; // forward declare
 

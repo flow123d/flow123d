@@ -53,6 +53,16 @@
 
 namespace IT = Input::Type;
 
+const Input::Type::Selection & Mesh::get_input_intersection_variant() {
+    return Input::Type::Selection("Types of search algorithm for finding intersection candidates.")
+        .add_value(Mesh::BIHsearch, "BIHsearch",
+            "Use BIH for finding initial candidates, then continue by prolongation.")
+        .add_value(Mesh::BIHonly, "BIHonly",
+            "Use BIH for finding all candidates.")
+        .add_value(Mesh::BBsearch, "BBsearch",
+            "Use bounding boxes for finding initial candidates, then continue by prolongation.")
+        .close();
+}
 
 const IT::Record & Mesh::get_input_type() {
 	return IT::Record("Mesh","Record with mesh related data." )
@@ -65,10 +75,10 @@ const IT::Record & Mesh::get_input_type() {
 				" - ALL (all regions of the mesh)\n - .BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
 	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
+        .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
+                     IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
 		.close();
 }
-
-
 
 const unsigned int Mesh::undef_idx;
 
@@ -97,6 +107,10 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
     reinit(in_record_);
 }
 
+Mesh::IntersectionSearch Mesh::get_intersection_search()
+{
+    return in_record_.val<Mesh::IntersectionSearch>("intersection_search");
+}
 
 
 void Mesh::reinit(Input::Record in_record)

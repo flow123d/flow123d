@@ -68,10 +68,15 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
                                             std::vector< IntersectionLocal<dim,3>>& storage)
 {
     START_TIMER("Intersection algorithm");
+
+    Mesh::IntersectionSearch is = mesh->get_intersection_search();
+    switch(is){
+        case Mesh::BIHsearch: iea.compute_intersections(mesh->get_bih_tree()); break;
+        case Mesh::BIHonly:   iea.compute_intersections_BIHtree(mesh->get_bih_tree()); break;
+        case Mesh::BBsearch:  iea.compute_intersections_BB(); break;
+        default: ASSERT(0).error("Unsupported search algorithm.");
+    }
     
-    iea.compute_intersections(mesh->get_bih_tree());
-//     iea.compute_intersections_BIHtree(mesh->get_bih_tree());
-//     iea.compute_intersections_BB();
     END_TIMER("Intersection algorithm");
     
     START_TIMER("Intersection into storage");

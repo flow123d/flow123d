@@ -104,7 +104,20 @@ public:
             << "Element id: " << EI_ElemNew::val << " on region name: " << EI_RegNew::val << "\n");
 
 
-
+    /**
+     * \brief Types of search algorithm for finding intersection candidates.
+     */
+    typedef enum IntersectionSearch {
+        BIHsearch  = 1,
+        BIHonly = 2,
+        BBsearch = 3
+    } IntersectionSearch;
+    
+    /**
+     * \brief The definition of input record for selection of variant of file format
+     */
+    static const Input::Type::Selection & get_input_intersection_variant();
+    
     static const unsigned int undef_idx=-1;
     static const Input::Type::Record & get_input_type();
 
@@ -280,7 +293,10 @@ public:
      */
     void check_and_finish();
     
+    /// Getter for BIH. Creates and compute BIH at first call.
     const BIHTree &get_bih_tree();
+    /// Getter for input type selection for intersection search algorithm.
+    IntersectionSearch get_intersection_search();
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
