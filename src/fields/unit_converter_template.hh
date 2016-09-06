@@ -87,6 +87,9 @@ public:
     {
     	unit_data_[unit_data_key_].coef_ = d;
     }
+
+    inline UnitData unit_data()
+    { return unit_data_; }
 private:
 
     Semantic_actions& operator=( const Semantic_actions& );
@@ -102,6 +105,19 @@ private:
     std::string unit_data_key_;  //!< keyo actual item of unit_data_
     int factor_idx_;             //!< index to actual item of subvector of factors of unit_data_
 };
+
+
+template< typename Iter_type >
+void throw_error( spirit_namespace::position_iterator< Iter_type > i, const std::string& reason )
+{
+    throw Error_position( i.get_position().line, i.get_position().column, reason );
+}
+
+template< typename Iter_type >
+void throw_error( Iter_type i, const std::string& reason )
+{
+   throw reason;
+}
 
 
 // the spirit grammer
@@ -125,6 +141,12 @@ public:
 	static void throw_exp_not_int( Iter_type begin, Iter_type end )
     {
 	    throw_error( begin, "not integer value of exponent" );
+    }
+
+
+	static void throw_not_shortcut( Iter_type begin, Iter_type end )
+    {
+	    throw_error( begin, "not shortcut of unit" );
     }
 
 
@@ -153,7 +175,7 @@ public:
             // actual grammer
 
             unit_
-			    = formula_ >> *( ( ch_p(';') >> *space_p ) >> constant_ )
+			    = formula_ >> *( ch_p(';') >> *space_p >> constant_ )
                 ;
 
             formula_
@@ -164,7 +186,7 @@ public:
                 ;
 
             formula_factor_
-		        = +alpha_p
+		        = +alpha_p | eps_p[ &throw_not_shortcut ]
 			    ;
 
             constant_
@@ -175,11 +197,12 @@ public:
 			    ;
 
             constant_shortcut_
-			    = +alpha_p
+			    = +alpha_p | eps_p[ &throw_not_shortcut ]
 				;
 
             constant_multiplicator_
 			    = strict_real_p[ new_multipl ]
+				  | int64_p[ new_multipl ]
 			    ;
 
             exp_
@@ -199,6 +222,27 @@ private:
 
     Semantic_actions_t& actions_;
 };
+
+UnitData read_unit(std::string s)
+{
+    typedef spirit_namespace::position_iterator< std::string::iterator > PosnIterT;
+
+    std::string::iterator begin = s.begin();
+	std::string::iterator end = s.end();
+
+    const PosnIterT posn_begin( begin, end );
+    const PosnIterT posn_end( end, end );
+
+    Semantic_actions< std::string::iterator > semantic_actions;
+
+    const spirit_namespace::parse_info< std::string::iterator > info =
+                        spirit_namespace::parse( begin, end,
+                                                UnitSIGrammer< std::string::iterator >( semantic_actions ),
+                                                spirit_namespace::space_p );
+
+    return semantic_actions.unit_data();
+}
+
 
 } // end namespace units_converter
 

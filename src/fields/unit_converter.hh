@@ -29,6 +29,7 @@ namespace units_converter
 struct Factor {
 	/// Constructor
 	Factor() : exponent_(1) {}
+	Factor(std::string factor, int exponent) : factor_(factor), exponent_(exponent) {}
 
 	std::string factor_;  //!< string represantation of unit or user defined constant
 	int exponent_;        //!< exponent
