@@ -24,6 +24,16 @@
 using namespace std;
 using namespace computeintersection;
 
+/// auxiliary function for sorting intersection point according to x,y local coordinates of component triangle
+bool compare_ip22(const computeintersection::IntersectionPoint<2,2>& a,
+                  const computeintersection::IntersectionPoint<2,2>& b)
+{
+    if (a.comp_coords()[0] == b.comp_coords()[0])
+        return a.comp_coords()[1] <= b.comp_coords()[1];
+    else
+        return a.comp_coords()[0] < b.comp_coords()[0];
+}
+
 /// Create results for the meshes in directory 'simple_meshes_22d'.
 void fill_22d_solution(std::vector<computeintersection::IntersectionLocal<2,2>> &ils)
 {
@@ -53,7 +63,6 @@ void fill_22d_solution(std::vector<computeintersection::IntersectionLocal<2,2>> 
     ils[8].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0.4,0.4})));
     ils[8].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0.25,0.5}),arma::vec2({0.5,0.5})));
 }
-
 
 // Permutes tetrahedron coordinates of IP<2,2> according to given permutation.
 computeintersection::IntersectionLocal<2,2> permute_coords(computeintersection::IntersectionLocal<2,2> il,
@@ -98,7 +107,9 @@ void compute_intersection_22d(Mesh *mesh, const computeintersection::Intersectio
 
     computeintersection::IntersectionLocal<2,2> ilc(is);
     EXPECT_EQ(ilc.size(), il.size());
-
+    
+    // sort ips in ils according local coordinates of component triangle
+    std::sort(ilc.points().begin(), ilc.points().end(),compare_ip22);
     
     for(unsigned int i=0; i < is.size(); i++)
     {
@@ -123,9 +134,9 @@ TEST(intersections_22d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-//         const unsigned int np = permutations_triangle.size();
-//         for(unsigned int p=0; p<np; p++)
-//         {
+        const unsigned int np = permutations_triangle.size();
+        for(unsigned int p=0; p<np; p++)
+        {
             MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
@@ -135,11 +146,14 @@ TEST(intersections_22d, all) {
             reader.read_mesh(&mesh);
         
             // permute nodes of one triangle:
-//             permute_triangle(mesh.element(0),p);
+            permute_triangle(mesh.element(0),p);
             
             mesh.setup_topology();
             
-            compute_intersection_22d(&mesh, solution[s]);//permute_coords(solution[s], permutations_triangle[p]));
-//         }
+//             auto il = solution[s];
+            auto il = permute_coords(solution[s], permutations_triangle[p]);
+            std::sort(il.points().begin(), il.points().end(),compare_ip22);
+            compute_intersection_22d(&mesh, il);
+        }
     }
 }
