@@ -46,10 +46,12 @@ Selection::Selection(const string &name, const string &desc)
 
 
 
-Selection &Selection::add_value(const int value, const std::string &key, const std::string &description) {
+Selection &Selection::add_value(const int value, const std::string &key,
+        const std::string &description, TypeBase::attribute_map attributes)
+{
     ASSERT(!is_finished())(key)(type_name()).error("Declaration of new key in finished Selection.");
 
-    data_->add_value(value, key, description);
+    data_->add_value(value, key, description, attributes);
     return *this;
 }
 
@@ -155,7 +157,8 @@ TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterP
 
 
 
-void Selection::SelectionData::add_value(const int value, const std::string &key, const std::string &description) {
+void Selection::SelectionData::add_value(const int value, const std::string &key,
+        const std::string &description, TypeBase::attribute_map attributes) {
     KeyHash key_h = TypeBase::key_hash(key);
     ASSERT(key_to_index_.find(key_h) == key_to_index_.end())(key)(type_name_).error("Key already exists in Selection.");
     value_to_index_const_iter it = value_to_index_.find(value);
@@ -167,7 +170,7 @@ void Selection::SelectionData::add_value(const int value, const std::string &key
     key_to_index_.insert(std::make_pair(key_h, new_idx));
     value_to_index_.insert(std::make_pair(value, new_idx));
 
-    Key tmp_key = { new_idx, key, description, value };
+    Key tmp_key = { new_idx, key, description, value, attributes };
     keys_.push_back(tmp_key);
 }
 

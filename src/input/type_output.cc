@@ -718,8 +718,10 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type) {
 		if (it != type->begin()) {
 			stream << "," << endl;
 		}
-		stream << "{ \"name\" : \"" << it->key_ << "\"," << endl
-		       << "\"description\" : \"" << escape_description(it->description_) << "\" }";
+		stream << "{ \"name\" : \"" << it->key_ << "\"," << endl;
+		stream << "\"description\" : \"" << escape_description(it->description_) << "\"," << endl;
+		stream << print_attributes(it->attributes_) << "," << endl;
+		stream << "}";
 	}
 
 	stream << "]" << endl;
