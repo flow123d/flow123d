@@ -40,12 +40,13 @@ parser.add('', '--host', type=str, name='host', placeholder='<host>', docs=[
     'hostname is used to select the setup script.',
 ])
 parser.add('-v', '--valgrind', type=[True, str], name='valgrind', placeholder='[<VALGRIND ARGS>]', docs=[
-    'Run tests under valgrind, with python suppression with optional argument',
+    'Run command under valgrind, with python suppression with optional argument',
     ' <valgrind args> passed to the valgrind. (In PBS mode this arguments is ignored.)?',
 ])
 parser.add('', '--batch', type=True, name='batch', docs=[
-    'Make output of this script more for an off-line reading',
-    'In batch mode, stdout and stderr from executed processes will be printed, not saved'
+    'Make output of this script more suitable for an off-line logging. Features such as ',
+    'progress bars and other output will be disabled.'
+    'In batch mode, stdout and stderr from executed processes will be printed, not saved into file.'
 ])
 # ----------------------------------------------
 parser.add_section('Passable arguments to exec_with_limit.py')
@@ -56,9 +57,6 @@ parser.add('-t', '--limit-time', type=Duration.parse, name='time_limit', placeho
 parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder='<memory>', docs=[
     'Optional memory limit per node in MB',
     'For precision use float value'
-])
-parser.add('', '--root', hidden=True, type=str, name='root', placeholder='<ROOT>', docs=[
-    'Path to base dir of flow123d'
 ])
 # ----------------------------------------------
 
