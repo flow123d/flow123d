@@ -9,20 +9,20 @@ from scripts.prescriptions.remote_run import PBSModule
 # ----------------------------------------------
 
 
-
 class Module(PBSModule):
-    def get_pbs_command(self, options, pbs_script_filename):
+    def get_pbs_command(self, pbs_script_filename):
         # total parallel process
-        np = self.proc_value
+        np = self.case.proc
+
         # processes per node, default value 2 (Master-slave)
-        ppn = options.get('ppn', 2)
+        ppn = self.ppn
 
         # command
         command = [
             'qsub',
             '-pe', 'orte', '{np}'.format(**locals()),
             '-l', 'num_proc={ppn}'.format(**locals()),
-            '-o', self.pbs_output,
+            '-o', self.case.fs.pbs_output,
             pbs_script_filename
         ]
 
