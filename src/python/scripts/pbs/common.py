@@ -6,6 +6,8 @@ import importlib
 import json
 import platform
 # ----------------------------------------------
+import yaml
+
 from scripts.core.base import Paths, Printer
 # ----------------------------------------------
 
@@ -15,6 +17,7 @@ job_ok_string = '[JOB_STATUS:OK]'
 
 class DummyModule(object):
     """
+    Dummy class for auto-completion purposes in IDE
     :type template: str
     """
 
@@ -35,10 +38,18 @@ class DummyModule(object):
 
 def get_pbs_module(hostname_hint=None):
     """
+    file host_table.yaml serves as lookup table when using python script in queue mode
+    each key is hostname and each value names a module which should be loaded
+    modules are located in /src/python/scripts/pbs/modules
+
+    If no matching key for current machine exists try to use pbs_<hostname>
+    where all dots(.) are replaced with underscores(_)
+
+    if hostname_hint is not set node name will be used
     :rtype : scripts.pbs.modules.pbs_tarkil_cesnet_cz
     """
     pbs_module_path = None
-    host_file = Paths.join(Paths.flow123d_root(), 'bin', 'python', 'host_table.json')
+    host_file = Paths.join(Paths.flow123d_root(), 'config', 'host_table.yaml')
     host_file_exists = Paths.exists(host_file)
     hostname = hostname_hint or platform.node()
     from_host = False
@@ -46,7 +57,7 @@ def get_pbs_module(hostname_hint=None):
     # try to get name from json file
     if host_file_exists:
         with open(host_file, 'r') as fp:
-            hosts = json.load(fp)
+            hosts = yaml.load(fp)
             pbs_module_path = hosts.get(hostname, None)
             from_host = pbs_module_path is not None
 
