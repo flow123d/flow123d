@@ -12,6 +12,7 @@
 #include <flow_gtest.hh>
 
 #include "fields/unit_si.hh"
+#include "fields/unit_converter_template.hh"
 
 
 TEST(UnitSI, format_latex) {
@@ -121,4 +122,25 @@ TEST(UnitSI, user_defined_units) {
 	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^a"); }, UnitSI::ExcInvalidUnitString, "invalid exponent 'a'" );
 	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^2a"); }, UnitSI::ExcInvalidUnitString, "invalid exponent '2a'" );
 	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^1.5"); }, UnitSI::ExcInvalidUnitString, "invalid symbol of unit '5'" );
+}
+
+TEST(UnitSI, unit_converter) {
+	units_converter::UnitData data;
+	{
+		std::string unit = "MPa/rho/g; rho = 990*kg*m^-3; g = 9.8*m*s^-2";
+		data = units_converter::read_unit(unit);
+		EXPECT_EQ(data.size(), 3);
+		EXPECT_TRUE( data.find("rho") != data.end() );
+		EXPECT_TRUE( data.find("g") != data.end() );
+		EXPECT_FALSE( data.find("MPa") != data.end() );
+		EXPECT_DOUBLE_EQ( data.find("g")->second.coef_, 9.8);
+		EXPECT_EQ(data.find("g")->second.factors_.size(), 2);
+		EXPECT_DOUBLE_EQ( data.find("rho")->second.coef_, 990);
+		EXPECT_EQ(data.find("rho")->second.factors_.size(), 2);
+	}
+
+	{
+		std::string unit = "a*b; a = kg*m^a; b = m*s^-2";
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit, "not integer value of exponent" );
+	}
 }
