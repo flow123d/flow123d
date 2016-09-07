@@ -38,7 +38,7 @@ test_cases:
             a_tol: 200
   - files: flow_implicit.yaml
     tags: [problematic]
-    proc: [1, 2]
+    proc: [1]
     time_limit: 5.0
     memory_limit: 800
     check_rules:
