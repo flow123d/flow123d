@@ -4,40 +4,48 @@
 import re
 import random
 
-from scripts.pbs.job import Job
+from scripts.pbs.job import Job, JobState
 from scripts.prescriptions.remote_run import PBSModule
 
 
 class Module(PBSModule):
+    # must be set
+    mock = None
+
     def __init__(self, case):
         super(Module, self).__init__(case)
 
     def get_pbs_command(self, pbs_script_filename):
-        return ["bash", pbs_script_filename]
+        return [
+            "python",
+            Module.mock,
+            'qsub',
+            '-o', self.case.fs.pbs_output,
+            pbs_script_filename]
 
 
 template = """
 #!/bin/bash
-# $$command$$
-cp /home/jan-hybs/Dokumenty/projects/Flow123d-python-utils/src/foo.json $$json_output$$ > /dev/null 2>&1
-echo 25309
+uname -a
+echo JOB START: `date`
+pwd
+
+$$command$$
+
 """.lstrip()
 
 
 class ModuleJob(Job):
     def __init__(self, job_id, case):
         super(ModuleJob, self).__init__(job_id, case)
+        self.parser = self.parser_builder(
+            self, 1, JobState.UNKNOWN,
+            queue=2,
+        )
 
     @classmethod
     def update_command(cls):
-        return ['ps', '-a']
-
-    def parse_status(self, output=""):
-        # if random.random() > 0.5:
-        #     return 'Q'
-        if output.find(str(self.id)) == -1:
-            return 'C'
-        return 'R'
+        return ["python", Module.mock, 'qstat']
 
     @classmethod
     def create(cls, command_output, case):
