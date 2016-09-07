@@ -108,15 +108,9 @@ private:
 
 
 template< typename Iter_type >
-void throw_error( spirit_namespace::position_iterator< Iter_type > i, const std::string& reason )
-{
-    throw Error_position( i.get_position().line, i.get_position().column, reason );
-}
-
-template< typename Iter_type >
 void throw_error( Iter_type i, const std::string& reason )
 {
-   throw reason;
+	THROW( ExcInvalidUnit() << EI_UnitError(reason) );
 }
 
 
@@ -235,10 +229,14 @@ UnitData read_unit(std::string s)
 
     Semantic_actions< std::string::iterator > semantic_actions;
 
-    const spirit_namespace::parse_info< std::string::iterator > info =
-                        spirit_namespace::parse( begin, end,
-                                                UnitSIGrammer< std::string::iterator >( semantic_actions ),
-                                                spirit_namespace::space_p );
+	try {
+		spirit_namespace::parse( begin, end,
+							UnitSIGrammer< std::string::iterator >( semantic_actions ),
+							spirit_namespace::space_p );
+	} catch (ExcInvalidUnit &e) {
+		e << EI_UnitDefinition(s);
+		throw;
+	}
 
     return semantic_actions.unit_data();
 }

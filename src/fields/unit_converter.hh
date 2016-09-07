@@ -22,8 +22,16 @@
 #include <string>
 #include <map>
 
+#include "input/input_exception.hh"
+
 namespace units_converter
 {
+// Declaration of exception
+TYPEDEF_ERR_INFO(EI_UnitDefinition, std::string);
+TYPEDEF_ERR_INFO(EI_UnitError, std::string);
+DECLARE_INPUT_EXCEPTION(ExcInvalidUnit,
+        << "Invalid definition of unit: " << EI_UnitDefinition::qval << "\n" << EI_UnitError::val << ".\n");
+
 
 /// Store structure given by parser
 struct Factor {
