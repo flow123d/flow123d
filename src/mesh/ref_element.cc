@@ -388,7 +388,7 @@ auto RefElement<dim>::barycentric_on_face(const BaryPoint &barycentric, unsigned
     for(unsigned int i=0; i < dim; i++) {
         unsigned int i_sub_node = (i+1)%dim;
 //         unsigned int i_bary = (dim + side_nodes_[i_face][i_sub_node])%(dim+1);
-        unsigned int i_bary = (dim + interact<0,dim-1>(i_face)[i_sub_node])%(dim+1);
+        unsigned int i_bary = (dim + interact_<0,dim-1>(i_face)[i_sub_node])%(dim+1);
         face_barycentric[i] = barycentric[ i_bary ];
     }
     return face_barycentric;
@@ -404,7 +404,7 @@ auto RefElement<dim>::barycentric_from_face(const FaceBaryPoint &face_barycentri
     for(unsigned int i_sub_coord=0; i_sub_coord<dim; i_sub_coord++) {
         unsigned int i_sub_node = (i_sub_coord+1)%dim;
 //         barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( side_nodes_[i_face][i_sub_node]);
-        barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( interact<0,dim-1>(i_face)[i_sub_node]);
+        barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( interact_<0,dim-1>(i_face)[i_sub_node]);
     }
     return barycentric;
 }
