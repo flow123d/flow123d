@@ -25,6 +25,7 @@ class ModuleRuntest(ScriptModule):
     @staticmethod
     def read_configs(all_yamls):
         """
+        Add yamls to ConfigPool and parse configs
         :rtype: scripts.config.yaml_config.ConfigPool
         """
         configs = ConfigPool()
@@ -35,6 +36,7 @@ class ModuleRuntest(ScriptModule):
 
     def create_process_from_case(self, case):
         """
+        Method creates main thread where clean-up, pypy and comparison is stored
         :type case: scripts.config.yaml_config.ConfigCase
         """
         local_run = LocalRun(case)
@@ -52,6 +54,9 @@ class ModuleRuntest(ScriptModule):
 
     def create_pbs_job_content(self, module, case):
         """
+        Method creates pbs start script which will be passed to
+        some qsub command
+
         :type case: scripts.config.yaml_config.ConfigCase
         :type module: scripts.pbs.modules.pbs_tarkil_cesnet_cz
         :rtype : str
@@ -80,6 +85,12 @@ class ModuleRuntest(ScriptModule):
 
     def run_pbs_mode(self):
         """
+        Runs this module in local mode.
+        At this point all configuration files has been loaded what is left
+        to do is to create pbs scripts and put them to queue (qsub).
+        After them we monitor all jobs (qstat) and if some job exits we parse
+        result json file and determine ok/error status for the job
+
         :type debug: bool
         :type configs: scripts.config.yaml_config.ConfigPool
         """
@@ -169,6 +180,10 @@ class ModuleRuntest(ScriptModule):
 
     def run_local_mode(self):
         """
+        Runs this module in local mode.
+        At this point all configuration files has been loaded what is left
+        to do is to prepare execution arguments start whole process
+
         :type debug: bool
         :type configs: scripts.config.yaml_config.ConfigPool
         """
@@ -237,6 +252,10 @@ class ModuleRuntest(ScriptModule):
         self.configs = None
 
     def _check_arguments(self):
+        """
+        Arguments additional check
+        """
+
         # we need flow123d, mpiexec and ndiff to exists in LOCAL mode
         if not self.arg_options.queue and not Paths.test_paths('flow123d', 'mpiexec', 'ndiff'):
             Printer.err('Missing obligatory files! Exiting')
@@ -250,6 +269,9 @@ class ModuleRuntest(ScriptModule):
             sys.exit(2)
 
     def _run(self):
+        """
+        Run method for this module
+        """
 
         self.all_yamls = list()
         for path in self.others:

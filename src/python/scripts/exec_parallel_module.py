@@ -35,6 +35,10 @@ class ModuleExecParallel(ScriptModule):
         self.proc, self.time_limit, self.memory_limit = None, None, None
 
     def _check_arguments(self):
+        """
+        Arguments additional check
+        """
+
         # no args
         if len(self.rest) == 0:
             self.parser.exit_usage('no MPI executable provided', exit_code=1)
@@ -43,6 +47,10 @@ class ModuleExecParallel(ScriptModule):
             self.parser.exit_usage('no command provided', exit_code=2)
 
     def _run(self):
+        """
+        Run method for this module
+        """
+
         self.proc = ensure_iterable(self.arg_options.get('cpu'))
         self.time_limit = self.arg_options.get('time_limit')
         self.memory_limit = self.arg_options.get('memory_limit')
@@ -59,6 +67,12 @@ class ModuleExecParallel(ScriptModule):
             return self.run_local_mode()
 
     def run_pbs_mode(self):
+        """
+        Runs this module in local mode.
+        At this point arguments from cmd where parsed and converted.
+        We create pbs start script/s and monitor their status/es. All jobs
+        are inserted into queue and after finished evauluated.
+        """
         pbs_module = get_pbs_module()
         jobs = self.prepare_pbs_files(pbs_module)
 
@@ -157,6 +171,16 @@ class ModuleExecParallel(ScriptModule):
         return jobs
 
     def run_local_mode(self):
+        """
+        Runs this module in local mode.
+        At this point arguments from cmd where parsed and converted.
+        We create command arguments and prepare threads.
+
+        If we need to run multiple jobs (for example cpu specification required
+        to run this command using 1 AND 2 CPU) we call method run_local_mode_one
+        repeatedly otherwise only once
+        :return:
+        """
         total = len(self.proc)
 
         if total == 1:
@@ -205,6 +229,10 @@ class ModuleExecParallel(ScriptModule):
         return template
 
     def run_local_mode_one(self, proc):
+        """
+        Method runs single job with specified number of CPU
+        :param proc:
+        """
         if self.proc == 0:
             command = self.rest[1:]
         else:

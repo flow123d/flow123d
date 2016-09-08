@@ -16,6 +16,10 @@ class ModuleExecWithLimit(ScriptModule):
     """
 
     def _check_arguments(self):
+        """
+        Arguments additional check
+        """
+
         # check commands
         if not self.rest:
             self.parser.exit_usage('No command specified!', exit_code=1)
@@ -25,6 +29,10 @@ class ModuleExecWithLimit(ScriptModule):
             self.parser.exit_usage('No limits specified!', exit_code=2)
 
     def _run(self):
+        """
+        Run method for this module
+        """
+
         # prepare executor
         progress = not self.arg_options.batch
         executor = BinExecutor(self.rest)
