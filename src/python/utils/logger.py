@@ -9,6 +9,10 @@ import sys, os
 
 
 class Logger(object):
+    """
+    Class Logger is basic logger class for logging messages (console and file)
+    """
+
     _global_logger = None
 
     @staticmethod

@@ -9,7 +9,11 @@ from scripts.prescriptions.remote_run import PBSModule
 
 
 class Module(PBSModule):
-    # must be set
+    """
+    Class Module dummy local pbs module
+    """
+
+    # must be set later on
     mock = None
 
     def __init__(self, case):
@@ -36,6 +40,9 @@ $$command$$
 
 
 class ModuleJob(Job):
+    """
+    Class ModuleJob dummy local pbs module
+    """
     def __init__(self, job_id, case):
         super(ModuleJob, self).__init__(job_id, case)
         self.parser = self.parser_builder(

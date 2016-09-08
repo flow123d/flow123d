@@ -9,6 +9,10 @@ from ist.formatters.extensions.md_latex import MdLatexSupport
 
 
 class markdown2html(object):
+    """
+    Class markdown2html is simple helper class for parsing md to html
+    """
+
     def __init__(self):
         self._md_latex = MdLatexSupport()
 

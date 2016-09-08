@@ -14,6 +14,10 @@ from scripts.prescriptions.remote_run import PBSModule
 
 
 class Module(PBSModule):
+    """
+    Class Module for TUL hydra cluster PBS system
+    """
+
     def get_pbs_command(self, pbs_script_filename):
         # total parallel process
         np = self.case.proc
@@ -52,6 +56,10 @@ class Module(PBSModule):
 
 
 class ModuleJob(Job):
+    """
+    Class ModuleJob  for TUL hydra cluster PBS system job
+    """
+
     username = None
     instances = list()
 

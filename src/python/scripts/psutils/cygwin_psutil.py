@@ -53,6 +53,13 @@ class use_cache(object):
 
 
 def set_if_not_exists(obj, prop, default):
+    """
+    creates property on object if it does not already exists
+    :param obj:
+    :param prop:
+    :param default:
+    :return:
+    """
     if hasattr(obj, prop):
         return getattr(obj, prop, default)
     setattr(obj, prop, default)
@@ -70,6 +77,7 @@ def parse_csv(output):
 
 class Process(object):
     """
+    Implementation of Process under Cygwin
     :type process : subprocess.Popen
     """
     platform = 'cygwin'

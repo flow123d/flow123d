@@ -9,6 +9,11 @@ from utils.logger import Logger
 
 
 class DoxySection(object):
+    """
+    Class DoxySection registers section which will be parsed in different
+    manner
+    """
+
     def __init__(self, lines=[], formatted=True, section='', obligatory=False):
         self.lines = lines[:]
         self.formatted = formatted

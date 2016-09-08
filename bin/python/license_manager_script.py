@@ -271,6 +271,9 @@ def parse_args(parser):
 
 
 def main():
+    """
+    Main function for license scriptdsvsd
+    """
     parser = create_parser()
     (options, args) = parse_args(parser)
 

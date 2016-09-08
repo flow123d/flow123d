@@ -8,6 +8,11 @@ from utils.strings import format_n_lines
 
 
 class RuntestParser(object):
+    """
+    Class RuntestParser is module for parsing json file result for command runtest
+    keyword is test-case
+    """
+
     def __init__(self, obj, batch):
         self.n_lines = 0 if batch else 15
         self.batch = batch
@@ -91,6 +96,10 @@ class RuntestParser(object):
 
 
 class ExecParser(object):
+    """
+    Class ExecParser is module for parsing json file result for executing command
+    keyword is exec
+    """
     def __init__(self, obj, batch):
         self.returncode = obj.get('returncode', None)
         self.name = obj.get('name', None)
@@ -110,7 +119,8 @@ class ExecParser(object):
 
 class JsonParser(object):
     """
-    :type tests : list[RuntestParser]
+    Class JsonParser parses json result
+    :type tests : list[RuntestParser] or list[ExecParser]
     """
     parse_map = {
         'test-case': RuntestParser,

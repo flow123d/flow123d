@@ -80,6 +80,10 @@ class Globals(object):
 
 
 class FormatMode(object):
+    """
+    Class FormatMode is enum for format modes
+    """
+
     LATEX_MODE = 1
     HTML_MODE = 2
     format_mode = 0

@@ -9,6 +9,10 @@ from scripts.core.base import Printer
 
 
 class ProgressCounter(object):
+    """
+    Class ProgressCounter is simple printer-like class which count to specific target
+    """
+
     def __init__(self, fmt):
         self.i = 0
         self.fmt = fmt
@@ -25,6 +29,8 @@ class ProgressCounter(object):
 
 class ProgressTime(object):
     """
+    Class ProgressTime will measure time for specific scope
+    and prints elapsed time
     :type thread : threading.Thread
     """
     def __init__(self, format='{}', period=0.1, dynamic=True):

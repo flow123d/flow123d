@@ -10,6 +10,10 @@ from scripts.prescriptions.remote_run import PBSModule
 
 
 class Module(PBSModule):
+    """
+    Class Module for metacentrum PBS system
+    """
+
     def get_pbs_command(self, pbs_script_filename):
         # total parallel process
         np = self.case.proc
@@ -30,6 +34,10 @@ class Module(PBSModule):
 
 
 class ModuleJob(Job):
+    """
+    Class ModuleJob for metacentrum PBS system job
+    """
+
     instances = list()
 
     def __init__(self, job_id, case):

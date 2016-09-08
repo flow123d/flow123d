@@ -26,6 +26,10 @@ from utils.strings import format_n_lines
 
 
 class ModuleExecParallel(ScriptModule):
+    """
+    Class ModuleExecParallel is backend for script exec_parallel.py
+    """
+
     def __init__(self):
         super(ModuleExecParallel, self).__init__()
         self.proc, self.time_limit, self.memory_limit = None, None, None
@@ -242,6 +246,7 @@ class ModuleExecParallel(ScriptModule):
 
 def do_work(parser, args=None, debug=False):
     """
+    Main method which invokes ModuleExecParallel
     :type debug: bool
     :type args: list
     :type parser: utils.argparser.ArgParser

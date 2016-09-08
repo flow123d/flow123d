@@ -12,6 +12,10 @@ from utils.logger import Logger
 
 
 class ProfilerJSONDecoder(json.JSONDecoder):
+    """
+    Class ProfilerJSONDecoder is custom json decoder
+    """
+
     def decode(self, json_string):
         default_obj = super(ProfilerJSONDecoder, self).decode(json_string)
         return default_obj

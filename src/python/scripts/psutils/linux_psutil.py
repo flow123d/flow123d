@@ -40,6 +40,10 @@ _just_a_sec = 0.1
 
 
 class Process(psutil.Process):
+    """
+    Implementation of Process under windows and linux
+    """
+
     platform = 'windows'
 
     @classmethod

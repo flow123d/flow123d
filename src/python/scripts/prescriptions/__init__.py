@@ -8,6 +8,7 @@ from scripts.core.base import Paths, PathFilters
 
 class AbstractRun(object):
     """
+    Abstract class which prepares command list for PyPy class
     :type case : scripts.config.yaml_config.ConfigCase
     """
     def __init__(self, case):

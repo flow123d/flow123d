@@ -32,12 +32,22 @@ _list_single_digit_convert = lambda x: [eval(x)]
 # range format such as 1:3
 _list_range_short = re.compile(r'^(\d+):(\d+)$')
 def _list_range_short_convert(x):
+    """
+    Converts input to string from short list format which is defined as
+    from:to
+    :param x:
+    """
     args = [int(y) for y in _list_range_short.match(x).groups()]
     return list(range(args[0], args[1]+1))
 
 # range format such as 1:10:2
 _list_range_long = re.compile(r'^(\d+):(\d+):(\d+)$')
 def _list_range_long_convert(x):
+    """
+    Converts input to string from long list format which is defined as
+    from:to:step
+    :param x:
+    """
     args = [int(y) for y in _list_range_long.match(x).groups()]
     return list(range(args[0], args[1]+1, args[2]))
 
@@ -56,6 +66,10 @@ _parse_arg_name = re.compile(r'^(--[a-zA-Z0-9_-]+|-[a-zA-Z0-9_-])')
 
 
 class ArgOption(object):
+    """
+    Class ArgOption is simple container for single argument option
+    """
+    
     def __init__(self, short, long, type=str, default=None, name=None, subtype=str, docs='', placeholder=None, hidden=False):
         self.short = short
         self.long = long
@@ -125,6 +139,10 @@ class ArgOption(object):
 
 
 class ArgOptions(dict):
+    """
+    Class ArgOptions is dictionary with dot access available
+    """
+    
     def __getattr__(self, attr):
         return self.get(attr)
 
@@ -144,6 +162,13 @@ class ArgOptions(dict):
 
 
 class ArgParser(object):
+    """
+    Class ArgParser is command-line parsing class.
+
+    Parser support short and long flags with custom type definition.
+    It also return rest of arguments located after double dash --
+    """
+
     def __init__(self, usage):
         self._args = [str(x) for x in sys.argv[1:]]
         self.args = list()

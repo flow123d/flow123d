@@ -17,6 +17,10 @@ from markdown.util import etree
 
 
 class StrikeThroughExtension(Extension):
+    """
+    Class StrikeThroughExtension is module for md allowing to strike through the text
+    """
+
     def __init__(self, *args, **kwargs):
         self.md = None
         self.config = {
@@ -36,6 +40,10 @@ class StrikeThroughExtension(Extension):
 
 
 class StrikeThroughPattern(Pattern):
+    """
+    Class StrikeThroughPattern handles single match in md
+    """
+
     def __init__(self, pattern, config):
         super(StrikeThroughPattern, self).__init__(pattern)
         self.config = config
@@ -50,4 +58,10 @@ class StrikeThroughPattern(Pattern):
 
 
 def makeExtension(*args, **kwargs):
+    """
+    register extension
+    :param args:
+    :param kwargs:
+    :return:
+    """
     return StrikeThroughExtension(*args, **kwargs)

@@ -7,6 +7,10 @@ from scripts.core.base import Paths
 
 
 class CompareNdiff(object):
+    """
+    Class CompareNdiff is ndiff module for comparing results
+    """
+
     @staticmethod
     def get_command(f1, f2, **details):
         return [

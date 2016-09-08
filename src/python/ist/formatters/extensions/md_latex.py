@@ -19,6 +19,10 @@ from markdown.util import etree
 
 
 class MdLatexExtension (Extension):
+    """
+    Class MdLatexExtension extends md by latex
+    """
+
     def __init__ (self, *args, **kwargs):
         self.config = {
         }
@@ -40,6 +44,10 @@ class MdLatexExtension (Extension):
 
 
 class MdLatex (Pattern):
+    """
+    Class MdLatex handles single latex match
+    """
+
     def __init__ (self, pattern, config):
         super (MdLatex, self).__init__ (pattern)
         self.config = config
@@ -57,10 +65,20 @@ class MdLatex (Pattern):
 
 
 def makeExtension (*args, **kwargs):
+    """
+    Register extension
+    :param args:
+    :param kwargs:
+    :return:
+    """
     return MdLatexExtension (*args, **kwargs)
 
 
 class MdLatexSupport (object):
+    """
+    Class MdLatexSupport is helper class handling replacement in latex
+    """
+
     def __init__ (self):
         self.latex = []
 

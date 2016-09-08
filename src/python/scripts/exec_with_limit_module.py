@@ -11,6 +11,9 @@ from utils.strings import format_n_lines
 
 
 class ModuleExecWithLimit(ScriptModule):
+    """
+    Class ModuleExecWithLimit is backend for script exec_with_limit.py
+    """
 
     def _check_arguments(self):
         # check commands
@@ -54,6 +57,7 @@ class ModuleExecWithLimit(ScriptModule):
 
 def do_work(parser, args=None):
     """
+    Main method which invokes ModuleExecWithLimit
     :type args: list
     :type parser: utils.argparser.ArgParser
     """

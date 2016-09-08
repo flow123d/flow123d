@@ -17,6 +17,10 @@ from utils.globals import wait_for
 
 
 class ExtendedThread(threading.Thread):
+    """
+    Class ExtendedThread is Thread class with extra functionality added
+    """
+
     def __init__(self, name, target=None):
         super(ExtendedThread, self).__init__(name=name)
         self.started = None
@@ -89,6 +93,10 @@ class ExtendedThread(threading.Thread):
 
 
 class BrokenProcess(object):
+    """
+    Class BrokenProcess Dummy object when process execution fails
+    """
+
     def __init__(self, exception=None):
         self.exception = exception
         self.pid = -1
@@ -101,6 +109,7 @@ class BrokenProcess(object):
 
 class MultiThreads(ExtendedThread):
     """
+    Class MultiThreads is base class when executing threads in group
     :type threads: list[scripts.core.threads.ExtendedThread]
     """
     def __init__(self, name, progress=False):
@@ -170,6 +179,10 @@ class MultiThreads(ExtendedThread):
 
 
 class SequentialThreads(MultiThreads):
+    """
+    Class SequentialThreads runs multiple threads in sequential fashion
+    """
+
     def __init__(self, name, progress=True, indent=False):
         super(SequentialThreads, self).__init__(name, progress)
         self.thread_name_property = False
@@ -210,6 +223,10 @@ class SequentialThreads(MultiThreads):
 
 
 class ParallelThreads(MultiThreads):
+    """
+    Class ParallelThreads run multiple threads in parallel fashion
+    """
+
     def __init__(self, n=4, name='runner', progress=True):
         super(ParallelThreads, self).__init__(name, progress)
         self.n = n if type(n) is int else 1
@@ -249,6 +266,9 @@ class ParallelThreads(MultiThreads):
 
 class PyPy(ExtendedThread):
     """
+    Class PyPy is main class which executes command having multiple monitors registered
+    PyPy = BinExecutor + monitors
+
     :type executor : scripts.core.execution.BinExecutor
     :type case     : ConfigCase
     """
@@ -339,6 +359,10 @@ class PyPy(ExtendedThread):
 
 
 class ComparisonMultiThread(SequentialThreads):
+    """
+    Class ComparisonMultiThread hold comparison results and writes them to a file
+    """
+
     def __init__(self, output, name='Comparison', progress=True, indent=True):
         super(ComparisonMultiThread, self).__init__(name, progress, indent)
         self.output = output
@@ -376,6 +400,8 @@ class ComparisonMultiThread(SequentialThreads):
 
 class RuntestMultiThread(SequentialThreads):
     """
+    Class RuntestMultiThread is simple triplet holding single ConfigCase results
+    (CleanThread, PyPy, ComparisonMultiThread)
     :type clean  : scripts.prescriptions.local_run.CleanThread
     :type pypy   : PyPy
     :type comp   : ComparisonMultiThread

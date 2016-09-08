@@ -16,6 +16,10 @@ from utils.strings import format_n_lines
 
 
 class JobState(object):
+    """
+    Class JobState is enum for job states
+    """
+
     COMPLETED = 'C'
     EXITING = 'E'
     HELD = 'H'
@@ -60,6 +64,7 @@ class JobState(object):
 
 class Job(object):
     """
+    Class Job represents single PBS job
     :type case : scripts.config.yaml_config.ConfigCase
     """
     def __init__(self, job_id, case):
@@ -145,6 +150,7 @@ class Job(object):
 
 class MultiJob(object):
     """
+    Class MultiJob groups together multiple Jobs
     :type items : list[scripts.pbs.job.Job]
     :type cls   : class
     """
@@ -226,6 +232,11 @@ class MultiJob(object):
 
 
 def print_log_file(f, n_lines):
+    """
+    Method prints up to n_lines from file f
+    :param f:
+    :param n_lines:
+    """
     log_file = IO.read(f)
     if log_file:
         if n_lines == 0:
@@ -237,6 +248,11 @@ def print_log_file(f, n_lines):
 
 
 def get_status_line(o, map=False):
+    """
+    Helper method which prints first line with details
+    :param o:
+    :param map:
+    """
     if not map:
         return '[{:^6}]:{o[returncode]:3} |'.format('ERROR', o=o)
     return '[{:^6}]:{o[returncode]:3} |'.format(
@@ -245,6 +261,7 @@ def get_status_line(o, map=False):
 
 def finish_pbs_job(job, batch):
     """
+    Upon PBS finish determine Job exit
     :type job: scripts.pbs.job.Job
     """
     # try to get more detailed job status

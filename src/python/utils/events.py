@@ -6,6 +6,11 @@ import operator
 
 
 class Event(object):
+    """
+    Class Event maintains a list of its dependents and notifies
+    them automatically of any state changes
+    """
+    
     def __init__(self):
         self.handlers = dict()
 

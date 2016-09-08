@@ -15,6 +15,10 @@ REF_OUTPUT_DIR = 'ref_out'
 
 
 class LocalRun(AbstractRun):
+    """
+    Class LocalRun creates PyPy object and creates comparison threads
+    """
+    
     def __init__(self, case):
         super(LocalRun, self).__init__(case)
         self.progress = False
@@ -76,6 +80,10 @@ class LocalRun(AbstractRun):
 
 
 class CleanThread(ExtendedThread):
+    """
+    Class CleanThread clean directory where results will be stored
+    """
+    
     def __init__(self, name, dir):
         super(CleanThread, self).__init__(name)
         self.dir = dir

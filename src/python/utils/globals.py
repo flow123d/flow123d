@@ -78,6 +78,13 @@ def wait_for(obj, property, period=0.1, max_wait=5):
 
 
 def justify(text, max_length=60, max_spaces=2):
+    """
+    Method will justify text inserting maximum of max_spaces spaces
+    :param text:
+    :param max_length:
+    :param max_spaces:
+    :return:
+    """
     spaces = len([c for c in text if c.isspace()])
     needed = max_length - (len(text) - spaces)
     space_lst = [needed] + spaces * [0]

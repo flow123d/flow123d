@@ -8,7 +8,13 @@ from utils.counter import ProgressTime
 from utils.strings import format_n_lines
 # ----------------------------------------------
 
+
 def ensure_active(f):
+    """
+    Wrapper which executes its action if class is active
+    :param f:
+    :return:
+    """
     def wrapper(self, *args, **kwargs):
         if self.active:
             return f(self, *args, **kwargs)
@@ -16,6 +22,11 @@ def ensure_active(f):
 
 
 class ThreadMonitor(object):
+    """
+    Class ThreadMonitor is abstract class for monitoring other threads.
+    Event system is used.
+    """
+
     def __init__(self, pypy):
         """
         :type pypy: scripts.core.threads.PyPy
@@ -48,6 +59,10 @@ class ThreadMonitor(object):
 
 
 class ProgressMonitor(ThreadMonitor):
+    """
+    Class ProgressMonitor monitors PyPy object and reports progress
+    """
+    
     def __init__(self, pypy):
         super(ProgressMonitor, self).__init__(pypy)
         self.timer = ProgressTime('Running | elapsed time {}')
@@ -65,6 +80,11 @@ class ProgressMonitor(ThreadMonitor):
 
 
 class InfoMonitor(ThreadMonitor):
+    """
+    Class InfoMonitor monitors PyPy object and prints info at the beginning
+    and at the end. On error prints details.
+    """
+    
     def __init__(self, pypy):
         super(InfoMonitor, self).__init__(pypy)
         self.command_str = Command.to_string(self.pypy.executor.command)
@@ -96,6 +116,8 @@ class InfoMonitor(ThreadMonitor):
 
 class LimitMonitor(ThreadMonitor):
     """
+    Class LimitMonitor monitors resources of PyPy process and terminates
+    PyPy if limits are not withheld.
     :type process: scripts.psutils.Process
     """
     def __init__(self, pypy):
@@ -166,6 +188,10 @@ class LimitMonitor(ThreadMonitor):
 
 
 class ErrorMonitor(ThreadMonitor):
+    """
+    Class ErrorMonitor monitors PyPy object and prints detailed message if error occurs
+    """
+
     def __init__(self, pypy):
         super(ErrorMonitor, self).__init__(pypy)
         self.message = 'Command failed'

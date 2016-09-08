@@ -78,6 +78,9 @@ def parse_args (parser):
 
 
 def main ():
+    """
+    Run main program
+    """
     parser = create_parser ()
     (options, args) = parse_args (parser)
 

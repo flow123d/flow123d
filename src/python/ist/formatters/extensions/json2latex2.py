@@ -7,6 +7,10 @@ from utils.logger import Logger
 
 
 class LatexRecordDefault(object):
+    """
+    Class LatexRecordDefault is default formatter if no other formattor macthes
+    """
+
     @staticmethod
     def raw_format(tex, default):
         """
@@ -43,6 +47,10 @@ class LatexRecordDefault(object):
 
 
 class LatexRecord(TexList):
+    """
+    Class LatexRecord is formatter class for type record
+    """
+
     def format(self, record):
         """
         % begin{RecordType}
@@ -153,7 +161,12 @@ class LatexRecord(TexList):
             name = str(ref.input_type).capitalize()
             self.add(name + ref_range)
 
+
 class LatexSelection(TexList):
+    """
+    Class LatexSelection is formatter for type selection
+    """
+
     def format(self, selection):
         """
         % begin{SelectionType}
@@ -207,6 +220,10 @@ class LatexSelection(TexList):
 
 
 class LatexAbstractRecord(TexList):
+    """
+    Class LatexAbstractRecord is formatter for type abstract
+    """
+
     def format(self, abstract_record):
         """
         % begin{AbstractType}
@@ -252,6 +269,10 @@ class LatexAbstractRecord(TexList):
 
 
 class LatexFormatter(object):
+    """
+    Class LatexFormatter is main formatter for entire document
+    """
+
     formatters = {
         'TypeRecord': LatexRecord,
         # 'TypeRecordKey': LatexRecordKey,

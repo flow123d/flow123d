@@ -20,6 +20,11 @@ def print_debug():
 
 
 def add_path(*args):
+    """
+    Adds path to sys.path
+    :param args:
+    :return:
+    """
     root = os.path.dirname(os.path.realpath(__file__))
     if not args:
         return root

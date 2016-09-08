@@ -18,6 +18,10 @@ from scripts.script_module import ScriptModule
 
 
 class ModuleRuntest(ScriptModule):
+    """
+    Class ModuleRuntest is backend for script runtest.py
+    """
+
     @staticmethod
     def read_configs(all_yamls):
         """
@@ -286,6 +290,7 @@ class ModuleRuntest(ScriptModule):
 
 def do_work(parser, args=None, debug=False):
     """
+    Main method which invokes ModuleRuntest
     :type debug: bool
     :type args: list
     :type parser: utils.argparser.ArgParser

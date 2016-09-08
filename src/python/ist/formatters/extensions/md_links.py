@@ -27,6 +27,9 @@ def build_url(label, base, end):
 
 
 class MdLinkExtension(Extension):
+    """
+    Class MdLinkExtension md module for links to IST elements
+    """
     def __init__(self, *args, **kwargs):
         self.md = None
         self.config = {
@@ -46,6 +49,11 @@ class MdLinkExtension(Extension):
 
 
 class MdLinks(Pattern):
+    """
+    Class MdLinks tries to find appropriated element by specified id or name
+    and expose given property
+    """
+
     def __init__(self, pattern, config):
         super(MdLinks, self).__init__(pattern)
         self.config = config
@@ -96,4 +104,10 @@ class MdLinks(Pattern):
 
 
 def makeExtension(*args, **kwargs):
+    """
+    Register extension
+    :param args:
+    :param kwargs:
+    :return:
+    """
     return MdLinkExtension(*args, **kwargs)

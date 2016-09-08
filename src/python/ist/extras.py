@@ -11,6 +11,7 @@ from ist.utils.texlist2 import TexList
 
 class TypeReference(Parsable):
     """
+    Reference element
     :type reference  : unicode
     """
     __fields__ = [
@@ -42,6 +43,8 @@ class TypeReference(Parsable):
 
 class TypeSelectionValue(Parsable):
     """
+    Selection value element
+
     :type name           : unicode
     :type description    : unicode
     :type parent         : Parsable
@@ -76,6 +79,8 @@ class TypeSelectionValue(Parsable):
 
 class TypeRecordKeyDefault(Parsable):
     """
+    Default in record value
+
     :type type           : unicode
     :type value          : unicode
     """
@@ -92,6 +97,8 @@ class TypeRecordKeyDefault(Parsable):
 
 class TypeRecordKey(Parsable):
     """
+    Key in record
+
     :type key            : unicode
     :type type           : ist.extras.TypeReference
     :type default        : ist.extras.TypeRecordKeyDefault
@@ -132,6 +139,10 @@ class TypeRecordKey(Parsable):
 
 
 class TypeRange(Parsable):
+    """
+    Class TypeRange parent to all range elements
+    """
+
     __fields__ = []
 
     replacements = {
@@ -183,6 +194,8 @@ class TypeRange(Parsable):
 
 class TypeAttributeParameter(Parsable):
     """
+    Parameter in attrs
+
     :type name           : unicode
     :type reference      : ist.extras.TypeReference
     """
@@ -207,6 +220,8 @@ class TypeAttributeParameter(Parsable):
 
 class TypeAttributes(Parsable):
     """
+    Attributes element
+
     :type obsolete       : unicode
     :type link_name      : unicode
     :type input_type     : InputType
