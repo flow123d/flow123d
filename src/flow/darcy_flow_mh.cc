@@ -349,14 +349,14 @@ void DarcyMH::initialize() {
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
     if (balance_)
     {
-        data_-> water_balance_idx_ = water_balance_idx_ = balance_->add_quantity("water_volume");
+        data_-> water_balance_idx = water_balance_idx_ = balance_->add_quantity("water_volume");
         balance_->allocate(mh_dh.rows_ds->lsize(), 1);
         balance_->units(UnitSI().m(3));
     }
 
 
-    data_->system_.balance = balance_;
-    data_->system_.lin_sys = schur0;
+    data_->balance = balance_;
+    data_->lin_sys = schur0;
 
 
     initialize_specific();

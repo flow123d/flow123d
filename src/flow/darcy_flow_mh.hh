@@ -95,8 +95,6 @@ public:
     std::vector<unsigned int> dirichlet_edge;
     std::shared_ptr<arma::mat> local_matrix;
     double loc_side_rhs[4];
-    std::shared_ptr<Balance> balance;
-    LinSys *lin_sys;
 };
 
 
@@ -197,7 +195,10 @@ public:
         MH_DofHandler *mh_dh;
 
         RichardsSystem system_;
-        uint water_balance_idx_;
+        uint water_balance_idx;
+        std::shared_ptr<Balance> balance;
+        LinSys *lin_sys;
+        
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;
