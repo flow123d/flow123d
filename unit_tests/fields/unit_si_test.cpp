@@ -141,6 +141,6 @@ TEST(UnitSI, unit_converter) {
 
 	{
 		std::string unit = "a*b; a = kg*m^a; b = m*s^-2";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit, "not integer value of exponent" );
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit, "Value of exponent is not integer" );
 	}
 }

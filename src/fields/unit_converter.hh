@@ -23,6 +23,7 @@
 #include <map>
 
 #include "input/input_exception.hh"
+#include "fields/unit_si.hh"
 
 namespace units_converter
 {
@@ -36,22 +37,52 @@ DECLARE_INPUT_EXCEPTION(ExcInvalidUnit,
 /// Store structure given by parser
 struct Factor {
 	/// Constructor
-	Factor() : exponent_(1) {}
-	Factor(std::string factor, int exponent) : factor_(factor), exponent_(exponent) {}
+	Factor() : exponent_(1), basic_(true) {}
+	Factor(std::string factor, int exponent) : factor_(factor), exponent_(exponent), basic_(true) {}
 
 	std::string factor_;  //!< string represantation of unit or user defined constant
 	int exponent_;        //!< exponent
+	bool basic_;          //!< unit is basic (strict defined in application) / derived (defined by user as formula)
 };
 struct Formula {
 	/// Constructor
 	Formula() : coef_(1.0) {}
 
-	double coef_;                  //!< multiplicative coeficient
+	double coef_;                         //!< multiplicative coeficient
 	std::vector<struct Factor> factors_;  //!< factors of formula
 };
 typedef typename std::map<std::string, struct Formula> UnitData;
 
-
 }  // namespace units_converter
+
+class UnitConverter {
+public:
+	struct DerivedUnit {
+		double coef_;    //!< multiplicative coeficient
+		UnitSI unit_;    //!< derived SI unit
+	};
+
+	/// Define all base and derived units given by their symbol.
+	static const std::map<std::string, DerivedUnit> units_map;
+
+	// Constructor
+	UnitConverter(UnitSI unit_si);
+
+private:
+	/**
+	 * Coeficient of unit.
+	 *
+	 * Coeficient is used if unit is not in basic format. Example: if the unit is specified
+	 * in minutes, coeficient has value 60.
+	 */
+	double coef_;
+
+	/**
+	 * Basic format of SI unit
+	 */
+	UnitSI unit_si_;
+
+};
+
 
 #endif /* UNIT_CONVERTER_HH_ */

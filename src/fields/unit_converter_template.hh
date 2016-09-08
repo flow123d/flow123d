@@ -88,14 +88,36 @@ public:
     	unit_data_[unit_data_key_].coef_ = d;
     }
 
-    inline UnitData unit_data()
+    void check_unit_data()
+    {
+    	for(std::map<std::string, struct Formula>::iterator it = unit_data_.begin(); it != unit_data_.end(); ++it)
+    	{
+    		for(std::vector<struct Factor>::iterator formula_it = it->second.factors_.begin();
+    				formula_it != it->second.factors_.end(); ++formula_it)
+    		{
+    			if (formula_it->factor_ == it->first) { // error - cyclic definition
+    				std::stringstream ss;
+    				ss << "cyclic declaration of unit " << it->first;
+    				THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
+    			} else if (unit_data_.find(formula_it->factor_) != unit_data_.end()) { // formula exists as derived unit
+    				formula_it->basic_ = false;
+    			} else if (UnitConverter::units_map.find(formula_it->factor_) == UnitConverter::units_map.end()) { // error - unit not defined
+    				std::stringstream ss;
+    				ss << "unit " << formula_it->factor_ << " is not defined";
+    				THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
+    			}
+    		}
+    	}
+    }
+
+    inline UnitData unit_data() const
     { return unit_data_; }
 private:
 
     Semantic_actions& operator=( const Semantic_actions& );
                                 // to prevent "assignment operator could not be generated" warning
 
-    inline std::string get_str( std::string::const_iterator begin, std::string::const_iterator end )
+    inline std::string get_str( std::string::const_iterator begin, std::string::const_iterator end ) const
     {
         return std::string( begin, end );
     }
@@ -105,13 +127,6 @@ private:
     std::string unit_data_key_;  //!< keyo actual item of unit_data_
     int factor_idx_;             //!< index to actual item of subvector of factors of unit_data_
 };
-
-
-template< typename Iter_type >
-void throw_error( Iter_type i, const std::string& reason )
-{
-	THROW( ExcInvalidUnit() << EI_UnitError(reason) );
-}
 
 
 // the spirit grammer
@@ -129,18 +144,18 @@ public:
 
 	static void throw_not_equating( Iter_type begin, Iter_type end )
     {
-	    throw_error( begin, "not expression, missing '='" );
+		THROW( ExcInvalidUnit() << EI_UnitError("Invalid expression, missing '='") );
     }
 
 	static void throw_exp_not_int( Iter_type begin, Iter_type end )
     {
-	    throw_error( begin, "not integer value of exponent" );
+		THROW( ExcInvalidUnit() << EI_UnitError("Value of exponent is not integer") );
     }
 
 
 	static void throw_not_shortcut( Iter_type begin, Iter_type end )
     {
-	    throw_error( begin, "not shortcut of unit" );
+		THROW( ExcInvalidUnit() << EI_UnitError("Invalid shortcut of unit") );
     }
 
 
