@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: '[u''test18:'', u''diffusion'', u''through'', u''fractures'']'
   mesh:
@@ -10,12 +10,13 @@ problem: !Coupling_Sequential
         element_list:
           - 45
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
     input_fields:
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0
       - rid: 20
@@ -23,20 +24,20 @@ problem: !Coupling_Sequential
       - rid: 24
         cross_section: 1
     output:
-      output_stream: 
-        file: ./test18.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream: 
+      file: ./test18.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc: 0
         - rid: 20
           init_conc: 0
@@ -54,8 +55,9 @@ problem: !Coupling_Sequential
       file: ./transport-implicit.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.001
       name: transport_output_stream
+      times:
+        - step: 0.001
     substances:
       - A
     time:

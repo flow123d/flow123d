@@ -53,11 +53,11 @@ project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.8.8)
-if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
-  cmake_policy(VERSION 2.8.4)
-  cmake_policy(SET CMP0017 NEW)
+    
+cmake_policy(SET CMP0017 NEW)
+if (${CMAKE_VERSION} VERSION_GREATER 3.0)
+    cmake_policy(SET CMP0037 OLD)
 endif()
-
 
 
 # allow duplicate custom targets for makefiles
@@ -178,12 +178,13 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     flow_define(HAVE_SINCOS)
     
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-uninitialized -Wno-inconsistent-missing-override") 
     
+    # for some reason BOOST doesn't work with option -std=c++11
     # BOOST must be compiled with clang in order to use C++11 standard. 
-    set(Boost_FORCE_REBUILD "true")
-    set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
-    set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+    # set(Boost_FORCE_REBUILD "true")
+    # set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+    # set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
     
     # 
     # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
@@ -517,10 +518,12 @@ endif()
 #                              with correctly set dependencies on other libraries
 
 message(STATUS "\n =======================================================")
+
+set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
+set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
 find_package(ArmadilloFlow 3.2.4)
 if (NOT Armadillo_FOUND)
   message(STATUS "Try to install our own Armadillo.")
-  set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
   include(InstallArmadillo)
 
   # we try to erease from the cache everything that can cause failure of the second find_package
@@ -530,7 +533,6 @@ if (NOT Armadillo_FOUND)
   unset(Armadillo_LIBRARY_DIRS CACHE)
   unset(Armadillo_CONFIGURE_FILE CACHE)
 
-  set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
   find_package(ArmadilloFlow 3.2.4 REQUIRED)
 
 endif()
@@ -570,17 +572,26 @@ else()
     set(PYTHON_EXTRA_MODULES_PATH /src/python)
     flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 endif()
-# check whether PYTHON_ROOT is set 
+
+# check whether PYTHON_ROOT is set and use default value if not
 if(NOT DEFINED PYTHON_ROOT)
-    message(STATUS "--------------------------------------------------")
-    message(STATUS "PYTHON_ROOT not set! Using default configuration which may not work on this system")
-    message(STATUS "--------------------------------------------------")
-    
     set(PYTHON_ROOT /usr/lib/python2.7)
+    message(WARNING "Variable PYTHON_ROOT not set. Using default value '${PYTHON_ROOT}'.")
+endif()
+
+# set default value for PYTHON_COPY_PACKAGES if not defined
+if(NOT DEFINED PYTHON_COPY_PACKAGES)
     set(PYTHON_COPY_PACKAGES
         bsddb compiler ctypes curses distutils email encodings hotshot importlib 
-        json lib-dynload lib-tk lib2to3 logging multiprocessing 
+        json lib-dynload lib-tk lib2to3 logging multiprocessing plat-linux2
         plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
+endif()
+
+# set default value for PYTHON_SYSPATH if not defined
+if(NOT DEFINED PYTHON_SYSPATH)
+    set(PYTHON_SYSPATH
+        plat-x86_64-linux-gnu plat-linux2 lib-tk lib-old lib-dynload
+        dist-packages site-packages)
 endif()
 
 # ----------------- Part 1/3 - PythonLibs ------------------------------------------
@@ -600,7 +611,9 @@ endif()
 
 # ----------------- Part 3/3 - PythonScripts ----------------------------------------
 # install 3rd party packages and copy python runtest
-include(python/PythonScripts)
+if (NOT DEFINED PYTHON_SCRIPTS_OFF)
+    include(python/PythonScripts)
+endif()    
 
 
 
@@ -608,17 +621,17 @@ include(python/PythonScripts)
 #  YAML_CPP_FOUND - set to true if the library is found
 
 message(STATUS "\n =======================================================")
+set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
+set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
 find_package(YamlCpp)
 if (NOT YamlCpp_FOUND)
     message(STATUS "Try to install our own yaml-cpp library.")
-    set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
     include(InstallYamlCpp)
 
     unset(YamlCpp_FOUND CACHE) 
     unset(YamlCpp_INCLUDE_DIR CACHE)        # overwrite cache    
     unset(YamlCpp_LIBRARY CACHE)
 
-    set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
     find_package(YamlCpp REQUIRED)
     
     message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
@@ -826,8 +839,8 @@ if( PETSC_FOUND )
   
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
-  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  add_dependencies(bin/flow123d update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
@@ -840,7 +853,7 @@ endif()
 
   
 message(STATUS "=============== Summary ===================")
-message(STATUS "Boost:      ${BOOST_LIBRARIES}")
+message(STATUS "Boost:      ${Boost_LIBRARIES}")
 message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
 message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
@@ -857,6 +870,8 @@ message(STATUS "===========================================")
 ####################################################################################
 # Install and Packaging
 
+set(CMAKE_INSTALL_MESSAGE ALWAYS)
+
 # Cache PLATFORM_NAME
 set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
 
@@ -864,6 +879,16 @@ if (UNIX)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
 endif()
 
+if (CYGWIN)
+    set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/CYGWIN/NSIS/Flow123d-2.0.0_rc-CYGWIN/Unspecified)
+else()
+    set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux)  
+endif()
+
+macro(ls DIR)
+    install(CODE "execute_process(COMMAND echo LS ${DIR})")
+    install(CODE "execute_process(COMMAND ls ${_CPACK_INSTALL_ROOT}/${DIR} )")
+endmacro()
 
 # install bin directory
 install(DIRECTORY bin/config              DESTINATION bin/)
@@ -879,9 +904,11 @@ install(PROGRAMS  bin/time_limit.sh       DESTINATION bin/)
 # install shared libraries
 if (CYGWIN)
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" cygwin WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    # install DLL, must be in the same dir as the binary
     install(DIRECTORY build_tree/bin/            
         DESTINATION bin/
         PATTERN mpiexec EXCLUDE
+        PATTERN flow* EXCLUDE
         )
     
     # replace path separator and make path relative
@@ -893,25 +920,39 @@ if (CYGWIN)
     configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.bat @ONLY)
 else()
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
-    install(DIRECTORY build_tree/lib/            
-        DESTINATION lib/
-        PATTERN lib/python* EXCLUDE
-        PATTERN *.a EXCLUDE
-        )
+    #install(CODE "execute_process(COMMAND ls /home/jb/workspace/build-master/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux )")
+        
     # configure wrapper file
     configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh @ONLY)
 endif()        
 
+ls( lib )
+ls( bin)
+install(DIRECTORY build_tree/lib/           
+    DESTINATION lib/
+    #PATTERN lib/python* EXCLUDE
+    PATTERN *.a EXCLUDE
+    )
+
+ls( lib )
+ls( bin)
+
+
 # install python modules and system libs
 if (PYTHON_COPY)
     # install lib folder of Python to lib
-    install(DIRECTORY ${PY_BUILD_PREFIX}/lib
-            DESTINATION lib
-            OPTIONAL)
+    #install(DIRECTORY ${PY_BUILD_PREFIX}/lib
+    #        DESTINATION lib
+    #        OPTIONAL)
+    
     # copy Python's include
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
             DESTINATION include)
+            
 endif()
+
+ls( lib )
+ls( bin)
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
 if (CYGWIN)
@@ -927,6 +968,9 @@ else()
     install(PROGRAMS    build_tree/bin/ld-linux-loader.so  DESTINATION bin/)
 endif()
 
+
+ls( lib )
+ls( bin)
 
 install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
@@ -960,6 +1004,7 @@ SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
 SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
+SET(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE On)
 
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 
@@ -998,6 +1043,7 @@ if (CYGWIN)
     # 1. Page
     # Displayed name of the software, and target subdirectory of installation prefix.
     SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Flow123d ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH}")
+    
     
     # 2. Page
     # Software banner in installer.
@@ -1048,12 +1094,11 @@ if (CYGWIN)
 
     # Extra NSIS commands that will be added to the end of the install Section, 
     # after your install tree is available on the target system.
-    
     # File association for CON files."
     set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
         WriteRegStr HKCR '.con' '' 'Flow123dFile'
         WriteRegStr HKCR 'Flow123dFile\\\\shell' '' 'open'
-        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\"%1\\"'
+        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\\"%1\\\"'
         System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
         ")
 
@@ -1141,6 +1186,10 @@ endif()
 #  SET(CPACK_SOURCE_STRIP_FILES "")
 #ENDIF(WIN32 AND NOT UNIX)
 #SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+
+add_custom_target(package_debug
+              COMMAND ${CMAKE_CPACK_COMMAND} --debug --verbose --config CPackConfig.cmake
+              COMMENTS "Build package with debug and verbose output")
 
 INCLUDE(CPack)
 

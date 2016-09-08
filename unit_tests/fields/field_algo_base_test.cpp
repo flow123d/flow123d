@@ -52,7 +52,7 @@ public:
 
 
 	    field_.name("test_field");
-	    field_.input_selection( &get_test_selection() );
+	    field_.input_selection( get_test_selection() );
 
 		auto a_rec_type = this->field_.get_input_type();
 		test_field_descriptor = make_shared<Input::Type::Record>(
@@ -161,15 +161,10 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 // full list
 #define f_list(Dim) \
 	Field<Dim,FV<0>::Scalar> , \
-	Field<Dim,FV<0>::Vector>, \
     Field<Dim,FV<0>::Enum>, \
-    Field<Dim,FV<0>::EnumVector>, \
     Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<0>::Vector>, \
-	Field<Dim,FV<2>::VectorFixed>, \
-	Field<Dim,FV<3>::VectorFixed>, \
-	Field<Dim,FV<2>::TensorFixed>, \
-	Field<Dim,FV<3>::TensorFixed>
+	Field<Dim,FV<Dim>::VectorFixed>, \
+	Field<Dim,FV<Dim>::TensorFixed>
 
 // simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
@@ -317,7 +312,7 @@ TYPED_TEST(FieldFix, update_history) {
 	string list_ok = "["
 			"{time=0, region=\"ALL\", a =0, b =0},"
 			"{time=1, region=\"BULK\", a =1, b =0},"
-			"{time=2, region=\"BOUNDARY\", a =1, b =0},"
+			"{time=2, region=\".BOUNDARY\", a =1, b =0},"
 			"{time=3, region=\"ALL\", b =0},"
 			"{time=4, region=\"ALL\", a =0},"
 			"{time=5, region=\"ALL\", a =1}"
@@ -447,7 +442,7 @@ TYPED_TEST(FieldFix, set_time) {
 	string list_ok = "["
 			"{time=0, region=\"ALL\", a =0, b =0},"
 			"{time=1, region=\"BULK\", a =1, b =0},"
-			"{time=2, region=\"BOUNDARY\", a =1, b =0},"
+			"{time=2, region=\".BOUNDARY\", a =1, b =0},"
 			"{time=3, region=\"ALL\", b =0},"
 			"{time=4, region=\"ALL\", a =0},"
 			"{time=5, region=\"ALL\", a =1}"
@@ -586,14 +581,14 @@ TEST(Field, init_from_input) {
 	mesh.read_gmsh_from_stream(in);
 
     Field<3, FieldValue<3>::Enum > sorption_type;
-    Field<3, FieldValue<3>::Vector > init_conc;
+    Field<3, FieldValue<3>::VectorFixed > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
 
 
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
 
 
-    sorption_type.input_selection( &get_sorption_type_selection() );
+    sorption_type.input_selection( get_sorption_type_selection() );
     init_conc.set_components(component_names);
 
     it::Record main_record =
@@ -825,7 +820,7 @@ TEST(Field, init_from_default) {
     {
         Field<3, FieldValue<3>::Enum > enum_field("any", true);
 
-        enum_field.input_selection( &get_test_type_selection() );
+        enum_field.input_selection( get_test_type_selection() );
         enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
 
@@ -834,7 +829,6 @@ TEST(Field, init_from_default) {
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
     }
-    Field<3, FieldValue<3>::Vector > vector_field;
 
 }
 

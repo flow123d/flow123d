@@ -1,4 +1,4 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Steady flow with River boundary condition
   # The test problem use a square computational domain and emulate slope of the top surface
@@ -15,6 +15,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ${INPUT}/slope_surface.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     n_schurs: 2
     input_fields:
       - region: plane
@@ -29,19 +30,20 @@ problem: !Coupling_Sequential
         bc_pressure: 0
         bc_robin_sigma: 0.0004
     output:
-      output_stream:
-        file: ./flow_river_slope.pvd
-        format: !vtk
-          variant: ascii
 #        add_input_times: true          
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
     nonlinear_solver:        
         tolerance: 1e-6
         max_it: 10
         linear_solver: !Petsc
             a_tol: 1.0e-07
+    output_stream:
+      file: ./flow_river_slope.pvd
+      format: !vtk
+        variant: ascii
+#        add_input_times: true          

@@ -94,6 +94,10 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             std::vector<std::string> var_list;
 
             FunctionParser tmp_parser;
+            tmp_parser.AddConstant("Pi", 3.14159265358979323846);
+            tmp_parser.AddConstant("E", 2.71828182845904523536);
+
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
             {
@@ -107,10 +111,13 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                 if (var_name == std::string("t") ) time_dependent=true;
                 else if (var_name == "x" || var_name == "y" || var_name == "z") continue;
                 else
-                    xprintf(Warn, "Unknown variable '%s' in the  FieldFormula[%d][%d] == '%s'\n at the input address:\n %s \n",
-                            var_name.c_str(), row, col, formula_matrix_.at(row,col).c_str(),
-                            value_input_address_.c_str() );
+                	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
+                            var_name, row, col, formula_matrix_.at(row,col), value_input_address_ );
             }
+
+            // Seems that we can not just add 't' constant to tmp_parser, since it was already Parsed.
+            parser_matrix_[row][col].AddConstant("Pi", 3.14159265358979323846);
+            parser_matrix_[row][col].AddConstant("E", 2.71828182845904523536);
             if (time_dependent) {
                 parser_matrix_[row][col].AddConstant("t", time.end());
             }
@@ -118,7 +125,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             // TODO:
             // - possibly add user defined constants and units here ...
             // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
-
+            //parser_matrix_[row][col] = tmp_parser;
             if (time_dependent || this->time_ == TimeStep() ) {
                 parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
 

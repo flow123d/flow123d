@@ -1,0 +1,65 @@
+# Time dependent problem, with analytical solution:
+# p(t,x) = exp(-(C/S)*(Pi/2)^2*t)*sin((Pi/2)*x)
+# v(t,x) = -C*(Pi/2)*exp(-(C/S)*Pi^2*t)*cos(Pi*x/2)
+# C .. conductivity
+# S .. storativity
+#
+# in x=1 we have p(t,1)=exp(-(C/S)*(Pi/2)^2*t)
+
+# theoretical values for C=0.5, S=1.0:  Numerical values:
+# t:       p(1)=        v(1)=0       p(0)=0   v(0)=
+# 0        1                                    -0.7854
+# 0.1      0.8839                               -0.6942
+# 0.2      0.7813                               -0.6137
+# 0.3      0.6907                               -0.5424
+# 0.6      0.4770                               -0.3746
+# 1        0.2912                               -0.2287
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Test15 - 2D unsteady flow LM
+  mesh:
+    mesh_file: ./input/test10_1d.msh
+  flow_equation: !Flow_Richards_LMH
+    output_specific:
+      raw_flow_output: ./raw_output.txt
+    input_fields:
+      - region: ALL
+        storativity: 1.0
+      - region: plane
+#        water_source_density: !FieldFormula
+#          value: -x
+        conductivity: 0.5
+        cross_section: 1.0
+        init_pressure: !FieldFormula
+            value: sin(Pi/2*x)
+      - region: .bc_inflow
+        bc_type: dirichlet
+        bc_pressure: 0
+      #- region: .bc_outflow
+      #  bc_type: dirichlet
+      #  bc_pressure: !FieldFormula
+      #    value: exp(-0.5*(Pi/2)^2*t)
+
+      # zero Neumann on .bc_outflow  
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    n_schurs: 2
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    balance:
+      cumulative: true
+    time:
+      end_time: 1.0
+      max_dt: 0.01
+      min_dt: 0.01
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+      times:
+        - step: 0.1

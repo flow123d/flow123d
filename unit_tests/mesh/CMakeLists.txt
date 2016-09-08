@@ -25,6 +25,8 @@
 set(libs mesh_lib system_lib)
 add_test_directory("${libs}")
     
+    define_test(ref_element)
+    define_test(element)
     define_test(gmsh_reader)
     define_test(intersection)
     define_mpi_test(bih_tree 1)

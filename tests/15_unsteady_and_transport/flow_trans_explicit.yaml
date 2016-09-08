@@ -1,9 +1,11 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
     mesh_file: ./input/channel_unstructured.msh
   flow_equation: !Flow_Richards_LMH
+    output_specific:
+      raw_flow_output: ./raw_output.txt
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -24,13 +26,7 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-12
     n_schurs: 2
     output:
-      output_stream: 
-        file: ./test15.pvd
-        format: !vtk
-          variant: ascii
-        time_step: 0.1
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
@@ -40,6 +36,13 @@ problem: !Coupling_Sequential
       end_time: 2.0
       max_dt: 0.01
       min_dt: 0.01
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+      times:
+        - step: 0.1
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -57,8 +60,9 @@ problem: !Coupling_Sequential
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.1
       name: transport_output_stream
+      times:
+        - step: 0.1
     substances:
       - conc
     reaction_term: !Sorption
@@ -75,7 +79,8 @@ problem: !Coupling_Sequential
           sorption_type: linear
           isotherm_mult: 0.6
           isotherm_other: 0.4
-      output_fields: []
+      output:
+        fields: []
     time:
       end_time: 2.0
     balance:

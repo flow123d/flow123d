@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: 'Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption,
     sources).'
@@ -14,6 +14,7 @@ problem: !Coupling_Sequential
           - 1d_left_branch
   # mesh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -26,21 +27,21 @@ problem: !Coupling_Sequential
         sigma: 0.9
       - region: 2d
         conductivity: 1.0e-07
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x+y
     output:
-      output_stream:
-        file: flow.pvd
-        format: !vtk
-          variant: ascii
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
   # primary equation
+    output_stream:
+      file: flow.pvd
+      format: !vtk
+        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -51,7 +52,7 @@ problem: !Coupling_Sequential
             - 0.25
             - 0
           # source is in the whole volume (l+s) -> times porosity
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc:
             - 0.0
             - 1.0
@@ -76,7 +77,6 @@ problem: !Coupling_Sequential
           init_conc_immobile:
             - 0.0
             - 0.0
-      output_fields: []
       reaction_mobile: !SorptionMobile
         solvent_density: 1000.0
         # water
@@ -99,7 +99,8 @@ problem: !Coupling_Sequential
             isotherm_other:
               - 0
               - 1.0
-        output_fields: []
+        output:
+          fields: []
       reaction_immobile: !SorptionImmobile
         solvent_density: 1000.0
         # water
@@ -110,11 +111,15 @@ problem: !Coupling_Sequential
           - 1.0
           - 1.0
         input_fields: *anchor1
-        output_fields: []
+        output:
+          fields: []
+      output:
+        fields: []
     output_stream:
       file: transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 100000.0
   # secondary_equation
 # problem
+      times:
+        - step: 100000.0

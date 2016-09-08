@@ -488,7 +488,9 @@ class MEConfig:
         try:
             cls.root_input_type = get_root_input_type_from_json(text)
         except Exception as e:
-            cls._report_error("Can't open format file", e)
+            from os.path import join
+            file_name = join(cls.format_dir, cls.curr_format_file + ".json")
+            cls._report_error("Can't parse format file: " + file_name , e)
         else:
             InfoTextGenerator.init(text)
             cls.autocomplete_helper.create_options(cls.root_input_type)

@@ -1,12 +1,17 @@
 config.cmake
 profiler_info*.log
 flow*.log
+*.orig.*
+*.orig
 unit_tests/*/makefile
 unit_tests/makefile
 unit_tests/fields/speed_test_*.log
 unit_tests/output/*.pvd
 unit_tests/output/*.msh
+unit_tests/output/*.yaml
 unit_tests/output/test?/
+unit_tests/system/profiler_info*
+unit_tests/system/tokenizer_speed.txt
 bin/tests/makefile
 bin/flow123d
 bin/mpiexec

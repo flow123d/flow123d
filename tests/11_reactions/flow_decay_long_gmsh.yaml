@@ -1,27 +1,28 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test11 - radioactive decay simulation, long decay chain with biffurcation
   mesh:
     mesh_file: ./input/sit_decay.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
     input_fields:
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: 0
     output:
-      output_stream: 
-        file: ./flow.msh
-        format: !gmsh
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream: 
+      file: ./flow.msh
+      format: !gmsh
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -36,7 +37,7 @@ problem: !Coupling_Sequential
             - 0.07
             - 0.08
           # this currently does not work
-        - region: BOUNDARY
+        - region: .BOUNDARY
           #           {
           #             TYPE:"FieldElementwise",
           #             gmsh_file:"./input/sit_decay_long.msh",
@@ -100,7 +101,8 @@ problem: !Coupling_Sequential
       file: ./transport.msh
       format: !gmsh
         variant: ascii
-      time_step: 0.5
       name: transport_output_stream
+      times:
+        - step: 0.5
     balance:
       cumulative: true
