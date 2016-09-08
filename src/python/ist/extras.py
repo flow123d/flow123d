@@ -17,7 +17,7 @@ class TypeReference(Parsable):
     __fields__ = [
     ]
 
-    def parse(self, json_data={ }):
+    def parse(self, json_data={}):
         self.reference = json_data
         return self
 
@@ -70,7 +70,6 @@ class TypeSelectionValue(Parsable):
 
             return '{self.parent.href_id}-{self.name}'.format(self=self)
         return self.name
-
 
     @property
     def href_name(self):
@@ -154,7 +153,7 @@ class TypeRange(Parsable):
         '': 'unknown range'
     }
 
-    def parse(self, json_data={ }):
+    def parse(self, json_data={}):
         self.min = json_data[0]
         self.max = json_data[1]
         return self
@@ -206,7 +205,7 @@ class TypeAttributeParameter(Parsable):
         self.name = None
         self.reference = None
 
-    def parse(self, json_data={ }):
+    def parse(self, json_data={}):
         item = json_data.items()[0]
         self.name = str(item[0])
         self.reference = TypeReference().parse(item[1])

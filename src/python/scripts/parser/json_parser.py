@@ -100,6 +100,7 @@ class ExecParser(object):
     Class ExecParser is module for parsing json file result for executing command
     keyword is exec
     """
+
     def __init__(self, obj, batch):
         self.returncode = obj.get('returncode', None)
         self.name = obj.get('name', None)

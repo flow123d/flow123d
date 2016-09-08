@@ -145,7 +145,6 @@ class Parsable(object):
         input_type = getattr(self, 'input_type', None)
         return input_type is not None and input_type == InputType.MAIN_TYPE
 
-
     @property
     def href_name(self):
         """
@@ -161,7 +160,6 @@ class Parsable(object):
 
         if getattr(self, 'name', None):
             return self.name
-
 
     @property
     def href_id(self):

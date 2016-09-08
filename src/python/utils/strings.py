@@ -10,7 +10,7 @@ from __future__ import absolute_import
 
 
 def format_n_lines(text, n_lines=0, line_prefix='## ', line_suffix='',
-                   first_line='#'*60, last_line='#'*60,
+                   first_line='#' * 60, last_line='#' * 60,
                    empty="<file is empty>", indent=''):
     """
     Format given lines and adds prefix to them

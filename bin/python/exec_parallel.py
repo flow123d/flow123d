@@ -3,7 +3,8 @@
 # author:   Jan Hybs
 # ----------------------------------------------
 from __future__ import absolute_import
-import pathfix; pathfix.init()
+import pathfix
+pathfix.init()
 # ----------------------------------------------
 import sys
 # ----------------------------------------------

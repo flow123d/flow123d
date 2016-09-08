@@ -72,7 +72,8 @@ def get_pbs_module(hostname_hint=None):
     try:
         return importlib.import_module(full_module_path)
     except ImportError:
-        Printer.err('Error:  Could not load module "{}" ({}) for hostname "{}"', pbs_module_path, full_module_path, hostname)
+        Printer.err('Error:  Could not load module "{}" ({}) for hostname "{}"',
+                    pbs_module_path, full_module_path, hostname)
         Printer.open(2)
         if host_file_exists:
             if from_host:

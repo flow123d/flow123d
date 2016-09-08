@@ -33,6 +33,7 @@ class ProgressTime(object):
     and prints elapsed time
     :type thread : threading.Thread
     """
+
     def __init__(self, format='{}', period=0.1, dynamic=True):
         self.format = format
         self.period = period

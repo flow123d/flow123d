@@ -277,7 +277,7 @@ def main():
     parser = create_parser()
     (options, args) = parse_args(parser)
 
-    variables = { }
+    variables = {}
     for name_value in options.variables:
         name, value = name_value.split(':', 1)
         variables[name] = value

@@ -3,9 +3,11 @@
 # author:   Jan Hybs
 
 from __future__ import absolute_import
-import logging, traceback
+import logging
+import traceback
 import datetime
-import sys, os
+import sys
+import os
 
 
 class Logger(object):
@@ -54,8 +56,6 @@ class Logger(object):
         # file_logger.setLevel(level)
         # file_logger.setFormatter(fmt)
         # self.logger.addHandler(file_logger)
-
-
 
         # add empty lines if file contains some previous logs
         # if os.stat(f).st_size != 0:

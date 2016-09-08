@@ -48,26 +48,26 @@ from coverage import coverage_merge_module
 
 
 # parse arguments
-def create_parser ():
+def create_parser():
     """Creates command line parse"""
-    newline = 10 * '\t';
-    parser = OptionParser (usage="%prog [options] [file1 file2 ... filen]", version="%prog 1.0",
-                           epilog="If no files are specified all xml files in current directory will be selected. \n" +
-                                  "Useful when there is not known precise file name only location")
+    newline = 10 * '\t'
+    parser = OptionParser(usage="%prog [options] [file1 file2 ... filen]", version="%prog 1.0",
+                          epilog="If no files are specified all xml files in current directory will be selected. \n" +
+                          "Useful when there is not known precise file name only location")
 
-    parser.add_option ("-o", "--output", dest="filename", default="coverage-merged.xml",
-                       help="output file xml name", metavar="FILE")
-    parser.add_option ("-p", "--path", dest="path", default="./",
-                       help="xml location, default current directory", metavar="FILE")
-    parser.add_option ("-l", "--log", dest="loglevel", default="DEBUG",
-                       help="Log level DEBUG, INFO, WARNING, ERROR, CRITICAL")
-    parser.add_option ("-f", "--filteronly", dest="filteronly", default=False, action='store_true',
-                       help="If set all files will be filtered by keep rules otherwise " +
+    parser.add_option("-o", "--output", dest="filename", default="coverage-merged.xml",
+                      help="output file xml name", metavar="FILE")
+    parser.add_option("-p", "--path", dest="path", default="./",
+                      help="xml location, default current directory", metavar="FILE")
+    parser.add_option("-l", "--log", dest="loglevel", default="DEBUG",
+                      help="Log level DEBUG, INFO, WARNING, ERROR, CRITICAL")
+    parser.add_option("-f", "--filteronly", dest="filteronly", default=False, action='store_true',
+                      help="If set all files will be filtered by keep rules otherwise " +
                             "all given files will be merged and filtered.")
-    parser.add_option ("-s", "--suffix", dest="suffix", default='',
-                       help="Additional suffix which will be added to filtered files so they original files can be preserved")
-    parser.add_option ("-k", "--keep", dest="packagefilters", default=None, metavar="NAME", action="append",
-                       help="preserves only specific packages. e.g.: " + newline +
+    parser.add_option("-s", "--suffix", dest="suffix", default='',
+                      help="Additional suffix which will be added to filtered files so they original files can be preserved")
+    parser.add_option("-k", "--keep", dest="packagefilters", default=None, metavar="NAME", action="append",
+                      help="preserves only specific packages. e.g.: " + newline +
                             "'python merge.py -k src.la.*'" + newline +
                             "will keep all packgages in folder " +
                             "src/la/ and all subfolders of this folders. " + newline +
@@ -78,9 +78,9 @@ def create_parser ():
     return parser
 
 
-def parse_args (parser):
+def parse_args(parser):
     """Parses argument using given parses and check resulting value combination"""
-    (options, args) = parser.parse_args ()
+    (options, args) = parser.parse_args()
 
     # for now, no check needed
 
@@ -88,8 +88,7 @@ def parse_args (parser):
 
 
 if __name__ == '__main__':
-    parser = create_parser ()
-    (options, args) = parse_args (parser)
+    parser = create_parser()
+    (options, args) = parse_args(parser)
 
-    coverage_merge_module.merge (options, args)
-
+    coverage_merge_module.merge(options, args)

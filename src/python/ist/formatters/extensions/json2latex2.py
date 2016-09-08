@@ -249,7 +249,7 @@ class LatexAbstractRecord(TexList):
             if abstract_record.default_descendant:
                 self.macro_alink(abstract_record.default_descendant.get_reference())
         with self:
-                self.macro_add_doc(abstract_record)
+            self.macro_add_doc(abstract_record)
         # description
         self._newline()
         self._tab()

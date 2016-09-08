@@ -3,7 +3,9 @@
 # author:   Jan Hybs
 
 
-import sys, os, re
+import sys
+import os
+import re
 from scripts.core.base import Printer
 from scripts.core.exceptions import ArgumentException
 from utils.globals import justify
@@ -31,6 +33,8 @@ _list_single_digit_convert = lambda x: [eval(x)]
 
 # range format such as 1:3
 _list_range_short = re.compile(r'^(\d+):(\d+)$')
+
+
 def _list_range_short_convert(x):
     """
     Converts input to string from short list format which is defined as
@@ -38,10 +42,12 @@ def _list_range_short_convert(x):
     :param x:
     """
     args = [int(y) for y in _list_range_short.match(x).groups()]
-    return list(range(args[0], args[1]+1))
+    return list(range(args[0], args[1] + 1))
 
 # range format such as 1:10:2
 _list_range_long = re.compile(r'^(\d+):(\d+):(\d+)$')
+
+
 def _list_range_long_convert(x):
     """
     Converts input to string from long list format which is defined as
@@ -49,7 +55,7 @@ def _list_range_long_convert(x):
     :param x:
     """
     args = [int(y) for y in _list_range_long.match(x).groups()]
-    return list(range(args[0], args[1]+1, args[2]))
+    return list(range(args[0], args[1] + 1, args[2]))
 
 # all list supported format
 _list_formats = [
@@ -69,7 +75,7 @@ class ArgOption(object):
     """
     Class ArgOption is simple container for single argument option
     """
-    
+
     def __init__(self, short, long, type=str, default=None, name=None, subtype=str, docs='', placeholder=None, hidden=False):
         self.short = short
         self.long = long
@@ -142,7 +148,7 @@ class ArgOptions(dict):
     """
     Class ArgOptions is dictionary with dot access available
     """
-    
+
     def __getattr__(self, attr):
         return self.get(attr)
 
@@ -229,7 +235,7 @@ class ArgParser(object):
         """
         :rtype : str
         """
-        return None if self.i+1 >= len(self.source) else self.source[self.i+1]
+        return None if self.i + 1 >= len(self.source) else self.source[self.i + 1]
 
     def move_on(self):
         self.i += 1
@@ -348,7 +354,7 @@ class ArgParser(object):
             if not find:
                 # end of parsing section
                 if self.current() == '--':
-                    self.rest = self.source[self.i+1:]
+                    self.rest = self.source[self.i + 1:]
                     self.check_help()
                     return self.simple_options, self.others, self.rest
                 # just add to others

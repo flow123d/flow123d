@@ -34,7 +34,7 @@ class StrikeThroughExtension(Extension):
         # append to end of inline patterns
         # WIKILINK_RE = r'\[\[([\w0-9_ -]+)\]\]'
         WIKILINK_RE = r'~~([\w0-9_#-]+)~~'
-        wikilinkPattern = StrikeThroughPattern(WIKILINK_RE, { })
+        wikilinkPattern = StrikeThroughPattern(WIKILINK_RE, {})
         wikilinkPattern.md = md
         md.inlinePatterns.add('mdstrikethrough', wikilinkPattern, "<not_strong")
 

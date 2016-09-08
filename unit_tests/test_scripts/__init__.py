@@ -33,6 +33,7 @@ def print_test(f):
 
 
 class UnitTest(TestCase):
+
     @classmethod
     def setUpClass(cls):
         super(UnitTest, cls).setUpClass()

@@ -11,6 +11,7 @@ class AbstractRun(object):
     Abstract class which prepares command list for PyPy class
     :type case : scripts.config.yaml_config.ConfigCase
     """
+
     def __init__(self, case):
         self.case = case
         self.mpi = False

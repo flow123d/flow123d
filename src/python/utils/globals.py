@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
-import time, sys
+import time
+import sys
 
 
 def check_modules(*modules):
@@ -99,10 +100,10 @@ def justify(text, max_length=60, max_spaces=2):
         top = space_lst[0]
         if top > spaces:
             space_lst[0] -= spaces
-            space_lst[1:] = [space_lst[i+1]+1 for i in range(spaces)]
+            space_lst[1:] = [space_lst[i + 1] + 1 for i in range(spaces)]
             continue
         space_lst[0] -= top
-        space_lst[1:top+1] = [space_lst[i+1]+1 for i in range(top)]
+        space_lst[1:top + 1] = [space_lst[i + 1] + 1 for i in range(top)]
         space_lst = space_lst[1:]
         space_lst = sorted(space_lst, reverse=False)
         break
@@ -111,7 +112,7 @@ def justify(text, max_length=60, max_spaces=2):
         return text
 
     for i in range(0, spaces):
-        position = text.find(' ', position+1)
-        text = text[:position] + ' ' * space_lst[i] + text[position+1:]
+        position = text.find(' ', position + 1)
+        text = text[:position] + ' ' * space_lst[i] + text[position + 1:]
         position += space_lst[i]
     return text

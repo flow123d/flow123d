@@ -29,7 +29,9 @@ pathfix.append_to_path()
 import system.versions
 system.versions.require_version_2()
 
-import os, sys, json
+import os
+import sys
+import json
 from optparse import OptionParser
 from utils.logger import Logger
 from ist.base import InputType

@@ -199,7 +199,7 @@ class ModuleExecParallel(ScriptModule):
         template = PBSModule.format(
             module.template,
             command=command,
-            json_output=case.fs.json_output # TODO remove
+            json_output=case.fs.json_output  # TODO remove
         )
 
         return template

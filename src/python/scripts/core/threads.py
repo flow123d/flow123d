@@ -112,6 +112,7 @@ class MultiThreads(ExtendedThread):
     Class MultiThreads is base class when executing threads in group
     :type threads: list[scripts.core.threads.ExtendedThread]
     """
+
     def __init__(self, name, progress=False):
         super(MultiThreads, self).__init__(name)
         self.threads = list()
@@ -152,7 +153,7 @@ class MultiThreads(ExtendedThread):
 
     @property
     def current_thread(self):
-        return self.threads[self.index -1]
+        return self.threads[self.index - 1]
 
     @property
     def returncode(self):
@@ -247,11 +248,11 @@ class ParallelThreads(MultiThreads):
     def _run(self):
         # determine how many parallel batches will be
         # later on take cpu into account
-        steps = int(math.ceil(float(self.total)/self.n))
+        steps = int(math.ceil(float(self.total) / self.n))
 
         # run each batch
         for i in range(steps):
-            batch = [x for x in range(i*self.n, i*self.n+self.n) if x < len(self.threads)]
+            batch = [x for x in range(i * self.n, i * self.n + self.n) if x < len(self.threads)]
             for t in batch:
                 self.run_next()
 
@@ -326,8 +327,8 @@ class PyPy(ExtendedThread):
 
         if self.executor.broken:
             Printer.err('Could not start command {}: {}',
-                         Command.to_string(self.executor.command),
-                         getattr(self.executor, 'exception', 'Unknown error'))
+                        Command.to_string(self.executor.command),
+                        getattr(self.executor, 'exception', 'Unknown error'))
             self.returncode = self.executor.returncode
 
         # if process is not broken, propagate start event
@@ -406,6 +407,7 @@ class RuntestMultiThread(SequentialThreads):
     :type pypy   : PyPy
     :type comp   : ComparisonMultiThread
     """
+
     def __init__(self, clean, pypy, comp):
         super(RuntestMultiThread, self).__init__('test-case', progress=False, indent=False)
         self.clean = clean

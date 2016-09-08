@@ -76,11 +76,11 @@ class TestDoWork(test_scripts.UnitTest):
     def test_compare_correct_output(self):
         # all test must pass since we are copying reference outputs
         try:
-            do_work(parser,[
-                        '--root', root,
-                        os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
-                        '--',
-                        '-t', '0.1', '--copy', '--clean'
+            do_work(parser, [
+                '--root', root,
+                os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
+                '--',
+                '-t', '0.1', '--copy', '--clean'
             ])
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_OK)
@@ -89,11 +89,11 @@ class TestDoWork(test_scripts.UnitTest):
     def test_compare_no_output(self):
         # all test must fail since test_outputs are empty
         try:
-            do_work(parser,[
-                        '--root', root,
-                        os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
-                        '--',
-                        '-t', '0.1', '--clean'
+            do_work(parser, [
+                '--root', root,
+                os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
+                '--',
+                '-t', '0.1', '--clean'
             ])
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_COMPARE_ERROR)
@@ -102,11 +102,11 @@ class TestDoWork(test_scripts.UnitTest):
     def test_compare_wrong_output_error(self):
         # all test must fail since test_outputs are empty
         try:
-            do_work(parser,[
-                        '--root', root,
-                        os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
-                        '--',
-                        '-t', '0.1', '--clean', '--random'
+            do_work(parser, [
+                '--root', root,
+                os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
+                '--',
+                '-t', '0.1', '--clean', '--random'
             ])
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_COMPARE_ERROR)
@@ -115,12 +115,12 @@ class TestDoWork(test_scripts.UnitTest):
     def test_missing_yaml(self):
         # test fail if we pass non_existent yaml file
         try:
-            do_work(parser,[
-                        '--root', root,
-                        os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit_non_existent.yaml'),
-                        os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
-                        '--',
-                        '-t', '0.01', '--copy', '--clean'
+            do_work(parser, [
+                '--root', root,
+                os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit_non_existent.yaml'),
+                os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
+                '--',
+                '-t', '0.01', '--copy', '--clean'
             ])
         except SystemExit as se:
             self.assertNotEqual(se.code, EXIT_OK)
@@ -132,11 +132,11 @@ class TestDoWork(test_scripts.UnitTest):
         start_time = time.time()
         sleep_time = 2
         try:
-            do_work(parser,[
-                        '--root', root,
-                        os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
-                        '--',
-                        '-t', str(sleep_time), '-e'
+            do_work(parser, [
+                '--root', root,
+                os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
+                '--',
+                '-t', str(sleep_time), '-e'
             ])
         except SystemExit as se:
             self.assertNotEqual(se.code, EXIT_OK)

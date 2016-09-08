@@ -43,7 +43,7 @@ class Module(PBSModule):
         # command
         command = [
             'qsub',
-            '-l', 'nodes={nodes}:ppn={ppn}'.format(**locals()), # :nfs4 option may be set
+            '-l', 'nodes={nodes}:ppn={ppn}'.format(**locals()),  # :nfs4 option may be set
             '-l', 'mem={mem}mb'.format(**locals()),
             '-l', 'walltime={walltime}'.format(**locals()),
             '-l', 'place=infiniband',

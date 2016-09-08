@@ -28,6 +28,7 @@ class use_cache(object):
     """
     Decorator which uses cache for certain amount of time
     """
+
     def __init__(self, cache_duration=5):
         self.cache_duration = cache_duration
 
@@ -36,8 +37,8 @@ class use_cache(object):
 
         # call wrapped function or use caches value
         def wrapper(other, *args, **kwargs):
-            last_update = set_if_not_exists(other, name+'_update', 0)
-            last_result = set_if_not_exists(other, name+'_result', None)
+            last_update = set_if_not_exists(other, name + '_update', 0)
+            last_result = set_if_not_exists(other, name + '_result', None)
 
             # was is 5 sec since last update?
             since = time.time() - last_update

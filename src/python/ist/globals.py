@@ -11,7 +11,7 @@ class Globals(object):
     Global class object which stores references and all objects on memory for later use
     :type items             : dict[ist.base.Parsable]
     """
-    items = { }
+    items = {}
     names = {
         'record': 'type_name',
         'r': 'type_name',

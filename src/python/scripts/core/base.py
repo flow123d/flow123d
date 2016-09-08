@@ -186,6 +186,7 @@ class PathFilters(object):
         patt = re.compile(fmt)
         return lambda x: patt.match(x)\
 
+
     @staticmethod
     def filter_endswith(suffix=""):
         return lambda x: x.endswith(suffix)
@@ -490,10 +491,10 @@ class DynamicSleep(object):
         d = float(steps)
         b = float(min)
         self.steps = list()
-        for t in range(steps+1):
+        for t in range(steps + 1):
             self.steps.append(float(int(
-                -c * math.cos(t/d * (math.pi/2)) + c + b
-            ))/1000)
+                -c * math.cos(t / d * (math.pi / 2)) + c + b
+            )) / 1000)
         self.current = -1
         self.total = len(self.steps)
 

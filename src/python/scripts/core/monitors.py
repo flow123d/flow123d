@@ -15,6 +15,7 @@ def ensure_active(f):
     :param f:
     :return:
     """
+
     def wrapper(self, *args, **kwargs):
         if self.active:
             return f(self, *args, **kwargs)
@@ -62,7 +63,7 @@ class ProgressMonitor(ThreadMonitor):
     """
     Class ProgressMonitor monitors PyPy object and reports progress
     """
-    
+
     def __init__(self, pypy):
         super(ProgressMonitor, self).__init__(pypy)
         self.timer = ProgressTime('Running | elapsed time {}')
@@ -84,7 +85,7 @@ class InfoMonitor(ThreadMonitor):
     Class InfoMonitor monitors PyPy object and prints info at the beginning
     and at the end. On error prints details.
     """
-    
+
     def __init__(self, pypy):
         super(InfoMonitor, self).__init__(pypy)
         self.command_str = Command.to_string(self.pypy.executor.command)
@@ -102,7 +103,7 @@ class InfoMonitor(ThreadMonitor):
         # print either error that command failed or on_complete info id exists
         if self.pypy.returncode > 0:
             Printer.err('Error! Command ({process.pid}) ended with {process.returncode}'.
-                             format(process=self.pypy.executor.process))
+                        format(process=self.pypy.executor.process))
             Printer.err(Command.to_string(self.pypy.executor.command))
         elif self.end_fmt:
             Printer.out(self.end_fmt.format(**dict(self=self)))
@@ -120,6 +121,7 @@ class LimitMonitor(ThreadMonitor):
     PyPy if limits are not withheld.
     :type process: scripts.psutils.Process
     """
+
     def __init__(self, pypy):
         super(LimitMonitor, self).__init__(pypy)
         self.process = None
@@ -175,7 +177,7 @@ class LimitMonitor(ThreadMonitor):
                     Printer.out()
                     Printer.err('Error: Memory limit exceeded! {:1.2f}MB used, {:1.2f}MB allowed'.format(
                         memory_usage, self.memory_limit
-                        )
+                    )
                     )
                     self.terminated_cause = 'MEMORY_LIMIT'
                     self.terminated = True

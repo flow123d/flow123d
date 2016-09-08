@@ -50,7 +50,7 @@ class JobState(object):
 
     def __bool__(self):
         return self.value == self.COMPLETED
-    __nonzero__=__bool__
+    __nonzero__ = __bool__
 
     def __hash__(self):
         return hash(self.value)
@@ -67,6 +67,7 @@ class Job(object):
     Class Job represents single PBS job
     :type case : scripts.config.yaml_config.ConfigCase
     """
+
     def __init__(self, job_id, case):
         self.id = job_id
         self.case = case
@@ -87,7 +88,7 @@ class Job(object):
         :rtype : scripts.pbs.job.JobState
         """
         return self._status
-    
+
     @status.setter
     def status(self, value):
         """
@@ -154,6 +155,7 @@ class MultiJob(object):
     :type items : list[scripts.pbs.job.Job]
     :type cls   : class
     """
+
     def __init__(self, cls):
         self.items = list()
         self.cls = cls
