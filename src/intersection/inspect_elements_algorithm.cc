@@ -471,14 +471,18 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_bulk_element_edge
     switch (IP.dim_B())
     {
         // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
-        case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++)
-                    edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[RefElement<3>::interact<2,0>(IP.idx_B())[j]]]));
+        case 0: for(unsigned int j=0; j < RefElement<3>::n_sides_per_node; j++){
+                    unsigned int local_edge = RefElement<3>::interact(Interaction<2,0>(IP.idx_B()))[j];
+                    edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[local_edge]]));
+                }
                 DebugOut() << "3d prolong (node)\n";
                 break;
         
         // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
-        case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++)
-                    edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[RefElement<3>::interact<2,1>(IP.idx_B())[j]]]));
+        case 1: for(unsigned int j=0; j < RefElement<3>::n_sides_per_line; j++){
+                    unsigned int local_edge = RefElement<3>::interact(Interaction<2,1>(IP.idx_B()))[j];
+                    edges.push_back(&(mesh->edges[bulk_ele->edge_idx_[local_edge]]));
+                }
                 DebugOut() << "3d prolong (edge)\n";
                 break;
                 

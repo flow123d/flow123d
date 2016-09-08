@@ -75,8 +75,8 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                 unsigned int vertex_index = ip.idx_A();
                 DebugOut() << "Intersection type E-E. (Vertex_index: " << vertex_index << ")\n";
                 
-                row = 4 + RefElement<2>::interact<1,0>(vertex_index)[0];
-                object_index = 4 + RefElement<2>::interact<1,0>(vertex_index)[1];
+                row = 4 + RefElement<2>::interact(Interaction<1,0>(vertex_index))[0];
+                object_index = 4 + RefElement<2>::interact(Interaction<1,0>(vertex_index))[1];
                 DebugOut().fmt("E-E: row: {}, to edge: {}, ip: {} \n",row, object_index, i);
 
             } break;
@@ -135,8 +135,8 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                  */
                 unsigned int tetrahedron_line = ip.idx_B();
                 unsigned int first_side = ip.orientation();
-                row = RefElement<3>::interact<2,1>(tetrahedron_line)[1-first_side];
-                object_index = RefElement<3>::interact<2,1>(tetrahedron_line)[first_side];
+                row = RefElement<3>::interact(Interaction<2,1>(tetrahedron_line))[1-first_side];
+                object_index = RefElement<3>::interact(Interaction<2,1>(tetrahedron_line))[first_side];
 
                 DebugOut().fmt("S-S: row: {}, to side: {}, ip: {} \n",row, object_index, i);
             } break;

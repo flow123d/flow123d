@@ -216,7 +216,7 @@ void Mapping<dim,spacedim>::transform_subquadrature(unsigned int sid,
         side_bar_coords(dim-1) = 1.0 - lambda;
 
         // transform to element coordinates
-        auto side_nodes = RefElement<dim>::template interact<0, (dim - 1)>(sid);
+        auto side_nodes = RefElement<dim>::interact(Interaction<0, (dim - 1)>(sid));
         for (unsigned int i=0; i<dim; i++) {
             // TODO: use RefElement<>::interpolate to map coordinates from the subelement
             unsigned int i_node = (side_nodes[RefElement<dim>::side_permutations[pid][i]]+dim)%(dim+1);

@@ -260,16 +260,16 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_pathologic(uns
         else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
         
         // possibly set triangle vertex {0,1,2}
-        if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact<0,1>(side)[RefElement<2>::normal_orientation(side)],0);}
-        else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact<0,1>(side)[1-RefElement<2>::normal_orientation(side)],0);}
+        if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact(Interaction<0,1>(side))[RefElement<2>::normal_orientation(side)],0);}
+        else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact(Interaction<0,1>(side))[1-RefElement<2>::normal_orientation(side)],0);}
         else                         {        IP.set_topology_B(side,1);}   // no vertex, side side, dim = 1
         
         arma::vec2 local_abscissa({1-s, s});
         arma::vec3 local_triangle({0,0,0});
 
         // set local triangle barycentric coordinates according to nodes of the triangle side:
-        local_triangle[RefElement<2>::interact<0,1>(side)[RefElement<2>::normal_orientation(side)]] = 1 - t;
-        local_triangle[RefElement<2>::interact<0,1>(side)[1-RefElement<2>::normal_orientation(side)]] = t;
+        local_triangle[RefElement<2>::interact(Interaction<0,1>(side))[RefElement<2>::normal_orientation(side)]] = 1 - t;
+        local_triangle[RefElement<2>::interact(Interaction<0,1>(side))[1-RefElement<2>::normal_orientation(side)]] = t;
 //      local_abscissa.print();
 //      local_triangle.print();
         
@@ -559,19 +559,19 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                         // DBGMSG("set_node A\n");
                         // we are on line of the triangle A, and IP.idx_A contains local node of the line
                         // we know vertex index
-                        unsigned int node = RefElement<2>::interact<0,1>(triangle_line)[IP.idx_A()];
+                        unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()];
                         IP22.set_topology_A(node, 0);
                         
                         // set flag on all sides of tetrahedron connected by the node
                         for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
-                            CI12[RefElement<2>::interact<1,0>(node)[s]].set_computed();
+                            CI12[RefElement<2>::interact(Interaction<1,0>(node))[s]].set_computed();
                     }
                     if( IP.dim_B() == 0 ) // if IP is vertex of triangle
                     {
                         // DBGMSG("set_node B\n");
                         // set flag on both sides of triangle connected by the node
                         for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
-                            CI12[3 + RefElement<2>::interact<1,0>(IP.idx_B())[s]].set_computed();
+                            CI12[3 + RefElement<2>::interact(Interaction<1,0>(IP.idx_B()))[s]].set_computed();
                     }
                     else if( IP.dim_B() == 1 ) // if IP is vertex of triangle
                     {
@@ -586,12 +586,12 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                     // DBGMSG("set_node B\n");
                     // we are on line of the triangle, and IP.idx_A contains local node of the line
                     // we know vertex index
-                    unsigned int node = RefElement<2>::interact<0,1>(triangle_line)[IP.idx_A()];
+                    unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()];
                     IP22.set_topology_B(node, 0);
                     
                     // set flag on both sides of triangle connected by the node
                     for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
-                        CI12[3 + RefElement<2>::interact<1,0>(node)[s]].set_computed();
+                        CI12[3 + RefElement<2>::interact(Interaction<1,0>(node))[s]].set_computed();
                 }
 //                 cout << IP22;
                 IP22s.push_back(IP22);
@@ -724,10 +724,10 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
 	for(unsigned int side = 0; side <  RefElement<3>::n_sides; side++){
 		for(unsigned int line = 0; line < RefElement<3>::n_lines_per_side; line++){
 			CI12[side].set_pc_triangle(plucker_coordinates_tetrahedron[
-                                            RefElement<3>::interact<1,2>(side)[line]], line);
+                                            RefElement<3>::interact(Interaction<1,2>(side))[line]], line);
             
             CI12[side].set_plucker_product(
-                plucker_products_[RefElement<3>::interact<1,2>(side)[line]],
+                plucker_products_[RefElement<3>::interact(Interaction<1,2>(side))[line]],
                 line);
 		}
 		CI12[side].set_pc_abscissa(plucker_coordinates_abscissa_);
@@ -777,18 +777,18 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
                 if(IP.dim_B() == 0) // IP is vertex of triangle
                 {
                     // map side (triangle) node index to tetrahedron node index
-                    unsigned int node = RefElement<3>::interact<0,2>(side)[IP.idx_B()];
+                    unsigned int node = RefElement<3>::interact(Interaction<0,2>(side))[IP.idx_B()];
                     // set flag on all sides of tetrahedron connected by the node
                     for(unsigned int s=0; s < RefElement<3>::n_sides_per_node; s++)
-                        CI12[RefElement<3>::interact<2,0>(node)[s]].set_computed();
+                        CI12[RefElement<3>::interact(Interaction<2,0>(node))[s]].set_computed();
                     // set topology data for object B (tetrahedron) - node
                     IP13.set_topology_B(node, IP.dim_B());
                 }
                 else if(IP.dim_B() == 1) // IP is on edge of triangle
                 {
                     for(unsigned int s=0; s < RefElement<3>::n_sides_per_line; s++)
-                        CI12[RefElement<3>::interact<2,1>(IP.idx_B())[s]].set_computed();
-                    IP13.set_topology_B(RefElement<3>::interact<1,2>(side)[IP.idx_B()], IP.dim_B());
+                        CI12[RefElement<3>::interact(Interaction<2,1>(IP.idx_B()))[s]].set_computed();
+                    IP13.set_topology_B(RefElement<3>::interact(Interaction<1,2>(side))[IP.idx_B()], IP.dim_B());
                 }
 			}
 			
@@ -1062,7 +1062,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             {
                 // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
-                IP23.set_topology_A(RefElement<2>::interact<0,1>(triangle_line)[IP.idx_A()], 0);
+                IP23.set_topology_A(RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()], 0);
             
                 if( IP.dim_B() < 3 )
                     // if IP is on the surface of the tetrahedron,
@@ -1087,7 +1087,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                 
                 if(IP.dim_A() == 0) // IP is vertex of line (i.e. line of tetrahedron)
                 {
-                    IP23.set_topology_B(RefElement<3>::interact<0,1>(tetra_edge)[IP.idx_A()], 0);
+                    IP23.set_topology_B(RefElement<3>::interact(Interaction<0,1>(tetra_edge))[IP.idx_A()], 0);
                     // in case of tetrahedron vertex set pathologic case
                     // since we cannot trace it optimally
                     intersection.pathologic_ = true;
