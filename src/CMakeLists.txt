@@ -147,6 +147,7 @@ add_library(la_lib
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
     la/sparse_graph.cc
+    la/local_system.cc
 )
 target_link_libraries(la_lib 
     input_lib system_lib

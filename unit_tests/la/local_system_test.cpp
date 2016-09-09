@@ -18,7 +18,7 @@ using namespace std;
 class SetValues : public testing::Test, public LocalSystem {
 public:
     
-    static const unsigned int size = 6;
+    static const unsigned int size = 9;
     
     SetValues() : LocalSystem(size,size) {
     }
@@ -30,7 +30,7 @@ public:
     /**
          * Set system size and generate random dirichlet conditions.
          */
-    void set_size(unsigned int size) {
+    void restart() {
             full_matrix_ = matrix = arma::zeros(size, size);
             full_rhs_    = rhs    = arma::zeros(size);
             
@@ -45,6 +45,13 @@ public:
             
 //             cout << "dir_rows\n" << dirichlet_rows_;
 //             cout << "dir\n" << dirichlet_;
+            
+            this->reset();
+            for(unsigned int i=0; i < size; i++){
+                row_dofs[i] = i;
+                col_dofs[i] = i;
+            }
+            
     }
     
     /**
@@ -52,7 +59,7 @@ public:
          * 
          */
     void add(arma::uvec rows, arma::uvec cols) {
-          
+        
             arma::mat loc_mat=arma::randu<arma::mat>(rows.size(), cols.size());
             arma::vec loc_rhs=arma::randu<arma::vec>(rows.size());
             // apply to full system
@@ -105,6 +112,59 @@ public:
             EXPECT_TRUE( arma::all( abs(rhs_ - reduced_rhs_)<eps ) );
             */
     }
+    
+    /**
+         * Add a random local matrix and rhs spanning over given rows and columns.
+         * 
+         */
+    void add_single(arma::uvec rows, arma::uvec cols) {
+          
+            arma::mat loc_mat=arma::randu<arma::mat>(rows.size(), cols.size());
+            arma::vec loc_rhs=arma::randu<arma::vec>(rows.size());
+            // apply to full system
+            full_matrix_.submat(rows, cols)+=loc_mat;
+            full_rhs_.elem(rows)+=loc_rhs;
+            
+//             cout << "full_matrix\n" << full_matrix_;
+//             cout << "full_rhs\n" << full_rhs_;
+            
+//             // apply to fixture system
+//             arma::vec row_sol=dirichlet_values_.elem(rows);
+//             arma::vec col_sol=dirichlet_values_.elem(cols);
+//             
+//             
+//             auto i_rows=arma::conv_to<std::vector<int> >::from(
+//                           arma::conv_to<arma::ivec>::from(rows)%dirichlet_.elem(rows));
+//             auto i_cols=arma::conv_to<std::vector<int> >::from(
+//                           arma::conv_to<arma::ivec>::from(cols)%dirichlet_.elem(cols));
+            
+            // set dirichlet
+            for(unsigned int i=0; i < dirichlet_rows_.n_elem; i++){
+//                 cout << "set solution: " << dirichlet_rows_(i) << "  " << dirichlet_values_(dirichlet_rows_(i)) << endl;
+                set_solution(dirichlet_rows_(i), dirichlet_values_(dirichlet_rows_(i)));
+            }
+            
+//             cout << "i_rows\n" << arma::ivec(i_rows);
+//             cout << "i_cols\n" << arma::ivec(i_cols);
+            for(unsigned int i=0; i < rows.n_elem; i++)
+                for(unsigned int j=0; j < cols.n_elem; j++)
+                    this->set_value(rows(i), cols(j), loc_mat(i,j), loc_rhs(i));
+            
+            fix_diagonal();
+            
+            // check consistency
+            double eps=4*arma::datum::eps;
+            // zero dirichlet rows and cols
+//             cout << "Dirich rows:\n" << dirichlet_rows_;
+//             cout << "matrix_:\n" << matrix;
+            
+            EXPECT_TRUE( arma::norm(matrix.submat(dirichlet_rows_, non_dirichlet_rows_), "inf") < eps);
+            
+            EXPECT_TRUE( arma::norm(matrix.submat(non_dirichlet_rows_, dirichlet_rows_), "inf") < eps);
+            
+            auto dirich_submat = matrix.submat(dirichlet_rows_, dirichlet_rows_);
+            EXPECT_TRUE( arma::norm( dirich_submat - arma::diagmat(dirich_submat), "inf") < eps );
+    }
 
     
     arma::uvec non_dirichlet_rows_;
@@ -120,12 +180,12 @@ public:
 
 
 
-TEST_F(SetValues, dirichlet) {
+TEST_F(SetValues, dirichlet_values) {
     
     unsigned int n = 100;
     for(unsigned int i=0; i<n; i++) {
 //         cout << "############################################################   " << i << endl;
-        this->set_size(6);
+        restart();
         this->add( {0,1,2}, {0,1,2} );
         this->add( {0,1}, {3,4,5} );
         this->add( {4,5}, {0,1} );
@@ -133,6 +193,23 @@ TEST_F(SetValues, dirichlet) {
         this->add( {3,4}, {3,4,5} );
         this->add( {5}, {0,2,4,5} );
         this->add( {1,3,4}, {4,5} );
-        this->add( {0,3}, {4,5,} );
+        this->add( {0,3}, {4,5} );
+    }     
+};
+
+TEST_F(SetValues, dirichlet_value) {
+    
+    unsigned int n = 100;
+    for(unsigned int i=0; i<n; i++) {
+//         cout << "############################################################   " << i << endl;
+        restart();
+        this->add_single( {0,1,2}, {0,1,2} );
+        this->add_single( {0,1}, {3,4,5} );
+        this->add_single( {4,5}, {0,1} );
+        this->add_single( {0,2,3}, {0,2,3} );
+        this->add_single( {3,4}, {3,4,5} );
+        this->add_single( {5}, {0,2,4,5} );
+        this->add_single( {1,3,4}, {4,5} );
+        this->add_single( {0,3}, {4,5} );
     }     
 };
