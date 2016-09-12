@@ -88,6 +88,32 @@ public:
     	unit_data_[unit_data_key_].coef_ = d;
     }
 
+	void throw_exp_not_int( Iter_type begin, Iter_type end )
+    {
+		std::stringstream ss;
+		ss << "Value of exponent '" << get_str( begin, end ) << "' is not integer";
+		THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
+    }
+
+	void throw_not_shortcut( Iter_type begin, Iter_type end )
+    {
+		std::stringstream ss;
+		if (begin == end) {
+			ss << "Missing declaration of shortcut '.." << get_str( begin-4, end+4 ) << "..'";
+		} else {
+			ss << "Invalid shortcut of unit '" << get_str( begin, end ) << "'";
+		}
+		THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
+    }
+
+	void throw_not_equating( Iter_type begin, Iter_type end )
+    {
+		std::stringstream ss;
+		ss << "Invalid expression '" << get_str( begin, end ) << "', missing '='";
+		THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
+    }
+
+
     void check_unit_data()
     {
     	for(std::map<std::string, struct Formula>::iterator it = unit_data_.begin(); it != unit_data_.end(); ++it)
@@ -142,22 +168,6 @@ public:
     {
     }
 
-	static void throw_not_equating( Iter_type begin, Iter_type end )
-    {
-		THROW( ExcInvalidUnit() << EI_UnitError("Invalid expression, missing '='") );
-    }
-
-	static void throw_exp_not_int( Iter_type begin, Iter_type end )
-    {
-		THROW( ExcInvalidUnit() << EI_UnitError("Value of exponent is not integer") );
-    }
-
-
-	static void throw_not_shortcut( Iter_type begin, Iter_type end )
-    {
-		THROW( ExcInvalidUnit() << EI_UnitError("Invalid shortcut of unit") );
-    }
-
 
     template< typename ScannerT >
     class definition
@@ -175,11 +185,14 @@ public:
             typedef boost::function< void( double )               > Real_action;
             typedef boost::function< void( boost::int64_t )       > Int_action;
 
-            Str_action    new_shortcut     ( boost::bind( &Semantic_actions_t::new_shortcut,     &self.actions_, _1, _2 ) );
-            Str_action    new_mult_factor  ( boost::bind( &Semantic_actions_t::new_mult_factor,  &self.actions_, _1, _2 ) );
-            Str_action    new_div_factor   ( boost::bind( &Semantic_actions_t::new_div_factor,   &self.actions_, _1, _2 ) );
-            Real_action   new_multipl      ( boost::bind( &Semantic_actions_t::new_multipl,      &self.actions_, _1 ) );
-            Int_action    new_exp          ( boost::bind( &Semantic_actions_t::new_exp,          &self.actions_, _1 ) );
+            Str_action    new_shortcut       ( boost::bind( &Semantic_actions_t::new_shortcut,       &self.actions_, _1, _2 ) );
+            Str_action    new_mult_factor    ( boost::bind( &Semantic_actions_t::new_mult_factor,    &self.actions_, _1, _2 ) );
+            Str_action    new_div_factor     ( boost::bind( &Semantic_actions_t::new_div_factor,     &self.actions_, _1, _2 ) );
+            Real_action   new_multipl        ( boost::bind( &Semantic_actions_t::new_multipl,        &self.actions_, _1 ) );
+            Int_action    new_exp            ( boost::bind( &Semantic_actions_t::new_exp,            &self.actions_, _1 ) );
+            Str_action    throw_exp_not_int  ( boost::bind( &Semantic_actions_t::throw_exp_not_int,  &self.actions_, _1, _2 ) );
+            Str_action    throw_not_equating ( boost::bind( &Semantic_actions_t::throw_not_equating, &self.actions_, _1, _2 ) );
+            Str_action    throw_not_shortcut ( boost::bind( &Semantic_actions_t::throw_not_shortcut, &self.actions_, _1, _2 ) );
 
             // actual grammer
 
@@ -195,18 +208,23 @@ public:
                 ;
 
             formula_factor_
-		        = +alpha_p | eps_p[ &throw_not_shortcut ]
+		        = ( alpha_p >> *( anychar_p - ch_p(';') - ch_p('*') - ch_p('/') - ch_p('=') - ch_p('^') - space_p ) )
+		          | shortcut_err_[ throw_not_shortcut ]
 			    ;
 
             constant_
-			    = constant_shortcut_[ new_shortcut ]
-				  >> *space_p >> ( ch_p('=') | eps_p[ &throw_not_equating ] )
-				  >> *space_p >> !(constant_multiplicator_ >> ch_p('*'))
-			      >> formula_
+			    = ( formula_factor_[ new_shortcut ] >> *space_p
+			        >> ch_p('=') >> *space_p >> constant_value_ )
+				  | constant_err_[ throw_not_equating ]
 			    ;
 
-            constant_shortcut_
-			    = +alpha_p | eps_p[ &throw_not_shortcut ]
+            constant_value_
+			    = !(constant_multiplicator_ >> ch_p('*'))
+				  >> formula_
+				;
+
+            constant_err_
+		        = +( anychar_p - ch_p(';') )
 				;
 
             constant_multiplicator_
@@ -216,11 +234,20 @@ public:
 
             exp_
 			    = int64_p[ new_exp ]
-			      | eps_p[ &throw_exp_not_int ]
+			      | exp_err_[ throw_exp_not_int ]
+				;
+
+            exp_err_
+			    = +( anychar_p - ch_p(';') - ch_p('*') - ch_p('/') - space_p )
+				;
+
+            shortcut_err_
+			    = *( anychar_p - ch_p(';') - ch_p('*') - ch_p('/') - ch_p(';') - ch_p('^') )
 				;
         }
 
-        spirit_namespace::rule< ScannerT > unit_, formula_, formula_factor_, exp_, constant_, constant_shortcut_, constant_multiplicator_;
+        spirit_namespace::rule< ScannerT > unit_, formula_, formula_factor_, exp_, exp_err_, constant_,
+				constant_value_, constant_err_, constant_multiplicator_, shortcut_err_;
 
         const spirit_namespace::rule< ScannerT >& start() const { return unit_; }
     };
@@ -252,6 +279,8 @@ UnitData read_unit(std::string s)
 		e << EI_UnitDefinition(s);
 		throw;
 	}
+
+	semantic_actions.check_unit_data();
 
     return semantic_actions.unit_data();
 }
