@@ -31,6 +31,7 @@
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
 #include "reaction/reaction_term.hh"
+#include "io/equation_output.hh"
 
 class Isotherm;
 class Mesh;
@@ -47,11 +48,17 @@ public:
    */
   static const Input::Type::Record & get_input_type();
   
+  /*
   static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
   {
       return EqData(output_field_name).output_fields
         .make_output_field_selection(selection_name, "desc")
         .close();
+  }*/
+
+  static Input::Type::Instance make_output_type(const string &equation_name, const string &output_field_name )
+  {
+      return EqData(output_field_name).output_fields.make_output_type(equation_name, "");
   }
 
   class EqData : public FieldSet
@@ -83,7 +90,7 @@ public:
     FieldSet input_data_set_;
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
-    FieldSet output_fields;
+    EquationOutput output_fields;
 
   };
 
@@ -153,7 +160,7 @@ protected:
   /**
    * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
    */
-  double **compute_reaction(double **concentrations, int loc_el);
+  double **compute_reaction(double **concentrations, int loc_el) override;
   
   /// Reinitializes the isotherm.
   /**
@@ -206,7 +213,7 @@ protected:
    */
   double** conc_solid;
   
-  Input::Array output_array;
+  //Input::Array output_array;
 
   //Input::Type::Selection output_selection;
 

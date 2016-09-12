@@ -64,7 +64,7 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
-    virtual void init_from_input(const Input::Record &rec);
+    virtual void init_from_input(const Input::Record &rec) override;
 
     /**
      * Set row of boundary data. Used to implement old BC input.
@@ -82,19 +82,19 @@ public:
      *
      * See also description of the FieldBase<...>::set_mesh.
      */
-    virtual void set_mesh(const Mesh *mesh, bool boundary_domain);
+    void set_mesh(const Mesh *mesh, bool boundary_domain) override;
 
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
+    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override;
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type>  &value_list);
+    void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+                       std::vector<typename Value::return_type>  &value_list) override;
 
 
     virtual ~FieldElementwise();

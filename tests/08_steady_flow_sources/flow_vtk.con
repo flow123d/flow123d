@@ -18,6 +18,7 @@
           }
         },
         { region = ".plane_boundary",
+          storativity="1.0",
           bc_type = "dirichlet",
           bc_pressure = 0
         } 

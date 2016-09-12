@@ -21,6 +21,9 @@ mpiexec_name = "mpiexec" if is_linux else "mpiexec.hydra"
 
 
 def find_base_dir():
+    """
+    Attempts to find base directory from pathfix's module's location
+    """
     import os
     import pathfix
     path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(pathfix.__file__)), '..', '..'))
@@ -28,6 +31,10 @@ def find_base_dir():
 
 
 class GlobalResult(object):
+    """
+    Class GlobalResult stores global result which can be dumped to json
+    """
+
     items = []
     returncode = None
     error = None
@@ -44,12 +51,17 @@ class GlobalResult(object):
         if f:
             with open(f, 'w') as fp:
                 fp.write(content)
-                print '\n' * 10
-                print content
+                print ('\n' * 10)
+                print (content)
         return content
 
 
 class MyEncoder(JSONEncoder):
+    """
+    Class MyEncoder tries to call to_json on object
+     method before converting to string if there is no encoder available
+    """
+
     def default(self, o):
         try:
             return o.to_json()
@@ -58,9 +70,17 @@ class MyEncoder(JSONEncoder):
 
 
 class Printer(object):
+    """
+    Class Printer unifies output operation
+    """
+
     indent = 0
     batch_output = True
     dynamic_output = not batch_output
+
+    @classmethod
+    def ind(cls):
+        return cls.indent * '    '
 
     @classmethod
     def style(cls, msg='', *args, **kwargs):
@@ -79,7 +99,7 @@ class Printer(object):
     @classmethod
     def err(cls, msg='', *args, **kwargs):
         if cls.indent:
-            sys.stdout.write('    ' * cls.indent)
+            sys.stdout.write(cls.ind())
         sys.stdout.write(msg.format(*args, **kwargs))
         sys.stdout.write('\n')
 
@@ -88,7 +108,7 @@ class Printer(object):
     @classmethod
     def out(cls, msg='', *args, **kwargs):
         if cls.indent:
-            sys.stdout.write('    ' * cls.indent)
+            sys.stdout.write(cls.ind())
         if not args and not kwargs:
             sys.stdout.write(msg)
         else:
@@ -100,7 +120,7 @@ class Printer(object):
         if cls.dynamic_output:
             sys.stdout.write('\r' + ' ' * 80)
             if cls.indent:
-                sys.stdout.write('\r' + '    ' * cls.indent + msg.format(*args, **kwargs))
+                sys.stdout.write('\r' + cls.ind() + msg.format(*args, **kwargs))
             else:
                 sys.stdout.write('\r' + msg.format(*args, **kwargs))
             sys.stdout.flush()
@@ -117,6 +137,11 @@ class Printer(object):
 
 
 def make_relative(f):
+    """
+    Wrapper which return value as relative absolute or non-changed base on
+    value Paths.format
+    :param f:
+    """
     def wrapper(*args, **kwargs):
         path = f(*args, **kwargs)
         if Paths.format == PathFormat.RELATIVE:
@@ -128,6 +153,10 @@ def make_relative(f):
 
 
 class PathFilters(object):
+    """
+    Class PathFilters serves as filter library for filtering files and folders
+    """
+
     @staticmethod
     def filter_name(name):
         return lambda x: Paths.basename(x) == name
@@ -161,18 +190,27 @@ class PathFilters(object):
         patt = re.compile(fmt)
         return lambda x: patt.match(x)\
 
+
     @staticmethod
     def filter_endswith(suffix=""):
         return lambda x: x.endswith(suffix)
 
 
 class PathFormat(object):
+    """
+    Class PathFormat is enum class for different path formats
+    """
+
     CUSTOM = 0
     RELATIVE = 1
     ABSOLUTE = 2
 
 
 class Paths(object):
+    """
+    Class Paths is helper class when dealng with files and folders
+    """
+
     _base_dir = find_base_dir()
     format = PathFormat.ABSOLUTE
     cur_dir = os.getcwd()
@@ -387,6 +425,10 @@ class Paths(object):
 
 
 class Command(object):
+    """
+    Class Command help quote arguments passed to command
+    """
+
     @classmethod
     def escape_command(cls, command):
         """
@@ -402,6 +444,10 @@ class Command(object):
 
 
 class IO(object):
+    """
+    Class IO is helper class fo IO operations
+    """
+
     @classmethod
     def read(cls, name, mode='r'):
         """
@@ -436,6 +482,12 @@ class IO(object):
 
 
 class DynamicSleep(object):
+    """
+    Class DynamicSleep extends sleep duration each time sleep method
+    is called. This is useful when we want to have finer resolution at the
+    beginning of an operation.
+    """
+
     def __init__(self, min=100, max=5000, steps=13):
         # -c * Math.cos(t/d * (Math.PI/2)) + c + b;
         # t: current time, b: begInnIng value, c: change In value, d: duration
@@ -443,10 +495,10 @@ class DynamicSleep(object):
         d = float(steps)
         b = float(min)
         self.steps = list()
-        for t in range(steps+1):
+        for t in range(steps + 1):
             self.steps.append(float(int(
-                -c * math.cos(t/d * (math.pi/2)) + c + b
-            ))/1000)
+                -c * math.cos(t / d * (math.pi / 2)) + c + b
+            )) / 1000)
         self.current = -1
         self.total = len(self.steps)
 

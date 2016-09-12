@@ -1,10 +1,11 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test6 - Coupling between dimension 2D-3D - influence of sigma and cross
     section parameters.
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -34,14 +35,14 @@ problem: !Coupling_Sequential
           value: z
           # p_3d
     output:
-      output_stream:
-        file: test6_32d.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream:
+      file: test6_32d.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

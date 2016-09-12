@@ -11,7 +11,8 @@ Situation is following:
 So to sys.path is appended ../../src/python path
 """
 
-import sys, os
+import sys
+import os
 
 
 def print_debug():
@@ -20,6 +21,11 @@ def print_debug():
 
 
 def add_path(*args):
+    """
+    Adds path to sys.path
+    :param args:
+    :return:
+    """
     root = os.path.dirname(os.path.realpath(__file__))
     if not args:
         return root

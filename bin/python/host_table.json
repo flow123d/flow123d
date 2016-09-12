@@ -1,6 +1,0 @@
-{
-    "janhybs":              "local_pbs",
-    "ci2runner.nti.tul.cz": "local_pbs",
-    "tarkil.cesnet.cz":     "pbs_tarkil_cesnet_cz",
-    "hydra.kai.tul.cz":     "pbs_hydra_kai_tul_cz"
-}

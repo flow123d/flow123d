@@ -1,0 +1,174 @@
+#########################################################################################
+# Template for project Flow123d - DEVELOPER BUILDS
+#########################################################################################
+
+
+# defaults values
+- defaults:
+    name: flow123d-build
+    node: "{platform}"
+    workspace: "F123-{platform}-{build-type}"
+    # TODO log rotate 200 days
+    wrappers:
+      - build-name:
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
+
+- project:
+    name: "Multijob project debug"
+    platform: master
+    build-type: debug
+    unit-dir: 
+      - $PLACEHOLDER_unit_list$
+    test-dir:
+      - $PLACEHOLDER_test_list$
+    jobs:
+      - "Flow123d-{platform}-debug-install-image"
+      - "Flow123d-{platform}-debug-start-image"
+      - "Flow123d-{platform}-debug-configure"
+      - "Flow123d-{platform}-debug-stop-image"
+    #   - "Flow123d-{platform}-{build-type}-build-libs"
+    #   - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+    #   - "Flow123d-{platform}-{build-type}-build"
+    #   - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-debug-multijob"
+
+# ---------------------------------------------------------------------------- #
+# ---------- INSTALL IMAGE --------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-debug-install-image"
+    display-name: "{platform} debug / Flow123d install image"
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          whoami
+          cd docker-config/dockerfiles
+          ls -lad
+          docker build --tag flow123d/base                  base
+          docker build --tag flow123d/base-build            base-build
+          docker build --tag flow123d/flow-libs-dev-dbg     flow-libs-dev-dbg
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- RUN IMAGE ------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-debug-start-image"
+    display-name: "{platform} debug / Flow123d start image"
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          rm -f /tmp/docker_test.cid
+          docker run --privileged -di --cidfile /tmp/docker_test.cid flow123d/flow-libs-dev-dbg bash
+          docker_pid=`cat /tmp/docker_test.cid`
+          echo "DOCKER_PID=${{docker_pid}}" >> prop.file
+
+# ---------------------------------------------------------------------------- #
+# ---------- CONFIGURE ------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-debug-configure"
+    display-name: "{platform} debug / Flow123d configure"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          FLOW=/opt/flow123d/flow123d
+          docker exec ${{DOCKER_PID}} git clone -b JHy_docker https://github.com/flow123d/flow123d.git ${{FLOW}}
+          docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-linux-debug.cmake ${{FLOW}}/config.cmake
+          docker exec ${{DOCKER_PID}} make all
+
+# ---------------------------------------------------------------------------- #
+# ---------- STOP IMAGE ------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-debug-stop-image"
+    display-name: "{platform} debug / Flow123d stop image"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker stop ${{DOCKER_PID}}
+          docker rm   ${{DOCKER_PID}}
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- MULTIJOB -------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-debug-multijob"
+    display-name: "{platform} debug / Flow123d multijob"
+    project-type: multijob
+    defaults: flow123d-build
+
+    block-downstream: yes
+    scm:
+      - git:
+          url: https://github.com/flow123d/docker-config.git
+          basedir: docker-config
+          browser: githubweb
+          browser-url: https://github.com/flow123d/docker-config/
+          skip-tag: true
+          
+    wrappers:
+      - inject:
+          script-content: |
+            rm -f prop.file && touch prop.file
+            echo "BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
+      - build-name:
+          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+            
+    triggers: 
+      - github
+      
+    builders:
+      - shell: |
+          # service docker status
+      - multijob:
+          name: "Install image"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Flow123d-{platform}-debug-install-image"
+      - multijob:
+          name: "Start image"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Flow123d-{platform}-debug-start-image"
+      # ---------- START IMAGE ----------------------------------------------- #
+      - multijob:
+          name: "Configure flow123d Phase"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Flow123d-{platform}-debug-configure"
+    
+      # ---------- STOP IMAGE ------------------------------------------------ #
+      - multijob:
+          name: "Stop image"
+          condition: COMPLETED
+          projects:  
+            - name: "Flow123d-{platform}-debug-stop-image"
+#       - multijob:
+#           name: "Build Flow123d libraries"
+#           condition: COMPLETED
+#           projects:
+#             - name: "Flow123d-{platform}-debug-build-libs"
+#       - multijob:
+#           name: "Unit tests"
+#           condition: COMPLETED
+#           projects:     #*UNIT-JOBS
+#             - name: "Flow123d-{platform}-debug-unit-test-$PLACEHOLDER_unit_list$"
+#       - multijob:
+#           name: "Build Flow123d"
+#           condition: SUCCESSFUL
+#           projects:
+#             - name: "Flow123d-{platform}-debug-build"
+#       - multijob:
+#           name: "Integration tests"
+#           condition: COMPLETED
+#           projects:
+# # $PLACEHOLDER_test_list$
+#             - name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$"
+#               kill-phase-on: NEVER
+# # $PLACEHOLDER_test_list$

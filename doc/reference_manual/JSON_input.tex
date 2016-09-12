@@ -3,6 +3,8 @@
 \section{Main Input File (CON File Format)}
 \label{sec:CONformat}
 
+\tbd{Update, brief documentation of YAML format}
+
 \begin{figure}
  \begin{center}
  \includegraphics[scale=0.4]{\fig/input_subsystem.pdf}
@@ -169,15 +171,17 @@ Similar functionality holds for arrays. If the user sets a non-array value where
 
 \subsection{Mesh Record}
 \label{sec:Mesh}
-The \hyperlink{IT::Mesh}{mesh record} provides initialization for the computational mesh consisting of points, lines, triangles and tetrahedrons in 3D space.
+The \hyperA{IT::Mesh}{mesh record} provides initialization for the computational mesh consisting of points, lines, triangles and tetrahedrons in 3D space.
 Currently, we support only GMSH mesh file format \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}{MSH ASCII}. 
 The input file is provided by the key \hyperA{Mesh::mesh-file}{{\tt mesh\_file}}. The file format allows to group elements into {\it regions} identified either by ID number or by string label. 
 The regions with labels starting with the dot character are treated as {\it boundary regions}. Their elements are removed from the computational domain, however they can be used to specify boundary
 conditions. Other regions are called {\it bulk regions}. User can create new labeled regions through the key 
-\hyperA{Mesh::regions}{{\tt regions}}, the new region can be specified either by its ID
-or by list of IDs of its elements. The latter possibility overrides original region assigned to the elements, which can be useful for specification of small areas ``ad hoc''.
-The key \hyperA{Mesh::sets}{{\tt sets}} allows specification of sets of regions in terms of list of region IDs or labels and basic set operations. The difference between regions and sets is that
-regions form disjoint covering of elements, the sets, however, may overlap. There are three predefined region sets: ``ALL'', ``BOUNDARY'', ``BULK''.
+\hyperA{Mesh::regions}{{\tt regions}}. 
+\tbd{Update info about Mesh record.}
+%, the new region can be specified either by its ID
+%or by list of IDs of its elements. The latter possibility overrides original region assigned to the elements, which can be useful for specification of small areas ``ad hoc''.
+%The key \hyperA{Mesh::sets}{{\tt sets}} allows specification of sets of regions in terms of list of region IDs or labels and basic set operations. The difference between regions and sets is that
+%regions form disjoint covering of elements, the sets, however, may overlap. There are three predefined region sets: ``ALL'', ``.BOUNDARY'', ``BULK''.
 
 
 \subsection{Field Records}
@@ -243,9 +247,8 @@ concentration = {
 
 \subsection{Field Data for Equations}
 Every equation record has key \verb'input_fields', intended to set both the bulk and boundary fields. These keys contain an array of region-time initialization records
-like the \hyperlink{IT::DarcyFlowMH-Data}{\tt Data} record of the DarcyFlow equation. Every such record specifies fields on particular region 
-(keys \hyperA{DarcyFlowMH-Steady-BulkData::region}{{\tt region}} and \hyperA{DarcyFlowMH-Steady-BulkData::rid}{{\tt rid}} ) or on a region set 
-(key \hyperA{DarcyFlowMH-Steady-BulkData::r-set}{{\tt r\_set}}) starting from the time specified by the key \hyperA{DarcyFlowMH-Steady-BulkData::time}{{\tt time}}.
+like the \hyperA{IT::Flow-Darcy-MH-Data}{\tt Data} record of the DarcyFlow equation. Every such record specifies fields on particular region 
+(keys \hyperA{Flow-Darcy-MH-Data::region}{{\tt region}} and \hyperA{Flow-Darcy-MH-Data::rid}{{\tt rid}} ) starting from the time specified by the key \hyperA{Flow-Darcy-MH-Data::time}{{\tt time}}.
 The array is processed sequentially and latter values overwrite the previous ones. Times should form a non-decreasing sequence.
 
 Example:

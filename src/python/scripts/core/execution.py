@@ -1,18 +1,24 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
+# ----------------------------------------------
 import os
 import subprocess
 import sys
 import tempfile
-
+# ----------------------------------------------
 from scripts import psutils
 from scripts.core.base import IO, Paths
 from scripts.core.threads import ExtendedThread, BrokenProcess
 from utils.globals import ensure_iterable
+# ----------------------------------------------
 
 
 class OutputMode(object):
+    """
+    Class OutputMode helper class for redirecting output from a command
+    """
+
     WRITE, APPEND, SHOW, HIDE, VARIABLE = range(5)
 
     def __init__(self, mode, filename=None, fp=None):
@@ -75,6 +81,7 @@ class OutputMode(object):
 
 class BinExecutor(ExtendedThread):
     """
+    Class which executes command and saves returncode
     :type process: scripts.psutils.Process
     :type threads: list[scripts.core.execution.BinExecutor]
     :type output : OutputMode

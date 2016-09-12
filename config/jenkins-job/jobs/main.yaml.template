@@ -1,0 +1,9 @@
+#########################################################################################
+# Template for project Flow123d
+#########################################################################################
+
+# include template for project Flow123d - DEBUG BUILD
+!include: debug.yaml
+
+# include template for project Flow123d - RELEASE BUILDS
+!include: release.yaml

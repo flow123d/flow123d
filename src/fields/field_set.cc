@@ -83,7 +83,8 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             }
             OLD_ASSERT( field->units().is_def() , "units not def.");
             rec.declare_key(field->input_name(), field_type_ptr, Input::Type::Default::optional(), description,
-                    {{FlowAttribute::field_unit(), field->units().json() }});
+                    { {FlowAttribute::field_unit(), field->units().json() },
+                      {FlowAttribute::field_value_shape(), field->get_value_attribute()} });
         }
 
     }
@@ -91,7 +92,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
 }
 
 
-
+/*
 Input::Type::Selection FieldSet::make_output_field_selection(const string &name, const string &desc)
 {
     namespace IT=Input::Type;
@@ -107,14 +108,16 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
                 desc += " (" + field->description() + ").";
             else
                 desc += ".";
-            sel.add_value(i, field->name(), desc);
+            DebugOut() << field->get_value_attribute();
+
+            sel.add_value(i, field->name(), desc, { {FlowAttribute::field_value_shape(), field->get_value_attribute()} } );
             i++;
         }
     }
 
     return sel;
 }
-
+*/
 
 
 void FieldSet::set_field(const std::string &dest_field_name, FieldCommon &source)
@@ -162,21 +165,6 @@ bool FieldSet::is_jump_time() const {
     bool is_jump = false;
     for(auto field : field_list) is_jump = is_jump || field->is_jump_time();
     return is_jump;
-}
-
-
-
-void FieldSet::output(std::shared_ptr<OutputTime> stream) {
-	START_TIMER("Fill OutputData");
-    
-    // TODO: remove const_cast after resolving problems with const Mesh.
-    Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
-    DBGMSG("call make output stream\n");
-    stream->make_output_mesh(field_mesh, this);
-    
-    for(auto field : field_list)
-        if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
-            field->output(stream);
 }
 
 

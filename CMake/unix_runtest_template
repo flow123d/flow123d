@@ -2,4 +2,4 @@
 # Simple script which will use correct python version and execute runtest.py
 
 # populated by configure_file call
-@PYTHON_EXECUTABLE@ @PYTHON_RUNTEST@ $@
+@PYTHON_EXECUTABLE@ @PYTHON_RUNTEST@ "$@"

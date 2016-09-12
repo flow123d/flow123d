@@ -29,7 +29,6 @@
 #include "mpi.h"
 
 #include "system/system.hh"
-#include "system/xio.h"
 #include "system/file_path.hh"
 #include "system/sys_profiler.hh"
 
@@ -107,19 +106,6 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 		default: screen=NULL;
 	}
 
-
-#ifdef MPI_PRINTALL
-	//print msg header with mpi_id to distinguish the message origin
-    if (screen)
-        fprintf(screen,"[mpi_id=%d] ", sys_info.my_proc );
-    if (mf.log && sys_info.log)
-        fprintf(sys_info.log,"[mpi_id=%d] ", sys_info.my_proc );
-#else
-    //if not PRINTALL, allow console output only for MPI master, no need to print mpi_id
-	if ( (screen) && ( sys_info.my_proc != 0 ) )
-        screen = NULL;
-#endif
-
 	{
 		va_list argptr;
 		if (mf.stop) {
@@ -135,6 +121,20 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 				<< EI_XprintfMessage( format_message ) );
 		}
 	}
+
+	ASSERT(false).error("Non error usage of xprintf is not allowed.");
+
+#ifdef MPI_PRINTALL
+    //print msg header with mpi_id to distinguish the message origin
+    if (screen)
+        fprintf(screen,"[mpi_id=%d] ", sys_info.my_proc );
+    if (mf.log && sys_info.log)
+        fprintf(sys_info.log,"[mpi_id=%d] ", sys_info.my_proc );
+#else
+    //if not PRINTALL, allow console output only for MPI master, no need to print mpi_id
+    if ( (screen) && ( sys_info.my_proc != 0 ) )
+        screen = NULL;
+#endif
 
 	//generate barrier and unique ID for MPI messages
     if (mf.mpi) {
@@ -194,7 +194,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
  *
  * @param[in] size  New size for the memory block, in bytes.
  * @return          same as ISO C realloc()
- */
+ *//*
 void *xmalloc( size_t size )
 {
 	void *rc;
@@ -205,7 +205,7 @@ void *xmalloc( size_t size )
 	if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
 
 	return(rc);
-}
+}*/
 
 /*!
  * @brief Reallocation of memory block with checking.
@@ -229,6 +229,8 @@ void *xmalloc( size_t size )
  * @param[in] size  New size for the memory block, in bytes.
  * @return          same as ISO C realloc()
  */
+
+/*
 void * xrealloc( void * ptr, size_t size )
 {
     void * rc;
@@ -237,7 +239,7 @@ void * xrealloc( void * ptr, size_t size )
     if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
 
     return(rc);
-}
+}*/
 
 /*
 void *operator new (std::size_t size, const my_new_t &) throw() {
@@ -265,6 +267,7 @@ void operator delete[]( void *p,  const my_new_t &) throw ()
 /*!
  * @brief SYSTEM with err handling
  */
+/*
 int xsystem( const char *cmd )
 {
 	int rc;
@@ -272,11 +275,12 @@ int xsystem( const char *cmd )
 	rc = system( cmd );
 	INPUT_CHECK(!( rc != 0 ),"Error executing external command: %s\n", cmd );
 	return(rc);
-}
+}*/
 
 /*!
  * @brief MAKE BRAND NEW COPY OF STRING
  */
+/*
 char *xstrcpy( const char *src )
 {
 	char *rc;
@@ -287,7 +291,7 @@ char *xstrcpy( const char *src )
 	rc = (char*) xmalloc(length * sizeof(char));
 	strcpy( rc, src );
 	return(rc);
-}
+}*/
 
 /*!
  * @brief      STRTOK WITH ERROR HANDLING and whitespace delimiters
@@ -295,6 +299,7 @@ char *xstrcpy( const char *src )
  * @param[in]  position requested position of the token
  * @return              strtok return
  */
+/*
 char *xstrtok(char *s, int position)
 {
     char *rc;
@@ -303,6 +308,7 @@ char *xstrtok(char *s, int position)
     rc = xstrtok( s, whitespace_delim, position);
     return(rc);
 }
+*/
 
 /*!
  * @brief      STRTOK WITH ERROR HANDLING and user specified delimiters
@@ -313,6 +319,7 @@ char *xstrtok(char *s, int position)
  *
  * Function behaves like original strtok
  */
+/*
 char *xstrtok( char *s1, const char *delim, int position )
 {
 	char *rc;
@@ -341,12 +348,14 @@ char *xstrtok( char *s1, const char *delim, int position )
 
 	return(rc);
 }
+*/
 
 /*!
  * @brief           Delete trailing whitespace characters (space,tab,CR,NL).
  * @param[in,out] s string to change
  * @return          number of deleted characters
  */
+/*
 int xchomp( char * s )
 {
     int no_erased = 0;
@@ -368,12 +377,13 @@ int xchomp( char * s )
         }
     }
     return(no_erased);
-}
+}*/
 
 
 /*!
  * @brief MKDIR WITH ERROR HANDLING
  */
+/*
 int xmkdir( const char *s )
 {
     int rc;
@@ -385,11 +395,12 @@ int xmkdir( const char *s )
     INPUT_CHECK(!( rc != 0 ),"Cannot make directory %s\n", s );
 
     return(rc);
-}
+}*/
 
 /*!
  * @brief RMDIR with err handling
  */
+/*
 int xrmdir( const char *s )
 {
     int rc;
@@ -398,11 +409,12 @@ int xrmdir( const char *s )
     rc = rmdir( s );
     INPUT_CHECK(!( rc != 0 ),"Cannot delete directory %s\n", s );
     return(rc);
-}
+}*/
 
 /*!
  * @brief CHDIR WITH ERROR HANDLING
  */
+/*
 int xchdir( const char *s )
 {
     int rc;
@@ -411,11 +423,13 @@ int xchdir( const char *s )
     rc = chdir( s );
     INPUT_CHECK(!( rc != 0 ),"Cannot change directory to %s\n", s );
     return(rc);
-}
+}*/
 
 /*!
  * @brief DELETE a FILE with error handling
  */
+
+/*
 int xremove( const char *fname )
 {
     int rc;
@@ -430,11 +444,12 @@ int xremove( const char *fname )
     	WarningOut() << "File '" << fname << "' does not exist, can not remove. Ignoring." << std::endl;
 
     return(rc);
-}
+}*/
 
 /*!
  * @brief GET CURRENT WORKING DIRECTORY with error handling
  */
+/*
 char *xgetcwd( void )
 {
     char tmp[PATH_MAX];
@@ -444,5 +459,5 @@ char *xgetcwd( void )
     OLD_ASSERT( rc,"Cannot get name of current working directory\n");
 
     return(xstrcpy( tmp ));
-}
+}*/
 

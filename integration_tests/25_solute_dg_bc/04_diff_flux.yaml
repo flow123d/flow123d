@@ -1,27 +1,28 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test of boundary conditions for transport
   mesh:
     mesh_file: ../00_mesh/square_1x1_str.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc &anchor3
         a_tol: 1.0e-12
         r_tol: 1.0e-12
     input_fields:
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0
     output:
-      output_stream: 
-        file: ./flow.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream: 
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
@@ -49,8 +50,9 @@ problem: !Coupling_Sequential
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 1
       name: transport_output_stream
+      times:
+        - step: 1
     substances:
       - tracer
     time:

@@ -9,12 +9,12 @@ import time
 import sys
 
 from scripts.config.yaml_config import ConfigCase, DEFAULTS
-from scripts.core.base import Paths, Printer, Command, IO, GlobalResult
+from scripts.core.base import Paths, Printer, Command, IO, GlobalResult, DynamicSleep
 from scripts.core.base import PathFormat
-from scripts.core.threads import PyPy
+from scripts.core.threads import PyPy, ResultHolder
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.pbs.common import get_pbs_module, job_ok_string
-from scripts.pbs.job import JobState, finish_pbs_job, MultiJob
+from scripts.pbs.job import JobState, finish_pbs_exec, MultiJob
 from scripts.prescriptions.remote_run import exec_parallel_command, PBSModule
 from scripts.script_module import ScriptModule
 from utils.counter import ProgressCounter
@@ -26,11 +26,19 @@ from utils.strings import format_n_lines
 
 
 class ModuleExecParallel(ScriptModule):
+    """
+    Class ModuleExecParallel is backend for script exec_parallel.py
+    """
+
     def __init__(self):
         super(ModuleExecParallel, self).__init__()
         self.proc, self.time_limit, self.memory_limit = None, None, None
 
     def _check_arguments(self):
+        """
+        Arguments additional check
+        """
+
         # no args
         if len(self.rest) == 0:
             self.parser.exit_usage('no MPI executable provided', exit_code=1)
@@ -39,6 +47,10 @@ class ModuleExecParallel(ScriptModule):
             self.parser.exit_usage('no command provided', exit_code=2)
 
     def _run(self):
+        """
+        Run method for this module
+        """
+
         self.proc = ensure_iterable(self.arg_options.get('cpu'))
         self.time_limit = self.arg_options.get('time_limit')
         self.memory_limit = self.arg_options.get('memory_limit')
@@ -55,11 +67,14 @@ class ModuleExecParallel(ScriptModule):
             return self.run_local_mode()
 
     def run_pbs_mode(self):
+        """
+        Runs this module in local mode.
+        At this point arguments from cmd where parsed and converted.
+        We create pbs start script/s and monitor their status/es. All jobs
+        are inserted into queue and after finished evauluated.
+        """
         pbs_module = get_pbs_module()
         jobs = self.prepare_pbs_files(pbs_module)
-
-        if self.debug:
-            return 0
 
         # start jobs
         Printer.dyn('Starting jobs')
@@ -71,7 +86,6 @@ class ModuleExecParallel(ScriptModule):
             job_id += 1
 
             Printer.dyn('Starting jobs {:02d} of {:02d}', job_id, total)
-
             output = subprocess.check_output(qsub_command)
             job = pbs_module.ModuleJob.create(output, pbs_run.case)
             job.full_name = "Case {}".format(pbs_run.case)
@@ -93,7 +107,10 @@ class ModuleExecParallel(ScriptModule):
 
         Printer.separator()
         Printer.dyn(multijob.get_status_line())
-        returncodes = dict()
+        result = ResultHolder()
+
+        # use dynamic sleeper
+        sleeper = DynamicSleep(min=300, max=5000, steps=5)
 
         # wait for finish
         while multijob.is_running():
@@ -109,7 +126,9 @@ class ModuleExecParallel(ScriptModule):
 
             # get all jobs where was status update to COMPLETE state
             for job in jobs_changed:
-                returncodes[job] = finish_pbs_job(job, self.batch)
+                pypy = finish_pbs_exec(job, self.batch)
+                if pypy:
+                    result.add(pypy)
 
             if jobs_changed:
                 Printer.separator()
@@ -117,13 +136,13 @@ class ModuleExecParallel(ScriptModule):
 
             # after printing update status lets sleep for a bit
             if multijob.is_running():
-                time.sleep(5)
+                sleeper.sleep()
 
         Printer.out(multijob.get_status_line())
         Printer.out('All jobs finished')
 
         # get max return code or number 2 if there are no returncodes
-        return max(returncodes.values()) if returncodes else 2
+        return result.singlify()
 
     def prepare_pbs_files(self, pbs_module):
         """
@@ -153,11 +172,23 @@ class ModuleExecParallel(ScriptModule):
         return jobs
 
     def run_local_mode(self):
+        """
+        Runs this module in local mode.
+        At this point arguments from cmd where parsed and converted.
+        We create command arguments and prepare threads.
+
+        If we need to run multiple jobs (for example cpu specification required
+        to run this command using 1 AND 2 CPU) we call method run_local_mode_one
+        repeatedly otherwise only once
+        :rtype: PyPy
+        """
         total = len(self.proc)
+        result = ResultHolder()
 
         if total == 1:
             pypy = self.run_local_mode_one(self.proc[0])
             GlobalResult.returncode = pypy.returncode
+            result.add(pypy)
         else:
             # optionally we use counter
             progress = ProgressCounter('Running {:02d} of {total:02d}')
@@ -170,8 +201,9 @@ class ModuleExecParallel(ScriptModule):
                 pypy = self.run_local_mode_one(p)
                 Printer.close()
                 GlobalResult.returncode = max(GlobalResult.returncode, pypy.returncode)
+                result.add(pypy)
 
-        return GlobalResult.returncode if not self.debug else pypy
+        return result.singlify()
 
     def create_pbs_job_content(self, module, case):
         """
@@ -189,19 +221,23 @@ class ModuleExecParallel(ScriptModule):
             script=pkgutil.get_loader('exec_parallel').filename,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.rest else Command.to_string(self.rest),
-            json_output=case.fs.json_output
+            dump_output=case.fs.dump_output
         )
 
         template = PBSModule.format(
             module.template,
             command=command,
-            json_output=case.fs.json_output # TODO remove
+            dump_output=case.fs.dump_output  # TODO remove
         )
 
         return template
 
     def run_local_mode_one(self, proc):
-        if self.proc == 0:
+        """
+        Method runs single job with specified number of CPU
+        :param proc:
+        """
+        if int(proc) == 0:
             command = self.rest[1:]
         else:
             command = [self.rest[0], '-np', proc] + self.rest[1:]
@@ -242,9 +278,23 @@ class ModuleExecParallel(ScriptModule):
 
 def do_work(parser, args=None, debug=False):
     """
+    Main method which invokes ModuleExecParallel
+    :rtype: scripts.core.threads.ResultHolder or
+            scripts.serialization.ResultHolderResult or
+            scripts.serialization.PyPyResult or
+            scripts.core.threads.PyPy
     :type debug: bool
     :type args: list
     :type parser: utils.argparser.ArgParser
     """
     module = ModuleExecParallel()
-    return module.run(parser, args, debug)
+    result = module.run(parser, args, debug)
+
+    # pickle out result on demand
+    if parser.simple_options.dump:
+        try:
+            import pickle
+            pickle.dump(result.dump(), open(parser.simple_options.dump, 'wb'))
+        except:
+            pass # TODO implement dump in pbs mode
+    return result

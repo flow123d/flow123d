@@ -6,6 +6,10 @@ import time
 
 
 class Timer(object):
+    """
+    Class Timer measures elapsed time between tick and tock
+    """
+
     def __init__(self, name=None):
         self.time = 0
         self.name = name

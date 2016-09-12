@@ -31,6 +31,7 @@
 #include "fem/fe_p.hh"
 
 #include "fields/vec_seq_double.hh"
+#include "io/equation_output.hh"
 
 
 class DarcyMH;
@@ -56,7 +57,7 @@ class DOFHandlerMultiDim;
 class DarcyFlowMHOutput {
 public:
 
-	class OutputFields : public FieldSet {
+	class OutputFields : public EquationOutput {
 	public:
 
 		OutputFields();
@@ -72,29 +73,27 @@ public:
 	    Field<3, FieldValue<3>::Scalar> pressure_diff;
 	    Field<3, FieldValue<3>::Scalar> div_diff;
 
-	    // List fields, we have initialized for output
-	    // In case of error fields, we have to add them to the main field set
-	    // but perform output only if user set compute_errors flag.
-	    FieldSet fields_for_output;
-
-	    static const Input::Type::Selection & get_output_selection();
+	    FieldSet error_fields_for_output;
 	};
 
     DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
-    static const Input::Type::Record & get_input_type();
-
+    static const Input::Type::Instance & get_input_type();
+    static const Input::Type::Record & get_input_type_specific();
 
     /** \brief Calculate values for output.  **/
     void output();
 
-    const OutputFields &get_output_fields() { return output_fields; }
+    //const OutputFields &get_output_fields() { return output_fields; }
+
 
 
 private:
+    typedef const vector<unsigned int> & ElementSetRef;
+
     void make_side_flux();
-    void make_element_scalar();
+    void make_element_scalar(ElementSetRef element_indices);
     
     /** Computes fluxes at the barycenters of elements.
      *  TODO:
@@ -102,17 +101,17 @@ private:
      *  but we still use MHDofHandler. Once we are able to make output routines
      *  parallel, we can use simply FieldFE for velocity here.
      */
-    void make_element_vector();
+    void make_element_vector(ElementSetRef element_indices);
 
-    void make_sides_scalar();
+    //void make_sides_scalar();
     /**
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param();
-    void make_node_scalar();
+    void make_node_scalar_param(ElementSetRef element_indices);
+    //void make_node_scalar();
     void make_corner_scalar(vector<double> &node_scalar);
-    void make_neighbour_flux();
+    //void make_neighbour_flux();
     void output_internal_flow_data();
 
     /**
@@ -130,24 +129,12 @@ private:
      */
     void compute_l2_difference();
 
-    /**
-     * Calculate and output water balance over material subdomains and boudary fluxes.
-     * Works only for steady flow.
-     *
-     * TODO:
-     * - fix it also for unsteady flow
-     * - create separate class for this caculations and output
-     * - create class for output of tables with support to output into various file formats
-     *   like GNUplot of excel/open calc
-     **/
-    void water_balance();
-    double calc_water_balance();
 
     DarcyMH *darcy_flow;
     Mesh *mesh_;
 
-    /// Accessor to the input record for the DarcyFlow output.
-    Input::Record   in_rec_;
+    /// Specific experimental error computing.
+    bool compute_errors_;
 
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
@@ -161,6 +148,9 @@ private:
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
     VectorSeqDouble ele_flux;
+
+    // A vector of all element indexes
+    std::vector<unsigned int> all_element_idx_;
 
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
@@ -178,10 +168,8 @@ private:
 
     std::shared_ptr<OutputTime> output_stream;
 
-    /// Temporary solution for writing balance into separate file.
-    FILE *balance_output_file;
     /// Raw data output file.
-    FILE *raw_output_file;
+    ofstream raw_output_file;
 };
 
 

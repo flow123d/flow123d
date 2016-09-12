@@ -1,4 +1,4 @@
-# 
+#
 # Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
 #
 # Please make a following refer to Flow123d on your project site if you use the program for any purpose,
@@ -7,8 +7,8 @@
 #
 # This program is free software; you can redistribute it and/or modify it under the terms
 # of the GNU General Public License version 3 as published by the Free Software Foundation.
-# 
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 # without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details.
 #
@@ -30,22 +30,22 @@
 
 
 %.tst: check_build_tree ../../bin/flow123d %.con
-	../../bin/pythonenv.sh ../../bin/tests/run_test.sh $*.con ${NPROC} ${FLOW_PARAMS}
+	../../bin/tests/run_test.sh $*.con ${NPROC} ${FLOW_PARAMS}
 
 check_build_tree:
 	cd ../.. && bin/git_post_checkout_hook
 
 update: check_build_tree ../../bin/flow123d
-	../../bin/pythonenv.sh ../../bin/tests/run_test.sh --update ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
+	../../bin/tests/run_test.sh --update ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 test: check_build_tree ../../bin/flow123d
-	../../bin/pythonenv.sh ../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
+	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 test-all: check_build_tree ../../bin/flow123d
-	../../bin/pythonenv.sh ../../bin/tests/run_test.sh --all ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
+	../../bin/tests/run_test.sh --all ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 clean:
 	rm -rf output Results test_results
-	rm -f profiler_* 
+	rm -f profiler_*
 	rm -f vystup.txt
 	rm -f short.*

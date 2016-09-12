@@ -16,6 +16,6 @@ class Duration(object):
         try:
             return float(value)
         except ValueError:
-            time = datetime.strptime(value,"%H:%M:%S")
+            time = datetime.strptime(value, "%H:%M:%S")
             delta = timedelta(hours=time.hour, minutes=time.minute, seconds=time.second)
             return delta.total_seconds()

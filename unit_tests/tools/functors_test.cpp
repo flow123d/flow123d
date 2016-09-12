@@ -10,13 +10,17 @@
 #include <ctime>
 #include <cstdlib>
 #include <sstream>
+#include <vector>
+#include <algorithm>
 
 #include <flow_gtest.hh>
 
 #include "tools/functors_impl.hh"
 #include "tools/interpolant_impl.hh"
 
-#define EQUAL(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
+using namespace std;
+
+//#define EQUAL(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
 
 //*********************************** FUNCTOR EXAMPLES *********************************
 
@@ -132,31 +136,31 @@ TEST (Functors, functors)
   my_func.set_param(Cubic<double>::p1,1.0);
   my_func.set_param(Cubic<>::p2,2.0);
   my_func.set_param(Cubic<>::p3,3.0);
-  EQUAL(my_func.param(2), 3.0);
-  EQUAL(my_func.param(Cubic<>::p2), 2.0);
-  EQUAL(my_func(2.0), 9.0);
+  EXPECT_EQ( 3.0,my_func.param(2));
+  EXPECT_EQ( 2.0,my_func.param(Cubic<>::p2));
+  EXPECT_EQ( 9.0,my_func(2.0));
   
   //Explicit functor and setting parameters in constructor
   Cubic<> my_func2(3.0,4.0,5.0);        //x^3+2 (parameter p1=2.0)
-  EQUAL(my_func2.param(2), 5.0);
-  EQUAL(my_func2.param(Cubic<>::p1), 3.0);
-  EQUAL(my_func2(2.0), 11.0);
+  EXPECT_EQ( 5.0,my_func2.param(2));
+  EXPECT_EQ( 3.0,my_func2.param(Cubic<>::p1));
+  EXPECT_EQ( 11.0,my_func2(2.0));
   
   
   //copying functor and parameters
   Cubic<double> my_func3;
   my_func3.set_param_from_func(&my_func2);
   
-  EQUAL(my_func3.param(2), 5.0);
-  EQUAL(my_func3.param(Cubic<>::p1), 3.0);
+  EXPECT_EQ( 5.0,my_func3.param(2));
+  EXPECT_EQ( 3.0,my_func3.param(Cubic<>::p1));
   
   
   //Implicit functor
   Circle<double> circle_func(4.0, 1.0, 2.0);    //(x-1)^2 + (y-2)^2 - 4^2 = 0
   
-  EQUAL(circle_func.param(Circle<>::radius), 4.0);
-  EQUAL(circle_func.param(Circle<>::c_x), 1.0);
-  EQUAL(circle_func(5.0,2.0), 0.0);
+  EXPECT_EQ( 4.0,circle_func.param(Circle<>::radius));
+  EXPECT_EQ( 1.0,circle_func.param(Circle<>::c_x));
+  EXPECT_EQ( 0.0,circle_func(5.0,2.0));
 }
 
 
@@ -174,8 +178,8 @@ TEST (Functors, make_interpolation)
   interpolant2.set_interval(0, 10);
   //interpolant2.set_size(10);
   interpolant2.set_size_automatic(0.01, 10, 1e5);
-  EQUAL(interpolant2.f_diff(2).first, 10);
-  EQUAL(interpolant2.f_diff(2).second, 12);
+  EXPECT_EQ( 10,interpolant2.f_diff(2).first);
+  EXPECT_EQ( 12,interpolant2.f_diff(2).second);
   interpolant2.interpolate();
   EXPECT_TRUE(interpolant2.error() < 3.891645e-3);
   EXPECT_TRUE(interpolant2.error() > 3.891643e-3);
@@ -187,17 +191,17 @@ TEST (Functors, make_interpolation)
   //extrapolation set by default to functor
   
   //statistics - zero at start
-  EQUAL(interpolant->statistics().total_calls, 0);
-  EQUAL(interpolant->statistics().interval_miss_a, 0);
-  EQUAL(interpolant->statistics().interval_miss_b, 0);
-  EQUAL(interpolant->statistics().min, 0);
-  EQUAL(interpolant->statistics().max, 0);
+  EXPECT_EQ( 0,interpolant->statistics().total_calls);
+  EXPECT_EQ( 0,interpolant->statistics().interval_miss_a);
+  EXPECT_EQ( 0,interpolant->statistics().interval_miss_b);
+  EXPECT_EQ( 0,interpolant->statistics().min);
+  EXPECT_EQ( 0,interpolant->statistics().max);
   
   //2^3 = 8, dfdx: 3x^2, 3*2^2=12
-  EQUAL(my_func(2), 8);
-  EQUAL(interpolant->f_val(2), 8);
-  EQUAL(interpolant->f_diff(2).first, 8);
-  EQUAL(interpolant->f_diff(2).second, 12);
+  EXPECT_EQ( 8,my_func(2));
+  EXPECT_EQ( 8,interpolant->f_val(2));
+  EXPECT_EQ( 8,interpolant->f_diff(2).first);
+  EXPECT_EQ( 12,interpolant->f_diff(2).second);
   
   //2nd 3rd derivate: 6*x, 6
   EXPECT_EQ(interpolant->f_diffn(4,2), 24);
@@ -208,57 +212,56 @@ TEST (Functors, make_interpolation)
   //interpolant->set_size_automatic(0.1,10,1e5);
   interpolant->interpolate();
   
-  //DBGMSG("Error of interpolation: %f\n", interpolant->error());
+  //DebugOut().fmt("Error of interpolation: {}\n", interpolant->error());
 
-  EQUAL(interpolant->val(-7), -343);    //out of interval
-  EQUAL(interpolant->statistics().min, -7.0);
-  EQUAL(interpolant->statistics().max, 11);
+  EXPECT_EQ( -343,interpolant->val(-7));    //out of interval
+  EXPECT_EQ( -7.0,interpolant->statistics().min);
+  EXPECT_EQ( 11,interpolant->statistics().max);
   
-  EQUAL(interpolant->val(-5), -125);
-  EQUAL(interpolant->val(0), 0);
-  EQUAL(interpolant->val(3), 27);
-  EQUAL(interpolant->val(10), 1030);
-  EQUAL(interpolant->val(11), 1331);
-  EQUAL(interpolant->val(15), 3375);    //out of interval
+  EXPECT_EQ( -125,interpolant->val(-5));
+  EXPECT_EQ( 0,interpolant->val(0));
+  EXPECT_EQ( 27,interpolant->val(3));
+  EXPECT_EQ( 1030,interpolant->val(10));
+  EXPECT_EQ( 1331,interpolant->val(11));
+  EXPECT_EQ( 3375,interpolant->val(15));    //out of interval
   
-  EQUAL(interpolant->diff(-7).first, -343); //out of interval
-  EQUAL(interpolant->diff(-7).second, 147);       //out of interval
-  EQUAL(interpolant->diff(-4).second, 51);
-  EQUAL(interpolant->diff(3).second, 27);
-  EQUAL(interpolant->diff(5).second, 75);
-  EQUAL(interpolant->diff(9).second, 243);
-  EQUAL(interpolant->diff(10).second, 303);
-  EQUAL(interpolant->diff(11).second, 363);
+  EXPECT_EQ( -343,interpolant->diff(-7).first); //out of interval
+  EXPECT_EQ( 147,interpolant->diff(-7).second);       //out of interval
+  EXPECT_EQ( 51,interpolant->diff(-4).second);
+  EXPECT_EQ( 27,interpolant->diff(3).second);
+  EXPECT_EQ( 75,interpolant->diff(5).second);
+  EXPECT_EQ( 243,interpolant->diff(9).second);
+  EXPECT_EQ( 303,interpolant->diff(10).second);
+  EXPECT_EQ( 363,interpolant->diff(11).second);
   
   //statistics
-  EQUAL(interpolant->statistics().total_calls, 15);
-  EQUAL(interpolant->statistics().interval_miss_a, 3);
-  EQUAL(interpolant->statistics().interval_miss_b, 1);
-  EQUAL(interpolant->statistics().min, -7.0);
-  EQUAL(interpolant->statistics().max, 15.0);
+  EXPECT_EQ( 15,interpolant->statistics().total_calls);
+  EXPECT_EQ( 3,interpolant->statistics().interval_miss_a);
+  EXPECT_EQ( 1,interpolant->statistics().interval_miss_b);
+  EXPECT_EQ( -7.0,interpolant->statistics().min);
+  EXPECT_EQ( 15.0,interpolant->statistics().max);
   
   //extrapolation
   //functor type has been tested as default before
   interpolant->set_extrapolation(Extrapolation::constant);
-  EQUAL(interpolant->val(-10), -125);
-  EQUAL(interpolant->val(15), 1331);
-  EQUAL(interpolant->diff(-10).first, -125);
-  EQUAL(interpolant->diff(15).first, 1331);
-  EQUAL(interpolant->diff(-10).second, 75);
-  EQUAL(interpolant->diff(15).second, 363);
+  EXPECT_EQ( -125,interpolant->val(-10));
+  EXPECT_EQ( 1331,interpolant->val(15));
+  EXPECT_EQ( -125,interpolant->diff(-10).first);
+  EXPECT_EQ( 1331,interpolant->diff(15).first);
+  EXPECT_EQ( 75,interpolant->diff(-10).second);
+  EXPECT_EQ( 363,interpolant->diff(15).second);
   interpolant->set_extrapolation(Extrapolation::linear);
-  EQUAL(interpolant->val(-10), -370);           //-125 + 49*(-10-(-5)) 
-  EQUAL(interpolant->val(15), 2535);            //729 + 301*(15-9)      
-  EQUAL(interpolant->diff(-10).first, -370);                            
-  EQUAL(interpolant->diff(15).first, 2535);
-  EQUAL(interpolant->diff(-10).second, 195);    //75 + (-24)*(-10-(-5))
-  EQUAL(interpolant->diff(15).second, 603);     //243 + 60*(15-9)
+  EXPECT_EQ( -370,interpolant->val(-10));           //-125 + 49*(-10-(-5))
+  EXPECT_EQ( 2535,interpolant->val(15));            //729 + 301*(15-9)
+  EXPECT_EQ( -370,interpolant->diff(-10).first);
+  EXPECT_EQ( 2535,interpolant->diff(15).first);
+  EXPECT_EQ( 195,interpolant->diff(-10).second);    //75 + (-24)*(-10-(-5))
+  EXPECT_EQ( 603,interpolant->diff(15).second);     //243 + 60*(15-9)
   
   //increasing missed interval evaluation
   //this should remake the table
   for(unsigned int i=0; i < 100; i++)
   {
-    //DBGMSG("i: %d\n",i);
     interpolant->val(-20);
     interpolant->val(15);
   }
@@ -267,17 +270,17 @@ TEST (Functors, make_interpolation)
   //interpolant->check_stats_and_reinterpolate(0.5);
   
   //statistics
-  //DBGMSG("bound_a: %f\n",interpolant->bound_a());
-  //DBGMSG("bound_b: %f\n",interpolant->bound_b());
-  //DBGMSG("total: %d\n",interpolant->statistics().total_calls);
-  EQUAL(interpolant->bound_a(),-20);
-  EQUAL(interpolant->bound_b(),15);
+  //DebugOut().fmt("bound_a: {}\n", interpolant->bound_a());
+  //DebugOut().fmt("bound_b: {}\n", interpolant->bound_b());
+  //DebugOut().fmt("total: {}\n", interpolant->statistics().total_calls);
+  EXPECT_EQ(-20,interpolant->bound_a());
+  EXPECT_EQ(15,interpolant->bound_b());
   
-  EQUAL(interpolant->statistics().total_calls, 0);
-  EQUAL(interpolant->statistics().interval_miss_a, 0);
-  EQUAL(interpolant->statistics().interval_miss_b, 0);
-  EQUAL(interpolant->statistics().min, -20.0);
-  EQUAL(interpolant->statistics().max, 15.0);
+  EXPECT_EQ( 0,interpolant->statistics().total_calls);
+  EXPECT_EQ( 0,interpolant->statistics().interval_miss_a);
+  EXPECT_EQ( 0,interpolant->statistics().interval_miss_b);
+  EXPECT_EQ( -20.0,interpolant->statistics().min);
+  EXPECT_EQ( 15.0,interpolant->statistics().max);
   
   delete interpolant;
 }
@@ -291,7 +294,7 @@ TEST(Functors, make_implicit)
   
   interpolant.fix_variable(IFixVariable::fix_x,2.0);
   
-  EQUAL(interpolant.f_val(3.0),-14.0);           //(2-1)^2+(3-2)^2-4^2 = 1+1-16=-14
+  EXPECT_EQ(-14.0,interpolant.f_val(3.0));           //(2-1)^2+(3-2)^2-4^2 = 1+1-16=-14
   
   interpolant.set_interval(-4,4);
   interpolant.set_size(10);
@@ -312,14 +315,14 @@ TEST (Functors, interpolation_error)
   interpolant->set_interval(1,10);
   interpolant->set_size(10);
   
-  EQUAL(interpolant->error(), -1);      //error not computed yet
+  EXPECT_EQ( -1,interpolant->error());      //error not computed yet
   
   //interpolant->set_functor<Linear, double>(&lin_func);
   interpolant->interpolate();
   //linear function is interpolated by linear aproximation accurately
-  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
+  //DebugOut().fmt("Error of interpolation: {}\n", interpolant->error());
   //cout << "Error of interpolation: " << interpolant->error() << endl;
-  //EQUAL(interpolant->error(), 0);
+  //EXPECT_EQ( 0,interpolant->error());
   EXPECT_TRUE(interpolant->error() < 1e-15);
   
   interpolant->set_functor<Quadratic, double>(&quad_func);
