@@ -56,3 +56,4 @@ bin/runtest.sh
 
 /config/jenkins.ini
 /config/jenkins-job/jobs/*.yaml
+/config/jenkins-job/jenkins.ini
