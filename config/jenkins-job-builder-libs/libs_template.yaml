@@ -1,0 +1,87 @@
+#########################################################################################
+# Template for project Flow123d - LIBS 
+#########################################################################################
+
+
+# defaults values
+- defaults:
+    name: lib-defaults
+    node: "{platform}"
+    workspace: "libs-build"
+    # TODO log rotate 200 days
+    wrappers:
+      - build-name:
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
+
+- project:
+    name: "Multijob Petsc 3.6.1"
+    platform: master
+    build-type: [Debug, Release]
+    lib: [armadillo, petsc, yamlcpp]
+    step: [cmake, build, package]
+    jobs:
+      - "{lib}-{build-type}-{step}"
+      - "{lib}-{build-type}-multijob"
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- [cmake, build, package] ----------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "{lib}-{build-type}-{step}"
+    display-name: "{build-type} / {lib} {step}"
+    defaults: lib-defaults
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          cd docker-config/cmakefiles/{lib}/ && make BUILD_TYPE={build-type} {step}
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- MULTIJOB -------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "{lib}-{build-type}-multijob"
+    display-name: "{build-type} / {lib} multijob"
+    project-type: multijob
+    defaults: lib-defaults
+
+    block-downstream: yes
+    scm:
+      - git:
+          url: https://github.com/flow123d/docker-config.git
+          basedir: docker-config
+          browser: githubweb
+          browser-url: https://github.com/x3mSpeedy/docker-config/
+          skip-tag: true
+          branches:
+            - origin/master
+          
+    wrappers:
+      - inject:
+          script-content: |
+            rm -f prop.file && touch prop.file
+            echo "BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
+      - build-name:
+          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+            
+    triggers: 
+      - github
+      
+    builders:
+      - multijob:
+          name: "cmake step"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "{lib}-{build-type}-cmake"
+      - multijob:
+          name: "build step"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "{lib}-{build-type}-build"
+      - multijob:
+          name: "package step"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "{lib}-{build-type}-package"

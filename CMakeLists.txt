@@ -322,7 +322,9 @@ flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 #   Boost_${COMPONENT}_FOUND            True IF the Boost library "component" was found.
 #   Boost_${COMPONENT}_LIBRARY          Contains the libraries for the specified Boost
 
-message(STATUS "\n =======================================================")
+message(STATUS "=======================================================")
+message(STATUS "====== BOOST ==========================================")
+message(STATUS "=======================================================")
 set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
@@ -390,10 +392,13 @@ if (NOT Boost_FOUND)
    
 endif()
 
-message(STATUS "BOOST_ROOT: ${BOOST_ROOT}")
-message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
-message(STATUS "Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")   
-message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Boost_FOUND = ${Boost_FOUND}")
+message(STATUS "BOOST_ROOT = ${BOOST_ROOT}")
+message(STATUS "Boost_LIBRARIES = ${Boost_LIBRARIES}")
+message(STATUS "Boost_LIBRARY_DIRS = ${Boost_LIBRARY_DIRS}")
+message(STATUS "Boost_INCLUDE_DIR = ${Boost_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
 
 
 # We are looking for PETSC, f succed this module set:
@@ -404,8 +409,9 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-
-message(STATUS "\n =======================================================")
+message(STATUS "=======================================================")
+message(STATUS "====== PETSC ==========================================")
+message(STATUS "=======================================================")
 include (FindPackageMultipass)
 
 # this export list is for possible BDDCML installation
@@ -414,158 +420,100 @@ set(PETSC_EXPORT_LIST
   METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
   MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB
   UMFPACK_LIB)  
-find_package(PETSc 3.6.0)
+
+message(STATUS "PETSC_DIR = ${PETSC_DIR}")
+message(STATUS "PETSC_ARCH = ${PETSC_ARCH}")
+
+find_package(PETSc 3.6.0 REQUIRED)
+flow_define(HAVE_PETSC)
+flow_define(HAVE_MPI)
+
+set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
+set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PETSC_FOUND = ${PETSC_FOUND}")
+message(STATUS "PETSC_LIBS = ${PETSC_LIBRARIES}")
+message(STATUS "PETSC_EXTERNAL_LIB = ${PETSC_EXTERNAL_LIB}")
+message(STATUS "=======================================================\n\n")
 
 
-if (NOT PETSC_FOUND)
-    if (PETSC_DIR) 
-        message(STATUS "Can not configure with given PETSC_DIR=${PETSC_DIR}")
-    else()    
-        # Install PETSC
-        # also set PETSC_DIR, PETSC_ARCH
-        set(PETSC_INSTALL_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_3.6_build)
-        set(PETSC_INSTALL_URL \"http://flow.nti.tul.cz/libraries/petsc-lite-3.6.1.tar.gz\")
-        include(InstallPetsc)
-        
-        set(PETSC_CURRENT "NO")
-        find_package(PETSc 3.6.0)
-        
-    endif()    
-        
-       
-    # If we haven't PETSC, we try to find MPI
-        
-    # === Variables ===
-    # This module will set the following variables per language in your project,
-    # where <lang> is one of C, CXX, or Fortran:
-    #   MPI_<lang>_FOUND           TRUE if FindMPI found MPI flags for <lang>
-    #   MPI_<lang>_COMPILER        MPI Compiler wrapper for <lang>
-    #   MPI_<lang>_COMPILE_FLAGS   Compilation flags for MPI programs
-    #   MPI_<lang>_INCLUDE_PATH    Include path(s) for MPI header
-    #   MPI_<lang>_LINK_FLAGS      Linking flags for MPI programs
-    #   MPI_<lang>_LIBRARIES       All libraries to link MPI programs against
-    # Additionally, FindMPI sets the following variables for running MPI
-    # programs from the command line:
-    #   MPIEXEC                    Executable for running MPI programs
-    #   MPIEXEC_NUMPROC_FLAG       Flag to pass to MPIEXEC before giving
-    #                              it the number of processors to run on
-    #   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
-    #                              before the executable to run.
-    #   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
-#
-#    find_package(MPI)
-#  
-#    if (MPI_CXX_FOUND)
-#        flow_define(HAVE_MPI)
-#    else(MPI_CXX_FOUND) 
-        # build single processor replacement taken from PETSc
-#        set(mpiuni_sources    system/mpiuni/mpi.c)
-#        set(MPIUNI_INCLUDES src/system/mpiuni)
-#        flow_define(HAVE_MPI)
-#        flow_define(HAVE_MPIUNI)
-#    
-        # overwrite NOTFOUND status
-#        set(MPI_CXX_LIBRARIES mpiuni_lib)
-#        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
-#    
-#    endif(MPI_CXX_FOUND)
-
-endif(NOT PETSC_FOUND)
-
-if(PETSC_FOUND)
-    flow_define(HAVE_PETSC)
-    flow_define(HAVE_MPI)
-    set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
-    set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
-    
-    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
-endif(PETSC_FOUND)
-
-#find_package(PARMETIS)
-
-message(STATUS "\n =======================================================")
-#################################################################################
+################################################################################
 #  BDDCML_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== BDDCML =========================================")
+message(STATUS "=======================================================")
+message(STATUS "BDDCML_ROOT = ${BDDCML_ROOT}")
 
-if (BDDCML_ROOT) 
-    find_package(BDDCML)
+find_package(BDDCML REQUIRED)
+flow_define(HAVE_BDDCML)
 
-    if (NOT BDDCML_FOUND)
-        set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_petsc_3.6_build)
-        include(InstallBLOPEX)
-        set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_petsc_3.6_build)
-        include(InstallBDDCML)
-
-        set(BDDCML_bddcml_config_current "NO")
-        find_package(BDDCML)
-    endif()
-    
-    if (BDDCML_FOUND)
-        flow_define(HAVE_BDDCML)
-    endif()
-else()
-    # set(BDDCML_LIBRARIES "")
-endif()    
+message(STATUS "-------------------------------------------------------")
+message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
+message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
+message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
+message(STATUS "=======================================================\n\n") 
 
 
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
 #  Armadillo_INCLUDE_DIRS - list of required include directories
-#  Armadillo_LIBRARIES - list of libraries to be linked 
+#  Armadillo_LIBRARIES - list of libraries to be linked
 #  Armadillo_CONFIGURE_CMAKE - path to configure cmake script that introduce target 'armadillo'
 #                              with correctly set dependencies on other libraries
+message(STATUS "=======================================================")
+message(STATUS "====== ARMADILLO ======================================")
+message(STATUS "=======================================================")
+message(STATUS "Armadillo_ROOT_HINT = ${Armadillo_HINT_LIB}, ${Armadillo_HINT_INC}, ${Armadillo_HINT_CONF}")
 
-message(STATUS "\n =======================================================")
 
 set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
 set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
-find_package(ArmadilloFlow 3.2.4)
-if (NOT Armadillo_FOUND)
-  message(STATUS "Try to install our own Armadillo.")
-  include(InstallArmadillo)
-
-  # we try to erease from the cache everything that can cause failure of the second find_package
-  # however just unsetting Boost_INCLUDE_DIR should be enough
-  unset(Armadillo_FOUND CACHE) 
-  unset(Armadillo_INCLUDE_DIR CACHE)        # overwrite cache    
-  unset(Armadillo_LIBRARY_DIRS CACHE)
-  unset(Armadillo_CONFIGURE_FILE CACHE)
-
-  find_package(ArmadilloFlow 3.2.4 REQUIRED)
-
-endif()
-
-
-message(STATUS "Armadillo_LIBRARIES: ${Armadillo_LIBRARIES}")
-message(STATUS "Armadillo_INCLUDE_DIRS: ${Armadillo_INCLUDE_DIRS}")
-message(STATUS "Armadillo_CONFIGURE_FILE: ${Armadillo_CONFIGURE_FILE}")
+find_package(ArmadilloFlow 3.2.4 REQUIRED)
 include("${Armadillo_CONFIGURE_FILE}")   # this introduce target "armadillo" with correct dependencies
-IF (PETSC_FOUND)
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
     # this may be fragile because of _NOCONFIG
-    set_target_properties(armadillo PROPERTIES 
-      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}"
-      ) 
-endif()
+set_target_properties(armadillo PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}")
 
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Armadillo_FOUND = ${Armadillo_FOUND}")
+message(STATUS "Armadillo_LIBRARIES = ${Armadillo_LIBRARIES}")
+message(STATUS "Armadillo_INCLUDE_DIRS = ${Armadillo_INCLUDE_DIRS}")
+message(STATUS "Armadillo_CONFIGURE_FILE = ${Armadillo_CONFIGURE_FILE}")
+message(STATUS "=======================================================\n\n")
+
+
+#################################################################################
+#  YAML_CPP_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== YAML-CPP =======================================")
+message(STATUS "=======================================================")
+message(STATUS "YamlCpp_ROOT_HINT = ${YamlCpp_ROOT_HINT}")
+
+find_package(YamlCpp REQUIRED)
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "YamlCpp_FOUND = ${YamlCpp_FOUND}")
+message(STATUS "YamlCpp_LIBRARY = ${YamlCpp_LIBRARY}")
+message(STATUS "YamlCpp_INCLUDE_DIR = ${YamlCpp_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
 
 
 ####################################################################################
 # PYTHON
-# ----------------- Part 0/3 - variables ------------------------------------------
-# where python build starts for now we use build_tree
-set(PY_BUILD_PREFIX ${CMAKE_BINARY_DIR})
+message(STATUS "=======================================================")
+message(STATUS "====== PYTHON =========================================")
+message(STATUS "=======================================================")
 # # define varible for storing this extra module path
 # this variable is used later to update search module path
 # if PYTHON_COPY is present it points to lib/flow123d dir in build tree
-# if not, default location is src/python dir in CMake_SOURCE_DIR location
+# if not, default location is src/python dir in CMAKE_SOURCE_DIR location
 if(PYTHON_COPY)
     # copy python interpret files and 3rd party packages including
     # python utils files for flow123d
     set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
-    flow_define(PYTHON_EXTRA_MODULES_PATH ${PY_BUILD_PREFIX}/${PYTHON_EXTRA_MODULES_PATH})
+    flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_BINARY_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 else()
     # if python copy is not set we do nothing but export
     # variable PYTHON_EXTRA_MODULES_PATH so python_loader can add correct path
@@ -573,77 +521,26 @@ else()
     flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 endif()
 
-# check whether PYTHON_ROOT is set and use default value if not
-if(NOT DEFINED PYTHON_ROOT)
-    set(PYTHON_ROOT /usr/lib/python2.7)
     message(WARNING "Variable PYTHON_ROOT not set. Using default value '${PYTHON_ROOT}'.")
-endif()
-
-# set default value for PYTHON_COPY_PACKAGES if not defined
-if(NOT DEFINED PYTHON_COPY_PACKAGES)
-    set(PYTHON_COPY_PACKAGES
-        bsddb compiler ctypes curses distutils email encodings hotshot importlib 
-        json lib-dynload lib-tk lib2to3 logging multiprocessing plat-linux2
-        plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
-endif()
-
-# set default value for PYTHON_SYSPATH if not defined
-if(NOT DEFINED PYTHON_SYSPATH)
-    set(PYTHON_SYSPATH
-        plat-x86_64-linux-gnu plat-linux2 lib-tk lib-old lib-dynload
-        dist-packages site-packages)
-endif()
-
-# ----------------- Part 1/3 - PythonLibs ------------------------------------------
-# always detect PythonLibs but set flag HAVE_PYTHON conditionally to user
-# embedded python in flow123d
-include(python/PythonLibs)
 if(USE_PYTHON)
     flow_define(HAVE_PYTHON)
 endif()
 
-# ----------------- Part 2/3 - PythonCopy ------------------------------------------
-# Copy python libs to ${PY_BUILD_PREFIX}/lib/python2.7
-if(PYTHON_COPY)
-    include(python/PythonCopy)
-    flow_define(PYTHON_COPY)
-endif()
+# find python 
+find_package(PythonInterp 2.7 REQUIRED)
+find_package(PythonLibs 2.7   REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
 
-# ----------------- Part 3/3 - PythonScripts ----------------------------------------
-# install 3rd party packages and copy python runtest
-if (NOT DEFINED PYTHON_SCRIPTS_OFF)
-    include(python/PythonScripts)
-endif()    
-
-
-
-#################################################################################
-#  YAML_CPP_FOUND - set to true if the library is found
-
-message(STATUS "\n =======================================================")
-set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
-set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
-find_package(YamlCpp)
-if (NOT YamlCpp_FOUND)
-    message(STATUS "Try to install our own yaml-cpp library.")
-    include(InstallYamlCpp)
-
-    unset(YamlCpp_FOUND CACHE) 
-    unset(YamlCpp_INCLUDE_DIR CACHE)        # overwrite cache    
-    unset(YamlCpp_LIBRARY CACHE)
-
-    find_package(YamlCpp REQUIRED)
-    
-    message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
-endif()
-
-message(STATUS "YamlCpp_LIBRARY: ${YamlCpp_LIBRARY}")
-message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
-
-
-
-
-message(STATUS "\n ======================================================= ")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
+message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
+message(STATUS "PYTHON_VERSION_STRING = ${PYTHON_VERSION_STRING}")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PYTHONLIBS_FOUND = ${PYTHONLIBS_FOUND}")
+message(STATUS "PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
+message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "PYTHONLIBS_VERSION_STRING = ${PYTHONLIBS_VERSION_STRING}")
+message(STATUS "=======================================================\n\n")
 
 
 message(STATUS "Installing HTML documentation")
@@ -732,8 +629,18 @@ if(PETSC_MPIEXEC)
       
       # resolve symlinks
       get_filename_component(RESOLVED_MPIEXEC "${PETSC_MPIEXEC}" REALPATH)
-      message(STATUS "using petsc_mpiexec: ${RESOLVED_MPIEXEC}")
-      set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
+      
+      # we verify that REALPATH of PETSC_MPIEXEC exists
+      # if not, PETSC_MPIEXEC is probably only command 'mpiexec'
+      # in that case we use this value, since PETSc was ok with that
+      if(EXISTS RESOLVED_MPIEXEC)
+          message(STATUS "using petsc_mpiexec: ${RESOLVED_MPIEXEC}")
+          set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
+      else()
+          message(STATUS "path does not point to valid location: ${RESOLVED_MPIEXEC} using ${PETSC_MPIEXEC}")
+          set(MPIEXEC_PATH "${PETSC_MPIEXEC}")
+      endif()
+      
 else()
       find_program(SYSTEM_MPIEXEC mpiexec)
       if(SYSTEM_MPIEXEC)
