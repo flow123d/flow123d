@@ -251,8 +251,6 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     schur0(nullptr)
 {
 
-    is_linear_=true;
-
     START_TIMER("Darcy constructor");
     {
         Input::Record time_record;
@@ -265,6 +263,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     data_ = make_shared<EqData>();
     EquationBase::eq_data_ = data_.get();
     
+    data_->is_linear=true;
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
@@ -467,7 +466,7 @@ void DarcyMH::solve_nonlinear()
 
     // Reduce is_linear flag.
     int is_linear_common;
-    MPI_Allreduce(&is_linear_, &is_linear_common,1, MPI_INT ,MPI_MIN,PETSC_COMM_WORLD);
+    MPI_Allreduce(&(data_->is_linear), &is_linear_common,1, MPI_INT ,MPI_MIN,PETSC_COMM_WORLD);
 
     Input::Record nl_solver_rec = input_record_.val<Input::Record>("nonlinear_solver");
     this->tolerance_ = nl_solver_rec.val<double>("tolerance");
@@ -638,6 +637,9 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 {
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
+    // set auxiliary flag for switchting Dirichlet like BC
+//     data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    
     LinSys *ls = schur0;
 
     class Boundary *bcd;
@@ -714,7 +716,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                             ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
 
                 } else if (type==EqData::seepage) {
-                    is_linear_=false;
+                    data_->is_linear=false;
                     //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
                     unsigned int loc_edge_idx = bcd->bc_ele_idx_;
                     char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
@@ -760,7 +762,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 
                     // ** Apply BCUpdate BC type. **
                     // Force Dirichlet type during the first iteration of the unsteady case.
-                    if (switch_dirichlet || (use_steady_assembly_ && nonlinear_iteration_ == 0) ) {
+                    if (switch_dirichlet || data_->force_bc_switch ) {
                         //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         c_val = 0.0;
                         loc_side_rhs[i] -= bc_pressure;
@@ -773,7 +775,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     }
 
                 } else if (type==EqData::river) {
-                    is_linear_=false;
+                    data_->is_linear=false;
                     //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
                     //unsigned int loc_edge_idx = bcd->bc_ele_idx_;
                     //char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
@@ -788,7 +790,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 
 
                     // Force Robin type during the first iteration of the unsteady case.
-                    if (solution_head > bc_switch_pressure  || (use_steady_assembly_ && nonlinear_iteration_ ==0)) {
+                    if (solution_head > bc_switch_pressure  || data_->force_bc_switch) {
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         ls->rhs_set_value(edge_row, bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
@@ -1292,7 +1294,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-    is_linear_=true;
+    data_->is_linear=true;
     bool is_steady = zero_time_term();
 	//DebugOut() << "Assembly linear system\n";
 	if (data_->changed()) {

@@ -199,6 +199,9 @@ public:
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
         
+        int is_linear;              ///< Hack fo BDDC solver.
+        bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;
@@ -340,7 +343,6 @@ protected:
 	int size;				    // global size of MH matrix
 	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
-	int is_linear_;             // Hack fo BDDC solver.
 
 	// Propagate test for the time term to the assembly.
 	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
