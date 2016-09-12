@@ -30,20 +30,31 @@ class FlowAttribute {
 public:
 
 	/**
-	 * Attribute specify unit of a field, specified in the field abstract record.
+	 * Specify a unit of a field.
 	 *
-	 * Format of value: string
+	 * Format of value: record with base units as keys and exponents as their values, e.g.
+	 * { "m" : 0, "md" : 0, "kg" : 0, "s" : 0, "A" : 0, "K" : 0, "mol" : 0, "cd" : 0 }
 	 */
 	inline static string field_unit()
 	{ return "key_field_unit"; }
 
     /**
-     * Particular for GeoMop, units in machine readable form
+     * Specify a value of the field.
      *
-     * Format of value: string
+     * Format of value: record e.g.
+     * { "subfields": true, "shape": [ 1, 1 ], "type": "Float" }
      */
     inline static string field_value_shape()
     { return "field_value_shape"; }
+
+    /**
+     * Specify path where multifields of the equation get their names.
+     *
+     * Format of value: string, pattern of address, e.g.
+     * "/problem/solute_equation/substances/ * /name"
+     */
+    inline static string subfields_address()
+    { return "subfields_address"; }
 
 };
 

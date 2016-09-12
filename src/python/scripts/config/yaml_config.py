@@ -39,11 +39,14 @@ TAG_TAGS = 'tags'
 
 REF_OUTPUT_DIR = 'ref_out'
 
+
 class ConfigPool(object):
     """
+    Class ConfigPool collects configs from multiple yaml files
     :type configs : dict[str, ConfigBase]
     :type files : dict[str, ConfigBase]
     """
+
     def __init__(self):
         self.configs = dict()
         self.files = dict()
@@ -82,6 +85,10 @@ class ConfigPool(object):
 
 
 class ConfigCaseFiles(object):
+    """
+    Class ConfigCaseFiles is helper class for defining path for ConfigCase
+    """
+
     def __init__(self, root, ref_output, output):
         """
         :type ref_output: str
@@ -97,6 +104,7 @@ class ConfigCaseFiles(object):
 
         self.job_output = self.in_output('job_output.log')
         self.json_output = self.in_output('result.json')
+        self.dump_output = self.in_output('result.p')
 
         self.input = self.in_root('input')
         self.ref_output = ref_output
@@ -116,8 +124,10 @@ class ConfigCaseFiles(object):
 
 class ConfigCase(object):
     """
-    :type config   : scripts.config.base.ConfigBase
+    Class ConfigCase represents single ConfigCase
+    :type config   : ConfigBase
     """
+
     def __init__(self, o, config):
         o = ConfigBase.merge(DEFAULTS, deepcopy(o))
 
@@ -132,11 +142,13 @@ class ConfigCase(object):
         if self.config:
             self.file = Paths.join(self.config.root, self.file)
             self.without_ext = Paths.basename(Paths.without_ext(self.file))
-            self.shortname = '{name}.{proc}'.format(name=self.without_ext, proc=self.proc)
+            self.shortname = '{name}.{proc}'.format(
+                name=self.without_ext, proc=self.proc)
 
             self.fs = ConfigCaseFiles(
                 root=self.config.root,
-                ref_output=Paths.join(self.config.root, REF_OUTPUT_DIR, self.without_ext),
+                ref_output=Paths.join(
+                    self.config.root, REF_OUTPUT_DIR, self.without_ext),
                 output=Paths.join(
                     self.config.root,
                     'test_results',
@@ -170,6 +182,10 @@ class ConfigCase(object):
 
 
 class ConfigBase(object):
+    """
+    Class ConfigBase represents single configuration yaml file
+    """
+
     def __init__(self, yaml_config_file):
         self.yaml_config_file = yaml_config_file
         self.root = Paths.dirname(self.yaml_config_file)
@@ -187,7 +203,8 @@ class ConfigBase(object):
         else:
             # setup common config values
             self.yaml_config = self._read_yaml()
-            self.common_config = self.merge(DEFAULTS, self.yaml_config.get('common_config', {}))
+            self.common_config = self.merge(
+                DEFAULTS, self.yaml_config.get('common_config', {}))
 
             # first process files which are specified in test_cases
             missing = [Paths.basename(y) for y in self.yamls]
@@ -195,7 +212,8 @@ class ConfigBase(object):
                 case_config = self.merge(self.common_config, case)
 
                 # ensure that value is array
-                case_config[TAG_FILES] = ensure_iterable(case_config.get(TAG_FILES, []))
+                case_config[TAG_FILES] = ensure_iterable(
+                    case_config.get(TAG_FILES, []))
                 self.cases.append(case_config)
                 for f in case_config[TAG_FILES]:
                     if f in missing:
@@ -235,9 +253,10 @@ class ConfigBase(object):
 
     def _get_all_yamls(self):
         yamls = Paths.browse(
-            self.root,(
+            self.root, (
                 PathFilters.filter_endswith(YAML),
-                PathFilters.filter_not(PathFilters.filter_endswith(CONFIG_YAML))
+                PathFilters.filter_not(
+                    PathFilters.filter_endswith(CONFIG_YAML))
             ))
         return yamls
 

@@ -5,15 +5,21 @@ from scripts.prescriptions import AbstractRun
 
 
 runtest_command = """
-"$$python$$" "$$script$$" "$$yaml$$" $$limits$$ --json "$$json_output$$" -- $$args$$
+"$$python$$" "$$script$$" "$$yaml$$" $$limits$$ --dump "$$dump_output$$" -- $$args$$
 """.strip()
 
 exec_parallel_command = """
-"$$python$$" "$$script$$" $$limits$$ --json "$$json_output$$" -- $$args$$
+"$$python$$" "$$script$$" $$limits$$ --dump "$$dump_output$$" -- $$args$$
 """.strip()
 
 
 class PBSModule(AbstractRun):
+    """
+    Class PBSModule server for executing PBS jobs.
+    Class offers static method which formats given string with placeholders and creates dummy
+    get_pbs_command method which MUST be implemented in children
+    """
+
     def __init__(self, case):
         super(PBSModule, self).__init__(case)
         self.queue = 'default'

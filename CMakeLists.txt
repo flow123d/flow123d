@@ -53,11 +53,11 @@ project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.8.8)
-if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
-  cmake_policy(VERSION 2.8.4)
-  cmake_policy(SET CMP0017 NEW)
+    
+cmake_policy(SET CMP0017 NEW)
+if (${CMAKE_VERSION} VERSION_GREATER 3.0)
+    cmake_policy(SET CMP0037 OLD)
 endif()
-
 
 
 # allow duplicate custom targets for makefiles
@@ -178,12 +178,13 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     flow_define(HAVE_SINCOS)
     
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-uninitialized -Wno-inconsistent-missing-override") 
     
+    # for some reason BOOST doesn't work with option -std=c++11
     # BOOST must be compiled with clang in order to use C++11 standard. 
-    set(Boost_FORCE_REBUILD "true")
-    set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
-    set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+    # set(Boost_FORCE_REBUILD "true")
+    # set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+    # set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
     
     # 
     # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
@@ -321,7 +322,9 @@ flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 #   Boost_${COMPONENT}_FOUND            True IF the Boost library "component" was found.
 #   Boost_${COMPONENT}_LIBRARY          Contains the libraries for the specified Boost
 
-message(STATUS "\n =======================================================")
+message(STATUS "=======================================================")
+message(STATUS "====== BOOST ==========================================")
+message(STATUS "=======================================================")
 set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
@@ -389,10 +392,13 @@ if (NOT Boost_FOUND)
    
 endif()
 
-message(STATUS "BOOST_ROOT: ${BOOST_ROOT}")
-message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
-message(STATUS "Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")   
-message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Boost_FOUND = ${Boost_FOUND}")
+message(STATUS "BOOST_ROOT = ${BOOST_ROOT}")
+message(STATUS "Boost_LIBRARIES = ${Boost_LIBRARIES}")
+message(STATUS "Boost_LIBRARY_DIRS = ${Boost_LIBRARY_DIRS}")
+message(STATUS "Boost_INCLUDE_DIR = ${Boost_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
 
 
 # We are looking for PETSC, f succed this module set:
@@ -403,8 +409,9 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-
-message(STATUS "\n =======================================================")
+message(STATUS "=======================================================")
+message(STATUS "====== PETSC ==========================================")
+message(STATUS "=======================================================")
 include (FindPackageMultipass)
 
 # this export list is for possible BDDCML installation
@@ -413,224 +420,127 @@ set(PETSC_EXPORT_LIST
   METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
   MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB
   UMFPACK_LIB)  
-find_package(PETSc 3.6.0)
+
+message(STATUS "PETSC_DIR = ${PETSC_DIR}")
+message(STATUS "PETSC_ARCH = ${PETSC_ARCH}")
+
+find_package(PETSc 3.6.0 REQUIRED)
+flow_define(HAVE_PETSC)
+flow_define(HAVE_MPI)
+
+set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
+set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PETSC_FOUND = ${PETSC_FOUND}")
+message(STATUS "PETSC_LIBS = ${PETSC_LIBRARIES}")
+message(STATUS "PETSC_EXTERNAL_LIB = ${PETSC_EXTERNAL_LIB}")
+message(STATUS "=======================================================\n\n")
 
 
-if (NOT PETSC_FOUND)
-    if (PETSC_DIR) 
-        message(STATUS "Can not configure with given PETSC_DIR=${PETSC_DIR}")
-    else()    
-        # Install PETSC
-        # also set PETSC_DIR, PETSC_ARCH
-        set(PETSC_INSTALL_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_3.6_build)
-        set(PETSC_INSTALL_URL \"http://flow.nti.tul.cz/libraries/petsc-lite-3.6.1.tar.gz\")
-        include(InstallPetsc)
-        
-        set(PETSC_CURRENT "NO")
-        find_package(PETSc 3.6.0)
-        
-    endif()    
-        
-       
-    # If we haven't PETSC, we try to find MPI
-        
-    # === Variables ===
-    # This module will set the following variables per language in your project,
-    # where <lang> is one of C, CXX, or Fortran:
-    #   MPI_<lang>_FOUND           TRUE if FindMPI found MPI flags for <lang>
-    #   MPI_<lang>_COMPILER        MPI Compiler wrapper for <lang>
-    #   MPI_<lang>_COMPILE_FLAGS   Compilation flags for MPI programs
-    #   MPI_<lang>_INCLUDE_PATH    Include path(s) for MPI header
-    #   MPI_<lang>_LINK_FLAGS      Linking flags for MPI programs
-    #   MPI_<lang>_LIBRARIES       All libraries to link MPI programs against
-    # Additionally, FindMPI sets the following variables for running MPI
-    # programs from the command line:
-    #   MPIEXEC                    Executable for running MPI programs
-    #   MPIEXEC_NUMPROC_FLAG       Flag to pass to MPIEXEC before giving
-    #                              it the number of processors to run on
-    #   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
-    #                              before the executable to run.
-    #   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
-#
-#    find_package(MPI)
-#  
-#    if (MPI_CXX_FOUND)
-#        flow_define(HAVE_MPI)
-#    else(MPI_CXX_FOUND) 
-        # build single processor replacement taken from PETSc
-#        set(mpiuni_sources    system/mpiuni/mpi.c)
-#        set(MPIUNI_INCLUDES src/system/mpiuni)
-#        flow_define(HAVE_MPI)
-#        flow_define(HAVE_MPIUNI)
-#    
-        # overwrite NOTFOUND status
-#        set(MPI_CXX_LIBRARIES mpiuni_lib)
-#        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
-#    
-#    endif(MPI_CXX_FOUND)
-
-endif(NOT PETSC_FOUND)
-
-if(PETSC_FOUND)
-    flow_define(HAVE_PETSC)
-    flow_define(HAVE_MPI)
-    set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
-    set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
-    
-    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
-endif(PETSC_FOUND)
-
-#find_package(PARMETIS)
-
-message(STATUS "\n =======================================================")
-#################################################################################
+################################################################################
 #  BDDCML_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== BDDCML =========================================")
+message(STATUS "=======================================================")
+message(STATUS "BDDCML_ROOT = ${BDDCML_ROOT}")
 
-if (BDDCML_ROOT) 
-    find_package(BDDCML)
+find_package(BDDCML REQUIRED)
+flow_define(HAVE_BDDCML)
 
-    if (NOT BDDCML_FOUND)
-        set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_petsc_3.6_build)
-        include(InstallBLOPEX)
-        set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_petsc_3.6_build)
-        include(InstallBDDCML)
-
-        set(BDDCML_bddcml_config_current "NO")
-        find_package(BDDCML)
-    endif()
-    
-    if (BDDCML_FOUND)
-        flow_define(HAVE_BDDCML)
-    endif()
-else()
-    # set(BDDCML_LIBRARIES "")
-endif()    
+message(STATUS "-------------------------------------------------------")
+message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
+message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
+message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
+message(STATUS "=======================================================\n\n") 
 
 
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
 #  Armadillo_INCLUDE_DIRS - list of required include directories
-#  Armadillo_LIBRARIES - list of libraries to be linked 
+#  Armadillo_LIBRARIES - list of libraries to be linked
 #  Armadillo_CONFIGURE_CMAKE - path to configure cmake script that introduce target 'armadillo'
 #                              with correctly set dependencies on other libraries
-
-message(STATUS "\n =======================================================")
-find_package(ArmadilloFlow 3.2.4)
-if (NOT Armadillo_FOUND)
-  message(STATUS "Try to install our own Armadillo.")
-  set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
-  include(InstallArmadillo)
-
-  # we try to erease from the cache everything that can cause failure of the second find_package
-  # however just unsetting Boost_INCLUDE_DIR should be enough
-  unset(Armadillo_FOUND CACHE) 
-  unset(Armadillo_INCLUDE_DIR CACHE)        # overwrite cache    
-  unset(Armadillo_LIBRARY_DIRS CACHE)
-  unset(Armadillo_CONFIGURE_FILE CACHE)
-
-  set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
-  find_package(ArmadilloFlow 3.2.4 REQUIRED)
-
-endif()
+message(STATUS "=======================================================")
+message(STATUS "====== ARMADILLO ======================================")
+message(STATUS "=======================================================")
+message(STATUS "Armadillo_ROOT_HINT = ${Armadillo_HINT_LIB}, ${Armadillo_HINT_INC}, ${Armadillo_HINT_CONF}")
 
 
-message(STATUS "Armadillo_LIBRARIES: ${Armadillo_LIBRARIES}")
-message(STATUS "Armadillo_INCLUDE_DIRS: ${Armadillo_INCLUDE_DIRS}")
-message(STATUS "Armadillo_CONFIGURE_FILE: ${Armadillo_CONFIGURE_FILE}")
+set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
+set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
+find_package(ArmadilloFlow 3.2.4 REQUIRED)
 include("${Armadillo_CONFIGURE_FILE}")   # this introduce target "armadillo" with correct dependencies
-IF (PETSC_FOUND)
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
     # this may be fragile because of _NOCONFIG
-    set_target_properties(armadillo PROPERTIES 
-      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}"
-      ) 
-endif()
+set_target_properties(armadillo PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}")
 
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Armadillo_FOUND = ${Armadillo_FOUND}")
+message(STATUS "Armadillo_LIBRARIES = ${Armadillo_LIBRARIES}")
+message(STATUS "Armadillo_INCLUDE_DIRS = ${Armadillo_INCLUDE_DIRS}")
+message(STATUS "Armadillo_CONFIGURE_FILE = ${Armadillo_CONFIGURE_FILE}")
+message(STATUS "=======================================================\n\n")
+
+
+#################################################################################
+#  YAML_CPP_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== YAML-CPP =======================================")
+message(STATUS "=======================================================")
+message(STATUS "YamlCpp_ROOT_HINT = ${YamlCpp_ROOT_HINT}")
+
+find_package(YamlCpp REQUIRED)
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "YamlCpp_FOUND = ${YamlCpp_FOUND}")
+message(STATUS "YamlCpp_LIBRARY = ${YamlCpp_LIBRARY}")
+message(STATUS "YamlCpp_INCLUDE_DIR = ${YamlCpp_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
 
 
 ####################################################################################
 # PYTHON
-# ----------------- Part 0/3 - variables ------------------------------------------
-# where python build starts for now we use build_tree
-set(PY_BUILD_PREFIX ${CMAKE_BINARY_DIR})
+message(STATUS "=======================================================")
+message(STATUS "====== PYTHON =========================================")
+message(STATUS "=======================================================")
 # # define varible for storing this extra module path
 # this variable is used later to update search module path
 # if PYTHON_COPY is present it points to lib/flow123d dir in build tree
-# if not, default location is src/python dir in CMake_SOURCE_DIR location
+# if not, default location is src/python dir in CMAKE_SOURCE_DIR location
 if(PYTHON_COPY)
     # copy python interpret files and 3rd party packages including
     # python utils files for flow123d
     set(PYTHON_EXTRA_MODULES_PATH /lib/flow123d)
-    flow_define(PYTHON_EXTRA_MODULES_PATH ${PY_BUILD_PREFIX}/${PYTHON_EXTRA_MODULES_PATH})
+    flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_BINARY_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 else()
     # if python copy is not set we do nothing but export
     # variable PYTHON_EXTRA_MODULES_PATH so python_loader can add correct path
     set(PYTHON_EXTRA_MODULES_PATH /src/python)
     flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 endif()
-# check whether PYTHON_ROOT is set 
-if(NOT DEFINED PYTHON_ROOT)
-    message(STATUS "--------------------------------------------------")
-    message(STATUS "PYTHON_ROOT not set! Using default configuration which may not work on this system")
-    message(STATUS "--------------------------------------------------")
-    
-    set(PYTHON_ROOT /usr/lib/python2.7)
-    set(PYTHON_COPY_PACKAGES
-        bsddb compiler ctypes curses distutils email encodings hotshot importlib 
-        json lib-dynload lib-tk lib2to3 logging multiprocessing 
-        plat-x86_64-linux-gnu pydoc_data sqlite3 test unittest wsgiref xml)
-endif()
 
-# ----------------- Part 1/3 - PythonLibs ------------------------------------------
-# always detect PythonLibs but set flag HAVE_PYTHON conditionally to user
-# embedded python in flow123d
-include(python/PythonLibs)
+    message(WARNING "Variable PYTHON_ROOT not set. Using default value '${PYTHON_ROOT}'.")
 if(USE_PYTHON)
     flow_define(HAVE_PYTHON)
 endif()
 
-# ----------------- Part 2/3 - PythonCopy ------------------------------------------
-# Copy python libs to ${PY_BUILD_PREFIX}/lib/python2.7
-if(PYTHON_COPY)
-    include(python/PythonCopy)
-    flow_define(PYTHON_COPY)
-endif()
+# find python 
+find_package(PythonInterp 2.7 REQUIRED)
+find_package(PythonLibs 2.7   REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
 
-# ----------------- Part 3/3 - PythonScripts ----------------------------------------
-# install 3rd party packages and copy python runtest
-include(python/PythonScripts)
-
-
-
-#################################################################################
-#  YAML_CPP_FOUND - set to true if the library is found
-
-message(STATUS "\n =======================================================")
-find_package(YamlCpp)
-if (NOT YamlCpp_FOUND)
-    message(STATUS "Try to install our own yaml-cpp library.")
-    set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
-    include(InstallYamlCpp)
-
-    unset(YamlCpp_FOUND CACHE) 
-    unset(YamlCpp_INCLUDE_DIR CACHE)        # overwrite cache    
-    unset(YamlCpp_LIBRARY CACHE)
-
-    set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
-    find_package(YamlCpp REQUIRED)
-    
-    message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
-endif()
-
-message(STATUS "YamlCpp_LIBRARY: ${YamlCpp_LIBRARY}")
-message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
-
-
-
-
-message(STATUS "\n ======================================================= ")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
+message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
+message(STATUS "PYTHON_VERSION_STRING = ${PYTHON_VERSION_STRING}")
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PYTHONLIBS_FOUND = ${PYTHONLIBS_FOUND}")
+message(STATUS "PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
+message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "PYTHONLIBS_VERSION_STRING = ${PYTHONLIBS_VERSION_STRING}")
+message(STATUS "=======================================================\n\n")
 
 
 message(STATUS "Installing HTML documentation")
@@ -719,8 +629,18 @@ if(PETSC_MPIEXEC)
       
       # resolve symlinks
       get_filename_component(RESOLVED_MPIEXEC "${PETSC_MPIEXEC}" REALPATH)
-      message(STATUS "using petsc_mpiexec: ${RESOLVED_MPIEXEC}")
-      set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
+      
+      # we verify that REALPATH of PETSC_MPIEXEC exists
+      # if not, PETSC_MPIEXEC is probably only command 'mpiexec'
+      # in that case we use this value, since PETSc was ok with that
+      if(EXISTS RESOLVED_MPIEXEC)
+          message(STATUS "using petsc_mpiexec: ${RESOLVED_MPIEXEC}")
+          set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
+      else()
+          message(STATUS "path does not point to valid location: ${RESOLVED_MPIEXEC} using ${PETSC_MPIEXEC}")
+          set(MPIEXEC_PATH "${PETSC_MPIEXEC}")
+      endif()
+      
 else()
       find_program(SYSTEM_MPIEXEC mpiexec)
       if(SYSTEM_MPIEXEC)
@@ -826,8 +746,8 @@ if( PETSC_FOUND )
   
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
-  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  add_dependencies(bin/flow123d update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
@@ -840,7 +760,7 @@ endif()
 
   
 message(STATUS "=============== Summary ===================")
-message(STATUS "Boost:      ${BOOST_LIBRARIES}")
+message(STATUS "Boost:      ${Boost_LIBRARIES}")
 message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
 message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
@@ -857,6 +777,8 @@ message(STATUS "===========================================")
 ####################################################################################
 # Install and Packaging
 
+set(CMAKE_INSTALL_MESSAGE ALWAYS)
+
 # Cache PLATFORM_NAME
 set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
 
@@ -864,6 +786,16 @@ if (UNIX)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
 endif()
 
+if (CYGWIN)
+    set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/CYGWIN/NSIS/Flow123d-2.0.0_rc-CYGWIN/Unspecified)
+else()
+    set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux)  
+endif()
+
+macro(ls DIR)
+    install(CODE "execute_process(COMMAND echo LS ${DIR})")
+    install(CODE "execute_process(COMMAND ls ${_CPACK_INSTALL_ROOT}/${DIR} )")
+endmacro()
 
 # install bin directory
 install(DIRECTORY bin/config              DESTINATION bin/)
@@ -879,9 +811,11 @@ install(PROGRAMS  bin/time_limit.sh       DESTINATION bin/)
 # install shared libraries
 if (CYGWIN)
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" cygwin WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    # install DLL, must be in the same dir as the binary
     install(DIRECTORY build_tree/bin/            
         DESTINATION bin/
         PATTERN mpiexec EXCLUDE
+        PATTERN flow* EXCLUDE
         )
     
     # replace path separator and make path relative
@@ -895,26 +829,40 @@ if (CYGWIN)
     configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_runtest_template ${CMAKE_BINARY_DIR}/bin/runtest.bat @ONLY)
 else()
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
-    install(DIRECTORY build_tree/lib/            
-        DESTINATION lib/
-        PATTERN lib/python* EXCLUDE
-        PATTERN *.a EXCLUDE
-        )
-    # configure wrapper files
+    #install(CODE "execute_process(COMMAND ls /home/jb/workspace/build-master/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux )")
+        
+    # configure wrapper file
     configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh @ONLY)
     configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_BINARY_DIR}/bin/runtest.sh @ONLY)
 endif()        
 
+ls( lib )
+ls( bin)
+install(DIRECTORY build_tree/lib/           
+    DESTINATION lib/
+    #PATTERN lib/python* EXCLUDE
+    PATTERN *.a EXCLUDE
+    )
+
+ls( lib )
+ls( bin)
+
+
 # install python modules and system libs
 if (PYTHON_COPY)
     # install lib folder of Python to lib
-    install(DIRECTORY ${PY_BUILD_PREFIX}/lib
-            DESTINATION lib
-            OPTIONAL)
+    #install(DIRECTORY ${PY_BUILD_PREFIX}/lib
+    #        DESTINATION lib
+    #        OPTIONAL)
+    
     # copy Python's include
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
             DESTINATION include)
+            
 endif()
+
+ls( lib )
+ls( bin)
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
 if (CYGWIN)
@@ -932,6 +880,9 @@ else()
     install(PROGRAMS    build_tree/bin/ld-linux-loader.so   DESTINATION bin/)
 endif()
 
+
+ls( lib )
+ls( bin)
 
 install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
@@ -965,6 +916,7 @@ SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
 SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
+SET(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE On)
 
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 
@@ -1003,6 +955,7 @@ if (CYGWIN)
     # 1. Page
     # Displayed name of the software, and target subdirectory of installation prefix.
     SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Flow123d ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH}")
+    
     
     # 2. Page
     # Software banner in installer.
@@ -1053,12 +1006,11 @@ if (CYGWIN)
 
     # Extra NSIS commands that will be added to the end of the install Section, 
     # after your install tree is available on the target system.
-    
     # File association for CON files."
     set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
         WriteRegStr HKCR '.con' '' 'Flow123dFile'
         WriteRegStr HKCR 'Flow123dFile\\\\shell' '' 'open'
-        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\"%1\\"'
+        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\\"%1\\\"'
         System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
         ")
 
@@ -1146,6 +1098,10 @@ endif()
 #  SET(CPACK_SOURCE_STRIP_FILES "")
 #ENDIF(WIN32 AND NOT UNIX)
 #SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+
+add_custom_target(package_debug
+              COMMAND ${CMAKE_CPACK_COMMAND} --debug --verbose --config CPackConfig.cmake
+              COMMENTS "Build package with debug and verbose output")
 
 INCLUDE(CPack)
 

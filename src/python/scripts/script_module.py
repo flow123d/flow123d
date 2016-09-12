@@ -5,7 +5,13 @@
 from scripts.core.base import Printer, Paths, PathFormat
 # ----------------------------------------------
 
+
 class ScriptModule(object):
+    """
+    ScriptModule is abstract class for all script modules.
+    Children must implement or override method such as _check_arguments and _run
+    """
+
     def __init__(self):
         self.parser = None
         self.arg_options, self.others, self.rest = None, None, None

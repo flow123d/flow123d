@@ -240,6 +240,9 @@ Logger &operator<<(Logger & log, const T & x)
 #define DebugOut() \
 	_LOG( Logger::MsgType::debug )
 
+#define print_var(var) \
+    std::string(#var) << "=" << (var)
+
 
 
 

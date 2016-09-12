@@ -12,7 +12,8 @@ problem: !Coupling_Sequential
       - 1d_left_branch
   # mesh
   flow_equation: !Steady_MH
-    balance: true
+    output_specific:
+    balance: {}
     input_fields:
     - conductivity: 1.0e-06
       cross_section: 0.04
@@ -23,20 +24,20 @@ problem: !Coupling_Sequential
     - bc_pressure: !FieldFormula
         value: x+y
       bc_type: dirichlet
-      r_set: BOUNDARY
+      r_set: .BOUNDARY
     output:
-      output_fields:
+      fields:
       - pressure_p0
       - pressure_p1
       - velocity_p0
-      output_stream:
-        file: flow.pvd
-        format: !vtk
-          variant: ascii
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
   # primary equation
+    output_stream:
+      file: flow.pvd
+      format: !vtk
+        variant: ascii
   solute_equation: !TransportOperatorSplitting
     balance:
       cumulative: true
@@ -51,12 +52,13 @@ problem: !Coupling_Sequential
     - bc_conc:
       - 0.0
       - 1.0
-      r_set: BOUNDARY
+      r_set: .BOUNDARY
     output_stream:
       file: transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 100000
+      times:
+        - step: 100000
     reaction_term: !DualPorosity
       reaction_mobile: !SorptionMobile
         input_fields: &anchor1
@@ -71,7 +73,6 @@ problem: !Coupling_Sequential
           sorption_type:
           - none
           - freundlich
-        output_fields: []
         solubility:
         - 1.0
         - 1.0
@@ -80,6 +81,8 @@ problem: !Coupling_Sequential
         - age
         - U235
     
+        output:
+          fields: []
       input_fields:
       - diffusion_rate_immobile:
         - 0.01
@@ -89,10 +92,8 @@ problem: !Coupling_Sequential
         - 0.0
         porosity_immobile: 0.25
         r_set: ALL
-      output_fields: []
       reaction_immobile: !SorptionImmobile
         input_fields: *anchor1
-        output_fields: []
         solubility:
         - 1.0
         - 1.0
@@ -100,6 +101,10 @@ problem: !Coupling_Sequential
         substances:
         - age
         - U235
+        output:
+          fields: []
+      output:
+        fields: []
     substances:
     # water age  
     - molar_mass: 0.018   

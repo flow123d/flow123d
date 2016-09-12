@@ -71,6 +71,7 @@
 
 #include <armadillo>
 
+
 /*
  * Ordering of nodes and sides in reference elements
  * =================================================
@@ -112,24 +113,35 @@ template<unsigned int dim>
 class RefElement
 {
 public:
+    typedef arma::vec::fixed<dim> LocalPoint;
+    typedef arma::vec::fixed<dim+1> BaryPoint; // barycentric coordinates
+    typedef arma::vec::fixed<dim> FaceBaryPoint;
 
 	/**
 	 * Return local coordinates of given node.
 	 * @param nid Node number.
 	 */
-	static arma::vec::fixed<dim> node_coords(unsigned int nid);
+	static LocalPoint node_coords(unsigned int nid);
 
 	/**
 	 * Return barycentric coordinates of given node.
 	 * @param nid Node number.
 	 */
-	static arma::vec::fixed<dim+1> node_barycentric_coords(unsigned int nid);
+	static BaryPoint node_barycentric_coords(unsigned int nid);
 
 	/**
 	 * Compute normal vector to a given side.
 	 * @param sid Side number.
 	 */
-	static arma::vec::fixed<dim> normal_vector(unsigned int sid);
+	static LocalPoint normal_vector(unsigned int sid);
+
+
+	/**
+	 * If the given barycentric coordinate is in the ref. element, return unchanged.
+	 * If the given barycentric coordinate is out of the ref. element,
+	 * project it on the surface of the ref. element.
+	 */
+	static BaryPoint clip(const BaryPoint &barycentric);
 
 	static double side_measure(unsigned int sid);
     
@@ -183,6 +195,9 @@ public:
 	 */
     static const unsigned int line_nodes[n_lines][2];
 
+
+    static const std::vector< std::vector< std::vector<unsigned int> > > nodes_of_subelements;
+
 	/**
 	 * Number of permutations of nodes on sides.
 	 * dim   value
@@ -203,6 +218,31 @@ public:
 	 * @param p Permutation of nodes.
 	 */
 	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
+
+	typedef std::vector<BaryPoint> BarycentricUnitVec;
+
+	/**
+	 * Used in the clip method.
+	 */
+	static BarycentricUnitVec make_bary_unit_vec();
+
+    /**
+     * For given barycentric coordinates on the ref element returns barycentric coordinates
+     * on the ref. element of given face. Assumes that the input point is on the face.
+     * Barycentric order: (local_coords, complanatory)
+     */
+    static FaceBaryPoint barycentric_on_face(const BaryPoint &barycentric, unsigned int i_face);
+
+    /**
+     * For given barycentric coordinates on the face returns barycentric coordinates
+     * on the ref. element.
+     * Barycentric order: (local_coords, complanatory)
+     */
+    static BaryPoint barycentric_from_face(const FaceBaryPoint &face_barycentric, unsigned int i_face);
+
+
+    typedef const std::vector<LocalPoint> & CentersList;
+    static CentersList centers_of_subelements(unsigned int sub_dim);
 
 };
 

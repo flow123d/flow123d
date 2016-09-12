@@ -232,10 +232,51 @@ public:
 
 
 
+/**
+ * @brief Error info of previous exception.
+ *
+ * Allows keep and propagate message when one exception is catched and other exception is thrown.
+ * Catched exception is stored to EI_Nested and is printed out to message of thrown exception.
+ *
+ * Example of usage:
+ *
+ @code
+    try {
+        // method next() throws ExcA
+        obj.next();
+    } catch ( ExcA &e ) {
+        // add ExcA to EI tags of ExcB
+        THROW( ExcB() << make_nested_ei(e)) );
+    }
+ @endcode
+ *
+ */
+TYPEDEF_ERR_INFO( EI_Nested, std::shared_ptr<ExceptionBase>);
+TYPEDEF_ERR_INFO( EI_NestedMessage, std::string);
 
 
+/**
+ * Create EI_Nested error info with given exception.
+ *
+ * Used for propagation exception message.
+ */
+template <class Exc>
+EI_Nested make_nested_ei(Exc &e) {
+    // Template parameter can be only descendant of ExceptionBase
+    static_assert(std::is_base_of<ExceptionBase, Exc>::value,
+            "Exc must be a descendant of ExceptionBase"
+        );
 
+    return EI_Nested( std::make_shared<Exc>(e) );
+}
 
+/**
+ * Propagate just the 'what' message for exceptions that are not derived from ExceptionBase.
+ */
+template <class Exc>
+EI_NestedMessage make_nested_message(Exc &e) {
+    return EI_NestedMessage( e.what() );
+}
 
 namespace internal {
 
@@ -322,42 +363,10 @@ TYPEDEF_ERR_INFO( EI_XprintfMessage, std::string);
 DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfHeader::val << EI_XprintfMessage::val);
 
 
-/**
- * @brief Error info of previous exception.
- *
- * Allows keep and propagate message when one exception is catched and other exception is thrown.
- * Catched exception is stored to EI_Nested and is printed out to message of thrown exception.
- *
- * Example of usage:
- *
- @code
-	try {
-		// method next() throws ExcA
-		obj.next();
-	} catch ( ExcA &e ) {
-	    // add ExcA to EI tags of ExcB
-		THROW( ExcB() << make_nested_ei(e)) );
-	}
- @endcode
- *
- */
-TYPEDEF_ERR_INFO( EI_Nested, std::shared_ptr<ExceptionBase>);
 
 
-/**
- * Create EI_Nested error info with given exception.
- *
- * Used for propagation exception message.
- */
-template <class Exc>
-EI_Nested make_nested_ei(Exc &e) {
-	// Template parameter can be only descendant of ExceptionBase
-	static_assert(std::is_base_of<ExceptionBase, Exc>::value,
-	        "Exc must be a descendant of ExceptionBase"
-	    );
 
-    return EI_Nested( std::make_shared<Exc>(e) );
-}
+
 
 
 /***********************************************************************

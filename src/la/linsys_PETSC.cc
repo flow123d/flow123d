@@ -149,7 +149,7 @@ void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, dou
         case ALLOCATE:
             this->preallocate_values(nrow,rows,ncol,cols); 
             break;
-        default: DBGMSG("LS SetValues with non allowed insert mode.\n");
+        default: DebugOut() << "LS SetValues with non allowed insert mode.\n";
     }
 
     matrix_changed_ = true;
@@ -247,7 +247,7 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
     PetscErrorCode ierr;
 
     if (status_ == ALLOCATE) {
-        xprintf(Warn, "Finalizing linear system without setting values.\n");
+    	WarningOut() << "Finalizing linear system without setting values.\n";
         this->preallocate_matrix();
     }
     ierr = MatAssemblyBegin(matrix_, assembly_type); CHKERRV( ierr ); 
@@ -339,7 +339,7 @@ int LinSys_PETSC::solve()
     }
 
     if (params_ == "") params_ = petsc_dflt_opt;
-    xprintf(MsgLog,"inserting petsc options: %s\n",params_.c_str());
+    LogOut().fmt("inserting petsc options: {}\n",params_.c_str());
     PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
@@ -373,7 +373,7 @@ int LinSys_PETSC::solve()
     // substitute by PETSc call for residual
     VecNorm(rhs_, NORM_2, &residual_norm_);
     
-    xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", reason, nits);
+    LogOut().fmt("convergence reason {}, number of iterations is {}\n", reason, nits);
 
     // get residual norm
     KSPGetResidualNorm(system, &solution_precision_);

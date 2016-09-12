@@ -10,6 +10,7 @@ import threading
 from scripts.config.yaml_config import ConfigCase
 from scripts.core import monitors
 from scripts.core.base import Printer, Paths, Command, DynamicSleep, IO
+from scripts.serialization import PyPyResult, ResultHolderResult, RuntestTripletResult, ResultParallelThreads
 from utils.counter import ProgressCounter
 from utils.events import Event
 from utils.globals import wait_for
@@ -17,6 +18,10 @@ from utils.globals import wait_for
 
 
 class ExtendedThread(threading.Thread):
+    """
+    Class ExtendedThread is Thread class with extra functionality added
+    """
+
     def __init__(self, name, target=None):
         super(ExtendedThread, self).__init__(name=name)
         self.started = None
@@ -89,6 +94,10 @@ class ExtendedThread(threading.Thread):
 
 
 class BrokenProcess(object):
+    """
+    Class BrokenProcess Dummy object when process execution fails
+    """
+
     def __init__(self, exception=None):
         self.exception = exception
         self.pid = -1
@@ -101,8 +110,10 @@ class BrokenProcess(object):
 
 class MultiThreads(ExtendedThread):
     """
+    Class MultiThreads is base class when executing threads in group
     :type threads: list[scripts.core.threads.ExtendedThread]
     """
+
     def __init__(self, name, progress=False):
         super(MultiThreads, self).__init__(name)
         self.threads = list()
@@ -143,7 +154,7 @@ class MultiThreads(ExtendedThread):
 
     @property
     def current_thread(self):
-        return self.threads[self.index -1]
+        return self.threads[self.index - 1]
 
     @property
     def returncode(self):
@@ -170,6 +181,10 @@ class MultiThreads(ExtendedThread):
 
 
 class SequentialThreads(MultiThreads):
+    """
+    Class SequentialThreads runs multiple threads in sequential fashion
+    """
+
     def __init__(self, name, progress=True, indent=False):
         super(SequentialThreads, self).__init__(name, progress)
         self.thread_name_property = False
@@ -210,6 +225,10 @@ class SequentialThreads(MultiThreads):
 
 
 class ParallelThreads(MultiThreads):
+    """
+    Class ParallelThreads run multiple threads in parallel fashion
+    """
+
     def __init__(self, n=4, name='runner', progress=True):
         super(ParallelThreads, self).__init__(name, progress)
         self.n = n if type(n) is int else 1
@@ -230,11 +249,11 @@ class ParallelThreads(MultiThreads):
     def _run(self):
         # determine how many parallel batches will be
         # later on take cpu into account
-        steps = int(math.ceil(float(self.total)/self.n))
+        steps = int(math.ceil(float(self.total) / self.n))
 
         # run each batch
         for i in range(steps):
-            batch = [x for x in range(i*self.n, i*self.n+self.n) if x < len(self.threads)]
+            batch = [x for x in range(i * self.n, i * self.n + self.n) if x < len(self.threads)]
             for t in batch:
                 self.run_next()
 
@@ -246,9 +265,15 @@ class ParallelThreads(MultiThreads):
                 # no need to stop processes, just break
                 break
 
+    def dump(self):
+        return ResultParallelThreads(self)
+
 
 class PyPy(ExtendedThread):
     """
+    Class PyPy is main class which executes command having multiple monitors registered
+    PyPy = BinExecutor + monitors
+
     :type executor : scripts.core.execution.BinExecutor
     :type case     : ConfigCase
     """
@@ -306,8 +331,8 @@ class PyPy(ExtendedThread):
 
         if self.executor.broken:
             Printer.err('Could not start command {}: {}',
-                         Command.to_string(self.executor.command),
-                         getattr(self.executor, 'exception', 'Unknown error'))
+                        Command.to_string(self.executor.command),
+                        getattr(self.executor, 'exception', 'Unknown error'))
             self.returncode = self.executor.returncode
 
         # if process is not broken, propagate start event
@@ -338,7 +363,15 @@ class PyPy(ExtendedThread):
         return json
 
 
+    def dump(self):
+        return PyPyResult(self)
+
+
 class ComparisonMultiThread(SequentialThreads):
+    """
+    Class ComparisonMultiThread hold comparison results and writes them to a file
+    """
+
     def __init__(self, output, name='Comparison', progress=True, indent=True):
         super(ComparisonMultiThread, self).__init__(name, progress, indent)
         self.output = output
@@ -376,10 +409,13 @@ class ComparisonMultiThread(SequentialThreads):
 
 class RuntestMultiThread(SequentialThreads):
     """
+    Class RuntestMultiThread is simple triplet holding single ConfigCase results
+    (CleanThread, PyPy, ComparisonMultiThread)
     :type clean  : scripts.prescriptions.local_run.CleanThread
     :type pypy   : PyPy
     :type comp   : ComparisonMultiThread
     """
+
     def __init__(self, clean, pypy, comp):
         super(RuntestMultiThread, self).__init__('test-case', progress=False, indent=False)
         self.clean = clean
@@ -398,3 +434,31 @@ class RuntestMultiThread(SequentialThreads):
             execution=self.pypy,
             compare=self.comp
         )
+
+    def dump(self):
+        return RuntestTripletResult(self.pypy, self.clean, self.comp)
+
+
+class ResultHolder(object):
+    """
+    Class ResultHolder stores object with property returncode
+    """
+
+    def __init__(self):
+        self.items = list()
+
+    def add(self, item):
+        self.items.append(item)
+
+    @property
+    def returncode(self):
+        rc = [None]
+        for i in self.items:
+            rc.append(i.returncode)
+        return max(rc)
+
+    def singlify(self):
+        return self.items[0] if len(self.items) == 1 else self
+
+    def dump(self):
+        return ResultHolderResult(self)

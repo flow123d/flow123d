@@ -1,0 +1,87 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
+  mesh:
+    mesh_file: ./input/compatible.msh
+    regions:
+      - !Union
+        name: subset
+        regions:
+          - 2d
+          - 1d
+      - !Union
+        name: .sides
+        regions:
+          - .2d
+          - .1d
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: 1d
+        anisotropy: 10
+        sigma: 0.05
+        cross_section: !FieldFormula
+          value: 0.1+x/10
+      - region: 2d
+        anisotropy: 1
+        cross_section: 1
+      - region: .sides
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x
+    balance: {}
+    output:
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+        - region_id
+    output_stream:
+      file: ./test2.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: .sides
+          bc_conc: 1
+        - region: subset
+          init_conc: 0
+          porosity: 0.25
+        - region: 2d
+          rock_density: 2700
+          sorption_mult:
+            - 0.2
+            - 0
+        - region: .sides
+          time: 5
+          bc_conc: 0
+      solver: !Petsc
+      dg_order: 1
+      solvent_density: 1000
+      output:
+        fields:
+          - conc
+          - region_id
+    output_stream:
+      file: ./transport_dg.pvd
+      format: !vtk
+        variant: ascii
+      name: transport_output_stream
+      times:
+        - step: 1
+    substances:
+      - name: A
+        molar_mass: 2
+      - name: B
+        molar_mass: 0.5
+    time:
+      end_time: 10
+    balance:
+      file: mass_balance_dg.txt
+      cumulative: true

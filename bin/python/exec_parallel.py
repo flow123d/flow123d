@@ -3,7 +3,8 @@
 # author:   Jan Hybs
 # ----------------------------------------------
 from __future__ import absolute_import
-import pathfix; pathfix.init()
+import pathfix
+pathfix.init()
 # ----------------------------------------------
 import sys
 # ----------------------------------------------
@@ -40,12 +41,13 @@ parser.add('', '--host', type=str, name='host', placeholder='<host>', docs=[
     'hostname is used to select the setup script.',
 ])
 parser.add('-v', '--valgrind', type=[True, str], name='valgrind', placeholder='[<VALGRIND ARGS>]', docs=[
-    'Run tests under valgrind, with python suppression with optional argument',
+    'Run command under valgrind, with python suppression with optional argument',
     ' <valgrind args> passed to the valgrind. (In PBS mode this arguments is ignored.)?',
 ])
 parser.add('', '--batch', type=True, name='batch', docs=[
-    'Make output of this script more for an off-line reading',
-    'In batch mode, stdout and stderr from executed processes will be printed, not saved'
+    'Make output of this script more suitable for an off-line logging. Features such as ',
+    'progress bars and other output will be disabled.'
+    'In batch mode, stdout and stderr from executed processes will be printed, not saved into file.'
 ])
 # ----------------------------------------------
 parser.add_section('Passable arguments to exec_with_limit.py')
@@ -57,8 +59,11 @@ parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder=
     'Optional memory limit per node in MB',
     'For precision use float value'
 ])
-parser.add('', '--root', hidden=True, type=str, name='root', placeholder='<ROOT>', docs=[
-    'Path to base dir of flow123d'
+parser.add('', '--json', hidden=True, type=str, name='json', placeholder='<JSON>', docs=[
+    'Output result to json file'
+])
+parser.add('', '--dump', hidden=True, type=str, name='dump', placeholder='<FILE>', docs=[
+    'If set will pickle result to given file'
 ])
 # ----------------------------------------------
 
@@ -73,6 +78,5 @@ if __name__ == '__main__':
 
     # run work
     returncode = do_work(parser)
-    if parser.simple_options.json:
-        GlobalResult.to_json(parser.simple_options.json)
-    sys.exit(returncode)
+    if type(returncode) is int:
+        sys.exit(returncode)

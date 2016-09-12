@@ -87,7 +87,7 @@ public:
    * On the other hand, some do not have (linear reaction, pade approximant) 
    * - that is why it is not pure virtual.
    */
-  virtual void output_data(void){};
+  virtual void output_data(void) override {};
 
   /// Disable changes in TimeGovernor by empty method.
   void choose_next_time(void) override;

@@ -78,7 +78,7 @@ to molecular diffusion. We consider simple nonequilibrium linear model:
 where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone and
 $D_{dp}$ is a \hyperA{DualPorosity-Data::diffusion-rate-immobile}{diffusion rate} between the zones.
 $\vartheta_i$~denotes \hyperA{DualPorosity-Data::porosity-immobile}{porosity of the immobile zone} and 
-$\vartheta_m = \vartheta$ the \hyperlink{TransportOperatorSplitting-Data::porosity::B}{mobile porosity} from 
+$\vartheta_m = \vartheta$ the \hyperA{Solute-Advection-FV-Data::porosity}{mobile porosity} from 
 transport equation \eqref{e:ADE}. One can also set non-zero \hyperA{DualPorosity-Data::init-conc-immobile}{initial 
 concentration in the immobile zone} $c_i(0)$.
 
@@ -116,7 +116,7 @@ Notation:
 \begin{itemize}
  \item In solid, $c_s = \frac{n}{m_s}$ [mol\,$\mathrm{kg}^{-1}$] is the fraction of the molar amount of the solute 
        adsorbed $n$ and the amount of the adsorbent $m_s$ (mass of solid), all in unit volume. The concentration
-       in solid can be selected for \hyperA{Sorption::output-fields}{output}.
+       in solid can be selected for \Alink{IT::Sorption-output-fields}{output}.
  \item In liquid, $c_l = \frac{m}{m_l}$ \units{}{}{} is the fraction of the amount of the solute $m$ and 
        the mass of liquid $m_l$, all in unit volume. The relation between $c_l$ and the concentration $c$ from 
        transport equation \eqref{e:ADE} is $c = c_l \varrho_l$.
