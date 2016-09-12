@@ -521,7 +521,6 @@ else()
     flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 endif()
 
-    message(WARNING "Variable PYTHON_ROOT not set. Using default value '${PYTHON_ROOT}'.")
 if(USE_PYTHON)
     flow_define(HAVE_PYTHON)
 endif()
@@ -530,6 +529,10 @@ endif()
 find_package(PythonInterp 2.7 REQUIRED)
 find_package(PythonLibs 2.7   REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
+
+# create shortcuts for runtest
+set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
+configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
 
 message(STATUS "-------------------------------------------------------")
 message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
