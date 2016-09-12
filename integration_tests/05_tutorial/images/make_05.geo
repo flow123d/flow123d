@@ -12,7 +12,7 @@ General.ScaleZ = 3;
 
 General.SmallAxes = 0;
 
-Merge "ref_out/05_heat/flow.msh";
+Merge "../ref_out/05_heat/flow.msh";
 View[0].Visible = 0;
 View[1].Visible = 0;
 Mesh.SurfaceEdges = 1;
@@ -31,7 +31,7 @@ Draw;
 Print Sprintf("05_flow.pdf");
 
 
-Merge "ref_out/05_heat/heat.msh";
+Merge "../ref_out/05_heat/heat.msh";
 View[0].Visible = 0;
 View[1].Visible = 0;
 View[2].Visible = 1;

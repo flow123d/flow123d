@@ -12,7 +12,7 @@ General.ScaleZ = 6.5;
 
 General.SmallAxes = 0;
 
-Merge "ref_out/01_column/flow.msh";
+Merge "../ref_out/01_column/flow.msh";
 View[0].Visible = 0;
 View[1].Visible = 0;
 View[2].Visible = 0;

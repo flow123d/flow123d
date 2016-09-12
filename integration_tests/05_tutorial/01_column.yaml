@@ -14,7 +14,7 @@
 ##
 ##A pseudo one-dimensional model is considered in the range 10 × 23 m with the atmospheric pressure on the surface and on the bottom, and no flow boundary condition on the edges (Figure {@fig:geom}).
 ##
-##![a) the mesh; b) the boundary conditions; c) computed piezometric head and flux.](01_mesh_bc_flux.pdf){#fig:geom}
+##![a) the mesh; b) the boundary conditions; c) computed piezometric head and flux.](images/01_mesh_bc_flux.pdf){#fig:geom}
 ##
 ##
 ##

@@ -20,9 +20,9 @@ set y2label 'mass flux through .surface/.tunnel [kg/s]'
 set key top center out horizontal
 set ytics nomirror
 set y2tics
-plot '<grep rock ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/365):7 w l axes x1y1 t 'rock',\\
-     '<grep .surface ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/365):4 w l axes x1y2 t '.surface',\\
-     '<grep .tunnel ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/365):4 w l axes x1y2 t '.tunnel'" | gnuplot
+plot '<grep rock ../ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/365):7 w l axes x1y1 t 'rock',\\
+     '<grep .surface ../ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/365):4 w l axes x1y2 t '.surface',\\
+     '<grep .tunnel ../ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/365):4 w l axes x1y2 t '.tunnel'" | gnuplot
 
 # make image with concentrations
 gmsh make_02_transport.geo
@@ -52,7 +52,7 @@ set style circle radius graph 0.004
 plot '03_conc_tunnel.txt' u (timecolumn(1,\"%d.%m.%Y\")):2 w l lw 0.1 lc \"00000000\" axes x1y1 not,\\
      '' u (timecolumn(1,\"%d.%m.%Y\")):2 w circles fs solid axes x1y1 t 'measured',\\
      '03_conc_surface.txt' u (timecolumn(1,\"%d.%m.%Y\")):2 w l lc rgb \"#d0ff0000\" axes x1y2 t 'precipitation',\\
-     '<grep .tunnel ref_out/03_tunnel/mass_balance.txt' u ((timecolumn(1,\"%s\")+36*365.25)*86400):(-\$4) w l axes x1y1 t 'computed'
+     '<grep .tunnel ../ref_out/03_tunnel/mass_balance.txt' u ((timecolumn(1,\"%s\")+36*365.25)*86400):(-\$4) w l axes x1y1 t 'computed'
 " | gnuplot
 
 # make image of flux and pressure
@@ -72,6 +72,6 @@ echo "
 set terminal pdf color enhanced lw 2
 set output '05_power.pdf'
 set xlabel 'time [years]'
-plot [1:] \"< sed -n '/\\\\.well[12]_surface\\\"/p' ref_out/05_heat/energy_balance.txt | awk 'BEGIN {t=0;v=0} {if (t==\$1) v+=\$4; else {print t, v; t=\$1;v=\$4}} END {print t,v}'\" u (\$1/365.25/86400):(-\$2/1e6) w lp t 'power [MW]',\\
+plot [1:] \"< sed -n '/\\\\.well[12]_surface\\\"/p' ../ref_out/05_heat/energy_balance.txt | awk 'BEGIN {t=0;v=0} {if (t==\$1) v+=\$4; else {print t, v; t=\$1;v=\$4}} END {print t,v}'\" u (\$1/365.25/86400):(-\$2/1e6) w lp t 'power [MW]',\\
           25 dt 2 not
 " | gnuplot
