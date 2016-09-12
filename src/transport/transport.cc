@@ -65,29 +65,13 @@ const IT::Record &ConvectionTransport::get_input_type()
 			        EqData().make_field_descriptor_type(_equation_name)),
 			        IT::Default::obligatory(),
 			        "")
-
-            .declare_key("output_fields",
-			                IT::Array(
-			                        ConvectionTransport::EqData().output_fields
-			                            .make_output_field_selection(
-			                                    _equation_name + "_output_fields",
-			                                "Selection of output fields for Advective Solute Transport model.")
-			                            .close()),
-			                IT::Default("\"conc\""),
-			                "List of fields to write to output file.")
+            .declare_key("output",
+                    EqData().output_fields.make_output_type(_equation_name, ""),
+                    IT::Default("{ \"fields\": [ \"conc\" ] }"),
+                    "Setting of the fields output.")
 			.close();
 }
 
-/*
-const IT::Selection & ConvectionTransport::get_output_selection() {
-	return  ConvectionTransport::EqData().output_fields
-            .make_output_field_selection(
-                "ConvectionTransport_output_fields",
-                "Selection of output fields for Convection Solute Transport model.")
-            .close();
-
-}
-*/
 
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
@@ -97,7 +81,9 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
     	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
-    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
+    output_fields += conc_mobile.name("conc")
+            .units( UnitSI().kg().m(-3) )
+            .flags(FieldFlag::equation_result);
 	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
@@ -108,7 +94,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
   input_rec(in_rec),
-  mh_dh(nullptr)
+  mh_dh(nullptr),
+  sources_corr(nullptr)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -146,11 +133,16 @@ void ConvectionTransport::initialize()
 		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(n_substances());
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
-	output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
-    output_stream_->mark_output_times(*time_);
+	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
+    //output_stream_->mark_output_times(*time_);
+
+	data_.output_fields.initialize(output_stream_, input_rec.val<Input::Record>("output"), time() );
+	//cout << "Transport." << endl;
+	//cout << time().marks();
 
     if (balance_ != nullptr)
-    	balance_->allocate(el_ds->lsize(), 1);
+       balance_->allocate(el_ds->lsize(), 1);
+
 }
 
 
@@ -188,44 +180,46 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi;
 
-    //Destroy mpi vectors at first
-    MatDestroy(&tm);
-    VecDestroy(&mass_diag);
-    VecDestroy(&vpmass_diag);
-    VecDestroy(&vcfl_flow_);
-    VecDestroy(&vcfl_source_);
-    delete cfl_flow_;
-    delete cfl_source_;
+    if (sources_corr) {
+        //Destroy mpi vectors at first
+        MatDestroy(&tm);
+        VecDestroy(&mass_diag);
+        VecDestroy(&vpmass_diag);
+        VecDestroy(&vcfl_flow_);
+        VecDestroy(&vcfl_source_);
+        delete cfl_flow_;
+        delete cfl_source_;
 
-    for (sbi = 0; sbi < n_substances(); sbi++) {
-        // mpi vectors
-        VecDestroy(&(vconc[sbi]));
-        VecDestroy(&(vpconc[sbi]));
-        VecDestroy(&(bcvcorr[sbi]));
-        VecDestroy(&(vcumulative_corr[sbi]));
-        VecDestroy(&(v_tm_diag[sbi]));
-        VecDestroy(&(v_sources_corr[sbi]));
+        for (sbi = 0; sbi < n_substances(); sbi++) {
+            // mpi vectors
+            VecDestroy(&(vconc[sbi]));
+            VecDestroy(&(vpconc[sbi]));
+            VecDestroy(&(bcvcorr[sbi]));
+            VecDestroy(&(vcumulative_corr[sbi]));
+            VecDestroy(&(v_tm_diag[sbi]));
+            VecDestroy(&(v_sources_corr[sbi]));
+
+            // arrays of arrays
+            delete conc[sbi];
+            delete cumulative_corr[sbi];
+            delete tm_diag[sbi];
+            delete sources_corr[sbi];
+        }
+
+        // arrays of mpi vectors
+        delete vconc;
+        delete vpconc;
+        delete bcvcorr;
+        delete vcumulative_corr;
+        delete v_tm_diag;
+        delete v_sources_corr;
         
         // arrays of arrays
-        delete conc[sbi];
-        delete cumulative_corr[sbi];
-        delete tm_diag[sbi];
-        delete sources_corr[sbi];
+        delete conc;
+        delete cumulative_corr;
+        delete tm_diag;
+        delete sources_corr;
     }
-    
-    // arrays of mpi vectors
-    delete vconc;
-    delete vpconc;
-    delete bcvcorr;
-    delete vcumulative_corr;
-    delete v_tm_diag;
-    delete v_sources_corr;
-    
-    // arrays of arrays
-    delete conc;
-    delete cumulative_corr;
-    delete tm_diag;
-    delete sources_corr;
 }
 
 
@@ -464,7 +458,7 @@ void ConvectionTransport::compute_concentration_sources() {
                 {
                     balance_->add_source_matrix_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
                                                        {- src_sigma(sbi) * ele->measure() * csection});
-                    balance_->add_source_rhs_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
+                    balance_->add_source_vec_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
                                                     {source * ele->measure()});
                 }
             }
@@ -521,14 +515,14 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
         cfl_changed = true;
-        DBGMSG("CFL changed - flow.\n");
+        DebugOut() << "CFL changed - flow.\n";
     }
     
     if (is_mass_diag_changed)
     {
         create_mass_matrix();
         cfl_changed = true;
-        DBGMSG("CFL changed - mass matrix.\n");
+        DebugOut() << "CFL changed - mass matrix.\n";
     }
     
     // if DATA changed ---------------------> recompute concentration sources (rhs and matrix diagonal)
@@ -538,7 +532,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         compute_concentration_sources();
         is_src_term_scaled = false;
         cfl_changed = true;
-        DBGMSG("CFL changed - source.\n");
+        DebugOut() << "CFL changed - source.\n";
     }
     
     // now resolve the CFL condition
@@ -551,12 +545,13 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         VecMaxPointwiseDivide(cfl,mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
         cfl_max_step = 1 / cfl_max_step;
-        DBGMSG("CFL constraint (transport): %g\n", cfl_max_step);
+        DebugOut().fmt("CFL constraint (transport): {}\n", cfl_max_step);
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled
     if ( (mh_dh->time_changed() > transport_bc_time)
         || data_.porosity.changed()
+        || data_.water_content.changed()
         || data_.bc_conc.changed() )
     {
         set_boundary_conditions();
@@ -587,7 +582,7 @@ void ConvectionTransport::update_solution() {
     // if FLOW or DATA or BC or DT changed ---------------------> rescale boundary condition
     if( ! is_bc_term_scaled || time_->is_changed_dt() )
     {
-        DBGMSG("BC - rescale dt.\n");
+    	DebugOut() << "BC - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_bc_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int  sbi=0; sbi<n_substances(); sbi++)
@@ -598,7 +593,7 @@ void ConvectionTransport::update_solution() {
 
     // if DATA or TIME STEP changed -----------------------> rescale source term
     if( !is_src_term_scaled || time_->is_changed_dt()) {
-        DBGMSG("SRC - rescale dt.\n");
+    	DebugOut() << "SRC - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_src_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
@@ -611,7 +606,7 @@ void ConvectionTransport::update_solution() {
     
     // if DATA or TIME STEP changed -----------------------> rescale transport matrix
     if ( !is_convection_matrix_scaled || time_->is_changed_dt()) {
-        DBGMSG("TM - rescale dt.\n");
+    	DebugOut() << "TM - rescale dt.\n";
         //choose between fresh scaling with new dt or rescaling to a new dt
         double dt = (!is_convection_matrix_scaled) ? dt_new : dt_scaled;
         
@@ -623,7 +618,7 @@ void ConvectionTransport::update_solution() {
     
     
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
-    if (data_.cross_section.changed() || data_.porosity.changed())
+    if (data_.cross_section.changed() || data_.water_content.changed() || data_.porosity.changed())
     {
         VecCopy(mass_diag, vpmass_diag);
         create_mass_matrix();
@@ -708,7 +703,8 @@ void ConvectionTransport::create_mass_matrix()
         elm = mesh_->element(el_4_loc[loc_el]);
 
         double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
-        double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
+        //double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
+        double por_m = data_.water_content.value(elm->centre(), elm->element_accessor());
 
         if (balance_ != nullptr)
         {
@@ -886,17 +882,16 @@ void ConvectionTransport::calculate_instant_balance()
 
 void ConvectionTransport::output_data() {
 
-    if (time_->is_current( time_->marks().type_output() )) {
-        output_vector_gather();
+    data_.output_fields.set_time(time().step(), LimitSide::right);
+    //if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
+    output_vector_gather();
+    //}
 
-		data_.output_fields.set_time(time_->step(), LimitSide::right);
-		data_.output_fields.output(output_stream_);
-
-    }
+	data_.output_fields.output(time().step());
 }
 
-void ConvectionTransport::set_balance_object(boost::shared_ptr<Balance> balance)
+void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
-	subst_idx = balance_->add_quantities(substances_.names());
+    subst_idx = balance_->add_quantities(substances_.names());
 }

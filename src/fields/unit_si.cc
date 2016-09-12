@@ -18,7 +18,7 @@
 #include <sstream>
 
 #include "fields/unit_si.hh"
-#include "system/xio.h"
+#include "system/asserts.hh"
 
 
 using namespace std;
@@ -53,6 +53,10 @@ UnitSI & UnitSI::Pa() {
 UnitSI & UnitSI::dimensionless() {
 	static UnitSI unit = UnitSI().m(0);
 	return unit;
+}
+
+UnitSI & UnitSI::one() {
+    return dimensionless();
 }
 
 UnitSI & UnitSI::m(int exp) {
@@ -136,7 +140,7 @@ const std::string &UnitSI::unit_symbol(unsigned int idx) {
 
 
 std::string UnitSI::format(OutputFormat form) const {
-	OLD_ASSERT(is_def(), "UnitSI object must be defined!");
+	ASSERT(is_def()).error("UnitSI object must be defined!");
 
 	std::stringstream output;
 

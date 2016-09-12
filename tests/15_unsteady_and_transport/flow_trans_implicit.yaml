@@ -4,6 +4,8 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ./input/channel_structured.msh
   flow_equation: !Flow_Richards_LMH
+    output_specific:
+      raw_flow_output: ./raw_output.txt
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -24,13 +26,7 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-07
     n_schurs: 2
     output:
-      output_stream: 
-        file: ./test15.pvd
-        format: !vtk
-          variant: ascii
-        time_step: 0.1
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
@@ -39,6 +35,13 @@ problem: !Coupling_Sequential
     time:
       end_time: 2.0
       max_dt: 0.1
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+      times:
+        - step: 0.1
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
@@ -59,8 +62,9 @@ problem: !Coupling_Sequential
       file: ./transport-implicit.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.1
       name: transport_output_stream
+      times:
+        - step: 0.1
     substances:
       - conc
     time:

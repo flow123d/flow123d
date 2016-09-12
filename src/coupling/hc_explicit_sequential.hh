@@ -28,6 +28,8 @@ class DarcyFlowInterface;
 class Mesh;
 class EquationBase;
 class AdvectionProcessBase;
+class HeatProcessBase;
+class FieldCommon;
 
 
 /**
@@ -53,8 +55,32 @@ public:
     ~HC_ExplicitSequential();
 
 private:
+    typedef std::shared_ptr<AdvectionProcessBase> AdvectionPtr;
+
+    struct AdvectionData {
+        AdvectionData(AdvectionPtr p)
+        : process(p), velocity_changed(false), velocity_time(0.0)
+        {}
+
+        AdvectionPtr process;
+        bool velocity_changed;
+        double velocity_time;
+    };
+
+    /**
+     * Create an advection process for given input key.
+     */
+    AdvectionPtr make_advection_process(std::string process_key);
+
+    /**
+     * Perform a single time step of given advection process.
+     */
+    void advection_process_step(AdvectionData &pdata);
 
     static const int registrar;
+
+    ///
+    Input::Record in_record_;
 
     /// mesh common to darcy flow and transport
     Mesh *mesh;
@@ -62,9 +88,16 @@ private:
     /// steady or unsteady water flow simulator based on MH scheme
     std::shared_ptr<DarcyFlowInterface> water;
 
-    /// explicit transport with chemistry through operator splitting
-    std::shared_ptr<AdvectionProcessBase> secondary_eq;
+    /// solute transport with chemistry through operator splitting
+    std::vector<AdvectionData> processes_;
 
+    ///
+    double min_velocity_time;
+
+    bool is_end_all_;
+
+    FieldCommon *water_content_saturated_;
+    FieldCommon *water_content_p0_;
 };
 
 #endif /* HC_EXPLICIT_SEQUENTIAL_HH_ */

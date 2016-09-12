@@ -46,7 +46,7 @@
  *      }
  *
  *      Field<3, FieldValue<3>::Scalar> scalar_field;
- *      Field<3, FieldValue<3>::Vector> vector_field;
+ *      Field<3, FieldValue<3>::VectorFixed> vector_field;
  * };
  *
  * This way the fields are destructed just before their pointers stored in the FieldSet.
@@ -227,10 +227,6 @@ public:
     bool is_jump_time() const;
 
 
-    /**
-     * Collective interface to @p FieldCommonBase::output().
-     */
-    void output(std::shared_ptr<OutputTime> stream);
 
     /**
      * OBSOLETE

@@ -152,8 +152,31 @@ where
  \item \verb'<number of elements>' --- is number of elements in mesh, which is same as number of subsequent lines.
  \item \verb'<eid>' --- element id same as in the input mesh.
  \item \verb'<flux x,y,z>' --- components of water flux interpolated to barycenter of the element
- \item \verb'<number of sides>' --- number of sides of the element, infulence number of remaining values
+ \item \verb'<number of sides>' --- number of sides of the element, influence number of remaining values
  \item \verb'<pressures on sides>' --- for every side average of the pressure over the side
  \item \verb'<fluxes on sides>' --- for ever side total flux through the side 
 \end{description}
+
+The side values are reported according to the side order, with sides numbering given by Table \ref{tab:side_numbers}.
+\begin{table}[h]
+    \label{tab:side_numbers}
+    \caption{Side numbering relative to veritices.}
+    \begin{tabular}{ccl}
+        \toprule
+        element dimension   &   side       &   vertices \\
+        \toprule
+        \multirow{2}{*}{1}  &   0          &   0  \\
+                            &   1          &   1  \\
+        \midrule
+        \multirow{3}{*}{2}  &   0          &   0 1  \\
+                            &   1          &   0 2  \\
+                            &   2          &   1 2  \\    
+        \midrule
+        \multirow{4}{*}{3}  &   0          &   0 1 2 \\
+                            &   1          &   0 1 3 \\
+                            &   2          &   0 2 3 \\
+                            &   3          &   1 2 3 \\    
+        \bottomrule
+    \end{tabular}    
+\end{table}
 

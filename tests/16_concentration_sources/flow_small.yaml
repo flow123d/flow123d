@@ -6,6 +6,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ./input/test16_small.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -18,17 +19,17 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 0
     output:
-      output_stream: 
-        file: ./flow_test16.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
     balance:
       cumulative: true
+    output_stream: 
+      file: ./flow_test16.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -52,7 +53,8 @@ problem: !Coupling_Sequential
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.2
+      times:
+        - step: 0.2
     substances:
       - A
       - B

@@ -145,12 +145,12 @@ int TPolygon::InsertPosition(const TVertex& Vx) {
     	U2 = Vx.GetPoint() - V1->GetPoint();
     	N = Cross(U1, U2);
     	if (Dot(N, normal_vector) < 0) {
-    		if (pos > 0) xprintf(Msg, " - TPolygon::InsertPosition - ERROR: only one vector product must be negative\n");
+    		if (pos > 0) MessageOut() << "TPolygon::InsertPosition - ERROR: only one vector product must be negative\n";
     		pos = i+1;
     	}
     }
 
-    if (pos == 0) xprintf(Msg, " - TPolygon::InsertPosition - ERROR: no vector product is negative\n");
+    if (pos == 0) MessageOut() << "TPolygon::InsertPosition - ERROR: no vector product is negative\n";
     return pos;
 }
 

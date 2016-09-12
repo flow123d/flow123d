@@ -5,26 +5,27 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ./input/sit_decay.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
     input_fields:
       - rid: 1
         anisotropy: 0.01
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: 0
     output:
-      output_stream: 
-        file: ./decay.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream: 
+      file: ./decay.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -36,7 +37,7 @@ problem: !Coupling_Sequential
             - 0.04
             - 0.05
             - 0.06
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc:
             - 0.01
             - 0.02
@@ -48,8 +49,9 @@ problem: !Coupling_Sequential
       file: ./transport_decay.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.5
       name: transport_output_stream
+      times:
+        - step: 0.5
     substances:
       - A
       - B

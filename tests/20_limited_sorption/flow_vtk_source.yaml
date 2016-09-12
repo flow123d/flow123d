@@ -15,6 +15,7 @@ problem: !Coupling_Sequential
           - .up
           - .down
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -25,15 +26,15 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_piezo_head: 0
     output:
-      output_stream:
-        file: test_20.pvd
-        format: !vtk
-          variant: ascii
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream:
+      file: test_20.pvd
+      format: !vtk
+        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -107,7 +108,8 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.2
-  # secondary_equation
+  # solute_equation
 # problem
 # root
+      times:
+        - step: 0.2

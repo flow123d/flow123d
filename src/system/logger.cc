@@ -63,7 +63,7 @@ int StreamMask::operator()(void)
 
 
 Logger::Logger(MsgType type)
-: type_(type), every_process_(false)
+: type_(type), every_process_(false), line_(0)
 {
 	// set actual time
 	date_time_ = LoggerOptions::format_hh_mm_ss();
@@ -134,19 +134,31 @@ void Logger::set_mask()
 		else
 			streams_mask_ = StreamMask::cout | StreamMask::log;
 		break;
-#ifndef FLOW123D_DEBUG
+	case MsgType::log:
+        if (LoggerOptions::get_instance().no_log_)
+            streams_mask_ = StreamMask();
+        else if (LoggerOptions::get_instance().is_init())
+            streams_mask_ = StreamMask::log;
+        else
+            streams_mask_ = StreamMask::cout;
+        break;
+#ifdef FLOW123D_DEBUG
+    case MsgType::debug: // for debug build
+        if (LoggerOptions::get_instance().no_log_)
+            streams_mask_ = StreamMask();
+        else if (LoggerOptions::get_instance().is_init())
+            streams_mask_ = StreamMask::log | StreamMask::cout;
+        else
+            streams_mask_ = StreamMask::cout;
+        break;
+#else
 	case MsgType::debug: // for release build
 		streams_mask_ = StreamMask();
 		break;
+
 #endif
-	default: //MsgType::log + MsgType::debug (only for debug build)
-		if (LoggerOptions::get_instance().no_log_)
-			streams_mask_ = StreamMask();
-		else if (LoggerOptions::get_instance().is_init())
-			streams_mask_ = StreamMask::log;
-		else
-			streams_mask_ = StreamMask::cerr;
-		break;
+	default:
+	    ASSERT(false);
 	}
 
 	full_streams_mask_ = full_streams_mask_ | streams_mask_;

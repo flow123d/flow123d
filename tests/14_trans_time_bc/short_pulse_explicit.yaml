@@ -5,6 +5,7 @@ problem: !Coupling_Sequential
     mesh_file: ./input/rectangle_with_bc_0.2.msh
   # steady velocity field, with velocity v:0.1
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -12,22 +13,22 @@ problem: !Coupling_Sequential
     input_fields:
       - region: bulk
         conductivity: 1
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: 0.1*x
     n_schurs: 2
     output:
-      output_stream: 
-        file: ./test14.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream: 
+      file: ./test14.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -53,7 +54,8 @@ problem: !Coupling_Sequential
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.1
       name: transport_output_stream
+      times:
+        - step: 0.1
     balance:
       cumulative: true

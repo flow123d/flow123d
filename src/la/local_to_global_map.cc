@@ -23,11 +23,11 @@
 
 LocalToGlobalMap::LocalToGlobalMap(const Distribution &any_distr)
 : nonlocal_indices_(new std::set<unsigned int>()),
-  distr_(boost::make_shared<Distribution>(any_distr)),
+  distr_(std::make_shared<Distribution>(any_distr)),
   global_indices_(0)
 {}
 
-LocalToGlobalMap::LocalToGlobalMap(boost::shared_ptr<Distribution> any_distr)
+LocalToGlobalMap::LocalToGlobalMap(std::shared_ptr<Distribution> any_distr)
 : nonlocal_indices_(new std::set<unsigned int>()),
   distr_(any_distr),
   global_indices_(0)

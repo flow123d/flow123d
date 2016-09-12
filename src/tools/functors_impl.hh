@@ -19,7 +19,7 @@
 #define FUNCTORBASE_IMPL_H
 
 #include "tools/functors.hh"
-#include "system/xio.h"
+#include "system/global_defs.h"
 
 /**************************************** FunctorCommon *****************************************/
 template<class Type>
@@ -46,12 +46,12 @@ template<class TType>
 void FunctorCommon<Type>::set_param_from_func(FunctorCommon<TType>* func)
 {
   unsigned int n = func->param_.size();
-  //DBGMSG("param_size = %d\n",n);
+  //DebugOut().fmt("param_size = {}\n",n);
   param_.resize(n);
   
   for(unsigned int i=0; i < n; i++) //copying vector
   {
-    //DBGMSG("get_param = %d\n",i);
+    //DebugOut().fmt("get_param = {}\n",i);
     param_[i] = func->param(i);   
   }
 }

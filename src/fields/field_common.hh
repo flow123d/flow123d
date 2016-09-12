@@ -28,12 +28,15 @@ using namespace std;
 #include "tools/time_marks.hh"
 #include "tools/time_governor.hh"
 
+#include "fields/field_algo_base.hh"
 #include "fields/field_flag.hh"
 #include "fields/unit_si.hh"
 #include "io/output_time.hh"
 
 
+class Mesh;
 class Region;
+class Observe;
 
 namespace IT=Input::Type;
 
@@ -121,7 +124,7 @@ public:
      *
      * We must save raw pointer since selection may not be yet initialized (during static initialization phase).
      */
-    FieldCommon & input_selection(const Input::Type::Selection *element_selection)
+    FieldCommon & input_selection(Input::Type::Selection element_selection)
     {
       shared_->input_element_selection_=element_selection;
       return *this;
@@ -203,7 +206,10 @@ public:
     { return shared_->input_default_;}
 
     const UnitSI &units() const
-    { return shared_->units_;}
+    {
+        ASSERT(shared_->units_.is_def())(name()).error("Getting undefined unit.\n");
+        return shared_->units_;
+    }
 
     OutputTime::DiscreteSpace output_type() const
     { return type_of_output_data_; }
@@ -248,13 +254,34 @@ public:
      */
     virtual bool is_constant(Region reg) =0;
 
+
+    /**
+     * @brief Indicates special field states.
+     *
+     * Extension of the previous method. Return possible values from the enum @p FieldResult, see description there.
+     * The initial state is @p field_none, if the field is correctly set on all regions of the @p region_set given as parameter
+     * we return state @p field_other or even more particular result.
+     *
+     * Special field values spatially constant. Could allow optimization of tensor multiplication and
+     * tensor or vector addition. field_result_ should be set in constructor and in set_time method of particular Field implementation.
+     * We return value @p result_none, if the field is not initialized on the region of the given element accessor @p elm.
+     * Other possible results are: result_zeros, result_eye, result_ones, result_constant, result_other
+     * see @p FieldResult for explanation.
+     *
+     * Multifield return most particular value that holds for all its subfields.
+     *
+     *
+     */
+    virtual FieldResult field_result( RegionSet region_set) const =0;
+
+
     /**
      * Returns true if set_time_result_ is not @p TimeStatus::constant.
      * Returns the same value as last set_time method.
      */
     bool changed() const
     {
-    	OLD_ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
+    	ASSERT( set_time_result_ != TimeStatus::unknown ).error("Invalid time status.");
         return ( (set_time_result_ == TimeStatus::changed) );
     }
 
@@ -317,6 +344,10 @@ public:
     /**
      * Check that @p other is instance of the same Field<..> class and
      * perform assignment. Polymorphic copy.
+     *
+     * The copy is performed only if *this have set flag 'input_copy'.
+     * If *this have set also the flag 'decare_input' the copy is performed only if the
+     * input_list is empty.
      */
     virtual void copy_from(const FieldCommon & other) =0;
 
@@ -327,6 +358,12 @@ public:
      */
     virtual void output(std::shared_ptr<OutputTime> stream) =0;
 
+    /**
+     * Perform the observe output of the field.
+     * The Observe object passed by the parameter is called with the particular Field<> as the parameter
+     * to evaluate the field in observation points and store the values in the OutputData arrays.
+     */
+    virtual void observe_output(std::shared_ptr<Observe> observe) =0;
 
 
     /**
@@ -418,10 +455,8 @@ protected:
          * to read possible values of the field (e.g. for FieldConstant the key 'value' has this selection input type).
          *
          * Is empty selection for for non-enum values fields.
-         *
-         * In fact we must use raw pointer since selection may not be constructed yet (static variable).
          */
-        const IT::Selection *input_element_selection_;
+        IT::Selection input_element_selection_;
         /**
          * Possible default value of the field.
          */

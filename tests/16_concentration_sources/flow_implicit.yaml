@@ -5,13 +5,14 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ./input/test16.msh
   flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
     n_schurs: 2
     input_fields:
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: y
@@ -19,21 +20,21 @@ problem: !Coupling_Sequential
         cross_section: 1
         conductivity: 1
     output:
-      output_stream: 
-        file: ./flow_test16.pvd
-        format: !vtk
-          variant: ascii
-        name: flow_output_stream
-      output_fields:
+      fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: true
+    balance: {}
+    output_stream: 
+      file: ./flow_test16.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       # dual_porosity:false,
       input_fields:
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc: 0
         - region: BULK
           init_conc: 0
@@ -60,8 +61,9 @@ problem: !Coupling_Sequential
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
-      time_step: 0.8
       name: transport_output_stream
+      times:
+        - step: 0.8
     sorption_enable: false
     sources_file: ./input/test16.tso
     substances:
