@@ -59,6 +59,12 @@ parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder=
     'Optional memory limit per node in MB',
     'For precision use float value'
 ])
+parser.add('', '--json', hidden=True, type=str, name='json', placeholder='<JSON>', docs=[
+    'Output result to json file'
+])
+parser.add('', '--dump', hidden=True, type=str, name='dump', placeholder='<FILE>', docs=[
+    'If set will pickle result to given file'
+])
 # ----------------------------------------------
 
 if __name__ == '__main__':
@@ -72,6 +78,5 @@ if __name__ == '__main__':
 
     # run work
     returncode = do_work(parser)
-    if parser.simple_options.json:
-        GlobalResult.to_json(parser.simple_options.json)
-    sys.exit(returncode)
+    if type(returncode) is int:
+        sys.exit(returncode)

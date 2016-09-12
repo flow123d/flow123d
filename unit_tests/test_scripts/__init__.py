@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
+import platform
 from unittest import TestCase
 import os
 
@@ -17,19 +18,6 @@ try:
     rows, cols = [int(x) for x in os.popen('stty size', 'r').read().split()]
 except Exception as e:
     rows, cols = 80, 80
-
-
-def print_test(f):
-    import sys
-
-    def wrapper(*args, **kwargs):
-        # sys.stdout.write('\n')
-        # sys.stdout.write('=' * cols + '\n')
-        # msg = ' EXECUTING {:=<40s}'.format(str(f.func_name) + ' ')
-        # sys.stdout.write(('{:=^'+str(cols)+'}').format(msg) + '\n')
-        # sys.stdout.write('=' * cols + '\n')
-        return f(*args, **kwargs)
-    return wrapper
 
 
 class UnitTest(TestCase):
@@ -98,6 +86,15 @@ def get_consumer():
     return os.path.join(__dir__, 'consumer_cc')
 
 
+def ensure_iterable(o):
+    """
+    Method ensure that given object is iterable(list or tuple)
+    :param o: tested object
+    :return: list or tuple
+    """
+    return [o] if type(o) not in (list, tuple, set) else o
+
+
 def prepare_consumer():
     import os
     __dir__ = current_dir()
@@ -120,3 +117,62 @@ def prepare_consumer():
             print ('#' * 70)
         return rc
     return 0
+
+
+class limit_test(object):
+    """
+    Class limit_test is conditional wrapper for unit_tests.
+    Using this wrapper can turn off specific tests which are supposed to run on
+    certain platform
+    """
+
+    verbose = False
+
+    def __init__(self, hostname=None):
+        self.limiters = list()
+        if hostname:
+            self.limiters.append(HostnameLimiter(hostname))
+
+    def __call__(self, f):
+        if self.limiters:
+            if self.verbose:
+                print('=' * 80)
+                print('{:-^80}'.format(' checking test compatibility '))
+
+            for limiter in self.limiters:
+                if not limiter.test():
+                    print('-' * 80)
+                    print('{:-^80s}'.format(' skipping test "{f.func_name}" '.format(**locals())))
+                    print('=' * 80)
+                    return
+            if self.verbose:
+                print('=' * 80)
+
+        def wrapper(other, *args, **kwargs):
+            return f(other, *args, **kwargs)
+        return wrapper
+
+
+class HostnameLimiter(object):
+    """
+    Class HostnameLimiter is Limiter which will give green for test to run
+    if current platform hostname matches one of the intended hostnames
+    """
+
+    node = platform.node()
+
+    def __init__(self, hostname):
+        self.hostname = ensure_iterable(hostname)
+
+    def test(self):
+        if not self.hostname or '*' in self.hostname:
+            if limit_test.verbose:
+                print("Test allowed: found wildcard * in hostname list")
+            return True
+        if self.node in self.hostname:
+            if limit_test.verbose:
+                print("Test allowed: found '{self.node}' in {self.hostname}".format(self=self))
+            return True
+        if limit_test.verbose:
+            print("Test denied: '{self.node}' not found in {self.hostname}".format(self=self))
+        return False

@@ -104,6 +104,7 @@ class ConfigCaseFiles(object):
 
         self.job_output = self.in_output('job_output.log')
         self.json_output = self.in_output('result.json')
+        self.dump_output = self.in_output('result.p')
 
         self.input = self.in_root('input')
         self.ref_output = ref_output
@@ -124,7 +125,7 @@ class ConfigCaseFiles(object):
 class ConfigCase(object):
     """
     Class ConfigCase represents single ConfigCase
-    :type config   : scripts.config.base.ConfigBase
+    :type config   : ConfigBase
     """
 
     def __init__(self, o, config):

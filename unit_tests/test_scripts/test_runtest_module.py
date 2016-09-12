@@ -17,13 +17,17 @@ from scripts.runtest_module import do_work
 __dir__ = test_scripts.current_dir()
 extras = os.path.join(__dir__, 'extras')
 
-root = r'/home/jan-hybs/Dokumenty/projects/Flow123d/flow123d'
+root = os.path.abspath(os.path.join(__dir__, '..', '..'))
 EXIT_OK = 0
 EXIT_ERROR = 1
 EXIT_COMPARE_ERROR = 13
 
 
 class TestDoWork(test_scripts.UnitTest):
+    """
+    Class TestDoWork tests interface for script runtest.py and backend runtest_module
+    """
+
     flow_path = os.path.join(root, 'bin', 'flow123d')
     flow_path_copy = os.path.join(root, 'bin', 'flow123d_copy')
     backup = os.path.exists(flow_path) or os.path.islink(flow_path)
@@ -55,7 +59,6 @@ class TestDoWork(test_scripts.UnitTest):
             os.rename(cls.flow_path_copy, cls.flow_path)
         pass
 
-    @test_scripts.print_test
     def test_help(self):
         try:
             do_work(parser, ['--help'])
@@ -63,7 +66,6 @@ class TestDoWork(test_scripts.UnitTest):
         except SystemExit as e:
             self.assertEqual(e.code, EXIT_OK)
 
-    @test_scripts.print_test
     def test_empty(self):
         try:
             do_work(parser, [])
@@ -72,7 +74,6 @@ class TestDoWork(test_scripts.UnitTest):
         except SystemExit as e:
             self.assertEqual(e.code, 1)
 
-    @test_scripts.print_test
     def test_compare_correct_output(self):
         # all test must pass since we are copying reference outputs
         try:
@@ -85,7 +86,6 @@ class TestDoWork(test_scripts.UnitTest):
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_OK)
 
-    @test_scripts.print_test
     def test_compare_no_output(self):
         # all test must fail since test_outputs are empty
         try:
@@ -98,7 +98,6 @@ class TestDoWork(test_scripts.UnitTest):
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_COMPARE_ERROR)
 
-    @test_scripts.print_test
     def test_compare_wrong_output_error(self):
         # all test must fail since test_outputs are empty
         try:
@@ -111,7 +110,6 @@ class TestDoWork(test_scripts.UnitTest):
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_COMPARE_ERROR)
 
-    @test_scripts.print_test
     def test_missing_yaml(self):
         # test fail if we pass non_existent yaml file
         try:
@@ -125,7 +123,6 @@ class TestDoWork(test_scripts.UnitTest):
         except SystemExit as se:
             self.assertNotEqual(se.code, EXIT_OK)
 
-    @test_scripts.print_test
     def test_argument_pass(self):
         # we test that arguments are passed to flow123d by specifying sleep duration for flow123d_mock scripts
         # if passing works, duration for this test must be greater than sleep time passed

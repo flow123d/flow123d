@@ -10,6 +10,7 @@ import threading
 from scripts.config.yaml_config import ConfigCase
 from scripts.core import monitors
 from scripts.core.base import Printer, Paths, Command, DynamicSleep, IO
+from scripts.serialization import PyPyResult, ResultHolderResult, RuntestTripletResult, ResultParallelThreads
 from utils.counter import ProgressCounter
 from utils.events import Event
 from utils.globals import wait_for
@@ -264,6 +265,9 @@ class ParallelThreads(MultiThreads):
                 # no need to stop processes, just break
                 break
 
+    def dump(self):
+        return ResultParallelThreads(self)
+
 
 class PyPy(ExtendedThread):
     """
@@ -359,6 +363,10 @@ class PyPy(ExtendedThread):
         return json
 
 
+    def dump(self):
+        return PyPyResult(self)
+
+
 class ComparisonMultiThread(SequentialThreads):
     """
     Class ComparisonMultiThread hold comparison results and writes them to a file
@@ -426,3 +434,31 @@ class RuntestMultiThread(SequentialThreads):
             execution=self.pypy,
             compare=self.comp
         )
+
+    def dump(self):
+        return RuntestTripletResult(self.pypy, self.clean, self.comp)
+
+
+class ResultHolder(object):
+    """
+    Class ResultHolder stores object with property returncode
+    """
+
+    def __init__(self):
+        self.items = list()
+
+    def add(self, item):
+        self.items.append(item)
+
+    @property
+    def returncode(self):
+        rc = [None]
+        for i in self.items:
+            rc.append(i.returncode)
+        return max(rc)
+
+    def singlify(self):
+        return self.items[0] if len(self.items) == 1 else self
+
+    def dump(self):
+        return ResultHolderResult(self)

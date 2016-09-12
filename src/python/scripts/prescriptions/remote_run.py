@@ -5,11 +5,11 @@ from scripts.prescriptions import AbstractRun
 
 
 runtest_command = """
-"$$python$$" "$$script$$" "$$yaml$$" $$limits$$ --json "$$json_output$$" -- $$args$$
+"$$python$$" "$$script$$" "$$yaml$$" $$limits$$ --dump "$$dump_output$$" -- $$args$$
 """.strip()
 
 exec_parallel_command = """
-"$$python$$" "$$script$$" $$limits$$ --json "$$json_output$$" -- $$args$$
+"$$python$$" "$$script$$" $$limits$$ --dump "$$dump_output$$" -- $$args$$
 """.strip()
 
 

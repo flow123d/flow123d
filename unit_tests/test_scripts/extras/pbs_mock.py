@@ -55,7 +55,7 @@ def read_all(f):
         return fp.read()
 
 
-def qsub(pbs_file, queue=0, delay=1, rnd=0, output=None):
+def qsub(pbs_file, queue=0, delay=0, rnd=0, output=None):
     qid = get_next_id()
     pbs_file = os.path.abspath(pbs_file)
 

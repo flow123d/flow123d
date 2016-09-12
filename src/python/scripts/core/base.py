@@ -79,6 +79,10 @@ class Printer(object):
     dynamic_output = not batch_output
 
     @classmethod
+    def ind(cls):
+        return cls.indent * '    '
+
+    @classmethod
     def style(cls, msg='', *args, **kwargs):
         sys.stdout.write(msg.format(*args, **kwargs))
         sys.stdout.write('\n')
@@ -95,7 +99,7 @@ class Printer(object):
     @classmethod
     def err(cls, msg='', *args, **kwargs):
         if cls.indent:
-            sys.stdout.write('    ' * cls.indent)
+            sys.stdout.write(cls.ind())
         sys.stdout.write(msg.format(*args, **kwargs))
         sys.stdout.write('\n')
 
@@ -104,7 +108,7 @@ class Printer(object):
     @classmethod
     def out(cls, msg='', *args, **kwargs):
         if cls.indent:
-            sys.stdout.write('    ' * cls.indent)
+            sys.stdout.write(cls.ind())
         if not args and not kwargs:
             sys.stdout.write(msg)
         else:
@@ -116,7 +120,7 @@ class Printer(object):
         if cls.dynamic_output:
             sys.stdout.write('\r' + ' ' * 80)
             if cls.indent:
-                sys.stdout.write('\r' + '    ' * cls.indent + msg.format(*args, **kwargs))
+                sys.stdout.write('\r' + cls.ind() + msg.format(*args, **kwargs))
             else:
                 sys.stdout.write('\r' + msg.format(*args, **kwargs))
             sys.stdout.flush()

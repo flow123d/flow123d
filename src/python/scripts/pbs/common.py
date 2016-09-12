@@ -77,10 +77,10 @@ def get_pbs_module(hostname_hint=None):
         Printer.open(2)
         if host_file_exists:
             if from_host:
-                Printer.err('Value specified in host_table.json "{}" points to non-existing module', pbs_module_path)
+                Printer.err('Value specified in host_table.yaml "{}" points to non-existing module', pbs_module_path)
             else:
-                Printer.err('Config file host_table.json does not have entry for hostname "{}"', hostname)
+                Printer.err('Config file host_table.yaml does not have entry for hostname "{}"', hostname)
         else:
-            Printer.err('Config file host_table.json does not exists ({}) and auto module detection failed', host_file)
+            Printer.err('Config file host_table.yaml does not exists ({}) and auto module detection failed', host_file)
         Printer.close(2)
         raise

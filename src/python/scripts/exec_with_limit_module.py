@@ -60,12 +60,13 @@ class ModuleExecWithLimit(ScriptModule):
             IO.write(log_file, content)
             Printer.out(format_n_lines(content, indent='    ', n_lines=-n_lines))
 
-        return pypy.returncode
+        return pypy
 
 
 def do_work(parser, args=None):
     """
     Main method which invokes ModuleExecWithLimit
+    :rtype: scripts.core.threads.PyPy
     :type args: list
     :type parser: utils.argparser.ArgParser
     """

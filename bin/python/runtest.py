@@ -88,6 +88,12 @@ parser.add('', '--root', hidden=True, type=str, name='root', placeholder='<ROOT>
 parser.add('', '--json', hidden=True, type=str, name='json', placeholder='<JSON>', docs=[
     'Output result to json file'
 ])
+parser.add('', '--list', type=True, name='list', docs=[
+    'List tests structure'
+])
+parser.add('', '--dump', hidden=True, type=str, name='dump', placeholder='<FILE>', docs=[
+    'If set will pickle result to given file'
+])
 # ----------------------------------------------
 
 if __name__ == '__main__':
@@ -102,6 +108,6 @@ if __name__ == '__main__':
 
     # run work
     BinExecutor.register_sigint()
-    do_work(parser)
-    if parser.simple_options.json:
-        GlobalResult.to_json(parser.simple_options.json)
+    returncode = do_work(parser)
+    if type(returncode) is int:
+        sys.exit(returncode)

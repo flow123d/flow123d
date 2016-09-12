@@ -30,10 +30,6 @@ class Module(PBSModule):
 
 template = """
 #!/bin/bash
-uname -a
-echo JOB START: `date`
-pwd
-
 $$command$$
 
 """.lstrip()

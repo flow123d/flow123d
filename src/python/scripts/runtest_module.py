@@ -7,10 +7,10 @@ import time
 import sys
 # ----------------------------------------------
 from scripts.config.yaml_config import ConfigPool
-from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult
+from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult, DynamicSleep
 from scripts.core.threads import ParallelThreads, RuntestMultiThread
 from scripts.pbs.common import get_pbs_module
-from scripts.pbs.job import JobState, MultiJob, finish_pbs_job
+from scripts.pbs.job import JobState, MultiJob, finish_pbs_exec, finish_pbs_runtest
 from scripts.prescriptions.local_run import LocalRun
 from scripts.prescriptions.remote_run import runtest_command, PBSModule
 from scripts.script_module import ScriptModule
@@ -21,6 +21,33 @@ class ModuleRuntest(ScriptModule):
     """
     Class ModuleRuntest is backend for script runtest.py
     """
+
+    def list_tests(self):
+        test_dir = Paths.join(Paths.flow123d_root(), 'tests')
+        tests = Paths.walk(test_dir, [
+            PathFilters.filter_type_is_file(),
+            PathFilters.filter_endswith('.yaml'),
+            PathFilters.filter_not(PathFilters.filter_name('config.yaml')),
+        ])
+        result = dict()
+        for r in tests:
+            dirname = Paths.dirname(r)
+            basename = Paths.basename(r)
+            if Paths.dirname(dirname) != test_dir:
+                continue
+
+            if dirname not in result:
+                result[dirname] = list()
+            result[dirname].append(basename)
+        keys = sorted(result.keys())
+
+        for dirname in keys:
+            Printer.out(Paths.relpath(dirname, test_dir))
+            Printer.open()
+            for basename in result[dirname]:
+                Printer.out('{: >4s} {: <40s} {}', '', basename, Paths.relpath(Paths.join(dirname, basename), test_dir))
+            Printer.close()
+            Printer.out()
 
     @staticmethod
     def read_configs(all_yamls):
@@ -72,13 +99,13 @@ class ModuleRuntest(ScriptModule):
             yaml=case.file,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.rest else Command.to_string(self.rest),
-            json_output=case.fs.json_output
+            dump_output=case.fs.dump_output
         )
 
         template = PBSModule.format(
             module.template,
             command=command,
-            json_output=case.fs.json_output
+            dump_output=case.fs.dump_output
         )
 
         return template
@@ -147,6 +174,9 @@ class ModuleRuntest(ScriptModule):
         Printer.dyn(multijob.get_status_line())
         returncodes = dict()
 
+        # use dynamic sleeper
+        sleeper = DynamicSleep(min=300, max=5000, steps=5)
+
         # wait for finish
         while multijob.is_running():
             Printer.dyn('Updating job status')
@@ -161,7 +191,7 @@ class ModuleRuntest(ScriptModule):
 
             # get all jobs where was status update to COMPLETE state
             for job in jobs_changed:
-                returncodes[job] = finish_pbs_job(job, self.arg_options.batch)
+                returncodes[job] = finish_pbs_runtest(job, self.arg_options.batch)
 
             if jobs_changed:
                 Printer.separator()
@@ -169,14 +199,14 @@ class ModuleRuntest(ScriptModule):
 
             # after printing update status lets sleep for a bit
             if multijob.is_running():
-                time.sleep(5)
+                sleeper.sleep()
 
         Printer.out(multijob.get_status_line())
         Printer.out('All jobs finished')
 
         # get max return code or number 2 if there are no returncodes
         returncode = max(returncodes.values()) if returncodes else 2
-        sys.exit(returncode)
+        return returncode
 
     def run_local_mode(self):
         """
@@ -244,7 +274,7 @@ class ModuleRuntest(ScriptModule):
 
         # exit with runner's exit code
         GlobalResult.returncode = runner.returncode
-        return runner if self.debug else runner.returncode
+        return runner
 
     def __init__(self):
         super(ModuleRuntest, self).__init__()
@@ -255,6 +285,10 @@ class ModuleRuntest(ScriptModule):
         """
         Arguments additional check
         """
+
+        if self.arg_options.list:
+            self.list_tests()
+            sys.exit(0)
 
         # we need flow123d, mpiexec and ndiff to exists in LOCAL mode
         if not self.arg_options.queue and not Paths.test_paths('flow123d', 'mpiexec', 'ndiff'):
@@ -318,4 +352,10 @@ def do_work(parser, args=None, debug=False):
     :type parser: utils.argparser.ArgParser
     """
     module = ModuleRuntest()
-    return module.run(parser, args, debug)
+    result = module.run(parser, args, debug)
+
+    # pickle out result on demand
+    if parser.simple_options.dump:
+        import pickle
+        pickle.dump(result.dump(), open(parser.simple_options.dump, 'wb'))
+    return result
