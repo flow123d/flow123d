@@ -1,0 +1,9 @@
+"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"1d_channel"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"2d_fracture_1"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"2d_fracture_2"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"3d_cube"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".1d_channel"	"water_volume"	-2.25456e-05	0	-2.25456e-05	0	0	0	0	0	0	0	0	0
+0	".2d_fracture_1"	"water_volume"	2.48261e-05	1.05426	-1.05424	0	0	0	0	0	0	0	0	0
+0	".2d_fracture_2"	"water_volume"	3.31141e-06	1.05427	-1.05426	0	0	0	0	0	0	0	0	0
+0	".3d_cube"	"water_volume"	-5.59192e-06	0.102165	-0.102171	0	0	0	0	0	0	0	0	0

@@ -827,13 +827,16 @@ if (CYGWIN)
     if(PY_WRAPPER_PATHS_WIN)
         set(PY_WRAPPER_PATHS_WIN "..${PY_WRAPPER_PATHS_WIN}")
     endif()
+    # configure wrapper files
     configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.bat @ONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/CMake/windows_runtest_template ${CMAKE_BINARY_DIR}/bin/runtest.bat @ONLY)
 else()
     install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
     #install(CODE "execute_process(COMMAND ls /home/jb/workspace/build-master/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux )")
         
     # configure wrapper file
     configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_wrapper_template ${CMAKE_BINARY_DIR}/bin/flow123d_wrapper.sh @ONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_BINARY_DIR}/bin/runtest.sh @ONLY)
 endif()        
 
 ls( lib )
@@ -866,16 +869,18 @@ ls( bin)
 
 # on UNIX rename flow123d and create install wrapper which uses corrent linux loader
 if (CYGWIN)
-    install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin.exe"
+    install(PROGRAMS    build_tree/bin/flow123d             RENAME "flow123d.bin.exe"
             DESTINATION bin/)
     install(PROGRAMS    build_tree/bin/flow123d_wrapper.bat RENAME "flow123d.bat"
             DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/runtest.bat          DESTINATION bin/)
 else()
-    install(PROGRAMS    build_tree/bin/flow123d            RENAME "flow123d.bin"
+    install(PROGRAMS    build_tree/bin/flow123d             RENAME "flow123d.bin"
             DESTINATION bin/)
-    install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh RENAME "flow123d"
+    install(PROGRAMS    build_tree/bin/flow123d_wrapper.sh  RENAME "flow123d"
             DESTINATION bin/)
-    install(PROGRAMS    build_tree/bin/ld-linux-loader.so  DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/runtest.sh          DESTINATION bin/)
+    install(PROGRAMS    build_tree/bin/ld-linux-loader.so   DESTINATION bin/)
 endif()
 
 

@@ -1,0 +1,8 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- file: 01_3el_long.yaml
+- file: 02_3el_6subst.yaml
+- file: 03_3el_cfl.yaml

@@ -1,0 +1,12 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- files:
+  - 01.yaml
+  - 02_time.yaml
+  - 03_reaction.yaml
+  - 04_sorp.yaml
+  - 05_sorp_reaction.yaml
+  - 06_cfl.yaml

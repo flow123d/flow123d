@@ -1,0 +1,16 @@
+cl1 = 0.1;
+Point(1) = {0, 0, 0, cl1};
+Point(2) = {5, 0, 0, cl1};
+Point(3) = {5, 1, 0, cl1};
+Point(4) = {0, 1, 0, cl1};
+Line(20) = {1,2};
+Line(21) = {2,3};
+Line(22) = {3,4};
+Line(23) = {4,1};
+Line Loop(30) = {20, 21, 22, 23};
+Plane Surface(30) = {30};
+Physical Line(".2d_left") = {23};
+Physical Line(".2d_right") = {21};
+Physical Line(".2d_top") = {22};
+Physical Line(".2d_bottom") = {20};
+Physical Surface("rectangle") = {30};
