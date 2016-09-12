@@ -16,11 +16,11 @@ find_package(PythonInterp 2.7 REQUIRED)
 add_custom_target(test_scripts
     COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR} -bv
     DEPENDS consumer_cc
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Custom target which runs all tests for python scripts where output is shown. Since unittests
 # are testing correct and also incorrect behaviour output can be misleading (exceptions are thrown
 # and displayed yet test succeeds)
 add_custom_target(test_scripts_debug
     COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR} -v
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
