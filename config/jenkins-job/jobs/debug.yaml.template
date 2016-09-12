@@ -120,7 +120,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/tests/{test-dir} test-all
+          docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest {test-dir} --keep-going
 
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #
