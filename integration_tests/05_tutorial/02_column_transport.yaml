@@ -1,10 +1,22 @@
 ##---
-##title: Flow123d tutorial 3 -- ``1D column transport''
+##title: Flow123d tutorial 2 -- ``1D column transport''
 ##---
 ### Description and input
-##This is a variant of ```01_column.yaml``` and ```02_column_infiltration.yaml```. See therein for details.
+##This is a variant of ```01_column.yaml```.
+##The user will learn how to:
 ##
-##We demonstrate a simulation of the transport of a tracer.
+##* Use flux boundary conditions;
+##* Set up the advective transport model.
+##
+##For the fluid flow model we change the atmospheric pressure on the surface to the more realistic infiltration 200 mm/yr (= 6.34e-9 m/s):
+##
+##        - region: .surface
+##          bc_type: total_flux
+##          bc_flux: 6.34E-09
+##
+##In the resulting file ```water_balance.txt``` we can see that the value of the input and output flux changes to 6.34e-8. The visual results are similar to the case ```01_column.yaml```.
+##
+##Next we demonstrate a simulation of the transport of a tracer.
 ##The equation of advective transport (no diffusion/dispersion) is specified by:
 ##
 ##      solute_equation: !Coupling_OperatorSplitting
@@ -20,8 +32,7 @@
 ##
 ##We provide the name of the transported substance (in general there can be multiple transported substances):
 ##
-##      substances:
-##        - O-18
+##      substances: O-18
 ##
 ##The end time of the simulation is set in the section ```time``` to value 1e10 second (381 years):
 ## 
@@ -46,7 +57,7 @@
 ##On ".tunnel", the mass flux is zero at the beginning and then it changes within around 100 years to the opposite value of inflow -6 × 10-6 kg/s.
 ##Figure @fig:mass_plot depicts results from the file ```mass_balance.txt``` for mass transported through the boundaries ".surface" and ".tunnel" and in the volume of "rock".
 ##
-##![Tracer concentration after 5, 10, 15 and 20 time steps.](03_transport.pdf){#fig:transport}
+##![Tracer concentration after 5, 10, 15 and 20 time steps.](02_transport.pdf){#fig:transport}
 ##
 ##time|    region    |quantity [kg]|    flux|    flux_in|    flux_out|    mass|    error
 ##----:|-----------|-------------|-----:|----------:|------------:|-------:|--------:
@@ -61,13 +72,13 @@
 ##4e+09|   IMPLICIT BOUNDARY| O-18|  -1.02e-19|    0|   -1.02e-19|    0|   0
 ##4e+09|   ALL|   O-18|  9.40e-07| 6.34e-06|    -5.39e-06|    22774.9| -6.03e-10
 ##
-##: Illustration of the results in ```water_balanced.txt``` – selected columns in two time steps. {#tbl:mass_balance}
+##: Illustration of the results in ```mass_balance.txt``` – selected columns in two time steps. {#tbl:mass_balance}
 ##
-##![Results of evolution of mass in the volume and flux through boundaries.](03_mass_plot.pdf){#fig:mass_plot}
+##![Results of evolution of mass in the volume and flux through boundaries.](02_mass_plot.pdf){#fig:mass_plot}
 ##
 ### The control file
 ##
-##Below is the complete YAML file ```03_column_transport.yaml```.
+##Below is the complete YAML source.
 ##
 flow123d_version: 1.8.9
 problem: !Coupling_Sequential
@@ -104,8 +115,7 @@ problem: !Coupling_Sequential
       input_fields:
         - region: .surface
           bc_conc: 100
-    substances:
-      - O-18
+    substances: O-18
     time:
       end_time: 1e10
     output_stream:

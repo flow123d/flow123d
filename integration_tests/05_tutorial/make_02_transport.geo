@@ -15,12 +15,12 @@ General.SmallAxes = 0;
 //Mesh.SurfaceEdges = 1;
 
 For num In {1:4}
-  Merge "ref_out/03_column_transport/transport.msh";
+  Merge "ref_out/02_column_transport/transport.msh";
 
   View[0].TimeStep = 5*num;
 
   Draw;
-  Print Sprintf("03_transport_%01g.pdf", num);
+  Print Sprintf("02_transport_%01g.pdf", num);
 
   Delete View[0];
 EndFor

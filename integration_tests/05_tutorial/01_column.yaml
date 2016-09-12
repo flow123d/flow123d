@@ -7,6 +7,11 @@
 ##There is a particular seepage site 23 m under the surface which has a very fast reaction on rainfall events.
 ##Real data of discharge and concentration of stable isotopes are used.
 ##
+## The user will learn how to:
+##
+##* Set up the mesh and flow model input parameters;
+##* Set up the solver and output parameters.
+##
 ##A pseudo one-dimensional model is considered in the range 10 × 23 m with the atmospheric pressure on the surface and on the bottom, and no flow boundary condition on the edges (Figure {@fig:geom}).
 ##
 ##![a) the mesh; b) the boundary conditions; c) computed piezometric head and flux.](01_mesh_bc_flux.pdf){#fig:geom}
@@ -89,7 +94,11 @@
 ##          - pressure_p1
 ##          - velocity_p0
 ##
-##In addition, Flow123d provides computation of balance of fluid volume, flux through boundaries and volume sources.
+##The above code can be alternatively written in a more compact form, namely
+##
+##        output_fields: [piezo_head_p0, pressure_p0, pressure_p1, velocity_p0]
+##
+##In addition to the output of solution, Flow123d provides computation of balance of fluid volume, flux through boundaries and volume sources.
 ##This is turned on by
 ##
 ##        balance: true
@@ -107,13 +116,13 @@
 ##
 ##: Results in ```water_balanced.txt``` (edited table, extract from the file). {#tbl:water_balance}
 ##
-### Variants
-##Control files ```02_column_infiltration.yaml``` and ```03_column_transport.yaml``` contain modified boundary conditions and solute transport model for the same physical problem.
+### Variant
+##Control file ```02_column_transport.yaml``` contains modified boundary conditions and solute transport model for the same physical problem.
 ##
 ##
 ### The control file
 ##
-##Below is the complete YAML file ```01_column.yaml```.
+##Below is the complete YAML source.
 ##
 flow123d_version: 1.8.9
 problem: !Coupling_Sequential

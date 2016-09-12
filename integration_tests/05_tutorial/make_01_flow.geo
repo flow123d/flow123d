@@ -18,6 +18,7 @@ View[1].Visible = 0;
 View[2].Visible = 0;
 View[3].Visible = 0;
 Mesh.SurfaceEdges = 1;
+Mesh.SurfaceFaces = 0;
 Draw;
 Print Sprintf("01_mesh.pdf");
 
