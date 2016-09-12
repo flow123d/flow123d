@@ -1,0 +1,15 @@
+# template for jenkins job builder 
+# full doc http://docs.openstack.org/infra/jenkins-job-builder/execution.html#configuration-file
+
+# job builder -  settings for jenkins job build
+[job_builder]
+allow_duplicates=True
+ignore_cache=True
+
+
+# connection settings
+# password: # The API token for the user specified.
+[jenkins]
+user=admin
+password=
+url=http://ciflow.nti.tul.cz:8081/
