@@ -1,0 +1,14 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- file: 01_dirichlet.yaml
+- file: 02_neumann.yaml
+- file: 03_robin.yaml
+- file: 04_total_flux.yaml
+- file: 05_seepage.yaml
+- file: 06_river_square.yaml
+- file: 07_river_slope.yaml
+- file: 08_interpolated.yaml
+  proc: [1, 2, 3]

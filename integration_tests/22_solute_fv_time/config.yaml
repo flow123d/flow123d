@@ -1,0 +1,9 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- file: 01_fv_dp_sorp_small.yaml
+- file: 02_bc.yaml
+- file: 03_bc_short_pulse.yaml
+- file: 04_unsteady_flow.yaml

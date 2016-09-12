@@ -1,0 +1,11 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- files:
+  - 01_column.yaml
+  - 02_column_transport.yaml
+  - 03_tunnel.yaml
+- file: 05_heat.yaml
+  proc: [ 1 ]
