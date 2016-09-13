@@ -533,6 +533,7 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 # create shortcuts for runtest
 set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
 configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/integration_tests/runtest @ONLY)
 
 message(STATUS "-------------------------------------------------------")
 message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
