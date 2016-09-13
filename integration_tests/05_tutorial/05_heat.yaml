@@ -130,7 +130,7 @@
 ##
 ##![The temperature of exchanger after 30 years.](images/05_transport.pdf){#fig:tempr_grad}
 ##
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: "Example 5 - Heat transport"
   mesh:
@@ -186,13 +186,13 @@ problem: !Coupling_Sequential
       - region: .well2_surface
         bc_type: dirichlet
         bc_pressure: 0
-    balance: true
+    balance: {}
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
     output:
-      output_stream:
-        file: flow.msh
-        format: !gmsh
-          variant: ascii
-      output_fields:
+      fields:
         - piezo_head_p0
         - velocity_p0
   heat_equation: !Heat_AdvectionDiffusion_DG
@@ -239,7 +239,8 @@ problem: !Coupling_Sequential
       file: heat.msh
       format: !gmsh
         variant: ascii
-      time_step: 31557600       # 1 yr
+      times:
+        - step: 31557600       # 1 yr
     output_fields:
       - temperature
     solver: !Petsc

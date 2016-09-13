@@ -7,5 +7,5 @@ test_cases:
   - 01_column.yaml
   - 02_column_transport.yaml
   - 03_tunnel.yaml
-- file: 05_heat.yaml
+- files: 05_heat.yaml
   proc: [ 1 ]

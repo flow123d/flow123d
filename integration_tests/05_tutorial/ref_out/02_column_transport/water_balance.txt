@@ -2,4 +2,4 @@
 0	"rock"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	".surface"	"water_volume"	6.34e-08	6.34e-08	0	0	0	0	0	0	0	0	0	0
 0	".tunnel"	"water_volume"	-6.34e-08	0	-6.34e-08	0	0	0	0	0	0	0	0	0
-0	"IMPLICIT BOUNDARY"	"water_volume"	-6.2814e-23	9.58599e-22	-1.02141e-21	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"water_volume"	-6.2814e-23	9.58599e-22	-1.02141e-21	0	0	0	0	0	0	0	0	0

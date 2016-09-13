@@ -42,7 +42,8 @@
 ##The output files can be generated for specific time values. We set the time step for output to 1e8 second (=3 years and 2 months):
 ##
 ##      output_stream:
-##        time_step: 1e8
+##        times:
+##          - step: 1e8
 ##
 ##Finally, we turn on computation of mass balance with cumulative sums over the simulation time interval.
 ##
@@ -80,16 +81,12 @@
 ##
 ##Below is the complete YAML source.
 ##
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Example 1 of real locality - column 1D model with transport
   mesh:
-    mesh_file: ./01_mesh.msh
+    mesh_file: 01_mesh.msh
   flow_equation: !Flow_Darcy_MH
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1e-15
-        r_tol: 1e-15
     input_fields:
       - region: rock
         conductivity: 1e-8
@@ -99,13 +96,17 @@ problem: !Coupling_Sequential
       - region: .surface
         bc_type: total_flux
         bc_flux: 6.34E-09
-    balance: true
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1e-15
+        r_tol: 1e-15
+    balance: {}
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
     output:
-      output_stream: 
-        file: flow.msh
-        format: !gmsh
-          variant: ascii
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
@@ -119,7 +120,8 @@ problem: !Coupling_Sequential
     time:
       end_time: 1e10
     output_stream:
-      time_step: 1e8
+      times:
+        - step: 1e8
       file: transport.msh
       format: !gmsh
         variant: ascii
