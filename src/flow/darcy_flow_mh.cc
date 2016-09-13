@@ -1352,6 +1352,7 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     PetscViewerASCIIOpen(PETSC_COMM_WORLD, matlab_file.c_str(), &viewer);
     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
     MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
+    VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
     
     // compute h_min for different dimensions
     double d_max = std::numeric_limits<double>::max();
