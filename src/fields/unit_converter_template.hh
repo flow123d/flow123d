@@ -161,14 +161,20 @@ public:
     		{
     			if (formula_it->factor_ == it->first) { // error - cyclic definition
     				std::stringstream ss;
-    				ss << "cyclic declaration of unit " << it->first;
+    				ss << "Cyclic declaration of unit '" << it->first << "'";
     				THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
     			} else if (unit_data_.find(formula_it->factor_) != unit_data_.end()) { // formula exists as derived unit
+    				if (UnitConverter::basic_factors.units_map_.find(formula_it->factor_) != UnitConverter::basic_factors.units_map_.end()) {
+    					// error - conflict with predefined unit
+        				std::stringstream ss;
+        				ss << "Shortcut '" << formula_it->factor_ << "' is in conflict with predefined unit";
+        				THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
+    				}
     				formula_it->basic_ = false;
     			} else if (UnitConverter::basic_factors.units_map_.find(formula_it->factor_) == UnitConverter::basic_factors.units_map_.end()) {
     				// error - unit not defined
     				std::stringstream ss;
-    				ss << "unit " << formula_it->factor_ << " is not defined";
+    				ss << "Unit '" << formula_it->factor_ << "' is not defined";
     				THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
     			}
     		}
