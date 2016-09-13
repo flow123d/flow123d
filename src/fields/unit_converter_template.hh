@@ -48,16 +48,39 @@ const spirit_namespace::int_parser < boost::int64_t >  int64_p  = spirit_namespa
 const spirit_namespace::uint_parser< boost::uint64_t > uint64_p = spirit_namespace::uint_parser< boost::uint64_t >();
 
 
+/**
+ * @brief Class manages parsing of user defined field unit.
+ *
+ * Class contains:
+ *  - object of type \p UnitData for storing user defined unit
+ *  - methods for create UnitData object
+ *  - methods managing exceptions, if user defined unit is not in correct format
+ *
+ * For example, unit is defined in format:
+ * "MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2"
+ *
+ *  - this unit is composed of three parts separated by semicolons
+ *  - first part (MPa/rho/g) defines unit and allows operations multiplication, division and exponentiation of factors
+ *  - factor 'MPa' is predefined (MegaPascal), factors 'rho' and 'g_' must be defined in next parts
+ *  - first part is always obligatory
+ *  - following parts must be in format: '<shortcut> = (<multipicative_coeficient>*)<definition>'
+ *  - shotcut must correspond with user defined factor in first part
+ *  - multipicative_coeficient is optional
+ *  - definition allows operations multiplication, division and exponentiation of factors too
+ *  - symbol 'g_' must be defined in this format because 'g' is in conflict with gram
+ */
 template< class Iter_type >
 class Semantic_actions
 {
 public:
+	/// Constructor.
     Semantic_actions()
     : unit_data_key_(""), factor_idx_(-1)
     {
     	unit_data_[""] = Formula();
     }
 
+    /// Add new definition of formula
     void new_shortcut( Iter_type begin, Iter_type end )
     {
     	std::string key = get_str(begin, end);
@@ -66,28 +89,33 @@ public:
     	factor_idx_ = -1;
     }
 
+    /// Add new factor of unit (factor is multiplying)
     void new_mult_factor( Iter_type begin, Iter_type end )
     {
     	unit_data_[unit_data_key_].factors_.push_back( Factor(get_str(begin, end), 1 ) );
     	++factor_idx_;
     }
 
+    /// Add new factor of unit (factor is dividing)
     void new_div_factor( Iter_type begin, Iter_type end )
     {
     	unit_data_[unit_data_key_].factors_.push_back( Factor(get_str(begin, end), -1 ) );
     	++factor_idx_;
     }
 
+    /// Compute exponent to actual factor of unit
     void new_exp( boost::int64_t i )
     {
     	unit_data_[unit_data_key_].factors_[factor_idx_].exponent_ *= (int)i;
     }
 
+    /// Add multipicative coeficient of unit
     void new_multipl( double d )
     {
     	unit_data_[unit_data_key_].coef_ = d;
     }
 
+    /// Throw exception if exponent is not in correct format
 	void throw_exp_not_int( Iter_type begin, Iter_type end )
     {
 		std::stringstream ss;
@@ -95,6 +123,7 @@ public:
 		THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
     }
 
+	/// Throw exception if shortcut of factor is not in correct format
 	void throw_not_shortcut( Iter_type begin, Iter_type end )
     {
 		std::stringstream ss;
@@ -106,6 +135,7 @@ public:
 		THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
     }
 
+	/// Throw exception if sign '=' missing in definition
 	void throw_not_equating( Iter_type begin, Iter_type end )
     {
 		std::stringstream ss;
@@ -113,7 +143,15 @@ public:
 		THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
     }
 
-
+	/**
+	 * @brief Check @p unit_data_ object.
+	 *
+	 * Method:
+	 *  - marks factors that are defined as derived unit
+	 *  - checks undefined factors of unit
+	 *  - check conflicts in definitions of unit (same shortcut is defined by user and predefined in application)
+	 *  - checks cyclic definition of unit
+	 */
     void check_unit_data()
     {
     	for(std::map<std::string, struct Formula>::iterator it = unit_data_.begin(); it != unit_data_.end(); ++it)
@@ -137,6 +175,7 @@ public:
     	}
     }
 
+    // Return @p unit_data_
     inline UnitData unit_data() const
     { return unit_data_; }
 private:
@@ -151,12 +190,16 @@ private:
 
 
     UnitData unit_data_;         //!< Full parsed data
-    std::string unit_data_key_;  //!< keyo actual item of unit_data_
+    std::string unit_data_key_;  //!< key of actual item of unit_data_
     int factor_idx_;             //!< index to actual item of subvector of factors of unit_data_
 };
 
 
-// the spirit grammer
+/**
+ * @brief Definition of unit grammar.
+ *
+ * Allow parse user-defined units.
+ */
 template< class Iter_type >
 class UnitSIGrammer : public spirit_namespace::grammar< UnitSIGrammer< Iter_type > >
 {
@@ -164,12 +207,14 @@ public:
 
     typedef Semantic_actions< Iter_type > Semantic_actions_t;
 
+    /// Constructor.
     UnitSIGrammer( Semantic_actions_t& semantic_actions )
     :   actions_( semantic_actions )
     {
     }
 
 
+    /// Define rules of grammar
     template< typename ScannerT >
     class definition
     {
@@ -260,6 +305,12 @@ private:
     Semantic_actions_t& actions_;
 };
 
+
+/**
+ * @brief Parse and check unit defined in string format.
+ *
+ * Return data in format \p UnitData
+ */
 UnitData read_unit(std::string s)
 {
     typedef spirit_namespace::position_iterator< std::string::iterator > PosnIterT;
@@ -276,12 +327,11 @@ UnitData read_unit(std::string s)
 		spirit_namespace::parse( begin, end,
 							UnitSIGrammer< std::string::iterator >( semantic_actions ),
 							spirit_namespace::space_p );
+		semantic_actions.check_unit_data();
 	} catch (ExcInvalidUnit &e) {
 		e << EI_UnitDefinition(s);
 		throw;
 	}
-
-	semantic_actions.check_unit_data();
 
     return semantic_actions.unit_data();
 }
