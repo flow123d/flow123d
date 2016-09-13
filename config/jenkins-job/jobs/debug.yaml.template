@@ -120,7 +120,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest {test-dir} --keep-going
+          docker exec ${{DOCKER_PID}} ${{FLOW}}/integration_tests/runtest {test-dir} --keep-going
 
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #

@@ -9,4 +9,4 @@
 !include: debug.yaml
 
 # include template for project Flow123d - RELEASE BUILDS
-!include: release.yaml
+# !include: release.yaml
