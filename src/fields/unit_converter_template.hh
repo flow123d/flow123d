@@ -127,7 +127,8 @@ public:
     				THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );
     			} else if (unit_data_.find(formula_it->factor_) != unit_data_.end()) { // formula exists as derived unit
     				formula_it->basic_ = false;
-    			} else if (UnitConverter::units_map.find(formula_it->factor_) == UnitConverter::units_map.end()) { // error - unit not defined
+    			} else if (UnitConverter::basic_factors.units_map_.find(formula_it->factor_) == UnitConverter::basic_factors.units_map_.end()) {
+    				// error - unit not defined
     				std::stringstream ss;
     				ss << "unit " << formula_it->factor_ << " is not defined";
     				THROW( ExcInvalidUnit() << EI_UnitError(ss.str()) );

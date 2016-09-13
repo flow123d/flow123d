@@ -55,6 +55,29 @@ typedef typename std::map<std::string, struct Formula> UnitData;
 
 }  // namespace units_converter
 
+
+/**
+ * @brief Helper class. Defines basic factors of SI, non-SI and derived units.
+ *
+ * Class is instantiated as static object of UnitConverter class and provides check
+ * of user defined units.
+ */
+class BasicFactors {
+public:
+	struct DerivedUnit {
+		double coef_;    //!< multiplicative coeficient
+		UnitSI unit_;    //!< derived SI unit
+	};
+
+	/// Define all base and derived units given by their symbol.
+	std::map<std::string, DerivedUnit> units_map_;
+
+	// Constructor
+	BasicFactors();
+
+};
+
+
 class UnitConverter {
 public:
 	struct DerivedUnit {
@@ -63,7 +86,7 @@ public:
 	};
 
 	/// Define all base and derived units given by their symbol.
-	static const std::map<std::string, DerivedUnit> units_map;
+	static const BasicFactors basic_factors;
 
 	// Constructor
 	UnitConverter(UnitSI unit_si);
