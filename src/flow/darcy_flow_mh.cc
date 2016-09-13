@@ -1312,11 +1312,13 @@ void DarcyMH::assembly_linear_system() {
 
         assembly_source_term();
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix
+//         print_matlab_matrix("matrix.m");
 
 	    schur0->finish_assembly();
 	    schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
+        print_matlab_matrix("matrix.m");
 
 	    if (! is_steady) {
 	        START_TIMER("fix time term");
@@ -1343,6 +1345,47 @@ void DarcyMH::assembly_linear_system() {
 
 }
 
+
+void DarcyMH::print_matlab_matrix(std::string matlab_file)
+{
+    PetscViewer    viewer;
+    PetscViewerASCIIOpen(PETSC_COMM_WORLD, matlab_file.c_str(), &viewer);
+    PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+    MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
+    
+    // compute h_min for different dimensions
+    double d_max = std::numeric_limits<double>::max();
+    double h1 = d_max, h2 = d_max, h3 = d_max;
+    double he2 = d_max, he3 = d_max;
+    FOR_ELEMENTS(mesh_, ele){
+        switch(ele->dim()){
+            case 1: h1 = std::min(h1,ele->measure()); break;
+            case 2: h2 = std::min(h2,ele->measure()); break;
+            case 3: h3 = std::min(h3,ele->measure()); break;
+        }
+        
+        FOR_ELEMENT_SIDES(ele,j){
+            switch(ele->dim()){
+                case 2: he2 = std::min(he2, ele->side(j)->measure()); break;
+                case 3: he3 = std::min(he3, ele->side(j)->measure()); break;
+            }
+        }
+    }
+    if(h1 == d_max) h1 = 0;
+    if(h2 == d_max) h2 = 0;
+    if(h3 == d_max) h3 = 0;
+    if(he2 == d_max) he2 = 0;
+    if(he3 == d_max) he3 = 0;
+    
+    FILE * file;
+    file = fopen(matlab_file.c_str(),"a");
+    fprintf(file, "nA = %d;\n", mh_dh.side_ds->size());
+    fprintf(file, "nB = %d;\n", mh_dh.el_ds->size());
+    fprintf(file, "nBF = %d;\n", mh_dh.edge_ds->size());
+    fprintf(file, "h1 = %e;\nh2 = %e;\nh3 = %e;\n", h1, h2, h3);
+    fprintf(file, "he2 = %e;\nhe3 = %e;\n", he2, he3);
+    fclose(file);
+}
 
 
 void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {

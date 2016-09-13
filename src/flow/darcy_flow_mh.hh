@@ -327,6 +327,9 @@ protected:
      * residual field, standard part of EqData.
      */
     virtual double solution_precision() const;
+    
+    /// Print darcy flow matrix in matlab format into a file.
+    void print_matlab_matrix(string matlab_file);
 
     bool solution_changed_for_scatter;
     //Vec velocity_vector;
