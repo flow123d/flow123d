@@ -124,23 +124,60 @@ TEST(UnitSI, user_defined_units) {
 	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^1.5"); }, UnitSI::ExcInvalidUnitString, "invalid symbol of unit '5'" );
 }
 
-TEST(UnitSI, unit_converter) {
+TEST(UnitSI, unit_converter_grammar) {
 	units_converter::UnitData data;
 	{
-		std::string unit = "MPa/rho/g; rho = 990*kg*m^-3; g = 9.8*m*s^-2";
+		std::string unit = "MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2";
 		data = units_converter::read_unit(unit);
 		EXPECT_EQ(data.size(), 3);
 		EXPECT_TRUE( data.find("rho") != data.end() );
-		EXPECT_TRUE( data.find("g") != data.end() );
+		EXPECT_TRUE( data.find("g_") != data.end() );
 		EXPECT_FALSE( data.find("MPa") != data.end() );
-		EXPECT_DOUBLE_EQ( data.find("g")->second.coef_, 9.8);
-		EXPECT_EQ(data.find("g")->second.factors_.size(), 2);
+		EXPECT_DOUBLE_EQ( data.find("g_")->second.coef_, 9.8);
+		EXPECT_EQ(data.find("g_")->second.factors_.size(), 2);
 		EXPECT_DOUBLE_EQ( data.find("rho")->second.coef_, 990);
 		EXPECT_EQ(data.find("rho")->second.factors_.size(), 2);
 	}
 
 	{
 		std::string unit = "a*b; a = kg*m^a; b = m*s^-2";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit, "Value of exponent is not integer" );
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+				"Value of exponent 'a' is not integer" );
+	}
+
+	{
+		std::string unit = "a*b; b*c; b = m*s^-2";
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+				"Invalid expression '.*', missing '='" );
+	}
+
+	{
+		std::string unit = "kPa*n; n = m*55";
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+				"Invalid shortcut of unit '55'" );
+	}
+
+	{
+		std::string unit = "a*b; a = m*; b = kg*s*m^2";
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+				"Missing declaration of shortcut '.*'" );
+	}
+
+	{
+		std::string unit = "a*b; a = m*a; b = kg*s*m^2";
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+				"Cyclic declaration of unit 'a'" );
+	}
+
+	{
+		std::string unit = "s*g; g = 9.8*m*s^-2";
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+				"Shortcut 'g' is in conflict with predefined unit" );
+	}
+
+	{
+		std::string unit = "a*b*c; a = kg.K; b = m*s^-2";
+		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+				"Unit 'c' is not defined" );
 	}
 }
