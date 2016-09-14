@@ -306,6 +306,9 @@ def finish_pbs_runtest(job, batch):
         if results.returncode == 0:
             job.status = JobState.EXIT_OK
             Printer.out('OK:    Job ({}) ended', job.full_name)
+        else:
+            job.status = JobState.EXIT_ERROR
+            Printer.out('ERROR: Job ({}) ended', job.full_name)
     except:
         # no output file was generated assuming it went wrong
         job.status = JobState.EXIT_ERROR
@@ -347,7 +350,7 @@ def finish_pbs_runtest(job, batch):
                     Printer.out('[{:^6}]: {c}', 'FAILED', c=c)
             Printer.close(2)
             continue
-
+    return results.returncode
 
 
 def finish_pbs_job2(job, batch):
