@@ -464,11 +464,9 @@ message(STATUS "=======================================================\n\n")
 message(STATUS "=======================================================")
 message(STATUS "====== ARMADILLO ======================================")
 message(STATUS "=======================================================")
-message(STATUS "Armadillo_ROOT_HINT = ${Armadillo_HINT_LIB}, ${Armadillo_HINT_INC}, ${Armadillo_HINT_CONF}")
+message(STATUS "Armadillo_ROOT_HINT = ${Armadillo_ROOT_HINT}")
 
 
-set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
-set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
 find_package(ArmadilloFlow 3.2.4 REQUIRED)
 include("${Armadillo_CONFIGURE_FILE}")   # this introduce target "armadillo" with correct dependencies
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
