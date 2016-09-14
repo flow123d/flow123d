@@ -140,7 +140,7 @@ class ConfigCase(object):
         self.config = config
 
         if self.config:
-            self.file = Paths.join(self.config.root, self.file)
+            self.file = Paths.join(self.config.root, Paths.basename(self.file))
             self.without_ext = Paths.basename(Paths.without_ext(self.file))
             self.shortname = '{name}.{proc}'.format(
                 name=self.without_ext, proc=self.proc)
