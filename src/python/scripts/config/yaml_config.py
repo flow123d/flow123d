@@ -165,11 +165,12 @@ class ConfigCase(object):
                 output=tmp_folder
             )
 
-    def to_string(self):
+    @property
+    def as_string(self):
         if self.file:
             return '{} x {}'.format(
                 self.proc,
-                Paths.path_end(Paths.without_ext(self.file))
+                Paths.path_end(Paths.without_ext(self.file), level=2)
             )
         return 'process'
 
@@ -178,7 +179,11 @@ class ConfigCase(object):
             cpu=self.proc,
             test_case=self.file,
         )
-    __repr__ = to_string
+
+    def repr(self):
+        return self.as_string
+
+    __repr__ = repr
 
 
 class ConfigBase(object):

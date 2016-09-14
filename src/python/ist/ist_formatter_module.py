@@ -37,7 +37,7 @@ class ISTFormatter(object):
         :return:
         """
         FormatMode.format_mode = FormatMode.LATEX_MODE
-        latex_result = LatexFormatter.format(items).to_string()
+        latex_result = LatexFormatter.format(items).as_string()
         with open(output_file, 'w') as fp:
             fp.write(latex_result)
 

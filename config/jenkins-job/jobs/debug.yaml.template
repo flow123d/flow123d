@@ -55,8 +55,7 @@
     builders:
       - shell: |
           rm -f /tmp/docker_test.cid
-          # docker run --privileged -di --cidfile /tmp/docker_test.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
-          docker run --privileged -di --cidfile /tmp/docker_test.cid flow123d/flow-libs-dev-dbg:user bash
+          docker run --privileged -di --cidfile /tmp/docker_test.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
           docker_pid=`cat /tmp/docker_test.cid`
           echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
           echo "FLOW=/opt/flow123d/flow123d" >> prop.file
@@ -118,7 +117,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} ${{FLOW}}/integration_tests/runtest {test-dir} --keep-going
+          docker exec ${{DOCKER_PID}} ${{FLOW}}/integration_tests/runtest ${{FLOW}}/integration_tests/{test-dir} --keep-going
 
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #

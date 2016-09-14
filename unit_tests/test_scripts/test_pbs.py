@@ -32,7 +32,6 @@ def exec_call(*args, **kwargs):
 __dir__ = test_scripts.current_dir()
 extras = os.path.join(__dir__, 'extras')
 Module.mock = os.path.join(extras, 'pbs_mock.py')
-root = os.path.abspath(os.path.join(__dir__, '..', '..'))
 
 # set exit codes
 EXIT_OK = 0
@@ -44,37 +43,6 @@ class TestDoWork(test_scripts.UnitTest):
     """
     Class TestDoWork tests interface for script runtest.py and backend runtest_module
     """
-
-    flow_path = os.path.join(root, 'bin', 'flow123d')
-    flow_path_copy = os.path.join(root, 'bin', 'flow123d_copy')
-    backup = os.path.exists(flow_path) or os.path.islink(flow_path)
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestDoWork, cls).setUpClass()
-        if cls.backup:
-            os.rename(cls.flow_path, cls.flow_path_copy)
-
-        # copy bash
-        shutil.copy(
-            os.path.join(extras, 'flow123d.sh'),
-            cls.flow_path
-        )
-        # copy python
-        shutil.copy(
-            os.path.join(extras, 'flow123d_mock.py'),
-            cls.flow_path + '.py'
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        os.unlink(cls.flow_path + '.py')
-        os.unlink(cls.flow_path)
-
-        # restore prev file
-        if cls.backup:
-            os.rename(cls.flow_path_copy, cls.flow_path)
-        pass
 
     @test_scripts.limit_test(hostname='*')
     def test_single_job(self):
@@ -95,15 +63,6 @@ class TestDoWork(test_scripts.UnitTest):
         self.assertEqual(pypy.command[0], 'mpirun')
         self.assertEqual(pypy.command[2], '1')
 
-    @test_scripts.limit_test(hostname='*')
-    def test_parallel_job(self):
-        """
-        Run exec parallel with CPU = 2
-        """
-        pypy = exec_call(*'-n 2 -q -- mpirun uname -a'.split())
-        self.assertEqual(pypy.returncode, EXIT_OK)
-        self.assertEqual(pypy.command[0], 'mpirun')
-        self.assertEqual(pypy.command[2], '2')
 
     @test_scripts.limit_test(hostname='*')
     def test_parallel_multijob(self):
@@ -128,9 +87,3 @@ class TestDoWork(test_scripts.UnitTest):
 
         result = exec_call('-n', '2', '-q', '--', 'mpirun', 'rm', dummy_file)
         self.assertNotEqual(result.returncode, EXIT_OK)
-
-    @test_scripts.limit_test(hostname='*')
-    def test_runtest(self):
-        yaml_file = os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml')
-        result = runtest_call(yaml_file, '-q')
-        self.assertEqual(result, 0)

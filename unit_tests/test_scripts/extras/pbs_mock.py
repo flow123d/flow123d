@@ -24,6 +24,7 @@ action = args[0]
 if action not in actions:
     raise Exception("Invalid action, action '{}' not in {}".format(action, actions))
 
+os.chdir(os.path.dirname(__file__))
 
 def get_qstat_files():
     return [f for f in os.listdir('.') if f.startswith(prefix)]
@@ -46,7 +47,7 @@ def get_next_id():
 
 
 def write_all(f, c):
-    with open(f, 'w') as fp:
+    with open(os.path.abspath(f), 'w') as fp:
         fp.write(c)
 
 
