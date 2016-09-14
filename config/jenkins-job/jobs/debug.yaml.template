@@ -41,15 +41,12 @@
     builders:
       - shell: |
           whoami
-          cd docker-config/dockerfiles
-          ls -lah
-          make  base
-          make  base-build
-          make  flow-libs-dev-dbg
+          cd docker-config/bin
+          ./configure --yes-to-all --do-not-override
 
 
 # ---------------------------------------------------------------------------- #
-# ---------- RUN IMAGE ------------------------------------------------------- #
+# ---------- START IMAGE ----------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 - job-template:
     name: "Flow123d-{platform}-{build-type}-start-image"
@@ -58,7 +55,8 @@
     builders:
       - shell: |
           rm -f /tmp/docker_test.cid
-          docker run --privileged -di --cidfile /tmp/docker_test.cid flow123d/flow-libs-dev-dbg bash
+          # docker run --privileged -di --cidfile /tmp/docker_test.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
+          docker run --privileged -di --cidfile /tmp/docker_test.cid flow123d/flow-libs-dev-dbg:user bash
           docker_pid=`cat /tmp/docker_test.cid`
           echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
           echo "FLOW=/opt/flow123d/flow123d" >> prop.file
@@ -75,7 +73,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} git clone -b JHy_docker https://github.com/jbrezmorf/flow123d.git ${{FLOW}}
+          docker exec ${{DOCKER_PID}} git clone https://github.com/jbrezmorf/flow123d.git ${{FLOW}}
           docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-debug.cmake ${{FLOW}}/config.cmake
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} cmake
 
@@ -150,6 +148,8 @@
     scm:
       - git:
           url: https://github.com/flow123d/docker-config.git
+          branches:
+              - origin/builder
           basedir: docker-config
           browser: githubweb
           browser-url: https://github.com/flow123d/docker-config/
