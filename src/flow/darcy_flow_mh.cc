@@ -639,7 +639,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 
     // set auxiliary flag for switchting Dirichlet like BC
 //     data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
-    
+    data_->n_schur_compls = n_schur_compls;
     LinSys *ls = schur0;
 
     class Boundary *bcd;

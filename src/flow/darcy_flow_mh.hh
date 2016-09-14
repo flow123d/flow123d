@@ -199,6 +199,7 @@ public:
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
         
+        unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
         bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
         
