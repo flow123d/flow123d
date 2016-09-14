@@ -17,10 +17,12 @@ from scripts.runtest_module import do_work
 __dir__ = test_scripts.current_dir()
 extras = os.path.join(__dir__, 'extras')
 
+
 root = os.path.abspath(os.path.join(__dir__, '..', '..'))
 EXIT_OK = 0
 EXIT_ERROR = 1
 EXIT_COMPARE_ERROR = 13
+
 
 
 class TestDoWork(test_scripts.UnitTest):
@@ -141,3 +143,50 @@ class TestDoWork(test_scripts.UnitTest):
         end_time = time.time()
         diff = end_time - start_time
         self.assertGreater(diff, sleep_time)
+
+    def test_config_load(self):
+        config="""
+common_config:
+  proc: {common_proc}
+  memory_limit: 1000
+
+test_cases:
+- files: test-02.yaml
+  proc: {test02_proc}
+""".strip()
+
+        # ------------------------------------------------------------------------
+        common_proc = [1, 2, 3]
+        test02_proc = [1, 2, 3, 4]
+        with open('extras/foo/bar/config.yaml', 'w') as fp:
+            fp.write(config.format(**locals()))
+
+        # result = do_work(parser, ['extras/foo'])
+        # self.assertEqual(len(common_proc)+len(test02_proc), len(result.threads))
+        #
+        # result = do_work(parser, ['-p', '7', 'extras'])
+        # self.assertEqual(len(common_proc)+len(test02_proc), len(result.threads))
+
+        result = do_work(parser, ['extras/foo/bar/test-01.yaml'])
+        self.assertEqual(len(result.threads), len(common_proc))
+
+        result = do_work(parser, ['extras/foo/bar/test-02.yaml'])
+        self.assertEqual(len(result.threads), len(test02_proc))
+
+        # ------------------------------------------------------------------------
+        common_proc = [1]
+        test02_proc = []
+        with open('extras/foo/bar/config.yaml', 'w') as fp:
+            fp.write(config.format(**locals()))
+
+        result = do_work(parser, ['extras/foo'])
+        self.assertEqual(len(common_proc)+len(test02_proc), len(result.threads))
+
+        result = do_work(parser, ['-p', '2', 'extras/foo/bar'])
+        self.assertEqual(len(common_proc)+len(test02_proc), len(result.threads))
+
+        result = do_work(parser, ['extras/foo/bar/test-01.yaml'])
+        self.assertEqual(len(result.threads), len(common_proc))
+
+        result = do_work(parser, ['extras/foo/bar/test-02.yaml'])
+        self.assertEqual(len(result.threads), len(test02_proc))

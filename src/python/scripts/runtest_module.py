@@ -347,6 +347,7 @@ class ModuleRuntest(ScriptModule):
 def do_work(parser, args=None, debug=False):
     """
     Main method which invokes ModuleRuntest
+    :rtype: ParallelThreads
     :type debug: bool
     :type args: list
     :type parser: utils.argparser.ArgParser
