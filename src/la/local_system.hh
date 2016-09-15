@@ -4,6 +4,7 @@
 
 #include <armadillo>
 
+class LinSys;
 
 /** Local system class is meant to be used for local assembly and then pass to global linear system.
  * The key idea is to take care of known solution values (Dirichlet boundary conditions) in a common way.
@@ -18,6 +19,7 @@
  */
 class LocalSystem
 {
+friend class LinSys;
 protected:
     arma::mat matrix;   ///< local system matrix
     arma::vec rhs;      ///< local system RHS
@@ -27,10 +29,10 @@ protected:
     /// vector of solution values at @p loc_solution_rows indices (dirichlet BC)
     std::vector<double> loc_solution;
     
+public:
+    
     std::vector<int> row_dofs;  ///< global row indices
     std::vector<int> col_dofs;  ///< global column indices
-    
-public:
     
     /** @brief Constructor.
      * 
@@ -41,6 +43,9 @@ public:
     
     /// Resets the matrix, RHS, dofs to zero and clears solution settings
     void reset();
+    
+    const arma::mat& get_matrix() {return matrix;}
+    const arma::vec& get_rhs() {return rhs;}
     
     /** @brief Set the position and value of known solution.
      * 
@@ -67,7 +72,38 @@ public:
      * @p rhs_val is RHS entry value
      */
     void set_value(unsigned int row, unsigned int col,
-                    double mat_val, double rhs_val);  
+                   double mat_val, double rhs_val);
+
+    /** @brief Adds a single entry into the local system.
+     * 
+     * Known solution must be set before, so it is eliminated correctly during his call.
+     * @p row is local row index of local system
+     * @p col is local column index of local system
+     * @p mat_val is matrix entry value
+     * @p rhs_val is RHS entry value
+     */
+    void add_value(unsigned int row, unsigned int col,
+                   double mat_val, double rhs_val);
+    
+//     /** @brief Sets a single entry into the local system matrix.
+//      * 
+//      * Known solution must be set before, so it is eliminated correctly during his call.
+//      * @p row is local row index of local system
+//      * @p col is local column index of local system
+//      * @p mat_val is matrix entry value
+//      */
+//     void set_mat_value(unsigned int row, unsigned int col, double mat_val);
+    
+    /** @brief Sets a submatrix and rhs subvector into the local system matrix.
+     * 
+     * Known solution must be set before, so it is eliminated correctly during his call.
+     * @p rows are local row indices of local system
+     * @p cols are local column indices of local system
+     * @p loc_mat is submatrix to be entered
+     */
+    void set_mat_values(const std::vector< unsigned int >& rows,
+                        const std::vector< unsigned int >& cols,
+                        const arma::mat& loc_matrix);
     
     /** @brief Sets a submatrix and rhs subvector into the local system.
      * 
@@ -77,8 +113,10 @@ public:
      * @p loc_mat is submatrix to be entered
      * @p loc_rhs is vector to entered into RHS
      */
-    void set_values(std::vector<unsigned int> &rows, std::vector<unsigned int> &cols,
-                    const arma::mat &loc_matrix, const arma::vec &loc_rhs);
+    void set_values(const std::vector<unsigned int> &rows,
+                    const std::vector<unsigned int> &cols,
+                    const arma::mat &loc_matrix,
+                    const arma::vec &loc_rhs);
     
     /**
      * This is a copy of the set_values method from LinSys. (OBSOLETE)
