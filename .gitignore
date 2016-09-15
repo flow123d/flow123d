@@ -60,3 +60,7 @@ bin/runtest.sh
 
 /tests/runtest
 /integration_tests/runtest
+
+# add test results to ignore
+/integration_tests/*/test_results
+/integration_tests/*/output
