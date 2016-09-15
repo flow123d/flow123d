@@ -91,7 +91,7 @@
 ##
 ##Below is the complete YAML source.
 ##
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Example 2 inspirated of real locality - 2D model of the tunnel with transport
   mesh:
@@ -109,17 +109,17 @@ problem: !Coupling_Sequential
         bc_flux: -9.16E-02 
       - region: .base
         bc_type: dirichlet
-        bc_pressure: 270                
+        bc_pressure: 270
       - region: .surface
         bc_type: total_flux
         bc_flux: 2.33E-03
-    balance: true
+    balance: {}
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
     output:
-      output_stream: 
-        file: flow.msh
-        format: !gmsh
-          variant: ascii
-      output_fields:
+      fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
@@ -401,7 +401,8 @@ problem: !Coupling_Sequential
           bc_conc: -9.84281
           time: 2722
     output_stream:
-      time_step: 30
+      times:
+        - step: 30
       file: transport.msh
       format: !gmsh
         variant: ascii

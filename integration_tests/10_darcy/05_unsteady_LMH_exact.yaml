@@ -4,21 +4,21 @@
 # C .. conductivity
 # S .. storativity
 
-# theoretical values for C=0.5, S=1.0:
-# t:        p(Pi/2):     v(1):
-# 0.1      0.6105        0.9590
-# 0.2      0.3727        0.5854
-# 0.3      0.2275        0.3574
+# theoretical values for C=0.5, S=1.0:  Numerical values:
+# t:        p(Pi/2):     v(1):          LMH p       MH   p 
+# 0.1      0.6105        0.9590         0.6176      0.6180
+# 0.2      0.3727        0.5854         0.3816      0.3818
+# 0.3      0.2275        0.3574         0.2358      0.2358
 # 0.6      0.0518        0.0813
 # 1        0.0072        0.0113
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
-    mesh_file: ${INPUT}/test10.msh
-  #flow_equation: !Flow_Richards_LMH
-  flow_equation: !Flow_Darcy_MH
+    mesh_file: ../00_mesh/square_1x1_942el.msh
+  flow_equation: !Flow_Richards_LMH
     output_specific:
+  #flow_equation: !Flow_Darcy_MH
     time:
         end_time: 1
         max_dt: 0.01

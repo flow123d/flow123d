@@ -2,7 +2,7 @@ flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test8 - Steady flow with sources
   mesh:
-    mesh_file: ${INPUT}/test08.msh
+    mesh_file: ../00_mesh/square_1x1_shift.msh
   flow_equation: !Flow_Richards_LMH
     output_specific:
     nonlinear_solver:

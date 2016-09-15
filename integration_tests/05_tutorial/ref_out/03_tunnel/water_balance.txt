@@ -3,4 +3,4 @@
 0	".surface"	"water_volume"	1.165	1.165	0	0	0	0	0	0	0	0	0	0
 0	".base"	"water_volume"	-0.15545	0	-0.15545	0	0	0	0	0	0	0	0	0
 0	".tunnel"	"water_volume"	-1.00955	0	-1.00955	0	0	0	0	0	0	0	0	0
-0	"IMPLICIT BOUNDARY"	"water_volume"	-1.19297e-14	4.27904e-14	-5.47201e-14	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"water_volume"	-1.19297e-14	4.27904e-14	-5.47201e-14	0	0	0	0	0	0	0	0	0

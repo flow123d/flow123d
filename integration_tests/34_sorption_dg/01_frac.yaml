@@ -2,7 +2,7 @@ flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
   mesh:
-    mesh_file: ./input/compatible.msh
+    mesh_file: ../00_mesh/rectangle_12.8x8_frac.msh
     regions:
       - !Union
         name: subset
