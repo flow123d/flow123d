@@ -96,6 +96,11 @@ public:
        static const Input::Type::Instance & get_input_type_instance(const Input::Type::Selection *value_selection=NULL);
 
        /**
+        * Return Record for set user-defined derived unit SI.
+        */
+       static const Input::Type::Record & get_input_type_unit_si();
+
+       /**
         * This static method gets accessor to abstract record with function input,
         * dispatch to correct constructor and initialize appropriate function object from the input.
         * Returns shared pointer to  FunctionBase<>.
@@ -201,6 +206,8 @@ protected:
        FieldResult field_result_;
        /// Specify if the field is part of a MultiField and which component it is
        unsigned int component_idx_;
+       /// Coeficient of conversion of user-defined unit
+       double unit_conversion_coefficient_;
 };
 
 

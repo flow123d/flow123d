@@ -50,7 +50,8 @@ template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 : value_(r_value_),
   field_result_(result_other),
-  component_idx_(std::numeric_limits<unsigned int>::max())
+  component_idx_(std::numeric_limits<unsigned int>::max()),
+  unit_conversion_coefficient_(1.0)
 {
     value_.set_n_comp(n_comp);
 }
@@ -87,6 +88,23 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 	}
 
 	return it::Instance(get_input_type(), param_vec).close();
+}
+
+
+template <int spacedim, class Value>
+const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si() {
+    return it::Record("FieldUnit", "Set unit of Field by user. \n"
+    							   "Unit is defined as product or proportion of base or derived SI units \n"
+			   	   	   	   	       "and it is allowed to use subdefinitions. Example: \n"
+	   	   	       	   	   	       "'MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2', \n"
+  	   	   	       	   	   	       "allows define pressure head in MPa with subdefinitions of density and \n"
+  	   	   	       	   	   	       "gravity acceleration. In subdefinitions can be used multiplicative \n"
+  	   	   	       	   	   	       "coeficient. Resulting unit must correspond with defined Field unit \n"
+  	   	   	       	   	   	       "butit can differ in coefficient.")
+        .declare_key("unit_formula", it::String(), it::Default::obligatory(),
+                                   "Definition of unit." )
+        .allow_auto_conversion("unit_formula")
+		.close();
 }
 
 
