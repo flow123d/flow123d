@@ -8,7 +8,8 @@ import time
 # ----------------------------------------------
 import sys
 
-from scripts.config.yaml_config import ConfigCase, DEFAULTS
+from scripts.yamlc.yaml_config import ConfigCase
+from scripts.yamlc import DEFAULTS
 from scripts.core.base import Paths, Printer, Command, IO, GlobalResult, DynamicSleep
 from scripts.core.base import PathFormat
 from scripts.core.threads import PyPy, ResultHolder

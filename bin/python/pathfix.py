@@ -11,13 +11,22 @@ Situation is following:
 So to sys.path is appended ../../src/python path
 """
 
+import getpass
 import sys
 import os
 
 
 def print_debug():
     """Prints debug information about python"""
-    print ("Python " + str(sys.version).replace("\n", "") + ", " + str(sys.executable))
+    print ("Python {version}, {executable}".format(
+        version=str(sys.version).replace("\n", ""),
+        executable=sys.executable
+    ))
+    print ("CWD: {cwd}, USER: {whoami}".format(
+        cwd=os.getcwd(),
+        whoami=getpass.getuser())
+    )
+    print('-' * 80)
 
 
 def add_path(*args):

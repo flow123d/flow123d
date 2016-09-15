@@ -6,7 +6,7 @@ import subprocess
 import time
 import sys
 # ----------------------------------------------
-from scripts.config.yaml_config import ConfigPool
+from scripts.yamlc.yaml_config import ConfigPool
 from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult, DynamicSleep, StatusPrinter
 from scripts.core.threads import ParallelThreads, RuntestMultiThread
 from scripts.pbs.common import get_pbs_module
@@ -53,7 +53,7 @@ class ModuleRuntest(ScriptModule):
     def read_configs(all_yamls):
         """
         Add yamls to ConfigPool and parse configs
-        :rtype: scripts.config.yaml_config.ConfigPool
+        :rtype: scripts.config.ConfigPool
         """
         configs = ConfigPool()
         for y in all_yamls:
@@ -119,7 +119,7 @@ class ModuleRuntest(ScriptModule):
         result json file and determine ok/error status for the job
 
         :type debug: bool
-        :type configs: scripts.config.yaml_config.ConfigPool
+        :type configs: scripts.config.ConfigPool
         """
         pbs_module = get_pbs_module(self.arg_options.host)
         Printer.dynamic_output = not self.arg_options.batch
@@ -216,7 +216,7 @@ class ModuleRuntest(ScriptModule):
         to do is to prepare execution arguments start whole process
 
         :type debug: bool
-        :type configs: scripts.config.yaml_config.ConfigPool
+        :type configs: scripts.config.ConfigPool
         """
         runner = ParallelThreads(self.arg_options.parallel)
         runner.stop_on_error = not self.arg_options.keep_going
@@ -287,16 +287,13 @@ class ModuleRuntest(ScriptModule):
                 GlobalResult.error = "path does not exist"
                 sys.exit(3)
 
+            # append files to all_yamls
             if Paths.is_dir(path):
-                self.all_yamls.extend(Paths.walk(path, filters=[
-                    PathFilters.filter_type_is_file(),
-                    PathFilters.filter_ext('.yaml'),
-                    PathFilters.filter_not(PathFilters.filter_name('config.yaml'))
-                ]))
+                self.all_yamls.extend(Paths.walk(path, ConfigPool.yaml_filters))
             else:
                 self.all_yamls.append(path)
 
-        Printer.out("Found {} .yaml file/s", len(self.all_yamls))
+        Printer.out("Found {} yaml file/s", len(self.all_yamls))
         if not self.all_yamls:
             Printer.wrn('Warning! No yaml files found in locations: \n  {}', '\n  '.join(self.others))
             GlobalResult.error = "no yaml files or folders given"

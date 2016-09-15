@@ -7,7 +7,7 @@ import time
 import threading
 
 # ----------------------------------------------
-from scripts.config.yaml_config import ConfigCase
+from scripts.yamlc.yaml_config import ConfigCase
 from scripts.core import monitors
 from scripts.core.base import Printer, Paths, Command, DynamicSleep, IO
 from scripts.serialization import PyPyResult, ResultHolderResult, RuntestTripletResult, ResultParallelThreads

@@ -9,9 +9,8 @@ from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.prescriptions import AbstractRun
 from scripts.comparisons import file_comparison
+from scripts.yamlc import REF_OUTPUT_DIR
 # ----------------------------------------------
-
-REF_OUTPUT_DIR = 'ref_out'
 
 
 class LocalRun(AbstractRun):

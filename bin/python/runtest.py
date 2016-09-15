@@ -8,6 +8,7 @@ pathfix.init()
 # ----------------------------------------------
 import sys
 # ----------------------------------------------
+from scripts.core.base import Paths
 from utils.argparser import ArgParser
 from utils.duration import Duration
 # ----------------------------------------------
@@ -104,6 +105,9 @@ if __name__ == '__main__':
 
     from scripts.core.execution import BinExecutor
     from scripts.runtest_module import do_work
+    #
+    # import os
+    # Paths.init(os.getcwd())
 
     # run work
     BinExecutor.register_sigint()

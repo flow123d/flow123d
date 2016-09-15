@@ -193,8 +193,25 @@ class PathFilters(object):
             .replace('*', r'.*')\
             .replace('/', r'\/')
         patt = re.compile(fmt)
-        return lambda x: patt.match(x)\
+        return lambda x: patt.match(x)
 
+    @staticmethod
+    def filter_dir_contains_file(required_file):
+        def filter(file):
+            files = Paths.browse(Paths.dirname(file), [PathFilters.filter_name(required_file)])
+            return bool(files)
+
+        return filter
+
+    @staticmethod
+    def filter_ignore_dirs(dirs):
+        def filter(file):
+            for d in dirs:
+                if file.find(d) > 0:
+                    return False
+            return True
+
+        return filter
 
     @staticmethod
     def filter_endswith(suffix=""):
