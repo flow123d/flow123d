@@ -83,22 +83,6 @@ template<unsigned int dim> class QGauss;
 
 
 /**
- * This should contain target large algebra object to be assembled.
- * Since this should be passed only once per the whole assembly and may be equation specific
- * this structure is passed with the data
- */
-class RichardsSystem {
-public:
-    // temporary solution how to pass information about dirichlet BC on edges
-    // should be done better when we move whole assembly into assembly classes
-    // the vector is set in assembly_mh_matrix and used in LMH assembly of the time term
-    std::vector<unsigned int> dirichlet_edge;
-    std::shared_ptr<arma::mat> local_matrix;
-    double loc_side_rhs[4];
-};
-
-
-/**
  * @brief Mixed-hybrid of steady Darcy flow with sources and variable density.
  *
  * solve equations:
@@ -195,7 +179,6 @@ public:
         Mesh *mesh;
         MH_DofHandler *mh_dh;
 
-        RichardsSystem system_;
         uint water_balance_idx;
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;

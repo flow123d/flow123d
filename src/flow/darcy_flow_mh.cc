@@ -321,7 +321,6 @@ void DarcyMH::initialize() {
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_->set_time(time_->step(), LimitSide::right);
-    data_->system_.local_matrix = std::make_shared<arma::mat>();
     create_linear_system(rec);
 
 

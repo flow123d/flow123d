@@ -164,10 +164,10 @@ public:
 class AssemblerLMH : public AssemblerBase
 {
 public:
-    AssemblerLMH(AssemblyDataPtr d)
+    AssemblerLMH(std::shared_ptr<RichardsLMH::EqData> d)
     : AssemblerBase(d)
     {
-        dim_assembler = AssemblyBase::create< AssemblyMH >(d);
+        dim_assembler = AssemblyBase::create< AssemblyLMH >(d);
     }
 };
 

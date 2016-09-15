@@ -51,8 +51,10 @@
         
         virtual void assemble(LocalElementAccessorBase<3> ele_ac, bool fill_matrix = true) = 0;
         
-        // assembly just A block of local matrix
-        virtual void assembly_local_matrix(LocalElementAccessorBase<3> ele) =0;
+        virtual void assemble_sides(LocalElementAccessorBase<3> ele) =0;
+        
+        virtual void assemble_source_term(LocalElementAccessorBase<3> ele)
+        {}
 
         // assembly compatible neighbourings
         virtual void assembly_local_vb(double *local_vb,
@@ -113,8 +115,9 @@
         
             set_dofs_and_bc(ele_ac, fill_matrix);
             
-            if(fill_matrix) assembly_sides(ele_ac);
-            assembly_element(ele_ac);
+            if(fill_matrix) assemble_sides(ele_ac);
+            assemble_element(ele_ac);
+            assemble_source_term(ele_ac);
             
             loc_system_.fix_diagonal();
         }
@@ -141,39 +144,6 @@
             local_vb[2] = value;    local_vb[3] = -value;
         }
 
-        // just for LMH assembly now
-        arma::mat::fixed<dim+1,dim+1>  assembly_local_geometry_matrix(ElementFullIter ele)
-        {
-            //START_TIMER("Assembly<dim>::assembly_local_matrix");
-            fe_values_.reinit(ele);
-            unsigned int ndofs = fe_values_.get_fe()->n_dofs();
-            unsigned int qsize = fe_values_.get_quadrature()->size();
-            arma::mat::fixed<dim+1,dim+1> local_matrix;
-            local_matrix.zeros();
-            arma::vec3 &gravity_vec = ad_->gravity_vec_;
-
-            for (unsigned int k=0; k<qsize; k++)
-            {
-                for (unsigned int i=0; i<ndofs; i++)
-                {
-                     for (unsigned int j=0; j<ndofs; j++)
-                        local_matrix[i*ndofs+j] +=
-                                arma::dot(fe_values_.shape_vector(i,k),
-                                            (ad_->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
-                                             * fe_values_.shape_vector(j,k)
-                                           )
-                                * fe_values_.JxW(k);
-                     ad_->system_.loc_side_rhs[i] +=
-                             arma::dot(
-                                     gravity_vec,
-                                     fe_values_.shape_vector(i,k)
-                                     ) * fe_values_.JxW(k);
-                }
-            }
-
-            return local_matrix;
-        }
-
         arma::vec3 make_element_vector(ElementFullIter ele) override
         {
             //START_TIMER("Assembly<dim>::make_element_vector");
@@ -189,9 +159,6 @@
             flux_in_center /= ad_->cross_section.value(ele->centre(), ele->element_accessor() );
             return flux_in_center;
         }
-        
-        void assembly_local_matrix(LocalElementAccessorBase<3> ele)
-        {}
         
     protected:
         
@@ -338,35 +305,17 @@
             }
         }
         
-        
 
-        
-
-// 
-//         void assembly_local_matrix(LocalElementAccessorBase<3> ele) override
-//         {
-//             double cs = ad_->cross_section.value(ele.centre(), ele.element_accessor());
-//             double conduct =  ad_->conductivity.value(ele.centre(), ele.element_accessor());
-// 
-//             double scale = 1 / cs /conduct;
-//             *(ad_->system_.local_matrix) = scale*assembly_local_geometry_matrix(ele.full_iter());
-//             //TODO: assemble directly into local system
-// //             loc_system_.matrix.submat(0,0,dim,dim)
-// //                     = scale*assembly_local_geometry_matrix(ele.full_iter());
-// //             std::vector<unsigned int> loc_dofs(dim+1);
-// //             for(unsigned int i=0; i<dim+1; i++) loc_dofs[i]= i;
-// //             
-// //             loc_system_.set_mat_values(loc_dofs, loc_dofs,
-// //                                        scale*assembly_local_geometry_matrix(ele.full_iter()));
-//         }
-
-        void assembly_sides(LocalElementAccessorBase<3> ele_ac)
-        {
-            //TODO pass scaling argument, so we can reuse this in assembly_lmh
+        void assemble_sides(LocalElementAccessorBase<3> ele_ac){
             double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
             double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());
             double scale = 1 / cs /conduct;
             
+            assemble_sides_scale(ele_ac, scale);
+        }
+        
+        void assemble_sides_scale(LocalElementAccessorBase<3> ele_ac, double scale)
+        {
             arma::vec3 &gravity_vec = ad_->gravity_vec_;
             
             //START_TIMER("Assembly<dim>::assembly_local_matrix");
@@ -417,7 +366,7 @@
         }
         
         
-        void assembly_element(LocalElementAccessorBase<3> ele_ac){
+        void assemble_element(LocalElementAccessorBase<3> ele_ac){
             // set block B, B': element-side, side-element
             
             for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
