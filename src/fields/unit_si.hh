@@ -20,9 +20,7 @@
 
 #include <vector>
 #include <string>
-#include <map>
 
-#include "input/input_exception.hh"
 
 /**
  * @brief Class for representation SI units of Fields.
@@ -41,18 +39,8 @@
  */
 class UnitSI {
 public:
-	TYPEDEF_ERR_INFO(EI_UnitString, std::string);
-    TYPEDEF_ERR_INFO(EI_UnitProblemType, std::string);
-    TYPEDEF_ERR_INFO(EI_UnitProblemSeq, std::string);
-    DECLARE_INPUT_EXCEPTION(ExcInvalidUnitString,
-            << "Error in represantation of SI unit: " << EI_UnitString::qval << ", invalid " << EI_UnitProblemType::val
-			<< " " << EI_UnitProblemSeq::qval << ".\n");
-
 	/// Constructor
 	UnitSI();
-
-	/// Constructor allowing to set derived unit by string represantation
-	UnitSI(std::string unit);
 
 	/// Methods return frequently used derived units
 	/// Returns Newton
@@ -106,9 +94,6 @@ public:
 	/// Return true if the unit is defined.
 	bool is_def() const;
 
-	/// Return @p coef_ parameter.
-	double coef() const;
-
 	/// Multiply with power of given unit
 	void multiply(const UnitSI &other, int exp = 1);
 
@@ -119,9 +104,6 @@ public:
 	bool operator==(const UnitSI &other) const;
 
 private:
-	/// Define all base and derived units given by their symbol.
-	static const std::map<std::string, UnitSI> units_map;
-
 	/// Values determine positions of exponents in exponents_ vector
 	enum UnitOrder {
 		order_m=0,
@@ -145,9 +127,6 @@ private:
      */
 	static const std::string &unit_symbol(unsigned int idx);
 
-	/// Private onstructor.
-	UnitSI(double coef);
-
 	/// Generic output formating method.
 	std::string format(OutputFormat form) const;
 
@@ -167,14 +146,6 @@ private:
 	 * Value is set on true in constructor, when any exponent is changed, false value is set.
 	 */
 	bool undef_;
-
-	/**
-	 * Coeficient of unit.
-	 *
-	 * Coeficient is used if unit is not in basic format. Example: if the unit is specified
-	 * in minutes, coeficient has value 60.
-	 */
-	double coef_;
 
 	/// Product of two units.
 	friend UnitSI operator *(const UnitSI &a, const UnitSI &b);
