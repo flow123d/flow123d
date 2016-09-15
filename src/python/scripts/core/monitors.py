@@ -102,8 +102,8 @@ class InfoMonitor(ThreadMonitor):
 
         # print either error that command failed or on_complete info id exists
         if self.pypy.returncode > 0:
-            Printer.err('Error! Command ({process.pid}) ended with {process.returncode}'.
-                        format(process=self.pypy.executor.process))
+            Printer.err('Error! Command ({process.pid}) ended with {process.returncode}={rc}'.
+                        format(rc=self.pypy.returncode, process=self.pypy.executor.process))
             Printer.err(Command.to_string(self.pypy.executor.command))
         elif self.end_fmt:
             Printer.out(self.end_fmt.format(**dict(self=self)))
