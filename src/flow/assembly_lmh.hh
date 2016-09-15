@@ -8,11 +8,13 @@
 #ifndef SRC_FLOW_ASSEMBLY_LMH_HH_
 #define SRC_FLOW_ASSEMBLY_LMH_HH_
 
-#include "flow/darcy_flow_assembly.hh"
+#include "darcy_flow_assembly.hh"
 #include "soil_models.hh"
+#include "richards_lmh.hh"
 
+#include "coupling/balance.hh"
 
-
+#include "badiff.h"
 
 /**
  * Prove of concept for general assembly scheme.

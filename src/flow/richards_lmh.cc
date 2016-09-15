@@ -32,7 +32,7 @@
 #include "badiff.h"
 #include "fadiff.h"
 
-#include "flow/assembly_lmh.hh"
+#include "flow/darcy_flow_assembler.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
@@ -220,8 +220,8 @@ void RichardsLMH::assembly_linear_system()
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
         data_->time_step_ = time_->dt();
-        auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
-
+//         auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
+        auto multidim_assembler = AssemblerLMH(data_);
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
@@ -231,7 +231,7 @@ void RichardsLMH::assembly_linear_system()
             balance_->start_mass_assembly(water_balance_idx_);
         }
 
-        assembly_mh_matrix( multidim_assembler ); // fill matrix
+        assembly_mh_matrix(multidim_assembler); // fill matrix
 
         if (balance_ != nullptr) {
             balance_->finish_source_assembly(water_balance_idx_);
