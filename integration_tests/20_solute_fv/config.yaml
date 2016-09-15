@@ -5,4 +5,4 @@ common_config:
 test_cases:
 - files:
   - 02_sources.yaml
-  time_limit: 60
+  time_limit: 120
