@@ -191,6 +191,8 @@ public:
         arma::vec4 gravity_;
         arma::vec3 gravity_vec_;
 
+    // Mirroring the following members of DarcyMH:
+        
         Mesh *mesh;
         MH_DofHandler *mh_dh;
 
@@ -206,6 +208,9 @@ public:
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;
+        
+        /// Idicator of dirichlet or neumann type of switch boundary conditions.
+        std::vector<char> bc_switch_dirichlet;
     };
 
     /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
@@ -310,7 +315,7 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix( MultidimAssembler ma);
+    void assembly_mh_matrix( MultidimAssembler ma, bool fill_matrix = true);
     
 
     /// Source term is implemented differently in LMH version.
@@ -363,9 +368,6 @@ protected:
 
 	
 
-
-	/// Idicator of dirichlet or neumann type of switch boundary conditions.
-	std::vector<char> bc_switch_dirichlet;
 
 
 	// gather of the solution

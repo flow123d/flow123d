@@ -18,8 +18,15 @@
 #include "flow/mh_dofhandler.hh"
 
 
+#include "la/linsys.hh"
+#include "la/linsys_PETSC.hh"
+#include "la/linsys_BDDC.hh"
+#include "la/schur.hh"
 
+#include "la/local_to_global_map.hh"
+#include "la/local_system.hh"
 
+#include "coupling/balance.hh"
 
 
 
@@ -43,7 +50,10 @@
 
         }
 
-
+        virtual LocalSystem & get_local_system() = 0;
+        
+        virtual void assemble(LocalElementAccessorBase<3> ele_ac, bool fill_matrix = true) = 0;
+        
         // assembly just A block of local matrix
         virtual void assembly_local_matrix(LocalElementAccessorBase<3> ele) =0;
 
@@ -64,10 +74,6 @@
 
 
 
-
-
-
-
     template<int dim>
     class AssemblyMH : public AssemblyBase
     {
@@ -84,15 +90,63 @@
           velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
           ad_(data),
-          system_(data->system_)
-        {}
+//           system_(data->system_),
+          loc_system_(size(), size())
+        {
+            // local numbering of dofs for MH system
+            unsigned int nsides = dim+1;
+            loc_side_dofs.resize(nsides);
+            loc_ele_dof = nsides;
+            loc_edge_dofs.resize(nsides);
+            for(unsigned int i = 0; i < nsides; i++){
+                loc_side_dofs[i] = i;
+                loc_edge_dofs[i] = nsides + i + 1;
+            }
+        }
 
 
         ~AssemblyMH<dim>() override
         {}
+        
+        LocalSystem& get_local_system() override
+        { return loc_system_;}
+        
+        void assemble(LocalElementAccessorBase<3> ele_ac, bool fill_matrix) override
+        {
+            loc_system_.reset();
+        
+            set_dofs_and_bc(ele_ac, fill_matrix);
+            
+            if(fill_matrix) assembly_sides(ele_ac);
+            assembly_element(ele_ac);
+            schur_allocations(ele_ac);
+            
+        }
+        
+        void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
+        {
+            //START_TIMER("Assembly<dim>::assembly_local_vb");
+            // compute normal vector to side
+            arma::vec3 nv;
+            ElementFullIter ele_higher = ad_->mesh->element.full_iter(ngh->side()->element());
+            ASSERT_DBG(dim == ele_higher->dim());
+            fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
+            nv = fe_side_values_.normal_vector(0);
 
+            double value = ad_->sigma.value( ele->centre(), ele->element_accessor()) *
+                            2*ad_->conductivity.value( ele->centre(), ele->element_accessor()) *
+                            arma::dot(ad_->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+                            ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                            ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                            ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+                            ngh->side()->measure();
+
+            local_vb[0] = -value;   local_vb[1] = value;
+            local_vb[2] = value;    local_vb[3] = -value;
+        }
+
+        // just for LMH assembly now
         arma::mat::fixed<dim+1,dim+1>  assembly_local_geometry_matrix(ElementFullIter ele)
-
         {
             //START_TIMER("Assembly<dim>::assembly_local_matrix");
             fe_values_.reinit(ele);
@@ -124,37 +178,6 @@
             return local_matrix;
         }
 
-        void assembly_local_matrix(LocalElementAccessorBase<3> ele) override
-        {
-            double cs = ad_->cross_section.value(ele.centre(), ele.element_accessor());
-            double conduct =  ad_->conductivity.value(ele.centre(), ele.element_accessor());
-
-            double scale = 1 / cs /conduct;
-            *(system_.local_matrix) = scale*assembly_local_geometry_matrix(ele.full_iter());
-        }
-
-        void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
-        {
-            //START_TIMER("Assembly<dim>::assembly_local_vb");
-            // compute normal vector to side
-            arma::vec3 nv;
-            ElementFullIter ele_higher = ad_->mesh->element.full_iter(ngh->side()->element());
-            fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
-            nv = fe_side_values_.normal_vector(0);
-
-            double value = ad_->sigma.value( ele->centre(), ele->element_accessor()) *
-                            2*ad_->conductivity.value( ele->centre(), ele->element_accessor()) *
-                            arma::dot(ad_->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-                            ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-                            ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
-                            ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
-                            ngh->side()->measure();
-
-            local_vb[0] = -value;   local_vb[1] = value;
-            local_vb[2] = value;    local_vb[3] = -value;
-        }
-
-
         arma::vec3 make_element_vector(ElementFullIter ele) override
         {
             //START_TIMER("Assembly<dim>::make_element_vector");
@@ -170,8 +193,341 @@
             flux_in_center /= ad_->cross_section.value(ele->centre(), ele->element_accessor() );
             return flux_in_center;
         }
+        
+        void assembly_local_matrix(LocalElementAccessorBase<3> ele)
+        {}
+        
+    protected:
+        
+        static const unsigned int size()
+        {
+            // sides, 1 for element, edges
+            return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
+        }
+        
+        void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac, bool fill_matrix){
+        
+            ASSERT_DBG(ele_ac.dim() == dim);
+            
+            //set global dof for element (pressure)
+            loc_system_.row_dofs[loc_ele_dof] = loc_system_.col_dofs[loc_ele_dof] = ele_ac.ele_row();
+            
+            //shortcuts
+            const unsigned int nsides = ele_ac.n_sides();
+            LinSys *ls = ad_->lin_sys;
+            
+            Boundary *bcd;
+            unsigned int side_row, edge_row;
+            
+            for (unsigned int i = 0; i < nsides; i++) {
 
+                side_row = loc_side_dofs[i];    //local
+                edge_row = loc_edge_dofs[i];    //local
+                loc_system_.row_dofs[side_row] = loc_system_.col_dofs[side_row] = ele_ac.side_row(i);    //global
+                loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = ele_ac.edge_row(i);    //global
+                
+                bcd = ele_ac.side(i)->cond();
+                
+                // set block C and C': side-edge, edge-side
+//                 double c_val = 1.0;
+//                 ad_->system_.dirichlet_edge[i] = 0;
+//                 loc_side_rhs[i] = 0;
+                
+                if (bcd) {
+                    ElementAccessor<3> b_ele = bcd->element_accessor();
+                    DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
+                    double cross_section = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+
+                    if ( type == DarcyMH::EqData::none) {
+                        // homogeneous neumann
+                    } else if ( type == DarcyMH::EqData::dirichlet ) {
+                        double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
+                        loc_system_.set_solution(edge_row,bc_pressure);
+                        
+                    } else if ( type == DarcyMH::EqData::total_flux) {
+                        // internally we work with outward flux
+                        double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
+                        double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
+                        double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
+                        
+                        loc_system_.set_value(edge_row, edge_row,
+                                              -bcd->element()->measure() * bc_sigma * cross_section,
+                                              (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
+                    }
+                    else if (type==DarcyMH::EqData::seepage) {
+                        ad_->is_linear=false;
+
+                        unsigned int loc_edge_idx = bcd->bc_ele_idx_;
+                        char & switch_dirichlet = ad_->bc_switch_dirichlet[loc_edge_idx];
+                        double bc_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
+                        double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
+                        double side_flux = bc_flux * bcd->element()->measure() * cross_section;
+
+                        // ** Update BC type. **
+                        if (switch_dirichlet) {
+                            // check and possibly switch to flux BC
+                            // The switch raise error on the corresponding edge row.
+                            // Magnitude of the error is abs(solution_flux - side_flux).
+                            ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
+                            unsigned int loc_side_row = ele_ac.side_local_row(i);
+                            double & solution_flux = ls->get_solution_array()[loc_side_row];
+
+                            if ( solution_flux < side_flux) {
+                                //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
+                                solution_flux = side_flux;
+                                switch_dirichlet=0;
+                            }
+                        } else {
+                            // check and possibly switch to  pressure BC
+                            // TODO: What is the appropriate DOF in not local?
+                            // The switch raise error on the corresponding side row.
+                            // Magnitude of the error is abs(solution_head - bc_pressure)
+                            // Since usually K is very large, this error would be much
+                            // higher then error caused by the inverse switch, this
+                            // cause that a solution  with the flux violating the
+                            // flux inequality leading may be accepted, while the error
+                            // in pressure inequality is always satisfied.
+                            ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
+                            unsigned int loc_edge_row = ele_ac.edge_local_row(i);
+                            double & solution_head = ls->get_solution_array()[loc_edge_row];
+
+                            if ( solution_head > bc_pressure) {
+                                //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
+                                solution_head = bc_pressure;
+                                switch_dirichlet=1;
+                            }
+                        }
+                        
+                            // ** Apply BCUpdate BC type. **
+                            // Force Dirichlet type during the first iteration of the unsteady case.
+                            if (switch_dirichlet || ad_->force_bc_switch ) {
+                                //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
+                                loc_system_.set_solution(edge_row,bc_pressure);
+                            } else {
+                                //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
+                                loc_system_.set_value(edge_row, side_row, 1.0, side_flux);
+                            }
+
+                        } else if (type==DarcyMH::EqData::river) {
+                            ad_->is_linear=false;
+                            //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
+                            //unsigned int loc_edge_idx = bcd->bc_ele_idx_;
+                            //char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
+
+                            double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
+                            double bc_switch_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
+                            double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
+                            double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
+                            ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
+                            unsigned int loc_edge_row = ele_ac.edge_local_row(i);
+                            double & solution_head = ls->get_solution_array()[loc_edge_row];
+
+                            // Force Robin type during the first iteration of the unsteady case.
+                            if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
+                                // Robin BC
+                                //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
+                                loc_system_.set_value(edge_row, edge_row,
+                                                      -bcd->element()->measure() * bc_sigma * cross_section,
+                                                      bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
+                            } else {
+                                // Neumann BC
+                                //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
+                                double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
+                                
+                                loc_system_.set_value(edge_row, side_row,
+                                                      1.0,
+                                                      bc_total_flux * bcd->element()->measure() * cross_section);
+                                loc_system_.set_mat_values({side_row}, {edge_row}, {1.0});
+                            }
+                        } 
+                        else {
+                            xprintf(UsrErr, "BC type not supported.\n");
+                        }
+
+//                         if (ad_->balance != nullptr && fill_matrix)
+//                         {
+//                         /*
+//                             DebugOut()("add_flux: {} {} {} {}\n",
+//                                     mh_dh.el_ds->myp(),
+//                                     ele_ac.ele_global_idx(),
+//                                     local_boundary_index,
+//                                     side_row);*/
+//                             ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, local_boundary_index, {loc_system_.row_dofs[side_row]}, {1});
+//                         }
+//                         ++local_boundary_index;
+                    }
+                    loc_system_.set_mat_values({side_row}, {edge_row}, {1.0});
+                    loc_system_.set_mat_values({edge_row}, {side_row}, {1.0});
+
+                }
+        }
+        
+        
+
+        
+
+// 
+//         void assembly_local_matrix(LocalElementAccessorBase<3> ele) override
+//         {
+//             double cs = ad_->cross_section.value(ele.centre(), ele.element_accessor());
+//             double conduct =  ad_->conductivity.value(ele.centre(), ele.element_accessor());
+// 
+//             double scale = 1 / cs /conduct;
+//             *(ad_->system_.local_matrix) = scale*assembly_local_geometry_matrix(ele.full_iter());
+//             //TODO: assemble directly into local system
+// //             loc_system_.matrix.submat(0,0,dim,dim)
+// //                     = scale*assembly_local_geometry_matrix(ele.full_iter());
+// //             std::vector<unsigned int> loc_dofs(dim+1);
+// //             for(unsigned int i=0; i<dim+1; i++) loc_dofs[i]= i;
+// //             
+// //             loc_system_.set_mat_values(loc_dofs, loc_dofs,
+// //                                        scale*assembly_local_geometry_matrix(ele.full_iter()));
+//         }
+
+        void assembly_sides(LocalElementAccessorBase<3> ele_ac)
+        {
+            //TODO pass scaling argument, so we can reuse this in assembly_lmh
+            double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+            double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());
+            double scale = 1 / cs /conduct;
+            
+            arma::vec3 &gravity_vec = ad_->gravity_vec_;
+            
+            //START_TIMER("Assembly<dim>::assembly_local_matrix");
+            ElementFullIter ele =ele_ac.full_iter();
+            fe_values_.reinit(ele);
+            unsigned int ndofs = fe_values_.get_fe()->n_dofs();
+            unsigned int qsize = fe_values_.get_quadrature()->size();
+
+            for (unsigned int k=0; k<qsize; k++)
+                for (unsigned int i=0; i<ndofs; i++){
+                    double rhs_val =
+                            arma::dot(gravity_vec,fe_values_.shape_vector(i,k))
+                            * fe_values_.JxW(k);
+                    loc_system_.add_value(i,i , 0.0, rhs_val);
+                    
+                    for (unsigned int j=0; j<ndofs; j++){
+                        double mat_val = 
+                            arma::dot(fe_values_.shape_vector(i,k), //TODO: compute anisotropy before
+                                      (ad_->anisotropy.value(ele_ac.centre(), ele_ac.element_accessor() )).i()
+                                            * fe_values_.shape_vector(j,k))
+                            * scale * fe_values_.JxW(k);
+                        
+                        loc_system_.add_value(i,j , mat_val, 0.0);
+                    }
+                }
+            
+            // assemble matrix for weights in BDDCML
+            // approximation to diagonal of 
+            // S = -C - B*inv(A)*B'
+            // as 
+            // diag(S) ~ - diag(C) - 1./diag(A)
+            // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
+            // to a continuous one
+            // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
+            // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
+            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+               const arma::mat& local_matrix = loc_system_.get_matrix();
+               for(unsigned int i=0; i < ndofs; i++) {
+                   double val_side =  local_matrix(i,i);
+                   double val_edge =  -1./local_matrix(i,i);
+
+                   unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
+                   unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
+                   static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( side_row, val_side );
+                   static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( edge_row, val_edge );
+               }
+            }
+        }
+        
+        
+        void assembly_element(LocalElementAccessorBase<3> ele_ac){
+            // set block B, B': element-side, side-element
+            
+            for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
+                loc_system_.set_mat_values({loc_ele_dof}, {loc_side_dofs[side]}, {-1.0});
+                loc_system_.set_mat_values({loc_side_dofs[side]}, {loc_ele_dof}, {-1.0});
+            }
+//             ls->mat_set_values(1, &ele_row, nsides, side_rows, minus_ones);
+//             ls->mat_set_values(nsides, side_rows, 1, &ele_row, minus_ones);
+
+            // D block:  diagonal: element-element
+            //TODO: local system is dense; correct when it is sparse
+//             ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
+
+            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+                double val_ele =  1.;
+                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
+            }
+        }
+        
+        void schur_allocations(LocalElementAccessorBase<3> ele_ac){
+            
+            //D, E',E block: compatible connections: element-edge
+            LinSys* ls = ad_->lin_sys;
+            Neighbour *ngh;
+//             double local_vb[4]; // 2x2 matrix
+            int ele_row = ele_ac.ele_row();
+            unsigned int nsides = ele_ac.n_sides();
+            int* edge_rows = & loc_system_.row_dofs[loc_edge_dofs[0]];
+            
+            int tmp_rows[100];
+            // to make space for second schur complement, max. 10 neighbour edges of one el.
+            double zeros[1000];
+            for(int i=0; i<1000; i++) zeros[i]=0.0;
+            
+            for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
+                // every compatible connection adds a 2x2 matrix involving
+                // current element pressure  and a connected edge pressure
+                ngh= ele_ac.full_iter()->neigh_vb[i];
+                tmp_rows[0]=ele_row;
+                tmp_rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
+                
+//                 if (fill_matrix)
+//                     assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
+//                 
+//                 ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
+
+                // update matrix for weights in BDDCML
+//                 if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
+//                     int ind = tmp_rows[1];
+//                     // there is -value on diagonal in block C!
+//                     double new_val = local_vb[0];
+//                     static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( ind, new_val );
+//                 }
+
+                if (ad_->n_schur_compls == 2) {
+                    // for 2. Schur: N dim edge is conected with N dim element =>
+                    // there are nz between N dim edge and N-1 dim edges of the element
+
+                    ls->mat_set_values(nsides, edge_rows, 1, tmp_rows+1, zeros);
+                    ls->mat_set_values(1, tmp_rows+1, nsides, edge_rows, zeros);
+
+                    // save all global edge indices to higher positions
+                    tmp_rows[2+i] = tmp_rows[1];
+                }
+            }
+                // add virtual values for schur complement allocation
+            uint n_neigh;
+            switch (ad_->n_schur_compls) {
+            case 2:
+                n_neigh = ele_ac.full_iter()->n_neighs_vb;
+                // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
+                OLD_ASSERT(n_neigh*n_neigh<1000, "Too many values in E block.");
+                ls->mat_set_values(ele_ac.full_iter()->n_neighs_vb, tmp_rows+2,
+                        ele_ac.full_iter()->n_neighs_vb, tmp_rows+2, zeros);
+
+            case 1: // included also for case 2
+                // -(C')*(A-)*B block and its transpose conect edge with its elements
+                ls->mat_set_values(1, &ele_row, nsides, edge_rows, zeros);
+                ls->mat_set_values(nsides, edge_rows, 1, &ele_row, zeros);
+                // -(C')*(A-)*C block conect all edges of every element
+                ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
+            }
+        }
+        
+        
         // assembly volume integrals
         FE_RT0<dim,3> fe_rt_;
         MappingP1<dim,3> map_;
@@ -189,7 +545,14 @@
 
         // data shared by assemblers of different dimension
         AssemblyDataPtr ad_;
-        RichardsSystem system_;
+        
+        LocalSystem loc_system_;
+        std::vector<int> loc_side_dofs;
+        std::vector<int> loc_edge_dofs;
+        unsigned int loc_ele_dof;
+        
+        // Auxiliary counter for boundary balance. CAREFUL - here it would be different for every dimension!!
+//         unsigned int local_boundary_index;
 
     };
 
