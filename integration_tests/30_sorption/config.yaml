@@ -2,13 +2,3 @@ common_config:
   proc: [1, 2]
   memory_limit: 1000
 
-test_cases:
-- file: 01_simple.yaml
-- file: 02_source.yaml
-- file: 03_flow_trans_sorp.yaml
-- file: 04_langmuir.yaml
-- file: 05_freundlich.yaml
-- file: 06_linear.yaml
-- file: 07_langmuir_var.yaml
-- file: 08_freundlich_var.yaml
-- file: 09_linear_var.yaml
