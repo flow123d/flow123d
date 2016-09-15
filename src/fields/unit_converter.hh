@@ -26,11 +26,15 @@
 #include "fields/unit_si.hh"
 #include "system/xio.h"
 
-// Declaration of exception
+// Declaration of exceptions
 TYPEDEF_ERR_INFO(EI_UnitDefinition, std::string);
+TYPEDEF_ERR_INFO(EI_ExpectedUnit, std::string);
 TYPEDEF_ERR_INFO(EI_UnitError, std::string);
 DECLARE_INPUT_EXCEPTION(ExcInvalidUnit,
         << "Invalid definition of unit: " << EI_UnitDefinition::qval << "\n" << EI_UnitError::val << ".\n");
+DECLARE_INPUT_EXCEPTION(ExcNoncorrespondingUnit,
+        << "Non-corresponding definition of unit: " << EI_UnitDefinition::qval << "\nExpected: unit with base format "
+		<< EI_ExpectedUnit::qval << ".\n");
 
 
 /// Store structure given by parser

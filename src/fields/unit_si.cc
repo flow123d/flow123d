@@ -18,6 +18,7 @@
 #include <sstream>
 
 #include "fields/unit_si.hh"
+#include "fields/unit_converter.hh"
 #include "system/xio.h"
 
 
@@ -212,6 +213,19 @@ void UnitSI::reset() {
 	std::fill(exponents_.begin(), exponents_.end(), 0);
 	undef_ = true;
 }
+
+double UnitSI::convert_unit_from(std::string actual_unit) const {
+	UnitConverter converter;
+	double coef = converter.convert(actual_unit);
+
+	if ( converter.unit_si() == (*this) ) {
+		return coef;
+	} else {
+		THROW( ExcNoncorrespondingUnit() << EI_UnitDefinition(actual_unit) << EI_ExpectedUnit(this->format_text()) );
+		return 0.0;
+	}
+}
+
 
 bool UnitSI::operator==(const UnitSI &other) const
 {

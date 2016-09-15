@@ -190,3 +190,22 @@ TEST_F(UnitConverterTest, convert_function) {
 		EXPECT_TRUE( this->unit_si()==UnitSI().kg(-1).m(6) );
 	}
 }
+
+
+TEST(UnitSI, convert_from_string) {
+	{
+		UnitSI unit = UnitSI().m();
+		double coef = unit.convert_unit_from("MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2");
+		EXPECT_DOUBLE_EQ( coef, (1000.0/0.99/9.8) );
+	}
+	{
+		UnitSI unit = UnitSI().kg().m(-3);
+		double coef = unit.convert_unit_from("g*cm^-3");
+		EXPECT_DOUBLE_EQ( coef, 1000.0 );
+	}
+	{
+		UnitSI unit = UnitSI().kg().m(-3);
+		EXPECT_THROW_WHAT( { unit.convert_unit_from("m*rho; rho = g*cm^-3"); }, ExcNoncorrespondingUnit,
+				"Non-corresponding definition of unit" );
+	}
+}
