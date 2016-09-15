@@ -40,15 +40,17 @@ upload: expand
 
 # target which uploads configuration via jenkins-jobs to server
 .PHONY: delete
-delete:
+delete: which
+	jenkins-jobs --conf $(CONFIG) --ignore-cache delete-all
+
+
+.PHONY: which
+which:
 	@echo "-----------------------------------------------"
 	@echo "Using configuration scripts $(CONFIG)"
 	@echo "-----------------------------------------------"
 	cat $(CONFIG)
 	@echo "-----------------------------------------------"
-	jenkins-jobs --conf $(CONFIG) --ignore-cache delete-all
-
-
 
 .PHONY: help
 help:

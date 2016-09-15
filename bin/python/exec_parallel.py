@@ -80,3 +80,5 @@ if __name__ == '__main__':
     returncode = do_work(parser)
     if type(returncode) is int:
         sys.exit(returncode)
+    else:
+        sys.exit(returncode.returncode)

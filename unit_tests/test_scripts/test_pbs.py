@@ -4,6 +4,7 @@
 # ----------------------------------------------
 import os
 import sys
+import shutil
 # ----------------------------------------------
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 # ----------------------------------------------
@@ -12,7 +13,6 @@ test_scripts.fix_paths()
 # ----------------------------------------------
 from scripts.core.threads import ResultHolder
 from scripts.pbs.modules.local_pbs import Module
-from scripts.core.base import Paths
 # ----------------------------------------------
 
 
@@ -32,7 +32,6 @@ def exec_call(*args, **kwargs):
 __dir__ = test_scripts.current_dir()
 extras = os.path.join(__dir__, 'extras')
 Module.mock = os.path.join(extras, 'pbs_mock.py')
-root = os.path.abspath(os.path.join(__dir__, '..', '..'))
 
 # set exit codes
 EXIT_OK = 0
@@ -64,15 +63,6 @@ class TestDoWork(test_scripts.UnitTest):
         self.assertEqual(pypy.command[0], 'mpirun')
         self.assertEqual(pypy.command[2], '1')
 
-    @test_scripts.limit_test(hostname='*')
-    def test_parallel_job(self):
-        """
-        Run exec parallel with CPU = 2
-        """
-        pypy = exec_call(*'-n 2 -q -- mpirun uname -a'.split())
-        self.assertEqual(pypy.returncode, EXIT_OK)
-        self.assertEqual(pypy.command[0], 'mpirun')
-        self.assertEqual(pypy.command[2], '2')
 
     @test_scripts.limit_test(hostname='*')
     def test_parallel_multijob(self):
@@ -97,9 +87,3 @@ class TestDoWork(test_scripts.UnitTest):
 
         result = exec_call('-n', '2', '-q', '--', 'mpirun', 'rm', dummy_file)
         self.assertNotEqual(result.returncode, EXIT_OK)
-
-
-    @test_scripts.limit_test(hostname='*')
-    def test_runtest(self):
-        yaml_file = os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml')
-        runtest_call(yaml_file, '-q')

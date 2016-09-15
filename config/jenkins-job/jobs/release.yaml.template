@@ -1,5 +1,5 @@
 #########################################################################################
-# Template for project Flow123d - DEVELOPER BUILDS
+# Template for project Flow123d - RELEASE BUILDS
 #########################################################################################
 
 
@@ -16,7 +16,7 @@
 - project:
     name: "Multijob project {build-type}"
     platform: ci2runner
-    build-type: debug
+    build-type: release
     unit-dir:
       - $PLACEHOLDER_unit_list$
     test-dir:
@@ -41,12 +41,15 @@
     builders:
       - shell: |
           whoami
-          cd docker-config/bin
-          ./configure --yes-to-all --do-not-override
+          cd docker-config/dockerfiles
+          ls -lah
+          make  base
+          make  base-build
+          make  flow-libs-dev-rel
 
 
 # ---------------------------------------------------------------------------- #
-# ---------- START IMAGE ----------------------------------------------------- #
+# ---------- RUN IMAGE ------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 - job-template:
     name: "Flow123d-{platform}-{build-type}-start-image"
@@ -55,7 +58,7 @@
     builders:
       - shell: |
           rm -f /tmp/docker_test.cid
-          docker run --privileged -di --cidfile /tmp/docker_test.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
+          docker run --privileged -di --cidfile /tmp/docker_test.cid flow123d/flow-libs-dev-rel bash
           docker_pid=`cat /tmp/docker_test.cid`
           echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
           echo "FLOW=/opt/flow123d/flow123d" >> prop.file
@@ -72,8 +75,8 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} git clone https://github.com/jbrezmorf/flow123d.git ${{FLOW}}
-          docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-debug.cmake ${{FLOW}}/config.cmake
+          docker exec ${{DOCKER_PID}} git clone -b JHy_docker https://github.com/jbrezmorf/flow123d.git ${{FLOW}}
+          docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-release.cmake ${{FLOW}}/config.cmake
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} cmake
 
 
@@ -117,7 +120,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} ${{FLOW}}/integration_tests/runtest ${{FLOW}}/integration_tests/{test-dir} --keep-going
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/tests/{test-dir} test-all
 
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #
@@ -147,8 +150,6 @@
     scm:
       - git:
           url: https://github.com/flow123d/docker-config.git
-          branches:
-              - origin/builder
           basedir: docker-config
           browser: githubweb
           browser-url: https://github.com/flow123d/docker-config/

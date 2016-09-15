@@ -7,7 +7,7 @@ import subprocess
 import time
 import datetime
 # ----------------------------------------------
-from scripts.core.base import Printer, IO
+from scripts.core.base import Printer, IO, StatusPrinter
 from scripts.core.threads import PyPy
 from scripts.parser.json_parser import RuntestParser, JsonParser
 from scripts.pbs.common import job_ok_string
@@ -269,6 +269,7 @@ def finish_pbs_exec(job, batch):
     :type job: scripts.pbs.job.Job
     """
     job.is_active = False
+    n_lines = 0 if batch else 20
     try:
         result = load_pypy(job.case.fs.dump_output)
     except Exception as e:
@@ -276,7 +277,7 @@ def finish_pbs_exec(job, batch):
         job.status = JobState.EXIT_ERROR
         Printer.out('ERROR: Job {} ended (no output file found). Case: {}', job, job.full_name)
         Printer.out('       pbs output: ')
-        Printer.out(format_n_lines(IO.read(job.case.fs.pbs_output), 0))
+        Printer.raw(format_n_lines(IO.read(job.case.fs.pbs_output), n_lines))
         return
 
     # check result
@@ -289,7 +290,7 @@ def finish_pbs_exec(job, batch):
 
     if result.returncode != 0 or batch:
         Printer.open()
-        Printer.wrn(format_n_lines(IO.read(result.output), indent=Printer.ind()))
+        Printer.raw(format_n_lines(IO.read(result.output), indent=Printer.ind()))
         Printer.close()
 
     return result
@@ -299,13 +300,12 @@ def finish_pbs_runtest(job, batch):
     """
     Upon PBS runtest finish determine Job exit
     :type job: scripts.pbs.job.Job
+    :rtype: ResultParallelThreads
     """
     job.is_active = False
+    n_lines = 0 if batch else 20
     try:
-        results = load_runtest(job.case.fs.dump_output)
-        if results.returncode == 0:
-            job.status = JobState.EXIT_OK
-            Printer.out('OK:    Job ({}) ended', job.full_name)
+        runner = load_runtest(job.case.fs.dump_output)
     except:
         # no output file was generated assuming it went wrong
         job.status = JobState.EXIT_ERROR
@@ -314,77 +314,21 @@ def finish_pbs_runtest(job, batch):
         Printer.out(format_n_lines(IO.read(job.case.fs.pbs_output), 0))
         return
 
-    for result in results.items:
-        # TODO add human readable codes and print exit code from runtest_module.py
-        # test did not run because output directory could not be cleaned
-        if result.clean.returncode != 0:
-            Printer.out(
-                "Could not clean directory '{clean.dir}': {clean.error}", clean=result.clean)
-            continue
+    job.status = JobState.EXIT_OK if runner.returncode == 0 else JobState.EXIT_ERROR
 
-        # test execution failed
-        if result.pypy.returncode != 0 or batch:
-            if result.pypy.returncode != 0:
-                Printer.out(
-                    "Error while executing test '{pypy.case.repr}':", pypy=result.pypy)
+    for thread in runner.threads:
+        StatusPrinter.print_test_result(thread)
+        if thread.returncode != 0:
             Printer.open()
-            Printer.wrn(format_n_lines(IO.read(result.pypy.output), indent=Printer.ind()))
+            if not batch:
+                Printer.out('Rest of the log is  in {}', job.case.fs.job_output)
+            Printer.raw(format_n_lines(IO.read(job.case.fs.job_output), n_lines, indent=Printer.ind()))
             Printer.close()
 
-            if result.pypy.returncode != 0:
-                continue
+    # print status line only if pbs job container more cases
+    if len(runner.threads) > 1:
+        Printer.separator()
+        StatusPrinter.print_runner_stat(runner)
+        Printer.separator()
 
-        # comparison failed
-        if result.comp.returncode != 0 and result.comp.returncode is not None:
-            Printer.out(
-                "Comparison error, case: {repr}, Details: ", repr=result.pypy.case.repr)
-            Printer.open(2)
-            for c in result.comp.items:
-                rc = c.returncode
-                if rc == 0:
-                    Printer.out('[{:^6}]: {c}', 'OK', c=c)
-                else:
-                    Printer.out('[{:^6}]: {c}', 'FAILED', c=c)
-            Printer.close(2)
-            continue
-
-
-
-def finish_pbs_job2(job, batch):
-    """
-    Upon PBS finish determine Job exit
-    :type job: scripts.pbs.job.Job
-    """
-    # try to get more detailed job status
-    job.is_active = False
-    job_output = IO.read(job.case.fs.json_output)
-
-    if job_output:
-        job_json = JsonParser(json.loads(job_output), batch)
-        if job_json.returncode == 0:
-            job.status = JobState.EXIT_OK
-            Printer.out('OK:    Job {}({}) ended', job, job.full_name)
-            Printer.open()
-            # in batch mode print all logs
-            if batch:
-                Printer.open()
-                for test in job_json.tests:
-                    test.get_result()
-                Printer.close()
-            Printer.close()
-        else:
-            job.status = JobState.EXIT_ERROR
-            Printer.out('ERROR: Job {}({}) ended', job, job.full_name)
-            # in batch mode print all logs
-
-            Printer.open()
-            for test in job_json.tests:
-                test.get_result()
-            Printer.close()
-    else:
-        # no output file was generated assuming it went wrong
-        job.status = JobState.EXIT_ERROR
-        Printer.out('ERROR: Job {} ended (no output file found). Case: {}', job, job.full_name)
-        Printer.out('       pbs output: ')
-        Printer.out(format_n_lines(IO.read(job.case.fs.pbs_output), 0))
-    return 0 if job.status == JobState.EXIT_OK else 1
+    return runner

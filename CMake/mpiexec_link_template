@@ -1,3 +1,2 @@
 #!/bin/sh
-#@MPIEXEC_PATH@  --allow-run-as-root "$@"
-mpiexec.mpich "$@"
+@MPIEXEC_PATH@ "$@"

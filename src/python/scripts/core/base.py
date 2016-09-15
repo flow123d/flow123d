@@ -97,6 +97,11 @@ class Printer(object):
         sys.stdout.write('\n')
 
     @classmethod
+    def raw(cls, msg):
+        sys.stdout.write(msg)
+        sys.stdout.write('\n')
+
+    @classmethod
     def err(cls, msg='', *args, **kwargs):
         if cls.indent:
             sys.stdout.write(cls.ind())
@@ -513,3 +518,80 @@ class DynamicSleep(object):
             return self.steps[-1]
 
         return self.steps[self.current]
+
+
+class TestPrinterStatus(object):
+    template = '{status_name:11s} | {case_name:40s} [{thread.duration:1.2f} sec] {detail}'
+    default = 'failed'
+
+    statuses = {
+        '0':    'passed',
+        'None': 'skipped',
+        '-1': 'skipped',
+    }
+
+    errors = {
+        'clean': '| could not clean directory',
+        'pypy':  '| error while running',
+        'comp':  '| wrong result: {sub_detail}'
+    }
+
+    @classmethod
+    def get(cls, status):
+        return cls.statuses.get(status, cls.default)
+
+    @classmethod
+    def detail_comp(cls, thread):
+        """
+        :type thread: scripts.core.threads.RuntestMultiThread
+        """
+        Printer.open(3)
+        result = '\n'
+        for t in thread.comp.threads:
+            if t.returncode != 0:
+                result += '{}ERROR in {}\n'.format(Printer.ind(), t.name)
+        Printer.close(3)
+        return result
+
+
+class RunnerFormatter(object):
+    template = '{status_name:11s} | passed={passed}, failed={failed}, skipped={skipped} in [{runner.duration:1.2f} sec]'
+
+
+class StatusPrinter(object):
+
+    @classmethod
+    def print_test_result(cls, thread, formatter=TestPrinterStatus):
+        """
+        :type formatter: TestPrinterStatus
+        :type thread: scripts.core.threads.RuntestMultiThread
+        """
+        status_name = '[ {} ]'.format(formatter.get(str(thread.returncode))).upper()
+        case_name = thread.pypy.case.as_string
+
+        detail = ''
+        for ti in ['clean', 'pypy', 'comp']:
+            subthread = getattr(thread, ti)
+            if subthread.returncode != 0:
+                if hasattr(formatter, 'detail_{}'.format(ti)):
+                    sub_detail = getattr(formatter, 'detail_{}'.format(ti))(thread)
+                detail = formatter.errors[ti].format(**locals())
+                break
+
+        Printer.out(formatter.template.format(**locals()))
+    
+    @classmethod
+    def print_runner_stat(cls, runner, formatter=RunnerFormatter):
+        """
+        :type runner: scripts.core.threads.ParallelThreads
+        :type formatter: RunnerFormatter
+        """
+        returncodes = [t.returncode for t in runner.threads]
+
+        skipped = returncodes.count(None) + returncodes.count(-1)
+        passed = returncodes.count(0)
+        failed = len(returncodes) - (skipped + passed)
+
+        result = 0 if len(returncodes) == passed else 1
+        status_name = '[ {} ]'.format(TestPrinterStatus.get(str(result))).upper()
+        Printer.out(formatter.template.format(**locals()))

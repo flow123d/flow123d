@@ -8,7 +8,6 @@ pathfix.init()
 # ----------------------------------------------
 import sys
 # ----------------------------------------------
-from scripts.core.base import GlobalResult
 from utils.argparser import ArgParser
 from utils.duration import Duration
 # ----------------------------------------------
@@ -111,3 +110,5 @@ if __name__ == '__main__':
     returncode = do_work(parser)
     if type(returncode) is int:
         sys.exit(returncode)
+    else:
+        sys.exit(returncode.returncode)

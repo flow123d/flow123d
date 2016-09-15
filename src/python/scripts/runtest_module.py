@@ -7,7 +7,7 @@ import time
 import sys
 # ----------------------------------------------
 from scripts.config.yaml_config import ConfigPool
-from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult, DynamicSleep
+from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult, DynamicSleep, StatusPrinter
 from scripts.core.threads import ParallelThreads, RuntestMultiThread
 from scripts.pbs.common import get_pbs_module
 from scripts.pbs.job import JobState, MultiJob, finish_pbs_exec, finish_pbs_runtest
@@ -178,6 +178,7 @@ class ModuleRuntest(ScriptModule):
         sleeper = DynamicSleep(min=300, max=5000, steps=5)
 
         # wait for finish
+        runners = list()
         while multijob.is_running():
             Printer.dyn('Updating job status')
             multijob.update()
@@ -191,7 +192,7 @@ class ModuleRuntest(ScriptModule):
 
             # get all jobs where was status update to COMPLETE state
             for job in jobs_changed:
-                returncodes[job] = finish_pbs_runtest(job, self.arg_options.batch)
+                runners.append(finish_pbs_runtest(job, self.arg_options.batch))
 
             if jobs_changed:
                 Printer.separator()
@@ -204,9 +205,9 @@ class ModuleRuntest(ScriptModule):
         Printer.out(multijob.get_status_line())
         Printer.out('All jobs finished')
 
-        # get max return code or number 2 if there are no returncodes
-        returncode = max(returncodes.values()) if returncodes else 2
-        return returncode
+        returncodes = [runner.returncode for runner in runners if runner]
+
+        return max(returncodes) if returncodes else None
 
     def run_local_mode(self):
         """
@@ -234,42 +235,14 @@ class ModuleRuntest(ScriptModule):
 
         Printer.separator()
         Printer.out('Summary: ')
-        Printer.open()
 
+        Printer.open()
         for thread in runner.threads:
             multithread = thread
             """ :type: RuntestMultiThread """
-
-            returncode = multithread.returncode
-            GlobalResult.add(multithread)
-
-            if multithread.clean.with_error():
-                Printer.out("[{:^6}]:{:3} | Could not clean directory '{}': {}", 'ERROR',
-                            multithread.clean.returncode,
-                            multithread.clean.dir,
-                            multithread.clean.error)
-                continue
-
-            if not multithread.pypy.with_success():
-                Printer.out("[{:^6}]:{:3} | Run error, case: {}",
-                            multithread.pypy.returncode_map.get(str(multithread.pypy.returncode), 'ERROR'),
-                            multithread.pypy.returncode, multithread.pypy.case.to_string())
-                continue
-
-            if multithread.comp.with_error():
-                Printer.out("[{:^6}]:{:3} | Compare error, case: {}, Details: ",
-                            'FAILED', multithread.comp.returncode, multithread.pypy.case.to_string())
-                Printer.open(2)
-                for t in multithread.comp.threads:
-                    if t:
-                        Printer.out('[{:^6}]: {}', 'OK', t.name)
-                    else:
-                        Printer.out('[{:^6}]: {}', 'FAILED', t.name)
-                Printer.close(2)
-                continue
-
-            Printer.out("[{:^6}]:{:3} | Test passed: {}",
-                        'PASSED', multithread.pypy.returncode, multithread.pypy.case.to_string())
+            StatusPrinter.print_test_result(multithread)
+        Printer.separator()
+        StatusPrinter.print_runner_stat(runner)
         Printer.close()
 
         # exit with runner's exit code
@@ -347,6 +320,7 @@ class ModuleRuntest(ScriptModule):
 def do_work(parser, args=None, debug=False):
     """
     Main method which invokes ModuleRuntest
+    :rtype: ParallelThreads
     :type debug: bool
     :type args: list
     :type parser: utils.argparser.ArgParser
@@ -356,6 +330,8 @@ def do_work(parser, args=None, debug=False):
 
     # pickle out result on demand
     if parser.simple_options.dump:
-        import pickle
-        pickle.dump(result.dump(), open(parser.simple_options.dump, 'wb'))
+        try:
+            import pickle
+            pickle.dump(result.dump(), open(parser.simple_options.dump, 'wb'))
+        except: pass
     return result

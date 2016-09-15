@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 import re
-import random
+import os
 
 from scripts.pbs.job import Job, JobState
 from scripts.prescriptions.remote_run import PBSModule
@@ -13,8 +13,11 @@ class Module(PBSModule):
     Class Module dummy local pbs module
     """
 
-    # must be set later on
-    mock = None
+    # points to pbs mock python file in unit tests
+    mock = os.path.abspath(os.path.join(
+            os.path.dirname(os.path.realpath(os.path.abspath(__file__))),
+            '..', '..', '..', '..', '..',
+            'unit_tests', 'test_scripts', 'extras', 'pbs_mock.py'))
 
     def __init__(self, case):
         super(Module, self).__init__(case)

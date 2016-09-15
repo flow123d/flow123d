@@ -464,11 +464,9 @@ message(STATUS "=======================================================\n\n")
 message(STATUS "=======================================================")
 message(STATUS "====== ARMADILLO ======================================")
 message(STATUS "=======================================================")
-message(STATUS "Armadillo_ROOT_HINT = ${Armadillo_HINT_LIB}, ${Armadillo_HINT_INC}, ${Armadillo_HINT_CONF}")
+message(STATUS "Armadillo_ROOT_HINT = ${Armadillo_ROOT_HINT}")
 
 
-set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
-set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
 find_package(ArmadilloFlow 3.2.4 REQUIRED)
 include("${Armadillo_CONFIGURE_FILE}")   # this introduce target "armadillo" with correct dependencies
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
@@ -521,7 +519,6 @@ else()
     flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 endif()
 
-    message(WARNING "Variable PYTHON_ROOT not set. Using default value '${PYTHON_ROOT}'.")
 if(USE_PYTHON)
     flow_define(HAVE_PYTHON)
 endif()
@@ -530,6 +527,11 @@ endif()
 find_package(PythonInterp 2.7 REQUIRED)
 find_package(PythonLibs 2.7   REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
+
+# create shortcuts for runtest
+set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
+configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/integration_tests/runtest @ONLY)
 
 message(STATUS "-------------------------------------------------------")
 message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
