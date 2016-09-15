@@ -12,6 +12,7 @@
 #include <flow_gtest.hh>
 
 #include "fields/unit_si.hh"
+#include "fields/unit_converter.hh"
 #include "fields/unit_converter_template.hh"
 
 
@@ -79,105 +80,113 @@ TEST(UnitSI, division_operator) {
 	EXPECT_EQ( UnitSI::Pa().format_latex(), pressure2.format_latex() );
 }
 
-TEST(UnitSI, user_defined_units) {
-	{
-		UnitSI unit = UnitSI("m");
-		EXPECT_TRUE( unit == UnitSI().m() );
-		EXPECT_DOUBLE_EQ(unit.coef(), 1);
-	}
 
-	{
-		UnitSI unit = UnitSI("h");
-		EXPECT_TRUE( unit == UnitSI().s() );
-		EXPECT_DOUBLE_EQ(unit.coef(), 3600);
-	}
+class UnitConverterTest : public testing::Test, public UnitConverter {
+public:
+	UnitData unit_data_;
+protected:
 
-	{
-		UnitSI unit = UnitSI("kg.m^-3");
-		EXPECT_TRUE( unit == UnitSI().m(-3).kg() );
-		EXPECT_DOUBLE_EQ(unit.coef(), 1);
-	}
+    virtual void SetUp() {
+    }
+    virtual void TearDown() {
+    };
 
-	{
-		UnitSI unit = UnitSI("g.cm^-3");
-		EXPECT_TRUE( unit == UnitSI().m(-3).kg() );
-		EXPECT_DOUBLE_EQ(unit.coef(), 1000);
-	}
+};
 
-	{
-		UnitSI unit = UnitSI("m.kg.s^-2");
-		EXPECT_TRUE( unit == UnitSI().m().kg().s(-2) );
-		EXPECT_DOUBLE_EQ(unit.coef(), 1);
-	}
 
-	{
-		UnitSI unit = UnitSI("N.m^-2");
-		EXPECT_TRUE( unit == UnitSI::Pa() );
-		EXPECT_DOUBLE_EQ(unit.coef(), 1);
-	}
-
-	// Invalid representations of units
-	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m.s^-1^2"); }, UnitSI::ExcInvalidUnitString, "invalid value of unit" );
-	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("ab^2"); }, UnitSI::ExcInvalidUnitString, "invalid symbol of unit 'ab'" );
-	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^a"); }, UnitSI::ExcInvalidUnitString, "invalid exponent 'a'" );
-	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^2a"); }, UnitSI::ExcInvalidUnitString, "invalid exponent '2a'" );
-	EXPECT_THROW_WHAT( { UnitSI unit = UnitSI("m^1.5"); }, UnitSI::ExcInvalidUnitString, "invalid symbol of unit '5'" );
-}
-
-TEST(UnitSI, unit_converter_grammar) {
-	units_converter::UnitData data;
+TEST_F(UnitConverterTest, converter_grammar) {
 	{
 		std::string unit = "MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2";
-		data = units_converter::read_unit(unit);
-		EXPECT_EQ(data.size(), 3);
-		EXPECT_TRUE( data.find("rho") != data.end() );
-		EXPECT_TRUE( data.find("g_") != data.end() );
-		EXPECT_FALSE( data.find("MPa") != data.end() );
-		EXPECT_DOUBLE_EQ( data.find("g_")->second.coef_, 9.8);
-		EXPECT_EQ(data.find("g_")->second.factors_.size(), 2);
-		EXPECT_DOUBLE_EQ( data.find("rho")->second.coef_, 990);
-		EXPECT_EQ(data.find("rho")->second.factors_.size(), 2);
+		unit_data_ = this->read_unit(unit);
+		EXPECT_EQ(unit_data_.size(), 3);
+		EXPECT_TRUE( unit_data_.find("rho") != unit_data_.end() );
+		EXPECT_TRUE( unit_data_.find("g_") != unit_data_.end() );
+		EXPECT_FALSE( unit_data_.find("MPa") != unit_data_.end() );
+		EXPECT_DOUBLE_EQ( unit_data_.find("g_")->second.coef_, 9.8);
+		EXPECT_EQ(unit_data_.find("g_")->second.factors_.size(), 2);
+		EXPECT_DOUBLE_EQ( unit_data_.find("rho")->second.coef_, 990);
+		EXPECT_EQ(unit_data_.find("rho")->second.factors_.size(), 2);
 	}
 
 	{
 		std::string unit = "a*b; a = kg*m^a; b = m*s^-2";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
 				"Value of exponent 'a' is not integer" );
 	}
 
 	{
 		std::string unit = "a*b; b*c; b = m*s^-2";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
 				"Invalid expression '.*', missing '='" );
 	}
 
 	{
 		std::string unit = "kPa*n; n = m*55";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
 				"Invalid shortcut of unit '55'" );
 	}
 
 	{
 		std::string unit = "a*b; a = m*; b = kg*s*m^2";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
 				"Missing declaration of shortcut '.*'" );
 	}
 
 	{
 		std::string unit = "a*b; a = m*a; b = kg*s*m^2";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
 				"Cyclic declaration of unit 'a'" );
 	}
 
 	{
 		std::string unit = "s*g; g = 9.8*m*s^-2";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
 				"Shortcut 'g' is in conflict with predefined unit" );
 	}
 
 	{
 		std::string unit = "a*b*c; a = kg.K; b = m*s^-2";
-		EXPECT_THROW_WHAT( { data = units_converter::read_unit(unit); }, units_converter::ExcInvalidUnit,
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
 				"Unit 'c' is not defined" );
+	}
+}
+
+TEST_F(UnitConverterTest, convert_function) {
+	double coef;
+	{
+		std::string unit = "N/m^2";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, 1.0 );
+		EXPECT_TRUE( this->unit_si()==UnitSI::Pa() );
+	}
+	{
+		std::string unit = "kN/cm^2";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, 1.0e7 );
+		EXPECT_TRUE( this->unit_si()==UnitSI::Pa() );
+	}
+	{
+		std::string unit = "MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, (1000.0/0.99/9.8) );
+		EXPECT_TRUE( this->unit_si()==UnitSI().m() );
+	}
+	{
+		std::string unit = "g_^2; g_ = 9.8*m*s^-2";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, (9.8*9.8) );
+		EXPECT_TRUE( this->unit_si()==UnitSI().m(2).s(-4) );
+	}
+	{
+		std::string unit = "V*rho; rho = g*cm^-3; V = m^3";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, 1000.0 );
+		EXPECT_TRUE( this->unit_si()==UnitSI().kg() );
+	}
+	{
+		std::string unit = "q/rho^2; q = 100*kg ; rho = 1000*kg*m^-3";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, 0.0001 );
+		EXPECT_TRUE( this->unit_si()==UnitSI().kg(-1).m(6) );
 	}
 }
