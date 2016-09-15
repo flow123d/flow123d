@@ -538,7 +538,7 @@ class DynamicSleep(object):
 
 
 class TestPrinterStatus(object):
-    template = '{status_name:11s} | {case_name:40s} [{thread.duration:1.2f} sec] {detail}'
+    template = '{status_name:11s} | {case_name:45s} [{thread.duration:1.2f} sec] {detail}'
     default = 'failed'
 
     statuses = {
