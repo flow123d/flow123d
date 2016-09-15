@@ -104,6 +104,10 @@ class InfoMonitor(ThreadMonitor):
         if self.pypy.returncode > 0:
             Printer.err('Error! Command ({process.pid}) ended with {process.returncode}={rc}'.
                         format(rc=self.pypy.returncode, process=self.pypy.executor.process))
+            Printer.err('pypy.returncode =                          {}', self.pypy.returncode)
+            Printer.err('pypy.executor.returncode  =                {}', self.pypy.executor.returncode)
+            Printer.err('pypy.executor.process.returncode  =        {}', self.pypy.executor.process.returncode)
+            Printer.err('pypy.executor.process.process.returncode = {}', self.pypy.executor.process.process.returncode)
             Printer.err(Command.to_string(self.pypy.executor.command))
         elif self.end_fmt:
             Printer.out(self.end_fmt.format(**dict(self=self)))
