@@ -24,9 +24,8 @@
 
 #include "input/input_exception.hh"
 #include "fields/unit_si.hh"
+#include "system/xio.h"
 
-namespace units_converter
-{
 // Declaration of exception
 TYPEDEF_ERR_INFO(EI_UnitDefinition, std::string);
 TYPEDEF_ERR_INFO(EI_UnitError, std::string);
@@ -38,7 +37,7 @@ DECLARE_INPUT_EXCEPTION(ExcInvalidUnit,
 struct Factor {
 	/// Constructor
 	Factor() : exponent_(1), basic_(true) {}
-	Factor(std::string factor, int exponent) : factor_(factor), exponent_(exponent), basic_(true) {}
+	Factor(std::string factor, int exponent, bool basic = true) : factor_(factor), exponent_(exponent), basic_(basic) {}
 
 	std::string factor_;  //!< string represantation of unit or user defined constant
 	int exponent_;        //!< exponent
@@ -53,7 +52,6 @@ struct Formula {
 };
 typedef typename std::map<std::string, struct Formula> UnitData;
 
-}  // namespace units_converter
 
 
 /**
@@ -70,7 +68,7 @@ public:
 	};
 
 	/// Define all base and derived units given by their symbol.
-	std::map<std::string, DerivedUnit> units_map_;
+	std::map<std::string, struct DerivedUnit> units_map_;
 
 	// Constructor
 	BasicFactors();
@@ -80,18 +78,32 @@ public:
 
 class UnitConverter {
 public:
-	struct DerivedUnit {
-		double coef_;    //!< multiplicative coeficient
-		UnitSI unit_;    //!< derived SI unit
-	};
-
 	/// Define all base and derived units given by their symbol.
 	static const BasicFactors basic_factors;
 
-	// Constructor
-	UnitConverter(UnitSI unit_si);
+	/// Constructor
+	UnitConverter();
 
-private:
+	/// Convert string to coeficient and UnitSI representation, return coeficient
+	double convert(std::string actual_unit);
+
+	/// Return @p unit_si_
+	inline UnitSI unit_si() const {
+		ASSERT(unit_si_.is_def()).error("UnitSI is not defined, first call convert method.");
+		return unit_si_;
+	}
+
+protected:
+	/**
+	 * @brief Parse and check unit defined in string format.
+	 *
+	 * Return data in format \p UnitData
+	 */
+	UnitData read_unit(std::string s);
+
+	/// Calculates UnitSi and coeficient of Factor, recursively calls this method for user defined formula
+	void add_converted_unit(Factor factor, UnitData &unit_data, UnitSI &unit_si, double &coef);
+
 	/**
 	 * Coeficient of unit.
 	 *
@@ -101,7 +113,7 @@ private:
 	double coef_;
 
 	/**
-	 * Basic format of SI unit
+	 * Basic format of converted SI unit
 	 */
 	UnitSI unit_si_;
 

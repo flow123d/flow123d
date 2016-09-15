@@ -312,37 +312,6 @@ private:
 };
 
 
-/**
- * @brief Parse and check unit defined in string format.
- *
- * Return data in format \p UnitData
- */
-UnitData read_unit(std::string s)
-{
-    typedef spirit_namespace::position_iterator< std::string::iterator > PosnIterT;
-
-    std::string::iterator begin = s.begin();
-	std::string::iterator end = s.end();
-
-    const PosnIterT posn_begin( begin, end );
-    const PosnIterT posn_end( end, end );
-
-    Semantic_actions< std::string::iterator > semantic_actions;
-
-	try {
-		spirit_namespace::parse( begin, end,
-							UnitSIGrammer< std::string::iterator >( semantic_actions ),
-							spirit_namespace::space_p );
-		semantic_actions.check_unit_data();
-	} catch (ExcInvalidUnit &e) {
-		e << EI_UnitDefinition(s);
-		throw;
-	}
-
-    return semantic_actions.unit_data();
-}
-
-
 } // end namespace units_converter
 
 #endif /* UNIT_CONVERTER_TEMPLATE_HH_ */
