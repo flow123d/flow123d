@@ -109,6 +109,12 @@ public:
 	/// Return @p coef_ parameter.
 	double coef() const;
 
+	/// Multiply with power of given unit
+	void multiply(const UnitSI &other, int exp = 1);
+
+	/// Reset UnitSI object (set vector of exponents to zeros and set undef flag)
+	void reset();
+
 	/// Comparison operator
 	bool operator==(const UnitSI &other) const;
 

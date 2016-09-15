@@ -278,6 +278,18 @@ double UnitSI::coef() const {
 	return coef_;
 }
 
+void UnitSI::multiply(const UnitSI &other, int exp) {
+	for(unsigned int i=0; i < n_base_units; i++ ) {
+		exponents_[i] += exp * other.exponents_[i];
+	}
+	undef_ = false;
+}
+
+void UnitSI::reset() {
+	std::fill(exponents_.begin(), exponents_.end(), 0);
+	undef_ = true;
+}
+
 bool UnitSI::operator==(const UnitSI &other) const
 {
 	return (this->exponents_==other.exponents_);
