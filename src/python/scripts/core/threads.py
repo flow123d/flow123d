@@ -65,13 +65,21 @@ class ExtendedThread(threading.Thread):
         super(ExtendedThread, self).start()
 
     def run(self):
+        print 'ET: 1'
         self._is_over = False
+        print 'ET: 2'
         self.on_start(self)
+        print 'ET: 3'
         self.start_time = time.time()
+        print 'ET: before _run'
         self._run()
+        print 'ET: after   run'
         self.end_time = time.time()
-        self._is_over = True
+        print 'ET: 4'
         self.on_complete(self)
+        print 'ET: 5'
+        self._is_over = True
+        print 'ET: 6'
 
     def is_over(self):
         return self._is_over
@@ -342,8 +350,11 @@ class PyPy(ExtendedThread):
 
     def _run(self):
         # start executor
+        print 'PP: starting executor'
         self.executor.start()
+        print 'PP: waiting for process to exist'
         wait_for(self.executor, 'process')
+        print 'PP: process created'
 
         if self.executor.broken:
             Printer.err('Could not start command {}: {}',
@@ -354,14 +365,18 @@ class PyPy(ExtendedThread):
         # if process is not broken, propagate start event
         self.on_process_start(self)
 
+        print 'PP: while is running...'
         while self.executor.process.is_running():
             self.on_process_update(self)
             self.sleeper.sleep()
 
+        print 'PP: process ended'
+
         # get return code
         rc = getattr(self.executor, 'returncode', None)
+        print 'PP: rc = {}'.format(rc)
         self.returncode = rc if self.custom_error is None or str(rc) == "0" else self.custom_error
-
+        print 'PP: returncode = {}'.format(self.returncode)
         # propagate on_complete event
         self.on_process_complete(self)
 
