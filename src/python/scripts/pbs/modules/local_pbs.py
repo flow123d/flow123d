@@ -8,16 +8,31 @@ from scripts.pbs.job import Job, JobState
 from scripts.prescriptions.remote_run import PBSModule
 
 
+def determine_mock_location():
+    # if script are copied out
+    path = os.path.abspath(os.path.join(
+            os.path.dirname(os.path.realpath(os.path.abspath(__file__))),
+            '..', '..', '..', '..', '..',
+            'unit_tests', 'test_scripts', 'extras', 'pbs_mock.py'))
+    if os.path.exists(path):
+        return path
+
+    # if script is still in repo
+    path = os.path.abspath(os.path.join(
+        os.path.dirname(os.path.realpath(os.path.abspath(__file__))),
+        '..', '..', '..', '..',
+        'tests', 'test_scripts', 'extras', 'pbs_mock.py'))
+
+    if os.path.exists(path):
+        return path
+
 class Module(PBSModule):
     """
     Class Module dummy local pbs module
     """
 
     # points to pbs mock python file in unit tests
-    mock = os.path.abspath(os.path.join(
-            os.path.dirname(os.path.realpath(os.path.abspath(__file__))),
-            '..', '..', '..', '..', '..',
-            'unit_tests', 'test_scripts', 'extras', 'pbs_mock.py'))
+    mock = determine_mock_location()
 
     def __init__(self, case):
         super(Module, self).__init__(case)

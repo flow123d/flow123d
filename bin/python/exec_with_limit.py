@@ -24,13 +24,20 @@ parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder=
 ])
 parser.add('', '--batch', type=True, name='batch', docs=[
     'Make output of this script more for an off-line reading',
-    'In batch mode, stdout and stderr from executed processes will be printed, not saved'
+    'In batched mode, stdout and stderr from executed processes will be printed, not saved'
 ])
 # ----------------------------------------------
 
 if __name__ == '__main__':
     from scripts.exec_with_limit_module import do_work
 
+    # determine batched mode after parsing
+    from scripts.core.base import Printer
+    parser.on_parse += Printer.setup_printer
+
     # run work
     returncode = do_work(parser)
-    sys.exit(returncode)
+    if type(returncode) is int:
+        sys.exit(returncode)
+
+    sys.exit(returncode.returncode)

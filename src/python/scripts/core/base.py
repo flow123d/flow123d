@@ -13,6 +13,8 @@ import time
 import json
 # ----------------------------------------------
 from simplejson import JSONEncoder
+# ----------------------------------------------
+
 
 is_linux = platform.system().lower().startswith('linux')
 
@@ -69,76 +71,171 @@ class MyEncoder(JSONEncoder):
             return str(o)
 
 
+class _Printer(object):
+    """
+    Class _Printer server as wrapper for all printing and echoing in the program
+    """
+
+    LEVEL_BATCH = 1
+    LEVEL_CONSOLE = 2
+    LEVEL_ALL = LEVEL_BATCH | LEVEL_CONSOLE
+    SEPARATOR = '-' * 60
+    log_file = None
+
+    # default level
+    level = LEVEL_ALL
+    _indent = 0
+    _indents = {}
+    _depth = 0
+
+    def __init__(self, level):
+        self.level = level
+        self._with_level = 1
+
+    @classmethod
+    def indent(cls):
+        return '    ' * cls._indent
+
+    def open(self, level=1):
+        self.__class__._indent += level
+
+    def close(self, level=1):
+        self.__class__._indent -= level
+
+    def with_level(self, level=1):
+        self._with_level = level
+        return self
+
+    def __enter__(self):
+        self.open(self._with_level)
+        self.__class__._indents[self.__class__._depth] = self._with_level
+        self.__class__._depth += 1
+
+    def __exit__(self, type, value, traceback):
+        self.__class__._depth -= 1
+        i = self.__class__._indents[self.__class__._depth]
+
+        self.close(i)
+        return False
+
+    def is_muted(self):
+        return not self.level & self.__class__.level
+
+    def _write(self, str):
+        sys.stdout.write(str)
+
+        if self.__class__.log_file:
+            with open(self.__class__.log_file, "a+") as fp:
+                fp.write(str)
+
+    # ------------------------------------------------------
+    def out(self, msg, *args, **kwargs):
+        if self.is_muted():
+            return
+
+        if self.__class__._indent:
+            self._write(self.indent())
+        if not args and not kwargs:
+            self._write(msg)
+        else:
+            self._write(msg.format(*args, **kwargs))
+        self._write('\n')
+
+    def raw(self, msg):
+        if self.is_muted():
+            return
+
+        self._write(msg)
+        self._write('\n')
+
+    def dyn(self, msg, *args, **kwargs):
+        if self.is_muted():
+            return
+
+        self._write('\r' + ' ' * 80)
+        if self.__class__._indent:
+            self._write('\r' + self.indent() + msg.format(*args, **kwargs))
+        else:
+            self._write('\r' + msg.format(*args, **kwargs))
+        sys.stdout.flush()
+
+    def sep(self):
+        if self.is_muted():
+            return
+
+        self._write(self.indent())
+        self._write(self.SEPARATOR)
+        self._write('\n')
+
+    def suc(self, msg, *args, **kwargs):
+        if self.is_muted():
+            return
+
+        self._write('[ OK ]  | ')
+        self._write(msg.format(*args, **kwargs))
+        self._write('\n')
+
+    def err(self, msg, *args, **kwargs):
+        if self.is_muted():
+            return
+
+        self._write(self.indent())
+        self._write('[ERROR] | ')
+        self._write(msg.format(*args, **kwargs))
+        self._write('\n')
+
+        # import traceback
+        # traceback.print_stack(file=sys.stdout)
+
+    def newline(self):
+        if self.is_muted():
+            return
+
+        self._write('\n')
+
+
 class Printer(object):
     """
-    Class Printer unifies output operation
+    Class Printer is yet another wrapper for _Printer
+    This class offers convenient fields for different print level
     """
 
-    indent = 0
-    batch_output = True
-    dynamic_output = not batch_output
+    LEVEL_BATCH = _Printer.LEVEL_BATCH
+    LEVEL_CONSOLE = _Printer.LEVEL_CONSOLE
+    LEVEL_ALL = _Printer.LEVEL_ALL
+
+    all = _Printer(_Printer.LEVEL_ALL)
+    console = _Printer(_Printer.LEVEL_CONSOLE)
+    batched = _Printer(_Printer.LEVEL_BATCH)
 
     @classmethod
-    def ind(cls):
-        return cls.indent * '    '
+    def indent(cls):
+        return _Printer.indent()
 
     @classmethod
-    def style(cls, msg='', *args, **kwargs):
-        sys.stdout.write(msg.format(*args, **kwargs))
-        sys.stdout.write('\n')
+    def get_level(cls):
+        return _Printer.level
 
     @classmethod
-    def separator(cls):
-        cls.out('-' * 60)
+    def set_level(cls, level):
+        _Printer.level = level
 
     @classmethod
-    def wrn(cls, msg='', *args, **kwargs):
-        sys.stdout.write(msg.format(*args, **kwargs))
-        sys.stdout.write('\n')
-
-    @classmethod
-    def raw(cls, msg):
-        sys.stdout.write(msg)
-        sys.stdout.write('\n')
-
-    @classmethod
-    def err(cls, msg='', *args, **kwargs):
-        if cls.indent:
-            sys.stdout.write(cls.ind())
-        sys.stdout.write(msg.format(*args, **kwargs))
-        sys.stdout.write('\n')
-
-    # ----------------------------------------------
-
-    @classmethod
-    def out(cls, msg='', *args, **kwargs):
-        if cls.indent:
-            sys.stdout.write(cls.ind())
-        if not args and not kwargs:
-            sys.stdout.write(msg)
-        else:
-            sys.stdout.write(msg.format(*args, **kwargs))
-        sys.stdout.write('\n')
-
-    @classmethod
-    def dyn(cls, msg, *args, **kwargs):
-        if cls.dynamic_output:
-            sys.stdout.write('\r' + ' ' * 80)
-            if cls.indent:
-                sys.stdout.write('\r' + cls.ind() + msg.format(*args, **kwargs))
+    def setup_printer(cls, parser):
+        """
+        :type parser: utils.argparser.ArgParser
+        """
+        try:
+            if parser.simple_options.batch:
+                cls.set_level(cls.LEVEL_BATCH)
             else:
-                sys.stdout.write('\r' + msg.format(*args, **kwargs))
-            sys.stdout.flush()
+                cls.set_level(cls.LEVEL_CONSOLE)
+        except:
+            cls.set_level(cls.LEVEL_CONSOLE)
 
-    # ----------------------------------------------
-
-    @classmethod
-    def open(cls, l=1):
-        cls.indent += l
-
-    @classmethod
-    def close(cls, l=1):
-        cls.indent -= l
+        try:
+            _Printer.log_file = parser.simple_options.log
+        except: pass
 
 
 def make_relative(f):
@@ -270,7 +367,7 @@ class Paths(object):
         for path in paths:
             filename = getattr(cls, path)()
             if not cls.exists(filename):
-                Printer.err('Error: file {:10s} ({}) does not exists!', path, filename)
+                Printer.all.err('Error: file {:10s} ({}) does not exists!', path, filename)
                 status = False
 
         return status
@@ -562,12 +659,11 @@ class TestPrinterStatus(object):
         """
         :type thread: scripts.core.threads.RuntestMultiThread
         """
-        Printer.open(3)
-        result = '\n'
-        for t in thread.comp.threads:
-            if t.returncode != 0:
-                result += '{}ERROR in {}\n'.format(Printer.ind(), t.name)
-        Printer.close(3)
+        with Printer.all.with_level(3):
+            result = ''
+            for t in thread.comp.threads:
+                if t.returncode != 0:
+                    result += '\n{}[ WRONG ] in {}'.format(Printer.indent(), t.name)
         return result
 
 
@@ -595,7 +691,7 @@ class StatusPrinter(object):
                 detail = formatter.errors[ti].format(**locals())
                 break
 
-        Printer.out(formatter.template.format(**locals()))
+        Printer.all.out(formatter.template.format(**locals()))
     
     @classmethod
     def print_runner_stat(cls, runner, formatter=RunnerFormatter):
@@ -611,4 +707,4 @@ class StatusPrinter(object):
 
         result = 0 if len(returncodes) == passed else 1
         status_name = '[ {} ]'.format(TestPrinterStatus.get(str(result))).upper()
-        Printer.out(formatter.template.format(**locals()))
+        Printer.all.out(formatter.template.format(**locals()))

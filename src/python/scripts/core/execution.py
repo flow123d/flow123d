@@ -8,7 +8,7 @@ import sys
 import tempfile
 # ----------------------------------------------
 from scripts import psutils
-from scripts.core.base import IO, Paths
+from scripts.core.base import IO, Paths, Command
 from scripts.core.threads import ExtendedThread, BrokenProcess
 from utils.globals import ensure_iterable
 # ----------------------------------------------
@@ -119,6 +119,7 @@ class BinExecutor(ExtendedThread):
         self.process = None
         self.broken = False
         self.output = OutputMode.hidden_output()
+        self.exception = "Unknown error"
 
     def _run(self):
         if self.stopped:
@@ -143,6 +144,7 @@ class BinExecutor(ExtendedThread):
             self.returncode = process.returncode
             self.broken = True
             self.process = process
+            self.exception = str(e)
             return
 
         # process successfully started to wait for result
@@ -155,3 +157,7 @@ class BinExecutor(ExtendedThread):
             self.returncode = 5
             return
         self.returncode = getattr(self.process, 'returncode', None)
+
+    @property
+    def escaped_command(self):
+        return Command.to_string(self.command)

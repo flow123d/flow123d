@@ -13,16 +13,17 @@ class ProgressCounter(object):
     Class ProgressCounter is simple printer-like class which count to specific target
     """
 
-    def __init__(self, fmt):
+    def __init__(self, fmt, printer=Printer.all):
         self.i = 0
         self.fmt = fmt
+        self.printer = printer
 
     def reset(self):
         self.i = 0
 
     def next(self, attributes):
         self.i += 1
-        Printer.out(self.fmt.format(
+        self.printer.out(self.fmt.format(
             self.i, **attributes
         ))
 
@@ -34,7 +35,7 @@ class ProgressTime(object):
     :type thread : threading.Thread
     """
 
-    def __init__(self, format='{}', period=0.1, dynamic=True):
+    def __init__(self, format='{}', period=0.1, dynamic=True, printer=Printer.console):
         self.format = format
         self.period = period
 
@@ -43,7 +44,7 @@ class ProgressTime(object):
         self.running = False
         self.active = True
         self.format_args = dict(s=self)
-        self.dynamic = dynamic
+        self.printer = printer
 
     @property
     def elapsed(self):
@@ -54,9 +55,7 @@ class ProgressTime(object):
 
     def update(self):
         self.start_time = self.start_time or time.time()
-        Printer.dyn(self.format, self.elapsed, **self.format_args)
-        if not self.dynamic:
-            Printer.out()
+        self.printer.dyn(self.format, self.elapsed, **self.format_args)
 
     def __enter__(self):
         if not self.active:
@@ -81,8 +80,7 @@ class ProgressTime(object):
         self.update()
 
         # print \n if in dynamic mode (ending)
-        if self.dynamic:
-            Printer.out()
+        self.printer.newline()
         return False
 
     stop = __exit__

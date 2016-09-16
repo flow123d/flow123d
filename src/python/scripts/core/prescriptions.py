@@ -5,7 +5,8 @@
 import shutil
 # ----------------------------------------------
 from scripts.core.base import Paths, Printer, PathFilters
-from scripts.core.threads import BinExecutor, SequentialThreads, ExtendedThread, PyPy
+from scripts.core.execution import BinExecutor
+from scripts.core.threads import SequentialThreads, ExtendedThread, PyPy
 from scripts.comparisons import file_comparison
 # ----------------------------------------------
 
@@ -94,7 +95,7 @@ class TestPrescription(object):
             module = getattr(file_comparison, 'Compare{}'.format(method.capitalize()), None)
             comp_data = check_rule[method]
             if not module:
-                Printer.err('Warning! No module for check_rule method "{}"', method)
+                Printer.all.err('Warning! No module for check_rule method "{}"', method)
                 continue
 
             pairs = self.get_ref_output_files(comp_data)

@@ -8,14 +8,14 @@ import time
 # ----------------------------------------------
 import sys
 
+from scripts.pbs import pbs_control
+from scripts.pbs.job import finish_pbs_exec
 from scripts.yamlc.yaml_config import ConfigCase
 from scripts.yamlc import DEFAULTS
-from scripts.core.base import Paths, Printer, Command, IO, GlobalResult, DynamicSleep
-from scripts.core.base import PathFormat
+from scripts.core.base import Paths, Printer, Command, IO
 from scripts.core.threads import PyPy, ResultHolder
 from scripts.core.execution import BinExecutor, OutputMode
-from scripts.pbs.common import get_pbs_module, job_ok_string
-from scripts.pbs.job import JobState, finish_pbs_exec, MultiJob
+from scripts.pbs.common import get_pbs_module
 from scripts.prescriptions.remote_run import exec_parallel_command, PBSModule
 from scripts.script_module import ScriptModule
 from utils.counter import ProgressCounter
@@ -23,7 +23,6 @@ from utils.counter import ProgressCounter
 
 # global arguments
 from utils.globals import ensure_iterable
-from utils.strings import format_n_lines
 
 
 class ModuleExecParallel(ScriptModule):
@@ -72,77 +71,12 @@ class ModuleExecParallel(ScriptModule):
         Runs this module in local mode.
         At this point arguments from cmd where parsed and converted.
         We create pbs start script/s and monitor their status/es. All jobs
-        are inserted into queue and after finished evauluated.
+        are inserted into queue and after finished evaluated.
         """
-        pbs_module = get_pbs_module()
+        pbs_module = get_pbs_module(self.arg_options.host)
         jobs = self.prepare_pbs_files(pbs_module)
+        result, multijob = pbs_control.do_work(jobs, pbs_module, finish_pbs_exec)
 
-        # start jobs
-        Printer.dyn('Starting jobs')
-
-        total = len(jobs)
-        job_id = 0
-        multijob = MultiJob(pbs_module.ModuleJob)
-        for qsub_command, pbs_run in jobs:
-            job_id += 1
-
-            Printer.dyn('Starting jobs {:02d} of {:02d}', job_id, total)
-            output = subprocess.check_output(qsub_command)
-            job = pbs_module.ModuleJob.create(output, pbs_run.case)
-            job.full_name = "Case {}".format(pbs_run.case)
-            multijob.add(job)
-
-        Printer.out()
-        Printer.out('{} job/s inserted into queue', total)
-
-        # # first update to get more info about multijob jobs
-        Printer.out()
-        Printer.separator()
-        Printer.dyn('Updating job status')
-        multijob.update()
-
-        # print jobs statuses
-        Printer.out()
-        if self.progress:
-            multijob.print_status()
-
-        Printer.separator()
-        Printer.dyn(multijob.get_status_line())
-        result = ResultHolder()
-
-        # use dynamic sleeper
-        sleeper = DynamicSleep(min=300, max=5000, steps=5)
-
-        # wait for finish
-        while multijob.is_running():
-            Printer.dyn('Updating job status')
-            multijob.update()
-            Printer.dyn(multijob.get_status_line())
-
-            # if some jobs changed status add new line to dynamic output remains
-            jobs_changed = multijob.get_all(status=JobState.COMPLETED)
-            if jobs_changed:
-                Printer.out()
-                Printer.separator()
-
-            # get all jobs where was status update to COMPLETE state
-            for job in jobs_changed:
-                pypy = finish_pbs_exec(job, self.batch)
-                if pypy:
-                    result.add(pypy)
-
-            if jobs_changed:
-                Printer.separator()
-                Printer.out()
-
-            # after printing update status lets sleep for a bit
-            if multijob.is_running():
-                sleeper.sleep()
-
-        Printer.out(multijob.get_status_line())
-        Printer.out('All jobs finished')
-
-        # get max return code or number 2 if there are no returncodes
         return result.singlify()
 
     def prepare_pbs_files(self, pbs_module):
@@ -188,21 +122,18 @@ class ModuleExecParallel(ScriptModule):
 
         if total == 1:
             pypy = self.run_local_mode_one(self.proc[0])
-            GlobalResult.returncode = pypy.returncode
             result.add(pypy)
         else:
             # optionally we use counter
             progress = ProgressCounter('Running {:02d} of {total:02d}')
             for p in self.proc:
-                Printer.separator()
                 progress.next(locals())
-                Printer.separator()
+                Printer.all.sep()
 
-                Printer.open()
-                pypy = self.run_local_mode_one(p)
-                Printer.close()
-                GlobalResult.returncode = max(GlobalResult.returncode, pypy.returncode)
+                with Printer.all.with_level():
+                    pypy = self.run_local_mode_one(p)
                 result.add(pypy)
+                Printer.all.sep()
 
         return result.singlify()
 
@@ -222,7 +153,8 @@ class ModuleExecParallel(ScriptModule):
             script=pkgutil.get_loader('exec_parallel').filename,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.rest else Command.to_string(self.rest),
-            dump_output=case.fs.dump_output
+            dump_output=case.fs.dump_output,
+            log_file=case.fs.job_output
         )
 
         template = PBSModule.format(
@@ -249,31 +181,21 @@ class ModuleExecParallel(ScriptModule):
         # set limits
         pypy.limit_monitor.time_limit = self.time_limit
         pypy.limit_monitor.memory_limit = self.memory_limit
-        pypy.progress = self.progress
-        pypy.info_monitor.deactivate()
-        pypy.error_monitor.deactivate()
 
         # catch output to variable
-        # in batch mode we will keep the files
+        # in batched mode we will keep the files
         # otherwise we will keep logs only on error
         log_file = Paths.temp_file('exec-parallel-{date}-{time}-{rnd}.log')
         pypy.executor.output = OutputMode.variable_output()
         pypy.full_output = log_file
 
+        # save output to file
+        pypy.output_monitor.log_file = log_file
+
         # start and wait for exit
         pypy.start()
         pypy.join()
 
-        # add result to global json result
-        GlobalResult.add(pypy)
-
-        # in batch mode or on error
-        if not pypy.with_success() or self.batch:
-            content = pypy.executor.output.read()
-            IO.write(log_file, content)
-            Printer.close()
-            Printer.out(format_n_lines(content, indent='    ', n_lines=-n_lines))
-            Printer.open()
         return pypy
 
 

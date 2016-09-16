@@ -26,6 +26,7 @@ class PyPyResult(object):
         """
         self.returncode = pypy.returncode
         self.command = pypy.executor.command
+        self.escaped_command = pypy.escaped_command
         self.name = pypy.name
         self.output = pypy.full_output
         self.duration = pypy.duration

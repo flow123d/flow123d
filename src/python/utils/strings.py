@@ -7,23 +7,45 @@ Simple module which provides string/list utilities
 """
 
 from __future__ import absolute_import
+from scripts.core.base import Printer
+
+format_n_lines_successful = dict(
+    line_prefix='== ',
+    line_suffix='',
+    first_line='=' * 60,
+    last_line='=' * 60,
+)
+
+format_n_lines_error = dict(
+    line_prefix='## ',
+    line_suffix='',
+    first_line='#' * 60,
+    last_line='#' * 60,
+)
 
 
-def format_n_lines(text, n_lines=0, line_prefix='## ', line_suffix='',
+def format_n_lines(text, success=True):
+    if success:
+        return format_n_lines_(text, **format_n_lines_successful)
+    return format_n_lines_(text, **format_n_lines_error)
+
+
+def format_n_lines_(text, line_prefix='## ', line_suffix='',
                    first_line='#' * 60, last_line='#' * 60,
-                   empty="<file is empty>", indent=''):
+                   empty="<file is empty>"):
     """
     Format given lines and adds prefix to them
     :param text:
-    :param n_lines:
     :param line_prefix:
     :param line_suffix:
     :param first_line:
     :param last_line:
     :param empty:
-    :param indent:
     :return:
     """
+
+    n_lines = 0 if not Printer.batched.is_muted() else 20
+    indent = Printer.indent()
 
     # empty output
     if text is None or not text:

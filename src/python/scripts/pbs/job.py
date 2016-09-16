@@ -197,7 +197,7 @@ class MultiJob(object):
 
     def print_status(self):
         for item in self.items:
-            Printer.out(str(item))
+            Printer.all.out(str(item))
 
     def status_changed(self, desired=JobState.COMPLETED):
         """
@@ -234,22 +234,6 @@ class MultiJob(object):
         )
 
 
-def print_log_file(f, n_lines):
-    """
-    Method prints up to n_lines from file f
-    :param f:
-    :param n_lines:
-    """
-    log_file = IO.read(f)
-    if log_file:
-        if n_lines == 0:
-            Printer.out('Full log from file {}:', f)
-        else:
-            Printer.out('Last {} lines from file {}:', abs(n_lines), f)
-
-        Printer.wrn(format_n_lines(log_file.rstrip(), -n_lines, indent=Printer.indent * '    '))
-
-
 def get_status_line(o, map=False):
     """
     Helper method which prints first line with details
@@ -269,29 +253,27 @@ def finish_pbs_exec(job, batch):
     :type job: scripts.pbs.job.Job
     """
     job.is_active = False
-    n_lines = 0 if batch else 20
     try:
         result = load_pypy(job.case.fs.dump_output)
     except Exception as e:
         # no output file was generated assuming it went wrong
         job.status = JobState.EXIT_ERROR
-        Printer.out('ERROR: Job {} ended (no output file found). Case: {}', job, job.full_name)
-        Printer.out('       pbs output: ')
-        Printer.raw(format_n_lines(IO.read(job.case.fs.pbs_output), n_lines))
+        Printer.all.err('Job {} ended (no output file found). Case: {}', job, job.full_name)
+        Printer.all.out('       pbs output: ')
+        Printer.all.raw(format_n_lines(IO.read(job.case.fs.pbs_output), False))
         return
 
     # check result
     if result.returncode == 0:
         job.status = JobState.EXIT_OK
-        Printer.out('OK:    Job {}({}) ended', job, job.full_name)
+        Printer.all.suc('Job {}({}) ended', job, job.full_name)
     else:
         job.status = JobState.EXIT_ERROR
-        Printer.out('ERROR: Job {}({}) ended', job, job.full_name)
+        Printer.all.err('Job {}({}) ended', job, job.full_name)
 
     if result.returncode != 0 or batch:
-        Printer.open()
-        Printer.raw(format_n_lines(IO.read(result.output), indent=Printer.ind()))
-        Printer.close()
+        with Printer.all.with_level(1):
+            Printer.all.raw(format_n_lines(IO.read(result.output), result.returncode == 0))
 
     return result
 
@@ -303,32 +285,29 @@ def finish_pbs_runtest(job, batch):
     :rtype: ResultParallelThreads
     """
     job.is_active = False
-    n_lines = 0 if batch else 20
     try:
         runner = load_runtest(job.case.fs.dump_output)
     except:
         # no output file was generated assuming it went wrong
         job.status = JobState.EXIT_ERROR
-        Printer.out('ERROR: Job {} ended (no output file found). Case: {}', job, job.full_name)
-        Printer.out('       pbs output: ')
-        Printer.out(format_n_lines(IO.read(job.case.fs.pbs_output), 0))
+        Printer.all.err('Job {} ended (no output file found). Case: {}', job, job.full_name)
+        Printer.all.out('       pbs output: ')
+        Printer.all.raw(format_n_lines(IO.read(job.case.fs.pbs_output), False))
         return
 
     job.status = JobState.EXIT_OK if runner.returncode == 0 else JobState.EXIT_ERROR
 
     for thread in runner.threads:
         StatusPrinter.print_test_result(thread)
-        if thread.returncode != 0:
-            Printer.open()
-            if not batch:
-                Printer.out('Rest of the log is  in {}', job.case.fs.job_output)
-            Printer.raw(format_n_lines(IO.read(job.case.fs.job_output), n_lines, indent=Printer.ind()))
-            Printer.close()
+        if thread.returncode != 0 or batch:
+            with Printer.all.with_level():
+                Printer.all.out('Log file {}', job.case.fs.job_output)
+                Printer.all.raw(format_n_lines(IO.read(job.case.fs.job_output), thread.returncode == 0))
 
     # print status line only if pbs job container more cases
     if len(runner.threads) > 1:
-        Printer.separator()
+        Printer.all.sep()
         StatusPrinter.print_runner_stat(runner)
-        Printer.separator()
+        Printer.all.sep()
 
     return runner

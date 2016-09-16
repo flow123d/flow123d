@@ -72,15 +72,14 @@ def get_pbs_module(hostname_hint=None):
     try:
         return importlib.import_module(full_module_path)
     except ImportError:
-        Printer.err('Error:  Could not load module "{}" ({}) for hostname "{}"',
+        Printer.all.err('Could not load module "{}" ({}) for hostname "{}"',
                     pbs_module_path, full_module_path, hostname)
-        Printer.open(2)
-        if host_file_exists:
-            if from_host:
-                Printer.err('Value specified in host_table.yaml "{}" points to non-existing module', pbs_module_path)
+        with Printer.all.with_level(2):
+            if host_file_exists:
+                if from_host:
+                    Printer.all.err('Value specified in host_table.yaml "{}" points to non-existing module', pbs_module_path)
+                else:
+                    Printer.all.err('Config file host_table.yaml does not have entry for hostname "{}"', hostname)
             else:
-                Printer.err('Config file host_table.yaml does not have entry for hostname "{}"', hostname)
-        else:
-            Printer.err('Config file host_table.yaml does not exists ({}) and auto module detection failed', host_file)
-        Printer.close(2)
+                Printer.all.err('Config file host_table.yaml does not exists ({}) and auto module detection failed', host_file)
         raise

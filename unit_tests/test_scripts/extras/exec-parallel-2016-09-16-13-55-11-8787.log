@@ -1,0 +1,9 @@
+--------------------------------------------------------------------------
+mpirun was unable to launch the specified application as it could not find an executable:
+
+Executable: cascas
+Node: janhybs
+
+while attempting to start process rank 0.
+--------------------------------------------------------------------------
+3 total processes failed to start

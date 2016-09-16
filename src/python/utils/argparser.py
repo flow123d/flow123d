@@ -8,7 +8,7 @@ import os
 import re
 from scripts.core.base import Printer
 from scripts.core.exceptions import ArgumentException
-from utils.globals import justify
+from utils.events import Event
 
 _long_format = re.compile(r'--[a-z0-9_-]+=')
 _short_eq_format = re.compile(r'-[a-z]=')
@@ -188,6 +188,7 @@ class ArgParser(object):
         self._usage = usage
         self.all_options = list()
         self.add('-h', '--help', type=True, name='help', docs='Display this help and exit')
+        self.on_parse = Event()
 
     def add(self, short='', long='', type=str, default=None, name=None, subtype=str, docs='', placeholder='', hidden=False):
         ao = ArgOption(short, long, type, default, name, subtype, docs, placeholder, hidden)
@@ -218,9 +219,9 @@ class ArgParser(object):
 
     def exit_usage(self, msg=None, exit_code=1, *args, **kwargs):
         if msg:
-            Printer.err('Error: {}'.format(msg), *args, **kwargs)
+            Printer.all.raw('Error: {}'.format(msg), *args, **kwargs)
 
-        Printer.err(self.usage())
+        Printer.all.raw(self.usage())
 
         if exit_code is not None:
             raise ArgumentException(exit_code, msg)
@@ -356,6 +357,7 @@ class ArgParser(object):
                 if self.current() == '--':
                     self.rest = self.source[self.i + 1:]
                     self.check_help()
+                    self.on_parse(self)
                     return self.simple_options, self.others, self.rest
                 # just add to others
                 else:
@@ -363,6 +365,7 @@ class ArgParser(object):
             self.i += 1
 
         self.check_help()
+        self.on_parse(self)
         return self.simple_options, self.others, self.rest
 
     def __getattr__(self, item):

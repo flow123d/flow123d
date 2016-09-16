@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-from scripts.core.base import Printer, Paths, IO
+from scripts.core.base import Paths, IO
 from scripts.core.threads import PyPy
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.script_module import ScriptModule
 # ----------------------------------------------
-from utils.strings import format_n_lines
 
 
 class ModuleExecWithLimit(ScriptModule):
@@ -45,20 +44,15 @@ class ModuleExecWithLimit(ScriptModule):
         pypy.full_output = log_file
 
         # set limits
-        pypy.error_monitor.message = None
         pypy.limit_monitor.time_limit = self.arg_options.time_limit
         pypy.limit_monitor.memory_limit = self.arg_options.memory_limit
 
+        # save output to file
+        pypy.output_monitor.log_file = log_file
+
         # start process
-        Printer.separator()
         pypy.start()
         pypy.join()
-
-        # in batch mode or on error
-        if not pypy.with_success() or self.batch:
-            content = pypy.executor.output.read()
-            IO.write(log_file, content)
-            Printer.out(format_n_lines(content, indent='    ', n_lines=-n_lines))
 
         return pypy
 

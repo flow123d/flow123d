@@ -94,6 +94,9 @@ parser.add('', '--list', type=True, name='list', docs=[
 parser.add('', '--dump', hidden=True, type=str, name='dump', placeholder='<FILE>', docs=[
     'If set will pickle result to given file'
 ])
+parser.add('', '--log', type=str, name='log', placeholder='<FILE>', docs=[
+    'Will also redirect output to file'
+])
 # ----------------------------------------------
 
 if __name__ == '__main__':
@@ -105,7 +108,11 @@ if __name__ == '__main__':
 
     from scripts.core.execution import BinExecutor
     from scripts.runtest_module import do_work
-    #
+
+    # determine batched mode after parsing
+    from scripts.core.base import Printer
+    parser.on_parse += Printer.setup_printer
+
     # import os
     # Paths.init(os.getcwd())
 
