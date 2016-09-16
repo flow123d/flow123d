@@ -130,7 +130,6 @@ class BinExecutor(ExtendedThread):
 
         # run command and block current thread
         try:
-            print "BE: starting process"
             self.process = psutils.Process.popen(
                 self.command,
                 stdout=self.output.open(),
@@ -149,13 +148,10 @@ class BinExecutor(ExtendedThread):
         # process successfully started to wait for result
         # call wait on Popen process
         self.broken = False
-        print 'BE: waiting for end'
         code = self.process.process.wait()
-        print 'BE: process finished {}'.format(code)
         self.output.close()
 
         if self.process.terminated:
             self.returncode = 5
             return
         self.returncode = getattr(self.process, 'returncode', None)
-        print 'BE: returncode set to {}'.format(self.returncode)
