@@ -17,7 +17,9 @@ public:
 
     AssemblerBase(AssemblyDataPtr d)
     : ad_(d), local_boundary_index(0)
-    {}
+    {
+        for(int i=0; i<1000; i++) zeros[i]=0.0;
+    }
     
     virtual ~AssemblerBase(){}
     
@@ -42,6 +44,10 @@ protected:
     /// Auxiliary counter for boundary balance.
     unsigned int local_boundary_index;
     
+    int tmp_rows[100];
+    // to make space for second schur complement, max. 10 neighbour edges of one el.
+    double zeros[1000];
+    
     void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
         
         for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
@@ -65,7 +71,7 @@ protected:
         //D, E',E block: compatible connections: element-edge
         int ele_row = ele_ac.ele_row();
         
-        int tmp_rows[2];
+        int rows[2];
         double local_vb[4]; // 2x2 matrix
         Neighbour *ngh;
     
@@ -73,17 +79,17 @@ protected:
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             ngh= ele_ac.full_iter()->neigh_vb[i];
-            tmp_rows[0]=ele_row;
-            tmp_rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
+            rows[0]=ele_row;
+            rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
             
             if (fill_matrix)
                 dim_assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
             
-            ad_->lin_sys->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
+            ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
 
             // update matrix for weights in BDDCML
             if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-               int ind = tmp_rows[1];
+               int ind = rows[1];
                // there is -value on diagonal in block C!
                double new_val = local_vb[0];
                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
@@ -102,11 +108,6 @@ protected:
             // edge dofs are saved in local system
             LocalSystem& loc = dim_assembler[ele_ac.dim()-1]->get_local_system();
             int* edge_rows = & loc.row_dofs[ele_ac.dim() + 2];
-            
-            int tmp_rows[100];
-            // to make space for second schur complement, max. 10 neighbour edges of one el.
-            double zeros[1000];
-            for(int i=0; i<1000; i++) zeros[i]=0.0;
             
             // D block:  diagonal: element-element
             //TODO: local system is dense; correct when it is sparse
