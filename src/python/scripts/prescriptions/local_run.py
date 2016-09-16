@@ -57,7 +57,7 @@ class LocalRun(AbstractRun):
 
                     # if we fail, set error to 13
                     pm.custom_error = 13
-                    pm.info_monitor.active = True
+                    pm.info_monitor.active = False
                     pm.limit_monitor.active = False
                     pm.progress_monitor.active = False
                     pm.error_monitor.message = 'Error! Comparison using method {} failed!'.format(method)
