@@ -191,6 +191,7 @@ public:
         arma::vec4 gravity_;
         arma::vec3 gravity_vec_;
 
+        // Mirroring the following members of DarcyMH:
         Mesh *mesh;
         MH_DofHandler *mh_dh;
 
@@ -202,6 +203,9 @@ public:
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
         bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        
+        /// Idicator of dirichlet or neumann type of switch boundary conditions.
+        std::vector<char> bc_switch_dirichlet;
         
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
@@ -359,13 +363,6 @@ protected:
 
 
 	LinSys *schur0;  		//< whole MH Linear System
-
-
-	
-
-
-	/// Idicator of dirichlet or neumann type of switch boundary conditions.
-	std::vector<char> bc_switch_dirichlet;
 
 
 	// gather of the solution

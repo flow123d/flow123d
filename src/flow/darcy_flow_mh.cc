@@ -320,7 +320,7 @@ void DarcyMH::initialize() {
 
     mh_dh.reinit(mesh_);
     // Initialize bc_switch_dirichlet to size of global boundary.
-    bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
+    data_->bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
 
 
     nonlinear_iteration_=0;
@@ -719,7 +719,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     data_->is_linear=false;
                     //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
                     unsigned int loc_edge_idx = bcd->bc_ele_idx_;
-                    char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
+                    char & switch_dirichlet = data_->bc_switch_dirichlet[loc_edge_idx];
                     double bc_pressure = data_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
                     double side_flux=bc_flux * bcd->element()->measure() * cross_section;
