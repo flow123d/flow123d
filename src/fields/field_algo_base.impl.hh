@@ -111,18 +111,18 @@ const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_input_type_
 
 template <int spacedim, class Value>
 shared_ptr< FieldAlgorithmBase<spacedim, Value> >
-FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
+FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, const struct FieldAlgoBaseInitData& init_data )
 {
     shared_ptr< FieldAlgorithmBase<spacedim, Value> > func;
-    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(n_comp);
-    func->init_from_input(rec);
+    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(init_data.n_comp_);
+    func->init_from_input(rec, init_data);
     return func;
 }
 
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
     xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
             typeid(this).name());
 }

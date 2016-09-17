@@ -67,7 +67,7 @@ FieldConstant<spacedim, Value> &FieldConstant<spacedim, Value>::set_value(const 
 
 
 template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
     this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
 
     typename Value::return_type tmp_value;

@@ -77,7 +77,7 @@ internal_raw_data(false), mesh_(NULL)
 
 
 template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	cout << string(reader_file_) << endl;
 	OLD_ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
 	OLD_ASSERT( reader_file_ == FilePath(), "Multiple call of init_from_input.\n");

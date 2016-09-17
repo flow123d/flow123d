@@ -72,7 +72,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
     // read formulas form input
     STI::init_from_input( formula_matrix_, rec.val<typename STI::AccessType>("value") );
     value_input_address_ = rec.address_string();

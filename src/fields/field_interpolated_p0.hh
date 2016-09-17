@@ -48,7 +48,7 @@ public:
 	/**
 	 * Initialization from the input interface.
 	 */
-	virtual void init_from_input(const Input::Record &rec);
+	virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
     /**
      * Update time and possibly update data from GMSH file.

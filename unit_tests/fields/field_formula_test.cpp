@@ -56,7 +56,8 @@ TEST(FieldFormula, read_from_input) {
     ElementAccessor<3> elm;
 
 
-    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), 3);
+    FieldAlgoBaseInitData init_data_conc(3, UnitSI().m());
+    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), init_data_conc);
     {
         arma::vec result;
 
@@ -78,7 +79,8 @@ TEST(FieldFormula, read_from_input) {
         EXPECT_DOUBLE_EQ( point_1(1) +1.0,               result[2]);
     }
 
-    auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"));
+    FieldAlgoBaseInitData init_data_conductivity(0, UnitSI().m());
+    auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"), init_data_conductivity);
     cond->set_time(0.0);
     {
         arma::mat::fixed<3,3> result;
@@ -141,30 +143,31 @@ TEST(FieldFormula, set_time) {
     Input::Array in_array=reader.get_root_interface<Input::Array>();
 
     auto it = in_array.begin<Input::AbstractRecord>();
+    FieldAlgoBaseInitData init_data(3, UnitSI().m());
 
     {
-        auto field=VectorField::function_factory(*it, 3);
+        auto field=VectorField::function_factory(*it, init_data);
         EXPECT_TRUE( field->set_time(1.0) );
         EXPECT_TRUE( field->set_time(2.0) );
     }
     ++it;
 
     {
-        auto field=VectorField::function_factory(*it, 3);
+        auto field=VectorField::function_factory(*it, init_data);
         EXPECT_TRUE( field->set_time(3.0) );
         EXPECT_FALSE( field->set_time(4.0) );
     }
     ++it;
 
     {
-        auto field=VectorField::function_factory(*it, 3);
+        auto field=VectorField::function_factory(*it, init_data);
         EXPECT_TRUE( field->set_time(1.5) );
         EXPECT_TRUE( field->set_time(2.5) );
     }
     ++it;
 
     {
-        auto field=VectorField::function_factory(*it, 3);
+        auto field=VectorField::function_factory(*it, init_data);
         EXPECT_TRUE( field->set_time(0.0) );
         EXPECT_FALSE( field->set_time(2.0) );
     }

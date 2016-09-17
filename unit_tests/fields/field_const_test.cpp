@@ -78,7 +78,8 @@ TEST(FieldConst, read_from_input) {
     ElementAccessor<3> elm;
 
     /*
-    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), 3);
+    FieldAlgoBaseInitData init_data_conc(3, UnitSI().m());
+    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), init_data_conc);
     {
         arma::vec result;
 
@@ -93,16 +94,18 @@ TEST(FieldConst, read_from_input) {
         EXPECT_DOUBLE_EQ( 3.4, result[2]);
     }*/
 
-    auto tensor1=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor1"));
+    FieldAlgoBaseInitData init_data_tensor(0, UnitSI().m());
+
+    auto tensor1=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor1"), init_data_tensor);
     check_tensor_field(tensor1, "3.14 0 0; 0 3.14 0; 0 0 3.14", {point_1, point_2}, elm);
 
-    auto tensor2=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor2"));
+    auto tensor2=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor2"), init_data_tensor);
     check_tensor_field(tensor2, "1 0 0; 0 2 0; 0 0 3", {point_1, point_2}, elm);
 
-    auto tensor3=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor3"));
+    auto tensor3=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor3"), init_data_tensor);
     check_tensor_field(tensor3, "1 2 3; 2 4 5; 3 5 6", {point_1, point_2}, elm);
 
-    auto tensor4=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor4"));
+    auto tensor4=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor4"), init_data_tensor);
     check_tensor_field(tensor4, "1 2 3; 4 5 6; 7 8 9", {point_1, point_2}, elm);
 }
 

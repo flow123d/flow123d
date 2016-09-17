@@ -36,6 +36,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
 #include "fields/field_values.hh"
+#include "fields/field_common.hh"
 #include "tools/time_governor.hh"
 
 
@@ -106,14 +107,14 @@ public:
         * Returns shared pointer to  FunctionBase<>.
         */
        static std::shared_ptr< FieldAlgorithmBase<spacedim, Value> >
-           function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
+           function_factory(const Input::AbstractRecord &rec, const struct FieldAlgoBaseInitData& init_data);
 
        /**
         *  Function can provide way to initialize itself from the input data.
         *
         *  TODO: make protected, should be called through function factory
         */
-       virtual void init_from_input(const Input::Record &rec);
+       virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
        /**
         * Set new time value. Some Fields may and some may not implement time dependent values and

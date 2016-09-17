@@ -64,7 +64,7 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
-    virtual void init_from_input(const Input::Record &rec);
+    virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
     /**
      * Set row of boundary data. Used to implement old BC input.

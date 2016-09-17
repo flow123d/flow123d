@@ -62,7 +62,7 @@ FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_c
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 
 	// read mesh, create tree
     {

@@ -48,6 +48,14 @@ enum class LimitSide {
     right=1
 };
 
+/// Helper struct stores data for initizalize descentants of \p FieldAlgorithmBase.
+struct FieldAlgoBaseInitData {
+	FieldAlgoBaseInitData(unsigned int n_comp, const UnitSI &unit_si) : n_comp_(n_comp), unit_si_(unit_si) {}
+
+	unsigned int n_comp_;
+	const UnitSI &unit_si_;
+};
+
 
 
 /**
