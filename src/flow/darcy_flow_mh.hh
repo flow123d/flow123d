@@ -316,6 +316,8 @@ protected:
      */
     void assembly_mh_matrix( MultidimAssembler ma);
     
+    void allocate_mh_matrix();
+    
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();

@@ -645,7 +645,6 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     class Boundary *bcd;
     class Neighbour *ngh;
 
-    bool fill_matrix = assembler.size() > 0;
     int side_row, edge_row, loc_b = 0;
     int tmp_rows[100];
     double local_vb[4]; // 2x2 matrix
@@ -661,7 +660,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     arma::mat &local_matrix = *(data_->system_.local_matrix);
 
 
-    if (balance_ != nullptr && fill_matrix)
+    if (balance_ != nullptr)
         balance_->start_flux_assembly(water_balance_idx_);
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
@@ -805,7 +804,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
 
-                if (balance_ != nullptr && fill_matrix)
+                if (balance_ != nullptr)
                 {
                    /*
                     DebugOut()("add_flux: {} {} {} {}\n",
@@ -822,28 +821,27 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 
         }
 
-        if (fill_matrix) {
-            assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
+        assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
 
-            // assemble matrix for weights in BDDCML
-            // approximation to diagonal of 
-            // S = -C - B*inv(A)*B'
-            // as 
-            // diag(S) ~ - diag(C) - 1./diag(A)
-            // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
-            // to a continuous one
-            // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
-            // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-            if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-               for(unsigned int i=0; i < nsides; i++) {
-                   double val_side =  local_matrix(i,i);
-                   double val_edge =  -1./local_matrix(i,i);
+        // assemble matrix for weights in BDDCML
+        // approximation to diagonal of 
+        // S = -C - B*inv(A)*B'
+        // as 
+        // diag(S) ~ - diag(C) - 1./diag(A)
+        // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
+        // to a continuous one
+        // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
+        // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
+        if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
+            for(unsigned int i=0; i < nsides; i++) {
+                double val_side =  local_matrix(i,i);
+                double val_edge =  -1./local_matrix(i,i);
 
-                   static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_rows[i], val_side );
-                   static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_rows[i], val_edge );
-               }
+                static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_rows[i], val_side );
+                static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_rows[i], val_edge );
             }
         }
+        
 
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
 
@@ -874,8 +872,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
             tmp_rows[0]=ele_row;
             tmp_rows[1]=mh_dh.row_4_edge[ ngh->edge_idx() ];
             
-            if (fill_matrix)
-                assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
+            assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
             
             ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
 
@@ -919,7 +916,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
         }
     }    
     
-    if (balance_ != nullptr && fill_matrix)
+    if (balance_ != nullptr)
         balance_->finish_flux_assembly(water_balance_idx_);
 
 
@@ -931,6 +928,104 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     }  
 }
 
+void DarcyMH::allocate_mh_matrix()
+{
+    START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix");
+
+    // set auxiliary flag for switchting Dirichlet like BC
+    data_->n_schur_compls = n_schur_compls;
+    LinSys *ls = schur0;
+
+   
+    class Boundary *bcd;
+    class Neighbour *ngh;
+
+    int side_row, edge_row = 0;
+    int tmp_rows[100];
+    int side_rows[4], edge_rows[4];
+
+    // to make space for second schur complement, max. 10 neighbour edges of one el.
+    double zeros[1000];
+    for(int i=0; i<1000; i++) zeros[i] = 0.0;
+
+
+    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+        auto ele_ac = mh_dh.accessor(i_loc);
+        unsigned int nsides = ele_ac.n_sides();
+        
+        for (unsigned int i = 0; i < nsides; i++) {
+
+            side_rows[i] = side_row = ele_ac.side_row(i);
+            edge_rows[i] = edge_row = ele_ac.edge_row(i);
+            bcd=ele_ac.side(i)->cond();
+
+            if (bcd) {
+                ls->mat_set_value(edge_row, edge_row, 0.0);
+            }
+            ls->mat_set_value(side_row, edge_row, 0.0);
+            ls->mat_set_value(edge_row, side_row, 0.0);
+        }
+        
+        // set block A: side-side on one element - block diagonal matrix
+        ls->mat_set_values(nsides, side_rows, nsides, side_rows, zeros);
+        // set block B, B': element-side, side-element
+        int ele_row = ele_ac.ele_row();
+        ls->mat_set_values(1, &ele_row, nsides, side_rows, zeros);
+        ls->mat_set_values(nsides, side_rows, 1, &ele_row, zeros);
+
+
+        // D block:  diagonal: element-element
+        ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
+
+        // D, E',E block: compatible connections: element-edge
+        
+        for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+            ngh= ele_ac.full_iter()->neigh_vb[i];
+            tmp_rows[0]=ele_row;
+            tmp_rows[1]=mh_dh.row_4_edge[ ngh->edge_idx() ];
+            
+            ls->mat_set_values(2, tmp_rows, 2, tmp_rows, zeros);
+
+            if (n_schur_compls == 2) {
+                // for 2. Schur: N dim edge is conected with N dim element =>
+                // there are nz between N dim edge and N-1 dim edges of the element
+
+                ls->mat_set_values(nsides, edge_rows, 1, tmp_rows+1, zeros);
+                ls->mat_set_values(1, tmp_rows+1, nsides, edge_rows, zeros);
+
+                // save all global edge indices to higher positions
+                tmp_rows[2+i] = tmp_rows[1];
+            }
+        }
+
+        // add virtual values for schur complement allocation
+        uint n_neigh;
+        switch (n_schur_compls) {
+        case 2:
+            n_neigh = ele_ac.full_iter()->n_neighs_vb;
+            // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
+            OLD_ASSERT(n_neigh*n_neigh<1000, "Too many values in E block.");
+            ls->mat_set_values(ele_ac.full_iter()->n_neighs_vb, tmp_rows+2,
+                    ele_ac.full_iter()->n_neighs_vb, tmp_rows+2, zeros);
+
+        case 1: // included also for case 2
+            // -(C')*(A-)*B block and its transpose conect edge with its elements
+            ls->mat_set_values(1, &ele_row, ele_ac.n_sides(), edge_rows, zeros);
+            ls->mat_set_values(ele_ac.n_sides(), edge_rows, 1, &ele_row, zeros);
+            // -(C')*(A-)*C block conect all edges of every element
+            ls->mat_set_values(ele_ac.n_sides(), edge_rows, ele_ac.n_sides(), edge_rows, zeros);
+        }
+    }
+
+
+    if (mortar_method_ == MortarP0) {
+        P0_CouplingAssembler(*this).assembly(*ls);
+    } else if (mortar_method_ == MortarP1) {
+        P1_CouplingAssembler(*this).assembly(*ls);
+    }
+}
 
 void DarcyMH::assembly_source_term()
 {
@@ -1275,7 +1370,9 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
             schur0->start_allocation();
-            assembly_mh_matrix(MultidimAssembler()); // preallocation
+            
+            allocate_mh_matrix();
+            
     	    VecZeroEntries(schur0->get_solution());
             END_TIMER("PETSC PREALLOCATION");
         }
@@ -1305,12 +1402,12 @@ void DarcyMH::assembly_linear_system() {
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
 
-	    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data_);
-
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
 
         assembly_source_term();
+        
+        auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data_);
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix
 //         print_matlab_matrix("matrix.m");
 
