@@ -1318,7 +1318,7 @@ void DarcyMH::assembly_linear_system() {
 	    schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
-        print_matlab_matrix("matrix.m");
+        //print_matlab_matrix("matrix.m");
 
 	    if (! is_steady) {
 	        START_TIMER("fix time term");
@@ -1348,6 +1348,11 @@ void DarcyMH::assembly_linear_system() {
 
 void DarcyMH::print_matlab_matrix(std::string matlab_file)
 {
+    if ( typeid(*schur0) == typeid(LinSys_BDDC) ){
+        DebugOut() << "LinSys BDDC does not implement get_matrix().";
+        return;
+    }
+
     PetscViewer    viewer;
     PetscViewerASCIIOpen(PETSC_COMM_WORLD, matlab_file.c_str(), &viewer);
     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
