@@ -646,7 +646,7 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
     class Boundary *bcd;
     class Neighbour *ngh;
 
-    int side_row, edge_row, loc_b = 0;
+    int side_row, edge_row;
     int tmp_rows[100];
     double local_vb[4]; // 2x2 matrix
     int side_rows[4], edge_rows[4];
@@ -804,24 +804,12 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
                 } else {
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
-
-                if (balance_ != nullptr)
-                {
-                   /*
-                    DebugOut()("add_flux: {} {} {} {}\n",
-                            mh_dh.el_ds->myp(),
-                            ele_ac.ele_global_idx(),
-                            loc_b,
-                            side_row);*/
-                    balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
-                }
-                ++loc_b;
             }
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
-
         }
 
+        assembler.assemble(ele_ac, true);
         assembler.dim_assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
 
         // assemble matrix for weights in BDDCML

@@ -37,8 +37,8 @@ public:
         
 //         schur_allocations(ele_ac);
         
-//         if (ad_->balance != nullptr && fill_matrix)
-//             add_fluxes_in_balance_matrix(ele_ac);
+        if (ad_->balance != nullptr && fill_matrix)
+            add_fluxes_in_balance_matrix(ele_ac);
     }
     
 protected:
