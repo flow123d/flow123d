@@ -66,6 +66,7 @@
 
 #include "fields/vec_seq_double.hh"
 #include "darcy_flow_assembly.hh"
+#include "darcy_flow_assembler.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);

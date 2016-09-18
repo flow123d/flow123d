@@ -11,7 +11,7 @@
 #include "flow/darcy_flow_assembly.hh"
 #include "soil_models.hh"
 
-
+#include "badiff.h"
 
 
 /**
