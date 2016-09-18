@@ -634,7 +634,7 @@ void DarcyMH::local_assembly_specific() {
 //
 // =======================================================================================
 
-void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
+void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
 {
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
@@ -822,7 +822,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
 
         }
 
-        assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
+        assembler.dim_assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
 
         // assemble matrix for weights in BDDCML
         // approximation to diagonal of 
@@ -873,7 +873,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
             tmp_rows[0]=ele_row;
             tmp_rows[1]=mh_dh.row_4_edge[ ngh->edge_idx() ];
             
-            assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
+            assembler.dim_assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
             
             ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
 
@@ -1408,7 +1408,7 @@ void DarcyMH::assembly_linear_system() {
 
         assembly_source_term();
         
-        auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data_);
+        auto multidim_assembler = AssemblerMH(data_);
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix
 //         print_matlab_matrix("matrix.m");
 

@@ -59,7 +59,8 @@ class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
 class VectorSeqDouble;
-class AssemblyBase;
+//class AssemblyBase;
+class AssemblerBase;
 
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
 template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
@@ -142,8 +143,6 @@ public:
     DECLARE_EXCEPTION(ExcSolverDiverge,
             << "Diverged nonlinear solver. Reason: " << EI_Reason::val
              );
-
-    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembler;
 
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
@@ -314,7 +313,7 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix( MultidimAssembler ma);
+    void assembly_mh_matrix(AssemblerBase& assembler);
     
     void allocate_mh_matrix();
     
