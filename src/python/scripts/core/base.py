@@ -171,7 +171,7 @@ class _Printer(object):
         if self.is_muted():
             return
 
-        self._write('[ OK ]  | ')
+        self._write('[ OK ] |    ')
         self._write(msg.format(*args, **kwargs))
         self._write('\n')
 
@@ -180,7 +180,16 @@ class _Printer(object):
             return
 
         self._write(self.indent())
-        self._write('[ERROR] | ')
+        self._write('[ERROR] |   ')
+        self._write(msg.format(*args, **kwargs))
+        self._write('\n')
+
+    def wrn(self, msg, *args, **kwargs):
+        if self.is_muted():
+            return
+
+        self._write(self.indent())
+        self._write('[WARNING] | ')
         self._write(msg.format(*args, **kwargs))
         self._write('\n')
 

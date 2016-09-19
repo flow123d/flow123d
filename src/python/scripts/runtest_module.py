@@ -221,8 +221,8 @@ class ModuleRuntest(ScriptModule):
 
         Printer.all.out("Found {} yaml file/s", len(self.all_yamls))
         if not self.all_yamls:
-            Printer.all.err('No yaml files found in locations: \n  {}', '\n  '.join(self.others))
-            sys.exit(3)
+            Printer.all.wrn('No yaml files found in locations: \n  {}', '\n  '.join(self.others))
+            sys.exit(0)
 
         self.configs = self.read_configs(self.all_yamls)
         self.configs.update(
