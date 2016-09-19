@@ -87,6 +87,11 @@ public:
 
     }
 
+    const FieldAlgoBaseInitData& init_data() {
+    	static const FieldAlgoBaseInitData init_data(0, UnitSI::dimensionless());
+    	return init_data;
+    }
+
     Mesh *mesh;
     Input::Record rec;
     Space<3>::Point point;
@@ -97,7 +102,7 @@ public:
 
 TEST_F(FieldElementwiseTest, scalar) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar"));
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data());
     field.set_mesh(mesh,false);
 
     for (unsigned int j=0; j<2; j++) {
@@ -113,7 +118,7 @@ TEST_F(FieldElementwiseTest, scalar) {
 TEST_F(FieldElementwiseTest, bc_scalar) {
     ScalarField field;
     field.set_mesh(mesh,true);
-    field.init_from_input(rec.val<Input::Record>("scalar"));
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data());
 
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
@@ -129,7 +134,7 @@ TEST_F(FieldElementwiseTest, bc_scalar) {
 TEST_F(FieldElementwiseTest, vector_fixed) {
 	string expected_vals[2] = {"1 2 3", "2 3 4"};
     VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vector_fixed"));
+    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data());
     field.set_mesh(mesh,false);
 
     for (unsigned int j=0; j<2; j++) {
@@ -146,7 +151,7 @@ TEST_F(FieldElementwiseTest, vector_fixed) {
 TEST_F(FieldElementwiseTest, bc_vector_fixed) {
 	string expected_vals[2] = {"4 5 6", "5 6 7"};
     VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vector_fixed"));
+    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data());
     field.set_mesh(mesh,true);
 
     for (unsigned int j=0; j<2; j++) {
@@ -196,7 +201,7 @@ TEST_F(FieldElementwiseTest, bc_vector) {
 TEST_F(FieldElementwiseTest, tensor_fixed) {
 	string expected_vals[2] = {"1 4 7; 2 5 8; 3 6 9", "2 5 8; 3 6 9; 4 7 10"};
     TensorField field;
-    field.init_from_input(rec.val<Input::Record>("tensor_fixed"));
+    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data());
     field.set_mesh(mesh,false);
 
     for (unsigned int j=0; j<2; j++) {
@@ -215,7 +220,7 @@ TEST_F(FieldElementwiseTest, tensor_fixed) {
 TEST_F(FieldElementwiseTest, bc_tensor_fixed) {
 	string expected_vals[2] = {"4 7 10; 5 8 11; 6 9 12", "5 8 11; 6 9 12; 7 10 13"};
     TensorField field;
-    field.init_from_input(rec.val<Input::Record>("tensor_fixed"));
+    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data());
     field.set_mesh(mesh, true);
 
     for (unsigned int j=0; j<2; j++) {

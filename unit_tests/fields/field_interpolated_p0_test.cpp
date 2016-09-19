@@ -153,6 +153,11 @@ public:
 
     }
 
+    const FieldAlgoBaseInitData& init_data() {
+    	static const FieldAlgoBaseInitData init_data(0, UnitSI::dimensionless());
+    	return init_data;
+    }
+
     Mesh *mesh;
     Input::Record rec;
     Space<3>::Point point;
@@ -163,7 +168,7 @@ public:
 
 TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar"));
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data());
 
     for (unsigned int j=1; j<3; j++) {
     	field.set_time(test_time[j-1]);
@@ -181,7 +186,7 @@ TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
 
 TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_large) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_large"));
+    field.init_from_input(rec.val<Input::Record>("scalar_large"), init_data());
     field.set_time(0.0);
 
     //EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0)) );
