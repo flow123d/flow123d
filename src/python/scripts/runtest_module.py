@@ -53,13 +53,27 @@ class ModuleRuntest(ScriptModule):
     def read_configs(all_yamls):
         """
         Add yamls to ConfigPool and parse configs
-        :rtype: scripts.config.ConfigPool
+        :rtype: ConfigPool
         """
         configs = ConfigPool()
         for y in all_yamls:
             configs += y
         configs.parse()
         return configs
+
+    @property
+    def include(self):
+        """
+        return all exclude tags in set
+        """
+        return set(self.arg_options.include) if self.arg_options.include else set()
+
+    @property
+    def exclude(self):
+        """
+        return all exclude tags in set
+        """
+        return set(self.arg_options.exclude) if self.arg_options.exclude else {'disabled'}
 
     def create_process_from_case(self, case):
         """
@@ -158,6 +172,14 @@ class ModuleRuntest(ScriptModule):
                 multi_process = self.create_process_from_case(case)
                 runner.add(multi_process)
 
+        if self.include or self.exclude:
+            Printer.all.out('Running {} cases ({}{})'.format(
+                runner.total,
+                'including only tags in set {} '.format(list(self.include)) if self.include else '',
+                'excluding all tags in set {}'.format(list(self.exclude)) if self.exclude else ''))
+        else:
+            Printer.all.out('Running {} cases', runner.total)
+
         # run!
         runner.start()
         while runner.is_running():
@@ -229,6 +251,12 @@ class ModuleRuntest(ScriptModule):
             proc=self.arg_options.cpu,
             time_limit=self.arg_options.time_limit,
             memory_limit=self.arg_options.memory_limit,
+        )
+
+        # filter tags for includes and excludes
+        self.configs.filter_tags(
+            include=self.include,
+            exclude=self.exclude
         )
 
         if self.arg_options.queue:

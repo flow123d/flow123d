@@ -112,6 +112,7 @@ class ConfigBase(object):
                 # ensure that value is array
                 case_config[yamlc.TAG_FILES] = ensure_iterable(
                     case_config.get(yamlc.TAG_FILES, []))
+                # keep correct order
                 self.cases.append(case_config)
                 for f in case_config[yamlc.TAG_FILES]:
                     if f in missing:
@@ -168,6 +169,30 @@ class ConfigBase(object):
             if memory_limit:
                 case[yamlc.TAG_MEMORY_LIMIT] = memory_limit
 
+    def filter_tags(self, include, exclude):
+        """
+        :type exclude: set
+        :type include: set
+        """
+        # skip tests if no --include and --exclude are set
+        if not include and not exclude:
+            return
+
+        result = []
+        for case in self.cases:
+            tags = set(case['tags'])
+            match = True
+
+            # every tag in include must be present in tags
+            match &= not include or include.issubset(tags)
+            # every tag in exclude must not br present in tags
+            match &= not exclude or not exclude.intersection(tags)
+
+            if match:
+                result.append(case)
+
+        self.cases = result
+
     @classmethod
     def _get_all_for_case(cls, case):
         result = list()
@@ -191,7 +216,6 @@ class ConfigBase(object):
         for child in children:
             parent_copy.update(child)
         return parent_copy
-
 
 
 class ConfigPool(object):
@@ -246,3 +270,10 @@ class ConfigPool(object):
     def update(self, proc, time_limit, memory_limit, **kwargs):
         for config in self.configs.values():
             config.update(proc, time_limit, memory_limit, **kwargs)
+
+    def filter_tags(self, include, exclude):
+        include = set(include) if include else None
+        exclude = set(exclude) if exclude else None
+
+        for config in self.configs.values():
+            config.filter_tags(include, exclude)

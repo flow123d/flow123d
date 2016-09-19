@@ -40,7 +40,8 @@ parser.add('', '--include', type=list, subtype=str, name='include', docs=[
 ])
 parser.add('', '--exclude', type=list, subtype=str, name='exclude', docs=[
     'Filter tags which should be processed.',
-    'See --include for more information.'
+    'See --include for more information. By default tag "disabled" is set if no',
+    'other --exclude flag is set'
 ])
 # ----------------------------------------------
 parser.add_section('Passable arguments to run_parallel.py')
@@ -113,8 +114,8 @@ if __name__ == '__main__':
     from scripts.core.base import Printer
     parser.on_parse += Printer.setup_printer
 
-    # import os
-    # Paths.init(os.getcwd())
+    import os
+    Paths.init(os.getcwd())
 
     # run work
     BinExecutor.register_sigint()
