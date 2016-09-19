@@ -164,7 +164,7 @@ TEST(FieldPython, read_from_input) {
     // read input string
     Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
-    FieldAlgoBaseInitData init_data(3, UnitSI().m());
+    FieldAlgoBaseInitData init_data(3, UnitSI::dimensionless());
 
     auto flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), init_data);
     {

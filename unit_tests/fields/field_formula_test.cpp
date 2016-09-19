@@ -56,7 +56,7 @@ TEST(FieldFormula, read_from_input) {
     ElementAccessor<3> elm;
 
 
-    FieldAlgoBaseInitData init_data_conc(3, UnitSI().m());
+    FieldAlgoBaseInitData init_data_conc(3, UnitSI::dimensionless());
     auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), init_data_conc);
     {
         arma::vec result;
@@ -79,7 +79,7 @@ TEST(FieldFormula, read_from_input) {
         EXPECT_DOUBLE_EQ( point_1(1) +1.0,               result[2]);
     }
 
-    FieldAlgoBaseInitData init_data_conductivity(0, UnitSI().m());
+    FieldAlgoBaseInitData init_data_conductivity(0, UnitSI::dimensionless());
     auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"), init_data_conductivity);
     cond->set_time(0.0);
     {
@@ -143,7 +143,7 @@ TEST(FieldFormula, set_time) {
     Input::Array in_array=reader.get_root_interface<Input::Array>();
 
     auto it = in_array.begin<Input::AbstractRecord>();
-    FieldAlgoBaseInitData init_data(3, UnitSI().m());
+    FieldAlgoBaseInitData init_data(3, UnitSI::dimensionless());
 
     {
         auto field=VectorField::function_factory(*it, init_data);

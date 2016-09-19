@@ -78,7 +78,8 @@ TEST(FieldConst, read_from_input) {
     ElementAccessor<3> elm;
 
     /*
-    FieldAlgoBaseInitData init_data_conc(3, UnitSI().m());
+    UnitSI unit = UnitSI().m();
+    FieldAlgoBaseInitData init_data_conc(3, unit);
     auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), init_data_conc);
     {
         arma::vec result;
@@ -94,7 +95,7 @@ TEST(FieldConst, read_from_input) {
         EXPECT_DOUBLE_EQ( 3.4, result[2]);
     }*/
 
-    FieldAlgoBaseInitData init_data_tensor(0, UnitSI().m());
+    FieldAlgoBaseInitData init_data_tensor(0, UnitSI::dimensionless());
 
     auto tensor1=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor1"), init_data_tensor);
     check_tensor_field(tensor1, "3.14 0 0; 0 3.14 0; 0 0 3.14", {point_1, point_2}, elm);

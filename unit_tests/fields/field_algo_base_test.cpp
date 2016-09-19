@@ -73,7 +73,7 @@ public:
 		root_input = input_list(field_input);
 		Input::Record x_rec = *(root_input.begin<Input::Record>());
 		auto field_rec = *(x_rec.find<Input::AbstractRecord>("a"));
-	    FieldAlgoBaseInitData init_data_conc(this->n_comp(), UnitSI().m());
+	    FieldAlgoBaseInitData init_data_conc(this->n_comp(), UnitSI::dimensionless());
 		my_field_algo_base = FieldType::FieldBaseType::function_factory(field_rec, init_data_conc);
 	}
 

@@ -174,7 +174,7 @@ TEST(OutputMesh, write_on_output_mesh) {
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     // create FieldAlgorithmBase field
-    FieldAlgoBaseInitData init_data(1, UnitSI().m());
+    FieldAlgoBaseInitData init_data(1, UnitSI::dimensionless());
     auto alg_field = AlgScalarField::function_factory(in_rec.val<Input::AbstractRecord>("conc"), init_data);
     
     // create field from FieldAlgorithmBase

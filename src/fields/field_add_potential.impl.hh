@@ -24,7 +24,7 @@
 template <int spacedim, class Value>
 FieldAddPotential<spacedim, Value>::FieldAddPotential(const arma::vec::fixed<spacedim+1> &potential, const Input::AbstractRecord &rec, unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  inner_field_( FieldAlgorithmBase<spacedim, Value>::function_factory(rec, FieldAlgoBaseInitData(this->value_.n_rows(), UnitSI().m())) )
+  inner_field_( FieldAlgorithmBase<spacedim, Value>::function_factory(rec, FieldAlgoBaseInitData(this->value_.n_rows(), UnitSI::dimensionless())) )
 {
     grad_=potential.subvec(0,spacedim-1);
     zero_level_=potential[spacedim];
