@@ -83,6 +83,7 @@ void Tracing::trace_polygon_opt(IntersectionAux<2,3> &p){
             } break;
             case 1: // if the ip is on the side of triangle -> intersection S-E or E-S
             {
+
                 DebugOut().fmt("Intersection type E{} - S{}, ori {}.\n",ip.idx_A(),ip.idx_B(),ip.orientation());
                 // IP is not a vertex of triangle -> cannot be E-E
                 /* directions of polygon edges depends on three aspects:
@@ -106,6 +107,7 @@ void Tracing::trace_polygon_opt(IntersectionAux<2,3> &p){
                  * if RES == 1 -> intersection direction is E-S
                  * if RES == 0 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
                  */
+                ASSERT_DBG( ip.dim_B() == 2 );
                 unsigned int j = (RefElement<3>::normal_orientation(ip.idx_B()) +
                                   RefElement<2>::normal_orientation(ip.idx_A()) +
                                   ip.orientation()
