@@ -41,6 +41,8 @@ const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
                                     " - vector of size (($N$)) to enter diagonal matrix\n\n"
                                     " - vector of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                     " - scalar to enter multiple of the unit matrix." )
+		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+									"Definition of unit.")
         .allow_auto_conversion("value")
 		.close();
 }
@@ -68,7 +70,19 @@ FieldConstant<spacedim, Value> &FieldConstant<spacedim, Value>::set_value(const 
 
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+    Input::Record unit_record;
+    if ( rec.opt_val("unit", unit_record) ) {
+        if (!Value::is_scalable()) {
+            WarningOut().fmt("Setting unit conversion coefficient of non-floating point field at address {}\nCoefficient will be skipped.\n",
+                    rec.address_string());
+        }
+        std::string unit_str = unit_record.val<std::string>("unit_formula");
+        this->unit_conversion_coefficient_ = init_data.unit_si_.convert_unit_from(unit_str);
+    }
+
+
     this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
+    this->value_.scale(this->unit_conversion_coefficient_);
 
     typename Value::return_type tmp_value;
     Value tmp_field_value(tmp_value);
