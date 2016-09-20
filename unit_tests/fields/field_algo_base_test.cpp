@@ -613,6 +613,7 @@ TEST(Field, init_from_input) {
     conductivity.set_mesh(mesh);
 
     sorption_type.units( UnitSI().m() );
+    init_conc.units( UnitSI().m() );
     conductivity.units( UnitSI().m() );
 
     auto region_set = mesh.region_db().get_region_set("BULK");
