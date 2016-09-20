@@ -122,9 +122,11 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(comput
     
     //assert inaccurate barycentric coordinates
     ASSERT_DBG(1-rounding_epsilonX <= local[0]+local[1]+local[2] &&
-           local[0]+local[1]+local[2] <= 1+rounding_epsilonX);
-    
+           local[0]+local[1]+local[2] <= 1+rounding_epsilonX)(local[0]+local[1]+local[2]);
+
+
     arma::vec3 local_triangle({local[2],local[1],local[0]});
+
     // local coordinate T on the line
     // for i-th coordinate it holds: (from formula (4) on pg. 12 in BP VF)
     // T = localAbscissa= (- A(i) + ( 1 - alfa - beta ) * V0(i) + alfa * V1(i) + beta * V2 (i)) / U(i)
@@ -138,13 +140,13 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(comput
     if(fabs((double)u[2]) > fabs(max)){ max = u[2]; i = 2;}
 
     // global coordinates in triangle
-    arma::vec3 global_triangle =
-    local_triangle[0]*(*triangle_)[0][0].point_coordinates() +
-    local_triangle[1]*(*triangle_)[0][1].point_coordinates() +
-    local_triangle[2]*(*triangle_)[1][1].point_coordinates();
+    double isect_coord_i =
+    local_triangle[0]*(*triangle_)[0][0].point_coordinates()[i] +
+    local_triangle[1]*(*triangle_)[0][1].point_coordinates()[i] +
+    local_triangle[2]*(*triangle_)[1][1].point_coordinates()[i];
 
     //theta on abscissa
-    double t =  (-(*abscissa_)[0].point_coordinates()[i] + global_triangle[i])/max;
+    double t =  (-(*abscissa_)[0].point_coordinates()[i] + isect_coord_i)/max;
 //     DBGMSG("t=%e\n",t);
         
     /*
@@ -296,26 +298,41 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
     if(std::abs(w_sum) > rounding_epsilonX)
         w = w / w_sum;
     
-    // test whether all plucker products have the same sign
-    if(((w[0] > rounding_epsilon) && (w[1] > rounding_epsilon) && (w[2] > rounding_epsilon)) ||
-       ((w[0] < -rounding_epsilon) && (w[1] < -rounding_epsilon) && (w[2] < -rounding_epsilon))){
-        
+    unsigned int n_positive = 0;
+    unsigned int n_negative = 0;
+    unsigned int zero_idx_sum =0;
+
+    for (unsigned int i=0; i < 3; i++) {
+        if (w[i] > rounding_epsilon) n_positive++;
+        else if (w[i] < -rounding_epsilon) n_negative++;
+        else zero_idx_sum+=i;
+        //DebugOut().fmt("{} np: {} nn: {}\n", w[i], n_positive, n_negative);
+    }
+
+    if (n_positive>0 && n_negative>0) return false;
+
+    // test whether all plucker products are not zero
+    unsigned int n_both = n_positive + n_negative;
+    if (n_both > 0) {
         IntersectionPointAux<1,2> IP;
         
         if(compute_plucker(IP, w))
         {
+            // edge of triangle
+            if (n_both == 2) // one zero product
+                IP.set_topology_B(zero_idx_sum, 1);
+            else if (n_both == 1) // two zero products
+                IP.set_topology_B(RefElement<2>::oposite_node(3-zero_idx_sum), 0);
+
             IP12s.push_back(IP);
             return true;
         }
-    }else if(compute_zeros_plucker_products){
-        
-        // 1 zero product -> IP is on the triangle side
-        // 2 zero products -> IP is at the vertex of triangle (there is no other IP)
+    } else if(compute_zeros_plucker_products){
+
         // 3 zero products: 
         //      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
         //      -> triangle side is part of the line (and otherwise)
         for(unsigned int i = 0; i < 3;i++){
-            if( std::abs(w[i]) <= rounding_epsilon ){
 //                 DBGMSG("Intersections - Pathologic case, side %d.\n",i);
                 IntersectionPointAux<1,2> IP;
                 if(compute_pathologic(i,IP))
@@ -324,7 +341,6 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
                     IP12s.push_back(IP);
                     return true;
                 }
-            }
         }
     }
     
@@ -756,35 +772,31 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 	std::vector<IntersectionPointAux<1,2>> IP12s;
 	unsigned int pocet_pruniku = 0;
 
-    // loop over sides of tetrahedron 
-	for(unsigned int side = 0;side < RefElement<3>::n_sides && pocet_pruniku < 2;side++){
-		if(!CI12[side].is_computed() // if not computed yet
-            && CI12[side].compute(IP12s, true)){    // compute; if intersection exists then continue
+    // loop over faces of tetrahedron
+	for(unsigned int face = 0; face < RefElement<3>::n_sides && pocet_pruniku < 2; face++){
+		if(!CI12[face].is_computed() // if not computed yet
+            && CI12[face].compute(IP12s, false)){    // compute; if intersection exists then continue
 
-//             DBGMSG("1d-3d side %d\n",side);
             IntersectionPointAux<1,2> IP = IP12s.back();   // shortcut
-            IntersectionPointAux<1,3> IP13(IP, side);
+            IntersectionPointAux<1,3> IP13(IP, face);
         
-			if(IP.is_pathologic()){   // resolve pathologic cases
-//                 DBGMSG("pathologic 13x\n");
-                // set the 'computed' flag on the connected sides by IP
-                if(IP.dim_B() == 0) // IP is vertex of triangle
-                {
-                    // map side (triangle) node index to tetrahedron node index
-                    unsigned int node = RefElement<3>::interact(Interaction<0,2>(side))[IP.idx_B()];
-                    // set flag on all sides of tetrahedron connected by the node
-                    for(unsigned int s=0; s < RefElement<3>::n_sides_per_node; s++)
-                        CI12[RefElement<3>::interact(Interaction<2,0>(node))[s]].set_computed();
-                    // set topology data for object B (tetrahedron) - node
-                    IP13.set_topology_B(node, IP.dim_B());
-                }
-                else if(IP.dim_B() == 1) // IP is on edge of triangle
-                {
-                    for(unsigned int s=0; s < RefElement<3>::n_sides_per_line; s++)
-                        CI12[RefElement<3>::interact(Interaction<2,1>(IP.idx_B()))[s]].set_computed();
-                    IP13.set_topology_B(RefElement<3>::interact(Interaction<1,2>(side))[IP.idx_B()], IP.dim_B());
-                }
-			}
+            // set the 'computed' flag on the connected sides by IP
+            if(IP.dim_B() == 0) // IP is vertex of triangle
+            {
+                // map side (triangle) node index to tetrahedron node index
+                unsigned int node = RefElement<3>::interact(Interaction<0,2>(face))[IP.idx_B()];
+                // set flag on all sides of tetrahedron connected by the node
+                for(unsigned int s=0; s < RefElement<3>::n_sides_per_node; s++)
+                    CI12[RefElement<3>::interact(Interaction<2,0>(node))[s]].set_computed();
+                // set topology data for object B (tetrahedron) - node
+                IP13.set_topology_B(node, IP.dim_B());
+            }
+            else if(IP.dim_B() == 1) // IP is on edge of triangle
+            {
+                for(unsigned int s=0; s < RefElement<3>::n_sides_per_line; s++)
+                    CI12[RefElement<3>::interact(Interaction<2,1>(IP.idx_B()))[s]].set_computed();
+                IP13.set_topology_B(RefElement<3>::interact(Interaction<1,2>(face))[IP.idx_B()], IP.dim_B());
+            }
 			
 			pocet_pruniku++;
             IP13s.push_back(IP13);

@@ -104,7 +104,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
 //     }
 
     computeintersection::IntersectionLocal<1,3> ilc(is);
-    EXPECT_EQ(ilc.size(), il.size());
+    EXPECT_EQ(il.size(), ilc.size());
     
     for(unsigned int i=0; i < ilc.size(); i++)
     {
