@@ -28,7 +28,6 @@
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
-#include <boost/make_shared.hpp>
 
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"

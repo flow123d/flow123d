@@ -173,7 +173,7 @@ void Field<spacedim,Value>::set_mesh(const Mesh &in_mesh) {
 
 /*
 template<int spacedim, class Value>
-boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
+std::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
     OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());

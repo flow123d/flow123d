@@ -89,10 +89,10 @@ public:
 private:
 
 	/// The actual list of substances.
-	boost::shared_ptr<std::vector<Substance> > substances_;
+	std::shared_ptr<std::vector<Substance> > substances_;
 
 	/// Auxiliary list of substance names used in some classes.
-	boost::shared_ptr<std::vector<std::string> > names_;
+	std::shared_ptr<std::vector<std::string> > names_;
 };
 
 

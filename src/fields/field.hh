@@ -173,7 +173,7 @@ public:
     /**
      * Direct read access to the table of Field pointers on regions.
      */
-    //boost::shared_ptr< FieldBaseType > operator[] (Region reg);
+    //std::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().
