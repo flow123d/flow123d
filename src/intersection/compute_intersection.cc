@@ -304,32 +304,35 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 
     for (unsigned int i=0; i < 3; i++) {
         if (w[i] > rounding_epsilon) n_positive++;
-        else if (w[i] < -rounding_epsilon) n_negative++;
-        else zero_idx_sum+=i;
-        //DebugOut().fmt("{} np: {} nn: {}\n", w[i], n_positive, n_negative);
+        else if ( w[i] > -rounding_epsilon) zero_idx_sum+=i;
+        else n_negative++;
     }
 
-    if (n_positive>0 && n_negative>0) return false;
+    if (n_negative>0) return false;
 
     // test whether all plucker products are not zero
-    unsigned int n_both = n_positive + n_negative;
-    if (n_both > 0) {
+    if (n_positive > 0) {
         IntersectionPointAux<1,2> IP;
         
-        if(compute_plucker(IP, w))
-        {
-            // edge of triangle
-            if (n_both == 2) // one zero product
-                IP.set_topology_B(zero_idx_sum, 1);
-            else if (n_both == 1) // two zero products
-                IP.set_topology_B(RefElement<2>::oposite_node(3-zero_idx_sum), 0);
-
-            DebugOut().VarFmt(n_positive).VarFmt(n_negative);
-            IP.set_orientation(n_positive > 0 ? 1 : 0);
-
-            IP12s.push_back(IP);
-            return true;
+        compute_plucker(IP, w);
+        // edge of triangle
+        unsigned int non_zero_idx=0;
+        if (n_positive == 2) {
+            // one zero product
+            IP.set_topology_B(zero_idx_sum, 1);
+            non_zero_idx =  (zero_idx_sum + 1) % 3;
         }
+        else if (n_positive == 1) {
+            // two zero products
+            IP.set_topology_B(RefElement<2>::oposite_node(3-zero_idx_sum), 0);
+            non_zero_idx = 3-zero_idx_sum;
+        }
+        //DebugOut().VarFmt(non_zero_idx).VarFmt(signed_plucker_product(non_zero_idx));
+
+        IP.set_orientation(signed_plucker_product(non_zero_idx) > 0 ? 1 : 0);
+
+        IP12s.push_back(IP);
+        return true;
 
     } else if(compute_zeros_plucker_products){
 
@@ -337,11 +340,9 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
         //      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
         //      -> triangle side is part of the line (and otherwise)
         for(unsigned int i = 0; i < 3;i++){
-//                 DBGMSG("Intersections - Pathologic case, side %d.\n",i);
                 IntersectionPointAux<1,2> IP;
                 if(compute_pathologic(i,IP))
                 {
-//                     DBGMSG("Intersections - Pathologic case PUSH.\n");
                     IP12s.push_back(IP);
                     return true;
                 }
@@ -799,15 +800,17 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
                 for(unsigned int s=0; s < RefElement<3>::n_sides_per_node; s++)
                     CI12[RefElement<3>::interact(Interaction<2,0>(node))[s]].set_computed();
                 // set topology data for object B (tetrahedron) - node
-                IP13.set_topology_B(node, IP.dim_B());
+                //IP13.set_topology_B(node, IP.dim_B());
             }
             else if(IP.dim_B() == 1) // IP is on edge of triangle
             {
                 for(unsigned int s=0; s < RefElement<3>::n_sides_per_line; s++)
                     CI12[RefElement<3>::interact(Interaction<2,1>(IP.idx_B()))[s]].set_computed();
-                IP13.set_topology_B(RefElement<3>::interact(Interaction<1,2>(face))[IP.idx_B()], IP.dim_B());
+                //IP13.set_topology_B(RefElement<3>::interact(Interaction<1,2>(face))[IP.idx_B()], IP.dim_B());
             }
-			
+
+            DebugOut().VarFmt(face) << "1d-3d, ";
+            DebugOut() << IP13;
 			pocet_pruniku++;
             IP13s.push_back(IP13);
 		}
@@ -1092,6 +1095,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++){
 		if(CI12[tetra_edge].compute(IP12s, false)){
             IntersectionPointAux<1,2> IP = IP12s.back();
+            DebugOut()<< "Edge - Triangle\n";
+            DebugOut() << IP;
             // Check whether the IP is on the abscissa (side of triangle)
 			if((IP.local_bcoords_A())[0] <= 1 && (IP.local_bcoords_A())[0] >= 0){
 //  				DBGMSG("CI23: 12 intersection\n");
