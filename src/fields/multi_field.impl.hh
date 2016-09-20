@@ -57,7 +57,7 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
 template<int spacedim, class Value>
 MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiField<spacedim,Value> &other)
 {
-	OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	//OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
 	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between multi fields with different meshes.\n");
@@ -168,7 +168,14 @@ void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
-	if (typeid(other) == typeid(*this)) {
+    ASSERT( flags().match(FieldFlag::equation_input))(other.name().c_str())(this->name().c_str())
+            .error("Can not copy to the non-copy field.");
+
+    // do not use copy if the field have its own input
+    if ( flags().match(FieldFlag::declare_input)
+         && this->shared_->input_list_.size() != 0 ) return;
+
+    if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  MultiField<spacedim, Value> const &>(other);
 		this->operator=(other_field);
 	} else if (typeid(other) == typeid(SubFieldType)) {
@@ -206,6 +213,40 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 	return const_all;
 }
 
+template<int spacedim, class Value>
+FieldResult MultiField<spacedim, Value>::field_result( RegionSet region_set) const
+{
+    ASSERT_DBG(true).error("Not used yet. Test it.");
+
+    FieldResult result_all = result_none;
+    for(auto &field : sub_fields_) {
+        FieldResult sub_result = field.field_result(region_set);
+        if (sub_result == result_none) return result_none;
+
+        if (result_all == result_none) // first subfield
+            result_all = sub_result;
+        else if (sub_result == result_other || result_all == result_other)
+            result_all = result_other;
+        else if (sub_result != result_all)
+            result_all = result_constant; // all subfields are (possibly different) constants
+    }
+
+    return result_all;
+
+}
+
+
+template<int spacedim, class Value>
+std::string MultiField<spacedim, Value>::get_value_attribute() const
+{
+    int nrows = Value::NRows_;
+    int ncols = Value::NCols_;
+    string type = "Integer";
+    if (std::is_floating_point<typename Value::element_type>::value)
+        type = "Double";
+
+    return fmt::format("{{ \"subfields\": true, \"shape\": [ {}, {} ], \"type\": \"{}\" }}", nrows, ncols, type);
+}
 
 
 template<int spacedim, class Value>

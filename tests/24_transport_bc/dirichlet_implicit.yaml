@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test of boundary conditions for transport
   mesh:
@@ -10,7 +10,7 @@ problem: !Coupling_Sequential
         a_tol: 1.0e-12
         r_tol: 1.0e-12
     input_fields:
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: (1-x)/10

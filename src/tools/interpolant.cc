@@ -18,8 +18,7 @@
 #include "adaptivesimpson.hh"
 #include "functors_impl.hh"
 #include "interpolant_impl.hh"
-
-#include "system/xio.h"
+#include "system/logger.hh"
 //#include "system/sys_profiler.hh"
 
 #include <limits>
@@ -113,24 +112,21 @@ void InterpolantBase::reset_stat()
 
 void InterpolantBase::check_stats_and_reinterpolate(double percentage)
 {
-  //DBGMSG("Check and reinterpolate.\n");
   bool reinterpolate = false;   //should we remake interpolation?
   if((double)stats.interval_miss_a/stats.total_calls > percentage)
   {
-    //DBGMSG("Check and reinterpolate.\n");
     bound_a_ = stats.min;
     reinterpolate = true;
   }
   if((double)stats.interval_miss_b/stats.total_calls > percentage)
   {
-    //DBGMSG("Check and reinterpolate.\n");
     bound_b_ = stats.max;
     reinterpolate = true;
   }
   
   if(reinterpolate)
   {
-    xprintf(Msg, "Interpolation: Reinterpolating...\n");
+    MessageOut() << "Interpolation: Reinterpolating...\n";
     interpolate();
     reset_stat();
   }
@@ -223,7 +219,6 @@ int Interpolant::interpolate()
     while(1) 
     {
       k++;
-      //DBGMSG("k = %d\n",k);
       compute_values();     //computes function (and possibly derivate) values at nodes
       
       if(norm_type == ErrorNorm::max)
@@ -231,18 +226,18 @@ int Interpolant::interpolate()
       else
         compute_error(tol, p, norm_type);
       
-      DBGMSG("error: %E\n", error_);
+      DebugOut().fmt("error: {}\n", error_);
     
       //error comparation
       if(user_tol < error_)
       {
-        DBGMSG("Interpolating: %d   size: %d \t error: %E\n",k, size_, error_);
+        DebugOut().fmt("Interpolating: {}   size: {} \t error: {}\n",k, size_, error_);
         result = 1;   //tolerance has not been satisfied
       }
       else 
       {
-        xprintf(Msg,"Interpolation: Size of the table set automaticaly to: %d after %d cycles.\n", size_,k);
-        //DBGMSG("Interpolation error estimate is: %f\n", error_);
+        MessageOut().fmt("Interpolation: Size of the table set automaticaly to: {} after {} cycles.\n", size_, k);
+        //DebugOut().fmt("Interpolation error estimate is: {}\n", error_);
         result = 0;   //interpolation OK
         break;
       }
@@ -260,7 +255,8 @@ int Interpolant::interpolate()
       }
       else
       { 
-        xprintf(Warn,"Interpolation: User defined tolerance %E has not been satisfied with size of interpolation table %d.\n",user_tol,size_);
+        WarningOut().fmt("Interpolation: User defined tolerance {} has not been satisfied with size of interpolation table {}).\n",
+        		user_tol, size_);
         break;
       }
     }
@@ -276,7 +272,7 @@ int Interpolant::interpolate()
       
     result = 0;   //interpolation OK
   }
-  xprintf(Msg,"Interpolation: Interpolation error estimate is: %E.\n", error_);
+  MessageOut().fmt("Interpolation: Interpolation error estimate is: {}.\n", error_);
   reset_stat();
   return result;
 }
@@ -353,7 +349,6 @@ void Interpolant::compute_values()
     DiffValue value;
     for(unsigned int i = 0; i < size_; i++)
     {
-      //DBGMSG("size: %d \tfill vectors: %d\n",size_,i);
       temp_x = bound_a_ + step*i;
       value = f_diff(temp_x);
       f_vec[i] = value.first;
@@ -430,7 +425,6 @@ void Interpolant::compute_error(double tol, std::vector<double>& f, std::vector<
     DiffValue int_value;
     for(unsigned int i = 0; i != size_; i++)
     {
-      //DBGMSG("size: %d \tfill vectors: %d\n",size_,i);
       temp_x = temp_a + step*i;
       value = f_diff(temp_x);
       f.push_back(value.first);
@@ -442,8 +436,6 @@ void Interpolant::compute_error(double tol, std::vector<double>& f, std::vector<
                           std::abs(value.first - int_value.first) / (std::abs(value.first) + tol)
                             + std::abs(value.second - int_value.second) / (std::abs(value.second) + tol)
                         );
-      //DBGMSG("x,f,if: \t%f:  %f: %f\n",temp_x, value.first, int_value.first);
-      //DBGMSG("temporary tot_error: %f:  %f: %f\n",temp_x,tot_err,t);
     }
   }
   else
@@ -531,10 +523,8 @@ void Interpolant::compute_error(double tol, double p, ErrorNorm::Type norm_type)
                                            x_node+step,
                                            simpson_tolerance) );
                    
-    //DBGMSG("error on interval<%f,%f>: %f\n",x_vec[i],x_vec[i+1],p_err);
     tot_err += p_err;
   }
-  //DBGMSG("tot_err = %f\n",tot_err);
   tot_err /= (bound_b_ - bound_a_);       //relative to the interval length  
   tot_err = std::pow(tot_err, 1.0/exponent);     //p-th root
   error_ = tot_err;
@@ -583,12 +573,10 @@ int InterpolantImplicit::interpolate()
   /*
   OLD_ASSERT(fix_ != IFixVariable::no_fix,"Cannot do interpolation. No varible was fixed.");
   check_all();
-  DBGMSG("seg %f\n",func_u);
+  DebugOut().fmt("seg {}\n",func_u);
   explicit_interpolant = new Interpolant(func_u, interpolate_derivative);
   //explicit_interpolant->set_functor(func_u, interpolate_derivative);
-  DBGMSG("seg\n");
   explicit_interpolant->set_interval(bound_a_,bound_b_);
-  DBGMSG("seg\n");
   if(automatic_size)
   {
     explicit_interpolant->set_size_automatic(user_tol, size_, max_size);
@@ -598,9 +586,7 @@ int InterpolantImplicit::interpolate()
     explicit_interpolant->set_size(size_);
   }
 
-  DBGMSG("seg\n");
   explicit_interpolant->interpolate();
-  DBGMSG("seg\n");
   error_ = explicit_interpolant->error();
   */
   return 0;

@@ -135,6 +135,7 @@ template<unsigned int spacedim>
 class FEValuesSpaceBase
 {
 public:
+    virtual ~FEValuesSpaceBase() {}
     /**
      * @brief Return the value of the @p function_no-th shape function at
      * the @p point_no-th quadrature point.

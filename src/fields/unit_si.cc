@@ -19,7 +19,7 @@
 
 #include "fields/unit_si.hh"
 #include "fields/unit_converter.hh"
-#include "system/xio.h"
+#include "system/asserts.hh"
 
 
 using namespace std;
@@ -142,7 +142,7 @@ const std::string &UnitSI::unit_symbol(unsigned int idx) {
 
 
 std::string UnitSI::format(OutputFormat form) const {
-	OLD_ASSERT(is_def(), "UnitSI object must be defined!");
+	ASSERT(is_def()).error("UnitSI object must be defined!");
 
 	std::stringstream output;
 

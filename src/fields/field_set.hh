@@ -46,7 +46,7 @@
  *      }
  *
  *      Field<3, FieldValue<3>::Scalar> scalar_field;
- *      Field<3, FieldValue<3>::Vector> vector_field;
+ *      Field<3, FieldValue<3>::VectorFixed> vector_field;
  * };
  *
  * This way the fields are destructed just before their pointers stored in the FieldSet.
@@ -135,7 +135,7 @@ public:
     /**
      * Make Selection with strings for all field names in the FieldSet.
      */
-    Input::Type::Selection make_output_field_selection(const string &name, const string &desc);
+    //Input::Type::Selection make_output_field_selection(const string &name, const string &desc);
 
     /**
      * Use @p FieldCommonBase::copy_from() to set field of the field set given by the first parameter

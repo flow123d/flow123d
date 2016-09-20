@@ -40,11 +40,11 @@ MH_DofHandler::~MH_DofHandler()
     delete side_ds;
 
     //  xfree(el_4_loc);
-    xfree(row_4_el);
-    xfree(side_id_4_loc);
-    xfree(side_row_4_id);
-    xfree(edge_4_loc);
-    xfree(row_4_edge);
+    delete [] row_4_el;
+    delete [] side_id_4_loc;
+    delete [] side_row_4_id;
+    delete [] edge_4_loc;
+    delete []  row_4_edge;
 }
 
 

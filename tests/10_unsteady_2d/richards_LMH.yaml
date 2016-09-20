@@ -1,10 +1,16 @@
-flow123d_version: 1.8.9
+# Test problem based on a simulation of an experiment performed at UGN.
+# Column of bentonite is in contact with water surface (pressure_head=0) at its bottom side other sides are impermeable,
+# there is a hole at the top side so the air can vent out freely.
+# 
+# 
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
     mesh_file: ./input/test10_bentonit_0.001.msh
     #mesh_file: ./input/test10_bentonit_0.005.msh
   flow_equation: !Flow_Richards_LMH
+    output_specific:
     soil_model: irmay
     time: # time in hours (consistent with conductivity)
         end_time: 3000     # original experiment from UGN up to time 6000 h

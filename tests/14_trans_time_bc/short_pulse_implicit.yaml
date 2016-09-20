@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test14 - 2D transport with time variable boundary, test matching input/output
     times even if prescribed initial and maximal time step is larger.
@@ -14,7 +14,7 @@ problem: !Coupling_Sequential
     input_fields:
       - region: bulk
         conductivity: 1
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x

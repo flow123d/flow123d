@@ -78,11 +78,11 @@ Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
 
 
 template <int spacedim, class Value>
-const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(const Input::Type::Selection *value_selection) {
+const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(Input::Type::Selection value_selection) {
 	std::vector<it::TypeBase::ParameterPair> param_vec;
 	if (is_enum_valued) {
-		OLD_ASSERT(value_selection, "Not defined 'value_selection' for enum element type.\n");
-		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<it::Selection>(*value_selection)) );
+		ASSERT( !(value_selection==Input::Type::Selection()) ).error("Not defined 'value_selection' for enum element type.\n");
+		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<it::Selection>(value_selection)) );
 	} else {
 		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<typename Value::ElementInputType>()) );
 	}
@@ -156,11 +156,10 @@ void FieldAlgorithmBase<spacedim, Value>::value_list(
         const ElementAccessor<spacedim> &elm,
         std::vector<typename Value::return_type>  &value_list)
 {
-	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
+	ASSERT_EQ( point_list.size(), value_list.size() ).error();
     for(unsigned int i=0; i< point_list.size(); i++) {
-    	OLD_ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
-                "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
-                i, Value(value_list[i]).n_rows(),this->value_.n_rows());
+    	ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows() )(i)(Value(value_list[i]).n_rows())(this->value_.n_rows())
+                .error("value_list has wrong number of rows");
         value_list[i]=this->value(point_list[i], elm);
     }
 
@@ -185,10 +184,6 @@ template class field<dim_from, FieldValue<0>::Integer >;                       \
 template class field<dim_from, FieldValue<0>::Scalar >;                       \
 \
 INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
-
-
-//template class field<dim_from, FieldValue<0>::EnumVector >;                \
-//template class field<dim_from, FieldValue<0>::Vector >;                         \
 
 
 // All instances of one field class template @p field.

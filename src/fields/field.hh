@@ -48,8 +48,7 @@ namespace IT=Input::Type;
  * we use classes provided by Armadillo library for linear algebra.
  * The @p Value template parameter should FieldValue<> template, usual choices are:
  * FieldValue<spacedim>::Scalar, FieldValue<spacedim>::Integer, FieldValue<spacedim>::Enum,
- * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed
- * deprecated choices: FieldValue<spacedim>::Vector, FieldValue<spacedim>::VectorEnum.
+ * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed.
  *
  * This class assign particular fields (instances of descendants of FiledBase) to the regions. It keeps a table of pointers to fields for every possible bulk
  * region index (very same functionality, but for boundary regions is provided by @p BCField class). This class has interface very similar to  FiledBase, however
@@ -240,8 +239,16 @@ public:
      * Other possible results are: result_zeros, result_eye, result_ones, result_constant, result_other
      * see @p FieldResult for explanation.
      */
-    FieldResult field_result( RegionSet region_set) const;
+    FieldResult field_result( RegionSet region_set) const override;
 
+    /**
+     * Return specification of the field value type in form of the string:
+     * [ <element type>, NRows, NCols]
+     *
+     * Result is valid JSON (and/or flow style YAML).
+     * For multifields not implemented.
+     */
+    std::string get_value_attribute() const override;
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

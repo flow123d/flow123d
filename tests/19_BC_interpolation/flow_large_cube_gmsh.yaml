@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Interpolated boundary condition - big cube
   mesh:
@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
       linear_solver: !Petsc
         a_tol: 1.0e-07
     input_fields:
-      - region: IMPLICIT BOUNDARY
+      - region: .IMPLICIT_BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z

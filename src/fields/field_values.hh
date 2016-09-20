@@ -45,10 +45,11 @@ typedef unsigned int FieldEnum;
 namespace internal {
 
 // Helper functions to get scalar type name
+/*
 std::string type_name_(double);
 std::string type_name_(int);
 std::string type_name_(FieldEnum);
-
+*/
 
 /**
  * InputType dispatch from elementary type @p ET of FieldValues_ to elementary Input::Type, i.e. descendant of Input::Type::Scalar.

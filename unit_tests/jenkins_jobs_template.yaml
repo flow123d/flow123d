@@ -38,6 +38,7 @@
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-{build-type}-make-doc"
       - "Flow123d-{platform}-debug-multijob"
 
 

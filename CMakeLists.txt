@@ -178,12 +178,13 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     flow_define(HAVE_SINCOS)
     
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-uninitialized -Wno-inconsistent-missing-override") 
     
+    # for some reason BOOST doesn't work with option -std=c++11
     # BOOST must be compiled with clang in order to use C++11 standard. 
-    set(Boost_FORCE_REBUILD "true")
-    set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
-    set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+    # set(Boost_FORCE_REBUILD "true")
+    # set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+    # set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
     
     # 
     # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
@@ -837,7 +838,7 @@ if( PETSC_FOUND )
   
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
-  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(bin/flow123d update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
@@ -851,7 +852,7 @@ endif()
 
   
 message(STATUS "=============== Summary ===================")
-message(STATUS "Boost:      ${BOOST_LIBRARIES}")
+message(STATUS "Boost:      ${Boost_LIBRARIES}")
 message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
 message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")

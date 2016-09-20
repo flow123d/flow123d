@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 output_streams:
   - &anchor1
     file: dual_por.pvd
@@ -23,7 +23,7 @@ problem: !Coupling_Sequential
     input_fields:
       - region: ALL
         conductivity: 1.0e-15
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0
     output:
@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
             - 1.0
             - 0.0
           porosity: 0.25
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc: 0
     substances:
       - A

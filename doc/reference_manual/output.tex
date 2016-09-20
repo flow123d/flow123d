@@ -40,9 +40,9 @@ Below we mention the most important output fields of all equations and link to t
 \tt velocity\_p0 & Vector field of water flux \units{}{3}{-1}. For every element we evaluate discrete flux field in barycenter.\\
 \hline
 \tt piezo\_head\_p0 & Piezometric head \units{}{1}{}, piecewise constant on every element. This is just pressure on element  plus z-coordinate of the barycenter. This field is produced only on demand
- (see key \hyperlink{IT::DarcyMHOutput-Selection}{\tt piezo\_head\_p0}).\\
+ (see key \hyperA{IT::Flow-Darcy-MH-output-fields}{\tt piezo\_head\_p0}).\\
  \hline
-complete list & See \hyperlink{IT::DarcyMHOutput-Selection}{Darcy flow output fields}.\\
+complete list & See \hyperA{IT::Flow-Darcy-MH-output-fields}{Darcy flow output fields}.\\
 \hline
 % \end{tabular}
 % 
@@ -52,7 +52,7 @@ complete list & See \hyperlink{IT::DarcyMHOutput-Selection}{Darcy flow output fi
 \hline
 \tt conc & Concentration \units{1}{-3}{}, piecewise constant on every element.\\
  \hline
-complete list & See \hyperlink{IT::ConvectionTransport-Output}{Convection transport output fields}.\\
+complete list & See \hyperA{IT::Solute-Advection-FV-output-fields}{Convection transport output fields}.\\
 \hline
 % \end{tabular}
 % 
@@ -62,7 +62,7 @@ complete list & See \hyperlink{IT::ConvectionTransport-Output}{Convection transp
 \hline
 \tt conc & Concentration \units{1}{-3}{}, piecewise linear on every element. Even if higher order polynomial approximation is used in simulation, the results are saved only in element corners.\\
  \hline
-complete list & See \hyperlink{IT::SoluteTransport-DG-Output}{Transport with dispersion output fields}.\\
+complete list & See \hyperA{IT::Solute-AdvectionDiffusion-DG-output-fields}{Transport with dispersion output fields}.\\
 \hline
 % \end{tabular}
 % 
@@ -72,21 +72,21 @@ complete list & See \hyperlink{IT::SoluteTransport-DG-Output}{Transport with dis
 \hline
 \tt conc\_immobile & Concentration \units{1}{-3}{} in immobile zone, piecewise linear on every element.\\
  \hline
-complete list & See \hyperlink{IT::DualPorosity-Output}{Dual porosity output fields}.\\
+complete list & See \hyperA{IT::DualPorosity-output-fields}{Dual porosity output fields}.\\
 \hline
 % 
 \multicolumn{2}{|l|}{\bf Sorption, Mobile sorption, Immobile sorption}\\
 \hline
 \tt conc\_solid & Concentration [mol\,$\mathrm{kg}^{-1}$] of sorbed substance, piecewise linear on every element.\\
  \hline
-complete list & See \hyperlink{IT::Sorption-Output}{Sorption output fields}, \hyperlink{IT::SorptionMobile-Output}{Mobile sorption output fields}, \hyperlink{IT::SorptionImmobile-Output}{Immobile sorption output fields}.\\
+complete list & See \hyperA{IT::Sorption-output-fields}{Sorption output fields}, \hyperA{IT::SorptionMobile-output-fields}{Mobile sorption output fields}, \hyperA{IT::SorptionImmobile-output-fields}{Immobile sorption output fields}.\\
 \hline
 % 
 \multicolumn{2}{|l|}{\bf Heat transfer}\\
 \hline
 \tt temperature & Temperature [K], piecewise linear on every element. Even if higher order polynomial approximation is used in simulation, the results are saved only in element corners.\\
  \hline
-complete list & See \hyperlink{IT::HeatTransfer-DG-Output}{Heat transfer output fields}.\\
+complete list & See \hyperA{IT::Heat-AdvectionDiffusion-DG-output-fields}{Heat transfer output fields}.\\
 \hline
 \end{tabular}
 
@@ -157,10 +157,10 @@ where
  \item \verb'<fluxes on sides>' --- for ever side total flux through the side 
 \end{description}
 
-The side values are reported according to the side order, with sides numbering given by Table \ref{tab:side_numbers}.
+The side values are reported according to the side order, with sides numbering given by Table \ref{tab:side-numbers}.
 \begin{table}[h]
-    \label{tab:side_numbers}
     \caption{Side numbering relative to veritices.}
+    \label{tab:side-numbers}
     \begin{tabular}{ccl}
         \toprule
         element dimension   &   side       &   vertices \\

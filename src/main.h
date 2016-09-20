@@ -75,6 +75,7 @@ protected:
      */
     virtual void after_run();
 
+
     /**
      * Parse command line parameters.
      * @param[in] argc       command line argument count
@@ -90,8 +91,8 @@ private:
     /// filename of main input file
     string main_input_filename_;
 
-    int passed_argc_;
-    char ** passed_argv_;
+    //int passed_argc_;
+    //char ** passed_argv_;
     
     /// Description of possible command line arguments.
     string program_arguments_desc_;

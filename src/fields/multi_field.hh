@@ -56,7 +56,6 @@ class MultiField : public FieldCommon {
 public:
     typedef FieldAlgorithmBase<spacedim, Value> SubFieldBaseType;
     typedef Field<spacedim, Value> SubFieldType;
-    typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldValue_<0,1,typename Value::element_type> MultiFieldValue;
 
@@ -151,6 +150,20 @@ public:
      * Implementation of @p FieldCommonBase::is_constant().
      */
     bool is_constant(Region reg) override;
+
+    /**
+     * @brief Indicates special field states.
+     *
+     * Return possible values from the enum @p FieldResult, see description there.
+     *
+     * Only difference to Field<>::field_result is meaning of @p result_constant. Here we return this value if
+     * all subfields are (possibly different) constants.
+     *
+     * Not used yet. Possibly tune behavior after usage.
+     */
+    FieldResult field_result( RegionSet region_set) const override;
+
+    std::string get_value_attribute() const override;
 
     /**
      * Virtual destructor.

@@ -144,7 +144,9 @@ const it::Record & DarcyMH::get_input_type() {
 
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
-        .declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
+        .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
+                "Vector of the gravitational acceleration (divided by the acceleration). Dimensionless, magnitude one for the Earth conditions.")
+		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
                 "Non-linear solver for MH problem.")
@@ -192,7 +194,7 @@ DarcyMH::EqData::EqData()
     
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
     	// TODO: temporary solution, we should try to get rid of pointer to the selection after having generic types
-        bc_type.input_selection( &get_bc_type_selection() );
+        bc_type.input_selection( get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' save the bc_type='none'."
@@ -290,8 +292,14 @@ void DarcyMH::init_eq_data()
     data_->mesh = mesh_;
     data_->mh_dh = &mh_dh;
     data_->set_mesh(*mesh_);
-    //data_->gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
-    data_->gravity_ =  arma::vec4(" 0 0 -1 0");
+
+    auto gravity_array = input_record_.val<Input::Array>("gravity");
+    std::vector<double> gvec;
+    gravity_array.copy_to(gvec);
+    gvec.push_back(0.0); // zero pressure shift
+    data_->gravity_ =  arma::vec(gvec);
+    data_->gravity_vec_ = data_->gravity_.subvec(0,2);
+
     data_->bc_pressure.add_factory(
         std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
         (data_->gravity_, "bc_piezo_head") );
@@ -412,7 +420,7 @@ void DarcyMH::update_solution()
 
         solve_nonlinear(); // with left limit data
         if (jump_time) {
-            xprintf(Warn, "Output of solution discontinuous in time not supported yet.\n");
+        	WarningOut() << "Output of solution discontinuous in time not supported yet.\n";
             //solution_output(T, left_limit); // output use time T- delta*dt
             //output_data();
         }
@@ -433,7 +441,7 @@ void DarcyMH::update_solution()
         solve_nonlinear(); // with right limit data
 
     } else if (! zero_time_term_from_left && jump_time) {
-        xprintf(Warn, "Discontinuous time term not supported yet.\n");
+    	WarningOut() << "Discontinuous time term not supported yet.\n";
         //solution_transfer(); // internally call set_time(T, left) and set_time(T,right) again
         //solve_nonlinear(); // with right limit data
     }
@@ -450,12 +458,12 @@ bool DarcyMH::zero_time_term() {
 void DarcyMH::solve_nonlinear()
 {
 
-    DBGMSG("dt: %g\n", time_->step().length());
+	DebugOut().fmt("dt: {}\n", time_->step().length());
     assembly_linear_system();
     double residual_norm = schur0->compute_residual();
     unsigned int l_it=0;
     nonlinear_iteration_ = 0;
-    xprintf(Msg, "[nonlin solver] norm of initial residual: %g\n", residual_norm);
+    MessageOut().fmt("[nonlin solver] norm of initial residual: {}\n", residual_norm);
 
     // Reduce is_linear flag.
     int is_linear_common;
@@ -483,7 +491,7 @@ void DarcyMH::solve_nonlinear()
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 5] > 0.8) {
             // stagnation
             if (input_record_.val<Input::Record>("nonlinear_solver").val<bool>("converge_on_stagnation")) {
-                xprintf(Warn, "Accept solution on stagnation. Its: %d Residual: %g\n", nonlinear_iteration_, residual_norm);
+            	WarningOut().fmt("Accept solution on stagnation. Its: {} Residual: {}\n", nonlinear_iteration_, residual_norm);
                 break;
             } else {
                 THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
@@ -503,12 +511,13 @@ void DarcyMH::solve_nonlinear()
 
 
 
-        //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
+        //LogOut().fmt("Linear solver ended with reason: {} \n", convergedReason );
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
         assembly_linear_system();
 
         residual_norm = schur0->compute_residual();
-        xprintf(Msg, "  [nonlinear solver] it: %d lin. it:%d (reason: %d) residual: %g\n",nonlinear_iteration_, l_it, convergedReason, residual_norm);
+        MessageOut().fmt("[nonlinear solver] it: {} lin. it:{} (reason: {}) residual: {}\n",
+        		nonlinear_iteration_, l_it, convergedReason, residual_norm);
     }
     this -> postprocess();
 
@@ -518,7 +527,7 @@ void DarcyMH::solve_nonlinear()
         if (nonlinear_iteration_ < 3) mult = 1.6;
         if (nonlinear_iteration_ > 7) mult = 0.7;
         int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
-        //DBGMSG("time adaptivity, res: %d it: %d m: %f dt: %f edt: %f\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
+        //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
 
     solution_changed_for_scatter=true;
@@ -645,7 +654,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
     for(int i=0; i<1000; i++) zeros[i]=0.0;
 
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
-    double loc_side_rhs[4];
+    double * loc_side_rhs = data_->system_.loc_side_rhs;
 
     arma::mat &local_matrix = *(data_->system_.local_matrix);
 
@@ -673,7 +682,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
             bcd=ele_ac.side(i)->cond();
 
             // gravity term on RHS
-            loc_side_rhs[i] = (ele_ac.centre()[ 2 ] - ele_ac.side(i)->centre()[ 2 ]);
+            //
+            loc_side_rhs[i] = 0;
 
             // set block C and C': side-edge, edge-side
             double c_val = 1.0;
@@ -722,7 +732,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                         double & solution_flux = ls->get_solution_array()[loc_side_row];
 
                         if ( solution_flux < side_flux) {
-                            //DBGMSG("x: %g, to neum, p: %g f: %g -> f: %g\n",b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
+                            //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
                             solution_flux = side_flux;
                             switch_dirichlet=0;
 
@@ -742,7 +752,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                         double & solution_head = ls->get_solution_array()[loc_edge_row];
 
                         if ( solution_head > bc_pressure) {
-                            //DBGMSG("x: %g, to dirich, p: %g -> p: %g f: %g\n",b_ele.centre()[0], solution_head, bc_pressure,  bc_flux);
+                            //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
                             solution_head = bc_pressure;
                             switch_dirichlet=1;
                         }
@@ -751,14 +761,14 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     // ** Apply BCUpdate BC type. **
                     // Force Dirichlet type during the first iteration of the unsteady case.
                     if (switch_dirichlet || (use_steady_assembly_ && nonlinear_iteration_ == 0) ) {
-                        //DBGMSG("x: %g, dirich, bcp: %g\n",b_ele.centre()[0], bc_pressure);
+                        //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         c_val = 0.0;
                         loc_side_rhs[i] -= bc_pressure;
                         ls->rhs_set_value(edge_row, -bc_pressure);
                         ls->mat_set_value(edge_row, edge_row, -1.0);
                         data_->system_.dirichlet_edge[i] = 1;
                     } else {
-                        //DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], side_flux, bc_flux);
+                        //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
                         ls->rhs_set_value(edge_row, side_flux);
                     }
 
@@ -780,12 +790,12 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     // Force Robin type during the first iteration of the unsteady case.
                     if (solution_head > bc_switch_pressure  || (use_steady_assembly_ && nonlinear_iteration_ ==0)) {
                         // Robin BC
-                        //DBGMSG("x: %g, robin, bcp: %g\n",b_ele.centre()[0], bc_pressure);
+                        //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         ls->rhs_set_value(edge_row, bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
                         ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
                     } else {
                         // Neumann BC
-                        //DBGMSG("x: %g, neuman, q: %g  bcq: %g\n",b_ele.centre()[0], bc_switch_pressure, bc_pressure);
+                        //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
                         ls->rhs_set_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
                     }
@@ -796,7 +806,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                 if (balance_ != nullptr && fill_matrix)
                 {
                    /*
-                    DBGMSG("add_flux: %d %d %d %d\n",
+                    DebugOut()("add_flux: {} {} {} {}\n",
                             mh_dh.el_ds->myp(),
                             ele_ac.ele_global_idx(),
                             loc_b,
@@ -831,7 +841,6 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                    static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_rows[i], val_edge );
                }
             }
-
         }
 
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
@@ -972,9 +981,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 		if (bcd) {			
 			ElementAccessor<3> b_ele = bcd->element_accessor();
 			auto type = (DarcyMH::EqData::BC_Type)darcy_.data_->bc_type.value(b_ele.centre(), b_ele);
-			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
+			//DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
 			if (type == DarcyMH::EqData::dirichlet) {
-				//DBGMSG("Dirichlet: %d\n", ele->index());
+				//DebugOut().fmt("Dirichlet: {}\n", ele->index());
 				dofs[i_side] = -dofs[i_side];
 				double bc_pressure = darcy_.data_->bc_pressure.value(b_ele.centre(), b_ele);
 				dirichlet[i_side] = bc_pressure;
@@ -1055,9 +1064,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 			if (bcd) {
 				ElementAccessor<3> b_ele = bcd->element_accessor();
 				auto type = (DarcyMH::EqData::BC_Type)darcy_.data_->bc_type.value(b_ele.centre(), b_ele);
-				//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
+				//DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
 				if (type == DarcyMH::EqData::dirichlet) {
-					//DBGMSG("Dirichlet: %d\n", ele->index());
+					//DebugOut().fmt("Dirichlet: {}\n", ele->index());
 					dofs[shift + i_side] = -dofs[shift + i_side];
 					double bc_pressure = darcy_.data_->bc_pressure.value(b_ele.centre(), b_ele);
 					dirichlet[shift + i_side] = bc_pressure;
@@ -1190,7 +1199,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
        
     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 #ifdef FLOW123D_HAVE_BDDCML
-            xprintf(Warn, "For BDDC no Schur complements are used.");
+    		WarningOut() << "For BDDC no Schur complements are used.";
             mh_dh.prepare_parallel_bddc();
             n_schur_compls = 0;
             LinSys_BDDC *ls = new LinSys_BDDC(mh_dh.global_row_4_sub_row->size(), &(*mh_dh.rows_ds),
@@ -1211,7 +1220,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
         else if (in_rec.type() == LinSys_PETSC::get_input_type()) {
         // use PETSC for serial case even when user wants BDDC
             if (n_schur_compls > 2) {
-                xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
+            	WarningOut() << "Invalid number of Schur Complements. Using 2.";
                 n_schur_compls = 2;
             }
 
@@ -1285,9 +1294,9 @@ void DarcyMH::assembly_linear_system() {
 
     is_linear_=true;
     bool is_steady = zero_time_term();
-	//DBGMSG("Assembly linear system\n");
+	//DebugOut() << "Assembly linear system\n";
 	if (data_->changed()) {
-		//DBGMSG("  Data changed\n");
+		//DebugOut()  << "Data changed\n";
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
@@ -1309,7 +1318,7 @@ void DarcyMH::assembly_linear_system() {
 
 	    if (! is_steady) {
 	        START_TIMER("fix time term");
-	    	//DBGMSG("    setup time term\n");
+	    	//DebugOut() << "setup time term\n";
 	    	// assembly time term and rhs
 	    	setup_time_term();
 	    	modify_system();
@@ -1409,7 +1418,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // trace computation
         arma::vec3 centre = ele_ac.centre();
         double conduct = data_->conductivity.value( centre , ele_ac.element_accessor() );
-        arma::mat33 aniso = data_->anisotropy.value( centre, ele_ac.element_accessor() );
+        auto aniso = data_->anisotropy.value( centre, ele_ac.element_accessor() );
 
         // compute mean on the diagonal
         double coef = 0.;
@@ -1496,7 +1505,7 @@ DarcyMH::~DarcyMH() {
 
 	if (solution != NULL) {
 	    chkerr(VecDestroy(&sol_vec));
-		xfree(solution);
+		delete [] solution;
 	}
 
 	delete output_object;
@@ -1519,13 +1528,13 @@ void DarcyMH::make_serial_scatter() {
             int i, *loc_idx; //, si;
 
             // create local solution vector
-            solution = (double *) xmalloc(size * sizeof(double));
+            solution = new double[size];
             VecCreateSeqWithArray(PETSC_COMM_SELF,1, size, solution,
                     &(sol_vec));
 
             // create seq. IS to scatter par solutin to seq. vec. in original order
             // use essentialy row_4_id arrays
-            loc_idx = (int *) xmalloc(size * sizeof(int));
+            loc_idx = new int [size];
             i = 0;
             FOR_ELEMENTS(mesh_, ele) {
                 FOR_ELEMENT_SIDES(ele,si) {
@@ -1541,7 +1550,7 @@ void DarcyMH::make_serial_scatter() {
             OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
             //DBGPRINT_INT("loc_idx",size,loc_idx);
             ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
-            xfree(loc_idx);
+            delete [] loc_idx;
             VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
                     PETSC_NULL, &par_to_all);
             ISDestroy(&(is_loc));
@@ -1595,7 +1604,7 @@ void DarcyMH::read_initial_condition()
 
 	// cycle over local element rows
 
-	DBGMSG("Setup with dt: %f\n",time_->dt());
+	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
 	for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
 		auto ele_ac = mh_dh.accessor(i_loc_el);
 		// set initial condition
@@ -1616,12 +1625,12 @@ void DarcyMH::setup_time_term() {
     PetscScalar *local_diagonal;
     VecGetArray(new_diagonal,& local_diagonal);
 
-    DBGMSG("Setup with dt: %f\n",time_->dt());
+    DebugOut().fmt("Setup with dt: {}\n", time_->dt());
 
     if (balance_ != nullptr)
     	balance_->start_mass_assembly(water_balance_idx_);
 
-    //DBGMSG("time_term lsize: %d %d\n",mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
+    //DebugOut().fmt("time_term lsize: {} {}\n", mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
     for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
         auto ele_ac = mh_dh.accessor(i_loc_el);
 
@@ -1631,9 +1640,10 @@ void DarcyMH::setup_time_term() {
 				* ele_ac.measure();
         local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
 
-        //DBGMSG("time_term: %d %d %d %d %f\n",mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
+        //DebugOut().fmt("time_term: {} {} {} {} {}\n", mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
         if (balance_ != nullptr)
-        	balance_->add_mass_matrix_values(water_balance_idx_, ele_ac.region().bulk_idx(), {ele_ac.ele_row()}, {diagonal_coeff});
+        	balance_->add_mass_matrix_values(water_balance_idx_,
+        	        ele_ac.region().bulk_idx(), { int(ele_ac.ele_row()) }, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);

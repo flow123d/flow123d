@@ -121,7 +121,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     search_header.time=time.end();
 
 
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(search_header,
     		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
     return search_header.actual;
 }

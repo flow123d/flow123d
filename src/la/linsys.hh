@@ -103,7 +103,8 @@ public:
     LinSys(const  Distribution *rows_ds)
       : comm_( rows_ds->get_comm() ), status_( NONE ), lsize_( rows_ds->lsize() ), rows_ds_(rows_ds),
         symmetric_( false ), positive_definite_( false ), negative_definite_( false ),
-        spd_via_symmetric_general_( false ), solution_(NULL), v_solution_(NULL)
+        spd_via_symmetric_general_( false ), solution_(NULL), v_solution_(NULL),
+        own_solution_(false)
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
         int sizeInt;

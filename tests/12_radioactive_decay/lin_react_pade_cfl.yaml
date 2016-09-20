@@ -1,4 +1,4 @@
-flow123d_version: 1.8.9
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test12 - demonstration of unstability of reaction solver without CFL condition
     (exact solution (50+5*exp(-55*t))/55)
@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
     input_fields:
       - rid: 1
         anisotropy: 1
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: 0
     output:
@@ -33,7 +33,7 @@ problem: !Coupling_Sequential
           init_conc:
             - 1
             - 0
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc:
             - 1
             - 0

@@ -19,7 +19,7 @@
 #include "input/input_type.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-#include "transport/transport_operator_splitting.hh"
+//#include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
 #include "fields/unit_si.hh"
 #include "coupling/balance.hh"
@@ -70,7 +70,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
             "Type of boundary condition.")
             .units( UnitSI::dimensionless() )
             .input_default("\"inflow\"")
-            .input_selection( &get_bc_type_selection() )
+            .input_selection( get_bc_type_selection() )
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=bc_dirichlet_value
             .name("bc_temperature")
@@ -105,6 +105,12 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(in_main_matrix & in_time_term);
+
+    *this+=water_content
+            .name("water_content")
+            .units( UnitSI::dimensionless() )
+            .input_default("1.0")
+            .flags_add(input_copy & in_main_matrix & in_time_term);
 
     *this+=fluid_density
             .name("fluid_density")

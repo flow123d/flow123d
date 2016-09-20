@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test12 - narrow radioaoctive decay chain, with transport switched enabled
     but with zero pressure gradient
@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
     input_fields:
       - rid: 1
         anisotropy: 0.01
-      - region: BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: 0
     output:
@@ -34,7 +34,7 @@ problem: !Coupling_Sequential
             - 1
             - 0
             - 0
-        - region: BOUNDARY
+        - region: .BOUNDARY
           bc_conc:
             - 1
             - 0

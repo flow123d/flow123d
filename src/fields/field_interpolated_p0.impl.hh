@@ -104,7 +104,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     search_header.time = time.end();
     
     bool boundary_domain_ = false;
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<typename Value::element_type>(search_header,
     		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
 
     return search_header.actual;
@@ -210,7 +210,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 				}
 			}
 		} else {
-			xprintf(Warn, "Processed element with idx %d is out of source mesh!\n", elm.idx());
+			WarningOut().fmt("Processed element with idx {} is out of source mesh!\n", elm.idx());
 		}
 		END_TIMER("compute_pressure");
 

@@ -94,6 +94,7 @@ public:
     // the vector is set in assembly_mh_matrix and used in LMH assembly of the time term
     std::vector<unsigned int> dirichlet_edge;
     std::shared_ptr<arma::mat> local_matrix;
+    double loc_side_rhs[4];
     std::shared_ptr<Balance> balance;
     LinSys *lin_sys;
 };
@@ -175,7 +176,7 @@ public:
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
         Field<3, FieldValue<3>::Scalar > sigma;
-
+        
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
         BCField<3, FieldValue<3>::Scalar > bc_flux;
@@ -190,6 +191,7 @@ public:
          * to pressure head and vice versa.
          */
         arma::vec4 gravity_;
+        arma::vec3 gravity_vec_;
 
         Mesh *mesh;
         MH_DofHandler *mh_dh;
@@ -219,7 +221,7 @@ public:
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
-    const MH_DofHandler &get_mh_dofhandler() {
+    const MH_DofHandler &get_mh_dofhandler()  override {
         double *array;
         unsigned int size;
         get_solution_vector(array, size);

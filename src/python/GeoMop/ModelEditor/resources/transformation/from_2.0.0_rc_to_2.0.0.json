@@ -1,10 +1,27 @@
 {
 "name": "Main transformation file",
 "description": "Template for creating transformation file",
-"old_format": "1.8.2",
+"old_format": "2.0.0_rc",
 "new_format": "2.0.0",
 "actions":
-  [
+  [ {
+      "NAME": "Change version.",
+      "action": "change-value",
+      "parameters":{
+          "path" : "/flow123d_version",
+          "old_value" : "2.0.0_rc",
+          "new_value" : "2.0.0"
+      }
+    },
+    {
+      "NAME": "Change version.",
+      "action": "change-value",
+      "parameters":{
+          "path" : "/flow123d_version",
+          "old_value" : "1.8.9",
+          "new_value" : "2.0.0"
+      }
+    },
     {
       "NAME": "Make output-specific key.",
       "action": "add-key",
@@ -265,6 +282,60 @@
           "path" : "/problem/heat_equation/balance",
           "old_value" : "false",
           "new_value" : "{add_output_times: false}"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY, hack to deal with substitution matching the substrings",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
         }
     }
   ]

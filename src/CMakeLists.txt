@@ -93,11 +93,11 @@ add_library(system_lib
     system/sys_profiler.cc
     system/time_point.cc
     system/system.cc
-    system/xio.cc
+#    system/xio.cc
     system/exceptions.cc
     system/stack_trace.cc
     system/asserts.cc
-    io/read_ini.cc
+#    io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
     system/application_base.cc
@@ -271,13 +271,13 @@ target_link_libraries(coupling_lib
 
 
 # make separate library for Semchem (God save us!)
-add_library(semchem 
-    semchem/che_semchem.cc
-    semchem/che_read.cc
-)
-set_target_properties(semchem 
-    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
-)
+#add_library(semchem 
+#    semchem/che_semchem.cc
+#    semchem/che_read.cc
+#)
+#set_target_properties(semchem 
+#    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+#)
 
 
 
@@ -302,7 +302,7 @@ add_library(flow123d_lib
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
     reaction/linear_ode_analytic.cc
-    semchem/semchem_interface.cc
+    #semchem/semchem_interface.cc
 
     transport/concentration_model.cc
     transport/heat_model.cc
@@ -315,7 +315,7 @@ add_library(flow123d_lib
     coupling/hc_explicit_sequential.cc
 )    
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib 
+    fem_lib mesh_lib la_lib input_lib 
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 

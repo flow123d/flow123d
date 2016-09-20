@@ -19,6 +19,7 @@
 #include "system/logger_options.hh"
 #include "system/logger.hh"
 #include "system/global_defs.h"
+#include "system/file_path.hh"
 
 #include <time.h>
 
@@ -109,7 +110,7 @@ void LoggerOptions::set_log_file(std::string log_file_base) {
 		}
 		std::stringstream file_name;
 		file_name << log_file_base << "." << mpi_rank << ".log";
-		file_stream_.open( file_name.str().c_str(), std::ofstream::out );
+		FilePath(file_name.str(), FilePath::output_file).open_stream(file_stream_);
 	}
 	init_ = true;
 }

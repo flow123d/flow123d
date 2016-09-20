@@ -202,6 +202,7 @@ protected:
 			double Dm,
 			double alphaL,
 			double alphaT,
+			double water_content,
 			double porosity,
 			double cross_cut,
 			arma::mat33 &K);
