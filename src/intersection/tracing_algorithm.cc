@@ -105,8 +105,6 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                  * if RES == 1 -> intersection direction is E-S
                  * if RES == 0 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
                  */
-//                 DebugOut().fmt("S={} P={}, E={}.\n",RefElement<3>::normal_orientation(ip.idx_B()), 
-//                        RefElement<2>::normal_orientation(ip.idx_A()), ip.orientation());
                 unsigned int j = (RefElement<3>::normal_orientation(ip.idx_B()) +
                                   RefElement<2>::normal_orientation(ip.idx_A()) +
                                   ip.orientation()
@@ -133,8 +131,10 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
                  *  then the right side [0] is in and left side [1] is out
                  *  - this is determined by IP orientation
                  */
+                ASSERT_DBG( ip.dim_B() == 1 );
                 unsigned int tetrahedron_line = ip.idx_B();
                 unsigned int first_side = ip.orientation();
+                DebugOut().VarFmt(ip.idx_B()).VarFmt(ip.orientation());
                 row = RefElement<3>::interact(Interaction<2,1>(tetrahedron_line))[1-first_side];
                 object_index = RefElement<3>::interact(Interaction<2,1>(tetrahedron_line))[first_side];
 
@@ -180,7 +180,7 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     // jump from row to row until we get back to the first row 
     // (i.e. go through polygonal vertices until we get back to starting point)
     while(next_row != first_row_index){
-//         DebugOut().fmt("next_row = {}\n",next_row);
+        DebugOut().VarFmt(next_row);
         unsigned int i_ip_orig = (unsigned int)trace_table_x[next_row][1];
         ASSERT_LT_DBG(i_ip_orig, p.points().size());
         
