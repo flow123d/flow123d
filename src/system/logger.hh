@@ -241,7 +241,7 @@ Logger &operator<<(Logger & log, const T & x)
 	_LOG( Logger::MsgType::debug )
 
 #define VarFmt( var ) \
-    fmt("'" + string(#var) + "': {}" , (var))
+    fmt("'" + string(#var) + "': {} " , (var))
 
 
 #endif /* LOGGER_HH_ */

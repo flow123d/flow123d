@@ -156,8 +156,8 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(comput
     global_triangle.print();
     */
     IP.set_topology_B(0, 2);
-    IP.set_orientation(signed_plucker_product(0) > 0 ? 1 : 0);
     
+
     // possibly set abscissa vertex {0,1}
     if( fabs(t) <= rounding_epsilon)       { t = 0; IP.set_topology_A(0,0);}
     else if(fabs(1-t) <= rounding_epsilon) { t = 1; IP.set_topology_A(1,0);}
@@ -324,9 +324,13 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
             else if (n_both == 1) // two zero products
                 IP.set_topology_B(RefElement<2>::oposite_node(3-zero_idx_sum), 0);
 
+            DebugOut().VarFmt(n_positive).VarFmt(n_negative);
+            IP.set_orientation(n_positive > 0 ? 1 : 0);
+
             IP12s.push_back(IP);
             return true;
         }
+
     } else if(compute_zeros_plucker_products){
 
         // 3 zero products: 
@@ -556,14 +560,14 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
             local_ip_counter = CI12[i].compute_final(IP12s);    // compute; if intersection exists then continue
             if(local_ip_counter == 0) continue;
             
-            unsigned int triangle_line = i%3; //i goes from 0 to 5 -> i%3 = 0,1,2,0,1,2
+            unsigned int triangle_side = i%3; //i goes from 0 to 5 -> i%3 = 0,1,2,0,1,2
 //             DBGMSG("found %d\n", i);
             ip_coutner += local_ip_counter;
             
             for(IntersectionPointAux<1,2> &IP : IP12s)
             {
                 IntersectionPointAux<2,1> IP21 = IP.switch_objects();   // swicth dim 12 -> 21
-                IntersectionPointAux<2,2> IP22(IP21, triangle_line);    // interpolate dim 21 -> 22
+                IntersectionPointAux<2,2> IP22(IP21, triangle_side);    // interpolate dim 21 -> 22
                 
                 if(i < 3){
                     //switch back to keep order of triangles [A,B]
@@ -574,7 +578,7 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                         // DBGMSG("set_node A\n");
                         // we are on line of the triangle A, and IP.idx_A contains local node of the line
                         // we know vertex index
-                        unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()];
+                        unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()];
                         IP22.set_topology_A(node, 0);
                         
                         // set flag on all sides of tetrahedron connected by the node
@@ -601,7 +605,7 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                     // DBGMSG("set_node B\n");
                     // we are on line of the triangle, and IP.idx_A contains local node of the line
                     // we know vertex index
-                    unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()];
+                    unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()];
                     IP22.set_topology_B(node, 0);
                     
                     // set flag on both sides of triangle connected by the node
@@ -1050,24 +1054,22 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	std::vector<IntersectionPointAux<1,3>> IP13s;
 	unsigned int pocet_13_pruniku;
 
-	for(unsigned int triangle_line = 0; triangle_line < RefElement<2>::n_lines; triangle_line++){    // go through triangle lines
-// 		DBGMSG("2d-3d triangle side %d\n",triangle_line);
-        pocet_13_pruniku = CI13[triangle_line].compute(IP13s);
+	for(unsigned int triangle_side = 0; triangle_side < RefElement<2>::n_lines; triangle_side++){    // go through triangle lines
+        pocet_13_pruniku = CI13[triangle_side].compute(IP13s);
         ASSERT_DBG(pocet_13_pruniku < 3);
-//         DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
         
         for(unsigned int n=pocet_13_pruniku; n >= 1; n--){
             IntersectionPointAux<1,3> IP (IP13s[IP13s.size()-n]);
             
             IntersectionPointAux<3,1> IP31 = IP.switch_objects();   // switch idx_A and idx_B and coords
-            IntersectionPointAux<3,2> IP32(IP31, triangle_line);    // interpolation uses local_bcoords_B and given idx_B
+            IntersectionPointAux<3,2> IP32(IP31, triangle_side);    // interpolation uses local_bcoords_B and given idx_B
             IntersectionPointAux<2,3> IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
             
             if( IP.dim_A() == 0 ) // if IP is vertex of triangle
             {
                 // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
-                IP23.set_topology_A(RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()], 0);
+                IP23.set_topology_A(RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()], 0);
             
                 if( IP.dim_B() < 3 )
                     // if IP is on the surface of the tetrahedron,
