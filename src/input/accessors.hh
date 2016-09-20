@@ -32,7 +32,6 @@
 #include <boost/type_traits.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/static_assert.hpp>
-//#include <boost/shared_ptr.hpp>
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
@@ -148,7 +147,7 @@ protected:
         /**
          * Pointer to data of parent node in the address tree
          */
-    	boost::shared_ptr<AddressData> parent_;
+    	std::shared_ptr<AddressData> parent_;
         /**
          * Index in StorageArray of the parent_ to get actual node.
          */
@@ -225,7 +224,7 @@ protected:
     /**
      * Shared part of address.
      */
-    boost::shared_ptr<AddressData> data_;
+    std::shared_ptr<AddressData> data_;
 
 
 };

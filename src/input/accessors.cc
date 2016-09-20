@@ -16,7 +16,6 @@
  */
 
 #include <memory>
-#include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include "input/accessors.hh"
 
@@ -53,7 +52,7 @@ std::ostringstream &Exception::form_message(std::ostringstream &converter) const
  */
 
 Address::Address()
-: data_(boost::make_shared<AddressData>())
+: data_(std::make_shared<AddressData>())
 {
    data_->root_type_ = nullptr;
    data_->root_storage_ = &Array::empty_storage_;
@@ -63,7 +62,7 @@ Address::Address()
 
 
 Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
-: data_( boost::make_shared<AddressData>() )
+: data_( std::make_shared<AddressData>() )
 {
     if (! storage_root)
         THROW( ExcAddressNullPointer() << EI_AccessorName("storage_root") );
@@ -96,7 +95,7 @@ std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
 std::string Address::make_full_address() const {
 	std::vector<unsigned int> path;
-	boost::shared_ptr<AddressData> address_data = data_;
+	std::shared_ptr<AddressData> address_data = data_;
 	while (address_data->parent_ != NULL) {
 		path.push_back(address_data->descendant_order_);
 		address_data = address_data->parent_;
