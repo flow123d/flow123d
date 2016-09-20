@@ -30,8 +30,8 @@ public:
     void assemble(LocalElementAccessorBase<3> ele_ac, bool fill_matrix = true){
         
         unsigned int dim = ele_ac.dim();
-//         dim_assembler[dim-1]->assemble(ele_ac,fill_matrix);
-//         ad_->lin_sys->set_local_system(dim_assembler[dim-1]->get_local_system());
+        dim_assembler[dim-1]->assemble(ele_ac);
+        ad_->lin_sys->set_local_system(dim_assembler[dim-1]->get_local_system());
         
         assembly_dim_connections(ele_ac,fill_matrix);
         

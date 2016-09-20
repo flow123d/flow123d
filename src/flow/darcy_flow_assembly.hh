@@ -49,12 +49,10 @@ public:
 
     }
 
+    virtual LocalSystem & get_local_system() = 0;
+    
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
-
-    // assembly just A block of local matrix
-    virtual void assembly_local_matrix(LocalElementAccessorBase<3> ele) =0;
-
     // assembly compatible neighbourings
     virtual void assembly_local_vb(double *local_vb,
                                     ElementFullIter ele,
@@ -115,6 +113,9 @@ public:
     ~AssemblyMH<dim>() override
     {}
 
+    LocalSystem& get_local_system() override
+        { return loc_system_;}
+    
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
         loc_system_.reset();
@@ -123,51 +124,9 @@ public:
         
         assemble_sides(ele_ac);
 //         assemble_element(ele_ac);
-//         assemble_source_term(ele_ac);
+        assemble_source_term(ele_ac);
         
 //         loc_system_.fix_diagonal();
-    }
-        
-    arma::mat::fixed<dim+1,dim+1>  assembly_local_geometry_matrix(ElementFullIter ele)
-
-    {
-        //START_TIMER("Assembly<dim>::assembly_local_matrix");
-        fe_values_.reinit(ele);
-        unsigned int ndofs = fe_values_.get_fe()->n_dofs();
-        unsigned int qsize = fe_values_.get_quadrature()->size();
-        arma::mat::fixed<dim+1,dim+1> local_matrix;
-        local_matrix.zeros();
-        arma::vec3 &gravity_vec = ad_->gravity_vec_;
-
-        for (unsigned int k=0; k<qsize; k++)
-        {
-            for (unsigned int i=0; i<ndofs; i++)
-            {
-                    for (unsigned int j=0; j<ndofs; j++)
-                    local_matrix[i*ndofs+j] +=
-                            arma::dot(fe_values_.shape_vector(i,k),
-                                        (ad_->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
-                                            * fe_values_.shape_vector(j,k)
-                                        )
-                            * fe_values_.JxW(k);
-                    ad_->system_.loc_side_rhs[i] +=
-                            arma::dot(
-                                    gravity_vec,
-                                    fe_values_.shape_vector(i,k)
-                                    ) * fe_values_.JxW(k);
-            }
-        }
-
-        return local_matrix;
-    }
-
-    void assembly_local_matrix(LocalElementAccessorBase<3> ele) override
-    {
-        double cs = ad_->cross_section.value(ele.centre(), ele.element_accessor());
-        double conduct =  ad_->conductivity.value(ele.centre(), ele.element_accessor());
-
-        double scale = 1 / cs /conduct;
-        *(system_.local_matrix) = scale*assembly_local_geometry_matrix(ele.full_iter());
     }
 
     void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
@@ -212,7 +171,7 @@ protected:
     static const unsigned int size()
     {
         // sides, 1 for element, edges
-//         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
+//         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;  //FIXME
         return RefElement<dim>::n_sides;
     }
 
@@ -220,7 +179,7 @@ protected:
         
         ASSERT_DBG(ele_ac.dim() == dim);
         
-        //set global dof for element (pressure)
+        //set global dof for element (pressure) //FIXME
 //         loc_system_.row_dofs[loc_ele_dof] = loc_system_.col_dofs[loc_ele_dof] = ele_ac.ele_row();
         
         //shortcuts
@@ -233,13 +192,14 @@ protected:
         for (unsigned int i = 0; i < nsides; i++) {
 
             side_row = loc_side_dofs[i];    //local
-//             edge_row = loc_edge_dofs[i];    //local
+//             edge_row = loc_edge_dofs[i];    //local  //FIXME
             loc_system_.row_dofs[side_row] = loc_system_.col_dofs[side_row] = ele_ac.side_row(i);    //global
 //             loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = ele_ac.edge_row(i);    //global
         }
     }
     
-     void assemble_sides(LocalElementAccessorBase<3> ele_ac){
+     void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
+     {
         double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
         double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());
         double scale = 1 / cs /conduct;
@@ -262,7 +222,8 @@ protected:
                 double rhs_val =
                         arma::dot(gravity_vec,fe_values_.shape_vector(i,k))
                         * fe_values_.JxW(k);
-                loc_system_.add_value(i,i , 0.0, rhs_val);
+//                 loc_system_.add_value(i,i , 0.0, rhs_val);   //FIXME
+                        ad_->system_.loc_side_rhs[i] += rhs_val;
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
@@ -291,7 +252,8 @@ protected:
                 double val_edge =  -1./local_matrix(i,i);
 
                 unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
-                unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
+//                 unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];  //FIXME
+                unsigned int edge_row = ele_ac.edge_row(i);
                 static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( side_row, val_side );
                 static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( edge_row, val_edge );
             }

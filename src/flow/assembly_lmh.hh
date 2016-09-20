@@ -93,7 +93,7 @@ public:
         }
     }
 
-    void assembly_local_matrix(LocalElementAccessorBase<3> ele) override
+    void assemble_sides(LocalElementAccessorBase<3> ele) override
     {
         reset_soil_model(ele);
         cross_section = this->ad_->cross_section.value(ele.centre(), ele.element_accessor());
@@ -117,16 +117,15 @@ public:
         }
 
         double scale = 1 / cross_section / conductivity;
-        *(system_.local_matrix) = scale * this->assembly_local_geometry_matrix(ele.full_iter());
-
-        assembly_source_term(ele);
+        this->assemble_sides_scale(ele,scale);
     }
 
     /***
      * Called from assembly_local_matrix, assumes precomputed:
      * cross_section, genuchten_on, soil_model
      */
-    void assembly_source_term(LocalElementAccessorBase<3> ele) {
+    void assemble_source_term(LocalElementAccessorBase<3> ele) override
+    {
 
         // set lumped source
         double diagonal_coef = ele.measure() * cross_section / ele.n_sides();

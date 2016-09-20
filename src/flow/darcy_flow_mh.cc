@@ -810,33 +810,9 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
         }
 
         assembler.assemble(ele_ac, true);
-        assembler.dim_assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
-
-        // assemble matrix for weights in BDDCML
-        // approximation to diagonal of 
-        // S = -C - B*inv(A)*B'
-        // as 
-        // diag(S) ~ - diag(C) - 1./diag(A)
-        // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
-        // to a continuous one
-        // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
-        // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-        if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-            for(unsigned int i=0; i < nsides; i++) {
-                double val_side =  local_matrix(i,i);
-                double val_edge =  -1./local_matrix(i,i);
-
-                static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_rows[i], val_side );
-                static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_rows[i], val_edge );
-            }
-        }
-        
 
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
 
-        
-        // set block A: side-side on one element - block diagonal matrix
-        ls->mat_set_values(nsides, side_rows, nsides, side_rows, local_matrix.memptr());
         // set block B, B': element-side, side-element
         int ele_row = ele_ac.ele_row();
         ls->mat_set_values(1, &ele_row, nsides, side_rows, minus_ones);
