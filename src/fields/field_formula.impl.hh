@@ -46,6 +46,8 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
                                         " - array of strings of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                         " - just one string to enter (spatially variable) multiple of the unit matrix.\n"
                                         "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
+			.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+										"Definition of unit.")
 			.close();
 }
 
@@ -73,7 +75,9 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
-    // read formulas form input
+	this->init_unit_conversion_coefficient(rec, init_data);
+
+	// read formulas form input
     STI::init_from_input( formula_matrix_, rec.val<typename STI::AccessType>("value") );
     value_input_address_ = rec.address_string();
 }

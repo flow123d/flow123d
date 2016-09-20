@@ -43,6 +43,8 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
+		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+				"Definition of unit.")
         .close();
 }
 
@@ -63,6 +65,8 @@ FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_c
 
 template <int spacedim, class Value>
 void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+	this->init_unit_conversion_coefficient(rec, init_data);
+
 
 	// read mesh, create tree
     {

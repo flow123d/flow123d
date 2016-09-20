@@ -41,6 +41,8 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
+		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+				"Definition of unit.")
         .close();
 }
 
@@ -78,9 +80,11 @@ internal_raw_data(false), mesh_(NULL)
 
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
-	cout << string(reader_file_) << endl;
-	OLD_ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
-	OLD_ASSERT( reader_file_ == FilePath(), "Multiple call of init_from_input.\n");
+	this->init_unit_conversion_coefficient(rec, init_data);
+
+	DebugOut() << "Reader file: " << string(reader_file_);
+	ASSERT(internal_raw_data).error("Trying to initialize internal FieldElementwise from input.");
+	ASSERT(reader_file_ == FilePath()).error("Multiple call of init_from_input.");
     reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
     ReaderInstances::instance()->get_reader(reader_file_);
 

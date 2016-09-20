@@ -165,6 +165,21 @@ void FieldAlgorithmBase<spacedim, Value>::value_list(
 
 }
 
+template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::init_unit_conversion_coefficient(const Input::Record &rec,
+		const struct FieldAlgoBaseInitData& init_data)
+{
+    Input::Record unit_record;
+    if ( rec.opt_val("unit", unit_record) ) {
+        if (!Value::is_scalable()) {
+            WarningOut().fmt("Setting unit conversion coefficient of non-floating point field at address {}\nCoefficient will be skipped.\n",
+                    rec.address_string());
+        }
+        std::string unit_str = unit_record.val<std::string>("unit_formula");
+        this->unit_conversion_coefficient_ = init_data.unit_si_.convert_unit_from(unit_str);
+    }
+}
+
 
 
 /****************************************************************************

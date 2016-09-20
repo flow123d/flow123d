@@ -206,6 +206,8 @@ public:
 
 
 protected:
+       /// Init value of @p unit_conversion_coefficient_ from input
+       void init_unit_conversion_coefficient(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
        /// Actual time level; initial value is -infinity.
        TimeStep time_;
        /// Last value, prevents passing large values (vectors) by value.
