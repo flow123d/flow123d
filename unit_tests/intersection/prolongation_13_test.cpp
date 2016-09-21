@@ -178,17 +178,19 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     // and we avoid creating the intersection map for exact IPs
     std::sort(ilc.begin(), ilc.end(),compare_is13);
     
-    EXPECT_EQ(ilc.size(), il.size());
+    EXPECT_EQ(il.size(), ilc.size());
     EXPECT_EQ(n_components,ie.number_of_components(1));
     
     for(unsigned int i=0; i < ilc.size(); i++)
         for(unsigned int j=0; j < ilc[i].size(); j++)
     {
-        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
+        MessageOut().fmt("---------- check Intersection[{}] el_1d: {} el_3d: {} ----------\n",i,
+                ilc[i].component_ele_idx(), ilc[i].bulk_ele_idx());
+        DebugOut()<< "bary: " << ilc[i][j].comp_coords();
         arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
-        EXPECT_NEAR(ip[0], il[i][j][0], 1e-14);
-        EXPECT_NEAR(ip[1], il[i][j][1], 1e-14);
-        EXPECT_NEAR(ip[2], il[i][j][2], 1e-14);
+        EXPECT_NEAR(il[i][j][0], ip[0], 1e-14);
+        EXPECT_NEAR(il[i][j][1], ip[1], 1e-14);
+        EXPECT_NEAR(il[i][j][2], ip[2], 1e-14);
     }
     
     computed_length = ie.measure_13();
