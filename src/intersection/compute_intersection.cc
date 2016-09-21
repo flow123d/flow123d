@@ -308,9 +308,10 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
         else n_negative++;
     }
 
+    // any negative barycentric coordinate means, no intersection
     if (n_negative>0) return false;
 
-    // test whether all plucker products are not zero
+    // test whether any plucker products is non-zero
     if (n_positive > 0) {
         IntersectionPointAux<1,2> IP;
         
@@ -318,12 +319,14 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
         // edge of triangle
         unsigned int non_zero_idx=0;
         if (n_positive == 2) {
-            // one zero product
+            // one zero product, intersection on the zero edge
+            // the zero edge index is equal to zero_idx_sum
             IP.set_topology_B(zero_idx_sum, 1);
             non_zero_idx =  (zero_idx_sum + 1) % 3;
         }
         else if (n_positive == 1) {
-            // two zero products
+            // two zero products, intersection in vertex oposite to single non-zero edge
+            // index of the non-zero edge is 3-zero_idx_sum
             IP.set_topology_B(RefElement<2>::oposite_node(3-zero_idx_sum), 0);
             non_zero_idx = 3-zero_idx_sum;
         }
@@ -769,10 +772,11 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAu
     unsigned int count = compute(intersection.i_points_);
     
     // set if pathologic!!
+    /*
     for(IntersectionPointAux<1,3> &p : intersection.i_points_){
         if(p.is_pathologic()) intersection.pathologic_ = true;
         break;
-    }
+    }*/
     
     return count;
     
