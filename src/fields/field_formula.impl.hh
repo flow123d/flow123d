@@ -160,7 +160,7 @@ typename Value::return_type const & FieldFormula<spacedim, Value>::value(const P
 {
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            this->value_(row,col) = parser_matrix_[row][col].Eval(p.memptr());
+            this->value_(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p.memptr());
         }
     return this->r_value_;
 }
@@ -182,7 +182,7 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)
             for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-                envelope(row,col) = parser_matrix_[row][col].Eval(point_list[i].memptr());
+                envelope(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(point_list[i].memptr());
             }
     }
 }

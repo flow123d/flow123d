@@ -153,6 +153,7 @@ template <int spacedim, class Value>
 typename Value::return_type const & FieldPython<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
     set_value(p,elm, this->value_);
+    this->value_.scale(this->unit_conversion_coefficient_);
     return this->r_value_;
 }
 
@@ -171,6 +172,7 @@ void FieldPython<spacedim, Value>::value_list (const std::vector< Point >  &poin
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, envelope.n_rows(),this->value_.n_rows());
         set_value(point_list[i], elm, envelope );
+        envelope.scale(this->unit_conversion_coefficient_);
     }
 }
 

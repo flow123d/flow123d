@@ -62,6 +62,12 @@ string input = R"INPUT(
        function="func_circle",
        script_string="import math\ndef func_circle(r,phi): return ( r * math.cos(phi), r * math.sin(phi) )"
    },
+   field_string_unit_conversion={
+       TYPE="FieldPython",
+       function="func_circle",
+       script_string="import math\ndef func_circle(r,phi): return ( r * math.cos(phi), r * math.sin(phi) )",
+       unit="cm"
+   },
    field_file={
        TYPE="FieldPython",
        function="func_xyz",
@@ -131,13 +137,15 @@ TEST(FieldPython, read_from_input) {
 
     Input::Type::Record rec_type = Input::Type::Record("FieldPythonTest","")
         .declare_key("field_string", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
+        .declare_key("field_string_unit_conversion", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
         .declare_key("field_file", ScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .close();
 
     // read input string
     Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
-    FieldAlgoBaseInitData init_data(3, UnitSI::dimensionless());
+    UnitSI unit = UnitSI().m();
+    FieldAlgoBaseInitData init_data(3, unit);
 
     auto flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), init_data);
     {
@@ -155,6 +163,24 @@ TEST(FieldPython, read_from_input) {
         result = flux->value( point_2, elm);
         EXPECT_DOUBLE_EQ( -1, result[0]);
         EXPECT_DOUBLE_EQ( 1, result[1]);
+    }
+
+    auto flux_unit_conv=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string_unit_conversion"), init_data);
+    {
+        Space<2>::Point point_1, point_2;
+        point_1(0)=1.0; point_1(1)= pi / 2.0;
+        point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
+
+        ElementAccessor<2> elm;
+        arma::vec2 result;
+
+        result = flux_unit_conv->value( point_1, elm);
+        EXPECT_DOUBLE_EQ( 0.01*cos(pi /2.0 ) , result[0]); // should be 0.0
+        EXPECT_DOUBLE_EQ( 0.01, result[1]);
+
+        result = flux_unit_conv->value( point_2, elm);
+        EXPECT_DOUBLE_EQ( -0.01, result[0]);
+        EXPECT_DOUBLE_EQ( 0.01, result[1]);
     }
 
     auto conc=ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("field_file"), init_data);
