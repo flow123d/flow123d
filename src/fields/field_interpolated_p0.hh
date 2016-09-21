@@ -67,7 +67,10 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 protected:
-	/// mesh, which is interpolated
+    /// Multiply @p data_ with @p unit_conversion_coefficient_
+    void scale_data();
+
+    /// mesh, which is interpolated
 	Mesh* source_mesh_;
 
 	/// mesh reader file

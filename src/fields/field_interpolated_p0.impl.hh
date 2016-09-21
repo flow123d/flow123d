@@ -110,6 +110,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     bool boundary_domain_ = false;
     data_ = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<typename Value::element_type>(search_header,
     		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    this->scale_data();
 
     return search_header.actual;
 }
@@ -230,6 +231,18 @@ void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >
 {
 	OLD_ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
     FieldAlgorithmBase<spacedim, Value>::value_list(point_list, elm, value_list);
+}
+
+
+
+template <int spacedim, class Value>
+void FieldInterpolatedP0<spacedim, Value>::scale_data()
+{
+	if (Value::is_scalable()) {
+		std::vector<typename Value::element_type> &vec = *( data_.get() );
+		for(unsigned int i=0; i<vec.size(); ++i)
+			vec[i] *= this->unit_conversion_coefficient_;
+	}
 }
 
 

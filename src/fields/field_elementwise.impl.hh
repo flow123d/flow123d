@@ -73,6 +73,7 @@ internal_raw_data(false), mesh_(NULL)
 {
 	n_components_ = this->value_.n_rows() * this->value_.n_cols();
 	data_ = data;
+	this->scale_data();
 }
 
 
@@ -127,6 +128,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
 
     data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(search_header,
     		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    this->scale_data();
     return search_header.actual;
 }
 
@@ -197,6 +199,18 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
     } else {
         xprintf(UsrErr, "FieldElementwise is not implemented for discrete return types.\n");
     }
+}
+
+
+
+template <int spacedim, class Value>
+void FieldElementwise<spacedim, Value>::scale_data()
+{
+	if (Value::is_scalable()) {
+		std::vector<typename Value::element_type> &vec = *( data_.get() );
+		for(unsigned int i=0; i<vec.size(); ++i)
+			vec[i] *= this->unit_conversion_coefficient_;
+	}
 }
 
 

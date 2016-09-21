@@ -30,6 +30,12 @@ string input = R"INPUT(
        gmsh_file="fields/simplest_cube_data.msh",
        field_name="scalar"
    },
+   scalar_unit_conversion={
+       TYPE="FieldElementwise",
+       gmsh_file="fields/simplest_cube_data.msh",
+       field_name="scalar",
+       unit="const; const=100*m^0"
+   },
    vector_fixed={
        TYPE="FieldElementwise",
        gmsh_file="fields/simplest_cube_data.msh",
@@ -64,6 +70,7 @@ public:
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
@@ -117,6 +124,35 @@ TEST_F(FieldElementwiseTest, bc_scalar) {
 
         for(unsigned int i=0; i < 4; i++) {
             EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i, true)) );
+        }
+        EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5, true)) );
+    }
+
+}
+
+TEST_F(FieldElementwiseTest, scalar_unit_conv) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data());
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+        field.set_time(test_time[j]);
+        for(unsigned int i=0; i < mesh->element.size(); i++) {
+            EXPECT_DOUBLE_EQ( j*10.0+(i+1)*10.0 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+}
+
+TEST_F(FieldElementwiseTest, bc_scalar_unit_conv) {
+    ScalarField field;
+    field.set_mesh(mesh,true);
+    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data());
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+        for(unsigned int i=0; i < 4; i++) {
+            EXPECT_DOUBLE_EQ( 100.0+j*10.0+(i+1)*10.0 , field.value(point,mesh->element_accessor(i, true)) );
         }
         EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5, true)) );
     }
