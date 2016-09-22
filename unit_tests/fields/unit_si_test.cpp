@@ -145,9 +145,15 @@ TEST_F(UnitConverterTest, converter_grammar) {
 	}
 
 	{
-		std::string unit = "a*b*c; a = kg.K; b = m*s^-2";
+		std::string unit = "a*b*c; a = kg*K; b = m*s^-2";
 		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
 				"Unit 'c' is not defined" );
+	}
+
+	{
+		std::string unit = "a+b; a=m*s^-2; b=kg/m^2";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Invalid shortcut of unit '.*'" );
 	}
 }
 

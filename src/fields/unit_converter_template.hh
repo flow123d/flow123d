@@ -260,7 +260,8 @@ public:
                 ;
 
             formula_factor_
-		        = ( alpha_p >> *( anychar_p - ch_p(';') - ch_p('*') - ch_p('/') - ch_p('=') - ch_p('^') - space_p ) )
+		        = forbidden_char_[ throw_not_shortcut ]
+		          | ( alpha_p >> *( anychar_p - ch_p(';') - ch_p('*') - ch_p('/') - ch_p('=') - ch_p('^') - space_p ) )
 		          | shortcut_err_[ throw_not_shortcut ]
 			    ;
 
@@ -296,10 +297,17 @@ public:
             shortcut_err_
 			    = *( anychar_p - ch_p(';') - ch_p('*') - ch_p('/') - ch_p(';') - ch_p('^') )
 				;
+
+            forbidden_char_
+			    = *( alnum_p | ch_p('_') )
+				>> ( anychar_p - alnum_p - ch_p('_') - ch_p(';') - ch_p('*') - ch_p('/') - ch_p('=') - ch_p('^') - space_p )
+				>> *( alnum_p | ch_p('_') )
+                ;
+
         }
 
         spirit_namespace::rule< ScannerT > unit_, formula_, formula_factor_, exp_, exp_err_, constant_,
-				constant_value_, constant_err_, constant_multiplicator_, shortcut_err_;
+				constant_value_, constant_err_, constant_multiplicator_, shortcut_err_, forbidden_char_;
 
         const spirit_namespace::rule< ScannerT >& start() const { return unit_; }
     };
