@@ -94,7 +94,7 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 
 
 
-template <int spacedim, class Value>
+/*template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, typename Value::return_type &value) {
     Value ref(value);
     OLD_ASSERT( this->value_.n_cols() == ref.n_cols(), "Size of variable vectors do not match.\n" );
@@ -106,7 +106,7 @@ void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, 
         for(unsigned int col=0; col < ref.n_cols(); col++, vec_pos++)
         	vec[vec_pos] = ref(row,col);
 
-}
+}*/
 
 
 template <int spacedim, class Value>

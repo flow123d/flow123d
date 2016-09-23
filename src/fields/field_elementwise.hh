@@ -69,7 +69,7 @@ public:
     /**
      * Set row of boundary data. Used to implement old BC input.
      */
-    void set_data_row(unsigned int boundary_idx, typename Value::return_type &value);
+    //void set_data_row(unsigned int boundary_idx, typename Value::return_type &value);
 
     /**
      * Update time and possibly update data from GMSH file.
