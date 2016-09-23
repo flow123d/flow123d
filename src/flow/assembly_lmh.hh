@@ -8,11 +8,13 @@
 #ifndef SRC_FLOW_ASSEMBLY_LMH_HH_
 #define SRC_FLOW_ASSEMBLY_LMH_HH_
 
-#include "flow/darcy_flow_assembly.hh"
+#include "darcy_flow_assembly.hh"
 #include "soil_models.hh"
+#include "richards_lmh.hh"
 
+#include "coupling/balance.hh"
 
-
+#include "badiff.h"
 
 /**
  * Prove of concept for general assembly scheme.
@@ -51,7 +53,6 @@ public:
     AssemblyLMH(AssemblyDataPtr data)
     : AssemblyMH<dim>(data),
       ad_(data),
-      system_(data->system_),
       genuchten_on(false),
       cross_section(1.0),
       soil_model(data->soil_model_)
@@ -93,7 +94,7 @@ public:
         }
     }
 
-    void assembly_local_matrix(LocalElementAccessorBase<3> ele) override
+    void assemble_sides(LocalElementAccessorBase<3> ele) override
     {
         reset_soil_model(ele);
         cross_section = this->ad_->cross_section.value(ele.centre(), ele.element_accessor());
@@ -117,16 +118,14 @@ public:
         }
 
         double scale = 1 / cross_section / conductivity;
-        *(system_.local_matrix) = scale * this->assembly_local_geometry_matrix(ele.full_iter());
-
-        assembly_source_term(ele);
+        this->assemble_sides_scale(ele,scale);
     }
 
     /***
      * Called from assembly_local_matrix, assumes precomputed:
      * cross_section, genuchten_on, soil_model
      */
-    void assembly_source_term(LocalElementAccessorBase<3> ele) {
+    void assemble_source_term(LocalElementAccessorBase<3> ele) {
 
         // set lumped source
         double diagonal_coef = ele.measure() * cross_section / ele.n_sides();
@@ -141,7 +140,8 @@ public:
             uint local_edge = ele.edge_local_idx(i);
             uint local_side = ele.side_local_idx(i);
             uint edge_row = ele.edge_row(i);
-            if (ad_->system_.dirichlet_edge[i] == 0) {
+//             if (ad_->system_.dirichlet_edge[i] == 0)
+            {
 
                 double capacity = this->ad_->capacity[local_side];
                 double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
@@ -162,21 +162,22 @@ public:
                                   + diagonal_coef * water_content_diff / this->ad_->time_step_;
 
 
-                system_.lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal/this->ad_->time_step_ );
-                system_.lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
+                this->loc_system_.set_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i], 
+                                            -mass_diagonal/this->ad_->time_step_,
+                                            -source_diagonal - mass_rhs);
+                
             }
 
-            if (system_.balance != nullptr) {
-                system_.balance->add_mass_vec_value(ad_->water_balance_idx_, ele.region().bulk_idx(),
+            if (ad_->balance != nullptr) {
+                ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
-                system_.balance->add_source_vec_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {(int)edge_row}, {source_diagonal});
+                ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(int)edge_row}, {source_diagonal});
             }
         }
 
     }
 
     AssemblyDataPtr ad_;
-    RichardsSystem system_;
 
     bool genuchten_on;
     double cross_section;

@@ -49,6 +49,7 @@ doc/reference_manual/flow_version.tex
 .settings
 
 *.pyc
+*python.log
 /.idea/
 bin/pythonenv.sh
 tests/runtest.sh

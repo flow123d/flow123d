@@ -59,7 +59,7 @@ class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
 class VectorSeqDouble;
-class AssemblyBase;
+class AssemblerBase;
 
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
 template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
@@ -80,24 +80,6 @@ template<unsigned int dim> class QGauss;
  * 2) actualize_solution - this is for iterative nonlinear solvers
  *
  */
-
-
-/**
- * This should contain target large algebra object to be assembled.
- * Since this should be passed only once per the whole assembly and may be equation specific
- * this structure is passed with the data
- */
-class RichardsSystem {
-public:
-    // temporary solution how to pass information about dirichlet BC on edges
-    // should be done better when we move whole assembly into assembly classes
-    // the vector is set in assembly_mh_matrix and used in LMH assembly of the time term
-    std::vector<unsigned int> dirichlet_edge;
-    std::shared_ptr<arma::mat> local_matrix;
-    double loc_side_rhs[4];
-    std::shared_ptr<Balance> balance;
-    LinSys *lin_sys;
-};
 
 
 /**
@@ -145,7 +127,6 @@ public:
             << "Diverged nonlinear solver. Reason: " << EI_Reason::val
              );
 
-    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembler;
 
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
@@ -193,14 +174,25 @@ public:
         arma::vec4 gravity_;
         arma::vec3 gravity_vec_;
 
+    // Mirroring the following members of DarcyMH:
+        
         Mesh *mesh;
         MH_DofHandler *mh_dh;
 
-        RichardsSystem system_;
-        uint water_balance_idx_;
+        uint water_balance_idx;
+        std::shared_ptr<Balance> balance;
+        LinSys *lin_sys;
+        
+        unsigned int n_schur_compls;
+        int is_linear;              ///< Hack fo BDDC solver.
+        bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;
+        
+        /// Idicator of dirichlet or neumann type of switch boundary conditions.
+        std::vector<char> bc_switch_dirichlet;
     };
 
     /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
@@ -305,7 +297,7 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix( MultidimAssembler ma);
+    void assembly_mh_matrix( AssemblerBase& ma, bool fill_matrix = true);
     
 
     /// Source term is implemented differently in LMH version.
@@ -323,6 +315,9 @@ protected:
      * residual field, standard part of EqData.
      */
     virtual double solution_precision() const;
+    
+    /// Print darcy flow matrix in matlab format into a file.
+    void print_matlab_matrix(string matlab_file);
 
     bool solution_changed_for_scatter;
     //Vec velocity_vector;
@@ -339,7 +334,6 @@ protected:
 	int size;				    // global size of MH matrix
 	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
-	int is_linear_;             // Hack fo BDDC solver.
 
 	// Propagate test for the time term to the assembly.
 	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
@@ -356,9 +350,6 @@ protected:
 
 	
 
-
-	/// Idicator of dirichlet or neumann type of switch boundary conditions.
-	std::vector<char> bc_switch_dirichlet;
 
 
 	// gather of the solution
