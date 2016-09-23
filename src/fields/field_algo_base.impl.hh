@@ -32,6 +32,8 @@ using namespace std;
 
 #include "fields/field_values.hh"
 
+#include "fields/unit_converter.hh"
+
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
 #include "input/accessors.hh"
@@ -176,7 +178,15 @@ void FieldAlgorithmBase<spacedim, Value>::init_unit_conversion_coefficient(const
                     rec.address_string());
         }
         std::string unit_str = unit_record.val<std::string>("unit_formula");
-        this->unit_conversion_coefficient_ = init_data.unit_si_.convert_unit_from(unit_str);
+    	try {
+    		this->unit_conversion_coefficient_ = init_data.unit_si_.convert_unit_from(unit_str);
+    	} catch (ExcInvalidUnit &e) {
+    		e << rec.ei_address();
+    		throw;
+    	} catch (ExcNoncorrespondingUnit &e) {
+    		e << rec.ei_address();
+    		throw;
+    	}
     }
 }
 
