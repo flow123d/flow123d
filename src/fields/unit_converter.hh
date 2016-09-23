@@ -71,10 +71,12 @@ public:
 		UnitSI unit_;    //!< derived SI unit
 	};
 
-	/// Define all base and derived units given by their symbol.
-	std::map<std::string, struct DerivedUnit> units_map_;
+	typedef std::map<std::string, struct DerivedUnit> UnitsMap;
 
-	// Constructor
+	/// Define all base and derived units given by their symbol.
+	UnitsMap units_map_;
+
+	/// Constructor
 	BasicFactors();
 
 };

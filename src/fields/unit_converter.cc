@@ -24,7 +24,7 @@
  */
 
 BasicFactors::BasicFactors() {
-	units_map_ = {
+	UnitsMap base_units_map = {
 			{ "*m",  { 1,           UnitSI().m() } },
 			{ "*g",  { 0.001,       UnitSI().kg() } },
 			{ "*s",  { 1,           UnitSI().s() } },
@@ -65,8 +65,7 @@ BasicFactors::BasicFactors() {
 
 	// add derived units
 	std::map<std::string, DerivedUnit>::iterator it;
-	std::vector<std::string> delete_keys; // store keys start with '*' (will be deleted)
-	for (it=units_map_.begin(); it!=units_map_.end(); ++it) {
+	for (it=base_units_map.begin(); it!=base_units_map.end(); ++it) {
 		if (it->first.at(0)=='*') {
 			std::string shortcut = it->first.substr(1);
 			double coef = it->second.coef_;
@@ -75,15 +74,9 @@ BasicFactors::BasicFactors() {
 				std::string key = prefix_it->first + shortcut;
 				units_map_.insert(std::pair<std::string, DerivedUnit>( key, { coef*prefix_it->second, it->second.unit_ } ));
 			}
-
-			delete_keys.push_back(it->first);
+		} else {
+			units_map_.insert( std::pair<std::string, DerivedUnit>( it->first, it->second ) );
 		}
-	}
-
-	// delete keys start with '*'
-	for (std::vector<std::string>::iterator del_it = delete_keys.begin(); del_it!=delete_keys.end(); ++del_it) {
-		it = units_map_.find(*del_it);
-		units_map_.erase(it);
 	}
 }
 
