@@ -76,13 +76,14 @@ template<> const IdxVector<2> RefElement<2>::node_lines_[] = {
      {2,1}
 };
 
-//TODO: what should be the order ??
+// Order clockwise looking over the vertex to center; smallest index first
 template<> const IdxVector<3> RefElement<3>::node_lines_[] = {
      {0,1,3},
-     {0,2,4},
+     {0,4,2},
      {1,2,5},
-     {3,4,5},
+     {3,5,4},
 };
+
 
 
 //TODO: what should be the order ??
@@ -101,6 +102,7 @@ template<> const IdxVector<3> RefElement<3>::node_sides_[] = {
         { 1, 2, 3 }
 };
 
+// faces ordered clock wise with respect to edge shifted to center of tetrahedron
 template<> const IdxVector<2> RefElement<3>::line_sides_[] = {
      {0,1},
      {2,0},
