@@ -125,6 +125,7 @@
 /** Auxilliary class representing vector of indices (unsigned int).
  * @tparam Size is the fixed size of the vector.
  */
+/*
 template<unsigned int Size>
 class IdxVector{
     unsigned int data_[Size];   ///< Array with indices.
@@ -137,6 +138,11 @@ class IdxVector{
         /// Getter for index @p idx.
         unsigned int operator[](unsigned int idx) const;
 };
+*/
+
+template<std::size_t Size>
+using IdxVector = std::array<unsigned int, Size>;
+
 
 /** Auxilliary structure that is used to pass template arguments into interact function of RefElement:
  * RefElement<dim>::interact( Interaction<OutDim,InDim>(i) )
@@ -425,7 +431,7 @@ auto RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> coord, int sub_simp
 {
     return RefElement<dim>::bary_coords<subdim>(sub_simplex_idx)*coord;
 };
-
+/*
 template <unsigned int Size>
 IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)
 : data_(data_in){}
@@ -442,7 +448,7 @@ inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
 {   ASSERT_LT_DBG(idx, Size).error("Index out of bounds.");
     return data_[idx]; }
     
-
+*/
 
 template<> template<> inline unsigned int RefElement<3>::count<0>()
 { return n_nodes; }

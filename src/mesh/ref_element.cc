@@ -25,7 +25,7 @@
 using namespace arma;
 using namespace std;
 
-template<unsigned int n>
+template<std::size_t n>
 std::vector< std::vector<unsigned int> > _array_to_vec( const IdxVector<n> array[], unsigned int m) {
     std::vector< std::vector<unsigned int> > vec(m);
     for(unsigned int i=0; i<m; i++)
