@@ -178,7 +178,11 @@ public:
     const arma::vec::fixed<dimB> &bulk_coords() const;
     //@}
     
-    /// Computes the real coordinates.
+    /**
+     * Computes the real coordinates.
+     * comp_ele is component element
+     */
+
     arma::vec3 coords(ElementFullIter comp_ele) const;
     
     /// Friend output operator.
