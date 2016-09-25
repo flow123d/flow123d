@@ -153,6 +153,7 @@ public:
     unsigned int dim_B() const;         ///< Returns dimension of object B.
     unsigned int idx_A() const;     ///<  Returns the index of Simplex<N>.
     unsigned int idx_B() const;     ///<  Returns the index of Simplex<M>.
+    // orientation: 0 - negative sign, 1 - positive sign, 2 - degenerate (zero for all sides)
     unsigned int orientation() const;   ///<  Returns the orientation.
     //@}
     
