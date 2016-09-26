@@ -1025,37 +1025,47 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3  >& intersection){
 
-	std::vector<IntersectionPointAux<1,2>> IP12s;
+	std::vector<IPAux12> IP12s;
+	std::vector<IPAux13> IP13s, degenerate_ips;
+
 	std::vector<IntersectionPointAux<1,3>> IP13s;
 	unsigned int pocet_13_pruniku;
 
-	for(unsigned int triangle_side = 0; triangle_side < RefElement<2>::n_lines; triangle_side++){    // go through triangle lines
-        pocet_13_pruniku = CI13[triangle_side].compute(IP13s);
-        ASSERT_DBG(pocet_13_pruniku < 3);
-        
-        for(unsigned int n=pocet_13_pruniku; n >= 1; n--){
-            IntersectionPointAux<1,3> IP (IP13s[IP13s.size()-n]);
+	// pass through the ccwise oriented sides in ccwise oriented order
+	// How to make this in independent way?
+	// Move this into RefElement?
+	std::vector<unsigned int> side_cycle_orientation = { 0, 0, 1};
+	std::vector<unsigned int> cycle_sides = {0, 2, 1};
+
+	for(unsigned int i_side = 0; i_side < RefElement<2>::n_lines; i_side++){    // go through triangle lines
+        CI13[ cycle_sides[i_side] ].compute(IP13s);
+        ASSERT_DBG(IP13s.size() < 3);
+        if (IP13s.size() == 0) continue;
+        for(unsigned int _ip=0; _ip < IP13s.size(); _ip++) {
+            // fix order of IPs
+            ip = (side_cycle_orientation[i_side] + _ip) % IP13s.size();
             
+            // convert from 13 to 23 IP
+            IPAux13 &IP = IP13s[ip];
             IntersectionPointAux<3,1> IP31 = IP.switch_objects();   // switch idx_A and idx_B and coords
-            IntersectionPointAux<3,2> IP32(IP31, triangle_side);    // interpolation uses local_bcoords_B and given idx_B
-            IntersectionPointAux<2,3> IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
+            IntersectionPointAux<3,2> IP32(IP31, i_side);    // interpolation uses local_bcoords_B and given idx_B
+            IPAux23 IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
             
-            if( IP.dim_A() == 0 ) // if IP is vertex of triangle
+            if( IP.dim_A() == 0 ) // IP is vertex of triangle,
             {
                 // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
-                IP23.set_topology_A(RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()], 0);
-            
-                if( IP.dim_B() < 3 )
-                    // if IP is on the surface of the tetrahedron,
-                    // we cannot trace it optimally
-                    intersection.pathologic_ = true;
+                IP23.set_topology_A(RefElement<2>::interact(Interaction<0,1>(cycle_sides[i_side]))[IP.idx_A()], 0);
             }
-            
-            if (IP.is_pathologic()) {intersection.pathologic_ = true; /*DBGMSG("pathologic 13\n");*/}
             intersection.i_points_.push_back(IP23);
         }
     }
+
+    if (IP13s.size() == 1) {
+        degenerate_ips.push_back(IP23);
+        continue;
+    }
+
 
 	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++){
 		if(CI12[tetra_edge].compute(IP12s, false)){

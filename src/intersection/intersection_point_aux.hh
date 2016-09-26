@@ -120,7 +120,7 @@ public:
     void clear();
     
     /// Switches the object A and B.
-    IntersectionPointAux<M, N> switch_objects();
+    IntersectionPointAux<M, N> switch_objects() const;
     
     ///@name Setters.
     //@{
