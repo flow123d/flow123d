@@ -23,7 +23,7 @@
 #include <armadillo>
 #include "mesh/mesh_types.hh"
 
-namespace computeintersection{
+namespace computeintersection {
 
 //TODO: idea:replace with relative tolerance and use some user input tolerance (absolute) of the coordinates
 static const double geometry_epsilon = 1e-9;//8*std::numeric_limits<double>::epsilon();//1e-9;
@@ -36,6 +36,14 @@ static const double rounding_epsilonX = 8*std::numeric_limits<double>::epsilon()
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> std::ostream& operator<<(std::ostream& os, const IntersectionPointAux<N,M>& IP);
     
+
+enum class IntersectionResult {
+    positive = 1,
+    negative = 0,
+    degenerate = 2,
+    none = 3
+};
+
 /** @brief Internal auxiliary class represents an intersection point of simplex<N> and simplex<M>.
  * 
  * It contains barycentric coordinates of the point on both simplices.
@@ -162,6 +170,11 @@ public:
     
     /// Returns true, if this is a pathologic case.
     bool is_pathologic() const;
+
+    /// Returns true if the intersection result is degenerate: line coplanar with triangle
+    bool is_degenerate() const;
+    /// Returns true if the intersection is empty set
+    bool is_none() const;
     
 	/** @brief Comparison operator for sorting the IPs in convex hull tracing algorithm.
      * Compares the points by x-coordinate (in case of a tie, compares by y-coordinate).
@@ -234,6 +247,13 @@ template<unsigned int N, unsigned int M>
 bool IntersectionPointAux<N,M>::is_pathologic() const
 {   return (orientation_ > 1); }
 
+template<unsigned int N, unsigned int M>
+bool IntersectionPointAux<N,M>::is_degenerate() const
+{   return (orientation_ == 2); }
+
+template<unsigned int N, unsigned int M>
+bool IntersectionPointAux<N,M>::is_none() const
+{   return (orientation_ == 3); }
 
 } // END namespace
 #endif /* INTERSECTIONPOINT_H_ */

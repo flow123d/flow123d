@@ -64,6 +64,7 @@ static const double plucker_empty = std::numeric_limits<double>::infinity();
  */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
 public:
+
     /// Default constructor. Use when this is NOT final intersection object.
 	ComputeIntersection();
     /** @brief Constructor, sets abscissa and triangle object.
@@ -87,12 +88,13 @@ public:
      * @param compute_zeros_plucker_products - if true, resolve pathologic cases (zero Plucker products), 
      * otherwise ignore. E.g. in 2d-3d is false when looking for tetrahedron edges X triangle intersection
      * (these would be found before in triangle line X tetrahedron intersection).
-     * @return true, if intersection is found; false otherwise
+     * @return Orientation flag (0,1 sign of product if get intersection, 2 - three zero products (degenerated),
+     * 3 - no intersection
      * 
      * NOTE: Why this is not done in constructor?
      * Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
      */
-	bool compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
+	unsigned int compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
     
     /** Computes final 1d-2d intersection. (Use when this is the resulting dimension object).
      * TODO: as in 1d-3d check the topology after interpolation
@@ -504,6 +506,7 @@ public:
     void print_plucker_coordinates_tree(std::ostream &os);
 
 private:
+    std::vector<IPAux12> IP12s_;
 
     /// Vector of Plucker coordinates for triangle side.
     std::vector<Plucker *> plucker_coordinates_triangle_;
