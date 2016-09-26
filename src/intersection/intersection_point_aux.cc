@@ -102,7 +102,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-2
 };
 
 template<unsigned int N, unsigned int M>
-IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects()
+IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects() const
 {
     IntersectionPointAux<M,N> IP;
     IP.set_coordinates(local_bcoords_B_,local_bcoords_A_);

@@ -460,6 +460,11 @@ private:
  */
 template<> class ComputeIntersection<Simplex<2>, Simplex<3> > {
 public:
+    typedef IntersectionPointAux<1,2> IPAux12;
+    typedef IntersectionPointAux<1,3> IPAux13;
+    typedef IntersectionPointAux<2,3> IPAux23;
+
+
     /** @brief Default constructor, creates empty object.
      * Resizes vectors for Plucker coordinates and products.
      */
@@ -493,8 +498,8 @@ public:
     void compute(IntersectionAux<2,3> &intersection, std::vector<unsigned int> &prolongation_table);
     typedef std::array<uint, 2> FacePair;
 
-    auto edge_faces(uint i_edge, const IntersectionPointAux<1,2> &edge_ip ) -> FacePair;
-    auto vertex_faces(uint i_edge, const IntersectionPointAux<1,2> &edge_ip) -> FacePair;
+    auto edge_faces(uint i_edge, const IPAux12 &edge_ip ) -> FacePair;
+    auto vertex_faces(uint i_edge, const IPAux12 &edge_ip) -> FacePair;
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
     void print_plucker_coordinates(std::ostream &os);
