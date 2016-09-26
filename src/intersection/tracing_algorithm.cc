@@ -34,7 +34,10 @@ void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, Inter
 //         DebugOut() << ip;
     
     // avoid tracing (none is needed) if the intersection is just single point
-    if(p.points().size() < 2) return;
+    if(p.points().size() < 2) {
+        DebugOut() << "Less than 2 IPs, no tracing.\n";
+        return;
+    }
     
     if(p.is_pathologic()) trace_polygon_convex_hull(prolongation_table, p);
     else trace_polygon_opt(prolongation_table, p);
@@ -231,27 +234,29 @@ void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_
         p.points().erase(p.points().end());
     }
 
-
+    DebugOut() << "Convex hull - number of points: " << p.points().size() << "\n";
+    
     int n = p.points().size(), k = 0;
-    std::vector<IntersectionPointAux<2,3>> H(2*n);
+    if(n > 2){
+    
+        std::vector<IntersectionPointAux<2,3>> H(2*n);
 
-    for(int i = 0; i < n; ++i){
-        while(k >= 2 && convex_hull_cross(H[k-2], H[k-1], p.points()[i]) <= 0) k--;
-        H[k++] = p.points()[i];
+        for(int i = 0; i < n; ++i){
+            while(k >= 2 && convex_hull_cross(H[k-2], H[k-1], p.points()[i]) <= 0) k--;
+            H[k++] = p.points()[i];
+        }
+
+        for(int i = n-2, t = k+1;i>=0;i--){
+            while(k >= t && (convex_hull_cross(H[k-2], H[k-1], p.points()[i])) <= 0) k--;
+            H[k++] = p.points()[i];
+        }
+
+        H.resize(k-1);
+        p.points() = H;
     }
-
-    for(int i = n-2, t = k+1;i>=0;i--){
-        while(k >= t && (convex_hull_cross(H[k-2], H[k-1], p.points()[i])) <= 0) k--;
-        H[k++] = p.points()[i];
-    }
-
-    H.resize(k-1);
-    p.points() = H;
-
-
+    
     // Filling prolongation table
     if(p.points().size() > 1){
-
         // Prolongation - finding same zero bary coord/coords except
         // side with content intersect
         unsigned int size = p.points().size() == 2 ? 1 : p.points().size();
