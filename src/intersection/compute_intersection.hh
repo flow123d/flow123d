@@ -336,6 +336,7 @@ private:
 template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
 
 public:
+    typedef IntersectionPointAux<1,3> IPAux;
 
 	/// Default constructor. Use when this is NOT final intersection object.
     ComputeIntersection();
@@ -363,7 +364,7 @@ public:
      * @param IP13d vector of intersection points (output)
      * @return number of intersection points found
      */
-    unsigned int compute(std::vector<IntersectionPointAux<1,3>> &IP13s);
+    unsigned int compute(std::vector<IPAux> &IP13s);
     
     /** @brief Computes final 1D-3D intersection.
      * Computes IPs and check if any of them are pathologic to set the resulting object also pathologic.
@@ -434,7 +435,7 @@ private:
     /** @brief After interpolation, the topology information in tetrahedron must be updated.
      * @param ip intersection point to be corrected
      */
-    void correct_tetrahedron_ip_topology(IntersectionPointAux<1,3> &ip);
+    void correct_tetrahedron_ip_topology(double t, unsigned int i, std::vector<IPAux> &ip);
     
     /// Pointer to plucker coordinates of abscissa.
     Plucker* plucker_coordinates_abscissa_;
@@ -490,6 +491,10 @@ public:
      * @return number of intersection points found
      */
     void compute(IntersectionAux<2,3> &intersection, std::vector<unsigned int> &prolongation_table);
+    typedef std::array<uint, 2> FacePair;
+
+    auto edge_faces(uint i_edge, const IntersectionPointAux<1,2> &edge_ip ) -> FacePair;
+    auto vertex_faces(uint i_edge, const IntersectionPointAux<1,2> &edge_ip) -> FacePair;
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
     void print_plucker_coordinates(std::ostream &os);
