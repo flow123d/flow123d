@@ -105,7 +105,7 @@ public:
      * @param IP intersection point of lower dimension of object B
      * @param idx_B is the index of object B of IntersectionPointAux<N,M-1> in object B of IntersectionPointAux<N,M>
      */
-	IntersectionPointAux(IntersectionPointAux<N,M-1> &IP, unsigned int idx_B);
+	IntersectionPointAux(const IntersectionPointAux<N,M-1> &IP, unsigned int idx_B);
 
 	/** @brief Constructor interpolates the second bary coords
      * of IntersectionPointAux<N,M-2> to IntersectionPointAux<N,M>
@@ -114,7 +114,7 @@ public:
      * @param IP intersection point of lower dimension of object B
      * @param idx_B is the index of object B of IntersectionPointAux<N,M-2> in object B of IntersectionPointAux<N,M>
 	 */
-	IntersectionPointAux(IntersectionPointAux<N,M-2> &IP, unsigned int idx_B);
+	IntersectionPointAux(const IntersectionPointAux<N,M-2> &IP, unsigned int idx_B);
 
     /// Resets the object to default values.
     void clear();
