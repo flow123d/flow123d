@@ -78,8 +78,8 @@ Balance::Balance(const std::string &file_prefix, const Mesh *mesh)
 	  	  last_time_(),
 	  	  initial_(true),
 	  	  allocation_done_(false),
-	  	  output_line_counter_(0),
           balance_on_(true),
+	  	  output_line_counter_(0),
           output_yaml_header_(false)
 
 {
@@ -137,26 +137,7 @@ void Balance::init_from_input(
     time_set.read_from_input( in_rec.val<Input::Array>("times"), tg, balance_output_type_);
     add_output_times_ = in_rec.val<bool>("add_output_times");
 
-    if (rank_ == 0) {
-        // set default value by output_format_
-        std::string default_file_name;
-        switch (output_format_)
-        {
-        case txt:
-            default_file_name = file_prefix_ + "_balance.txt";
-            break;
-        case gnuplot:
-            default_file_name = file_prefix_ + "_balance.dat";
-            break;
-        case legacy:
-            default_file_name = file_prefix_ + "_balance.txt";
-            break;
-        }
-
-
-
-        balance_output_file_ = in_rec.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file));
-    }
+    input_record_ = in_rec;
 
 }
 
@@ -377,7 +358,29 @@ void Balance::lazy_initialize()
 
 
     if (rank_ == 0) {
-        balance_output_file_.open_stream(output_);
+        // set default value by output_format_
+        std::string default_file_name;
+        switch (output_format_)
+        {
+        case txt:
+            default_file_name = file_prefix_ + "_balance.txt";
+            break;
+        case gnuplot:
+            default_file_name = file_prefix_ + "_balance.dat";
+            break;
+        case legacy:
+            default_file_name = file_prefix_ + "_balance.txt";
+            break;
+        }
+
+        balance_output_file_ = input_record_.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file));
+        try {
+            balance_output_file_.open_stream(output_);
+        } catch (FilePath::ExcFileOpen &e ) {
+            e << FilePath::EI_Address_String(input_record_.address_string());
+        }
+
+
         // set file name of YAML output
         string yaml_file_name = file_prefix_ + "_balance.yaml";
         FilePath(yaml_file_name, FilePath::output_file).open_stream(output_yaml_);

@@ -569,6 +569,9 @@ private:
 	/// marks whether YAML output has printed header
 	bool output_yaml_header_;
 
+    /// Record for current balance
+    Input::Record input_record_;
+
 
 
 
