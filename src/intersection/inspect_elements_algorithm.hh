@@ -165,11 +165,13 @@ private:
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);
+
+    template<unsigned int ele_dim>
+    std::vector< unsigned int > get_element_edges(const ElementFullIter& ele,
+                                                  unsigned int ip_dim,
+                                                  unsigned int ip_obj_idx,
+                                                  const bool &include_current_ele);
     
-    std::vector<unsigned int> get_bulk_element_edges(const ElementFullIter& bulk_ele, 
-                                                     const IntersectionPointAux<dim,3> &IP,
-                                                     const bool &include_current_bulk_ele = false
-                                                    );
     unsigned int create_prolongations_over_bulk_element_edges(const std::vector<unsigned int>& bulk_neighbors,
                                                               const unsigned int &component_ele_idx);
     
