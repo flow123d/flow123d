@@ -704,6 +704,11 @@ add_subdirectory(src)
 add_subdirectory(doc)
 add_subdirectory(unit_tests) # this also adds third_party/gtest
 
+# install benchmark miniapp
+execute_process(COMMAND
+    make -C ${CMAKE_SOURCE_DIR}/src/python/benchmarks all
+)
+
 # optionally make targets for building reference_manual
 # we have to call separate instance of CMake since UseLatex.cmake
 # depends on many tools. If any of them miss CMake fails, while we can live
