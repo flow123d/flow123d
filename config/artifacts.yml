@@ -1,0 +1,28 @@
+config:
+ # no global config
+
+collectors:
+    # collects all profiles json files into single directory
+    - !Collector
+      source: <root>/
+      target: <root>/.artifacts/
+      name: "{path[-3]}/{path[-1]}/{name}"
+      flat: true
+      includes: "tests/**/test_results/**/profiler_info_*.log.json"
+      remove_original: true
+    
+    # execute node benchmarks, determining node performance
+    - !Command
+      command: [<root>/src/python/benchmarks/O0.out, <root>/.artifacts/benchmark_<datetime>.json]
+    
+    # export basic hardware info
+    - !Command.lscpu
+      output: <root>/.artifacts/lscpu_<datetime>.json
+    
+    - !Database.mongodb
+        server: mongodb://hybs.nti.tul.cz:27017
+        username: bench
+        password: BldRCi2
+        
+        # what to process
+        source: <root>/.artifacts/
