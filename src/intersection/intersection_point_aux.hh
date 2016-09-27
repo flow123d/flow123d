@@ -44,6 +44,10 @@ enum class IntersectionResult {
     none = 3
 };
 
+inline bool operator<(IntersectionResult a, IntersectionResult b) {
+    return int(a) < int(b);
+}
+
 /** @brief Internal auxiliary class represents an intersection point of simplex<N> and simplex<M>.
  * 
  * It contains barycentric coordinates of the point on both simplices.
