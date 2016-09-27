@@ -64,3 +64,6 @@ bin/runtest.sh
 # add test results to ignore
 /integration_tests/*/test_results
 /integration_tests/*/output
+
+
+/.artifacts
