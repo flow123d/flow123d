@@ -19,7 +19,7 @@ void IntersectionPointAux<N,M>::clear()
     local_bcoords_B_.zeros();
     idx_A_ = 0;
     idx_B_ = 0;
-    orientation_ = 1;
+    orientation_ = IntersectionResult::none;
     dim_A_ = N;
     dim_B_ = M;
 }
@@ -138,7 +138,7 @@ template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const 
     s.local_bcoords_A_.print(os);
     os << "Local coords on element B(id=" << s.idx_B_ << ", dim=" << s.dim_B_ << ")" << endl;
     s.local_bcoords_B_.print(os);
-    os << "Orientation: " << s.orientation_ << " Patological: " << s.is_pathologic() << endl;
+    os << "Orientation: " << int(s.orientation_) << " Patological: " << s.is_pathologic() << endl;
     return os;
 }
 
