@@ -14,6 +14,7 @@ from scripts.pbs.job import JobState, MultiJob, finish_pbs_runtest
 from scripts.prescriptions.local_run import LocalRun
 from scripts.prescriptions.remote_run import runtest_command, PBSModule
 from scripts.script_module import ScriptModule
+from utils import strings
 # ----------------------------------------------
 
 
@@ -105,7 +106,7 @@ class ModuleRuntest(ScriptModule):
 
         import pkgutil
 
-        command = PBSModule.format(
+        command = strings.replace_placeholders(
             runtest_command,
 
             python=sys.executable,
@@ -117,7 +118,7 @@ class ModuleRuntest(ScriptModule):
             log_file=case.fs.job_output
         )
 
-        template = PBSModule.format(
+        template = strings.replace_placeholders(
             module.template,
             command=command,
             dump_output=case.fs.dump_output

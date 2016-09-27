@@ -30,10 +30,3 @@ class PBSModule(AbstractRun):
         :rtype: list[str]
         """
         pass
-
-    @staticmethod
-    def format(template, **kwargs):
-        t = str(template)
-        for k, v in kwargs.items():
-            t = t.replace('$${}$$'.format(k), v)
-        return t

@@ -44,7 +44,7 @@ def format_n_lines_(text, line_prefix='## ', line_suffix='',
     :return:
     """
 
-    n_lines = 0 if not Printer.batched.is_muted() else 20
+    n_lines = 0 if not Printer.batched.is_muted() else -20
     indent = Printer.indent()
 
     # empty output
@@ -107,3 +107,12 @@ def join_iterable(iterable, prefix="", suffix="", separator=",", padding=None, e
     result += suffix
 
     return result
+
+
+def replace_placeholders(template, **kwargs):
+        result = str(template)
+        _format_ = kwargs.get('_format_', '$${}$$')
+
+        for key, value in kwargs.items():
+            result = result.replace(_format_.format(key), value)
+        return result

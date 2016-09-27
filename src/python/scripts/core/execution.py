@@ -32,9 +32,15 @@ class OutputMode(object):
             return {self.SHOW: None, self.HIDE: subprocess.PIPE}.get(self.mode)
 
         if self.mode in {self.WRITE, self.APPEND, self.VARIABLE}:
-            if not self.fp:
+
+            # open file manually when append or write
+            if self.mode in {self.WRITE, self.APPEND}:
                 Paths.ensure_path(self.filename)
                 self.fp = open(self.filename, 'w+' if self.mode is self.WRITE else 'a+')
+
+            # create temp file otherwise
+            if self.mode is self.VARIABLE:
+                self.fp, self.filename = tempfile.mkstemp()
             return self.fp
 
     def close(self):
@@ -75,8 +81,7 @@ class OutputMode(object):
 
     @classmethod
     def variable_output(cls):
-        fd, name = tempfile.mkstemp()
-        return OutputMode(cls.VARIABLE, name, fd)
+        return OutputMode(cls.VARIABLE)
 
 
 class BinExecutor(ExtendedThread):

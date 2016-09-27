@@ -13,7 +13,7 @@ class ProgressCounter(object):
     Class ProgressCounter is simple printer-like class which count to specific target
     """
 
-    def __init__(self, fmt, printer=Printer.all):
+    def __init__(self, fmt='{:02d}', printer=Printer.all):
         self.i = 0
         self.fmt = fmt
         self.printer = printer

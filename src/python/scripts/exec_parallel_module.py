@@ -19,6 +19,7 @@ from scripts.pbs.common import get_pbs_module
 from scripts.prescriptions.remote_run import exec_parallel_command, PBSModule
 from scripts.script_module import ScriptModule
 from utils.counter import ProgressCounter
+from utils import strings
 # ----------------------------------------------
 
 # global arguments
@@ -146,7 +147,7 @@ class ModuleExecParallel(ScriptModule):
 
         import pkgutil
 
-        command = PBSModule.format(
+        command = strings.replace_placeholders(
             exec_parallel_command,
 
             python=sys.executable,
@@ -157,7 +158,7 @@ class ModuleExecParallel(ScriptModule):
             log_file=case.fs.job_output
         )
 
-        template = PBSModule.format(
+        template = strings.replace_placeholders(
             module.template,
             command=command,
             dump_output=case.fs.dump_output  # TODO remove

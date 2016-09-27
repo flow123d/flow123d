@@ -11,6 +11,7 @@ import sys
 from scripts.core.base import Paths
 from utils.argparser import ArgParser
 from utils.duration import Duration
+from scripts.artifacts.artifacts import ArtifactProcessor
 # ----------------------------------------------
 
 parser = ArgParser("runtest.py [<parametes>] [<test set>]  [-- <test arguments>]")
@@ -83,6 +84,7 @@ parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder=
     'Optional memory limit per node in MB',
     'For precision use float value'
 ])
+parser.add_section('Special options')
 parser.add('', '--root', hidden=True, type=str, name='root', placeholder='<ROOT>', docs=[
     'Path to base dir of flow123d'
 ])
@@ -98,6 +100,11 @@ parser.add('', '--dump', hidden=True, type=str, name='dump', placeholder='<FILE>
 parser.add('', '--log', type=str, name='log', placeholder='<FILE>', docs=[
     'Will also redirect output to file'
 ])
+parser.add('', '--artifacts', type=str, name='artifacts', placeholder='<YAML>', default=True, docs=[
+    'If set, will process artifacts yaml file in order to save/copy file',
+    'or export them to database.'
+])
+
 # ----------------------------------------------
 
 if __name__ == '__main__':
@@ -114,12 +121,29 @@ if __name__ == '__main__':
     from scripts.core.base import Printer
     parser.on_parse += Printer.setup_printer
 
-    import os
-    Paths.init(os.getcwd())
+    # import os
+    # Paths.init(os.getcwd())
 
     # run work
     BinExecutor.register_sigint()
     returncode = do_work(parser)
+
+    # collect artifact if not set otherwise
+    # parser.parse()
+    if parser.simple_options.artifacts:
+        if parser.simple_options.artifacts is True:
+            artifact_yml = Paths.artifact_yaml()
+        else:
+            artifact_yml = parser.simple_options.artifacts
+
+        try:
+            ap = ArtifactProcessor(artifact_yml)
+            ap.run()
+        except Exception as e:
+            # we catch all error coming from artifact system
+            # so it does not affect regular tests
+            pass
+
     if type(returncode) is int:
         sys.exit(returncode)
     else:

@@ -371,6 +371,10 @@ class Paths(object):
         return cls._base_dir
 
     @classmethod
+    def artifact_yaml(cls):
+        return cls.join(cls.flow123d_root(), 'config', 'artifacts.yml')
+
+    @classmethod
     def test_paths(cls, *paths):
         status = True
         for path in paths:
@@ -480,7 +484,7 @@ class Paths(object):
         if not f:
             return
         p = os.path.dirname(f) if is_file else f
-        if not os.path.exists(p):
+        if p and not os.path.exists(p):
             os.makedirs(p)
 
     @classmethod
@@ -512,6 +516,25 @@ class Paths(object):
             if p.endswith(endswith):
                 break
         return cls.relpath(path, p)
+
+    @classmethod
+    def split(cls, path):
+        """
+        :rtype: list[str]
+        """
+        path = cls.abspath(path)
+        folders = []
+        while 1:
+            path, folder = os.path.split(path)
+            if folder != "":
+                folders.append(folder)
+            else:
+                if path != "":
+                    folders.append(path)
+
+                break
+        folders.reverse()
+        return folders
 
     # -----------------------------------
 
@@ -677,7 +700,7 @@ class TestPrinterStatus(object):
 
 
 class RunnerFormatter(object):
-    template = '{status_name:11s} | passed={passed}, failed={failed}, skipped={skipped} in [{runner.duration:1.2f} sec]'
+    template = '{status_name:11s} | passed={passed}, failed={failed}, skipped={skipped} in [{runner.duration:5.2f} sec]'
 
 
 class StatusPrinter(object):
@@ -694,7 +717,7 @@ class StatusPrinter(object):
         detail = ''
         for ti in ['clean', 'pypy', 'comp']:
             subthread = getattr(thread, ti)
-            if subthread.returncode != 0:
+            if subthread.returncode not in (0, None):
                 if hasattr(formatter, 'detail_{}'.format(ti)):
                     sub_detail = getattr(formatter, 'detail_{}'.format(ti))(thread)
                 detail = formatter.errors[ti].format(**locals())
