@@ -247,7 +247,12 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
     if (rank_==0) {
         FilePath observe_file_path(observe_name + "_observe.yaml", FilePath::output_file);
-        observe_file_path.open_stream(observe_file_);
+        try {
+            observe_file_path.open_stream(observe_file_);
+        } catch (FilePath::ExcFileOpen &e ) {
+            e << FilePath::EI_Address_String(in_array.address_string());
+            throw;
+        }
         output_header(observe_name);
     }
 }

@@ -300,7 +300,12 @@ int OutputMSH::write_data(void)
     if(this->header_written == false) {
         if(this->rank == 0) {
             this->fix_main_file_extension(".msh");
-            this->_base_filename.open_stream( this->_base_file );
+            try {
+                this->_base_filename.open_stream( this->_base_file );
+            } catch (FilePath::ExcFileOpen &e ) {
+                e << FilePath::EI_Address_String(input_record_.address_string());
+                throw;
+            }
         }
 
         this->write_head();
