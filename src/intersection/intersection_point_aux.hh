@@ -81,7 +81,7 @@ class IntersectionPointAux {
      * 
      * In pathologic case,  it is > 1.
      */
-	unsigned int orientation_;
+	IntersectionResult orientation_;
 	
 	unsigned int dim_A_;    ///< Dimension of the object A of intersection. Equal \p N, by default.
     unsigned int dim_B_;    ///< Dimension of the object B of intersection. Equal \p M, by default.
@@ -144,7 +144,7 @@ public:
     
     void set_topology_A(unsigned int idx, unsigned int dim_A);  ///< Sets the topology of object A in Simplex<N>.
     void set_topology_B(unsigned int idx, unsigned int dim_B);  ///< Sets the topology of object B in Simplex<M>.
-    void set_orientation(unsigned int orientation);             ///< Setter orientation flag.
+    void set_orientation(IntersectionResult orientation);             ///< Setter orientation flag.
     
     //@}
 
@@ -162,7 +162,7 @@ public:
     unsigned int idx_A() const;     ///<  Returns the index of Simplex<N>.
     unsigned int idx_B() const;     ///<  Returns the index of Simplex<M>.
     // orientation: 0 - negative sign, 1 - positive sign, 2 - degenerate (zero for all sides)
-    unsigned int orientation() const;   ///<  Returns the orientation.
+    IntersectionResult orientation() const;   ///<  Returns the orientation.
     //@}
     
     /// Computes real coordinates of IP, given the element @p ele in which IP lies.
@@ -170,11 +170,6 @@ public:
     
     /// Returns true, if this is a pathologic case.
     bool is_pathologic() const;
-
-    /// Returns true if the intersection result is degenerate: line coplanar with triangle
-    bool is_degenerate() const;
-    /// Returns true if the intersection is empty set
-    bool is_none() const;
     
 	/** @brief Comparison operator for sorting the IPs in convex hull tracing algorithm.
      * Compares the points by x-coordinate (in case of a tie, compares by y-coordinate).
@@ -202,7 +197,7 @@ void IntersectionPointAux<N,M>::set_topology(unsigned int idx_A,unsigned int dim
 }
     
 template<unsigned int N, unsigned int M>
-void IntersectionPointAux<N,M>::set_orientation(unsigned int orientation)
+void IntersectionPointAux<N,M>::set_orientation(IntersectionResult orientation)
 {   orientation_ = orientation; }
 
 template<unsigned int N, unsigned int M>
@@ -240,20 +235,13 @@ unsigned int IntersectionPointAux<N,M>::idx_B() const
 {   return idx_B_; }
 
 template<unsigned int N, unsigned int M>
-unsigned int IntersectionPointAux<N,M>::orientation() const
+IntersectionResult IntersectionPointAux<N,M>::orientation() const
 {   return orientation_; }
 
 template<unsigned int N, unsigned int M>
 bool IntersectionPointAux<N,M>::is_pathologic() const
-{   return (orientation_ > 1); }
+{   return (unsigned int)(orientation_) > 1; }
 
-template<unsigned int N, unsigned int M>
-bool IntersectionPointAux<N,M>::is_degenerate() const
-{   return (orientation_ == 2); }
-
-template<unsigned int N, unsigned int M>
-bool IntersectionPointAux<N,M>::is_none() const
-{   return (orientation_ == 3); }
 
 } // END namespace
 #endif /* INTERSECTIONPOINT_H_ */

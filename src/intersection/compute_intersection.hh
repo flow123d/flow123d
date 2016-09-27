@@ -38,6 +38,7 @@
 #include "simplex.hh"
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
+#include "intersection/intersection_point_aux.hh"
 
 namespace computeintersection {
 
@@ -94,7 +95,7 @@ public:
      * NOTE: Why this is not done in constructor?
      * Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
      */
-	unsigned int compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
+	IntersectionResult compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
     
     /** Computes final 1d-2d intersection. (Use when this is the resulting dimension object).
      * TODO: as in 1d-3d check the topology after interpolation
@@ -497,8 +498,8 @@ public:
     void compute(IntersectionAux<2,3> &intersection);
     typedef std::array<uint, 2> FacePair;
 
-    auto edge_faces(uint i_edge, const IPAux12 &edge_ip ) -> FacePair;
-    auto vertex_faces(uint i_edge, const IPAux12 &edge_ip) -> FacePair;
+    auto edge_faces(uint i_edge) -> FacePair;
+    auto vertex_faces(uint i_vtx) -> FacePair;
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
     void print_plucker_coordinates(std::ostream &os);
@@ -506,7 +507,12 @@ public:
     void print_plucker_coordinates_tree(std::ostream &os);
 
 private:
+    const unsigned int no_idx;
+    std::vector<unsigned int> s4_dim_starts;
+    const unsigned int s3_side_start; // 3 sides
+
     std::vector<IPAux12> IP12s_;
+    std::vector<IPAux23> IP23_list, degenerate_ips;
 
     /// Vector of Plucker coordinates for triangle side.
     std::vector<Plucker *> plucker_coordinates_triangle_;

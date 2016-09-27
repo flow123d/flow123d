@@ -133,7 +133,7 @@ TEST(intersections_13d, all) {
         const unsigned int np = permutations_tetrahedron.size();
         for(unsigned int p=0; p<np; p++)
         {
-            MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
+            MessageOut().fmt("Computing intersection on mesh #{} permutation #{} :  {}\n", s, p,  filenames[s]);
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
             Mesh mesh;
