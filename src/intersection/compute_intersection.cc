@@ -1108,22 +1108,23 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size());
             //DebugOut().VarFmt(IP23.dim_B()).VarFmt(IP23.idx_B()).VarFmt(tetra_object).VarFmt(ip_idx).VarFmt(side_object);
             if (_ip == 0) {
-                //DebugOut() << "first";
+                //DebugOut() << "first"  <<  tetra_object << " to " << ip_idx;
 
                 object_next[tetra_object] = ip_idx;
                 IP_next[ip_idx] =  side_object;
             } else {
-                //DebugOut() << "second";
+                //DebugOut() << "second " <<  side_object << " to " << ip_idx;
                 object_next[side_object] = ip_idx;
                 IP_next[ip_idx] = tetra_object;
                 if (object_next[tetra_object] == no_idx) {
-                //    DebugOut() << "back link";
+                    //DebugOut() << "back link " <<  side_object << " to " << ip_idx;
                     object_next[tetra_object] = ip_idx;
                 }
             }
         }
         last_triangle_vertex = current_triangle_vertex;
     }
+
 
     // remove possible duplicity of the first vertex
     if (IP23_list.size() > 1 &&
@@ -1133,9 +1134,13 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
         unsigned int i_point = IP23_list.size() -1;
         unsigned int i_object = IP_next[ i_point ];
         if ( object_next[ i_object ] == i_point )  object_next[ i_object ] = 0;
-        object_next[ s3_side_start + 2 ] = 0;
+        //DebugOut() << "vtx" <<  i_object << " to " << 0;
+        //DebugOut() << "vtx" <<  s3_side_start + 2 << " to " << 0;
+        object_next[ s3_side_start + cycle_sides[2] ] = 0;
+
         IP23_list.pop_back();
         IP_next.pop_back();
+        //DebugOut().VarFmt(i_object).VarFmt(object_next[ i_object ]).VarFmt(i_point);
     }
 
 
@@ -1204,7 +1209,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	        } else { // interior of S3
 	            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
 	            IP23.set_topology_B(i_edge, edge_dim);
-	            DebugOut().VarFmt(IP23_list.size()).VarFmt(face_pair[0]).VarFmt(face_pair[1]);
+
                 IP23_list.push_back(IP23);
 	            unsigned int ip = IP23_list.size()-1;
 	            object_next[ face_pair[0] ] = ip;
@@ -1220,16 +1225,19 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	ASSERT_EQ(0, intersection.size());
 	if (IP23_list.size() <= 2 ) {
 	    // Need to deal with degenerate_list
+	    DebugOut()<< "Degenerate case.";
 	} else {
 	    // regular case
 	    unsigned int ip=0;
 	    while( intersection.points().size() < IP23_list.size() ) {
-	        //DebugOut().VarFmt(ip) << IP23_list[ip];
+	        // DebugOut().VarFmt(ip) << IP23_list[ip];
+
 	        intersection.points().push_back(IP23_list[ip]);
 	        unsigned int object = IP_next[ip];
 	        ASSERT_LT_DBG(object, no_idx);
 	        ip = object_next[object];
 	        ASSERT_LT_DBG(ip, no_idx);
+	        // DebugOut().VarFmt(object).VarFmt(ip);
 	    }
 	}
 
