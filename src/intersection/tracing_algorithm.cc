@@ -27,7 +27,7 @@
 
 namespace computeintersection{
     
-void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
+void Tracing::trace_polygon(IntersectionAux<2,3> &p){
     
 //     DebugOut().fmt("{} intersections:\n",p.size());
 //     for(IntersectionPointAux<2,3> &ip : p.points())
@@ -39,16 +39,14 @@ void Tracing::trace_polygon(std::vector<unsigned int> &prolongation_table, Inter
         return;
     }
     
-    if(p.is_pathologic()) trace_polygon_convex_hull(prolongation_table, p);
-    else trace_polygon_opt(prolongation_table, p);
+    if(p.is_pathologic()) trace_polygon_convex_hull(p);
+    else trace_polygon_opt(p);
 };
 
-void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
+void Tracing::trace_polygon_opt(IntersectionAux<2,3> &p){
 
     START_TIMER("CI trace opt");
     ASSERT_DBG(!p.is_pathologic());
-    
-    prolongation_table.clear();
 
     const unsigned int tt_size = 7;
     // Tracing table - 7 (4 sides of tetrahedron + 3 edges of triangle) X 2
@@ -174,11 +172,6 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     new_points.push_back(p.points()[trace_table_x[first_row_index][1]]);
     // determine next row in the trace table
     unsigned int next_row = trace_table_x[first_row_index][0];
-    
-    // Fill also the prolongation table
-    // It contains indices of tetrahedron sides and triangle edges (indices in the tracing table)
-    prolongation_table.reserve(p.points().size());
-    prolongation_table.push_back((unsigned int)trace_table_x[first_row_index][0]);
 
     // jump from row to row until we get back to the first row 
     // (i.e. go through polygonal vertices until we get back to starting point)
@@ -192,13 +185,12 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
         // if the optimal tracing fails, then call convex hull tracing
         if(i_ip_orig >= p.points().size())
         {
-            trace_polygon_convex_hull(prolongation_table,p);
+            trace_polygon_convex_hull(p);
             break;
         }
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         
         new_points.push_back(p.points()[i_ip_orig]);
-        prolongation_table.push_back((unsigned int)trace_table_x[next_row][0]);
         next_row = trace_table_x[next_row][0];
     }
 
@@ -207,12 +199,10 @@ void Tracing::trace_polygon_opt(std::vector<unsigned int> &prolongation_table, I
     END_TIMER("CI trace opt");
 };
 
-void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &p){
+void Tracing::trace_polygon_convex_hull(IntersectionAux<2,3> &p){
 
     START_TIMER("CI trace convex hull");
     DebugOut() << "convex hull tracing\n";
-
-    prolongation_table.clear();
     
     // sort IPs using IP's operator <
     std::sort(p.points().begin(),p.points().end());
@@ -251,29 +241,6 @@ void Tracing::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_
 
         H.resize(k-1);
         p.points() = H;
-    }
-    
-    // Filling prolongation table
-    if(p.points().size() > 1){
-        // Prolongation - finding same zero bary coord/coords except
-        // side with content intersect
-        unsigned int size = p.points().size() == 2 ? 1 : p.points().size();
-        int forbidden_side = side_content_prolongation(p);
-
-        for(unsigned int i = 0; i < size;i++){
-            unsigned int ii = (i+1)%p.points().size();
-
-            for(unsigned int j = 0; j < 3;j++){
-                if(fabs((double)p.points()[i].local_bcoords_A()[j]) < geometry_epsilon && fabs((double)p.points()[ii].local_bcoords_A()[j]) < geometry_epsilon){
-                    prolongation_table.push_back(6-j);
-                }
-            }
-            for(unsigned int k = 0; k < 4;k++){
-                if((int)k != forbidden_side && fabs((double)p.points()[i].local_bcoords_B()[k]) < geometry_epsilon && fabs((double)p.points()[ii].local_bcoords_B()[k]) < geometry_epsilon){
-                    prolongation_table.push_back(3-k);
-                }
-            }
-        }
     }
 
     END_TIMER("CI trace convex hull");

@@ -246,10 +246,9 @@ public:
      * Computes CIs (side vs triangle) in following order: [A0_B, A1_B, A2_B, B0_A, B1_A, B2_A].
      * During cycle determine topology information and set computed flags accordingly.
      * @param intersection final 2D-2D intersection object (output)
-     * @param prolongation_table unused (give empty vector), is here due to template compatibility with other classes
      * @return number of intersection points found
      */
-    unsigned int compute(IntersectionAux<2,2> &intersection, std::vector<unsigned int> &prolongation_table);
+    unsigned int compute(IntersectionAux<2,2> &intersection);
     
      /// @name Setters and Getters
     //@{
@@ -369,10 +368,9 @@ public:
      * Computes IPs and check if any of them are pathologic to set the resulting object also pathologic.
      * Calls @p compute function inside.
      * @param intersection final 1D-3D intersection object (output)
-     * @param prolongation_table unused (give empty vector), is here due to template compatibility with other classes
      * @return number of intersection points found
      */
-    unsigned int compute(IntersectionAux<1,3> &intersection, std::vector<unsigned int> &prolongation_table);
+    unsigned int compute(IntersectionAux<1,3> &intersection);
     
      /// @name Setters and Getters
     //@{ 
@@ -485,11 +483,10 @@ public:
      * Finally, tracing algorithm is called to sort the intersection points to
      * create convex polygon.
      * @param intersection final 2D-3D intersection object (output)
-     * @param prolongation_table auxiliary vector that is filled in tracing algorithm of polygon.
      *          It is then used further in prolongation decision routines.
      * @return number of intersection points found
      */
-    void compute(IntersectionAux<2,3> &intersection, std::vector<unsigned int> &prolongation_table);
+    void compute(IntersectionAux<2,3> &intersection);
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
     void print_plucker_coordinates(std::ostream &os);

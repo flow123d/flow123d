@@ -81,14 +81,13 @@ void InspectElementsAlgorithm<dim>::compute_bounding_boxes()
 template<unsigned int dim> 
 bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_ele_idx,
                                                        unsigned int bulk_ele_idx,
-                                                       unsigned int component_idx,
-                                                       std::vector< unsigned int >& prolongation_table)
+                                                       unsigned int component_idx)
 {
     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx, component_idx);
     START_TIMER("Compute intersection");
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
-    CI.compute(is, prolongation_table);
+    CI.compute(is);
     END_TIMER("Compute intersection");
     
     last_slave_for_3D_elements[bulk_ele_idx] = component_ele_idx;
@@ -194,9 +193,9 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                     
                     update_simplex(elm, component_simplex); // update component simplex
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
-                    std::vector<unsigned int> prolongation_table;
-                    bool found = compute_initial_CI(component_ele_idx, bulk_ele_idx,
-                                                    component_counter_, prolongation_table);
+                    bool found = compute_initial_CI(component_ele_idx,
+                                                    bulk_ele_idx,
+                                                    component_counter_);
 
                     // keep the index of the current component element that is being investigated
                     unsigned int current_component_element_idx = component_ele_idx;
@@ -302,13 +301,12 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
-                    std::vector<unsigned int> prolongation_table;
                     
                     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx, 0);
                     START_TIMER("Compute intersection");
                     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
                     CI.init();
-                    CI.compute(is, prolongation_table);
+                    CI.compute(is);
                     END_TIMER("Compute intersection");
                     
                     if(is.points().size() > 0) {
@@ -388,9 +386,9 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                     
                     update_simplex(elm, component_simplex); // update component simplex
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
-                    std::vector<unsigned int> prolongation_table;
-                    bool found = compute_initial_CI(component_ele_idx, bulk_ele_idx,
-                                                    component_counter_, prolongation_table);
+                    bool found = compute_initial_CI(component_ele_idx,
+                                                    bulk_ele_idx,
+                                                    component_counter_);
 
                     // keep the index of the current component element that is being investigated
                     unsigned int current_component_element_idx = component_ele_idx;
@@ -685,12 +683,11 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     update_simplex(ele_3D, tetrahedron);
 
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
-    std::vector<unsigned int> prolongation_table;
     
     START_TIMER("Compute intersection");
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
-    CI.compute(is, prolongation_table);
+    CI.compute(is);
     END_TIMER("Compute intersection");
     
     last_slave_for_3D_elements[pr.elm_3D_idx] = pr.component_elm_idx;
@@ -781,11 +778,10 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
     update_simplex(eleB, triaB_);
     
     IntersectionAux<2,2> is(eleA->index(), eleB->index(), 0);
-    std::vector<unsigned int> prolongation_table;
     
     ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA_, triaB_);
     CI.init();
-    unsigned int n_local_intersection = CI.compute(is, prolongation_table);
+    unsigned int n_local_intersection = CI.compute(is);
     
     if(n_local_intersection > 0)
         intersectionaux_storage22_.push_back(is);

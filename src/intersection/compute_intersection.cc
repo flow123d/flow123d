@@ -524,8 +524,7 @@ void ComputeIntersection<Simplex<2>, Simplex<2>>::set_data(computeintersection::
     }
 };
 
-unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAux< 2, 2 >& intersection,
-                                                                  std::vector<unsigned int> &prolongation_table)
+unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAux< 2, 2 >& intersection)
 {
     // final intersection points
     std::vector<IntersectionPointAux<2,2>> &IP22s = intersection.points();
@@ -599,10 +598,6 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
             IP12s.clear();
         }
     }
-    
-    // trace intersection polygon
-//     if(intersection.size() > 2)
-//         Tracing::trace_polygon(prolongation_table, intersection);
 
     return ip_coutner;
 };
@@ -741,8 +736,7 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(computeintersection::
 	}
 };
 
-unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAux< 1, 3 >& intersection,
-                                                                  std::vector<unsigned int> &prolongation_table)
+unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAux< 1, 3 >& intersection)
 {
     
     unsigned int count = compute(intersection.i_points_);
@@ -1038,8 +1032,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 
 };
 
-void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3  >& intersection, 
-                                                          std::vector<unsigned int> &prolongation_table){
+void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3  >& intersection){
 
 	std::vector<IntersectionPointAux<1,2>> IP12s;
 	std::vector<IntersectionPointAux<1,3>> IP13s;
@@ -1102,7 +1095,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     
     // trace intersection polygon
     if(intersection.size() > 1)
-        Tracing::trace_polygon(prolongation_table, intersection);
+        Tracing::trace_polygon(intersection);
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::print_plucker_coordinates(std::ostream &os){

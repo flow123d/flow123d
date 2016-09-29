@@ -93,10 +93,9 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
     Simplex<3> tetra = create_simplex<3>(mesh->element(0));
     
     IntersectionAux<1,3> is;
-    std::vector<unsigned int> prolong_table;
     ComputeIntersection< Simplex<1>, Simplex<3>> CI(line, tetra);
     CI.init();
-    CI.compute(is, prolong_table);
+    CI.compute(is);
     
 //     DebugOut() << is;
 //     for(IntersectionPointAux<1,3> &ip: is.points())

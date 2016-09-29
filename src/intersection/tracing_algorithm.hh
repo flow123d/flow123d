@@ -39,17 +39,17 @@ public:
      *      - not pathologic -> use optimized algorithm exploiting Plucker data
      * It fills the prolongation table for later usage in prolongation routines.
      */
-    static void trace_polygon(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &polygon);
+    static void trace_polygon(IntersectionAux<2,3> &polygon);
 
 private:
     /// Optimized polygon tracing.
-    static void trace_polygon_opt(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &polygon);
+    static void trace_polygon_opt(IntersectionAux<2,3> &polygon);
 
     /** General polygon tracing (also resolves pathologic cases). 
      * Implements Monotone Chain algorithm (find convex hull of set of points in 2D):
      * https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain
      */
-    static void trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table, IntersectionAux<2,3> &polygon);
+    static void trace_polygon_convex_hull(IntersectionAux<2,3> &polygon);
     
     /** 2D cross product of OA and OB vectors, i.e. z-component of their 3D cross product.
      * @return positive value, if OAB makes a counter-clockwise turn;

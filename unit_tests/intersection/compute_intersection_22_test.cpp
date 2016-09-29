@@ -94,10 +94,9 @@ void compute_intersection_22d(Mesh *mesh, const computeintersection::Intersectio
                triaB = create_simplex<2>(mesh->element(1));
     
     IntersectionAux<2,2> is;
-    std::vector<unsigned int> prolong_table;
     ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA, triaB);
     CI.init();
-    CI.compute(is, prolong_table);
+    CI.compute(is);
     
 //     DebugOut() << is;
 //     for(IntersectionPointAux<2,2> &ip: is.points())
