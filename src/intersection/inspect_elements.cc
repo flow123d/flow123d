@@ -25,6 +25,15 @@ InspectElements::InspectElements(Mesh* mesh)
 InspectElements::~InspectElements()
 {}
 
+
+unsigned int InspectElements::number_of_components(unsigned int dim)
+{
+    ASSERT(dim < 3);
+    if(dim == 1) return algorithm13_.component_counter_;
+    if(dim == 2) return algorithm23_.component_counter_;
+    return 0;
+}
+
  
 double InspectElements::measure_13() 
 {

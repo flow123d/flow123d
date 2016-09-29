@@ -99,6 +99,8 @@ public:
     
     //temporary functions:
     
+    unsigned int number_of_components(unsigned int dim);
+    
     /// Computes the size of the intersection in @p dim dimenstions.
     double measure_13();
     double measure_23();
