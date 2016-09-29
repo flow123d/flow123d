@@ -207,7 +207,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                         
                         DebugOut().fmt("start component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
                         
-                        prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back(), prolongation_table);
+                        prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back());
                         
                         START_TIMER("Prolongation algorithm");
                         do{
@@ -401,7 +401,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                         
                         DebugOut().fmt("start component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
                         
-                        prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back(), prolongation_table);
+                        prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back());
                         
                         START_TIMER("Prolongation algorithm");
                         do{
@@ -526,119 +526,94 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_edges(con
     return elements_idx;
 }
 
+
 template<unsigned int dim>
-unsigned int InspectElementsAlgorithm<dim>::create_prolongations_over_bulk_element_edges(const std::vector< unsigned int >& bulk_neighbors,
-                                                                                         const unsigned int &component_ele_idx)
+unsigned int InspectElementsAlgorithm<dim>::create_prolongation_to_bulk(unsigned int bulk_ele_idx,
+                                                                        unsigned int component_ele_idx)
 {
-    unsigned int n_prolongations = 0;
-    for(unsigned int bulk_neighbor_idx : bulk_neighbors)
+    if(last_slave_for_3D_elements[bulk_ele_idx] == undefined_elm_idx_ ||
+        (last_slave_for_3D_elements[bulk_ele_idx] != component_ele_idx && !intersection_exists(component_ele_idx,bulk_ele_idx)))
     {
-        if(last_slave_for_3D_elements[bulk_neighbor_idx] == undefined_elm_idx_ ||
-            (last_slave_for_3D_elements[bulk_neighbor_idx] != component_ele_idx && !intersection_exists(component_ele_idx,bulk_neighbor_idx)))
-        {
-            last_slave_for_3D_elements[bulk_neighbor_idx] = component_ele_idx;
+        last_slave_for_3D_elements[bulk_ele_idx] = component_ele_idx;
+    
+        DebugOut().fmt("prolongation: c {} in b {}\n",component_ele_idx,bulk_ele_idx);
         
-            DebugOut().fmt("3d prolong {} in {}\n",component_ele_idx,bulk_neighbor_idx);
-            
-            // Vytvoření průniku bez potřeby počítání
-            IntersectionAux<dim,3> il_other(component_ele_idx, bulk_neighbor_idx);
-            intersection_list_[component_ele_idx].push_back(il_other);
-            
-            Prolongation pr = {component_ele_idx, bulk_neighbor_idx, (unsigned int)intersection_list_[component_ele_idx].size() - 1};
-            bulk_queue_.push(pr);
-            n_prolongations++;
-        }
+        // prepare empty intersection object
+        IntersectionAux<dim,3> il_other(component_ele_idx, bulk_ele_idx);
+        intersection_list_[component_ele_idx].push_back(il_other);
+        
+        Prolongation pr = {component_ele_idx, bulk_ele_idx, (unsigned int)intersection_list_[component_ele_idx].size() - 1};
+        bulk_queue_.push(pr);
+        
+        return 1;
     }
-    return n_prolongations;
+    return 0;
 }
 
-// template<unsigned int dim>
-// unsigned int InspectElementsAlgorithm<dim>::create_prolongations_over_bulk_element_edges(const unsigned int& bulk_ele_idx,
-//                                                                                          const unsigned int& component_ele_idx)
-// {
-//     if(last_slave_for_3D_elements[bulk_ele_idx] == undefined_elm_idx_ ||
-//         (last_slave_for_3D_elements[bulk_ele_idx] != component_ele_idx && !intersection_exists(component_ele_idx,bulk_ele_idx)))
-//     {
-//         last_slave_for_3D_elements[bulk_ele_idx] = component_ele_idx;
-//     
-//         DebugOut().fmt("bulk prolongation: c {} in b {}\n",component_ele_idx,bulk_ele_idx);
-//         
-//         // Vytvoření průniku bez potřeby počítání
-//         IntersectionAux<dim,3> il_other(component_ele_idx, bulk_ele_idx);
-//         intersection_list_[component_ele_idx].push_back(il_other);
-//         
-//         Prolongation pr = {component_ele_idx, bulk_ele_idx, (unsigned int)intersection_list_[component_ele_idx].size() - 1};
-//         bulk_queue_.push(pr);
-//         
-//         return 1;
-//     }
-//     return 0;
-// }
 
-
-template<>
-void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& comp_ele,
-                                                      const ElementFullIter& bulk_ele,
-                                                      const IntersectionAux<1,3> &is,
-                                                      const std::vector<unsigned int> &prolongation_table)
+template<unsigned int dim>
+void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& comp_ele,
+                                                        const ElementFullIter& bulk_ele,
+                                                        const IntersectionAux<dim,3> &is)
 {
     DebugOut() << "DECIDE\n";
     // number of IPs that are at vertices of component element (counter used for closing element)
     unsigned int n_ip_vertices = 0;
     
-    for(const IntersectionPointAux<1,3> &IP : is.points()) {
-        if(IP.dim_A() == 0) { // if IP is the end of the 1D element
-            n_ip_vertices++;
-            DebugOut() << "1D end\n";
+    for(const IntersectionPointAux<dim,3> &IP : is.points()) {
+        if(IP.dim_A() < dim) { // if IP on the boundary of component element
+            if(IP.dim_A() == 0) n_ip_vertices++;
+            DebugOut() << "on " << dim << "D side, dim = " << IP.dim_A() << "\n";
+            
+            // search for indices of neighboring component elements (including the current one)
+            std::vector<unsigned int> comp_neighbors = get_element_edges<dim>(comp_ele,IP.dim_A(), IP.idx_A(),false);
+            
+//             for(unsigned int& comp_neighbor_idx : comp_neighbors)
+//                 DebugOut() << comp_neighbor_idx << "  ";
             
             // there are two possibilities:
             // 1] IP is inside the bulk element
-            //    => prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
+            //    => prolongate comp element as long as it creates prolongation point on the side of tetrahedron
             // 2] IP lies on the boundary of tetrahedron (vertex, edge or side)
-            //    => search all connected edges of tetrahedron for neghboring sides
-            //       and create candidates: neighboring 1D element + neighboring tetrahedron
+            //    => search all connected edges of tetrahedron for neighboring sides
+            //       and create candidates: neighboring comp element + neighboring tetrahedron
                 
             if(IP.dim_B() == 3)
             {
-                // iterate over sides of 1D element
-                SideIter elm_side = comp_ele->side(IP.idx_A());  // side of 1D element is vertex
-                Edge *edg = elm_side->edge();
-                for(int j=0; j < edg->n_sides;j++) {
-                    
-                    SideIter other_side=edg->side(j);
-                    if (other_side != elm_side) {   // we do not want to look at the current 1D element
+                for(unsigned int j=0; j < comp_neighbors.size(); j++) {
 
-                        unsigned int component_neighbor_idx = other_side->element()->index();
-                        if(!intersection_exists(component_neighbor_idx,bulk_ele->index())){
-                            DebugOut().fmt("1d prolong {} in {}\n", component_neighbor_idx, bulk_ele->index());
+                    unsigned int comp_neighbor_idx = comp_neighbors[j],
+                                 bulk_current = bulk_ele->index();
+                    if(!intersection_exists(comp_neighbor_idx,bulk_current)){
+                        DebugOut().fmt("prolongation: c {} in b {}\n",comp_neighbor_idx,bulk_current);
+                        
+                            // prepare empty intersection object
+                            IntersectionAux<dim,3> il_other(comp_neighbor_idx, bulk_current);
+                            intersection_list_[comp_neighbor_idx].push_back(il_other);
                             
-                                // Vytvoření průniku bez potřeby počítání
-                                IntersectionAux<1,3> il_other(component_neighbor_idx, bulk_ele->index());
-                                intersection_list_[component_neighbor_idx].push_back(il_other);
-                                
-                                Prolongation pr = {component_neighbor_idx, bulk_ele->index(), 
-                                                (unsigned int)intersection_list_[component_neighbor_idx].size() - 1};
-                                component_queue_.push(pr);
-                        }
+                            Prolongation pr = {comp_neighbor_idx, bulk_current, 
+                                            (unsigned int)intersection_list_[comp_neighbor_idx].size() - 1};
+                            component_queue_.push(pr);
+                            last_slave_for_3D_elements[bulk_current] = comp_neighbor_idx;
                     }
                 }
             }
             else
             {
                 // search for indices of neighboring bulk elements (including the current one)
-                std::vector<unsigned int> bulk_neighbors = get_element_edges<3>(bulk_ele,IP.dim_B(), IP.idx_B(), true);
+                std::vector<unsigned int> bulk_neighbors = get_element_edges<3>(bulk_ele,IP.dim_B(),IP.idx_B(), true);
+//                 for(unsigned int& bulk_neighbor_idx : bulk_neighbors)
+//                     DebugOut() << bulk_neighbor_idx << "  ";
                 
                 unsigned int n_prolongations = 0;
-                // iterate over sides of 1D element
-                SideIter elm_side = comp_ele->side(IP.idx_A());  // side of 1D element is vertex
-                Edge *edg = elm_side->edge();
-                for(int j=0; j < edg->n_sides;j++) {
-                    
-                    SideIter side=edg->side(j);
-                    unsigned int component_neighbor_idx = side->element()->index();
-                    // we want to look also at the current 1D and 3D element
-                    
-                    n_prolongations += create_prolongations_over_bulk_element_edges(bulk_neighbors,component_neighbor_idx);
+                for(unsigned int& bulk_neighbor_idx : bulk_neighbors){
+                    // prolong over current comp element
+                    n_prolongations += create_prolongation_to_bulk(bulk_neighbor_idx,
+                                                                   comp_ele->index());
+                    for(unsigned int& comp_neighbor_idx : comp_neighbors) {
+                        n_prolongations += create_prolongation_to_bulk(bulk_neighbor_idx,
+                                                                       comp_neighbor_idx);
+                    }
                 }
                 
                 // if there are no sides of any edge that we can continue to prolongate over,
@@ -661,7 +636,10 @@ void InspectElementsAlgorithm<1>::prolongation_decide(const ElementFullIter& com
                 continue;
             }
 
-            unsigned int n_prolongations = create_prolongations_over_bulk_element_edges(bulk_neighbors,comp_ele->index());
+            unsigned int n_prolongations = 0;
+            for(unsigned int& bulk_neighbor_idx : bulk_neighbors)
+                n_prolongations += create_prolongation_to_bulk(bulk_neighbor_idx,
+                                                               comp_ele->index());
             
             DebugOut().fmt("cover: {} {}\n", is.size(), n_prolongations);
             // if there are no sides of any edge that we can continue to prolongate over,
@@ -692,205 +670,6 @@ void InspectElementsAlgorithm<2>::assert_same_intersection(unsigned int comp_ele
     }
 }
 
-template<>
-void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& comp_ele,
-                                                      const ElementFullIter& bulk_ele,
-                                                      const IntersectionAux<2,3> &is,
-                                                      const std::vector<unsigned int> &prolongation_table)
-{
-    DebugOut() << "DECIDE\n";
-    // number of IPs that are at vertices of component element (counter used for closing element)
-    unsigned int n_ip_vertices = 0;
-    
-    for(const IntersectionPointAux<2,3> &IP : is.points()) {
-        if(IP.dim_A() < 2) { // if IP on one of the sides of triangle
-            if(IP.dim_A() == 0) n_ip_vertices++;
-            DebugOut() << "on 2D side, dim = " << IP.dim_A() << "\n";
-            
-            // search for indices of neighboring component elements (including the current one)
-            std::vector<unsigned int> comp_neighbors = get_element_edges<2>(comp_ele,IP.dim_A(), IP.idx_A(),false);
-                
-            // there are two possibilities:
-            // 1] IP is inside the bulk element
-            //    => prolongate 1D element as long as it creates prolongation point on the side of tetrahedron
-            // 2] IP lies on the boundary of tetrahedron (vertex, edge or side)
-            //    => search all connected edges of tetrahedron for neghboring sides
-            //       and create candidates: neighboring 1D element + neighboring tetrahedron
-                
-            if(IP.dim_B() == 3)
-            {
-                for(unsigned int j=0; j < comp_neighbors.size(); j++) {
-
-                    unsigned int comp_neighbor_idx = comp_neighbors[j],
-                                 bulk_current = bulk_ele->index();
-                    if(!intersection_exists(comp_neighbor_idx,bulk_current)){
-                        DebugOut().fmt("2d prolong {} in {}\n", comp_neighbor_idx, bulk_current);
-                        
-                            // Vytvoření průniku bez potřeby počítání
-                            IntersectionAux<2,3> il_other(comp_neighbor_idx, bulk_current);
-                            intersection_list_[comp_neighbor_idx].push_back(il_other);
-                            
-                            Prolongation pr = {comp_neighbor_idx, bulk_current, 
-                                            (unsigned int)intersection_list_[comp_neighbor_idx].size() - 1};
-                            component_queue_.push(pr);
-                            last_slave_for_3D_elements[bulk_current] = comp_neighbor_idx;
-                    }
-                }
-            }
-            else
-            {
-                // search for indices of neighboring bulk elements (including the current one)
-                std::vector<unsigned int> bulk_neighbors = get_element_edges<3>(bulk_ele,IP.dim_B(),IP.idx_B(), true);
-                
-                unsigned int n_prolongations = 0;
-                // prolong also current element
-                n_prolongations += create_prolongations_over_bulk_element_edges(bulk_neighbors,comp_ele->index());
-                
-                for(unsigned int j=0; j < comp_neighbors.size(); j++) {
-                    n_prolongations += create_prolongations_over_bulk_element_edges(bulk_neighbors,comp_neighbors[j]);
-                }
-                
-                // if there are no sides of any edge that we can continue to prolongate over,
-                // it means we are at the boundary and cannot prolongate further
-                if(n_prolongations == 0)
-                {
-                    Prolongation pr = {comp_ele->index(), undefined_elm_idx_, undefined_elm_idx_};
-                    bulk_queue_.push(pr);
-                }
-            }
-
-        }else{
-            std::vector<unsigned int> bulk_neighbors = get_element_edges<3>(bulk_ele,IP.dim_B(), IP.idx_B(),false);
-            
-            // if edge has only one side, it means it is on the boundary and we cannot prolongate
-            if(bulk_neighbors.empty())
-            {
-                Prolongation pr = {comp_ele->index(), undefined_elm_idx_, undefined_elm_idx_};
-                bulk_queue_.push(pr);
-                continue;
-            }
-
-            unsigned int n_prolongations = create_prolongations_over_bulk_element_edges(bulk_neighbors,comp_ele->index());
-            
-            DebugOut().fmt("cover: {} {}\n", is.size(), n_prolongations);
-            // if there are no sides of any edge that we can continue to prolongate over,
-            // it means we are at the boundary and cannot prolongate further
-            if(bulk_neighbors.size() != 1 && n_prolongations == 0)
-            {
-                Prolongation pr = {comp_ele->index(), undefined_elm_idx_, undefined_elm_idx_};
-                bulk_queue_.push(pr);
-            }
-        }  
-    }
-    
-    // close component element if it has all vertices inside bulk element
-    if(n_ip_vertices == is.size()) closed_elements[comp_ele->index()] = true;
-}
-
-// template<>
-// void InspectElementsAlgorithm<2>::prolongation_decide(const ElementFullIter& comp_ele,
-//                                                       const ElementFullIter& bulk_ele,
-//                                                       const IntersectionAux<2,3> &is,
-//                                                       const std::vector<unsigned int> &prolongation_table
-//                                                      )
-// {
-//     DebugOut() << "DECIDE\n";
-//     // in case there are more than 2 IPs, the prolongation table is filled
-//     for(unsigned int i = 0; i < prolongation_table.size();i++){
-// 
-//         unsigned int side;
-//         bool is_triangle_side = true;
-// 
-//         if(prolongation_table[i] >= 4){
-//             side = prolongation_table[i] - 4;
-//         }else{
-//             side = prolongation_table[i];
-//             is_triangle_side = false;
-//         }
-// 
-//         DebugOut().fmt("prolongation table: {} {}\n", side, is_triangle_side);
-// 
-//         if(is_triangle_side){
-//             // prolongation through the triangle side
-// 
-//             SideIter elm_side = comp_ele->side(side);
-//             Edge *edg = elm_side->edge();
-// 
-//             for(int j=0; j < edg->n_sides;j++) {
-//                 SideIter other_side=edg->side(j);
-//                 if (other_side != elm_side) {
-//                     unsigned int sousedni_element = other_side->element()->index(); // 2D element
-// 
-//                     DebugOut().fmt("2d sousedni_element {}\n", sousedni_element);
-// 
-//                         if(!intersection_exists(sousedni_element,bulk_ele->index())){
-// 
-//                             unsigned int component_idx = is.component_idx();
-//                             if(edg->n_sides > 2)
-//                             {
-//                                 component_counter_++;
-//                                 DebugOut().fmt("COMPONENT COUNTER: {}\n", component_counter_);
-//                                 component_idx = component_counter_;
-//                             }
-//                             
-//                             DebugOut() << "2d prolong\n";
-//                             assert_same_intersection(sousedni_element, bulk_ele->index());
-//                             // Vytvoření průniku bez potřeby počítání
-//                             IntersectionAux<2,3> il_other(sousedni_element, bulk_ele->index(), component_idx);
-//                             intersection_list_[sousedni_element].push_back(il_other);
-// 
-//                             Prolongation pr = {sousedni_element, bulk_ele->index(), (unsigned int)intersection_list_[sousedni_element].size() - 1};
-//                             component_queue_.push(pr);
-//                         }
-//                 }
-//             }
-// 
-//         }else{
-//             // prolongation through the tetrahedron side
-//             
-//             SideIter elm_side = bulk_ele->side(side);
-//             Edge *edg = elm_side->edge();
-// 
-//             for(int j=0; j < edg->n_sides;j++) {
-//                 SideIter other_side=edg->side(j);
-//                 if (other_side != elm_side) {
-//                     //
-// 
-//                     unsigned int sousedni_element = other_side->element()->index();
-// 
-//                     DebugOut().fmt("3d sousedni_element {}\n", sousedni_element);
-// 
-//                     // TODO:
-//                     // - rename it, describe it and test that it is really useful !!
-//                     // how it probably works: 
-//                     // - if index undefined then no intersection has been computed for the 3D element
-//                     // - if not undefined check the index of actual 2D element 
-//                     //   (most probable case, that we are looking along 2D element back to 3D element, which we have just computed)
-//                     // - if it is another 2D element, then go through all found intersections of the 3D element and test it..
-//                     
-//                     if(last_slave_for_3D_elements[sousedni_element] == undefined_elm_idx_ || 
-//                         (last_slave_for_3D_elements[sousedni_element] != comp_ele->index() && !intersection_exists(comp_ele->index(),sousedni_element))){
-//                         
-//                         last_slave_for_3D_elements[sousedni_element] = comp_ele->index();
-// 
-//                         DebugOut() << "3d prolong\n";
-//                         DebugOut().fmt("last_slave_for_3D_elements: {}, exists: {}\n", last_slave_for_3D_elements[sousedni_element], intersection_exists(comp_ele->index(),sousedni_element));
-//                         assert_same_intersection(comp_ele->index(), sousedni_element);
-//                         // Vytvoření průniku bez potřeby počítání
-//                         IntersectionAux<2,3> il_other(comp_ele->index(), sousedni_element, is.component_idx());
-//                         intersection_list_[comp_ele->index()].push_back(il_other);
-// 
-//                         Prolongation pr = {comp_ele->index(), sousedni_element, (unsigned int)intersection_list_[comp_ele->index()].size() - 1};
-//                         bulk_queue_.push(pr);
-// 
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     // otherwise, we need to be able to prolongate over 1 or 2 IPs; if we want to find components properly
-//     // TODO: ...
-// }
 
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< dim >::Prolongation& pr)
@@ -920,7 +699,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
 //         for(unsigned int j=0; j < is.size(); j++) 
 //             DebugOut() << is[j];
         
-        prolongation_decide(elm, ele_3D,is,prolongation_table);
+        prolongation_decide(elm, ele_3D,is);
         n_intersections_++;
     }
 }
