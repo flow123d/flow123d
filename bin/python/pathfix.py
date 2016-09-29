@@ -59,11 +59,10 @@ def append_to_path():
     add_path('..', 'lib')
     # path to src/python if COPY_PYTHON is disabled
     add_path('..', '..', 'src', 'python')
-    # path to lib/flow123d after COPY_PYTHON
-    add_path('..', '..', 'build_tree', 'lib', 'flow123d')
-    # path to lib/flow123d/site-packages additional libs after COPY_PYTHON
-    add_path('..', '..', 'build_tree', 'lib', 'flow123d', 'site-packages')
-
+    
+    # path to lib/flow123d after install
+    add_path('..', '..', 'lib', 'python', 'flow123d')
+    add_path('..', '..', 'lib', 'python', 'dist-packages')
 
 # alias
 init = append_to_path
