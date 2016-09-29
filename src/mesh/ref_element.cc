@@ -56,12 +56,12 @@ template<> const IdxVector<2> RefElement<2>::line_nodes_[] = {
 };
 
 template<> const IdxVector<2> RefElement<3>::line_nodes_[] = {
-        {0,1},
-        {0,2},
-        {1,2},
-        {0,3},
-        {1,3},
-        {2,3}
+        {0,1},	//0
+        {0,2},  //1
+        {0,3},  //2 <-3 (fixed order)
+        {1,2},  //3 <-2
+        {1,3},  //4
+        {2,3}   //5
 };
 
 
@@ -78,15 +78,15 @@ template<> const IdxVector<2> RefElement<2>::node_lines_[] = {
 
 // Order clockwise looking over the vertex to center; smallest index first
 template<> const IdxVector<3> RefElement<3>::node_lines_[] = {
-     {0,1,3},
-     {0,4,2},
-     {1,2,5},
-     {3,5,4},
+     {0,1,2},
+     {0,4,3},
+     {1,3,5},
+     {2,5,4},
 };
 
 
 
-//TODO: what should be the order ??
+// Lexicographic order.
 template<> const IdxVector<3> RefElement<3>::side_nodes_[] = {
         { 0, 1, 2 },
         { 0, 1, 3 },
@@ -94,30 +94,30 @@ template<> const IdxVector<3> RefElement<3>::side_nodes_[] = {
         { 1, 2, 3 }
 };
 
-//TODO: what should be the order ??
+// Order clockwise, faces opposite to the lines from node_lines.
 template<> const IdxVector<3> RefElement<3>::node_sides_[] = {
-        { 0, 1, 2 },
-        { 0, 1, 3 },
-        { 0, 2, 3 },
-        { 1, 2, 3 }
+        { 1, 0, 2 },
+        { 3, 0, 1 },
+        { 3, 2, 0 },
+        { 3, 1, 2 }
 };
 
 // faces ordered clock wise with respect to edge shifted to center of tetrahedron
 template<> const IdxVector<2> RefElement<3>::line_sides_[] = {
      {0,1},
      {2,0},
-     {0,3},
      {1,2},
+     {0,3},
      {3,1},
      {2,3}
 };
 
 
 template<> const IdxVector<3> RefElement<3>::side_lines_[] = {
-        {0,1,2},
-        {0,3,4},
-        {1,3,5},
-        {2,4,5}
+        {0,1,3},
+        {0,2,4},
+        {1,2,5},
+        {3,4,5}
 };
 
 
