@@ -24,11 +24,14 @@ using namespace computeintersection;
 
 
 /// Create results for the meshes in directory 'prolong_meshes_23d'.
-void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils)
+void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, 
+                       std::vector<unsigned int>& n_components)
 {
-    unsigned int n_files=1;
+    unsigned int n_files=9;
     ils.clear();
+    n_components.clear();
     ils.resize(n_files);
+    n_components.resize(n_files, 1);
     
     ils[0].resize(4);
     ils[0][0] = {   {0.475, 0.325, 0}, 
@@ -47,7 +50,60 @@ void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils)
                     {0.2, -0.2 ,0.2},
                     {0.04, 0, 0.08}};
     
+    // no prolongation over a gap between two tetrahedra
+    ils[1].resize(4);
+    n_components[1] = 4;
+    ils[1][0] = {   {0.2, 0.25, 0},
+                    {0.25, 0.25, 0.25},
+                    {0.25, 0.25, 0}};
+    ils[1][1] = {   {0.25, 0.25, -1},
+                    {0.25, 0.25, -1.25},
+                    {0.2, 0.25, -1}};
+    ils[1][2] = {   {0.25, 0.5, 0.25},
+                    {0.25, 0.5, 0},
+                    {0.2, 0.5, 0}};
+    ils[1][3] = {   {0.25, 0.5, -1.25},
+                    {0.25, 0.5, -1},
+                    {0.2, 0.5, -1}};
+                    
+    // multiple nodes - face
+    ils[2].resize(2);
+    ils[2][0] = {   {0, 0.25, 0.25},
+                    {0, 0.5, 0.25}};
+    ils[2][1] = {   {0, 0.25, 0.25},
+                    {0, 0.5, 0.25},
+                    {0.25, 0.25, 0.25}};
 
+    // node - face
+    ils[3].resize(2);
+    ils[3][0] = {   {0, 0.25, 0.25}};
+    ils[3][1] = {   {0, 0.25, 0.25},
+                    {0, 0.375, 0.25},
+                    {0.25, 0.25, 0.25}};
+                    
+    // multiple nodes - edge
+    ils[4].resize(2);
+    ils[4][0] = {   {0, 0.25, 0},
+                    {0, 0.5, 0}};
+    ils[4][1] = {   {0, 0.25, 0},
+                    {0, 0.5, 0}};
+    
+    // node - edge
+    ils[5].resize(2, {{0, 0.25, 0}});
+    
+    // node - node
+    ils[6].resize(9, {{0, 0, 0}} );
+    
+    // edge - edge
+    ils[7].resize(2);
+    ils[7][0] = {   {0, 0.25, 0}};
+    ils[7][1] = {   {0.25, 0.25, 0.25},
+                    {0, 0.25, 0.25},
+                    {0, 0.25, 0},
+                    {0.25, 0.25, 0}};
+    
+    // side - node
+    ils[8].resize(3, {{0, 0, 1}} );
 }
 
 /// auxiliary function for sorting intersection storage 13d
@@ -60,7 +116,9 @@ bool compare_is23(const computeintersection::IntersectionLocal<2,3>& a,
         return a.component_ele_idx() < b.component_ele_idx();
 }
 
-void compute_intersection_23d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il)
+void compute_intersection_23d(Mesh *mesh,
+                              const std::vector<std::vector<arma::vec3>> &il,
+                              const unsigned int& n_components)
 {
     double area = 0;
 
@@ -68,20 +126,23 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<std::vector<arma::ve
     InspectElements ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d23);
     
-    // write computed intersections
-//     for(unsigned int i = 0; i < ie.intersection_storage23_.size(); i++)
-//     {
-//         DebugOut() << &ie.intersection_storage23_[i] << ie.intersection_storage23_[i];
-//     }
-    
     //test solution
     std::vector<computeintersection::IntersectionLocal<2,3>> ilc = ie.intersection_storage23_;
+    
+    // write computed intersections
+    for(unsigned int i = 0; i < ilc.size(); i++)
+    {
+        DebugOut() << &ilc[i] << ilc[i];
+        for(unsigned int j=0; j < ilc[i].size(); j++)
+            DebugOut() << ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
+    }
     
     // sort the storage, so it is the same for every algorithm (BIH, BB ...)
     // and we avoid creating the intersection map for exact IPs
     std::sort(ilc.begin(), ilc.end(),compare_is23);
     
     EXPECT_EQ(ilc.size(), il.size());
+    EXPECT_EQ(n_components,ie.number_of_components(2));
     
     for(unsigned int i=0; i < ilc.size(); i++)
         for(unsigned int j=0; j < ilc[i].size(); j++)
@@ -112,7 +173,8 @@ TEST(intersection_prolongation_23d, all) {
     read_files_form_dir(dir_name, "msh", filenames);
         
     std::vector<std::vector<std::vector<arma::vec3>>> solution;
-    fill_23d_solution(solution);
+    std::vector<unsigned int> n_components;
+    fill_23d_solution(solution, n_components);
     
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
@@ -127,6 +189,6 @@ TEST(intersection_prolongation_23d, all) {
         
         mesh.setup_topology();
         
-        compute_intersection_23d(&mesh, solution[s]);
+        compute_intersection_23d(&mesh, solution[s], n_components[s]);
     }
 }
