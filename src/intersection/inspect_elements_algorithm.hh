@@ -170,8 +170,12 @@ private:
                                                   unsigned int ip_obj_idx,
                                                   const bool &include_current_ele);
     
-    unsigned int create_prolongation_to_bulk(unsigned int bulk_ele_idx,
-                                             unsigned int component_ele_idx);
+//     unsigned int create_prolongation_to_bulk(unsigned int bulk_ele_idx,
+//                                              unsigned int component_ele_idx);
+    
+    unsigned int create_prolongation(unsigned int bulk_ele_idx,
+                                     unsigned int component_ele_idx,
+                                     std::queue<Prolongation>& queue);
     
     friend class InspectElements;
     friend class InspectElementsAlgorithm22;
