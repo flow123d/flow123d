@@ -59,11 +59,16 @@ bin/runtest.sh
 /config/jenkins-job/jenkins.ini
 
 /tests/runtest
-/integration_tests/runtest
+/tests_old/runtest
 
 # add test results to ignore
 /integration_tests/*/test_results
 /integration_tests/*/output
 
 
+# artifact folder
 /.artifacts
+
+# folder containing symlink to python sources
+/lib
+
