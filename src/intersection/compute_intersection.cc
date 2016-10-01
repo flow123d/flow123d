@@ -1093,9 +1093,9 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 		}
 	}
     
-    // trace intersection polygon
-    if(intersection.size() > 1)
-        Tracing::trace_polygon(intersection);
+//     // trace intersection polygon
+//     if(intersection.size() > 1)
+//         Tracing::trace_polygon(intersection);
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::print_plucker_coordinates(std::ostream &os){
