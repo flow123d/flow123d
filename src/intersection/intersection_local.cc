@@ -3,7 +3,8 @@
 #include "intersection_aux.hh"
 #include "intersection_point_aux.hh"
 #include "mesh/mesh_types.hh"
-#include "mesh/elements.h"
+// #include "mesh/elements.h"
+#include "mesh/mesh.h"
 
 #include <iostream>
 

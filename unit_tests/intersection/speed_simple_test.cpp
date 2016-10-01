@@ -36,7 +36,7 @@
 using namespace std;
 
 static const unsigned int profiler_loop = 100;
-static const unsigned int n_meshes = 100;
+static const unsigned int n_meshes = 10000;
 
 // results - number of cases with number of ips 0-7
 static unsigned int n_intersection[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -216,8 +216,6 @@ void compute_intersection(computeintersection::Simplex<dimA>& eleA,
                           computeintersection::Simplex<dimB>& eleB)
 {
     // compute intersection
-    std::vector< unsigned int > prolongation_table;
-    
     START_TIMER("Compute intersection");
    
     vector<Space<3>::Point> verticesA(dimA+1);
@@ -236,7 +234,7 @@ void compute_intersection(computeintersection::Simplex<dimA>& eleA,
         CI.init();
         END_TIMER("CI create");
         START_TIMER("CI compute");
-        CI.compute(is, prolongation_table);
+        CI.compute(is);
         END_TIMER("CI compute");
         
         n_intersection[is.size()]++;
@@ -356,32 +354,32 @@ TEST(speed_simple_12, all) {
     
     { START_TIMER("Speed test NGH");
     // for each mesh, compute intersection area and compare with old NGH
-    xprintf(Msg, "======== NGH ========\n");
+    MessageOut() << "======== NGH ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
-            //xprintf(Msg, "================================================ %d\n",i);
+            //MessageOut() << "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
                 compute_intersection_ngh_12(eleA[i], eleB[i]);
             }
-            //xprintf(Msg, "================================================\n");
+            //MessageOut() << "================================================\n";
     }
-    xprintf(Msg, "======== NGH end ========\n");
+    MessageOut() << "======== NGH end ========\n";
     END_TIMER("Speed test NGH"); }
     
     { START_TIMER("Speed test");
     // for each mesh, compute intersection area and compare with old NGH
-    xprintf(Msg, "======== NEW ========\n");
+    MessageOut() << "======== NEW ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
-            //xprintf(Msg, "================================================ %d\n",i);
+            //MessageOut() << "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
                 compute_intersection<1,2>(eleA[i], eleB[i]);
             }
-            //xprintf(Msg, "================================================\n");
+            //MessageOut() << "================================================\n";
     }
-    xprintf(Msg, "======== NEW end ========\n");
+    MessageOut() << "======== NEW end ========\n";
     END_TIMER("Speed test"); }
     
     print_statistics();
@@ -414,32 +412,32 @@ TEST(speed_simple_22, all) {
     
     { START_TIMER("Speed test NGH");
     // for each mesh, compute intersection area and compare with old NGH
-    xprintf(Msg, "======== NGH ========\n");
+    MessageOut() << "======== NGH ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
-            //xprintf(Msg, "================================================ %d\n",i);
+            //MessageOut() << "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
                 compute_intersection_ngh_22(eleA[i], eleB[i]);
             }
-            //xprintf(Msg, "================================================\n");
+            //MessageOut() << "================================================\n";
     }
-    xprintf(Msg, "======== NGH end ========\n");
+    MessageOut() << "======== NGH end ========\n";
     END_TIMER("Speed test NGH"); }
     
     { START_TIMER("Speed test");
     // for each mesh, compute intersection area and compare with old NGH
-    xprintf(Msg, "======== NEW ========\n");
+    MessageOut() << "======== NEW ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
-            //xprintf(Msg, "================================================ %d\n",i);
+            //MessageOut() << "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
                 compute_intersection<2,2>(eleA[i], eleB[i]);
             }
-            //xprintf(Msg, "================================================\n");
+            //MessageOut() << "================================================\n";
     }
-    xprintf(Msg, "======== NEW end ========\n");
+    MessageOut() << "======== NEW end ========\n";
     END_TIMER("Speed test"); }
     
     print_statistics();
@@ -473,32 +471,32 @@ TEST(speed_simple_13, all) {
     
     { START_TIMER("Speed test NGH");
     // for each mesh, compute intersection area and compare with old NGH
-    xprintf(Msg, "======== NGH ========\n");
+    MessageOut() << "======== NGH ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
-            //xprintf(Msg, "================================================ %d\n",i);
+            //MessageOut() << "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
                 compute_intersection_ngh_13(eleA[i], eleB[i]);
             }
-            //xprintf(Msg, "================================================\n");
+            //MessageOut() << "================================================\n";
     }
-    xprintf(Msg, "======== NGH end ========\n");
+    MessageOut() << "======== NGH end ========\n";
     END_TIMER("Speed test NGH"); }
     
     { START_TIMER("Speed test");
     // for each mesh, compute intersection area and compare with old NGH
-    xprintf(Msg, "======== NEW ========\n");
+    MessageOut() << "======== NEW ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
-            //xprintf(Msg, "================================================ %d\n",i);
+            //MessageOut() << "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
                 compute_intersection(eleA[i], eleB[i]);
             }
-            //xprintf(Msg, "================================================\n");
+            //MessageOut() << "================================================\n";
     }
-    xprintf(Msg, "======== NEW end ========\n");
+    MessageOut() << "======== NEW end ========\n";
     END_TIMER("Speed test"); }
     
     print_statistics();
@@ -533,32 +531,32 @@ TEST(speed_simple_23, all) {
     
     { START_TIMER("Speed test NGH");
     // for each mesh, compute intersection area and compare with old NGH
-    xprintf(Msg, "======== NGH ========\n");
+    MessageOut() << "======== NGH ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
-            //xprintf(Msg, "================================================ %d\n",i);
+            //MessageOut() << "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
                 compute_intersection_ngh_23(eleA[i], eleB[i]);
             }
-            //xprintf(Msg, "================================================\n");
+            //MessageOut() << "================================================\n";
     }
-    xprintf(Msg, "======== NGH end ========\n");
+    MessageOut() << "======== NGH end ========\n";
     END_TIMER("Speed test NGH"); }
     
     { START_TIMER("Speed test");
     // for each mesh, compute intersection area and compare with old NGH
-    xprintf(Msg, "======== NEW ========\n");
+    MessageOut() << "======== NEW ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
-            //xprintf(Msg, "================================================ %d\n",i);
+            //MessageOut() << "================================================ %d\n",i);
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
             {
                 compute_intersection<2,3>(eleA[i], eleB[i]);
             }
-            //xprintf(Msg, "================================================\n");
+            //MessageOut() << "================================================\n";
     }
-    xprintf(Msg, "======== NEW end ========\n");
+    MessageOut() << "======== NEW end ========\n";
     END_TIMER("Speed test"); }
     
     print_statistics();

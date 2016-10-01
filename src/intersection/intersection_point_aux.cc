@@ -5,9 +5,10 @@
  *      Author: viktor
  */
 
+// #include "mesh/elements.h"
+#include "mesh/mesh.h"
 #include "intersection_point_aux.hh"
 #include "mesh/ref_element.hh"
-#include "mesh/elements.h"
 #include "system/system.hh"
 
 using namespace std;
