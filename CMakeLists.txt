@@ -785,46 +785,8 @@ message(STATUS "===========================================")
 
 
 
-
-# # install bin directory
-# install(DIRECTORY bin/config              DESTINATION bin/)
-# install(DIRECTORY bin/ndiff               DESTINATION bin/)
-# install(DIRECTORY bin/paraview            DESTINATION bin/)
-# install(DIRECTORY bin/python              DESTINATION bin/)
-# 
-# install(PROGRAMS  bin/flow123d.sh         DESTINATION bin/)
-# install(PROGRAMS  bin/ini2json.sh         DESTINATION bin/)
-# install(PROGRAMS  bin/time_limit.sh       DESTINATION bin/)
-# install(PROGRAMS  bin/ndiff/ndiff.pl    DESTINATION bin/ndiff)
-# 
-# # links
-# install(PROGRAMS  tests/runtest         DESTINATION tests)
-# 
-# 
-# 
-# 
-# 
-# 
-# SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator")
-# SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
-# SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
-# SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
-# SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
-# SET(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE On)
-# SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
-# 
-# set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-# set(CPACK_GENERATOR "TGZ")
-# set(CPACK_SOURCE_GENERATOR "TGZ")
-# INCLUDE(CPack)
-
-#include(EchoTargets)
-#message(STATUS "Lib sufix: ${CMAKE_FIND_LIBRARY_SUFFIX}")
-#echo_targets("bin/flow123d")
-
 ####################################################################################
 # Install and Packaging
-
 
 # Cache PLATFORM_NAME
 # set(CMAKE_INSTALL_MESSAGE ALWAYS)
@@ -859,17 +821,18 @@ install(FILES     doc/README                DESTINATION doc/)
 install(FILES     ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf
                                             DESTINATION doc/ OPTIONAL)
 
-# tests
-# TODO: clean directories before install
+# install tests dir
+install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
 find_program (MAKE_EXECUTABLE               NAMES make gmake)
 install(DIRECTORY tests                     DESTINATION .)
 install(PROGRAMS  tests/runtest             DESTINATION tests)
-# install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
 
-# python
+
+# python libs, sources and config files
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/python/ DESTINATION lib/python/flow123d)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/python  DESTINATION bin/python)
-
+install(FILES     config/host_table.yaml          DESTINATION config/)
+install(FILES     config/artifacts.yaml           DESTINATION config/)
 
 
 # To install MSVC runtime libraries ... ?
