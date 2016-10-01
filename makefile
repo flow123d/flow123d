@@ -88,10 +88,11 @@ test-all: build-flow123d
 %.tst : build-flow123d
 	make -C tests $*.tst
 
-# Clean test results
+# Clean test results using find command
 .PHONY: clean-tests
 clean-tests:
-	make -C tests clean
+	find tests -maxdepth 2 -type d -name "test_results" -exec echo " - {}" \;
+	find tests -maxdepth 2 -type d -name "test_results" -exec rm -rf {} \;
 
 
 # Create html documentation

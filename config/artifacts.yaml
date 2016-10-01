@@ -7,9 +7,11 @@ collectors:
       source: <root>/
       target: <root>/.artifacts/
       name: "{path[-3]}/{path[-1]}/{name}"
-      flat: true
       includes: "tests/**/test_results/**/profiler_info_*.log.json"
+      flat: true
       remove_original: true
+      wipeout_dir:
+        - <root>/.artifacts/
     
     # execute node benchmarks, determining node performance
     - !Command
