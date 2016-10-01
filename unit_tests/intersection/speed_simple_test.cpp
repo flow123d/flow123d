@@ -338,7 +338,7 @@ void compute_intersection_ngh_23(computeintersection::Simplex<2>& eleA,
 {
     double area;
     
-    {START_TIMER("Compute intersection NGH");
+//  START_TIMER("Compute intersection NGH");
         
     TPoint p1 = TPoint(eleA.node(0).point_coordinates()(0), eleA.node(0).point_coordinates()(1), eleA.node(0).point_coordinates()(2)),
            p2 = TPoint(eleA.node(1).point_coordinates()(0), eleA.node(1).point_coordinates()(1), eleA.node(1).point_coordinates()(2)),
@@ -353,8 +353,10 @@ void compute_intersection_ngh_23(computeintersection::Simplex<2>& eleA,
     TTetrahedron tte(p4,p5,p6,p7);
     TIntersectionType it = Intersections::area;
 
-    GetIntersection(ttr, tte, it, area);
-    END_TIMER("Compute intersection NGH");}
+    {
+    PROFILER_LOOP("NGH intersection")
+        GetIntersection(ttr, tte, it, area);
+    }
 } 
 
 
@@ -550,7 +552,7 @@ TEST(speed_simple_13, all) {
 
 
 // ***************************************************************************************************   2D-3D
-/*
+
 TEST(speed_simple_23, all) {
     Profiler::initialize();
     Profiler::instance()->set_task_info("Speed test for 2d-3d ComputeIntersection class.",2);
@@ -573,10 +575,10 @@ TEST(speed_simple_23, all) {
     for(unsigned int i=0; i<n; i++)
     {       
             //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
+//             for(unsigned int loop = 0; loop < profiler_loop; loop++)
+//             {
                 compute_intersection_ngh_23(eleA[i], eleB[i]);
-            }
+//             }
             //MessageOut() << "================================================\n";
     }
     MessageOut() << "======== NGH end ========\n";
@@ -588,10 +590,10 @@ TEST(speed_simple_23, all) {
     for(unsigned int i=0; i<n; i++)
     {       
             //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
+//             for(unsigned int loop = 0; loop < profiler_loop; loop++)
+//             {
                 compute_intersection<2,3>(eleA[i], eleB[i]);
-            }
+//             }
             //MessageOut() << "================================================\n";
     }
     MessageOut() << "======== NEW end ========\n";
@@ -607,5 +609,5 @@ TEST(speed_simple_23, all) {
     Profiler::uninitialize();
 }
 
-*/
+
 #endif // FLOW123D_RUN_UNIT_BENCHMARKS
