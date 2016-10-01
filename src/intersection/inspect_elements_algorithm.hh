@@ -165,10 +165,9 @@ private:
     void prolongate(const Prolongation &pr);
 
     template<unsigned int ele_dim>
-    std::vector< unsigned int > get_element_edges(const ElementFullIter& ele,
-                                                  unsigned int ip_dim,
-                                                  unsigned int ip_obj_idx,
-                                                  const bool &include_current_ele);
+    std::vector< unsigned int > get_element_neighbors(const ElementFullIter& ele,
+                                                      unsigned int ip_dim,
+                                                      unsigned int ip_obj_idx);
     
 //     unsigned int create_prolongation_to_bulk(unsigned int bulk_ele_idx,
 //                                              unsigned int component_ele_idx);

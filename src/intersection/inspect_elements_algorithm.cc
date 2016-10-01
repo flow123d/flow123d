@@ -461,11 +461,9 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
 
 template<unsigned int dim>
 template<unsigned int ele_dim>
-std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_edges(const ElementFullIter& ele,
-                                                                             unsigned int ip_dim,
-                                                                             unsigned int ip_obj_idx,
-                                                                             const bool &include_current_ele
-                                                                             )
+std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors(const ElementFullIter& ele,
+                                                                                 unsigned int ip_dim,
+                                                                                 unsigned int ip_obj_idx)
 {
     std::vector<Edge*> edges;
     edges.reserve(ele_dim - ip_dim);  // reserve number of possible edges
@@ -516,10 +514,6 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_edges(con
         if (edg->side(j)->element() != ele)
             elements_idx.push_back(edg->side(j)->element()->index());
     }
-    
-    // possibly include the current bulk element
-    if(include_current_ele)
-        elements_idx.push_back(ele->index());
     
     return elements_idx;
 }
@@ -590,7 +584,7 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
             DebugOut() << "on " << dim << "D side, dim = " << IP.dim_A() << "\n";
             
             // search for indices of neighboring component elements (including the current one)
-            std::vector<unsigned int> comp_neighbors = get_element_edges<dim>(comp_ele,IP.dim_A(), IP.idx_A(),false);
+            std::vector<unsigned int> comp_neighbors = get_element_neighbors<dim>(comp_ele,IP.dim_A(), IP.idx_A());
             
 //             for(unsigned int& comp_neighbor_idx : comp_neighbors)
 //                 DebugOut() << comp_neighbor_idx << "  ";
@@ -623,7 +617,7 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
             if(IP.dim_B() < 3)
             {
                 // search for indices of neighboring bulk elements (including the current one)
-                std::vector<unsigned int> bulk_neighbors = get_element_edges<3>(bulk_ele,IP.dim_B(),IP.idx_B(), false);
+                std::vector<unsigned int> bulk_neighbors = get_element_neighbors<3>(bulk_ele,IP.dim_B(),IP.idx_B());
 //                 for(unsigned int& bulk_neighbor_idx : bulk_neighbors)
 //                     DebugOut() << bulk_neighbor_idx << "  ";
                 
@@ -660,7 +654,7 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
             }
 
         }else{
-            std::vector<unsigned int> bulk_neighbors = get_element_edges<3>(bulk_ele,IP.dim_B(), IP.idx_B(),false);
+            std::vector<unsigned int> bulk_neighbors = get_element_neighbors<3>(bulk_ele,IP.dim_B(), IP.idx_B());
             
             // if edge has only one side, it means it is on the boundary and we cannot prolongate
             if(bulk_neighbors.empty())
