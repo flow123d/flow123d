@@ -18,7 +18,9 @@ class Collector(ArtifactStep):
 
     yaml_tag = u'!Collector'
 
-    def __init__(self, source=None, target=None, includes='*', excludes=None, flat=False, name=None, remove_original=False, **kwargs):
+    def __init__(self, source=None, target=None, includes='*',
+                 excludes=None, flat=False, name=None, remove_original=False,
+                 wipeout_dir=[], **kwargs):
         self.source = source
         self.target = target
         self.includes = includes
@@ -26,6 +28,7 @@ class Collector(ArtifactStep):
         self.flat = flat
         self.name = name
         self.remove_original = remove_original
+        self.wipeout_dir = wipeout_dir
         self.__dict__.update(kwargs)
 
     @staticmethod
@@ -54,6 +57,13 @@ class Collector(ArtifactStep):
             yield CopyRule(filename, Paths.join(root, name), self.remove_original)
 
     def run(self):
+        # wipe out dirs on demand
+        if self.wipeout_dir:
+            for d in self.wipeout_dir:
+                if Paths.exists(d):
+                    Printer.all.out('Deleting directory {}', d)
+                    shutil.rmtree(d)
+
         total = 0
         for p in self:
             total += 1

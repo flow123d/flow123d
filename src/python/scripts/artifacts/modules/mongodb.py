@@ -9,6 +9,7 @@ import platform
 
 from scripts.artifacts.artifacts import ArtifactStep
 from scripts.core.base import Paths, Printer
+from utils.timer import Timer
 
 TIMEOUT = 5
 
@@ -89,6 +90,7 @@ class DatabaseMongo(ArtifactStep):
             lscpu_data['benchmark'] = benchmark_data
             lscpu_data['username'] = getpass.getuser()
             lscpu_data['hostname'] = platform.node()
+            lscpu_data['duration'] = Timer.app_timer.duration
 
             # insert
             nodes_result = self.db.get_collection('nodes').insert_one(lscpu_data)

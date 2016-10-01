@@ -372,7 +372,7 @@ class Paths(object):
 
     @classmethod
     def artifact_yaml(cls):
-        return cls.join(cls.flow123d_root(), 'config', 'artifacts.yml')
+        return cls.join(cls.flow123d_root(), 'config', 'artifacts.yaml')
 
     @classmethod
     def test_paths(cls, *paths):
@@ -450,7 +450,7 @@ class Paths(object):
         :rtype: list[str]
         """
         paths = [cls.join(path, p) for p in os.listdir(path)]
-        return cls.filter(paths, filters)
+        return sorted(cls.filter(paths, filters))
 
     @classmethod
     def walk(cls, path, filters=()):
@@ -461,7 +461,7 @@ class Paths(object):
             for name in dirs:
                 paths.append(cls.join(root, name))
 
-        return cls.filter(paths, filters)
+        return sorted(cls.filter(paths, filters))
 
     @classmethod
     def filter(cls, paths, filters=()):
@@ -667,13 +667,13 @@ class DynamicSleep(object):
 
 
 class TestPrinterStatus(object):
-    template = '{status_name:11s} | {case_name:45s} [{thread.duration:1.2f} sec] {detail}'
+    template = '{status_name:11s} | {case_name:45s} [{thread.duration:5.2f} sec] {detail}'
     default = 'failed'
 
     statuses = {
         '0':    'passed',
         'None': 'skipped',
-        '-1': 'skipped',
+        '-1':   'skipped',
     }
 
     errors = {
