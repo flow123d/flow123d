@@ -715,7 +715,15 @@ void ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::clear_all()
 }
 
 void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
+/*
+    plucker_coordinates_abscissa_->clear();
+    for(unsigned int line = 0; line < RefElement<3>::n_lines; line++){
+        plucker_coordinates_tetrahedron[line]->clear();
+        // compute Plucker products (abscissa X tetrahedron line)
+        *(plucker_products_[line]) = plucker_empty;
+    }
 
+*/
 	for(unsigned int side = 0; side <  RefElement<3>::n_sides; side++){
 		for(unsigned int line = 0; line < RefElement<3>::n_lines_per_side; line++){
 			CI12[side].set_pc_triangle(plucker_coordinates_tetrahedron[

@@ -134,7 +134,10 @@ TPoint TPlain::GetPoint(double r, double s) const {
 }
 
 bool TPlain::Belong(const TPoint &P) const {
-    if (IsZero(Distance(*this, P)))
+    double dis = fabs( GetA() * P.X() + GetB() * P.Y() + GetC() * P.Z() + GetD());
+
+
+    if (IsZero(dis))
         return true;
     return false;
 }
