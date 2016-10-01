@@ -809,7 +809,7 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
     	//if (insec_tmp->get_point(0) != NULL) {
     		double t1 = t;//insec_tmp->get_point(0)->el1_coord()[0];
     		if (t1 < 0 - epsilon || t1 > 1 + epsilon) {
-    		    delete insec_tmp;
+    		    //delete insec_tmp;
     			insec = NULL;
     		} else {
     		    insec = insec_tmp;
