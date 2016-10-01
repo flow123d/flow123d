@@ -11,6 +11,7 @@ import sys
 from scripts.core.base import Paths
 from utils.argparser import ArgParser
 from utils.duration import Duration
+from utils.timer import Timer
 from scripts.artifacts.artifacts import ArtifactProcessor
 # ----------------------------------------------
 
@@ -100,7 +101,7 @@ parser.add('', '--dump', hidden=True, type=str, name='dump', placeholder='<FILE>
 parser.add('', '--log', type=str, name='log', placeholder='<FILE>', docs=[
     'Will also redirect output to file'
 ])
-parser.add('', '--artifacts', type=str, name='artifacts', placeholder='<YAML>', default=True, docs=[
+parser.add('-x', '--export', type=True, name='artifacts', default=False, docs=[
     'If set, will process artifacts yaml file in order to save/copy file',
     'or export them to database.'
 ])
@@ -125,8 +126,9 @@ if __name__ == '__main__':
     # Paths.init(os.getcwd())
 
     # run work
-    BinExecutor.register_sigint()
-    returncode = do_work(parser)
+    with Timer.app_timer:
+        BinExecutor.register_sigint()
+        returncode = do_work(parser)
 
     # collect artifact if not set otherwise
     # parser.parse()
