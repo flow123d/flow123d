@@ -603,9 +603,9 @@ void GetIntersection(const TTriangle &T1, const TTriangle &T2,
 // vraci localni souradnice pruniku, prvni souradnice vzhledem k B druha souradnice vzhledem k T
 // pro vsechny body pruniku B a T
 
-void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal * &insec) {
+void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal * &insec, double &t) {
     TPosition pos;
-    double t;
+    //double t;
     int cit=0;
     GetIntersection(T.GetPlain(), B, pos, t);
     switch (pos) {
@@ -615,22 +615,25 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
                 insec=NULL;
                 return;
             }
-
+/*
             vector<double> loc_coord_1(1);
             vector<double> loc_coord_2(2);
+
 
             loc_coord_1[0] = t;
             loc_coord_2[0] = 0; //TODO: values of loc_coord_2 are not computed
             loc_coord_2[1] = 0;
 
-            insec = new IntersectionLocal(IntersectionLocal::point);
-            insec->add_local_coord(loc_coord_1, loc_coord_2);
-
+            //insec = new IntersectionLocal(IntersectionLocal::point);
+            //insec->add_local_coord(loc_coord_1, loc_coord_2);
+*/
             return;
     	}
 
        // LINE INTERSECTION
        case belong: {
+           return;
+
            IntersectionLocal* insec_tmp;
            IntersectionPoint* insec_point_tmp[3];
 
@@ -796,25 +799,29 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
         return;
     }
     IntersectionLocal* insec_tmp=NULL;
-    GetIntersection( (const TBisector &)A, T, insec_tmp);
-    if (!insec_tmp) {
-    	insec = NULL;
-    	return;
-    }
-    if (insec_tmp->get_type() == IntersectionLocal::point) {
-    	if (insec_tmp->get_point(0) != NULL) {
-    		double t1 = insec_tmp->get_point(0)->el1_coord()[0];
+    double t;
+    GetIntersection( (const TBisector &)A, T, insec_tmp, t);
+    //if (!insec_tmp) {
+    //	insec = NULL;
+    //	return;
+    //}
+    //if (insec_tmp->get_type() == IntersectionLocal::point) {
+    	//if (insec_tmp->get_point(0) != NULL) {
+    		double t1 = t;//insec_tmp->get_point(0)->el1_coord()[0];
     		if (t1 < 0 - epsilon || t1 > 1 + epsilon) {
     		    delete insec_tmp;
     			insec = NULL;
     		} else {
     		    insec = insec_tmp;
     		}
-    	} else{
-            delete insec_tmp;
-            insec = NULL;
-        }
+    	//} else{
+        //    delete insec_tmp;
+        //    insec = NULL;
+        //}
+    	/*
     } else if(insec_tmp->get_type() == IntersectionLocal::line) {
+        insec = NULL;
+        return;
         // A1 i A2 ma byt v intervalu (0,1) -> vrati insec
         // pokud ne tak zkusi zkratit, nebo NULL (delete)
 
@@ -850,7 +857,7 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
             insec = NULL;
         }
     }
-    return;
+    return;*/
 
 //-------------------------------------------------------------------
 /*    		IntersectionPoint* insec_point_tmp[2];
@@ -975,7 +982,7 @@ void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
     	return;
     }
 
-    IntersectionLocal *insec;
+    IntersectionLocal *insec=NULL;
 
     for (int i = 1; i <= 4; i++) {
         it = unknown;

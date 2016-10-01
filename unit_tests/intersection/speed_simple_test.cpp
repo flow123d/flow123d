@@ -35,8 +35,12 @@
 
 using namespace std;
 
-static const unsigned int profiler_loop = 100;
-static const unsigned int n_meshes = 10000;
+static const unsigned int profiler_loop = 1000;
+static const unsigned int n_meshes = 1000;
+
+#define PROFILER_LOOP(name) \
+        /*START_TIMER(name);*/    \
+        for(unsigned int i=0; i<profiler_loop; i++)
 
 // results - number of cases with number of ips 0-7
 static unsigned int n_intersection[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -213,10 +217,11 @@ void compute_intersection<1,2>(computeintersection::Simplex<1>& eleA,
 
 template<unsigned int dimA, unsigned int dimB>
 void compute_intersection(computeintersection::Simplex<dimA>& eleA,
-                          computeintersection::Simplex<dimB>& eleB)
+                          computeintersection::Simplex<dimB>& eleB
+                          )
 {
     // compute intersection
-    START_TIMER("Compute intersection");
+    //START_TIMER("Compute intersection");
    
     vector<Space<3>::Point> verticesA(dimA+1);
     vector<Space<3>::Point> verticesB(dimB+1);
@@ -228,19 +233,35 @@ void compute_intersection(computeintersection::Simplex<dimA>& eleA,
     BoundingBox bbB(verticesB);
     
     if(bbA.intersect(bbB)) {   
-        START_TIMER("CI create");
-        computeintersection::IntersectionAux<dimA,dimB> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
-        computeintersection::ComputeIntersection<computeintersection::Simplex<dimA>, computeintersection::Simplex<dimB>> CI(eleA, eleB);
-        CI.init();
-        END_TIMER("CI create");
-        START_TIMER("CI compute");
-        CI.compute(is);
-        END_TIMER("CI compute");
+        //START_TIMER("CI create");
+
+//        {
+//            PROFILER_LOOP("CI create") CI.init();
+//        }
+        {
+            computeintersection::ComputeIntersection<computeintersection::Simplex<dimA>, computeintersection::Simplex<dimB>> CI(eleA, eleB);
+
+            PROFILER_LOOP("CI compute") {
+              computeintersection::IntersectionAux<dimA,dimB> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
+
+               //auto _is = is;
+               CI.init();
+               CI.compute(is);
+               n_intersection[is.size()]++;
+               if(is.is_pathologic()) n_intersection_p[is.size()]++;
+
+            }
+        }
+        //CI.compute(is);
         
-        n_intersection[is.size()]++;
-        if(is.is_pathologic()) n_intersection_p[is.size()]++;
+        //END_TIMER("CI create");
+        //START_TIMER("CI compute");
+        //for (unsigned int i=0; i< profiler_loop; i++)
+        //    CI.compute(is);
+        //END_TIMER("CI compute");
+
     }
-    END_TIMER("Compute intersection");
+    //END_TIMER("Compute intersection");
 }
 
 
@@ -290,7 +311,8 @@ void compute_intersection_ngh_13(computeintersection::Simplex<1>& eleA,
 {
     double length;
     
-    { START_TIMER("Compute intersection NGH");
+
+    { //START_TIMER("Compute intersection NGH");
         
     TPoint p1 = TPoint(eleA.node(0).point_coordinates()(0), eleA.node(0).point_coordinates()(1), eleA.node(0).point_coordinates()(2)),
            p2 = TPoint(eleA.node(1).point_coordinates()(0), eleA.node(1).point_coordinates()(1), eleA.node(1).point_coordinates()(2)),
@@ -303,8 +325,12 @@ void compute_intersection_ngh_13(computeintersection::Simplex<1>& eleA,
     TTetrahedron tte(p3, p4, p5, p6);
     TIntersectionType it = Intersections::line;
     
-    GetIntersection(tabs, tte, it, length);
-    END_TIMER("Compute intersection NGH"); }
+    {
+    PROFILER_LOOP("NGH intersection")
+        GetIntersection(tabs, tte, it, length);
+    }
+
+    }
 } 
 
 void compute_intersection_ngh_23(computeintersection::Simplex<2>& eleA,
@@ -333,7 +359,7 @@ void compute_intersection_ngh_23(computeintersection::Simplex<2>& eleA,
 
 
 
-
+/*
 // ***************************************************************************************************   1D-2D
 
 TEST(speed_simple_12, all) {
@@ -390,10 +416,10 @@ TEST(speed_simple_12, all) {
     fs.open(profiler_file.c_str(), std::fstream::out);
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
-}
+}*/
 
 // ***************************************************************************************************   2D-2D
-
+/*
 TEST(speed_simple_22, all) {
     Profiler::initialize();
     Profiler::instance()->set_task_info("Speed test for 2d-2d ComputeIntersection class.",2);
@@ -448,7 +474,7 @@ TEST(speed_simple_22, all) {
     fs.open(profiler_file.c_str(), std::fstream::out);
     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
     Profiler::uninitialize();
-}
+}*/
 
 
 
@@ -474,11 +500,17 @@ TEST(speed_simple_13, all) {
     MessageOut() << "======== NGH ========\n";
     for(unsigned int i=0; i<n; i++)
     {       
+
+            //START_TIMER("NGH single pair");
+            //START_TIMER("NGH single intersection");
+            //ADD_CALLS(profiler_loop);
             //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
+            //for(unsigned int loop = 0; loop < profiler_loop; loop++)
+            //{
                 compute_intersection_ngh_13(eleA[i], eleB[i]);
-            }
+            //}
+            //END_TIMER("NGH single intersection");
+            //END_TIMER("NGH single pair");
             //MessageOut() << "================================================\n";
     }
     MessageOut() << "======== NGH end ========\n";
@@ -488,12 +520,18 @@ TEST(speed_simple_13, all) {
     // for each mesh, compute intersection area and compare with old NGH
     MessageOut() << "======== NEW ========\n";
     for(unsigned int i=0; i<n; i++)
-    {       
+    {
+            //START_TIMER("Plucker single pair");
+            //START_TIMER("Plucker single intersection");
+            //ADD_CALLS(profiler_loop);
             //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
+            //for(unsigned int loop = 0; loop < profiler_loop; loop++)
+            //{
                 compute_intersection(eleA[i], eleB[i]);
-            }
+            //}
+            //END_TIMER("Plucker single intersection");
+            //END_TIMER("Plucker single pair");
+
             //MessageOut() << "================================================\n";
     }
     MessageOut() << "======== NEW end ========\n";
@@ -512,7 +550,7 @@ TEST(speed_simple_13, all) {
 
 
 // ***************************************************************************************************   2D-3D
-
+/*
 TEST(speed_simple_23, all) {
     Profiler::initialize();
     Profiler::instance()->set_task_info("Speed test for 2d-3d ComputeIntersection class.",2);
@@ -569,5 +607,5 @@ TEST(speed_simple_23, all) {
     Profiler::uninitialize();
 }
 
-
+*/
 #endif // FLOW123D_RUN_UNIT_BENCHMARKS
