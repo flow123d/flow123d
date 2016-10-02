@@ -21,6 +21,9 @@ set(USE_PYTHON          "yes")
 set(PLATFORM_NAME       "linux_x86_64")
 
 
-# need to load following modules
+# need to load following modules in order to build flow123d
+# 
 # module add cmake-2.8.12
 # module add mpich2
+# module load boost-1.56-gcc
+# module load python-2.7.10-gcc
