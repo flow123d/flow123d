@@ -62,8 +62,8 @@ bin/runtest.sh
 /tests_old/runtest
 
 # add test results to ignore
-/integration_tests/*/test_results
-/integration_tests/*/output
+/tests/*/test_results
+/tests/*/output
 
 
 # artifact folder
@@ -71,4 +71,3 @@ bin/runtest.sh
 
 # folder containing symlink to python sources
 /lib
-
