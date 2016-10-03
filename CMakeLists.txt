@@ -665,10 +665,8 @@ if( CYGWIN AND NOT EXISTS ${MPIEXEC_PATH})
     endif()
 endif()
 
-execute_process(COMMAND
-    ${CMAKE_COMMAND} -E create_symlink ${MPIEXEC_PATH} ${CMAKE_BINARY_DIR}/bin/mpiexec
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
+# create shell script which call correct mpiexec binary
+configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
 
 ##################################################################################################################### 
 # Macro to make usefull links in SOURCE_DIR
@@ -707,7 +705,6 @@ add_subdirectory(third_party/fparser-4.5.1)
 #add_subdirectory(third_party/tbb43_20150316oss)
 
 # add various our sources
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(src)
 add_subdirectory(doc)
 add_subdirectory(unit_tests) # this also adds third_party/gtest
