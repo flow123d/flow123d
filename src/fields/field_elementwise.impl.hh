@@ -41,6 +41,8 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
+		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+				"Definition of unit.")
         .close();
 }
 
@@ -71,16 +73,19 @@ internal_raw_data(false), mesh_(NULL)
 {
 	n_components_ = this->value_.n_rows() * this->value_.n_cols();
 	data_ = data;
+	this->scale_data();
 }
 
 
 
 
 template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec) {
-	cout << string(reader_file_) << endl;
-	OLD_ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
-	OLD_ASSERT( reader_file_ == FilePath(), "Multiple call of init_from_input.\n");
+void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+	this->init_unit_conversion_coefficient(rec, init_data);
+
+	DebugOut() << "Reader file: " << string(reader_file_);
+	ASSERT(internal_raw_data).error("Trying to initialize internal FieldElementwise from input.");
+	ASSERT(reader_file_ == FilePath()).error("Multiple call of init_from_input.");
     reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
     ReaderInstances::instance()->get_reader(reader_file_);
 
@@ -89,7 +94,7 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 
 
 
-template <int spacedim, class Value>
+/*template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, typename Value::return_type &value) {
     Value ref(value);
     OLD_ASSERT( this->value_.n_cols() == ref.n_cols(), "Size of variable vectors do not match.\n" );
@@ -101,7 +106,7 @@ void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, 
         for(unsigned int col=0; col < ref.n_cols(); col++, vec_pos++)
         	vec[vec_pos] = ref(row,col);
 
-}
+}*/
 
 
 template <int spacedim, class Value>
@@ -123,6 +128,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
 
     data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(search_header,
     		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    this->scale_data();
     return search_header.actual;
 }
 
@@ -193,6 +199,18 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
     } else {
         xprintf(UsrErr, "FieldElementwise is not implemented for discrete return types.\n");
     }
+}
+
+
+
+template <int spacedim, class Value>
+void FieldElementwise<spacedim, Value>::scale_data()
+{
+	if (Value::is_scalable()) {
+		std::vector<typename Value::element_type> &vec = *( data_.get() );
+		for(unsigned int i=0; i<vec.size(); ++i)
+			vec[i] *= this->unit_conversion_coefficient_;
+	}
 }
 
 

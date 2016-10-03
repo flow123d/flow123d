@@ -51,7 +51,7 @@ public:
 
     FieldPython(unsigned int n_comp=0);
 
-    virtual void init_from_input(const Input::Record &rec);
+    virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
     static const Input::Type::Record & get_input_type();
 
