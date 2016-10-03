@@ -298,6 +298,16 @@ public:
                     value_.at(row,col) = scale_coef * value_.at(row,col);
     }
 
+    // Compute the weighted average of val_0 and val_1
+    void interpolated(double coef, return_type val_0, return_type val_1) {
+    	ASSERT(coef >= 0 && coef <= 1)(coef).error();
+
+        if (is_scalable())
+            for( unsigned int row=0; row<n_rows(); row++)
+                for( unsigned int col=0; col<n_cols(); col++)
+                    value_.at(row,col) = val_0.at(row,col) + coef * (val_1.at(row,col) - val_0.at(row,col));
+    }
+
 private:
     return_type &value_;
 };
@@ -369,6 +379,14 @@ public:
     void scale(double scale_coef) {
         if (is_scalable())
             value_ = scale_coef * value_;
+    }
+
+    // Compute the weighted average of val_0 and val_1
+    void interpolated(double coef, return_type val_0, return_type val_1) {
+    	ASSERT(coef >= 0 && coef <= 1)(coef).error();
+
+        if (is_scalable())
+            value_ = val_0 + coef * (val_1 - val_0);
     }
 
 private:
@@ -446,6 +464,16 @@ public:
     }
 
 
+    // Compute the weighted average of val_0 and val_1
+    void interpolated(double coef, return_type val_0, return_type val_1) {
+    	ASSERT(coef >= 0 && coef <= 1)(coef).error();
+
+        if (is_scalable())
+            for(unsigned int i=0; i< n_rows(); i++) {
+                value_.at(i) = val_0.at(i) + coef * (val_1.at(i) - val_0.at(i));
+            }
+    }
+
 private:
     return_type &value_;
 };
@@ -514,6 +542,16 @@ public:
 	        for(unsigned int i=0; i< n_rows(); i++) {
 	            value_.at(i) = scale_coef * value_.at(i);
 	        }
+    }
+
+    // Compute the weighted average of val_0 and val_1
+    void interpolated(double coef, return_type val_0, return_type val_1) {
+    	ASSERT(coef >= 0 && coef <= 1)(coef).error();
+
+        if (is_scalable())
+            for(unsigned int i=0; i< n_rows(); i++) {
+                value_.at(i) = val_0.at(i) + coef * (val_1.at(i) - val_0.at(i));
+            }
     }
 
 private:
