@@ -1181,8 +1181,10 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	            i_edge = RefElement<3>::interact(Interaction<0,1>(tetra_edge))[IP12.idx_A()];
 	            face_pair = vertex_faces(i_edge);
 	            if (face_pair[0] == s4_dim_starts[3]) {
-	                // S3 side touch in vertex or on edge
-
+	                // catch 1 point and 2 point IPs
+                    IPAux23 IP23(IP12.switch_objects(), tetra_edge);
+                    IP23.set_topology_B(i_edge, edge_dim); // set vertex ID and dim ==0
+                    degenerate_ips.push_back(IP23);
 	            }
                 // mark edges coincident with the vertex
                 for( uint ie : RefElement<3>::interact(Interaction<1,0>(i_edge)) )
@@ -1225,7 +1227,12 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	ASSERT_EQ(0, intersection.size());
 	if (IP23_list.size() <= 2 ) {
 	    // Need to deal with degenerate_list
-	    DebugOut()<< "Degenerate case.";
+	    //DebugOut()<< "Degenerate case.";
+	    for( auto &p : IP23_list) intersection.points().push_back(p);
+	    for( auto &p : degenerate_ips) intersection.points().push_back(p);
+
+	    ASSERT_DBG(intersection.points().size() < 3);
+	    ASSERT_DBG(intersection.points())
 	} else {
 	    // regular case
 	    unsigned int ip=0;
