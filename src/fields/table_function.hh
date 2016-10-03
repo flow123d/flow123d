@@ -51,7 +51,7 @@ public:
     /**
      * Return record of one time stamp.
      */
-    static const Input::Type::Tuple & get_input_type_time_val();
+    static const Input::Type::Tuple & get_input_type_val();
 
     /**
      * Return Record for time series initialization of Fields. Allow to use interpolation

@@ -119,7 +119,7 @@ TEST(FieldConst, read_from_input) {
 string field_const_table_function_input = R"YAML(
 table_function_scalar: !FieldConstant
   value: 0.5
-  time_series_values:
+  time_function:
     - - 0.0
       - 0.5
     - - 1.0
@@ -128,7 +128,7 @@ table_function_scalar: !FieldConstant
       - 3.0
 table_function_vector: !FieldConstant
   value: [0.5, 1.5, 2.0]
-  time_series_values:
+  time_function:
     - - 0.0
       - [0.5, 1.5, 2.0]
     - - 1.0
@@ -137,7 +137,7 @@ table_function_vector: !FieldConstant
       - [3.0, 1.5, 5.0]
 table_function_tensor: !FieldConstant
   value: [ [1,3,4], [0,3,4], [1,6,6] ]
-  time_series_values:
+  time_function:
     - - 0.0
       - [ [1,3,4], [0,3,4], [1,6,6] ]
     - - 1.0

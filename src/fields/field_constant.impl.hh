@@ -42,7 +42,7 @@ const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
                                     " - vector of size (($N$)) to enter diagonal matrix\n\n"
                                     " - vector of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                     " - scalar to enter multiple of the unit matrix." )
-		.declare_key("time_series_values", TableFunction<Value>::get_input_type(), it::Default::optional(),
+		.declare_key("time_function", TableFunction<Value>::get_input_type(), it::Default::optional(),
 									"Allow set time series initialization of Fields.")
         .allow_auto_conversion("value")
 		.close();
@@ -74,9 +74,9 @@ void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec) {
     this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
 
     Input::Record time_series_rec;
-    if (rec.opt_val("time_series_values", time_series_rec) ) {
+    if (rec.opt_val("time_function", time_series_rec) ) {
         if (!Value::is_scalable()) {
-            WarningOut().fmt("Setting key 'time_series_values' of non-floating point field at address {}\nValues will be skipped.\n",
+            WarningOut().fmt("Setting key 'time_function' of non-floating point field at address {}\nValues will be skipped.\n",
                     rec.address_string());
         }
     	table_function_.init_from_input(time_series_rec);

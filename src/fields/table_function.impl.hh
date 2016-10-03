@@ -24,21 +24,21 @@
 namespace it = Input::Type;
 
 template <class Value>
-const it::Tuple & TableFunction<Value>::get_input_type_time_val()
+const it::Tuple & TableFunction<Value>::get_input_type_val()
 {
-    return it::Tuple("TimeValue", "Value of Field in one time stamp.")
-        .declare_key("time", it::Double( 0.0 ), it::Default::obligatory(),
-                                    "Time of stamp." )
+    return it::Tuple("IndependentValue", "Value of Field for independent variable.")
+        .declare_key("t", it::Double( 0.0 ), it::Default::obligatory(),
+                                    "Independent variable of stamp." )
 		.declare_key("value", Value::get_input_type(), it::Default::obligatory(),
-									"Value of the field in given time." )
+									"Value of the field in given stamp." )
 		.close();
 }
 
 template <class Value>
 const it::Record & TableFunction<Value>::get_input_type()
 {
-    return it::Record("TableFunction", "Allow set time series initialization of Fields.")
-        .declare_key("values", it::Array( TableFunction<Value>::get_input_type_time_val(), 2 ), it::Default::obligatory(),
+    return it::Record("TableFunction", "Allow set variable series initialization of Fields.")
+        .declare_key("values", it::Array( TableFunction<Value>::get_input_type_val(), 2 ), it::Default::obligatory(),
                                     "Initizaliation values of Field." )
         .allow_auto_conversion("values")
 		.close();
@@ -61,7 +61,7 @@ void TableFunction<Value>::init_from_input(const Input::Record &rec)
 	Input::Array data_array = rec.val<Input::Array>("values");
 	double last_time = -1.0;
     for (Input::Iterator<Input::Tuple> it = data_array.begin<Input::Tuple>(); it != data_array.end(); ++it) {
-    	double time = it->val<double>("time");
+    	double time = it->val<double>("t");
     	if (last_time >= time) {
     		THROW( ExcNonAscendingTime() << EI_LastTime(last_time) << EI_Time(time) );
     	}
