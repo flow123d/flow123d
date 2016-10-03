@@ -27,6 +27,7 @@
 #include "fields/field_add_potential.impl.hh"
 #include "fields/field_elementwise.impl.hh"
 #include "fields/field_fe.impl.hh"
+#include "fields/table_function.impl.hh"
 
 
 INSTANCE_ALL(FieldAlgorithmBase)
@@ -44,4 +45,11 @@ template class FieldAddPotential<3, FieldValue<0>::Scalar >;
 template class FieldConstant<3, FieldValue<0>::Vector >; // Necessary due to default value of the abstract.
 template class FieldPython<3, FieldValue<0>::Vector >;
 
-
+// Instantiation of TableFunction class
+template class TableFunction<FieldValue<0>::Enum >;
+template class TableFunction<FieldValue<0>::Integer >;
+template class TableFunction<FieldValue<0>::Scalar >;
+template class TableFunction<FieldValue<2>::VectorFixed >;
+template class TableFunction<FieldValue<2>::TensorFixed >;
+template class TableFunction<FieldValue<3>::VectorFixed >;
+template class TableFunction<FieldValue<3>::TensorFixed >;
