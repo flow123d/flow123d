@@ -803,7 +803,7 @@ install(DIRECTORY bin/python                DESTINATION bin/)
 install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
 install(PROGRAMS  bin/ini2json.sh           DESTINATION bin/)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
-install(PROGRAMS  ${MPIEXEC_PATH}           DESTINATION bin/ RENAME mpiexec)
+install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 
 # plain files
 install(FILES     bin/README                DESTINATION bin/)
