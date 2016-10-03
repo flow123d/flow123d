@@ -19,6 +19,7 @@
 #define FIELD_CONSTANT_IMPL_HH_
 
 #include "fields/field_constant.hh"
+#include "fields/table_function.hh"
 #include "input/input_type.hh"
 
 
@@ -41,6 +42,8 @@ const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
                                     " - vector of size (($N$)) to enter diagonal matrix\n\n"
                                     " - vector of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                     " - scalar to enter multiple of the unit matrix." )
+		.declare_key("time_series_values", TableFunction<Value>::get_input_type(), it::Default::optional(),
+									"Allow set time series initialization of Fields.")
         .allow_auto_conversion("value")
 		.close();
 }
@@ -69,6 +72,15 @@ FieldConstant<spacedim, Value> &FieldConstant<spacedim, Value>::set_value(const 
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec) {
     this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
+
+    Input::Record time_series_rec;
+    if (rec.opt_val("time_series_values", time_series_rec) ) {
+        if (!Value::is_scalable()) {
+            WarningOut().fmt("Setting key 'time_series_values' of non-floating point field at address {}\nValues will be skipped.\n",
+                    rec.address_string());
+        }
+    	table_function_.init_from_input(time_series_rec);
+    }
 
     typename Value::return_type tmp_value;
     Value tmp_field_value(tmp_value);
@@ -129,6 +141,13 @@ void FieldConstant<spacedim, Value>::value_list (const std::vector< Point >  &po
 
         value_list[i]=this->r_value_;
     }
+}
+
+
+template <int spacedim, class Value>
+typename Value::return_type const & FieldConstant<spacedim, Value>::time_dependent_value(double time)
+{
+	return table_function_.value(time);
 }
 
 
