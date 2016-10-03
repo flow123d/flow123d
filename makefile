@@ -205,7 +205,13 @@ update_add_doc: $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/add_to_ref_doc.txt
 #inputref: $(DOC_DIR)/flow_version.tex $(DOC_DIR)/input_reference_raw.tex update_add_doc
 inputref: $(DOC_DIR)/input_reference_raw.tex update_add_doc
 	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/input_reference.tex	
-	
+
+
+# target will run CPack in build_tree directory
+package: all
+	make -C build_tree package
+.PHONY : package
+
 	
 ################################################################################################
 # Help Target
@@ -221,6 +227,7 @@ help:
 	@echo "... doxy-doc (creates html documentation of the source using Doxygen)"
 	@echo "... ref-doc (creates reference manual using LaTeX sources and generated input reference file)"
 	@echo "... inputref (generates input reference file)"
+	@echo "... package (runs CPack)"
 #	@echo "packages:"
 #	@echo "... linux-pack"
 .PHONY : help
