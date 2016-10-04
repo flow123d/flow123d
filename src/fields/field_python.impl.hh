@@ -42,6 +42,8 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 		.declare_key("function", it::String(), it::Default::obligatory(),
 				"Function in the given script that returns tuple containing components of the return type.\n"
 				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+				"Definition of unit.")
 		.close();
 }
 
@@ -83,7 +85,9 @@ void FieldPython<spacedim, Value>::set_python_field_from_string(const string &py
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+	this->init_unit_conversion_coefficient(rec, init_data);
+
     Input::Iterator<string> it = rec.find<string>("script_string");
     if (it) {
         set_python_field_from_string( *it, rec.val<string>("function") );
@@ -149,6 +153,7 @@ template <int spacedim, class Value>
 typename Value::return_type const & FieldPython<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
     set_value(p,elm, this->value_);
+    this->value_.scale(this->unit_conversion_coefficient_);
     return this->r_value_;
 }
 
@@ -167,6 +172,7 @@ void FieldPython<spacedim, Value>::value_list (const std::vector< Point >  &poin
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, envelope.n_rows(),this->value_.n_rows());
         set_value(point_list[i], elm, envelope );
+        envelope.scale(this->unit_conversion_coefficient_);
     }
 }
 

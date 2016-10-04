@@ -32,6 +32,8 @@ using namespace std;
 
 #include "fields/field_values.hh"
 
+#include "fields/unit_converter.hh"
+
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
 #include "input/accessors.hh"
@@ -50,7 +52,8 @@ template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 : value_(r_value_),
   field_result_(result_other),
-  component_idx_(std::numeric_limits<unsigned int>::max())
+  component_idx_(std::numeric_limits<unsigned int>::max()),
+  unit_conversion_coefficient_(1.0)
 {
     value_.set_n_comp(n_comp);
 }
@@ -90,21 +93,38 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 }
 
 
+template <int spacedim, class Value>
+const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si() {
+    return it::Record("FieldUnit", "Set unit of Field by user. \n"
+    							   "Unit is defined as product or proportion of base or derived SI units \n"
+			   	   	   	   	       "and it is allowed to use subdefinitions. Example: \n"
+	   	   	       	   	   	       "'MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2', \n"
+  	   	   	       	   	   	       "allows define pressure head in MPa with subdefinitions of density and \n"
+  	   	   	       	   	   	       "gravity acceleration. In subdefinitions can be used multiplicative \n"
+  	   	   	       	   	   	       "coeficient. Resulting unit must correspond with defined Field unit \n"
+  	   	   	       	   	   	       "butit can differ in coefficient.")
+        .declare_key("unit_formula", it::String(), it::Default::obligatory(),
+                                   "Definition of unit." )
+        .allow_auto_conversion("unit_formula")
+		.close();
+}
+
+
 
 template <int spacedim, class Value>
 shared_ptr< FieldAlgorithmBase<spacedim, Value> >
-FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
+FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, const struct FieldAlgoBaseInitData& init_data )
 {
     shared_ptr< FieldAlgorithmBase<spacedim, Value> > func;
-    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(n_comp);
-    func->init_from_input(rec);
+    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(init_data.n_comp_);
+    func->init_from_input(rec, init_data);
     return func;
 }
 
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
     xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
             typeid(this).name());
 }
@@ -145,6 +165,29 @@ void FieldAlgorithmBase<spacedim, Value>::value_list(
         value_list[i]=this->value(point_list[i], elm);
     }
 
+}
+
+template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::init_unit_conversion_coefficient(const Input::Record &rec,
+		const struct FieldAlgoBaseInitData& init_data)
+{
+    Input::Record unit_record;
+    if ( rec.opt_val("unit", unit_record) ) {
+        if (!Value::is_scalable()) {
+            WarningOut().fmt("Setting unit conversion coefficient of non-floating point field at address {}\nCoefficient will be skipped.\n",
+                    rec.address_string());
+        }
+        std::string unit_str = unit_record.val<std::string>("unit_formula");
+    	try {
+    		this->unit_conversion_coefficient_ = init_data.unit_si_.convert_unit_from(unit_str);
+    	} catch (ExcInvalidUnit &e) {
+    		e << rec.ei_address();
+    		throw;
+    	} catch (ExcNoncorrespondingUnit &e) {
+    		e << rec.ei_address();
+    		throw;
+    	}
+    }
 }
 
 

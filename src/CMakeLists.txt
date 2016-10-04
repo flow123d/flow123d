@@ -256,6 +256,7 @@ add_library(coupling_lib
     fields/field_flag.cc
     fields/field_set.cc
     fields/unit_si.cc
+    fields/unit_converter.cc
     fields/generic_field.cc
     fields/table_function.cc
     fields/field_time_function.cc
