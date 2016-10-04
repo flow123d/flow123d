@@ -19,7 +19,9 @@
 #define TABLE_FUNCTION_HH_
 
 #include "input/input_type_forward.hh"
+#include "input/accessors.hh"
 #include "input/input_exception.hh"
+#include "fields/field_values.hh"
 #include <vector>
 
 
@@ -38,6 +40,8 @@ template <class Value>
 class TableFunction
 {
 public:
+	typedef typename Value::return_type return_type;
+
 	/// Store value in one time stamp.
 	struct TimeValue {
 		TimeValue(double time, Value val)
@@ -45,7 +49,7 @@ public:
 
 		double time_;
 		Value value_;
-		typename Value::return_type r_value_;
+		return_type r_value_;
 	};
 
     /**
@@ -71,7 +75,10 @@ public:
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    typename Value::return_type const &value(double time);
+    return_type const &value(double time);
+
+    // Compute the weighted average of val_0 and val_1
+    //void interpolated(double coef, Value val_0, Value val_1);
 
 private:
     /// Vector of values in all time stamps.
@@ -82,7 +89,7 @@ private:
 
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
-    typename Value::return_type r_value_;
+    return_type r_value_;
 };
 
 #endif /* TABLE_FUNCTION_HH_ */

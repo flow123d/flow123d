@@ -11,12 +11,9 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    table_function.impl.hh
+ * @file    table_function.cc
  * @brief
  */
-
-#ifndef TABLE_FUNCTION_IMPL_HH_
-#define TABLE_FUNCTION_IMPL_HH_
 
 #include "fields/table_function.hh"
 #include "input/input_type.hh"
@@ -81,7 +78,7 @@ bool TableFunction<Value>::initialized()
 }
 
 template <class Value>
-typename Value::return_type const &TableFunction<Value>::value(double time)
+typename TableFunction<Value>::return_type const &TableFunction<Value>::value(double time)
 {
 	ASSERT( this->initialized() ).error("Compute value of uninitialized TableFunction.");
 
@@ -102,4 +99,25 @@ typename Value::return_type const &TableFunction<Value>::value(double time)
 	return this->r_value_;
 }
 
-#endif /* TABLE_FUNCTION_IMPL_HH_ */
+// Compute the weighted average of val_0 and val_1
+/*template <class Value>
+void TableFunction<Value>::interpolated(double coef, Value val_0, Value val_1)
+{
+	ASSERT(coef >= 0 && coef <= 1)(coef).error();
+
+    if (Value::is_scalable())
+        for( unsigned int row=0; row<value_.n_rows(); row++)
+            for( unsigned int col=0; col<value_.n_cols(); col++)
+                r_value_(row,col) = val_0(row,col) + coef * (val_1(row,col) - val_0(row,col));
+}*/
+
+
+// Instantiation of TableFunction class
+template class TableFunction<FieldValue<0>::Enum >;
+template class TableFunction<FieldValue<0>::Integer >;
+template class TableFunction<FieldValue<0>::Scalar >;
+template class TableFunction<FieldValue<0>::Vector >; // temporary solution for computing more fields at once in python
+template class TableFunction<FieldValue<2>::VectorFixed >;
+template class TableFunction<FieldValue<2>::TensorFixed >;
+template class TableFunction<FieldValue<3>::VectorFixed >;
+template class TableFunction<FieldValue<3>::TensorFixed >;
