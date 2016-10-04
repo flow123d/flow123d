@@ -20,7 +20,6 @@
 
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
-#include "fields/table_function.hh"
 #include "input/factory.hh"
 #include "mesh/point.hh"
 
@@ -71,20 +70,12 @@ public:
     virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
-    /**
-     * Returns one value in given time. ResultType can be used to avoid some costly calculation if the result is trivial.
-     */
-    typename Value::return_type const &time_dependent_value(double time);
-
 
     virtual ~FieldConstant();
 
 private:
     /// Registrar of class to factory
     static const int registrar;
-
-    /// Allow set time series initialization of Fields
-    TableFunction<Value> table_function_;
 
 };
 
