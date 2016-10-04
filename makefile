@@ -152,8 +152,8 @@ update-build-tree:
 # initialize submodules in safe way
 # check which kind of access use this repository use same type for submodules
 # to this end one have to set key "https_url" in the .gitmodules to the alternative https URL.
-.PHONY: update-submodules
-update-submodules:
+.PHONY: initialize-submodules
+initialize-submodules:
 	git submodule init
 	origin_url=$$( git config --get remote.origin.url ) ;\
 	if [ "$${origin_url}" != "$${origin_url#https}" ]; \
@@ -162,6 +162,11 @@ update-submodules:
 	fi
 	git submodule sync
 	git checkout .gitmodules
+	
+
+# this target updates all submodules in this repository
+.PHONY: update-submodules
+update-submodules: initialize-submodules
 	git submodule update
 	
 
