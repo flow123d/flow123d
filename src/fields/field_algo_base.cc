@@ -19,6 +19,7 @@
  * @file Instantiation of descendants of the FieldBase<...>
  */
 #include "fields/field_algo_base.impl.hh"
+#include "fields/field_instances.hh"	// for instantiation macros
 
 #include "fields/field_python.impl.hh"
 #include "fields/field_constant.impl.hh"

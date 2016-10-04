@@ -21,6 +21,7 @@
 #include <boost/foreach.hpp>
 
 #include "field.hh"
+#include "field_algo_base.impl.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"

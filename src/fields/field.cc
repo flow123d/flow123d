@@ -18,7 +18,7 @@
 #include "system/exceptions.hh"
 #include "mesh/mesh.h"
 
-#include "fields/field_algo_base.impl.hh"	// for instantiation macros
+#include "fields/field_instances.hh"	// for instantiation macros
 
 #include "field.hh"
 #include "fields/field.impl.hh"
