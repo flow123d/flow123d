@@ -9,6 +9,8 @@
 #include "mesh/mesh.h"
 #include "intersection_point_aux.hh"
 #include "mesh/ref_element.hh"
+// #include "mesh/elements.h"   //TODO what is the best way of include to use ElementFullIter ?
+#include "mesh/mesh.h"
 #include "system/system.hh"
 
 using namespace std;
