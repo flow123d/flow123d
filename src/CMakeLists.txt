@@ -258,6 +258,7 @@ add_library(coupling_lib
     fields/unit_si.cc
     fields/generic_field.cc
     fields/table_function.cc
+    fields/field_time_function.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc
