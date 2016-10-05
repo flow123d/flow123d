@@ -91,8 +91,8 @@ test-all: build-flow123d
 # Clean test results using find command
 .PHONY: clean-tests
 clean-tests:
-	find tests -maxdepth 2 -type d -name "test_results" -exec echo " - {}" \;
-	find tests -maxdepth 2 -type d -name "test_results" -exec rm -rf {} \;
+	find tests -maxdepth 2 -type d -name "test_results*" -exec echo " - {}" \;
+	find tests -maxdepth 2 -type d -name "test_results*" -exec rm -rf {} \;
 
 
 # Create html documentation

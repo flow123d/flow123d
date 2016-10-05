@@ -105,6 +105,15 @@ parser.add('-x', '--export', type=True, name='artifacts', default=False, docs=[
     'If set, will process artifacts yaml file in order to save/copy file',
     'or export them to database.'
 ])
+parser.add('', '--random-output-dir', type=True, name='random_output_dir', default=False, docs=[
+    'If set, output directories will have random hash appended.'
+])
+parser.add('', '--no-clean', type=True, name='no_clean', default=False, docs=[
+    'If set, output directories will not be cleaned beforehand.'
+])
+parser.add('', '--no-compare', type=True, name='no_compare', default=False, docs=[
+    'If set, results will not be compared'
+])
 
 # ----------------------------------------------
 
