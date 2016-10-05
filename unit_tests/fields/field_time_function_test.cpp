@@ -76,8 +76,12 @@ TEST(FieldTableFunction, table_function) {
     point(0)=1.0; point(1)=2.0; point(2)=3.0;
     ElementAccessor<3> elm;
 
+    UnitSI unit = UnitSI().m();
+    FieldAlgoBaseInitData init_data_conc(3, unit);
+
     {
-        std::shared_ptr< ScalarField > scalar_base = ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_scalar"));
+        std::shared_ptr< ScalarField > scalar_base =
+        		ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_scalar"), init_data_conc);
         auto scalar = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<0>::Scalar> >(scalar_base);
 
         scalar->set_time(0.0);
@@ -99,7 +103,8 @@ TEST(FieldTableFunction, table_function) {
     }
 
     {
-        std::shared_ptr< VectorField > vector_base = VectorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_vector"));
+        std::shared_ptr< VectorField > vector_base =
+        		VectorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_vector"), init_data_conc);
         auto vector = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<3>::VectorFixed> >(vector_base);
     	arma::vec result;
 
@@ -130,7 +135,8 @@ TEST(FieldTableFunction, table_function) {
     }
 
     {
-        std::shared_ptr< TensorField > tensor_base = TensorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_tensor"));
+        std::shared_ptr< TensorField > tensor_base =
+        		TensorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_tensor"), init_data_conc);
         auto tensor = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<3>::TensorFixed> >(tensor_base);
     	arma::mat::fixed<3,3> result;
 

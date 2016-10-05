@@ -44,11 +44,6 @@ public:
     FieldTimeFunction(unsigned int n_comp=0);
 
     /**
-     * This method initialize actual value of the field given from the given Input::Record @p rec.
-     */
-    void init_from_input(const Input::Record &rec);
-
-    /**
      * Set time and init value_.
      */
     bool set_time(const TimeStep &time) override;
@@ -56,10 +51,6 @@ public:
 private:
     /// Registrar of class to factory
     static const int registrar;
-
-    /// Accessor to Input::Record
-    Input::Record in_rec_;
-
 };
 
 #endif /* FIELD_TIME_FUNCTION_HH_ */

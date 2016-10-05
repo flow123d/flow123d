@@ -31,6 +31,8 @@ const Input::Type::Record & FieldTimeFunction<spacedim, Value>::get_input_type()
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
 		.declare_key("time_function", TableFunction<Value>::get_input_type(), it::Default::obligatory(),
 									"Values of time series initialization of Field.")
+		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+									"Definition of unit.")
         .allow_auto_conversion("time_function")
 		.close();
 }
@@ -48,23 +50,18 @@ FieldTimeFunction<spacedim, Value>::FieldTimeFunction( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldTimeFunction<spacedim, Value>::init_from_input(const Input::Record &rec)
-{
-	this->in_rec_ = rec;
-}
-
-
-template <int spacedim, class Value>
 bool FieldTimeFunction<spacedim, Value>::set_time(const TimeStep &time)
 {
 	TableFunction<Value> table_function;
 
 	if (!Value::is_scalable()) {
 		WarningOut().fmt("Setting key 'time_function' of non-floating point field at address {}\nValues will be skipped.\n",
-				in_rec_.address_string());
+				this->in_rec_.address_string());
 	}
-	table_function.init_from_input( in_rec_.val<Input::Record>("time_function") );
+	Input::Record func_rec = this->in_rec_;
+	table_function.init_from_input( func_rec.val<Input::Record>("time_function") );
 	this->r_value_ = table_function.value( time.end() );
+    this->value_.scale(this->unit_conversion_coefficient_);
 
 	return true;
 }

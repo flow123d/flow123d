@@ -58,6 +58,12 @@ public:
     virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
 
+    /**
+     * Set time and init value_.
+     */
+    virtual bool set_time(const TimeStep &time) override;
+
+
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -72,6 +78,10 @@ public:
 
 
     virtual ~FieldConstant();
+
+protected:
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
 
 private:
     /// Registrar of class to factory
