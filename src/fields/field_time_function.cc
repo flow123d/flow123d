@@ -50,16 +50,23 @@ FieldTimeFunction<spacedim, Value>::FieldTimeFunction( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
+void FieldTimeFunction<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data)
+{
+	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
+}
+
+
+template <int spacedim, class Value>
 bool FieldTimeFunction<spacedim, Value>::set_time(const TimeStep &time)
 {
 	TableFunction<Value> table_function;
 
 	if (!Value::is_scalable()) {
 		WarningOut().fmt("Setting key 'time_function' of non-floating point field at address {}\nValues will be skipped.\n",
-				this->in_rec_.address_string());
+				in_rec_.address_string());
 	}
-	Input::Record func_rec = this->in_rec_;
-	table_function.init_from_input( func_rec.val<Input::Record>("time_function") );
+	table_function.init_from_input( in_rec_.val<Input::Record>("time_function") );
 	this->r_value_ = table_function.value( time.end() );
     this->value_.scale(this->unit_conversion_coefficient_);
 

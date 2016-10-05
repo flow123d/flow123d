@@ -84,7 +84,6 @@ TEST(FieldConst, read_from_input) {
     auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), init_data_conc);
     {
         arma::vec result;
-        conc->set_time(0.0);
 
         result = conc->value( point_1, elm);
         EXPECT_DOUBLE_EQ( 0.12 , result[0]);
@@ -100,18 +99,14 @@ TEST(FieldConst, read_from_input) {
     FieldAlgoBaseInitData init_data_tensor(0, UnitSI::dimensionless());
 
     auto tensor1=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor1"), init_data_tensor);
-    tensor1->set_time(0.0);
     check_tensor_field(tensor1, "3.14 0 0; 0 3.14 0; 0 0 3.14", {point_1, point_2}, elm);
 
     auto tensor2=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor2"), init_data_tensor);
-    tensor2->set_time(0.0);
     check_tensor_field(tensor2, "1 0 0; 0 2 0; 0 0 3", {point_1, point_2}, elm);
 
     auto tensor3=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor3"), init_data_tensor);
-    tensor3->set_time(0.0);
     check_tensor_field(tensor3, "1 2 3; 2 4 5; 3 5 6", {point_1, point_2}, elm);
 
     auto tensor4=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor4"), init_data_tensor);
-    tensor4->set_time(0.0);
     check_tensor_field(tensor4, "1 2 3; 4 5 6; 7 8 9", {point_1, point_2}, elm);
 }
