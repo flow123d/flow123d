@@ -64,9 +64,9 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          rm -f /tmp/docker_test.cid
-          docker run --privileged -di --cidfile /tmp/docker_test.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-rel:user bash
-          docker_pid=`cat /tmp/docker_test.cid`
+          rm -f /tmp/docker_test_release.cid
+          docker run --privileged -di --cidfile /tmp/docker_test_release.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-rel:user bash
+          docker_pid=`cat /tmp/docker_test_release.cid`
           echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
           echo "FLOW=/opt/flow123d/flow123d" >> prop.file
 
@@ -83,7 +83,7 @@
           properties-file: prop.file
       - shell: |
           docker exec ${{DOCKER_PID}} git clone -b ${{_GIT_BRANCH}} https://github.com/jbrezmorf/flow123d.git ${{FLOW}}
-          docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-release.cmake ${{FLOW}}/config.cmake
+          docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-{build-type}.cmake ${{FLOW}}/config.cmake
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} cmake
 
 
