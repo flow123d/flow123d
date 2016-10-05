@@ -22,7 +22,6 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 
 #include "fields/field_python.impl.hh"
-#include "fields/field_constant.impl.hh"
 #include "fields/field_formula.impl.hh"
 #include "fields/field_interpolated_p0.impl.hh"
 #include "fields/field_add_potential.impl.hh"
@@ -31,7 +30,6 @@
 
 
 INSTANCE_ALL(FieldAlgorithmBase)
-INSTANCE_ALL(FieldConstant)
 INSTANCE_ALL(FieldPython)
 INSTANCE_ALL(FieldFormula)
 INSTANCE_ALL(FieldElementwise)
@@ -42,5 +40,4 @@ template class FieldAddPotential<3, FieldValue<0>::Scalar >;
 //template class FieldAddPotential<2, FieldValue<0>::Scalar >;
 
 // temporary solution for computing more fields at once in python
-template class FieldConstant<3, FieldValue<0>::Vector >; // Necessary due to default value of the abstract.
 template class FieldPython<3, FieldValue<0>::Vector >;
