@@ -28,13 +28,31 @@
 using namespace std;
 using namespace computeintersection;
 
+/**
+ * Ideas for testing:
+ * - load files, sort alphabetically => analytical results must follow that order
+ * - mesh prerequisite: triangle must have index 1 (0), tetrahedron 2 (1)
+ * - do all permutations of triangle
+ * - do all permutations of tetrahedron (with positive Jacobian)
+ * - analytical real coordinates of IPs: due to permutations, we must have a fixed order
+ *      therefore we sort real points, see compare_coords()
+ * - due to sorting, we have no control of correct tracing
+ *      (at the moment the comparison of final area with old NGH sort of checks that)
+ * - in future, we could have analytical objects in std::vector<computeintersection::IntersectionAux<2,3>> solution
+ *      and check also for topologic position, correct tracing order, orientation of IP, barycentric coords...
+ *      - problem here is, we have to always pay attention to given permutations...
+ * 
+ * - TODO: one test case fails due to some rounding error; look into, if it is harmless or not...
+ *         (possibly add tolerance into armadillo expect)
+ * - TODO: when finished, remove NGH comparison
+ */
+
+
 
 /// Create results for the meshes in directory 'prolong_meshes_13d'.
 void fill_solution(std::vector<std::vector<arma::vec3>> &c)
 {
-//     unsigned int n_files=4;
     c.clear();
-//     c.resize(n_files);
     
     c.push_back({
                 {0.2, 0, 0.2},
@@ -48,6 +66,11 @@ void fill_solution(std::vector<std::vector<arma::vec3>> &c)
                 {0, 0.2, 0},
                 {0, 0.5, 0.5},
                 {0.2, 0.8, 0}});
+    c.push_back({
+                {0.1, 0.15, 0.3},
+                {0.2, 0.25, 0.15},
+                {0.4, 0.05, 0.1}});
+    
     c.push_back({
                 {0, 0, 0.6},
                 {0, 0.2, 0.8},
@@ -63,18 +86,42 @@ void fill_solution(std::vector<std::vector<arma::vec3>> &c)
                 {0.1, 0.2, 0},
                 {0.3, 0.1, 0},
                 {0.35, 0.15, 0.2}});
+    
+    c.push_back({
+                {0, 0, 0.475},
+                {0, 0.4, 0.25},
+                {0.035, 0.57, 0.15},
+                {0.5, 0.2, 0.3},
+                {0.6, 0, 0.4}});
+    
+    // special cases:
+    c.push_back({
+                {0, 0, 0.3},
+                {0.2, 0.5, 0.2},
+                {0.4, 0, 0.3}});
+    c.push_back({
+                {0, 0.5, 0},
+                {0, 0.7, 0},
+                {0.3, 0.7, 0},
+                {0.5, 0, 0},
+                {0.8, 0, 0},
+                {0.8, 0.2, 0}});
+    c.push_back({
+                {0, 0, 0},
+                {0, 1, 0},
+                {1, 0, 0}});
+    
+    c.push_back({{0, 0, 1}});
+    
+    c.push_back({
+                {0, 0, 0},
+                {1, 0, 0}});
+    c.push_back({
+                {0, 0.5, 0.25},
+                {0.2, 0.4, 0.4},
+                {0.3, 0.3, 0.4},
+                {0.5, 0, 0.25}});
 }
-
-/// auxiliary function for sorting intersection storage 13d
-/// TODO: move this into header and create a template for all dimension pairs
-// bool compare_is23(const computeintersection::IntersectionLocal<2,3>& a,
-//                   const computeintersection::IntersectionLocal<2,3>& b)
-// {
-//     if (a.component_ele_idx() == b.component_ele_idx())
-//         return a.bulk_ele_idx() <= b.bulk_ele_idx();
-//     else
-//         return a.component_ele_idx() < b.component_ele_idx();
-// }
 
 /// auxiliary function for sorting intersection point according to x,y local coordinates of component triangle
 bool compare_coords(const arma::vec3& a,
@@ -100,7 +147,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     Simplex<3> tetra = create_simplex<3>(mesh->element(tetra_ele_idx));
     
     IntersectionAux<2,3> is;
-    std::vector<unsigned int> prolong_table;    //FIXME with merge PE_prolong, remove prolong_table
+//     std::vector<unsigned int> prolong_table;    //FIXME with merge PE_prolong, remove prolong_table
     ComputeIntersection< Simplex<2>, Simplex<3>> CI(triangle, tetra);
     CI.init();
 //     CI.compute(is, prolong_table);
@@ -155,14 +202,6 @@ void compare_with_ngh(Mesh *mesh)
                      TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
                      TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
                      TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
-//         elm->node[0]->point().print();
-//         elm->node[1]->point().print();
-//         elm->node[2]->point().print();
-//         elm->node[3]->point().print();
-//         
-//         elm->side(0)->node(0)->point().print();
-//         elm->side(0)->node(1)->point().print();
-//         elm->side(0)->node(2)->point().print();
         }
     }
     GetIntersection(ttr, tte, it, area2);
