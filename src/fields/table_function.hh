@@ -26,14 +26,14 @@
 
 
 /// Declaration of exceptions.
-TYPEDEF_ERR_INFO( EI_LastTime, double);
-TYPEDEF_ERR_INFO( EI_Time, double);
-TYPEDEF_ERR_INFO( EI_MinTime, double);
-TYPEDEF_ERR_INFO( EI_MaxTime, double);
-DECLARE_INPUT_EXCEPTION( ExcNonAscendingTime, << "Nonascending order of declared time stamps in TableFunction:\n"
-											  << EI_LastTime::val << " is followed by " << EI_Time::val << "." );
-DECLARE_INPUT_EXCEPTION( ExcTimeOutOfRange,   << "Time " << EI_Time::val << " is out of range of TableFunction: <"
-											  << EI_MinTime::val << ", " << EI_MaxTime::val << ">." );
+TYPEDEF_ERR_INFO( EI_LastT, double);
+TYPEDEF_ERR_INFO( EI_ActualT, double);
+TYPEDEF_ERR_INFO( EI_MinT, double);
+TYPEDEF_ERR_INFO( EI_MaxT, double);
+DECLARE_INPUT_EXCEPTION( ExcNonAscendingT, << "Nonascending order of declared stamps in TableFunction:\n"
+											  << EI_LastT::val << " is followed by " << EI_ActualT::val << "." );
+DECLARE_INPUT_EXCEPTION( ExcTOutOfRange,   << "Value of stamp " << EI_ActualT::val << " is out of range of TableFunction: <"
+											  << EI_MinT::val << ", " << EI_MaxT::val << ">." );
 
 
 template <class Value>
@@ -42,12 +42,12 @@ class TableFunction
 public:
 	typedef typename Value::return_type return_type;
 
-	/// Store value in one time stamp.
-	struct TimeValue {
-		TimeValue(double time, Value val)
-		: time_(time), value_(r_value_), r_value_(val) {}
+	/// Store value in one t stamp.
+	struct TableValue {
+		TableValue(double t, Value val)
+		: t_(t), value_(r_value_), r_value_(val) {}
 
-		double time_;
+		double t_;
 		Value value_;
 		return_type r_value_;
 	};
@@ -77,15 +77,15 @@ public:
      */
     return_type const &value(double time);
 
-    // Compute the weighted average of val_0 and val_1
-    //void interpolated(double coef, Value val_0, Value val_1);
-
 private:
-    /// Vector of values in all time stamps.
-    std::vector<struct TimeValue> time_values_;
+    // Compute the weighted average of table_values_[idx] and table_values_[idx+1]
+    void interpolated(double coef, unsigned int idx);
+
+    /// Vector of values in all stamps.
+    std::vector<struct TableValue> table_values_;
 
     /// Last time of computed value_ (to prevent repetitive calculation)
-    double last_time_;
+    double last_t_;
 
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;

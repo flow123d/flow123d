@@ -45,7 +45,7 @@ const it::Record & TableFunction<Value>::get_input_type()
 
 template <class Value>
 TableFunction<Value>::TableFunction()
-: last_time_(-1.0),
+: last_t_(-1.0),
   value_(r_value_)
 {}
 
@@ -60,21 +60,21 @@ void TableFunction<Value>::init_from_input(const Input::Record &rec)
     for (Input::Iterator<Input::Tuple> it = data_array.begin<Input::Tuple>(); it != data_array.end(); ++it) {
     	double time = it->val<double>("t");
     	if (last_time >= time) {
-    		THROW( ExcNonAscendingTime() << EI_LastTime(last_time) << EI_Time(time) );
+    		THROW( ExcNonAscendingT() << EI_LastT(last_time) << EI_ActualT(time) );
     	}
     	last_time = time;
 
     	typename Value::return_type r_value;
     	Value value(r_value);
     	value.init_from_input( it->val<typename Value::AccessType>("value") );
-    	time_values_.push_back( TimeValue(time, value) );
+    	table_values_.push_back( TableValue(time, value) );
     }
 }
 
 template <class Value>
 bool TableFunction<Value>::initialized()
 {
-	return ( time_values_.size() > 0 );
+	return ( table_values_.size() > 0 );
 }
 
 template <class Value>
@@ -82,15 +82,15 @@ typename TableFunction<Value>::return_type const &TableFunction<Value>::value(do
 {
 	ASSERT( this->initialized() ).error("Compute value of uninitialized TableFunction.");
 
-	if (time != last_time_) {
-		unsigned int last_idx = time_values_.size() - 1;
-		if (time < time_values_[0].time_ || time > time_values_[last_idx].time_) {
-			THROW( ExcTimeOutOfRange() << EI_Time(time) << EI_MinTime(time_values_[0].time_) << EI_MaxTime(time_values_[last_idx].time_) );
+	if (time != last_t_) {
+		unsigned int last_idx = table_values_.size() - 1;
+		if (time < table_values_[0].t_ || time > table_values_[last_idx].t_) {
+			THROW( ExcTOutOfRange() << EI_ActualT(time) << EI_MinT(table_values_[0].t_) << EI_MaxT(table_values_[last_idx].t_) );
 		}
 		for (unsigned int i=0; i<last_idx; ++i) {
-			if (time >= time_values_[i].time_ && time <= time_values_[i+1].time_) {
-				double coef = (time - time_values_[i].time_) / (time_values_[i+1].time_ - time_values_[i].time_);
-				this->value_.interpolated(coef, time_values_[i].r_value_, time_values_[i+1].r_value_);
+			if (time >= table_values_[i].t_ && time <= table_values_[i+1].t_) {
+				double coef = (time - table_values_[i].t_) / (table_values_[i+1].t_ - table_values_[i].t_);
+				this->interpolated(coef, i);
 				break;
 			}
 		}
@@ -99,17 +99,20 @@ typename TableFunction<Value>::return_type const &TableFunction<Value>::value(do
 	return this->r_value_;
 }
 
-// Compute the weighted average of val_0 and val_1
-/*template <class Value>
-void TableFunction<Value>::interpolated(double coef, Value val_0, Value val_1)
+template <class Value>
+void TableFunction<Value>::interpolated(double coef, unsigned int idx)
 {
 	ASSERT(coef >= 0 && coef <= 1)(coef).error();
+	ASSERT(idx >= 0 && idx <= table_values_.size()-2)(idx).error();
 
+	Value val_0(table_values_[idx].r_value_);
+	Value val_1(table_values_[idx+1].r_value_);
     if (Value::is_scalable())
         for( unsigned int row=0; row<value_.n_rows(); row++)
-            for( unsigned int col=0; col<value_.n_cols(); col++)
-                r_value_(row,col) = val_0(row,col) + coef * (val_1(row,col) - val_0(row,col));
-}*/
+            for( unsigned int col=0; col<value_.n_cols(); col++) {
+            	value_(row,col) = val_0(row,col) + coef * (val_1(row,col) - val_0(row,col));
+            }
+}
 
 
 // Instantiation of TableFunction class
