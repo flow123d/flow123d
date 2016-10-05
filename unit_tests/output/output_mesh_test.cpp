@@ -27,6 +27,7 @@
 #include "io/output_element.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 

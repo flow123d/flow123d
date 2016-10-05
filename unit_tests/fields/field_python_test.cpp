@@ -28,6 +28,9 @@
 
 using namespace std;
 
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+
 string python_code = R"CODE(
 def testFunc():
     print "Python hallo."
