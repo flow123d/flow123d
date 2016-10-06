@@ -46,6 +46,22 @@
 
 
 
+/****************************************************************
+ * Definition of macro that allows catch exception and adds address to given error info tag.
+ *
+ * Parameters:
+ *  - ExceptionType: type of exception must be descendant of ExceptionBase
+ *  - AddressEITag: error info tag of string type
+ *  - input_accessor: accessor must be in non-pointer format and have to declare method address_string()
+ */
+#define INPUT_CATCH(ExceptionType, AddressEITag, input_accessor)    \
+		catch (ExceptionType &e ) {                                 \
+			e << AddressEITag(input_accessor.address_string());     \
+			throw;                                                  \
+		}
+
+
+
 namespace Input {
 
 using std::string;

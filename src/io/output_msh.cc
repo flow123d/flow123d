@@ -302,10 +302,7 @@ int OutputMSH::write_data(void)
             this->fix_main_file_extension(".msh");
             try {
                 this->_base_filename.open_stream( this->_base_file );
-            } catch (FilePath::ExcFileOpen &e ) {
-                e << FilePath::EI_Address_String(input_record_.address_string());
-                throw;
-            }
+            } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
         }
 
         this->write_head();

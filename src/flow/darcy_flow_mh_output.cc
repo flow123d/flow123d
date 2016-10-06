@@ -149,9 +149,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
             	try {
             		raw_output_file_path.open_stream(raw_output_file);
-            	} catch (FilePath::ExcFileOpen &e ) {
-            		e << FilePath::EI_Address_String(in_rec_specific->address_string());
-            	}
+            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
 
         }

@@ -376,10 +376,7 @@ void Balance::lazy_initialize()
         balance_output_file_ = input_record_.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file));
         try {
             balance_output_file_.open_stream(output_);
-        } catch (FilePath::ExcFileOpen &e ) {
-            e << FilePath::EI_Address_String(input_record_.address_string());
-            throw;
-        }
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
 
         // set file name of YAML output

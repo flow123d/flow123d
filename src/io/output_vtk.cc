@@ -100,10 +100,7 @@ int OutputVTK::write_data(void)
         this->fix_main_file_extension(".pvd");
         try {
             this->_base_filename.open_stream( this->_base_file );
-        } catch (FilePath::ExcFileOpen &e ) {
-            e << FilePath::EI_Address_String(input_record_.address_string());
-            throw;
-        }
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
 
@@ -123,10 +120,7 @@ int OutputVTK::write_data(void)
     /* Set up data file */
     try {
         frame_file_path.open_stream(_data_file);
-    } catch (FilePath::ExcFileOpen &e ) {
-        e << FilePath::EI_Address_String(input_record_.address_string());
-        throw;
-    }
+    } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
 
     LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";

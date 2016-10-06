@@ -24,6 +24,7 @@
 #include "system/exceptions.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
@@ -240,10 +241,8 @@ void Mesh::init_from_input() {
 	        this->read_regions_from_input(region_list);
 	    }
 	    reader.read_mesh(this);
-	} catch (FilePath::ExcFileOpen &e ) {
-		e << FilePath::EI_Address_String(in_record_.address_string());
-		throw;
-	} catch (ExceptionBase const &e) {
+	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
+	catch (ExceptionBase const &e) {
 		throw;
 	}
     // possibly add implicit_boundary region.

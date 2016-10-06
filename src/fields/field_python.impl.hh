@@ -92,10 +92,7 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec) {
         if (! it) xprintf(UsrErr, "Either 'script_string' or 'script_file' has to be specified in PythonField initialization.");
         try {
             set_python_field_from_file( *it, rec.val<string>("function") );
-        } catch (FilePath::ExcFileOpen &e ) {
-            e << FilePath::EI_Address_String( rec.address_string() );
-            throw;
-        }
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
     }
 }
 
