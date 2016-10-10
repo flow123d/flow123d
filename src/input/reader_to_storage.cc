@@ -301,8 +301,8 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Abstract *abstr_rec)
 {
-	string descendant_name = p.get_descendant_name();
-	if ( descendant_name == "" ) {
+	string record_name = p.get_record_name();
+	if ( record_name == "" ) {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
 			if ( p.is_record_type() ) {
 				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in Abstract.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
@@ -315,9 +315,9 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Abstract *a
 		}
 	} else {
 		try {
-			return make_storage(p, &( abstr_rec->get_descendant(descendant_name) ) );
+			return make_storage(p, &( abstr_rec->get_descendant(record_name) ) );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			THROW( ExcInputError() << EI_Specification("Wrong value '" + descendant_name + "' of the Selection.")
+			THROW( ExcInputError() << EI_Specification("Wrong value '" + record_name + "' of the Selection.")
 					<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(abstr_rec->get_type_selection().desc()) );
 		}
 	}

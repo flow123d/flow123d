@@ -295,7 +295,7 @@ PathJSON * PathJSON::clone() const {
 
 
 
-std::string PathJSON::get_descendant_name() const {
+std::string PathJSON::get_record_name() const {
 	std::string desc_name = "";
 	if ( this->is_record_type() ) {
 		PathJSON type_path(*this);
