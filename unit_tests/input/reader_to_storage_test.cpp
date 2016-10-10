@@ -1155,3 +1155,125 @@ TEST_F(InputReaderToStorageTest, storage_transpose) {
 }
 
 
+const string input_yaml_noautoconversion = R"YAML(
+pressure: !DescendantB
+  value: 0.5
+)YAML";
+
+const string input_json_noautoconversion = R"JSON(
+{ 
+  pressure: {
+    TYPE = "DescendantB",
+    value: 0.5
+  }
+}
+)JSON";
+
+TEST_F(InputReaderToStorageTest, Abstract_auto_conversion) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    static Type::Abstract abstract = Type::Abstract("AbstractOfRec", "Base of records.")
+        .allow_auto_conversion("DescendantA")
+        .close();
+
+    static Type::Record desc_a = Type::Record( "DescendantA", "descendant A")
+        .derive_from(abstract)
+		.declare_key("value", Type::Double(), Type::Default::obligatory(), "value")
+		.allow_auto_conversion("value")
+	    .close();
+
+    static Type::Record desc_b = Type::Record( "DescendantB", "descendant B")
+        .derive_from(abstract)
+		.declare_key("value", Type::Double(), Type::Default::obligatory(), "value")
+		.declare_key("b_val", Type::Integer(), Type::Default::optional(), "value")
+		.allow_auto_conversion("value")
+	    .close();
+
+    static Type::Record desc_c = Type::Record( "DescendantC", "descendant C")
+        .derive_from(abstract)
+		.declare_key("value", Type::Double(), Type::Default::obligatory(), "value")
+		.declare_key("c_val", Type::String(), Type::Default::optional(), "value")
+	    .close();
+
+    static Type::Record root_rec = Type::Record("RootOfAutoconversionTest", "Root of IST.")
+        .declare_key("pressure", abstract, Type::Default::obligatory(), "presure")
+        .close();
+
+    { // YAML format, DescendantA with autoconversion of Abstract and Record
+        stringstream ss("pressure: 0.5");
+        read_stream(ss, root_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "DescendantA");
+        EXPECT_DOUBLE_EQ(0.5, storage_->get_item(0)->get_item(1)->get_double() );
+    }
+
+    { // JSON format, DescendantA with autoconversion of Abstract and Record
+        stringstream ss("{ pressure = 0.5 }");
+        read_stream(ss, root_rec, FileFormat::format_JSON);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "DescendantA");
+        EXPECT_DOUBLE_EQ(0.5, storage_->get_item(0)->get_item(1)->get_double() );
+    }
+
+    { // YAML format, DescendantA only with autoconversion of Record
+        stringstream ss("pressure: !DescendantA 0.5");
+        read_stream(ss, root_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(2, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "DescendantA");
+        EXPECT_DOUBLE_EQ(0.5, storage_->get_item(0)->get_item(1)->get_double() );
+    }
+
+    { // YAML format, DescendantB with autoconversion
+        stringstream ss("pressure: !DescendantB 0.5");
+        read_stream(ss, root_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(3, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "DescendantB");
+        EXPECT_DOUBLE_EQ(0.5, storage_->get_item(0)->get_item(1)->get_double() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(2)->is_null() );
+    }
+
+    { // YAML format, DescendantC with autoconversion
+        stringstream ss("pressure: !DescendantC 0.5");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_rec, FileFormat::format_YAML);}, ExcInputError,
+        		"The value should be 'YAML map', but we found");
+    }
+
+    { // YAML format, full output
+        stringstream ss(input_yaml_noautoconversion);
+        read_stream(ss, root_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(3, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "DescendantB");
+        EXPECT_DOUBLE_EQ(0.5, storage_->get_item(0)->get_item(1)->get_double() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(2)->is_null() );
+    }
+
+    { // JSON format, full output
+        stringstream ss(input_json_noautoconversion);
+        read_stream(ss, root_rec, FileFormat::format_JSON);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(3, storage_->get_item(0)->get_array_size());
+        EXPECT_EQ(storage_->get_item(0)->get_item(0)->get_string(), "DescendantB");
+        EXPECT_DOUBLE_EQ(0.5, storage_->get_item(0)->get_item(1)->get_double() );
+        EXPECT_TRUE(storage_->get_item(0)->get_item(2)->is_null() );
+    }
+
+}
+
+
