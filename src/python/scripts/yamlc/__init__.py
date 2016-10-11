@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-from scripts.core.base import PathFilters, Paths
+from scripts.core.base import Paths
 # ----------------------------------------------
 
 DEFAULTS = dict(
@@ -27,6 +27,7 @@ TAG_TEST_CASES = 'test_cases'
 TAG_CHECK_RULES = 'check_rules'
 TAG_TAGS = 'tags'
 REF_OUTPUT_DIR = 'ref_out'
+TEST_RESULTS = 'test_results'
 
 YAML = '.yaml'
 CONFIG_YAML = 'config.yaml'

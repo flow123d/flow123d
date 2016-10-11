@@ -3,10 +3,12 @@
 # author:   Jan Hybs
 
 import os
+import random
 import time
+import uuid
 import yaml
 
-from scripts.core.base import Paths, Printer
+from scripts.core.base import Paths, Printer, System
 from utils import strings
 from utils.counter import ProgressCounter
 
@@ -60,13 +62,17 @@ class ArtifactProcessor(object):
         return self.configuration.get('collectors', []) or []
 
     def run(self):
+        Printer.all.sep()
+        Printer.all.out("Collecting artifacts...")
+        Printer.all.sep()
         counter = ProgressCounter('Artifact step {:02d} / {total:02d}: {step}')
         total = len(self.steps)
-
-        for step in self.steps:
-            counter.next(locals())
-            with Printer.all.with_level(1):
-                step.run()
+        with Printer.all.with_level(1):
+            for step in self.steps:
+                counter.next(locals())
+                with Printer.all.with_level(1):
+                    step.run()
+        Printer.all.sep()
 
     def parse_yaml(self):
         # register yaml parser tags
@@ -83,8 +89,12 @@ class ArtifactProcessor(object):
             _format_ = '<{}>',
 
             root=Paths.flow123d_root(),
-            time=time.strftime("%H-%M-%S"),
-            date=time.strftime("%y.%m.%d"),
-            datetime=time.strftime("%y.%m.%d_%H-%M-%S"),
+            time=System.time,
+            date=System.date,
+            datetime=System.datetime,
+            rnd8=System.rnd8,
+            rnd16=System.rnd16,
+            rnd32=System.rnd32,
+            rnd=System.rnd,
         )
         self.configuration = yaml.load(yaml_data) or {}

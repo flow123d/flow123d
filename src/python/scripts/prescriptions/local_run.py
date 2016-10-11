@@ -5,7 +5,7 @@
 import shutil
 # ----------------------------------------------
 from scripts.core.base import Paths, Printer
-from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread
+from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread, MultiThreads
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.prescriptions import AbstractRun
 from scripts.comparisons import file_comparison
@@ -80,6 +80,12 @@ class LocalRun(AbstractRun):
     def create_clean_thread(self):
         return CleanThread("cleaner", self.case.fs.output)
 
+    def create_dummy_clean_thread(self):
+        return DummyCleanThread("cleaner", self.case.fs.output)
+
+    def create_dummy_comparisons(self):
+        return DummyComparisonThread(self.case.fs.ndiff_log)
+
 
 class CleanThread(ExtendedThread):
     """
@@ -106,3 +112,17 @@ class CleanThread(ExtendedThread):
         json['dir'] = self.dir
         json['error'] = self.error
         return json
+
+
+class DummyCleanThread(CleanThread):
+    def _run(self):
+        self.returncode = 0
+
+
+class DummyComparisonThread(ComparisonMultiThread):
+    def _run(self):
+        return
+
+    @property
+    def returncode(self):
+        return 0

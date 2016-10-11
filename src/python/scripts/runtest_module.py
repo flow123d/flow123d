@@ -85,11 +85,15 @@ class ModuleRuntest(ScriptModule):
         local_run.mpi = case.proc > 1
         local_run.progress = self.progress
 
-        seq = RuntestMultiThread(
-            local_run.create_clean_thread(),
-            local_run.create_pypy(self.rest),
-            local_run.create_comparisons()
-        )
+        # on demand we do not clean dirs or run comparisons
+        no_clean = self.arg_options.no_clean
+        no_compare = self.arg_options.no_compare
+
+        clean = local_run.create_dummy_clean_thread() if no_clean else local_run.create_clean_thread()
+        compare = local_run.create_dummy_comparisons() if no_compare else local_run.create_comparisons()
+        pypy = local_run.create_pypy(self.rest)
+
+        seq = RuntestMultiThread(clean, pypy, compare)
 
         seq.stop_on_error = True
         return seq
@@ -229,6 +233,11 @@ class ModuleRuntest(ScriptModule):
         """
         Run method for this module
         """
+
+        if self.arg_options.random_output_dir:
+            import scripts.yamlc as yamlc
+            from core.base import System
+            yamlc.TEST_RESULTS = 'test_results-{}'.format(System.rnd8)
 
         self.all_yamls = list()
         for path in self.others:

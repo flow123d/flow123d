@@ -39,10 +39,18 @@
     display-name: "{build-type} / Flow123d install image"
     defaults: flow123d-build
     builders:
+      - inject:
+          properties-file: prop.file
       - shell: |
           whoami
-          cd docker-config/bin
+          ls -la
+          pwd
+          cd flow123d
+          make initialize-submodules
+          git submodule update bin/docker
+          cd bin/docker/bin
           ./configure --yes-to-all --do-not-override
+          echo ${{_GIT_BRANCH}}
 
 
 # ---------------------------------------------------------------------------- #
@@ -53,6 +61,8 @@
     display-name: "{build-type} / Flow123d start image"
     defaults: flow123d-build
     builders:
+      - inject:
+          properties-file: prop.file
       - shell: |
           rm -f /tmp/docker_test.cid
           docker run --privileged -di --cidfile /tmp/docker_test.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
@@ -72,7 +82,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} git clone https://github.com/jbrezmorf/flow123d.git ${{FLOW}}
+          docker exec ${{DOCKER_PID}} git clone -b ${{_GIT_BRANCH}} https://github.com/jbrezmorf/flow123d.git ${{FLOW}}
           docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-debug.cmake ${{FLOW}}/config.cmake
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} cmake
 
@@ -99,6 +109,7 @@
     name: "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
     display-name: "{build-type} / Flow123d unit-test {unit-dir}"
     defaults: flow123d-build
+    disabled: false
     builders:
       - inject:
           properties-file: prop.file
@@ -113,6 +124,7 @@
     name: "Flow123d-{platform}-{build-type}-test-{test-dir}"
     display-name: "{build-type} / Flow123d int-test {test-dir}"
     defaults: flow123d-build
+    disabled: false
     builders:
       - inject:
           properties-file: prop.file
@@ -142,25 +154,38 @@
     display-name: "{build-type} / Flow123d multijob"
     project-type: multijob
     defaults: flow123d-build
-
+    properties:
+      - raw:
+          xml: |
+            <hudson.model.ParametersDefinitionProperty>
+              <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                  <name>BRANCH_NAME</name>
+                  <description>Specify branch name you want to build. Default value will build master branch.</description>
+                  <defaultValue>$GIT_BRANCH</defaultValue>
+                </hudson.model.StringParameterDefinition>
+              </parameterDefinitions>
+            </hudson.model.ParametersDefinitionProperty>
     block-downstream: yes
     scm:
       - git:
-          url: https://github.com/flow123d/docker-config.git
+          url: https://github.com/jbrezmorf/flow123d.git
           branches:
-              - origin/builder
-          basedir: docker-config
+              - origin/master
+          basedir: flow123d
           browser: githubweb
-          browser-url: https://github.com/flow123d/docker-config/
+          browser-url: https://github.com/jbrezmorf/flow123d/
           skip-tag: true
 
     wrappers:
       - inject:
           script-content: |
             rm -f prop.file && touch prop.file
-            echo "BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
+            echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
+            echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                    >> prop.file
+            
       - build-name:
-          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"_GIT_BRANCH\"}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
 
     triggers:
       - github

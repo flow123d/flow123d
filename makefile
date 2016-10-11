@@ -91,8 +91,8 @@ test-all: build-flow123d
 # Clean test results using find command
 .PHONY: clean-tests
 clean-tests:
-	find tests -maxdepth 2 -type d -name "test_results" -exec echo " - {}" \;
-	find tests -maxdepth 2 -type d -name "test_results" -exec rm -rf {} \;
+	find tests -maxdepth 2 -type d -name "test_results*" -exec echo " - {}" \;
+	find tests -maxdepth 2 -type d -name "test_results*" -exec rm -rf {} \;
 
 
 # Create html documentation
@@ -152,8 +152,8 @@ update-build-tree:
 # initialize submodules in safe way
 # check which kind of access use this repository use same type for submodules
 # to this end one have to set key "https_url" in the .gitmodules to the alternative https URL.
-.PHONY: update-submodules
-update-submodules:
+.PHONY: initialize-submodules
+initialize-submodules:
 	git submodule init
 	origin_url=$$( git config --get remote.origin.url ) ;\
 	if [ "$${origin_url}" != "$${origin_url#https}" ]; \
@@ -162,6 +162,11 @@ update-submodules:
 	fi
 	git submodule sync
 	git checkout .gitmodules
+	
+
+# this target updates all submodules in this repository
+.PHONY: update-submodules
+update-submodules: initialize-submodules
 	git submodule update
 	
 
@@ -205,7 +210,13 @@ update_add_doc: $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/add_to_ref_doc.txt
 #inputref: $(DOC_DIR)/flow_version.tex $(DOC_DIR)/input_reference_raw.tex update_add_doc
 inputref: $(DOC_DIR)/input_reference_raw.tex update_add_doc
 	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/input_reference.tex	
-	
+
+
+# target will run CPack in build_tree directory
+package: all
+	make -C build_tree package
+.PHONY : package
+
 	
 ################################################################################################
 # Help Target
@@ -221,6 +232,7 @@ help:
 	@echo "... doxy-doc (creates html documentation of the source using Doxygen)"
 	@echo "... ref-doc (creates reference manual using LaTeX sources and generated input reference file)"
 	@echo "... inputref (generates input reference file)"
+	@echo "... package (runs CPack)"
 #	@echo "packages:"
 #	@echo "... linux-pack"
 .PHONY : help

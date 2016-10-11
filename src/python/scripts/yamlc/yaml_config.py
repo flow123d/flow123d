@@ -44,7 +44,7 @@ class ConfigCase(object):
                     self.config.root, yamlc.REF_OUTPUT_DIR, self.without_ext),
                 output=Paths.join(
                     self.config.root,
-                    'test_results',
+                    yamlc.TEST_RESULTS,
                     self.shortname
                 ))
         else:
@@ -229,7 +229,7 @@ class ConfigPool(object):
     #  in the same directory (excluding config.yaml itself)
     yaml_filters= [
         PathFilters.filter_type_is_file(),
-        PathFilters.filter_ignore_dirs(['ref_out', 'test_results']),
+        PathFilters.filter_ignore_dirs([yamlc.TEST_RESULTS, yamlc.TEST_RESULTS]),
         PathFilters.filter_not(PathFilters.filter_name('config.yaml')),
         PathFilters.filter_endswith('.yaml'),
         PathFilters.filter_dir_contains_file('config.yaml'),
