@@ -26,8 +26,6 @@
 
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/pointer_cast.hpp>

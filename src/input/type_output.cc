@@ -720,7 +720,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type) {
 		}
 		stream << "{ \"name\" : \"" << it->key_ << "\"," << endl;
 		stream << "\"description\" : \"" << escape_description(it->description_) << "\"," << endl;
-		stream << print_attributes(it->attributes_) << "," << endl;
+		stream << print_attributes(it->attributes_)  << endl;
 		stream << "}";
 	}
 
@@ -791,7 +791,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type) {
 
     print_type_header(stream, type);
     stream << "," << endl;
-	stream << "\"input_type\" : \"FileName\"," << endl;
 	stream << "\"file_mode\" : \"";
 	switch (type->get_file_type()) {
 	case ::FilePath::input_file:
