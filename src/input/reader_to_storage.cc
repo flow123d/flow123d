@@ -186,6 +186,11 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *record)
 {
+	// control test, check correct tag (or TYPE key) if Record is derived from Abstract
+	string record_name_from_tag = p.get_record_name();
+	if ( record_name_from_tag != "" ) {
+		ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
+	}
 	std::set<string> keys_to_process;
 	bool effectively_null = p.is_effectively_null();
 	if ( p.get_record_key_set(keys_to_process) || effectively_null ) {
