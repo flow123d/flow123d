@@ -100,6 +100,8 @@ TEST(FieldTableFunction, table_function) {
     	EXPECT_DOUBLE_EQ( scalar->value(point, elm), 2.0 );
         scalar->set_time(2.0);
     	EXPECT_DOUBLE_EQ( scalar->value(point, elm), 3.0 );
+        scalar->set_time(3.0);
+    	EXPECT_DOUBLE_EQ( scalar->value(point, elm), 3.0 );
     }
 
     {

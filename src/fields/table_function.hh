@@ -25,16 +25,6 @@
 #include <vector>
 
 
-/// Declaration of exceptions.
-TYPEDEF_ERR_INFO( EI_LastT, double);
-TYPEDEF_ERR_INFO( EI_ActualT, double);
-TYPEDEF_ERR_INFO( EI_MinT, double);
-TYPEDEF_ERR_INFO( EI_MaxT, double);
-DECLARE_INPUT_EXCEPTION( ExcNonAscendingT, << "Nonascending order of declared stamps in TableFunction:\n"
-											  << EI_LastT::val << " is followed by " << EI_ActualT::val << "." );
-DECLARE_INPUT_EXCEPTION( ExcTOutOfRange,   << "Value of stamp " << EI_ActualT::val << " is out of range of TableFunction: <"
-											  << EI_MinT::val << ", " << EI_MaxT::val << ">." );
-
 
 template <class Value>
 class TableFunction

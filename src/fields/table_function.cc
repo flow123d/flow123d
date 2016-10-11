@@ -60,14 +60,16 @@ void TableFunction<Value>::init_from_input(const Input::Record &rec)
     for (Input::Iterator<Input::Tuple> it = data_array.begin<Input::Tuple>(); it != data_array.end(); ++it) {
     	double time = it->val<double>("t");
     	if (last_time >= time) {
-    		THROW( ExcNonAscendingT() << EI_LastT(last_time) << EI_ActualT(time) );
-    	}
-    	last_time = time;
+    		WarningOut().fmt("Nonascending order of declared stamps in TableFunction at address {}.\nStamp {} will be skipped.",
+    				rec.address_string(), time);
+    	} else {
+        	last_time = time;
 
-    	typename Value::return_type r_value;
-    	Value value(r_value);
-    	value.init_from_input( it->val<typename Value::AccessType>("value") );
-    	table_values_.push_back( TableValue(time, value) );
+        	typename Value::return_type r_value;
+        	Value value(r_value);
+        	value.init_from_input( it->val<typename Value::AccessType>("value") );
+        	table_values_.push_back( TableValue(time, value) );
+    	}
     }
 }
 
@@ -84,14 +86,21 @@ typename TableFunction<Value>::return_type const &TableFunction<Value>::value(do
 
 	if (time != last_t_) {
 		unsigned int last_idx = table_values_.size() - 1;
-		if (time < table_values_[0].t_ || time > table_values_[last_idx].t_) {
-			THROW( ExcTOutOfRange() << EI_ActualT(time) << EI_MinT(table_values_[0].t_) << EI_MaxT(table_values_[last_idx].t_) );
-		}
-		for (unsigned int i=0; i<last_idx; ++i) {
-			if (time >= table_values_[i].t_ && time <= table_values_[i+1].t_) {
-				double coef = (time - table_values_[i].t_) / (table_values_[i+1].t_ - table_values_[i].t_);
-				this->interpolated(coef, i);
-				break;
+		if (time < table_values_[0].t_) {
+    		WarningOut().fmt("Value of stamp {} is out of range of TableFunction: <{}, {}>. Extrapolation of minimal value will be used.",
+    				time, table_values_[0].t_, table_values_[last_idx].t_);
+    		this->interpolated(0.0, 0);
+		} else if (time > table_values_[last_idx].t_) {
+    		WarningOut().fmt("Value of stamp {} is out of range of TableFunction: <{}, {}>. Extrapolation of maximal value will be used.",
+    				time, table_values_[0].t_, table_values_[last_idx].t_);
+    		this->interpolated(1.0, last_idx-1);
+		} else {
+			for (unsigned int i=0; i<last_idx; ++i) {
+				if (time >= table_values_[i].t_ && time <= table_values_[i+1].t_) {
+					double coef = (time - table_values_[i].t_) / (table_values_[i+1].t_ - table_values_[i].t_);
+					this->interpolated(coef, i);
+					break;
+				}
 			}
 		}
 	}
