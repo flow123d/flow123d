@@ -304,12 +304,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Abstract *a
 	string record_name = p.get_record_name();
 	if ( record_name == "" ) {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-			if ( p.is_record_type() ) {
-				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in Abstract.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
-			} else {
-				THROW( ExcInputError() << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ")
-					<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
-			}
+			THROW( ExcInputError() << EI_Specification("Can not determine type of the Abstract.") << EI_ErrorAddress(p.as_string())
+					<< EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
 		} else { // auto conversion
 			return abstract_automatic_conversion(p, abstr_rec);
 		}

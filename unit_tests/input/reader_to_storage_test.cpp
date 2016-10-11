@@ -626,7 +626,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
     {   // Missing TYPE
         stringstream ss("{ c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Missing key 'TYPE' in Abstract.");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Can not determine type of the Abstract.");
 
     }
 
@@ -638,7 +638,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
     {   // Wrong derived value type
         stringstream ss("[]");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Can not determine type of the Abstract.");
 
     }
 
@@ -785,7 +785,7 @@ TEST_F(InputReaderToStorageTest, AdHocAbstract) {
 
     {   // Missing TYPE
         stringstream ss("{ b_val=4, a_val=\"Some text\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "Missing key 'TYPE' in Abstract.");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "Can not determine type of the Abstract.");
     }
 
     {   // Wrong derived value type
