@@ -839,6 +839,9 @@ void DarcyMH::allocate_mh_matrix()
     data_->n_schur_compls = n_schur_compls;
     LinSys *ls = schur0;
 
+    int rank;
+    int my_rank = 1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
    
     class Boundary *bcd;
     class Neighbour *ngh;
@@ -855,48 +858,91 @@ void DarcyMH::allocate_mh_matrix()
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         unsigned int nsides = ele_ac.n_sides();
+        int ele_row = ele_ac.ele_row();
+        
+         unsigned int loc_size = 1 + nsides;
+//         unsigned int loc_size = 1 + 2*nsides;
+        std::vector<int> dofs(loc_size);
+        dofs[nsides] = ele_row;
         
         for (unsigned int i = 0; i < nsides; i++) {
 
             side_rows[i] = side_row = ele_ac.side_row(i);
             edge_rows[i] = edge_row = ele_ac.edge_row(i);
+            dofs[i] = side_row;
+//             dofs[nsides+1 + i] = edge_row;
+            
             bcd=ele_ac.side(i)->cond();
-
+            
             if (bcd) {
                 ls->mat_set_value(edge_row, edge_row, 0.0);
             }
-            ls->mat_set_value(side_row, edge_row, 0.0);
-            ls->mat_set_value(edge_row, side_row, 0.0);
+//             ls->mat_set_value(side_row, edge_row, 0.0);
+//             ls->mat_set_value(edge_row, side_row, 0.0);
         }
         
-        // set block A: side-side on one element - block diagonal matrix
-        ls->mat_set_values(nsides, side_rows, nsides, side_rows, zeros);
-        // set block B, B': element-side, side-element
-        int ele_row = ele_ac.ele_row();
-        ls->mat_set_values(1, &ele_row, nsides, side_rows, zeros);
-        ls->mat_set_values(nsides, side_rows, 1, &ele_row, zeros);
-
-
-        // D block:  diagonal: element-element
-        ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
+//         if(rank == my_rank){
+//             for (unsigned int i = 0; i < loc_size; i++) {
+//                 std::cout <<  dofs[i] << " ";
+//             }
+//             std::cout << endl;
+//         }
+        
+        // sides-sides, sides-ele, ele-sides, ele-ele
+        ls->mat_set_values(loc_size, dofs.data(), loc_size, dofs.data(), zeros);
+        // ele-edges
+        ls->mat_set_values(1, &ele_row, ele_ac.n_sides(), edge_rows, zeros);
+        // edges-ele
+        ls->mat_set_values(nsides, edge_rows, 1, &ele_row, zeros);
+        // sides-edges
+        ls->mat_set_values(nsides, side_rows, nsides, edge_rows, zeros);
+        // sides-edges
+        ls->mat_set_values(nsides, edge_rows, nsides, side_rows, zeros);
+        
+        for (unsigned int i = 0; i < nsides; i++)
+            for (unsigned int j = 0; j < nsides; j++){
+                if(i != j)
+                    ls->mat_set_value(edge_rows[i], edge_rows[j], 0.0);
+            }
+            
+//         // set block A: side-side on one element - block diagonal matrix
+//         ls->mat_set_values(nsides, side_rows, nsides, side_rows, zeros);
+//         // set block B, B': element-side, side-element
+//         ls->mat_set_values(1, &ele_row, nsides, side_rows, zeros);
+//         ls->mat_set_values(nsides, side_rows, 1, &ele_row, zeros);
+// 
+// 
+//         // D block:  diagonal: element-element
+//         ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
 
         // D, E',E block: compatible connections: element-edge
         
         for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            ngh= ele_ac.full_iter()->neigh_vb[i];
-            tmp_rows[0]=ele_row;
-            tmp_rows[1]=mh_dh.row_4_edge[ ngh->edge_idx() ];
+            ngh = ele_ac.full_iter()->neigh_vb[i];
+            int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
             
-            ls->mat_set_values(2, tmp_rows, 2, tmp_rows, zeros);
+            tmp_rows[0] = ele_row;
+            tmp_rows[1] = neigh_edge_row;
+            
+//             // be carefull with ele-ele entry
+            ls->mat_set_value(ele_row, neigh_edge_row, 0.0);
+            ls->mat_set_value(neigh_edge_row, ele_row, 0.0);
+            
+            // be carefull with ele-ele entry
+//             ls->mat_set_values(2, tmp_rows, 2, tmp_rows, zeros);
 
             if (n_schur_compls == 2) {
                 // for 2. Schur: N dim edge is conected with N dim element =>
                 // there are nz between N dim edge and N-1 dim edges of the element
 
-                ls->mat_set_values(nsides, edge_rows, 1, tmp_rows+1, zeros);
-                ls->mat_set_values(1, tmp_rows+1, nsides, edge_rows, zeros);
+//                 ls->mat_set_values(nsides, edge_rows, 1, tmp_rows+1, zeros);
+//                 ls->mat_set_values(1, tmp_rows+1, nsides, edge_rows, zeros);
+                
+//                 // be carefull with edge-edge entry
+                ls->mat_set_values(nsides, edge_rows, 1, &neigh_edge_row, zeros);
+                ls->mat_set_values(1, &neigh_edge_row, nsides, edge_rows, zeros);
 
                 // save all global edge indices to higher positions
                 tmp_rows[2+i] = tmp_rows[1];
@@ -913,12 +959,13 @@ void DarcyMH::allocate_mh_matrix()
             ls->mat_set_values(ele_ac.full_iter()->n_neighs_vb, tmp_rows+2,
                     ele_ac.full_iter()->n_neighs_vb, tmp_rows+2, zeros);
 
-        case 1: // included also for case 2
-            // -(C')*(A-)*B block and its transpose conect edge with its elements
-            ls->mat_set_values(1, &ele_row, ele_ac.n_sides(), edge_rows, zeros);
-            ls->mat_set_values(ele_ac.n_sides(), edge_rows, 1, &ele_row, zeros);
-            // -(C')*(A-)*C block conect all edges of every element
-            ls->mat_set_values(ele_ac.n_sides(), edge_rows, ele_ac.n_sides(), edge_rows, zeros);
+            // Here I cannot add values to the same positions, since it uses ADD_VALUE, when counting nnz.
+//         case 1: // included also for case 2
+//             // -(C')*(A-)*B block and its transpose conect edge with its elements
+//             ls->mat_set_values(1, &ele_row, ele_ac.n_sides(), edge_rows, zeros);
+//             ls->mat_set_values(ele_ac.n_sides(), edge_rows, 1, &ele_row, zeros);
+//             // -(C')*(A-)*C block conect all edges of every element
+//             ls->mat_set_values(ele_ac.n_sides(), edge_rows, ele_ac.n_sides(), edge_rows, zeros);
         }
     }
 
