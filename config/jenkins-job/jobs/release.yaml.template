@@ -28,7 +28,13 @@
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
       - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-{build-type}-make-doc"
+      - "Flow123d-{platform}-{build-type}-package"
       - "Flow123d-{platform}-{build-type}-stop-image"
+      - "Flow123d-{platform}-{build-type}-start-image-b"
+      - "Flow123d-{platform}-{build-type}-copy-image-b"
+      - "Flow123d-{platform}-{build-type}-create-install-image-b"
+      - "Flow123d-{platform}-{build-type}-stop-image-b"
       - "Flow123d-{platform}-{build-type}-multijob"
 
 # ---------------------------------------------------------------------------- #
@@ -67,8 +73,10 @@
           rm -f /tmp/docker_test_release.cid
           docker run --privileged -di --cidfile /tmp/docker_test_release.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-rel:user bash
           docker_pid=`cat /tmp/docker_test_release.cid`
-          echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
-          echo "FLOW=/opt/flow123d/flow123d" >> prop.file
+          echo "DOCKER_PID=${{docker_pid}}"                 >> prop.file
+          echo "FLOW=/opt/flow123d/flow123d"                >> prop.file
+          echo "PACK_NAME=Flow123d-2.0.0-Linux.tar.gz"      >> prop.file
+          echo "PACK_PATH=./Flow123d-2.0.0-Linux.tar.gz"    >> prop.file
 
 
 # ---------------------------------------------------------------------------- #
@@ -131,6 +139,37 @@
       - shell: |
           docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
 
+
+# ---------------------------------------------------------------------------- #
+# ---------- MAKE DOC -------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-make-doc"
+    display-name: "{build-type} / Flow123d make doc"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} html-doc
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} doxy-doc
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} ref-doc
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- PACKAGE --------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-package"
+    display-name: "{build-type} / Flow123d package"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} package
+
+
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #
 # ---------------------------------------------------------------------------- #
@@ -145,6 +184,66 @@
           docker stop ${{DOCKER_PID}}
           docker rm   ${{DOCKER_PID}}
 
+
+# ---------------------------------------------------------------------------- #
+# ---------- START IMAGE B --------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-start-image-b"
+    display-name: "{build-type} / Flow123d start image B"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          rm -f /tmp/docker_test_install.cid
+          docker run -tid  --cidfile /tmp/docker_test_install.cid flow123d/install
+          docker_pid=`cat /tmp/docker_test_install.cid`
+          echo "DOCKER_B_PID=${{docker_pid}}"  >> prop.file
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- COPY IMAGE B ---------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-copy-image-b"
+    display-name: "{build-type} / Flow123d copy image B"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+            docker   cp ${{PACK_PATH}} ${{DOCKER_B_PID}}:/tmp/${{PACK_NAME}}
+            docker exec ${{DOCKER_B_PID}} mkdir -p ${{FLOW}}
+            docker exec ${{DOCKER_B_PID}} tar -xvzf /tmp/${{PACK_NAME}} -C ${{FLOW}} --strip-components=1
+            docker exec ${{DOCKER_B_PID}} rm -f /tmp/${{PACK_NAME}}
+
+# ---------------------------------------------------------------------------- #
+# ---------- CREATE INSTALL B ---------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-create-install-image-b"
+    display-name: "{build-type} / Flow123d create install image B"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+            docker export ${{DOCKER_B_PID}} > flow123d.install.tar.gz
+
+# ---------------------------------------------------------------------------- #
+# ---------- STOP IMAGE B ---------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-stop-image-b"
+    display-name: "{build-type} / Flow123d stop image B"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker stop ${{DOCKER_B_PID}}
+          docker rm   ${{DOCKER_B_PID}}
 
 # ---------------------------------------------------------------------------- #
 # ---------- MULTIJOB -------------------------------------------------------- #
@@ -201,34 +300,62 @@
           condition: SUCCESSFUL
           projects:
             - name: "Flow123d-{platform}-{build-type}-start-image"
-      # ---------- START IMAGE ----------------------------------------------- #
       - multijob:
           name: "Configure flow123d Phase"
-          condition: SUCCESSFUL
+          condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-{build-type}-configure"
 
       - multijob:
           name: "Build flow123d Phase"
-          condition: SUCCESSFUL
+          condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-{build-type}-build"
-
       - multijob:
           name: "Unit tests"
           condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-{build-type}-unit-test-$PLACEHOLDER_unit_list$"
-
       - multijob:
           name: "Integration tests"
           condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-{build-type}-test-$PLACEHOLDER_test_list$"
               kill-phase-on: NEVER
-      # ---------- STOP IMAGE ------------------------------------------------ #
+      - multijob:
+          name: "Make doc"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-{build-type}-make-doc"
+      - multijob:
+          name: "Package"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-{build-type}-package"
       - multijob:
           name: "Stop image"
-          condition: SUCCESSFUL
+          condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-{build-type}-stop-image"
+
+
+      - multijob:
+          name: "Start image B"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-{build-type}-start-image-b"
+      - multijob:
+          name: "Copy image B"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-{build-type}-copy-image-b"
+      - multijob:
+          name: "Create install image B"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-{build-type}-create-install-image-b"
+      - multijob:
+          name: "Stop image B"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-{build-type}-stop-image-b"
