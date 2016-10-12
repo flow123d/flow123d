@@ -867,11 +867,11 @@ void DarcyMH::allocate_mh_matrix()
             dofs[i] = side_row;
 //             dofs[nsides+1 + i] = edge_row;
             
-            bcd=ele_ac.side(i)->cond();
-            
-            if (bcd) {
-                ls->mat_set_value(edge_row, edge_row, 0.0);
-            }
+//             bcd=ele_ac.side(i)->cond();
+//             
+//             if (bcd) {
+//                 ls->mat_set_value(edge_row, edge_row, 0.0);
+//             }
 //             ls->mat_set_value(side_row, edge_row, 0.0);
 //             ls->mat_set_value(edge_row, side_row, 0.0);
         }
@@ -964,7 +964,20 @@ void DarcyMH::allocate_mh_matrix()
         }
     }
 
-
+    if(rank == 0)
+    FOR_EDGES(mesh_, edg){
+//         Edge* e;
+        int edg_idx = mh_dh.row_4_edge[edg->side(0)->edge_idx()];
+        
+        FOR_EDGES(mesh_, edg2){
+            int edg_idx2 = mh_dh.row_4_edge[edg2->side(0)->edge_idx()];
+            if(edg_idx == edg_idx2){
+                DBGCOUT(<< "P[ " << rank << " ] " << "edg alloc: " << edg_idx << "  " << edg_idx2 << "\n");
+                ls->mat_set_value(edg_idx, edg_idx2, 0.0);
+            }
+        }
+    }
+    
     if (mortar_method_ == MortarP0) {
         P0_CouplingAssembler(*this).assembly(*ls);
     } else if (mortar_method_ == MortarP1) {
