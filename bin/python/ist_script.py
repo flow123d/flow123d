@@ -18,6 +18,8 @@ Options:
                         generated/overwritten
   -f FORMAT, --format=FORMAT
                         'tex' or 'html' output
+  -d, --debug
+                        will result in pretty looking tex format (which is however invalid)
 
 """
 
@@ -65,6 +67,8 @@ def create_parser():
                       help="Absolute or relative path output file which will be generated/overwritten")
     parser.add_option("-f", "--format", dest="format", metavar="FORMAT", default="tex",
                       help="tex|html output format")
+    parser.add_option("-d", "--debug", dest="debug", action="store_true", default=False,
+                      help="will result in pretty looking tex format (which is however invalid)")
     parser.add_option("--log", dest="loglevel", metavar="LEVEL", default="warning",
                       help="Logging level default is %default, options are (debug, info, warning, error, critical)")
     parser.set_usage("""%prog [options]""")
@@ -100,7 +104,7 @@ def main():
     formatter = ISTFormatter()
 
     # read input json file
-    with file(options.input, 'r') as fp:
+    with open(options.input, 'r') as fp:
         json_data = json.load(fp)
         ist_info = {
             'version': json_data['version']['flow123d_version'] if 'version' in json_data else 'Input reference'
@@ -138,12 +142,14 @@ def main():
     # convert to tex format
     if options.format.lower() in ('tex', 'latex'):
         Logger.instance().info('Formatting ist to tex format')
+        from ist.utils.texlist2 import TexList
+        TexList.PRETTY_FORMAT = options.debug
         formatter.json2latex(items, options.output, info=ist_info)
         if os.path.isfile(options.output):
-            print 'Ok: File "{:s}" created'.format(options.output)
+            print('Ok: File "{:s}" created'.format(options.output))
             sys.exit(0)
         else:
-            print 'Error: File "{:s}" does not exists'.format(options.output)
+            print('Error: File "{:s}" does not exists'.format(options.output))
             sys.exit(1)
 
     # convert to HTML format
@@ -151,10 +157,10 @@ def main():
         Logger.instance().info('Formatting ist to html format')
         formatter.json2html(items, options.output, info=ist_info)
         if os.path.isfile(options.output):
-            print 'Ok: File "{:s}" created'.format(options.output)
+            print('Ok: File "{:s}" created'.format(options.output))
             sys.exit(0)
         else:
-            print 'Error: File "{:s}" does not exists'.format(options.output)
+            print('Error: File "{:s}" does not exists'.format(options.output))
             sys.exit(1)
 
     if options.format.lower() in ('markdown', 'md'):
@@ -218,7 +224,7 @@ Full markdown specification can be found [here](https://github.com/adam-p/markdo
         '''
         o = htmltree()
         o.description(text)
-        print o.dump()
+        print(o.dump())
         sys.exit(0)
 
     Logger.instance().error("Error: Unsupported format '{:s}'".format(options.format))

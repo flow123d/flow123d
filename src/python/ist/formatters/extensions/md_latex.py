@@ -12,8 +12,7 @@ Converts (($latex-expression$)) to span which is later converted using katex to 
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-import re
-import cgi
+
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
 from markdown.util import etree
@@ -73,33 +72,3 @@ def makeExtension(*args, **kwargs):
     :return:
     """
     return MdLatexExtension(*args, **kwargs)
-
-
-class MdLatexSupport (object):
-    """
-    Class MdLatexSupport is helper class handling replacement in latex
-    """
-
-    def __init__(self):
-        self.latex = []
-
-    def _match_prepare(self, m):
-        self.latex.append(m.group(1))
-        return '(({}))'.format(len(self.latex) - 1)
-
-    def _match_finish(self, m):
-        index = int(m.group(1))
-        latex = cgi.escape(self.latex[index])
-        return '<span class="md-expression">{{{}}}</span>'.format(latex)
-
-    def prepare(self, html):
-        regex = r'\(\(([\w\d\s{}\[\]\\\?;$^?_/+!&=*<>~ (),-]*?)\)\)'
-
-        secured_html = re.sub(regex, self._match_prepare, html, re.S | re.M | re.UNICODE)
-        return secured_html
-
-    def finish(self, html):
-        regex = r'\(\(([0-9]+)\)\)'
-
-        secured_html = re.sub(regex, self._match_finish, html, re.S | re.M | re.UNICODE)
-        return secured_html
