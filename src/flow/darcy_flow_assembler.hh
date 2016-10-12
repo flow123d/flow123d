@@ -109,18 +109,10 @@ protected:
         // edge dofs are saved in local system
 //             LocalSystem& loc = dim_assembler[ele_ac.dim()-1]->get_local_system();
 //             int* edge_rows = & loc.row_dofs[ele_ac.dim() + 2];
+
         int edge_rows[nsides];
         for (unsigned int i = 0; i < nsides; i++)
             edge_rows[i] = ele_ac.edge_row(i);
-        
-        // D block:  diagonal: element-element
-        //TODO: local system is dense; correct when it is sparse
-        ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
-        
-        if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-            double val_ele =  1.;
-            static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( ele_row, val_ele );
-        }
         
         for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
@@ -140,7 +132,8 @@ protected:
                 tmp_rows[2+i] = tmp_rows[1];
             }
         }
-            // add virtual values for schur complement allocation
+
+        // add virtual values for schur complement allocation
         uint n_neigh;
         switch (ad_->n_schur_compls) {
         case 2:

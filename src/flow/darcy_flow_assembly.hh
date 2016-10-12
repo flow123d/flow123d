@@ -123,7 +123,7 @@ public:
         set_dofs_and_bc(ele_ac);
         
         assemble_sides(ele_ac);
-//         assemble_element(ele_ac);
+        assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
 //         loc_system_.fix_diagonal();
@@ -172,15 +172,15 @@ protected:
     {
         // sides, 1 for element, edges
 //         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;  //FIXME
-        return RefElement<dim>::n_sides;
+        return RefElement<dim>::n_sides +1;
     }
 
     void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac){
         
         ASSERT_DBG(ele_ac.dim() == dim);
         
-        //set global dof for element (pressure) //FIXME
-//         loc_system_.row_dofs[loc_ele_dof] = loc_system_.col_dofs[loc_ele_dof] = ele_ac.ele_row();
+        //set global dof for element (pressure)
+        loc_system_.row_dofs[loc_ele_dof] = loc_system_.col_dofs[loc_ele_dof] = ele_ac.ele_row();
         
         //shortcuts
         const unsigned int nsides = ele_ac.n_sides();
@@ -263,6 +263,8 @@ protected:
     
     void assemble_element(LocalElementAccessorBase<3> ele_ac){
         // set block B, B': element-side, side-element
+        
+//         ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
             loc_system_.set_mat_values({loc_ele_dof}, {loc_side_dofs[side]}, {-1.0});

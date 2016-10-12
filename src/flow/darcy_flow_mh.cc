@@ -812,11 +812,6 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
         assembler.assemble(ele_ac, true);
 
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
-
-        // set block B, B': element-side, side-element
-        int ele_row = ele_ac.ele_row();
-        ls->mat_set_values(1, &ele_row, nsides, side_rows, minus_ones);
-        ls->mat_set_values(nsides, side_rows, 1, &ele_row, minus_ones);
     }    
     
     if (balance_ != nullptr)
