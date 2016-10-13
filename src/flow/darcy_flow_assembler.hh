@@ -49,6 +49,10 @@ protected:
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[1000];
     
+    int rows[2];
+    double local_vb[4]; // 2x2 matrix
+    int edge_rows[4];
+    
     void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
         
         for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
@@ -72,10 +76,7 @@ protected:
         //D, E',E block: compatible connections: element-edge
         int ele_row = ele_ac.ele_row();
         
-        int rows[2];
-        double local_vb[4]; // 2x2 matrix
         Neighbour *ngh;
-    
         
         for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
@@ -109,8 +110,6 @@ protected:
         // edge dofs are saved in local system
 //             LocalSystem& loc = dim_assembler[ele_ac.dim()-1]->get_local_system();
 //             int* edge_rows = & loc.row_dofs[ele_ac.dim() + 2];
-
-        int edge_rows[nsides];
         for (unsigned int i = 0; i < nsides; i++)
             edge_rows[i] = ele_ac.edge_row(i);
         

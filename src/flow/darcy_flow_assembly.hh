@@ -171,7 +171,6 @@ protected:
     {
         // sides, 1 for element, edges
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
-//         return RefElement<dim>::n_sides +1;
     }
 
 //     void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac){
@@ -330,7 +329,6 @@ protected:
                         loc_system_.set_value(edge_row, side_row,
                                                 1.0,
                                                 bc_total_flux * bcd->element()->measure() * cross_section);
-                        loc_system_.set_mat_values({side_row}, {edge_row}, {1.0});
                     }
                 } 
                 else {
@@ -355,7 +353,6 @@ protected:
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         
-        //START_TIMER("Assembly<dim>::assembly_local_matrix");
         ElementFullIter ele =ele_ac.full_iter();
         fe_values_.reinit(ele);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
@@ -366,8 +363,7 @@ protected:
                 double rhs_val =
                         arma::dot(gravity_vec,fe_values_.shape_vector(i,k))
                         * fe_values_.JxW(k);
-                loc_system_.add_value(i,i , 0.0, rhs_val);   //FIXME
-//                         ad_->system_.loc_side_rhs[i] += rhs_val;
+                loc_system_.add_value(i,i , 0.0, rhs_val);
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
@@ -396,8 +392,7 @@ protected:
                 double val_edge =  -1./local_matrix(i,i);
 
                 unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
-                unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];  //FIXME
-//                 unsigned int edge_row = ele_ac.edge_row(i);
+                unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
                 static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( side_row, val_side );
                 static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( edge_row, val_edge );
             }

@@ -160,10 +160,6 @@ public:
                 double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] / this->ad_->time_step_
                                   + diagonal_coef * water_content_diff / this->ad_->time_step_;
 
-
-//                 ad_->lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal/this->ad_->time_step_ );
-//                 ad_->lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
-                                  
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
 //                             << "] mat: " << -mass_diagonal/this->ad_->time_step_
 //                             << " rhs: " << -source_diagonal - mass_rhs
