@@ -43,12 +43,12 @@ public:
 	};
 
     /**
-     * Return record of one time stamp.
+     * Return record of one t stamp.
      */
     static const Input::Type::Tuple & get_input_type_val();
 
     /**
-     * Return Record for time series initialization of Fields. Allow to use interpolation
+     * Return Record for one t stamp series initialization of Fields. Allow to use interpolation
      * of Field values defined in one field descriptor.
      */
     static const Input::Type::Record & get_input_type();
@@ -65,7 +65,7 @@ public:
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    return_type const &value(double time);
+    return_type const &value(double t);
 
 private:
     // Compute the weighted average of table_values_[idx] and table_values_[idx+1]
@@ -74,7 +74,7 @@ private:
     /// Vector of values in all stamps.
     std::vector<struct TableValue> table_values_;
 
-    /// Last time of computed value_ (to prevent repetitive calculation)
+    /// Last t stamp of computed value_ (to prevent repetitive calculation)
     double last_t_;
 
     /// Last value, prevents passing large values (vectors) by value.

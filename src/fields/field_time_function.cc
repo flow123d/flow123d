@@ -60,6 +60,7 @@ void FieldTimeFunction<spacedim, Value>::init_from_input(const Input::Record &re
 template <int spacedim, class Value>
 bool FieldTimeFunction<spacedim, Value>::set_time(const TimeStep &time)
 {
+	// Possible optimization: If we need set value_ repeatedly, we introduce TableFunction as class member and retrive it only once.
 	TableFunction<Value> table_function;
 
 	if (!Value::is_scalable()) {

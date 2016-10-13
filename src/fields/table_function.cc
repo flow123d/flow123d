@@ -56,19 +56,19 @@ void TableFunction<Value>::init_from_input(const Input::Record &rec)
 	ASSERT( !this->initialized() ).error("TableFunction can't be initialized more than once.");
 
 	Input::Array data_array = rec.val<Input::Array>("values");
-	double last_time = -1.0;
+	double last_t = -1.0;
     for (Input::Iterator<Input::Tuple> it = data_array.begin<Input::Tuple>(); it != data_array.end(); ++it) {
-    	double time = it->val<double>("t");
-    	if (last_time >= time) {
+    	double t = it->val<double>("t");
+    	if (last_t >= t) {
     		WarningOut().fmt("Nonascending order of declared stamps in TableFunction at address {}.\nStamp {} will be skipped.",
-    				rec.address_string(), time);
+    				rec.address_string(), t);
     	} else {
-        	last_time = time;
+        	last_t = t;
 
         	typename Value::return_type r_value;
         	Value value(r_value);
         	value.init_from_input( it->val<typename Value::AccessType>("value") );
-        	table_values_.push_back( TableValue(time, value) );
+        	table_values_.push_back( TableValue(t, value) );
     	}
     }
 }
@@ -80,24 +80,24 @@ bool TableFunction<Value>::initialized()
 }
 
 template <class Value>
-typename TableFunction<Value>::return_type const &TableFunction<Value>::value(double time)
+typename TableFunction<Value>::return_type const &TableFunction<Value>::value(double t)
 {
 	ASSERT( this->initialized() ).error("Compute value of uninitialized TableFunction.");
 
-	if (time != last_t_) {
+	if (t != last_t_) {
 		unsigned int last_idx = table_values_.size() - 1;
-		if (time < table_values_[0].t_) {
+		if (t < table_values_[0].t_) {
     		WarningOut().fmt("Value of stamp {} is out of range of TableFunction: <{}, {}>. Extrapolation of minimal value will be used.",
-    				time, table_values_[0].t_, table_values_[last_idx].t_);
+    				t, table_values_[0].t_, table_values_[last_idx].t_);
     		this->interpolated(0.0, 0);
-		} else if (time > table_values_[last_idx].t_) {
+		} else if (t > table_values_[last_idx].t_) {
     		WarningOut().fmt("Value of stamp {} is out of range of TableFunction: <{}, {}>. Extrapolation of maximal value will be used.",
-    				time, table_values_[0].t_, table_values_[last_idx].t_);
+    				t, table_values_[0].t_, table_values_[last_idx].t_);
     		this->interpolated(1.0, last_idx-1);
 		} else {
 			for (unsigned int i=0; i<last_idx; ++i) {
-				if (time >= table_values_[i].t_ && time <= table_values_[i+1].t_) {
-					double coef = (time - table_values_[i].t_) / (table_values_[i+1].t_ - table_values_[i].t_);
+				if (t >= table_values_[i].t_ && t <= table_values_[i+1].t_) {
+					double coef = (t - table_values_[i].t_) / (table_values_[i+1].t_ - table_values_[i].t_);
 					this->interpolated(coef, i);
 					break;
 				}

@@ -45,6 +45,10 @@ public:
 
     /**
      * This method initialize actual value of the field given from the given Input::Record @p rec.
+     *
+     * TODO: after removing support for vector valued FieldConstant we can merge this method
+     * with FieldConstant::init_from_input and move initizaliation of FieldConstant value
+     * to set_time method.
      */
     void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
