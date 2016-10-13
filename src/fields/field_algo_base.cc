@@ -22,7 +22,6 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 
 #include "fields/field_python.impl.hh"
-#include "fields/field_formula.impl.hh"
 #include "fields/field_interpolated_p0.impl.hh"
 #include "fields/field_add_potential.impl.hh"
 #include "fields/field_elementwise.impl.hh"
@@ -31,7 +30,6 @@
 
 INSTANCE_ALL(FieldAlgorithmBase)
 INSTANCE_ALL(FieldPython)
-INSTANCE_ALL(FieldFormula)
 INSTANCE_ALL(FieldElementwise)
 INSTANCE_ALL(FieldInterpolatedP0)
 INSTANCE_ALL(FieldFE)
