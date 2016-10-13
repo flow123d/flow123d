@@ -47,11 +47,11 @@ class AssemblyLMH : public AssemblyMH<dim> {
 public:
 
     typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtr;
+    using AssemblyMH<dim>::loc_system_;
 
     AssemblyLMH(AssemblyDataPtr data)
     : AssemblyMH<dim>(data),
       ad_(data),
-      system_(data->system_),
       genuchten_on(false),
       cross_section(1.0),
       soil_model(data->soil_model_)
@@ -140,7 +140,7 @@ public:
             uint local_edge = ele.edge_local_idx(i);
             uint local_side = ele.side_local_idx(i);
             uint edge_row = ele.edge_row(i);
-            if (ad_->system_.dirichlet_edge[i] == 0) {
+            if (this->dirichlet_edge[i] == 0) {
 
                 double capacity = this->ad_->capacity[local_side];
                 double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
@@ -161,8 +161,16 @@ public:
                                   + diagonal_coef * water_content_diff / this->ad_->time_step_;
 
 
-                ad_->lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal/this->ad_->time_step_ );
-                ad_->lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
+//                 ad_->lin_sys->mat_set_value(edge_row, edge_row, -mass_diagonal/this->ad_->time_step_ );
+//                 ad_->lin_sys->rhs_set_value(edge_row, -source_diagonal - mass_rhs);
+                                  
+//                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
+//                             << "] mat: " << -mass_diagonal/this->ad_->time_step_
+//                             << " rhs: " << -source_diagonal - mass_rhs
+//                             << "\n");
+                this->loc_system_.set_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i],
+                                            -mass_diagonal/this->ad_->time_step_,
+                                            -source_diagonal - mass_rhs);
             }
 
             if (ad_->balance != nullptr) {
@@ -175,7 +183,6 @@ public:
     }
 
     AssemblyDataPtr ad_;
-    RichardsSystem system_;
 
     bool genuchten_on;
     double cross_section;

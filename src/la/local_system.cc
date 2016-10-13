@@ -120,7 +120,7 @@ void LocalSystem::set_mat_values(const std::vector< unsigned int >& rows,
 
 void LocalSystem::set_value(unsigned int row, unsigned int col, double mat_val, double rhs_val)
 {
-    DBGCOUT(<< "row " << row << "  col " << col << "\n");
+//     DBGCOUT(<< "row " << row << "  col " << col << "\n");
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
     
