@@ -190,6 +190,11 @@ public:
     template <class Stream>
     void open_stream(Stream &stream) const;
 
+    /**
+     * Return true if the FilePath is a file.
+     */
+    bool exists() const;
+
 private:
     /**
      * Create a directory, and check for exceptions.

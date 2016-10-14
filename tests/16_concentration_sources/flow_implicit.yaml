@@ -1,5 +1,5 @@
 # COMMENT_Stop_time:"1275",
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Steady flow + transport with source
   mesh:

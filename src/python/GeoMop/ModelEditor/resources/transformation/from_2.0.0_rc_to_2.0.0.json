@@ -1,10 +1,27 @@
 {
 "name": "Main transformation file",
 "description": "Template for creating transformation file",
-"old_format": "1.8.2",
+"old_format": "2.0.0_rc",
 "new_format": "2.0.0",
 "actions":
-  [
+  [ {
+      "NAME": "Change version.",
+      "action": "change-value",
+      "parameters":{
+          "path" : "/flow123d_version",
+          "old_value" : "2.0.0_rc",
+          "new_value" : "2.0.0"
+      }
+    },
+    {
+      "NAME": "Change version.",
+      "action": "change-value",
+      "parameters":{
+          "path" : "/flow123d_version",
+          "old_value" : "1.8.9",
+          "new_value" : "2.0.0"
+      }
+    },
     {
       "NAME": "Make output-specific key.",
       "action": "add-key",

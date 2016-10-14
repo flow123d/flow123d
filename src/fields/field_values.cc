@@ -19,10 +19,11 @@
 
 namespace internal {
 // Helper functions to get scalar type name
+/*
 std::string type_name_(double) { return "Real"; }
 std::string type_name_(int)  { return "Int"; }
 std::string type_name_(FieldEnum) { return "Enum"; }
-
+*/
 
 } // namespace internal
 

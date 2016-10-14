@@ -28,6 +28,7 @@ set(libs la_lib system_lib)
 add_test_directory("${libs}")
 
 define_mpi_test(linsys 1)
+define_test(local_system)
 
 define_mpi_test(schur_compl 1)
 define_mpi_test(schur_compl 2)

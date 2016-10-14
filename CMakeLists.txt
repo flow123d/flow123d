@@ -178,12 +178,13 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     flow_define(HAVE_SINCOS)
     
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-uninitialized -Wno-inconsistent-missing-override") 
     
+    # for some reason BOOST doesn't work with option -std=c++11
     # BOOST must be compiled with clang in order to use C++11 standard. 
-    set(Boost_FORCE_REBUILD "true")
-    set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
-    set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+    # set(Boost_FORCE_REBUILD "true")
+    # set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+    # set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
     
     # 
     # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
@@ -851,7 +852,7 @@ endif()
 
   
 message(STATUS "=============== Summary ===================")
-message(STATUS "Boost:      ${BOOST_LIBRARIES}")
+message(STATUS "Boost:      ${Boost_LIBRARIES}")
 message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
 message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")

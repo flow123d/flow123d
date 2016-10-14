@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0_rc
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test11 - radioactive decay simulation, long decay chain with biffurcation
   mesh:

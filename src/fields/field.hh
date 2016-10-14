@@ -241,6 +241,14 @@ public:
      */
     FieldResult field_result( RegionSet region_set) const override;
 
+    /**
+     * Return specification of the field value type in form of the string:
+     * [ <element type>, NRows, NCols]
+     *
+     * Result is valid JSON (and/or flow style YAML).
+     * For multifields not implemented.
+     */
+    std::string get_value_attribute() const override;
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
