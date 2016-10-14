@@ -389,7 +389,7 @@ void DarcyMH::zero_time_step()
         VecZeroEntries(previous_solution);
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
-        print_matlab_matrix("matrix_zero.m");
+        print_matlab_matrix("matrix_zero");
         // TODO: reconstruction of solution in zero time.
     }
     //solution_output(T,right_limit); // data for time T in any case
@@ -990,7 +990,7 @@ void DarcyMH::allocate_mh_matrix()
         FOR_EDGES(mesh_, edg2){
             int edg_idx2 = mh_dh.row_4_edge[edg2->side(0)->edge_idx()];
             if(edg_idx == edg_idx2){
-                DBGCOUT(<< "P[ " << rank << " ] " << "edg alloc: " << edg_idx << "  " << edg_idx2 << "\n");
+//                 DBGCOUT(<< "P[ " << rank << " ] " << "edg alloc: " << edg_idx << "  " << edg_idx2 << "\n");
                 ls->mat_set_value(edg_idx, edg_idx2, 0.0);
             }
         }
@@ -1385,14 +1385,12 @@ void DarcyMH::assembly_linear_system() {
         
         auto multidim_assembler = AssemblerMH(data_);
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix
-//         print_matlab_matrix("matrix.m");
 
 	    schur0->finish_assembly();
-        print_matlab_matrix("matrix.m");
+        print_matlab_matrix("matrix");
 	    schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
-        //print_matlab_matrix("matrix.m");
 
 	    if (! is_steady) {
 	        START_TIMER("fix time term");
@@ -1422,16 +1420,27 @@ void DarcyMH::assembly_linear_system() {
 
 void DarcyMH::print_matlab_matrix(std::string matlab_file)
 {
+    std::string output_file;
+    
     if ( typeid(*schur0) == typeid(LinSys_BDDC) ){
-        DebugOut() << "LinSys BDDC does not implement get_matrix().";
-        return;
+        WarningOut() << "Can output matrix only on a single processor.";
+        output_file = FilePath(matlab_file + "_bddc.m", FilePath::output_file);
+        ofstream os( output_file );
+        auto bddc = static_cast<LinSys_BDDC*>(schur0);
+        bddc->print_matrix(os);
     }
-
-    PetscViewer    viewer;
-    PetscViewerASCIIOpen(PETSC_COMM_WORLD, matlab_file.c_str(), &viewer);
-    PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-    MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
-    VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+    else {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
+        output_file = FilePath(matlab_file + ".m", FilePath::output_file);
+        PetscViewer    viewer;
+        PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
+        PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+        MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
+        VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+    }
+//     else{
+//         WarningOut() << "No matrix output available for the current solver.";
+//         return;
+//     }
     
     // compute h_min for different dimensions
     double d_max = std::numeric_limits<double>::max();
@@ -1458,7 +1467,7 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     if(he3 == d_max) he3 = 0;
     
     FILE * file;
-    file = fopen(matlab_file.c_str(),"a");
+    file = fopen(output_file.c_str(),"a");
     fprintf(file, "nA = %d;\n", mh_dh.side_ds->size());
     fprintf(file, "nB = %d;\n", mh_dh.el_ds->size());
     fprintf(file, "nBF = %d;\n", mh_dh.edge_ds->size());
