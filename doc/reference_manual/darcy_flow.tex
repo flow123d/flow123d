@@ -125,41 +125,39 @@ $H_d^D$ \units{}{1}{} related to the pressure head through \eqref{eq:piezo_head}
 
 {\bf Total flux} boundary condition (combination of Neumann and Robin type)
 \[
-    -\vc q_d \cdot \vc n = q_d^N + \sigma_d^R ( h_d^R - h_d)        \text{ on }\Gamma_d^{TF},
+    -\vc q_d \cdot \vc n = \delta_d\left(q_d^N + \sigma_d^R ( h_d^R - h_d)\right)        \text{ on }\Gamma_d^{TF},
 \]
-where $q_d^N$ \units{}{4-d}{-1} is the \hyperA{Flow-Darcy-MH-Data::bc-flux}{surface density of the water inflow},
-$h_d^R$ is the \Alink{Flow-Darcy-MH-Data::bc-pressure}{boundary pressure head} and
-$\sigma_d^R$ \units{}{3-d}{-1}  
+where $q_d^N$ \units{}{1}{-1} is the \hyperA{Flow-Darcy-MH-Data::bc-flux}{surface density of the water inflow},
+$h_d^R$ \units{}{1}{} is the \Alink{Flow-Darcy-MH-Data::bc-pressure}{boundary pressure head} and
+$\sigma_d^R$ \units{}{}{-1}  
 is the \hyperA{Flow-Darcy-MH-Data::bc-robin-sigma}{transition coefficient}.
 As before one can also prescribe the \Alink{Flow-Darcy-MH-Data::bc-piezo-head}{boundary piezo head}
 $H_d^R$ to specify $h_d^R$.
 
-{\bf Seepage face} This condition is used to model surface with possible springs:
-\[
-    h_d \le h_d^S\quad \text{and} \quad \vc q_d \cdot \vc n \ge q_d^N
-\]    
+{\bf Seepage face} condition is used to model surface with possible springs:
+\begin{equation}\label{eq:seepage}
+    h_d \le h_d^S\quad \text{and} \quad -\vc q_d \cdot \vc n \le \delta_d q_d^N
+\end{equation}
 while the equality holds in at least one inequality. The \hyperA{Flow-Darcy-MH-Data::bc-switch-pressure}{switch pressure head} 
-$h_d^S$ \units{1}{}{} can alternatively be given by \hyperA{Flow-Darcy-MH-Data::bc-switch-piezo-head}{switch piezometric head}.
+$h_d^S$ \units{}{1}{} can alternatively be given by \hyperA{Flow-Darcy-MH-Data::bc-switch-piezo-head}{switch piezometric head}.
 
-The former inequality
-(usually with default value $h_d^S=0$) disallow non-zero water height on the surface, the later
-inequality (again with default value $q_d^N=0$) allows only outflow from the domain (i.e. spring).
-In practice one may want to allow given water height $h_d^D$ or given infiltration (e.g. precipitation-evaporation) $q_d^N$.
+The first inequality in \eqref{eq:seepage}
+with the default value $h_d^S=0$ disallows non-zero water height on the surface, the later
+inequality with default value $q_d^N=0$ allows only outflow from the domain (i.e. spring).
+In practice one may want to allow given water height $h_d^S$ or given infiltration (e.g. precipitation-evaporation) $q_d^N$.
 
-
-{\bf River} boundary condition
-This boundary condition models free water surface with bedrock of given conductivity. 
+{\bf River} boundary condition models free water surface with bedrock of given conductivity. 
 We prescribe:
 \begin{align}
-  \vc q_d \cdot \vc n &= \sigma_d^R ( H_d - H_d^D) + q_d^N, \quad \text{for} H_d \ge H_d^S,\\
-  \vc q_d \cdot \vc n &= \sigma_d^R ( H_d^S - H_d^D)+q_d^N, \quad \text{for} H_d < H_d^S,
+  -\vc q_d \cdot \vc n &= \delta_d\left(\sigma_d^R ( H_d - H_d^D) + q_d^N\right), \quad \text{for } H_d \ge H_d^S,\\
+  -\vc q_d \cdot \vc n &= \delta_d\left(\sigma_d^R ( H_d^S - H_d^D)+q_d^N\right), \quad \text{for } H_d < H_d^S,
 \end{align}
 where $H_d$ is piezometric head.
 The parameters of the condition are given by similar fields of other boundary conditions: 
-the \hyperA{Flow-Darcy-MH-Data::bc-robin-sigma}{transition coefficient} of the bedrock $\sigma_d^R$ \units{}{3-d}{-1}, 
+the \hyperA{Flow-Darcy-MH-Data::bc-robin-sigma}{transition coefficient} of the bedrock $\sigma_d^R$ \units{}{}{-1}, 
 the piezometric head of the water surface given as \Alink{Flow-Darcy-MH-Data::bc-piezo-head}{boundary piezometric head}  $H_d^D$ \units{}{1}{},
 the head of the bottom of the river given as the \Alink{Flow-Darcy-MH-Data::bc-switch-piezo-head}{switch piezometric head} 
-$h_d^S$ \units{1}{}{}. The boundary flux $q_d^N$ is zero by default, but can be used to express approximation of the seepage face condition 
+$h_d^S$ \units{}{1}{}. The boundary flux $q_d^N$ is zero by default, but can be used to express approximation of the seepage face condition 
 (see discussion below).  The piezometric heads  $H_d^S$ and $H_d^R$ may be alternatively 
 given by pressure heads $h_d^S$ and $h_d^R$, respectively.
 
@@ -170,15 +168,15 @@ For the water level below the bottom the infiltration is given by the water colu
 The river could be used to approximate the seepage face condition in the similar way as the Robin boundary condition with large $\sigma$ 
 can approximate Dirichlet boundary condition. We rewrite the condition as follows
 \begin{align}
-  \vc q_d \cdot \vc n &= \sigma_d^R ( h_d - h_d^D) + q_d^N, \quad \text{for} q_d \cdot \vc n \ge \sigma_d^R ( h_d^S - h_d^D) + q_d^N,\\
-  \vc q_d \cdot \vc n &= \sigma_d^R ( h_d^S - h_d^D)+q_d^N, \quad \text{for} h_d < h_d^S.
+  -\vc q_d \cdot \vc n &= \delta_d\left(\sigma_d^R ( h_d - h_d^D) + q_d^N\right), \quad \text{for } -\vc q_d \cdot \vc n \ge \delta_d\left(\sigma_d^R ( h_d^S - h_d^D) + q_d^N\right),\\
+  -\vc q_d \cdot \vc n &= \delta_d\left(\sigma_d^R ( h_d^S - h_d^D)+q_d^N\right), \quad \text{for } h_d < h_d^S.
 \end{align}
 Now if we take $h_d^S=h_d^D$, we obtain
 \begin{align}
-  \vc q_d \cdot \vc n &= \sigma_d^R ( h_d - h_d^S) + q_d^N, \quad \text{for} q_d \cdot \vc n \ge q_d^N,\\
-  \vc q_d \cdot \vc n &= q_d^N, \quad \text{for} h_d < h_d^S.
+  -\vc q_d \cdot \vc n &= \delta_d\left(\sigma_d^R ( h_d - h_d^S) + q_d^N\right), \quad \text{for } -\vc q_d \cdot \vc n \ge \delta_d q_d^N,\\
+  -\vc q_d \cdot \vc n &= \delta_d q_d^N, \quad \text{for } h_d < h_d^S,
 \end{align}
-where the first equation approximates $h_d = h_d^S$ as long as $\sigma_d^R$ is large.
+where the first equation approximates $h_d = h_d^S$ if $\sigma_d^R$ is sufficiently large.
 
 TODO: mixing seepage and river condition on single element using weighting.
 \begin{align}
