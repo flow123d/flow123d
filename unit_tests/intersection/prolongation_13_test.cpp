@@ -108,8 +108,8 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, s
     
     ils[6][3] = {arma::vec3({0,0,0})};
     ils[6][4] = {arma::vec3({0,0,0})};
-    ils[6][5] = {arma::vec3({-0.1,-0.3,-0.1}),arma::vec3({0,0,0})};
-    ils[6][6] = {arma::vec3({0,0,0}),arma::vec3({0.3,0.1,0.1})};
+    ils[6][5] = {arma::vec3({0,0,0}),arma::vec3({0.3,0.1,0.1})};
+    ils[6][6] = {arma::vec3({-0.1,-0.3,-0.1}),arma::vec3({0,0,0})};
     ils[6][7] = {arma::vec3({0,0,0})};
     ils[6][8] = {arma::vec3({0,0,0})};
     
@@ -165,16 +165,18 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     // and we avoid creating the intersection map for exact IPs
     std::sort(ilc.begin(), ilc.end(),compare_is13);
     
-    EXPECT_EQ(ilc.size(), il.size());
+    EXPECT_EQ(il.size(), ilc.size());
     
     for(unsigned int i=0; i < ilc.size(); i++)
         for(unsigned int j=0; j < ilc[i].size(); j++)
     {
-        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
+        MessageOut().fmt("---------- check Intersection[{}] el_1d: {} el_3d: {} ----------\n",i,
+                ilc[i].component_ele_idx(), ilc[i].bulk_ele_idx());
+        DebugOut()<< "bary: " << ilc[i][j].comp_coords();
         arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
-        EXPECT_NEAR(ip[0], il[i][j][0], 1e-14);
-        EXPECT_NEAR(ip[1], il[i][j][1], 1e-14);
-        EXPECT_NEAR(ip[2], il[i][j][2], 1e-14);
+        EXPECT_NEAR(il[i][j][0], ip[0], 1e-14);
+        EXPECT_NEAR(il[i][j][1], ip[1], 1e-14);
+        EXPECT_NEAR(il[i][j][2], ip[2], 1e-14);
     }
     
     computed_length = ie.measure_13();
@@ -198,6 +200,11 @@ TEST(intersection_prolongation_13d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s<filenames.size(); s++)
     {
+        /*
+        // skip failing prolongation
+        if (s == 6) continue;
+        */
+
         MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
         FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         

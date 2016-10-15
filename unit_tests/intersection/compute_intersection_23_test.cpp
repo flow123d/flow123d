@@ -81,12 +81,15 @@ TEST(area_intersections, all) {
     read_files_form_dir(dir_name, "msh", filenames);
 
     // for each mesh, compute intersection area and compare with old NGH
+    unsigned int i_file=0;
     for(auto &fname : filenames)
     {
+
         const unsigned int np = permutations_triangle.size();
         for(unsigned int p=0; p<np; p++)
         {
-            MessageOut() << "Computing intersection on mesh: " << fname << "\n";
+            if (p>0) break;
+            MessageOut().fmt("Computing intersection on mesh #{}: {} permutation #{}\n", i_file,  fname, p);
             FilePath mesh_file(dir_name + fname, FilePath::input_file);
             
             Mesh mesh;
@@ -104,5 +107,6 @@ TEST(area_intersections, all) {
             
             compute_intersection_area_23d(&mesh);
         }
+        i_file++;
     }
 }

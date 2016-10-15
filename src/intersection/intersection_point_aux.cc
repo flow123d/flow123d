@@ -19,7 +19,7 @@ void IntersectionPointAux<N,M>::clear()
     local_bcoords_B_.zeros();
     idx_A_ = 0;
     idx_B_ = 0;
-    orientation_ = 1;
+    orientation_ = IntersectionResult::none;
     dim_A_ = N;
     dim_B_ = M;
 }
@@ -52,7 +52,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-1> &IP, unsigned int idx_B){
+IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1> &IP, unsigned int idx_B){
     ASSERT_DBG(M>1 && M<4);
     
     local_bcoords_A_ = IP.local_bcoords_A();
@@ -78,7 +78,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-1> &IP,
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-2> &IP, unsigned int idx_B){
+IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-2> &IP, unsigned int idx_B){
     ASSERT_DBG(M == 3);
 
     local_bcoords_A_ = IP.local_bcoords_A();
@@ -102,7 +102,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-2> &IP,
 };
 
 template<unsigned int N, unsigned int M>
-IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects()
+IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects() const
 {
     IntersectionPointAux<M,N> IP;
     IP.set_coordinates(local_bcoords_B_,local_bcoords_A_);
@@ -138,7 +138,7 @@ template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const 
     s.local_bcoords_A_.print(os);
     os << "Local coords on element B(id=" << s.idx_B_ << ", dim=" << s.dim_B_ << ")" << endl;
     s.local_bcoords_B_.print(os);
-    os << "Orientation: " << s.orientation_ << " Patological: " << s.is_pathologic() << endl;
+    os << "Orientation: " << int(s.orientation_) << " Patological: " << s.is_pathologic() << endl;
     return os;
 }
 

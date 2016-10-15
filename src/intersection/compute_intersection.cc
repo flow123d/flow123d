@@ -122,9 +122,11 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(comput
     
     //assert inaccurate barycentric coordinates
     ASSERT_DBG(1-rounding_epsilonX <= local[0]+local[1]+local[2] &&
-           local[0]+local[1]+local[2] <= 1+rounding_epsilonX);
-    
+           local[0]+local[1]+local[2] <= 1+rounding_epsilonX)(local[0]+local[1]+local[2]);
+
+
     arma::vec3 local_triangle({local[2],local[1],local[0]});
+
     // local coordinate T on the line
     // for i-th coordinate it holds: (from formula (4) on pg. 12 in BP VF)
     // T = localAbscissa= (- A(i) + ( 1 - alfa - beta ) * V0(i) + alfa * V1(i) + beta * V2 (i)) / U(i)
@@ -138,14 +140,16 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(comput
     if(fabs((double)u[2]) > fabs(max)){ max = u[2]; i = 2;}
 
     // global coordinates in triangle
-    arma::vec3 global_triangle =
-    local_triangle[0]*(*triangle_)[0][0].point_coordinates() +
-    local_triangle[1]*(*triangle_)[0][1].point_coordinates() +
-    local_triangle[2]*(*triangle_)[1][1].point_coordinates();
+    double isect_coord_i =
+    local_triangle[0]*(*triangle_)[0][0].point_coordinates()[i] +
+    local_triangle[1]*(*triangle_)[0][1].point_coordinates()[i] +
+    local_triangle[2]*(*triangle_)[1][1].point_coordinates()[i];
 
     //theta on abscissa
-    double t =  (-(*abscissa_)[0].point_coordinates()[i] + global_triangle[i])/max;
-//     DBGMSG("t=%e\n",t);
+    //DebugOut() << "lineA: " << (*abscissa_)[0].point_coordinates();
+    //DebugOut() << "lineB: " << (*abscissa_)[1].point_coordinates();
+    double t =  (-(*abscissa_)[0].point_coordinates()[i] + isect_coord_i)/max;
+    //DebugOut().VarFmt(t).VarFmt(isect_coord_i).VarFmt(max);
         
     /*
     DBGMSG("Coordinates: line; local and global triangle\n");
@@ -154,8 +158,8 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(comput
     global_triangle.print();
     */
     IP.set_topology_B(0, 2);
-    IP.set_orientation(signed_plucker_product(0) > 0 ? 1 : 0);
     
+
     // possibly set abscissa vertex {0,1}
     if( fabs(t) <= rounding_epsilon)       { t = 0; IP.set_topology_A(0,0);}
     else if(fabs(1-t) <= rounding_epsilon) { t = 1; IP.set_topology_A(1,0);}
@@ -253,7 +257,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_pathologic(uns
     // if IP is inside of triangle side
     if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
 
-        IP.set_orientation(2);  // set orientation as a pathologic case ( > 1)
+        IP.set_orientation(IntersectionResult::degenerate);  // set orientation as a pathologic case ( > 1)
         // possibly set abscissa vertex {0,1}
         if( fabs(s) <= geometry_epsilon)       { s = 0; IP.set_topology_A(0,0);}
         else if(fabs(1-s) <= geometry_epsilon) { s = 1; IP.set_topology_A(1,0);}
@@ -281,11 +285,16 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_pathologic(uns
 }
 
 
-bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPointAux<1,2>> &IP12s, 
-                                                          bool compute_zeros_plucker_products){
-
+IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPointAux<1,2>> &IP12s,
+                                                          bool compute_zeros_plucker_products)
+{
+    ASSERT_EQ_DBG(0, IP12s.size());
     compute_plucker_products();
     computed_ = true;
+
+    //DebugOut() << "LINE: \n" << (*abscissa_)[0].point_coordinates()
+    //                       << (*abscissa_)[1].point_coordinates();
+
     
     // convert plucker products to local coords
     arma::vec3 w = {signed_plucker_product(0),
@@ -296,39 +305,63 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
     if(std::abs(w_sum) > rounding_epsilonX)
         w = w / w_sum;
     
-    // test whether all plucker products have the same sign
-    if(((w[0] > rounding_epsilon) && (w[1] > rounding_epsilon) && (w[2] > rounding_epsilon)) ||
-       ((w[0] < -rounding_epsilon) && (w[1] < -rounding_epsilon) && (w[2] < -rounding_epsilon))){
-        
+    unsigned int n_positive = 0;
+    unsigned int n_negative = 0;
+    unsigned int zero_idx_sum =0;
+
+    for (unsigned int i=0; i < 3; i++) {
+        if (w[i] > rounding_epsilon) n_positive++;
+        else if ( w[i] > -rounding_epsilon) zero_idx_sum+=i;
+        else n_negative++;
+    }
+
+    // any negative barycentric coordinate means, no intersection
+    if (n_negative>0) return IntersectionResult::none;
+
+    // test whether any plucker products is non-zero
+    if (n_positive > 0) {
         IntersectionPointAux<1,2> IP;
         
-        if(compute_plucker(IP, w))
-        {
-            IP12s.push_back(IP);
-            return true;
+        compute_plucker(IP, w);
+        // edge of triangle
+        unsigned int non_zero_idx=0;
+        if (n_positive == 2) {
+            // one zero product, intersection on the zero edge
+            // the zero edge index is equal to zero_idx_sum
+            IP.set_topology_B(zero_idx_sum, 1);
+            non_zero_idx =  (zero_idx_sum + 1) % 3;
         }
-    }else if(compute_zeros_plucker_products){
-        
-        // 1 zero product -> IP is on the triangle side
-        // 2 zero products -> IP is at the vertex of triangle (there is no other IP)
+        else if (n_positive == 1) {
+            // two zero products, intersection in vertex oposite to single non-zero edge
+            // index of the non-zero edge is 3-zero_idx_sum
+            IP.set_topology_B(RefElement<2>::oposite_node(3-zero_idx_sum), 0);
+            non_zero_idx = 3-zero_idx_sum;
+        }
+        //DebugOut().VarFmt(non_zero_idx).VarFmt(signed_plucker_product(non_zero_idx));
+
+        auto result = signed_plucker_product(non_zero_idx) > 0 ?
+                IntersectionResult::positive : IntersectionResult::negative;
+        IP.set_orientation(result);
+
+        IP12s.push_back(IP);
+        return result;
+
+    } else if(compute_zeros_plucker_products){
+        ASSERT_DBG(0).error("currently unsupported");
         // 3 zero products: 
         //      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
         //      -> triangle side is part of the line (and otherwise)
         for(unsigned int i = 0; i < 3;i++){
-            if( std::abs(w[i]) <= rounding_epsilon ){
-//                 DBGMSG("Intersections - Pathologic case, side %d.\n",i);
                 IntersectionPointAux<1,2> IP;
                 if(compute_pathologic(i,IP))
                 {
-//                     DBGMSG("Intersections - Pathologic case PUSH.\n");
                     IP12s.push_back(IP);
-                    return true;
+                    return IntersectionResult::degenerate;
                 }
-            }
         }
+    } else {
+        return IntersectionResult::degenerate;
     }
-    
-    return false;   // if IP not found before
 };
 
 unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< IntersectionPointAux< 1, 2 > >& IP12s)
@@ -541,14 +574,14 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
             local_ip_counter = CI12[i].compute_final(IP12s);    // compute; if intersection exists then continue
             if(local_ip_counter == 0) continue;
             
-            unsigned int triangle_line = i%3; //i goes from 0 to 5 -> i%3 = 0,1,2,0,1,2
+            unsigned int triangle_side = i%3; //i goes from 0 to 5 -> i%3 = 0,1,2,0,1,2
 //             DBGMSG("found %d\n", i);
             ip_coutner += local_ip_counter;
             
             for(IntersectionPointAux<1,2> &IP : IP12s)
             {
                 IntersectionPointAux<2,1> IP21 = IP.switch_objects();   // swicth dim 12 -> 21
-                IntersectionPointAux<2,2> IP22(IP21, triangle_line);    // interpolate dim 21 -> 22
+                IntersectionPointAux<2,2> IP22(IP21, triangle_side);    // interpolate dim 21 -> 22
                 
                 if(i < 3){
                     //switch back to keep order of triangles [A,B]
@@ -559,7 +592,7 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                         // DBGMSG("set_node A\n");
                         // we are on line of the triangle A, and IP.idx_A contains local node of the line
                         // we know vertex index
-                        unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()];
+                        unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()];
                         IP22.set_topology_A(node, 0);
                         
                         // set flag on all sides of tetrahedron connected by the node
@@ -586,7 +619,7 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                     // DBGMSG("set_node B\n");
                     // we are on line of the triangle, and IP.idx_A contains local node of the line
                     // we know vertex index
-                    unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()];
+                    unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()];
                     IP22.set_topology_B(node, 0);
                     
                     // set flag on both sides of triangle connected by the node
@@ -748,10 +781,11 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAu
     unsigned int count = compute(intersection.i_points_);
     
     // set if pathologic!!
+    /*
     for(IntersectionPointAux<1,3> &p : intersection.i_points_){
         if(p.is_pathologic()) intersection.pathologic_ = true;
         break;
-    }
+    }*/
     
     return count;
     
@@ -760,144 +794,113 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAu
 unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPointAux<1,3>> &IP13s){
 
 	std::vector<IntersectionPointAux<1,2>> IP12s;
-	unsigned int pocet_pruniku = 0;
+	ASSERT_EQ_DBG(0, IP13s.size());
 
-    // loop over sides of tetrahedron 
-	for(unsigned int side = 0;side < RefElement<3>::n_sides && pocet_pruniku < 2;side++){
-		if(!CI12[side].is_computed() // if not computed yet
-            && CI12[side].compute(IP12s, true)){    // compute; if intersection exists then continue
+   // loop over faces of tetrahedron
+	for(unsigned int face = 0; face < RefElement<3>::n_sides && IP13s.size() < 2; face++){
+	    IP12s.clear();
 
-//             DBGMSG("1d-3d side %d\n",side);
-            IntersectionPointAux<1,2> IP = IP12s.back();   // shortcut
-            IntersectionPointAux<1,3> IP13(IP, side);
+
+		if  (CI12[face].is_computed()) continue;
+	    IntersectionResult result = CI12[face].compute(IP12s, false);
+        //DebugOut().VarFmt(face).VarFmt(int(result)) << "1d-3d";
+
+		if (int(result) < int(IntersectionResult::degenerate) ) {
+		    ASSERT_EQ_DBG(1, IP12s.size());
+            IntersectionPointAux<1,2> &IP = IP12s.back();   // shortcut
+            IntersectionPointAux<1,3> IP13(IP, face);
         
-			if(IP.is_pathologic()){   // resolve pathologic cases
-//                 DBGMSG("pathologic 13x\n");
-                // set the 'computed' flag on the connected sides by IP
-                if(IP.dim_B() == 0) // IP is vertex of triangle
-                {
-                    // map side (triangle) node index to tetrahedron node index
-                    unsigned int node = RefElement<3>::interact(Interaction<0,2>(side))[IP.idx_B()];
-                    // set flag on all sides of tetrahedron connected by the node
-                    for(unsigned int s=0; s < RefElement<3>::n_sides_per_node; s++)
-                        CI12[RefElement<3>::interact(Interaction<2,0>(node))[s]].set_computed();
-                    // set topology data for object B (tetrahedron) - node
-                    IP13.set_topology_B(node, IP.dim_B());
-                }
-                else if(IP.dim_B() == 1) // IP is on edge of triangle
-                {
-                    for(unsigned int s=0; s < RefElement<3>::n_sides_per_line; s++)
-                        CI12[RefElement<3>::interact(Interaction<2,1>(IP.idx_B()))[s]].set_computed();
-                    IP13.set_topology_B(RefElement<3>::interact(Interaction<1,2>(side))[IP.idx_B()], IP.dim_B());
-                }
-			}
-			
-			pocet_pruniku++;
+            // set the 'computed' flag on the connected sides by IP
+            if(IP.dim_B() == 0) // IP is vertex of triangle
+            {
+                // map side (triangle) node index to tetrahedron node index
+                unsigned int node = RefElement<3>::interact(Interaction<0,2>(face))[IP.idx_B()];
+                IP13.set_topology_B(node, IP.dim_B());
+                // set flag on all sides of tetrahedron connected by the node
+                for(unsigned int node_face : RefElement<3>::interact(Interaction<2,0>(node)))
+                    CI12[node_face].set_computed();
+                // set topology data for object B (tetrahedron) - node
+
+            }
+            else if(IP.dim_B() == 1) // IP is on edge of triangle
+            {
+                unsigned int edge = RefElement<3>::interact(Interaction<1,2>(face))[IP.idx_B()];
+                IP13.set_topology_B(edge, IP.dim_B());
+                for(unsigned int edge_face : RefElement<3>::interact(Interaction<2,1>(edge)))
+                    CI12[edge_face].set_computed();
+            }
+
+            //DebugOut() << IP13;
             IP13s.push_back(IP13);
 		}
 	}
-    
-    ASSERT_LE(pocet_pruniku, 2);
-    
+	if (IP13s.size() == 0) return IP13s.size();
+
 	// in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
-	if(pocet_pruniku == 1){
-		double f_theta = IP13s[IP13s.size()-1].local_bcoords_A()[1];
+	if(IP13s.size() == 1){
+		double f_theta = IP13s[0].local_bcoords_A()[1];
+		// TODO: move this test to separate function of 12 intersection
         // no tolerance needed - it was already compared and normalized in 1d-2d
 		if(f_theta > 1 || f_theta < 0){
-			pocet_pruniku = 0;
 			IP13s.pop_back();
 		}
 
-	}else if(pocet_pruniku == 2){
-        
-        // create shortcuts
-        IntersectionPointAux<1,3> 
-            &a1 = IP13s[IP13s.size()-2],   // start point
-            &a2 = IP13s[IP13s.size()-1];   // end point
+	} else {
+	    ASSERT_EQ_DBG(2, IP13s.size());
+        // order IPs according to the lline parameter
+        if(IP13s[0].local_bcoords_A()[1] > IP13s[1].local_bcoords_A()[1])
+            std::swap(IP13s[0], IP13s[1]);
+        double t[2];
+        int sign[2];
+        int ip_sign[] = {-2, +2}; // states to cut
+        for( unsigned int ip=0; ip<2; ip++) {
+            t[ip] = IP13s[ip].local_bcoords_A()[1];
 
-        // swap the ips in the line coordinate direction (0->1 : a1->a2)        
-        if(a1.local_bcoords_A()[1] > a2.local_bcoords_A()[1])
-        {
-//             DBGMSG("Swap.\n");
-            std::swap(a1, a2);
-        }
-        
-        // get first and second theta (coordinate of ips on the line)
-        double t1, t2;
-        t1 = a1.local_bcoords_A()[1];
-        t2 = a2.local_bcoords_A()[1];
-//         DBGMSG("t1=%e, t2=%e\n",t1,t2);
-        // cut off the line by the abscissa points
-        bool cut1 = false, cut2 = false;    //flags to avoid unnecessary interpolation
-        if(t1 < 0) { t1 = 0; cut1 = true;}
-        if(t2 > 1) { t2 = 1; cut2 = true;}
-        
-        if(t2 < t1) { // then the intersection is outside the abscissa => NO intersection
-            pocet_pruniku = 0;
-            IP13s.pop_back();
-            IP13s.pop_back(); 
-            return pocet_pruniku;
+            // TODO move this into 12d intersection, possibly with results -2, -1, 0, 1, 2; -1,1 for position on end points
+            sign[ip] = (t[ip] < 0 ? -2 : (t[ip] > 1 ? +2 : 0) );
+            if (t[ip] == 0) sign[ip] = -1;
+            if (t[ip] == 1) sign[ip] = +1;
+
+            // cut every IP to its end of the line segment
+            if (sign[ip] == ip_sign[ip]) {
+                t[ip]=ip;
+                correct_tetrahedron_ip_topology(t[ip], ip, IP13s);
+            }
+            if (sign[ip] == -1)  IP13s[ip].set_topology_A(0, 0);
+            if (sign[ip] == +1)  IP13s[ip].set_topology_A(1, 0);
         }
 
-        if(t1 == 0) // interpolate IP a1
-        {
-            //if cut (non-compatible case), then interpolate
-            if(cut1)
-            {
-//                 DBGMSG("cut 1\n");
-            arma::vec4 local_tetra = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
-                                                                                   a2.local_bcoords_B(), 
-                                                                                   a1.local_bcoords_A()[1],
-                                                                                   a2.local_bcoords_A()[1], 
-                                                                                   t1);
-            arma::vec2 local_abscissa({1 - t1, t1});    // abscissa local barycentric coords
-            a1.set_coordinates(local_abscissa,local_tetra);
-            // correct topology of ip in tetrahedron after interpolation
-            correct_tetrahedron_ip_topology(a1);
-            }
-            
-//             DBGMSG("E-E 0\n");
-            // set topology: node 0 of the line, tetrahedron
-            a1.set_topology_A(0, 0);
+        // intersection outside of abscissa => NO intersection
+        if (t[1] < t[0]) {
+            IP13s.clear();
+            return IP13s.size();
         }
-        
-        if(t1 == t2)    // if IPs are the same, then throw the second one away
-        {
-            pocet_pruniku = 1;
+
+        // if IPs are the same, then throw the second one away
+        if(t[0] == t[1]) {
             IP13s.pop_back();
-        }
-        else if(t2 == 1) // interpolate IP a2
-        {
-            //if cut (non-compatible case), then interpolate
-            if(cut2)
-            {
-//                 DBGMSG("cut 2\n");
-            arma::vec4 local_tetra = RefElement<3>::line_barycentric_interpolation(a1.local_bcoords_B(), 
-                                                                                   a2.local_bcoords_B(), 
-                                                                                   a1.local_bcoords_A()[1],
-                                                                                   a2.local_bcoords_A()[1], 
-                                                                                   t2);
-            arma::vec2 local_abscissa({1 - t2, t2});    // abscissa local barycentric coords
-            a2.set_coordinates(local_abscissa,local_tetra);
-            correct_tetrahedron_ip_topology(a2);
-            }
-//             DBGMSG("E-E 1\n");
-            // set topology: node 1 of the line, tetrahedron
-            a2.set_topology_A(1, 0);
         }
     }
-    return pocet_pruniku;
+
+    return IP13s.size();
 };
 
-void ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::correct_tetrahedron_ip_topology(IntersectionPointAux< 1, 3 >& ip)
+void ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::correct_tetrahedron_ip_topology(
+        double t, unsigned int ip, std::vector<IPAux> &ips)
 {
+    arma::vec4 local_tetra = RefElement<3>::line_barycentric_interpolation(
+                                ips[0].local_bcoords_B(), ips[1].local_bcoords_B(),
+                                ips[0].local_bcoords_A()[1], ips[1].local_bcoords_A()[1], t);
+    arma::vec2 local_abscissa({1 - t, t});    // abscissa local barycentric coords
+    ips[ip].set_coordinates(local_abscissa, local_tetra);
+
     // create mask for zeros in barycentric coordinates
     // coords (*,*,*,*) -> byte bitwise xxxx
     // only least significant one byte used from the integer
     unsigned int zeros = 0;
     unsigned int n_zeros = 0;
     for(char i=0; i < 4; i++){
-        if(std::fabs(ip.local_bcoords_B()[i]) < geometry_epsilon) 
+        if(std::fabs(ips[ip].local_bcoords_B()[i]) < geometry_epsilon)
         {
             zeros = zeros | (1 << (3-i));
             n_zeros++;
@@ -906,13 +909,13 @@ void ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::correct_tetrahedron_ip
     
     switch(n_zeros)
     {
-        default: ip.set_topology_B(0,3);  //inside tetrahedon
+        default: ips[ip].set_topology_B(0,3);  //inside tetrahedon
                  break;
-        case 1: ip.set_topology_B(RefElement<3>::topology_idx<2>(zeros),2);
+        case 1: ips[ip].set_topology_B(RefElement<3>::topology_idx<2>(zeros),2);
                 break;
-        case 2: ip.set_topology_B(RefElement<3>::topology_idx<1>(zeros),1);
+        case 2: ips[ip].set_topology_B(RefElement<3>::topology_idx<1>(zeros),1);
                 break;
-        case 3: ip.set_topology_B(RefElement<3>::topology_idx<0>(zeros),0);
+        case 3: ips[ip].set_topology_B(RefElement<3>::topology_idx<0>(zeros),0);
                 break;
     }
 };
@@ -951,7 +954,12 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::print_plucker_coordinates_tree
  *                                  COMPUTE INTERSECTION FOR:             2D AND 3D
  ************************************************************************************************************/
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection()
+: no_idx(100),
+s4_dim_starts({0, 4, 10, 14}),
+s3_side_start(15) // 3 sides
+
 {
+
     plucker_coordinates_triangle_.resize(3, nullptr);
     plucker_coordinates_tetrahedron.resize(6, nullptr);
     plucker_products_.resize(3*6, nullptr);
@@ -959,6 +967,7 @@ ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection()
 
 
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron)
+: ComputeIntersection()
 {
     plucker_coordinates_triangle_.resize(3);
     plucker_coordinates_tetrahedron.resize(6);
@@ -1039,71 +1048,281 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3  >& intersection, 
-                                                          std::vector<unsigned int> &prolongation_table){
+                                                          std::vector<unsigned int> &prolongation_table)
+{
 
-	std::vector<IntersectionPointAux<1,2>> IP12s;
-	std::vector<IntersectionPointAux<1,3>> IP13s;
-	unsigned int pocet_13_pruniku;
+    IP23_list.clear();
+    degenerate_ips.clear();
 
-	for(unsigned int triangle_line = 0; triangle_line < RefElement<2>::n_lines; triangle_line++){    // go through triangle lines
-// 		DBGMSG("2d-3d triangle side %d\n",triangle_line);
-        pocet_13_pruniku = CI13[triangle_line].compute(IP13s);
-        ASSERT_DBG(pocet_13_pruniku < 3);
-//         DBGMSG("CI23: number of 1-3 intersections = %d\n",pocet_13_pruniku);
-        
-        for(unsigned int n=pocet_13_pruniku; n >= 1; n--){
-            IntersectionPointAux<1,3> IP (IP13s[IP13s.size()-n]);
-            
+	std::vector<IPAux13> IP13s;
+
+	std::vector<unsigned int> IP_next;
+	// 4 vertices, 6 edges, 4 faces, 1 volume
+	std::vector<unsigned int> object_next(18, no_idx);
+
+    unsigned int last_triangle_vertex=30; // no vertex at last IP
+    unsigned int current_triangle_vertex;
+
+	// pass through the ccwise oriented sides in ccwise oriented order
+	// How to make this in independent way?
+	// Move this into RefElement?
+	std::vector<unsigned int> side_cycle_orientation = { 0, 0, 1};
+	std::vector<unsigned int> cycle_sides = {0, 2, 1};
+
+	// TODO:
+	// better mechanism for detecting vertex duplicities, do no depend on cyclic order of sides
+	// still need cyclic orientation
+	for(unsigned int _i_side = 0; _i_side < RefElement<2>::n_lines; _i_side++) {    // go through triangle lines
+	    unsigned int i_side = cycle_sides[_i_side];
+	    IP13s.clear();
+        CI13[ i_side ].compute(IP13s);
+        ASSERT_DBG(IP13s.size() < 3);
+        if (IP13s.size() == 0) continue;
+        for(unsigned int _ip=0; _ip < IP13s.size(); _ip++) {
+            // fix order of IPs
+            unsigned int ip = (side_cycle_orientation[_i_side] + _ip) % IP13s.size();
+            // convert from 13 to 23 IP
+            IPAux13 &IP = IP13s[ip];
             IntersectionPointAux<3,1> IP31 = IP.switch_objects();   // switch idx_A and idx_B and coords
-            IntersectionPointAux<3,2> IP32(IP31, triangle_line);    // interpolation uses local_bcoords_B and given idx_B
-            IntersectionPointAux<2,3> IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
+            IntersectionPointAux<3,2> IP32(IP31, i_side);    // interpolation uses local_bcoords_B and given idx_B
+            IPAux23 IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
             
-            if( IP.dim_A() == 0 ) // if IP is vertex of triangle
+            if( IP.dim_A() == 0 ) // IP is vertex of triangle,
             {
                 // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
-                IP23.set_topology_A(RefElement<2>::interact(Interaction<0,1>(triangle_line))[IP.idx_A()], 0);
-            
-                if( IP.dim_B() < 3 )
-                    // if IP is on the surface of the tetrahedron,
-                    // we cannot trace it optimally
-                    intersection.pathologic_ = true;
+                current_triangle_vertex=RefElement<2>::interact(Interaction<0,1>(i_side))[IP.idx_A()];
+                IP23.set_topology_A(current_triangle_vertex, 0);
+            } else current_triangle_vertex=3+IP23_list.size(); // no vertex, and unique
+
+            if (IP13s.size() == 1) {
+                degenerate_ips.push_back(IP23);
+                current_triangle_vertex=30;
+                break;
             }
-            
-            if (IP.is_pathologic()) {intersection.pathologic_ = true; /*DBGMSG("pathologic 13\n");*/}
-            intersection.i_points_.push_back(IP23);
+
+            //DebugOut().VarFmt(current_triangle_vertex).VarFmt(last_triangle_vertex);
+            // avoid adding vertex twice
+            if (current_triangle_vertex != last_triangle_vertex)  {
+                IP23_list.push_back(IP23);
+                IP_next.push_back(no_idx);
+            }
+
+            // Tracking info
+            unsigned int tetra_object = s4_dim_starts[IP23.dim_B()] + IP23.idx_B();
+            unsigned int side_object = s3_side_start + i_side;
+            unsigned int ip_idx = IP23_list.size()-1;
+            ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size());
+            //DebugOut().VarFmt(IP23.dim_B()).VarFmt(IP23.idx_B()).VarFmt(tetra_object).VarFmt(ip_idx).VarFmt(side_object);
+            if (_ip == 0) {
+                //DebugOut() << "first"  <<  tetra_object << " to " << ip_idx;
+
+                object_next[tetra_object] = ip_idx;
+                IP_next[ip_idx] =  side_object;
+            } else {
+                //DebugOut() << "second " <<  side_object << " to " << ip_idx;
+                object_next[side_object] = ip_idx;
+                IP_next[ip_idx] = tetra_object;
+                if (object_next[tetra_object] == no_idx) {
+                    //DebugOut() << "back link " <<  side_object << " to " << ip_idx;
+                    object_next[tetra_object] = ip_idx;
+                }
+            }
         }
+        last_triangle_vertex = current_triangle_vertex;
     }
 
-	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++){
-		if(CI12[tetra_edge].compute(IP12s, false)){
-            IntersectionPointAux<1,2> IP = IP12s.back();
-            // Check whether the IP is on the abscissa (side of triangle)
-			if((IP.local_bcoords_A())[0] <= 1 && (IP.local_bcoords_A())[0] >= 0){
-//  				DBGMSG("CI23: 12 intersection\n");
-                
-				IntersectionPointAux<2,1> IP21 = IP.switch_objects();
-				IntersectionPointAux<2,3> IP23(IP21,tetra_edge);
-                
-                if(IP.dim_A() == 0) // IP is vertex of line (i.e. line of tetrahedron)
-                {
-                    IP23.set_topology_B(RefElement<3>::interact(Interaction<0,1>(tetra_edge))[IP.idx_A()], 0);
-                    // in case of tetrahedron vertex set pathologic case
-                    // since we cannot trace it optimally
-                    intersection.pathologic_ = true;
-                }
-                
-				//IP23.print();
-                if (IP.is_pathologic()) {intersection.pathologic_ = true; /*DBGMSG("pathologic 12\n");*/}
-                intersection.i_points_.push_back(IP23);
-			}
-		}
+
+    // remove possible duplicity of the first vertex
+    if (IP23_list.size() > 1 &&
+        IP23_list.front().dim_A()==0 && IP23_list.back().dim_A()==0 &&
+        IP23_list.front().idx_A()==0 && IP23_list.back().idx_A()==0)
+    {
+        unsigned int i_point = IP23_list.size() -1;
+        unsigned int i_object = IP_next[ i_point ];
+        if ( object_next[ i_object ] == i_point )  object_next[ i_object ] = 0;
+        //DebugOut() << "vtx" <<  i_object << " to " << 0;
+        //DebugOut() << "vtx" <<  s3_side_start + 2 << " to " << 0;
+        object_next[ s3_side_start + cycle_sides[2] ] = 0;
+
+        IP23_list.pop_back();
+        IP_next.pop_back();
+        //DebugOut().VarFmt(i_object).VarFmt(object_next[ i_object ]).VarFmt(i_point);
+    }
+
+
+    IP12s_.clear();
+    // S4 Edge - S3 intersections; collect all signs, make dummy intersections
+	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
+	    std::vector<IPAux12> IP12_local;
+	    IntersectionResult result = CI12[tetra_edge].compute(IP12_local, false);
+	    if (result < IntersectionResult::degenerate) {
+	        ASSERT_DBG(IP12_local.size() ==1);
+	        IP12s_.push_back(IP12_local[0]);
+	    } else {
+	        ASSERT_DBG(IP12_local.size() ==0);
+	        // make dummy intersection
+	        IP12s_.push_back(IPAux12());
+	        IP12s_.back().set_orientation(result);
+	    }
 	}
-    
-    // trace intersection polygon
-    if(intersection.size() > 1)
-        Tracing::trace_polygon(prolongation_table, intersection);
-};
+	vector<uint> processed_edge(6, 0);
+	FacePair face_pair;
+	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++) {
+	    if (! processed_edge[tetra_edge]) {
+	        IPAux12 &IP12 = IP12s_[tetra_edge];
+
+	        double edge_coord = IP12.local_bcoords_A()[0];
+	        //DebugOut().VarFmt(tetra_edge) << IP12;
+	        // skip no intersection and degenerate intersections
+	        if ( edge_coord > 1 || edge_coord < 0 || int(IP12.orientation()) >= 2 ) continue;
+
+	        uint edge_dim = IP12.dim_A();
+	        uint i_edge = tetra_edge;
+	        ASSERT_DBG(edge_dim < 2);
+
+	        if ( edge_dim == 1) {
+	            face_pair = edge_faces(i_edge);
+	        } else { // edge_dim == 0
+	            // i_edge is a vertex index in this case
+	            i_edge = RefElement<3>::interact(Interaction<0,1>(tetra_edge))[IP12.idx_A()];
+	            face_pair = vertex_faces(i_edge);
+	            if (face_pair[0] == s4_dim_starts[3]) {
+	                // S3 side touch in vertex or on edge
+
+	            }
+                // mark edges coincident with the vertex
+                for( uint ie : RefElement<3>::interact(Interaction<1,0>(i_edge)) )
+                    processed_edge[ie] = 1;
+
+	        }
+
+	        if (IP12.dim_B() < 2 ) { // boundary of S3
+	            unsigned int s4_object = s4_dim_starts[edge_dim] + i_edge;
+	            unsigned int ip = object_next[s4_object];
+	            // check that IPs match
+	            //ASSERT_EQ_DBG(edge_dim, IP23_list[ip].dim_B());
+	            //ASSERT_EQ_DBG(tetra_edge, IP23_list[ip].idx_B());
+	            if ( ip != no_idx) {
+                    //DebugOut().VarFmt(tetra_edge).VarFmt(s4_object).VarFmt(ip);
+                    ASSERT_LT_DBG(ip, IP_next.size());  // in particular ip !=no_idx
+                    if ( IP_next[ip] == s4_object) { // back link
+                        IP_next[ip] = face_pair[1];
+                    } else {
+                        object_next[face_pair[0]] = ip;
+                    }
+                    object_next[s4_object] = 2*no_idx;
+	            }
+	        } else { // interior of S3
+	            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
+	            IP23.set_topology_B(i_edge, edge_dim);
+
+                IP23_list.push_back(IP23);
+	            unsigned int ip = IP23_list.size()-1;
+	            object_next[ face_pair[0] ] = ip;
+	            IP_next.push_back( face_pair[1] );
+	        }
+	    }
+	}
+
+
+    // Return IPs in correct order
+
+
+	ASSERT_EQ(0, intersection.size());
+	if (IP23_list.size() <= 2 ) {
+	    // Need to deal with degenerate_list
+	    DebugOut()<< "Degenerate case.";
+	} else {
+	    // regular case
+	    unsigned int ip=0;
+	    while( intersection.points().size() < IP23_list.size() ) {
+	        // DebugOut().VarFmt(ip) << IP23_list[ip];
+
+	        intersection.points().push_back(IP23_list[ip]);
+	        unsigned int object = IP_next[ip];
+	        ASSERT_LT_DBG(object, no_idx);
+	        ip = object_next[object];
+	        ASSERT_LT_DBG(ip, no_idx);
+	        // DebugOut().VarFmt(object).VarFmt(ip);
+	    }
+	}
+
+	
+}
+
+auto ComputeIntersection<Simplex<2>, Simplex<3>>::edge_faces(uint i_edge)-> FacePair
+{
+    auto &line_faces=RefElement<3>::interact(Interaction<2,1>(i_edge));
+    unsigned int ip_ori = (unsigned int)(IP12s_[i_edge].orientation());
+    ASSERT_DBG(ip_ori < 2); // no degenerate case
+
+    // RefElement returns edge faces in clockwise order (edge pointing to us)
+    // negative ip sign (ori 0) = faces counter-clockwise
+    // positive ip sign (ori 1) = faces clockwise
+    return { s4_dim_starts[2] + line_faces[1-ip_ori], s4_dim_starts[2] + line_faces[ip_ori] };
+}
+
+auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> FacePair
+{
+    // vertex edges clockwise
+    const IdxVector<3> &vtx_edges = RefElement<3>::interact(Interaction<1,0>(i_vertex));
+    std::array<unsigned int, 3> n_ori, sum_idx;
+    n_ori.fill(0);
+    sum_idx.fill(0);
+    for(unsigned int ie=0; ie <3; ie++) {
+        unsigned int edge_ip_ori = (unsigned int)(IP12s_[ vtx_edges[ie]].orientation());
+        ASSERT_DBG(edge_ip_ori < 3);
+        n_ori[edge_ip_ori]++;
+        sum_idx[edge_ip_ori]+=ie;
+    }
+    unsigned int n_degen = n_ori[ int(IntersectionResult::degenerate) ];
+    unsigned int sum_degen = sum_idx[ int(IntersectionResult::degenerate) ];
+    unsigned int n_positive = n_ori[ int(IntersectionResult::positive) ];
+    unsigned int n_negative= n_ori[ int(IntersectionResult::negative) ];
+    if ( n_degen == 2 ) {
+        // regular edge
+        unsigned int i_edge = 3 - sum_degen;
+        FacePair pair = edge_faces(vtx_edges[i_edge]);
+        auto &vtx_faces = RefElement<3>::interact(Interaction<2,0>(i_vertex));
+        if (pair[0] == s4_dim_starts[2] + vtx_faces[(i_edge+1)%3])
+            return { s4_dim_starts[1] + (i_edge+2)%3,  s4_dim_starts[1] + (i_edge+1)%3 };
+        else
+            return { s4_dim_starts[1] + (i_edge+1)%3,  s4_dim_starts[1] + (i_edge+2)%3 };
+
+    } else if (n_degen == 1) {
+        unsigned int i_edge = sum_degen;
+        ASSERT( n_positive + n_negative == 2);
+        if ( n_positive == 1) { // opposite signs
+            FacePair pair = edge_faces(vtx_edges[(i_edge+1)%3]);
+            unsigned int face = RefElement<3>::interact(Interaction<2,0>(i_vertex))[i_edge];
+            if (pair[0] == s4_dim_starts[2] + face)
+                return { s4_dim_starts[2] + face, s4_dim_starts[1] + vtx_edges[i_edge]};
+            else
+                return { s4_dim_starts[1] + vtx_edges[i_edge], s4_dim_starts[2] + face };
+        } else {
+            ASSERT(n_positive == 0 || n_positive== 2);
+            return { s4_dim_starts[3], s4_dim_starts[3]};
+        }
+
+
+    } else {
+        ASSERT(n_degen == 0);
+        ASSERT( n_positive + n_negative == 3);
+
+        if (n_positive == 1) {
+            unsigned int i_edge = sum_idx[ int(IntersectionResult::positive) ];
+            return edge_faces(vtx_edges[i_edge]);
+        } else if (n_negative == 1) {
+            unsigned int i_edge = sum_idx[ int(IntersectionResult::negative) ];
+            return edge_faces(vtx_edges[i_edge]);
+        } else {
+            ASSERT( n_positive == 0 ||  n_positive == 3);
+            return { s4_dim_starts[3], s4_dim_starts[3]};
+        }
+    }
+}
+
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::print_plucker_coordinates(std::ostream &os){
 	for(unsigned int i = 0; i < 3;i++){

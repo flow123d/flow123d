@@ -38,6 +38,7 @@
 #include "simplex.hh"
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
+#include "intersection/intersection_point_aux.hh"
 
 namespace computeintersection {
 
@@ -64,6 +65,7 @@ static const double plucker_empty = std::numeric_limits<double>::infinity();
  */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
 public:
+
     /// Default constructor. Use when this is NOT final intersection object.
 	ComputeIntersection();
     /** @brief Constructor, sets abscissa and triangle object.
@@ -87,12 +89,13 @@ public:
      * @param compute_zeros_plucker_products - if true, resolve pathologic cases (zero Plucker products), 
      * otherwise ignore. E.g. in 2d-3d is false when looking for tetrahedron edges X triangle intersection
      * (these would be found before in triangle line X tetrahedron intersection).
-     * @return true, if intersection is found; false otherwise
+     * @return Orientation flag (0,1 sign of product if get intersection, 2 - three zero products (degenerated),
+     * 3 - no intersection
      * 
      * NOTE: Why this is not done in constructor?
      * Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
      */
-	bool compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
+	IntersectionResult compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
     
     /** Computes final 1d-2d intersection. (Use when this is the resulting dimension object).
      * TODO: as in 1d-3d check the topology after interpolation
@@ -336,6 +339,7 @@ private:
 template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
 
 public:
+    typedef IntersectionPointAux<1,3> IPAux;
 
 	/// Default constructor. Use when this is NOT final intersection object.
     ComputeIntersection();
@@ -363,7 +367,7 @@ public:
      * @param IP13d vector of intersection points (output)
      * @return number of intersection points found
      */
-    unsigned int compute(std::vector<IntersectionPointAux<1,3>> &IP13s);
+    unsigned int compute(std::vector<IPAux> &IP13s);
     
     /** @brief Computes final 1D-3D intersection.
      * Computes IPs and check if any of them are pathologic to set the resulting object also pathologic.
@@ -434,7 +438,7 @@ private:
     /** @brief After interpolation, the topology information in tetrahedron must be updated.
      * @param ip intersection point to be corrected
      */
-    void correct_tetrahedron_ip_topology(IntersectionPointAux<1,3> &ip);
+    void correct_tetrahedron_ip_topology(double t, unsigned int i, std::vector<IPAux> &ip);
     
     /// Pointer to plucker coordinates of abscissa.
     Plucker* plucker_coordinates_abscissa_;
@@ -459,6 +463,11 @@ private:
  */
 template<> class ComputeIntersection<Simplex<2>, Simplex<3> > {
 public:
+    typedef IntersectionPointAux<1,2> IPAux12;
+    typedef IntersectionPointAux<1,3> IPAux13;
+    typedef IntersectionPointAux<2,3> IPAux23;
+
+
     /** @brief Default constructor, creates empty object.
      * Resizes vectors for Plucker coordinates and products.
      */
@@ -490,6 +499,10 @@ public:
      * @return number of intersection points found
      */
     void compute(IntersectionAux<2,3> &intersection, std::vector<unsigned int> &prolongation_table);
+    typedef std::array<uint, 2> FacePair;
+
+    auto edge_faces(uint i_edge) -> FacePair;
+    auto vertex_faces(uint i_vtx) -> FacePair;
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
     void print_plucker_coordinates(std::ostream &os);
@@ -497,6 +510,12 @@ public:
     void print_plucker_coordinates_tree(std::ostream &os);
 
 private:
+    const unsigned int no_idx;
+    std::vector<unsigned int> s4_dim_starts;
+    const unsigned int s3_side_start; // 3 sides
+
+    std::vector<IPAux12> IP12s_;
+    std::vector<IPAux23> IP23_list, degenerate_ips;
 
     /// Vector of Plucker coordinates for triangle side.
     std::vector<Plucker *> plucker_coordinates_triangle_;

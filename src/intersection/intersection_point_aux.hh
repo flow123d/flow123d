@@ -23,7 +23,7 @@
 #include <armadillo>
 #include "mesh/mesh_types.hh"
 
-namespace computeintersection{
+namespace computeintersection {
 
 //TODO: idea:replace with relative tolerance and use some user input tolerance (absolute) of the coordinates
 static const double geometry_epsilon = 1e-9;//8*std::numeric_limits<double>::epsilon();//1e-9;
@@ -36,6 +36,18 @@ static const double rounding_epsilonX = 8*std::numeric_limits<double>::epsilon()
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> std::ostream& operator<<(std::ostream& os, const IntersectionPointAux<N,M>& IP);
     
+
+enum class IntersectionResult {
+    positive = 1,
+    negative = 0,
+    degenerate = 2,
+    none = 3
+};
+
+inline bool operator<(IntersectionResult a, IntersectionResult b) {
+    return int(a) < int(b);
+}
+
 /** @brief Internal auxiliary class represents an intersection point of simplex<N> and simplex<M>.
  * 
  * It contains barycentric coordinates of the point on both simplices.
@@ -73,7 +85,7 @@ class IntersectionPointAux {
      * 
      * In pathologic case,  it is > 1.
      */
-	unsigned int orientation_;
+	IntersectionResult orientation_;
 	
 	unsigned int dim_A_;    ///< Dimension of the object A of intersection. Equal \p N, by default.
     unsigned int dim_B_;    ///< Dimension of the object B of intersection. Equal \p M, by default.
@@ -105,7 +117,7 @@ public:
      * @param IP intersection point of lower dimension of object B
      * @param idx_B is the index of object B of IntersectionPointAux<N,M-1> in object B of IntersectionPointAux<N,M>
      */
-	IntersectionPointAux(IntersectionPointAux<N,M-1> &IP, unsigned int idx_B);
+	IntersectionPointAux(const IntersectionPointAux<N,M-1> &IP, unsigned int idx_B);
 
 	/** @brief Constructor interpolates the second bary coords
      * of IntersectionPointAux<N,M-2> to IntersectionPointAux<N,M>
@@ -114,13 +126,13 @@ public:
      * @param IP intersection point of lower dimension of object B
      * @param idx_B is the index of object B of IntersectionPointAux<N,M-2> in object B of IntersectionPointAux<N,M>
 	 */
-	IntersectionPointAux(IntersectionPointAux<N,M-2> &IP, unsigned int idx_B);
+	IntersectionPointAux(const IntersectionPointAux<N,M-2> &IP, unsigned int idx_B);
 
     /// Resets the object to default values.
     void clear();
     
     /// Switches the object A and B.
-    IntersectionPointAux<M, N> switch_objects();
+    IntersectionPointAux<M, N> switch_objects() const;
     
     ///@name Setters.
     //@{
@@ -136,7 +148,7 @@ public:
     
     void set_topology_A(unsigned int idx, unsigned int dim_A);  ///< Sets the topology of object A in Simplex<N>.
     void set_topology_B(unsigned int idx, unsigned int dim_B);  ///< Sets the topology of object B in Simplex<M>.
-    void set_orientation(unsigned int orientation);             ///< Setter orientation flag.
+    void set_orientation(IntersectionResult orientation);             ///< Setter orientation flag.
     
     //@}
 
@@ -153,7 +165,8 @@ public:
     unsigned int dim_B() const;         ///< Returns dimension of object B.
     unsigned int idx_A() const;     ///<  Returns the index of Simplex<N>.
     unsigned int idx_B() const;     ///<  Returns the index of Simplex<M>.
-    unsigned int orientation() const;   ///<  Returns the orientation.
+    // orientation: 0 - negative sign, 1 - positive sign, 2 - degenerate (zero for all sides)
+    IntersectionResult orientation() const;   ///<  Returns the orientation.
     //@}
     
     /// Computes real coordinates of IP, given the element @p ele in which IP lies.
@@ -188,7 +201,7 @@ void IntersectionPointAux<N,M>::set_topology(unsigned int idx_A,unsigned int dim
 }
     
 template<unsigned int N, unsigned int M>
-void IntersectionPointAux<N,M>::set_orientation(unsigned int orientation)
+void IntersectionPointAux<N,M>::set_orientation(IntersectionResult orientation)
 {   orientation_ = orientation; }
 
 template<unsigned int N, unsigned int M>
@@ -226,12 +239,12 @@ unsigned int IntersectionPointAux<N,M>::idx_B() const
 {   return idx_B_; }
 
 template<unsigned int N, unsigned int M>
-unsigned int IntersectionPointAux<N,M>::orientation() const
+IntersectionResult IntersectionPointAux<N,M>::orientation() const
 {   return orientation_; }
 
 template<unsigned int N, unsigned int M>
 bool IntersectionPointAux<N,M>::is_pathologic() const
-{   return (orientation_ > 1); }
+{   return (unsigned int)(orientation_) > 1; }
 
 
 } // END namespace
