@@ -16,15 +16,25 @@ TESTS_DIR="${0%/*}/${TESTS_DIR}"
 for f in $TESTS_DIR/*/*.con $TESTS_DIR/*/*.yaml
 do
 
-  if [ -f ${f%.yaml}.con ]
+  if [ -f ${f%.yaml}.con ]  # skip *.yaml converted from *.con
   then
     continue
   fi
-  if [ ! "${f%.orig.yaml}" == "$f" ]
+  if [ ! "${f%.orig.yaml}" == "$f" ]   # skip *.orig.yaml  
   then
     continue
   fi
 
+  f_base=${f%.yaml}  
+  for forig in ${f_base}.*.orig.yaml  # revert last transform of yaml before new transform
+  do
+    if [ "${forig}" == "${f_base}.0.orig.yaml" ]
+    then
+        cp -f ${forig} ${f}
+    fi
+    rm ${forig}    
+  done
+
   #echo $f
-  "${0%/*}/transform_test.sh" $f
+  python3 "${0%/*}/../input_convert.py" $f
 done

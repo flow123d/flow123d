@@ -1,0 +1,342 @@
+{
+"name": "Main transformation file",
+"description": "Template for creating transformation file",
+"old_format": "2.0.0_rc",
+"new_format": "2.0.0",
+"actions":
+  [ {
+      "NAME": "Change version.",
+      "action": "change-value",
+      "parameters":{
+          "path" : "/flow123d_version",
+          "old_value" : "2.0.0_rc",
+          "new_value" : "2.0.0"
+      }
+    },
+    {
+      "NAME": "Change version.",
+      "action": "change-value",
+      "parameters":{
+          "path" : "/flow123d_version",
+          "old_value" : "1.8.9",
+          "new_value" : "2.0.0"
+      }
+    },
+    {
+      "NAME": "Make output-specific key.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/flow_equation",
+        "key": "output_specific"
+      }
+    },
+    {
+      "NAME": "Move to output specific.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/raw_flow_output",
+        "destination_path": "/problem/flow_equation/output_specific/raw_flow_output",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move to output specific.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/compute_errors",
+        "destination_path": "/problem/flow_equation/output_specific/compute_errors",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move DarcyFlow output_stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/output_stream",
+        "destination_path": "/problem/flow_equation/output_stream",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Rename DarcyFlow output_fields.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/output_fields",
+        "destination_path": "/problem/flow_equation/output/fields"
+      }
+    },
+    {
+      "NAME": "Move time step for DarcyFlow output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output_stream/time_step",
+        "destination_path": "/problem/flow_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time_list for Darcy.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output_stream/time_list",
+        "addition_path": "/problem/flow_equation/output_stream/times",        
+        "destination_path": "/problem/flow_equation/output_stream/times"
+      }
+    },    
+    {
+      "NAME": "Move time step for DarcyFlow output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output_stream/add_input_times",
+        "destination_path": "/problem/flow_equation/output/add_input_times",
+        "create_path":true
+      }
+    },
+
+
+
+
+    {
+      "NAME": "Make output_fields in transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/transport/output_fields",
+        "destination_path": "/problem/solute_equation/transport/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in dual porosity.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in mobile reaction.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/reaction_mobile/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_mobile/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in immobile reaction.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/reaction_immobile/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make time step for transport output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/time_step",
+        "destination_path": "/problem/solute_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time_list for transport.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/time_list",
+        "addition_path": "/problem/solute_equation/output_stream/times",        
+        "destination_path": "/problem/solute_equation/output_stream/times"
+      }
+    },    
+    {
+      "NAME": "Move add_input_times for transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
+        "destination_path": "/problem/solute_equation/output/add_input_times",
+        "keep_source":true,
+        "create_path":true
+      }
+    },      
+    {
+      "NAME": "Move add_input_times for transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
+        "destination_path": "/problem/solute_equation/reaction_term/output/add_input_times",
+        "keep_source":true,
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move add_input_times for transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_mobile/output/add_input_times",
+        "keep_source":true,
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move add_input_times for transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/add_input_times",        
+        "create_path":true
+      }
+    },    
+      
+
+
+
+
+    {
+      "NAME": "Rename Heat output_fields.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output/output_fields",
+        "destination_path": "/problem/heat_equation/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time step for Heat output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/time_step",
+        "destination_path": "/problem/heat_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time_list for Heat.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/time_list",
+        "addition_path": "/problem/heat_equation/output_stream/times",        
+        "destination_path": "/problem/heat_equation/output_stream/times"
+      }
+    },    
+    {
+      "NAME": "Move time step for Heat output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/add_input_times",
+        "destination_path": "/problem/heat_equation/output/add_input_times",
+        "create_path":true
+      }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/flow_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    },
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/heat_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/flow_equation/balance",
+          "old_value" : "false",
+          "new_value" : "{add_output_times: false}"
+        }
+    },
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/balance",
+          "old_value" : "false",
+          "new_value" : "{add_output_times: false}"
+        }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/heat_equation/balance",
+          "old_value" : "false",
+          "new_value" : "{add_output_times: false}"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY, hack to deal with substitution matching the substrings",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    }
+  ]
+}

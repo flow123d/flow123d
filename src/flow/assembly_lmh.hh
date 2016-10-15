@@ -73,7 +73,7 @@ public:
 
     }
 
-    void update_water_content(LocalElementAccessorBase<3> ele) {
+    void update_water_content(LocalElementAccessorBase<3> ele) override {
         reset_soil_model(ele);
         double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
         FOR_ELEMENT_SIDES(ele.full_iter(), i) {
@@ -83,7 +83,7 @@ public:
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
-                  fadbad::B<double> evaluated( soil_model->water_content(x_phead) );
+                  fadbad::B<double> evaluated( soil_model->water_content_diff(x_phead) );
                   evaluated.diff(0,1);
                   water_content = evaluated.val();
                   capacity = x_phead.d(0);

@@ -46,6 +46,8 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
                                         " - array of strings of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                         " - just one string to enter (spatially variable) multiple of the unit matrix.\n"
                                         "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
+			.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+										"Definition of unit.")
 			.close();
 }
 
@@ -72,8 +74,10 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
-    // read formulas form input
+void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+	this->init_unit_conversion_coefficient(rec, init_data);
+
+	// read formulas form input
     STI::init_from_input( formula_matrix_, rec.val<typename STI::AccessType>("value") );
     value_input_address_ = rec.address_string();
 }
@@ -156,7 +160,7 @@ typename Value::return_type const & FieldFormula<spacedim, Value>::value(const P
 {
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            this->value_(row,col) = parser_matrix_[row][col].Eval(p.memptr());
+            this->value_(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p.memptr());
         }
     return this->r_value_;
 }
@@ -178,7 +182,7 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)
             for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-                envelope(row,col) = parser_matrix_[row][col].Eval(point_list[i].memptr());
+                envelope(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(point_list[i].memptr());
             }
     }
 }

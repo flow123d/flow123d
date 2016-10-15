@@ -236,6 +236,18 @@ FieldResult MultiField<spacedim, Value>::field_result( RegionSet region_set) con
 }
 
 
+template<int spacedim, class Value>
+std::string MultiField<spacedim, Value>::get_value_attribute() const
+{
+    int nrows = Value::NRows_;
+    int ncols = Value::NCols_;
+    string type = "Integer";
+    if (std::is_floating_point<typename Value::element_type>::value)
+        type = "Double";
+
+    return fmt::format("{{ \"subfields\": true, \"shape\": [ {}, {} ], \"type\": \"{}\" }}", nrows, ncols, type);
+}
+
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::setup_components() {
@@ -334,7 +346,8 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 				++it; ++position;
 			}
 
-		typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
+		FieldAlgoBaseInitData init_data(field.n_comp(), field.units());
+		typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), init_data );
 		field_algo_base->set_component_idx(index_);
 		return field_algo_base;
 	}

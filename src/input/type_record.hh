@@ -332,7 +332,7 @@ public:
     virtual string class_name() const override { return "Record"; }
 
     /// Class comparison and Record type name comparision.
-    bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const override;
 
     /**
      * @brief Interface to mapping key -> index in record.

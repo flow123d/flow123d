@@ -23,8 +23,6 @@
 #include "input/reader_to_storage.hh"
 
 #include <boost/typeof/typeof.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 

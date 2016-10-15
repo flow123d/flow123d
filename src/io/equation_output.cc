@@ -10,6 +10,7 @@
 #include "input/accessors.hh"
 #include "io/equation_output.hh"
 #include "io/output_time_set.hh"
+#include "input/flow_attribute_lib.hh"
 #include <memory>
 
 
@@ -69,7 +70,7 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
                 desc += " (" + field->description() + ").";
             else
                 desc += ".";
-            sel.add_value(i, field->name(), desc);
+            sel.add_value(i, field->name(), desc, { {FlowAttribute::field_value_shape(), field->get_value_attribute()} });
             i++;
         }
     }

@@ -52,7 +52,8 @@ public:
      * Reporting failure when openning a file.
      */
     TYPEDEF_ERR_INFO( EI_Path, string);
-    DECLARE_EXCEPTION( ExcFileOpen, << "Can not open file: " << EI_Path::qval );
+    TYPEDEF_ERR_INFO( EI_Address_String, string);
+    DECLARE_EXCEPTION( ExcFileOpen, << "Can not open file: " << EI_Path::qval << "\nAt input address: " << EI_Address_String::qval );
     DECLARE_EXCEPTION( ExcAbsOutputPath, << "Can not set absolute path " << EI_Path::qval << " for an output file."  );
     DECLARE_EXCEPTION( ExcMkdirFail, << "Can not create directory: " << EI_Path::qval );
 
@@ -189,6 +190,11 @@ public:
      */
     template <class Stream>
     void open_stream(Stream &stream) const;
+
+    /**
+     * Return true if the FilePath is a file.
+     */
+    bool exists() const;
 
 private:
     /**

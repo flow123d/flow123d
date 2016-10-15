@@ -2,19 +2,18 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.0.0_rc
-(2016-06-20)
+#Flow123d version 2.0.0
+(2016-08-31)
 
 ### User interface
 * Adopt YAML (http://www.yaml.org/start.html) as the format for the principal input file.
   The CON format (derivate of JSON) is still accepted, but obsolete. Only pure JSON format will be supported in the future. 
 
 * A tool is provided for conversion from the CON with the structure of the 1.8.2 version to the YAML 
-  format with the new structure. 
+  format with the new structure. The tool can also convert YAML files of the version 2.0.0_rc.
 
-  Usage:    ```bin/input_convert.py path/to/old_file.con```
-
-  Doc:      ```bin/input_convert.py --help```
+  Usage:    ```python3 bin/input_convert.py path/to/old_file.con```
+            ```python3 bin/input_convert.py path/to/old_file.yaml```  
 
 * Vector valued fields are replaced by "multifields". This allows independent setting for individual components.
   E.g. ``` init_conc = [ 0, 1, {TYPE=FieldFormula, value="x*y"} ]```
@@ -29,7 +28,7 @@ List of all changes in user interface and major internal changes.
   Useful for multifields.
 
 * Field descriptors in the 'input_fields' list need not to form increasing time series, this is required only 
-for the sequence of field descriptors of the single field. E.g. this is valid:
+  for the sequence of field descriptors of the single field. E.g. this is valid:
     ``` 
     input_fields : [
        { time:0.0, region:"ALL", conductivity:1 },
@@ -38,6 +37,11 @@ for the sequence of field descriptors of the single field. E.g. this is valid:
     ]
     ```
 * Removed support for old BCD files.
+
+* Introduction of observation points.
+
+* Independent output times for the balance output and the field output.
+  Support for more complex scheme of output times.
 
 * Changes in the structure of the input file:
     
@@ -84,6 +88,11 @@ for the sequence of field descriptors of the single field. E.g. this is valid:
      
      * Rename the key 'solver' of the flow equations to 'linear_solver'  and move it under the 
       new key 'nonlinear_solver'.
+      
+     * Separation of output_stream (only for main equations) with specification of resulting format and setting common to
+       equation outputs usign the stream. The equation outputs specify "what to output", namely 'output_fields' and 'observe_fields'.
+    
+     * Rename 'BOUNDARY' and 'IMPLICIT BOUNDARY' region sets to '.BOUNDARY' and '.IMPLICIT_BOUNDARY' respectively.
     
      * Add HTML format of the generated documentation to the structure of the input file.
      
@@ -91,6 +100,7 @@ for the sequence of field descriptors of the single field. E.g. this is valid:
      
 
 ### New features
+* Experimental support of Richards equation (model 'Flow_Richards_LMH'). Can not be used with transport processes yet.
 * DG - Reactions operator splitting.
 * 'total_flux' combined Neumann and Robin BC for the flow equations.
 * 'seepage_face' and 'river' boundary conditions for the flow equations
@@ -99,6 +109,7 @@ for the sequence of field descriptors of the single field. E.g. this is valid:
 * Using stable Pade aproximant for Decays and FirstOrderReaction.
 * Make whole reaction term models unconditionaly stable (no additional time step constraints).
 * Use conservative formulation in Solute_Advection_FV, allow time dependent 'porosity' and 'cross_section' fields.
+* Unified messaging and logging.
 * Use PETSc 3.6
 
 
@@ -107,6 +118,7 @@ for the sequence of field descriptors of the single field. E.g. this is valid:
 * Fix bug in treatment of the paths given by -i and -o command line arguments.
 * Fix calculation of the dispersivity for small velocities in Solute_AdvectionDiffusion_DG.
 * Allow arbitrary sources in Solute_Advection_FV, set CFL condition appropriately.
+* Fix bug in release 2.0.0_rc in Richards_LMH when using 3D elements.
 
 ### Internals:
 * Introduce generic input types, allow simplification of the documentation.
@@ -123,6 +135,8 @@ for the sequence of field descriptors of the single field. E.g. this is valid:
 * Input::Factory mechanism is used for constructing objects according to the input. Reduce dependencies of sources.
 * Executable wrappers dealing with compatibility of the shared libraries.
 * General default values (JSON format).
+* Stream based messaging and logging.
+* ASSERTS with simple output of involved variables.
 
 
 

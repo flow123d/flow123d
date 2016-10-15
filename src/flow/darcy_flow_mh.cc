@@ -1418,7 +1418,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // trace computation
         arma::vec3 centre = ele_ac.centre();
         double conduct = data_->conductivity.value( centre , ele_ac.element_accessor() );
-        arma::mat33 aniso = data_->anisotropy.value( centre, ele_ac.element_accessor() );
+        auto aniso = data_->anisotropy.value( centre, ele_ac.element_accessor() );
 
         // compute mean on the diagonal
         double coef = 0.;
@@ -1642,7 +1642,8 @@ void DarcyMH::setup_time_term() {
 
         //DebugOut().fmt("time_term: {} {} {} {} {}\n", mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
         if (balance_ != nullptr)
-        	balance_->add_mass_matrix_values(water_balance_idx_, ele_ac.region().bulk_idx(), {ele_ac.ele_row()}, {diagonal_coeff});
+        	balance_->add_mass_matrix_values(water_balance_idx_,
+        	        ele_ac.region().bulk_idx(), { int(ele_ac.ele_row()) }, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);

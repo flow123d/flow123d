@@ -1,0 +1,1202 @@
+if [ ! -e .git/hooks/post-checkout ];\
+	then cp bin/git_post_checkout_hook .git/hooks/post-checkout;\
+	fi	
+git submodule init
+
+POST-CHECKOUT(JHy_py_scripts -> JHy_py_scripts):
+origin_url=$( git config --get remote.origin.url ) ;\
+	if [ "${origin_url}" != "${origin_url#https}" ]; \
+	then \
+		cp .gitmodules_https .gitmodules; \
+	fi
+git submodule sync
+Synchronizing submodule url for 'src/dealii'
+git checkout .gitmodules
+
+POST-CHECKOUT(JHy_py_scripts -> JHy_py_scripts):
+git submodule update
+CMake Warning (dev) in CMakeLists.txt:
+  Syntax Warning in cmake code at
+
+    /home/jan-hybs/projects/Flow123d/flow123d/CMakeLists.txt:1128:108
+
+  Argument not separated from preceding token by whitespace.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) in CMakeLists.txt:
+  Syntax Warning in cmake code at
+
+    /home/jan-hybs/projects/Flow123d/flow123d/CMakeLists.txt:1128:112
+
+  Argument not separated from preceding token by whitespace.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+
+POST-CHECKOUT(JHy_py_scripts -> JHy_py_scripts):
+-- Flow build type: debug C++ compiler falgs: 
+-- Using build type: debug
+-- Adding: 'DEBUG' 1
+-- Adding: 'HAVE_SINCOS' 1
+-- Adding: 'HAVE_TIMER_CHRONO_HIGH_RESOLUTION' 1
+-- Timer used:       chrono highresolution timer
+-- Timer resolution: 0.097 [us]
+-- Looking for execinfo.h
+-- Looking for execinfo.h - found
+-- Adding: 'HAVE_EXEC_INFO' 1
+-- Looking for abi::__cxa_demangle
+-- Looking for abi::__cxa_demangle - found
+-- Adding: 'HAVE_DEMAGLER' 1
+-- Adding: 'COMPILER_FLAGS_' '-g -O0 -Wall -Wno-unused-local-typedefs -std=c++11'
+-- Adding: 'SOURCE_DIR' '/home/jan-hybs/projects/Flow123d/flow123d'
+-- 
+ =======================================================
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:492 ] _boost_TEST_VERSIONS = 1.56.0;1.56;1.55.0;1.55;1.54.0;1.54;1.53.0;1.53;1.52.0;1.52;1.51.0;1.51;1.50.0;1.50;1.49.0;1.49;1.48.0;1.48;1.47.0;1.47;1.46.1;1.46.0;1.46;1.45.0;1.45;1.44.0;1.44;1.43.0;1.43;1.42.0;1.42;1.41.0;1.41;1.40.0;1.40
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:494 ] Boost_USE_MULTITHREADED = OFF
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:496 ] Boost_USE_STATIC_LIBS = ON
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:498 ] Boost_USE_STATIC_RUNTIME = OFF
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:500 ] Boost_ADDITIONAL_VERSIONS = 
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:502 ] Boost_NO_SYSTEM_PATHS = 
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:554 ] Declared as CMake or Environmental Variables:
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:556 ]   BOOST_ROOT = /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/boost_build
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:558 ]   BOOST_INCLUDEDIR = 
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:560 ]   BOOST_LIBRARYDIR = 
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:562 ] _boost_TEST_VERSIONS = 1.56.0;1.56;1.55.0;1.55;1.54.0;1.54;1.53.0;1.53;1.52.0;1.52;1.51.0;1.51;1.50.0;1.50;1.49.0;1.49;1.48.0;1.48;1.47.0;1.47;1.46.1;1.46.0;1.46;1.45.0;1.45;1.44.0;1.44;1.43.0;1.43;1.42.0;1.42;1.41.0;1.41;1.40.0;1.40
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:631 ] Include debugging info:
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:633 ]   _boost_INCLUDE_SEARCH_DIRS = /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/boost_build/include;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/boost_build;PATHS;C:/boost/include;C:/boost;/sw/local/include
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:635 ]   _boost_PATH_SUFFIXES = boost-1_56_0;boost_1_56_0;boost/boost-1_56_0;boost/boost_1_56_0;boost-1_56;boost_1_56;boost/boost-1_56;boost/boost_1_56;boost-1_55_0;boost_1_55_0;boost/boost-1_55_0;boost/boost_1_55_0;boost-1_55;boost_1_55;boost/boost-1_55;boost/boost_1_55;boost-1_54_0;boost_1_54_0;boost/boost-1_54_0;boost/boost_1_54_0;boost-1_54;boost_1_54;boost/boost-1_54;boost/boost_1_54;boost-1_53_0;boost_1_53_0;boost/boost-1_53_0;boost/boost_1_53_0;boost-1_53;boost_1_53;boost/boost-1_53;boost/boost_1_53;boost-1_52_0;boost_1_52_0;boost/boost-1_52_0;boost/boost_1_52_0;boost-1_52;boost_1_52;boost/boost-1_52;boost/boost_1_52;boost-1_51_0;boost_1_51_0;boost/boost-1_51_0;boost/boost_1_51_0;boost-1_51;boost_1_51;boost/boost-1_51;boost/boost_1_51;boost-1_50_0;boost_1_50_0;boost/boost-1_50_0;boost/boost_1_50_0;boost-1_50;boost_1_50;boost/boost-1_50;boost/boost_1_50;boost-1_49_0;boost_1_49_0;boost/boost-1_49_0;boost/boost_1_49_0;boost-1_49;boost_1_49;boost/boost-1_49;boost/boost_1_49;boost-1_48_0;boost_1_48_0;boost/boost-1_48_0;boost/boost_1_48_0;boost-1_48;boost_1_48;boost/boost-1_48;boost/boost_1_48;boost-1_47_0;boost_1_47_0;boost/boost-1_47_0;boost/boost_1_47_0;boost-1_47;boost_1_47;boost/boost-1_47;boost/boost_1_47;boost-1_46_1;boost_1_46_1;boost/boost-1_46_1;boost/boost_1_46_1;boost-1_46_0;boost_1_46_0;boost/boost-1_46_0;boost/boost_1_46_0;boost-1_46;boost_1_46;boost/boost-1_46;boost/boost_1_46;boost-1_45_0;boost_1_45_0;boost/boost-1_45_0;boost/boost_1_45_0;boost-1_45;boost_1_45;boost/boost-1_45;boost/boost_1_45;boost-1_44_0;boost_1_44_0;boost/boost-1_44_0;boost/boost_1_44_0;boost-1_44;boost_1_44;boost/boost-1_44;boost/boost_1_44;boost-1_43_0;boost_1_43_0;boost/boost-1_43_0;boost/boost_1_43_0;boost-1_43;boost_1_43;boost/boost-1_43;boost/boost_1_43;boost-1_42_0;boost_1_42_0;boost/boost-1_42_0;boost/boost_1_42_0;boost-1_42;boost_1_42;boost/boost-1_42;boost/boost_1_42;boost-1_41_0;boost_1_41_0;boost/boost-1_41_0;boost/boost_1_41_0;boost-1_41;boost_1_41;boost/boost-1_41;boost/boost_1_41;boost-1_40_0;boost_1_40_0;boost/boost-1_40_0;boost/boost_1_40_0;boost-1_40;boost_1_40;boost/boost-1_40;boost/boost_1_40
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:655 ] location of version.hpp: /home/jan-hybs/projects/Flow123d/external_projects/boost_build/include/boost/version.hpp
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:679 ] version.hpp reveals boost 1.55.0
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:755 ] guessed _boost_COMPILER = -gcc48
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:765 ] _boost_MULTITHREADED = 
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:808 ] _boost_RELEASE_ABI_TAG = -
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:810 ] _boost_DEBUG_ABI_TAG = -d
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:859 ] _boost_LIBRARY_SEARCH_DIRS = /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/boost_build/lib;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/boost_build/stage/lib;/home/jan-hybs/projects/Flow123d/external_projects/boost_build/include/lib;/home/jan-hybs/projects/Flow123d/external_projects/boost_build/include/../lib;/home/jan-hybs/projects/Flow123d/external_projects/boost_build/include/../lib/x86_64-linux-gnu;/home/jan-hybs/projects/Flow123d/external_projects/boost_build/include/stage/lib;PATHS;C:/boost/lib;C:/boost;/sw/local/lib
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:947 ] Searching for PROGRAM_OPTIONS_LIBRARY_RELEASE: boost_program_options-gcc48-1_55;boost_program_options-gcc48;boost_program_options-1_55;boost_program_options;boost_program_options
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:983 ] Searching for PROGRAM_OPTIONS_LIBRARY_DEBUG: boost_program_options-gcc48-d-1_55;boost_program_options-gcc48-d;boost_program_options-d-1_55;boost_program_options-d;boost_program_options;boost_program_options
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:947 ] Searching for SERIALIZATION_LIBRARY_RELEASE: boost_serialization-gcc48-1_55;boost_serialization-gcc48;boost_serialization-1_55;boost_serialization;boost_serialization
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:983 ] Searching for SERIALIZATION_LIBRARY_DEBUG: boost_serialization-gcc48-d-1_55;boost_serialization-gcc48-d;boost_serialization-d-1_55;boost_serialization-d;boost_serialization;boost_serialization
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:947 ] Searching for REGEX_LIBRARY_RELEASE: boost_regex-gcc48-1_55;boost_regex-gcc48;boost_regex-1_55;boost_regex;boost_regex
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:983 ] Searching for REGEX_LIBRARY_DEBUG: boost_regex-gcc48-d-1_55;boost_regex-gcc48-d;boost_regex-d-1_55;boost_regex-d;boost_regex;boost_regex
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:947 ] Searching for FILESYSTEM_LIBRARY_RELEASE: boost_filesystem-gcc48-1_55;boost_filesystem-gcc48;boost_filesystem-1_55;boost_filesystem;boost_filesystem
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:983 ] Searching for FILESYSTEM_LIBRARY_DEBUG: boost_filesystem-gcc48-d-1_55;boost_filesystem-gcc48-d;boost_filesystem-d-1_55;boost_filesystem-d;boost_filesystem;boost_filesystem
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:947 ] Searching for SYSTEM_LIBRARY_RELEASE: boost_system-gcc48-1_55;boost_system-gcc48;boost_system-1_55;boost_system;boost_system
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:983 ] Searching for SYSTEM_LIBRARY_DEBUG: boost_system-gcc48-d-1_55;boost_system-gcc48-d;boost_system-d-1_55;boost_system-d;boost_system;boost_system
+-- [ /usr/share/cmake-2.8/Modules/FindBoost.cmake:1034 ] Boost_FOUND = 1
+-- Boost version: 1.55.0
+-- Found the following Boost libraries:
+--   program_options
+--   serialization
+--   regex
+--   filesystem
+--   system
+-- BOOST_ROOT: /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/boost_build
+-- Boost_LIBRARIES: /home/jan-hybs/projects/Flow123d/external_projects/boost_build/lib/libboost_program_options.a;/home/jan-hybs/projects/Flow123d/external_projects/boost_build/lib/libboost_serialization.a;/home/jan-hybs/projects/Flow123d/external_projects/boost_build/lib/libboost_regex.a;/home/jan-hybs/projects/Flow123d/external_projects/boost_build/lib/libboost_filesystem.a;/home/jan-hybs/projects/Flow123d/external_projects/boost_build/lib/libboost_system.a
+-- Boost_LIBRARY_DIRS: /home/jan-hybs/projects/Flow123d/external_projects/boost_build/lib
+-- Boost_INCLUDE_DIR: /home/jan-hybs/projects/Flow123d/external_projects/boost_build/include
+-- 
+ =======================================================
+-- PETSc could not be found.  Be sure to set PETSC_DIR and PETSC_ARCH. (missing:  PETSC_INCLUDES PETSC_LIBRARIES PETSC_EXTERNAL_LIB) (Required is at least version "3.6.0")
+-- === Installing PETSC ===
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build
+make[1]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+/usr/bin/cmake -H/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build -B/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build --check-build-system CMakeFiles/Makefile.cmake 0
+/usr/bin/make -f CMakeFiles/Makefile2 PETSC
+make[2]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+/usr/bin/cmake -H/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build -B/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build --check-build-system CMakeFiles/Makefile.cmake 0
+/usr/bin/cmake -E cmake_progress_start /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/CMakeFiles 8
+/usr/bin/make -f CMakeFiles/Makefile2 CMakeFiles/PETSC.dir/all
+make[3]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+/usr/bin/make -f CMakeFiles/PETSC.dir/build.make CMakeFiles/PETSC.dir/depend
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+cd /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build && /usr/bin/cmake -E cmake_depends "Unix Makefiles" /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/CMakeFiles/PETSC.dir/DependInfo.cmake --color=
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+/usr/bin/make -f CMakeFiles/PETSC.dir/build.make CMakeFiles/PETSC.dir/build
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+make[4]: Nothing to be done for `CMakeFiles/PETSC.dir/build'.
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+/usr/bin/cmake -E cmake_progress_report /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/CMakeFiles  1 2 3 4 5 6 7 8
+[100%] Built target PETSC
+make[3]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+/usr/bin/cmake -E cmake_progress_start /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/CMakeFiles 0
+make[2]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+make[1]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build'
+-- == PETSC build done
+-- PETSC version: 
+-- EXPORTING PETSC VARIABLE: MPIFC_SHOW as PETSC_VAR_MPIFC_SHOW = 
+-- EXPORTING PETSC VARIABLE: MPICXX_SHOW as PETSC_VAR_MPICXX_SHOW = 
+-- EXPORTING PETSC VARIABLE: MPICC_SHOW as PETSC_VAR_MPICC_SHOW = 
+-- EXPORTING PETSC VARIABLE: CC as PETSC_VAR_CC = 
+-- EXPORTING PETSC VARIABLE: FC as PETSC_VAR_FC = 
+-- EXPORTING PETSC VARIABLE: CC_FLAGS as PETSC_VAR_CC_FLAGS = 
+-- EXPORTING PETSC VARIABLE: PCC_FLAGS as PETSC_VAR_PCC_FLAGS = 
+-- EXPORTING PETSC VARIABLE: FC_FLAGS as PETSC_VAR_FC_FLAGS = 
+-- EXPORTING PETSC VARIABLE: CPP_FLAGS as PETSC_VAR_CPP_FLAGS = 
+-- EXPORTING PETSC VARIABLE: METIS_INCLUDE as PETSC_VAR_METIS_INCLUDE = 
+-- EXPORTING PETSC VARIABLE: BLASLAPACK_INCLUDE as PETSC_VAR_BLASLAPACK_INCLUDE = 
+-- EXPORTING PETSC VARIABLE: PARMETIS_INCLUDE as PETSC_VAR_PARMETIS_INCLUDE = 
+-- EXPORTING PETSC VARIABLE: MUMPS_INCLUDE as PETSC_VAR_MUMPS_INCLUDE = 
+-- EXPORTING PETSC VARIABLE: MPI_LIB as PETSC_VAR_MPI_LIB = 
+-- EXPORTING PETSC VARIABLE: MUMPS_LIB as PETSC_VAR_MUMPS_LIB = 
+-- EXPORTING PETSC VARIABLE: METIS_LIB as PETSC_VAR_METIS_LIB = 
+-- EXPORTING PETSC VARIABLE: PARMETIS_LIB as PETSC_VAR_PARMETIS_LIB = 
+-- EXPORTING PETSC VARIABLE: BLASLAPACK_LIB as PETSC_VAR_BLASLAPACK_LIB = 
+-- EXPORTING PETSC VARIABLE: SCALAPACK_LIB as PETSC_VAR_SCALAPACK_LIB = 
+-- EXPORTING PETSC VARIABLE: UMFPACK_LIB as PETSC_VAR_UMFPACK_LIB = 
+-- Recognized PETSc install with single library for all packages
+-- [FindPETSc] Try to resolve libraries from: '-Wl,-rpath,/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord -lscalapack -lflapack -lfblas -lparmetis -lmetis -lX11 -lm -L/usr/lib/gcc/x86_64-linux-gnu/4.8 -L/usr/lib/x86_64-linux-gnu -L/lib/x86_64-linux-gnu -lmpifort -lgfortran -lm -lgfortran -lm -lquadmath -lm -lmpicxx -lstdc++ -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/usr/lib/gcc/x86_64-linux-gnu/4.8 -L/usr/lib/x86_64-linux-gnu -L/lib/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu -ldl -lmpi -lpthread -lrt -lgcc_s -ldl '
+-- [FindPETSc] Resolved path: '/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/usr/lib/x86_64-linux-gnu/libX11.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpifort.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgfortran.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libquadmath.so;/usr/lib/x86_64-linux-gnu/libm.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpicxx.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libstdc++.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpi.a;/usr/lib/x86_64-linux-gnu/libpthread.so;/usr/lib/x86_64-linux-gnu/librt.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgcc_s.so;/usr/lib/x86_64-linux-gnu/libdl.so'
+-- check_c_source_compiles: MULTIPASS_TEST_1_petsc_works_minimal
+-- Performing Test MULTIPASS_TEST_1_petsc_works_minimal
+-- Performing Test MULTIPASS_TEST_1_petsc_works_minimal - Failed
+-- check_c_source_compiles: MULTIPASS_TEST_2_petsc_works_allincludes
+-- Performing Test MULTIPASS_TEST_2_petsc_works_allincludes
+-- Performing Test MULTIPASS_TEST_2_petsc_works_allincludes - Failed
+-- check_c_source_compiles: MULTIPASS_TEST_3_petsc_works_alllibraries
+-- Performing Test MULTIPASS_TEST_3_petsc_works_alllibraries
+-- Performing Test MULTIPASS_TEST_3_petsc_works_alllibraries - Success
+-- Performing Test MULTIPASS_TEST_4_petsc_works_alllibraries_runs
+-- Performing Test MULTIPASS_TEST_4_petsc_works_alllibraries_runs - Success
+-- PETSc only need minimal includes, but requires explicit linking to all dependencies.  This is expected when PETSc is built with static libraries.
+-- Found PETSc: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/include;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/include (Required is at least version "3.6.0") 
+-- Adding: 'HAVE_PETSC' 1
+-- Adding: 'HAVE_MPI' 1
+-- PETSC_LIBS: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpetsc.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/usr/lib/x86_64-linux-gnu/libX11.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpifort.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgfortran.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libquadmath.so;/usr/lib/x86_64-linux-gnu/libm.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpicxx.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libstdc++.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpi.a;/usr/lib/x86_64-linux-gnu/libpthread.so;/usr/lib/x86_64-linux-gnu/librt.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgcc_s.so;/usr/lib/x86_64-linux-gnu/libdl.so
+-- PETSC_EXTERNAL_LIB: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/usr/lib/x86_64-linux-gnu/libX11.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpifort.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgfortran.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libquadmath.so;/usr/lib/x86_64-linux-gnu/libm.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpicxx.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libstdc++.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpi.a;/usr/lib/x86_64-linux-gnu/libpthread.so;/usr/lib/x86_64-linux-gnu/librt.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgcc_s.so;/usr/lib/x86_64-linux-gnu/libdl.so
+-- PETSC_EXTERNAL_LIB: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/usr/lib/x86_64-linux-gnu/libX11.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpifort.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgfortran.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libquadmath.so;/usr/lib/x86_64-linux-gnu/libm.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpicxx.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libstdc++.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpi.a;/usr/lib/x86_64-linux-gnu/libpthread.so;/usr/lib/x86_64-linux-gnu/librt.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgcc_s.so;/usr/lib/x86_64-linux-gnu/libdl.so
+-- 
+ =======================================================
+-- BDDCML_ROOT: _INSTALL_
+-- BOBJ: 
+-- out: 
+-- in: 
+-- found: BDDCML_INCLUDES-NOTFOUND, 
+-- Could NOT find BDDCML (missing:  BDDCML_LIBRARIES BDDCML_INCLUDES) 
+-- === Installing BLOPEX ===
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build
+make[1]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+/usr/bin/cmake -H/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build -B/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build --check-build-system CMakeFiles/Makefile.cmake 0
+/usr/bin/make -f CMakeFiles/Makefile2 BLOPEX
+make[2]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+/usr/bin/cmake -H/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build -B/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build --check-build-system CMakeFiles/Makefile.cmake 0
+/usr/bin/cmake -E cmake_progress_start /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/CMakeFiles 8
+/usr/bin/make -f CMakeFiles/Makefile2 CMakeFiles/BLOPEX.dir/all
+make[3]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+/usr/bin/make -f CMakeFiles/BLOPEX.dir/build.make CMakeFiles/BLOPEX.dir/depend
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+cd /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build && /usr/bin/cmake -E cmake_depends "Unix Makefiles" /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/CMakeFiles/BLOPEX.dir/DependInfo.cmake --color=
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+/usr/bin/make -f CMakeFiles/BLOPEX.dir/build.make CMakeFiles/BLOPEX.dir/build
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+make[4]: Nothing to be done for `CMakeFiles/BLOPEX.dir/build'.
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+/usr/bin/cmake -E cmake_progress_report /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/CMakeFiles  1 2 3 4 5 6 7 8
+[100%] Built target BLOPEX
+make[3]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+/usr/bin/cmake -E cmake_progress_start /home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/CMakeFiles 0
+make[2]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+make[1]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build'
+-- == BLOPEX build done
+-- === Installing BDDCML ===
+-- BDDCML_ROOT:/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/bddcml_petsc_3.6_build/src
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build
+make[1]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build'
+make[2]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build'
+make[3]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build'
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build'
+[100%] Built target BDDCML
+make[3]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build'
+make[2]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build'
+make[1]: Leaving directory `/home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build'
+-- BDDCML build done
+-- BDDCML_ROOT: /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/bddcml_petsc_3.6_build/src
+-- found: /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build/src/src, /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build/src/lib/libbddcml.a 
+--  exporting BDDCML_LINK_SEQUENCE into cmake variable BDDCML_LINK_SEQ =  /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/bddcml_petsc_3.6_build/src/lib/libbddcml.a -Wl,-rpath,/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord -Wl,-rpath,/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -lparmetis -Wl,-rpath,/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -lmetis -Wl,-rpath,/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -lscalapack -Wl,-rpath,/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -lflapack -lfblas /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/multivector/multi_vector.o /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/pcg_multi/pcg_multi.o /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/matmultivec/matmultivec.o -L/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_abstract/lib -lBLOPEX
+--  exporting BDDCML_CDEFS into cmake variable BDDCML_CDEFS =  
+--  exporting BDDCML_INC into cmake variable BDDCML_INC =  -I/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/bddcml_petsc_3.6_build/src/src -I/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/bddcml_petsc_3.6_build
+-- BOBJ: /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/multivector/multi_vector.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/pcg_multi/pcg_multi.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/matmultivec/matmultivec.o
+-- out: /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build/src/lib/libbddcml.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/multivector/multi_vector.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/pcg_multi/pcg_multi.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/matmultivec/matmultivec.o;/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/src/blopex_abstract/lib/libBLOPEX.a
+-- in: /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build/src/lib/libbddcml.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/src/blopex_abstract/lib/libBLOPEX.a
+-- found: /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build/src/src;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/bddcml_petsc_3.6_build/src/src;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/bddcml_petsc_3.6_build, /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build/src/lib/libbddcml.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/multivector/multi_vector.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/pcg_multi/pcg_multi.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/matmultivec/matmultivec.o;/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/src/blopex_abstract/lib/libBLOPEX.a
+-- Found BDDCML: /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build/src/lib/libbddcml.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/multivector/multi_vector.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/pcg_multi/pcg_multi.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/matmultivec/matmultivec.o;/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/src/blopex_abstract/lib/libBLOPEX.a  
+-- Adding: 'HAVE_BDDCML' 1
+-- 
+ =======================================================
+-- Armadillo hint: 
+-- Armadillo_LIBRARY-NOTFOUND Armadillo_INCLUDE_DIR-NOTFOUND Armadillo_CONFIGURE_FILE-NOTFOUND
+-- Try to install our own Armadillo.
+-- /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/armadillo_build/CMakeLists.txt
+-- Armadillo build done
+-- Armadillo hint: /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/armadillo_build
+-- /home/jan-hybs/projects/Flow123d/external_projects/armadillo_build/lib/libarmadillo.a /home/jan-hybs/projects/Flow123d/external_projects/armadillo_build/include /home/jan-hybs/projects/Flow123d/external_projects/armadillo_build/share/Armadillo/CMake/ArmadilloConfig.cmake
+-- Found a Armadillo library: /home/jan-hybs/projects/Flow123d/external_projects/armadillo_build/lib/libarmadillo.a
+-- Armadillo_LIBRARIES: /home/jan-hybs/projects/Flow123d/external_projects/armadillo_build/lib/libarmadillo.a
+-- Armadillo_INCLUDE_DIRS: /home/jan-hybs/projects/Flow123d/external_projects/armadillo_build/include
+-- Armadillo_CONFIGURE_FILE: /home/jan-hybs/projects/Flow123d/external_projects/armadillo_build/share/Armadillo/CMake/ArmadilloConfig.cmake
+-- 
+ ======================================================= 
+-- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython2.7.so (found suitable version "2.7.6", minimum required is "2.7") 
+-- Adding: 'HAVE_PYTHON' 1
+-- Adding: 'PYTHONLIBS_VERSION_MAJOR' 2
+-- Adding: 'PYTHONLIBS_VERSION_MINOR' 7
+-- Adding: 'PYTHONLIBS_VERSION_STRING' '2.7.6'
+-- Python version: 2.7.6
+
+-- Python major version: 2
+
+-- Python minor version: 7
+
+-- Python include: /usr/include/python2.7;/usr/include/x86_64-linux-gnu/python2.7
+-- Python libs: /usr/lib/x86_64-linux-gnu/libpython2.7.so
+-- Python prefix: /usr
+-- Python target prefix: /home/jan-hybs/projects/Flow123d/build-JHy_py_scripts
+-- Adding: 'PYTHON_PREFIX' '/usr'
+-- Adding: 'PYTHON_EXTRA_MODULES_PATH' '/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts/lib/flow123d'
+-- 
+ =======================================================
+-- Could NOT find YamlCpp (missing:  YamlCpp_INCLUDE_DIR YamlCpp_LIBRARY) 
+-- Try to install our own yaml-cpp library.
+-- /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/yaml_cpp_build/CMakeLists.txt
+-- YamlCpp build done
+-- Found YamlCpp: /home/jan-hybs/projects/Flow123d/external_projects/yaml_cpp_build/include  
+-- /home/jan-hybs/projects/Flow123d/external_projects/yaml_cpp_build/include
+ /home/jan-hybs/projects/Flow123d/external_projects/yaml_cpp_build/lib/libyaml-cpp.a
+-- YamlCpp_LIBRARY: /home/jan-hybs/projects/Flow123d/external_projects/yaml_cpp_build/lib/libyaml-cpp.a
+-- YamlCpp_INCLUDE_DIR: /home/jan-hybs/projects/Flow123d/external_projects/yaml_cpp_build/include
+-- 
+ ======================================================= 
+-- Installing HTML documentation
+-- Creating temp CMakeLists file
+-- Preparing external HTMLDOC project with cmake
+--   Exit code 0
+-- 
+ ======================================================= 
+GENERATING CONFIG_H_TMP
+-- Found Git: /usr/bin/git (found version "1.9.1") 
+-- using petsc_mpiexec: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/bin/mpiexec.hydra
+-- add subdir FParser
+-- CMakeLists.txt - FParser
+-- ===========================================
+-- Configuring deal.II library (CMake 2.8.12.2)
+-- 
+-- Setting up cached variables.
+-- Prepending ${CMAKE_CXX_FLAGS} to ${DEAL_II_CXX_FLAGS}
+-- Prepending ${CMAKE_CXX_FLAGS_RELEASE} to ${DEAL_II_CXX_FLAGS_RELEASE}
+-- Prepending ${CMAKE_CXX_FLAGS_DEBUG} to ${DEAL_II_CXX_FLAGS_DEBUG}
+-- Prepending ${CMAKE_SHARED_LINKER_FLAGS} to ${DEAL_II_LINKER_FLAGS}
+-- 
+-- Performing Test DEAL_II_HAVE_USABLE_CXX_FLAGS
+-- Performing Test DEAL_II_HAVE_USABLE_CXX_FLAGS - Success
+-- 
+-- Setting up default compiler flags.
+-- Performing Test DEAL_II_HAVE_FLAG_pedantic
+-- Performing Test DEAL_II_HAVE_FLAG_pedantic - Success
+-- Performing Test DEAL_II_HAVE_FLAG_fpic
+-- Performing Test DEAL_II_HAVE_FLAG_fpic - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wl__as_needed
+-- Performing Test DEAL_II_HAVE_FLAG_Wl__as_needed - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wall
+-- Performing Test DEAL_II_HAVE_FLAG_Wall - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wpointer_arith
+-- Performing Test DEAL_II_HAVE_FLAG_Wpointer_arith - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wwrite_strings
+-- Performing Test DEAL_II_HAVE_FLAG_Wwrite_strings - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wsynth
+-- Performing Test DEAL_II_HAVE_FLAG_Wsynth - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wsign_compare
+-- Performing Test DEAL_II_HAVE_FLAG_Wsign_compare - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wswitch
+-- Performing Test DEAL_II_HAVE_FLAG_Wswitch - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wunused_local_typedefs
+-- Performing Test DEAL_II_HAVE_FLAG_Wunused_local_typedefs - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wlong_long
+-- Performing Test DEAL_II_HAVE_FLAG_Wlong_long - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wdeprecated
+-- Performing Test DEAL_II_HAVE_FLAG_Wdeprecated - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wdeprecated_declarations
+-- Performing Test DEAL_II_HAVE_FLAG_Wdeprecated_declarations - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Og
+-- Performing Test DEAL_II_HAVE_FLAG_Og - Success
+-- Performing Test DEAL_II_HAVE_FLAG_ggdb
+-- Performing Test DEAL_II_HAVE_FLAG_ggdb - Success
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/checks/check_01_compiler_features.cmake
+-- Performing Test DEAL_II_COMPILER_USE_VECTOR_ARITHMETICS
+-- Performing Test DEAL_II_COMPILER_USE_VECTOR_ARITHMETICS - Success
+-- Performing Test DEAL_II_VECTOR_ITERATOR_IS_POINTER_OK
+-- Performing Test DEAL_II_VECTOR_ITERATOR_IS_POINTER_OK - Success
+-- Test successful, do not define DEAL_II_VECTOR_ITERATOR_IS_POINTER
+-- Performing Test HAVE_BUILTIN_EXPECT
+-- Performing Test HAVE_BUILTIN_EXPECT - Success
+-- Performing Test HAVE_VERBOSE_TERMINATE
+-- Performing Test HAVE_VERBOSE_TERMINATE - Success
+-- Performing Test HAVE_GLIBC_STACKTRACE
+-- Performing Test HAVE_GLIBC_STACKTRACE - Success
+-- Performing Test DEAL_II_HAVE_FLAG_rdynamic
+-- Performing Test DEAL_II_HAVE_FLAG_rdynamic - Success
+-- Performing Test HAVE_LIBSTDCXX_DEMANGLER
+-- Performing Test HAVE_LIBSTDCXX_DEMANGLER - Success
+-- Performing Test DEAL_II_COMPILER_HAS_ATTRIBUTE_PRETTY_FUNCTION
+-- Performing Test DEAL_II_COMPILER_HAS_ATTRIBUTE_PRETTY_FUNCTION - Success
+-- Performing Test DEAL_II_HAVE_FLAG_Wa__compress_debug_sections
+-- Performing Test DEAL_II_HAVE_FLAG_Wa__compress_debug_sections - Success
+-- Performing Test DEAL_II_COMPILER_HAS_ATTRIBUTE_DEPRECATED
+-- Performing Test DEAL_II_COMPILER_HAS_ATTRIBUTE_DEPRECATED - Success
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/checks/check_01_cpu_features.cmake
+-- Check if the system is big endian
+-- Searching 16 bit integer
+-- Looking for sys/types.h
+-- Looking for sys/types.h - found
+-- Looking for stdint.h
+-- Looking for stdint.h - found
+-- Looking for stddef.h
+-- Looking for stddef.h - found
+-- Check size of unsigned short
+-- Check size of unsigned short - done
+-- Using unsigned short
+-- Check if the system is big endian - little endian
+-- Performing Test DEAL_II_HAVE_SSE2
+-- Performing Test DEAL_II_HAVE_SSE2 - Success
+-- Performing Test DEAL_II_HAVE_AVX
+-- Performing Test DEAL_II_HAVE_AVX - Failed
+-- Performing Test DEAL_II_HAVE_AVX512
+-- Performing Test DEAL_II_HAVE_AVX512 - Failed
+-- Performing Test DEAL_II_HAVE_OPENMP_SIMD
+-- Performing Test DEAL_II_HAVE_OPENMP_SIMD - Failed
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/checks/check_01_cxx_features.cmake
+-- Performing Test DEAL_II_HAVE_FLAG_stdcxx0x
+-- Performing Test DEAL_II_HAVE_FLAG_stdcxx0x - Success
+-- Performing Test DEAL_II_HAVE_FLAG_stdcxx11
+-- Performing Test DEAL_II_HAVE_FLAG_stdcxx11 - Success
+-- Using C++11 flag "-std=c++11"
+-- Performing Test DEAL_II_HAVE_CXX11_ARRAY
+-- Performing Test DEAL_II_HAVE_CXX11_ARRAY - Success
+-- Performing Test DEAL_II_HAVE_CXX11_CONDITION_VARIABLE
+-- Performing Test DEAL_II_HAVE_CXX11_CONDITION_VARIABLE - Success
+-- Performing Test DEAL_II_HAVE_CXX11_FUNCTIONAL
+-- Performing Test DEAL_II_HAVE_CXX11_FUNCTIONAL - Success
+-- Performing Test DEAL_II_HAVE_CXX11_FUNCTIONAL_GCCBUG35569_OK
+-- Performing Test DEAL_II_HAVE_CXX11_FUNCTIONAL_GCCBUG35569_OK - Success
+-- Performing Test DEAL_II_HAVE_CXX11_SHARED_PTR
+-- Performing Test DEAL_II_HAVE_CXX11_SHARED_PTR - Success
+-- Performing Test DEAL_II_HAVE_CXX11_THREAD
+-- Performing Test DEAL_II_HAVE_CXX11_THREAD - Success
+-- Performing Test DEAL_II_HAVE_CXX11_MUTEX
+-- Performing Test DEAL_II_HAVE_CXX11_MUTEX - Success
+-- Performing Test DEAL_II_HAVE_CXX11_TUPLE
+-- Performing Test DEAL_II_HAVE_CXX11_TUPLE - Success
+-- Performing Test DEAL_II_HAVE_CXX11_TYPE_TRAITS
+-- Performing Test DEAL_II_HAVE_CXX11_TYPE_TRAITS - Success
+-- Performing Test DEAL_II_HAVE_CXX11_MACOSXC99BUG_OK
+-- Performing Test DEAL_II_HAVE_CXX11_MACOSXC99BUG_OK - Success
+-- Performing Test DEAL_II_HAVE_CXX11_ICCNUMERICLIMITSBUG_OK
+-- Performing Test DEAL_II_HAVE_CXX11_ICCNUMERICLIMITSBUG_OK - Success
+-- Performing Test DEAL_II_HAVE_CXX11_ICCLIBSTDCPP47CXX11BUG_OK
+-- Performing Test DEAL_II_HAVE_CXX11_ICCLIBSTDCPP47CXX11BUG_OK - Success
+-- DEAL_II_WITH_CXX11 successfully set up
+-- Performing Test DEAL_II_HAVE_CXX11_IS_TRIVIALLY_COPYABLE
+-- Performing Test DEAL_II_HAVE_CXX11_IS_TRIVIALLY_COPYABLE - Failed
+-- Performing Test HAVE_ISNAN
+-- Performing Test HAVE_ISNAN - Success
+-- Performing Test HAVE_UNDERSCORE_ISNAN
+-- Performing Test HAVE_UNDERSCORE_ISNAN - Failed
+-- Performing Test DEAL_II_HAVE_ISFINITE
+-- Performing Test DEAL_II_HAVE_ISFINITE - Success
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/checks/check_02_system_features.cmake
+-- Looking for C++ include sys/resource.h
+-- Looking for C++ include sys/resource.h - found
+-- Looking for C++ include sys/time.h
+-- Looking for C++ include sys/time.h - found
+-- Looking for C++ include sys/times.h
+-- Looking for C++ include sys/times.h - found
+-- Looking for times
+-- Looking for times - found
+-- Looking for C++ include unistd.h
+-- Looking for C++ include unistd.h - found
+-- Looking for gethostname
+-- Looking for gethostname - found
+-- Looking for getpid
+-- Looking for getpid - found
+-- Looking for rand_r
+-- Looking for rand_r - found
+-- Performing Test m_LIBRARY
+-- Performing Test m_LIBRARY - Success
+-- Looking for jn
+-- Looking for jn - found
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/checks/check_03_compiler_bugs.cmake
+-- Performing Test DEAL_II_WRETURN_TYPE_CONST_QUALIFIER_BUG_OK
+-- Performing Test DEAL_II_WRETURN_TYPE_CONST_QUALIFIER_BUG_OK - Success
+-- Test successful, do not define DEAL_II_WRETURN_TYPE_CONST_QUALIFIER_BUG
+-- Performing Test DEAL_II_TEMPL_SPEC_FRIEND_BUG_OK
+-- Performing Test DEAL_II_TEMPL_SPEC_FRIEND_BUG_OK - Success
+-- Test successful, do not define DEAL_II_TEMPL_SPEC_FRIEND_BUG
+-- Performing Test DEAL_II_MEMBER_ARRAY_SPECIALIZATION_BUG_OK
+-- Performing Test DEAL_II_MEMBER_ARRAY_SPECIALIZATION_BUG_OK - Success
+-- Test successful, do not define DEAL_II_MEMBER_ARRAY_SPECIALIZATION_BUG
+-- Performing Test DEAL_II_MEMBER_VAR_SPECIALIZATION_BUG_OK
+-- Performing Test DEAL_II_MEMBER_VAR_SPECIALIZATION_BUG_OK - Success
+-- Test successful, do not define DEAL_II_MEMBER_VAR_SPECIALIZATION_BUG
+-- Performing Test DEAL_II_EXPLICIT_CONSTRUCTOR_BUG
+-- Performing Test DEAL_II_EXPLICIT_CONSTRUCTOR_BUG - Failed
+-- Performing Test DEAL_II_CONST_MEMBER_DEDUCTION_BUG_OK
+-- Performing Test DEAL_II_CONST_MEMBER_DEDUCTION_BUG_OK - Success
+-- Test successful, do not define DEAL_II_CONST_MEMBER_DEDUCTION_BUG
+-- Performing Test DEAL_II_TYPE_QUALIFIER_BUG_OK
+-- Performing Test DEAL_II_TYPE_QUALIFIER_BUG_OK - Success
+-- Test successful, do not define DEAL_II_TYPE_QUALIFIER_BUG
+-- Performing Test DEAL_II_BIND_NO_CONST_OP_PARENTHESES_OK
+-- Performing Test DEAL_II_BIND_NO_CONST_OP_PARENTHESES_OK - Success
+-- Test successful, do not define DEAL_II_BIND_NO_CONST_OP_PARENTHESES
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/checks/check_03_generator_bugs.cmake
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_1_bzip2.cmake
+-- Could NOT find BZip2 (missing:  BZIP2_LIBRARIES BZIP2_INCLUDE_DIR) 
+--   BZIP2_LIBRARIES: *** Required variable "_bzip2_libraries" set to NOTFOUND ***
+--   BZIP2_INCLUDE_DIRS: *** Required variable "BZIP2_INCLUDE_DIR" set to NOTFOUND ***
+-- Could NOT find BZIP2
+-- DEAL_II_WITH_BZIP2 has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_1_lapack.cmake
+-- Performing Test DEAL_II_HAVE_FLAG_pthread
+-- Performing Test DEAL_II_HAVE_FLAG_pthread - Success
+-- Performing Test LAPACK_SYMBOL_CHECK
+-- Performing Test LAPACK_SYMBOL_CHECK - Success
+-- DEAL_II_WITH_LAPACK successfully set up with external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_1_mpi.cmake
+-- Found MPI_C: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpi.a;/usr/lib/x86_64-linux-gnu/libpthread.so;/usr/lib/x86_64-linux-gnu/librt.so;/usr/lib/x86_64-linux-gnu/libpthread.so  
+-- Found MPI_CXX: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/usr/lib/x86_64-linux-gnu/libX11.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpifort.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgfortran.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libquadmath.so;/usr/lib/x86_64-linux-gnu/libm.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpicxx.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libstdc++.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpi.a;/usr/lib/x86_64-linux-gnu/libpthread.so;/usr/lib/x86_64-linux-gnu/librt.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgcc_s.so;/usr/lib/x86_64-linux-gnu/libdl.so  
+-- Found MPI_Fortran: /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpifort.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpi.a;/usr/lib/x86_64-linux-gnu/libpthread.so;/usr/lib/x86_64-linux-gnu/librt.so;/usr/lib/x86_64-linux-gnu/libpthread.so  
+-- DEAL_II_WITH_MPI successfully set up with external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_1_threads.cmake
+-- DEAL_II_WITH_THREADS is set to off.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_1_zlib.cmake
+-- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.so (found version "1.2.8") 
+-- DEAL_II_WITH_ZLIB successfully set up with external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_2_metis.cmake
+-- METIS_LIBRARY not found! Call:
+--     FIND_LIBRARY(METIS_LIBRARY NAMES metis HINTS PATH_SUFFIXES lib lib64 lib build/Linux-x86_64/libmetis)
+-- PARMETIS_LIBRARY not found! Call:
+--     FIND_LIBRARY(PARMETIS_LIBRARY NAMES parmetis HINTS NO_DEFAULT_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+-- METIS_INCLUDE_DIR not found! Call:
+--     FIND_PATH(METIS_INCLUDE_DIR metis.h HINTS PATH_SUFFIXES metis include/metis include)
+--   METIS_LIBRARIES: *** Required variable "METIS_LIBRARY" set to NOTFOUND ***
+--   METIS_INCLUDE_DIRS: *** Required variable "METIS_INCLUDE_DIR" set to NOTFOUND ***
+-- Could NOT find METIS
+-- DEAL_II_WITH_METIS has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_2_trilinos.cmake
+-- EPETRA_CONFIG_H not found! Call:
+--     FIND_FILE(EPETRA_CONFIG_H Epetra_config.h HINTS NO_DEFAULT_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+-- SACADO_CMATH_HPP not found! Call:
+--     FIND_FILE(SACADO_CMATH_HPP Sacado_cmath.hpp HINTS NO_DEFAULT_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+--   TRILINOS_LIBRARIES: *** Required variable "Trilinos_TPL_LIBRARIES" empty ***
+--   TRILINOS_INCLUDE_DIRS: *** Required variable "Trilinos_INCLUDE_DIRS" empty ***
+--   TRILINOS_USER_INCLUDE_DIRS: *** Required variable "Trilinos_INCLUDE_DIRS" empty ***
+-- Could NOT find TRILINOS
+-- DEAL_II_WITH_TRILINOS has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_2_umfpack.cmake
+-- DEAL_II_WITH_UMFPACK is set to off.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_3_petsc.cmake
+-- DEAL_II_WITH_PETSC successfully set up with external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_arpack.cmake
+-- ARPACK_LIBRARY not found! Call:
+--     FIND_LIBRARY(ARPACK_LIBRARY NAMES arpack HINTS PATH_SUFFIXES lib lib64 lib)
+--   ARPACK_LIBRARIES: *** Required variable "ARPACK_LIBRARY" set to NOTFOUND ***
+--   ARPACK_LINKER_FLAGS: -Wl,-rpath,/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -lflapack -lfblas
+-- Could NOT find ARPACK
+-- DEAL_II_WITH_ARPACK has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_boost.cmake
+-- DEAL_II_WITH_BOOST successfully set up with external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_hdf5.cmake
+-- Could NOT find HDF5 (missing:  HDF5_LIBRARIES HDF5_INCLUDE_DIRS) 
+-- DEAL_II_WITH_HDF5 has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_mumps.cmake
+-- SCALAPACK_LIBRARY not found! Call:
+--     FIND_LIBRARY(SCALAPACK_LIBRARY NAMES scalapack scalapack-openmpi HINTS PATH_SUFFIXES lib lib64 lib)
+-- BLACS_LIBRARY not found! Call:
+--     FIND_LIBRARY(BLACS_LIBRARY NAMES blacs blacs_MPI-LINUX-0 blacs_MPI-DARWIN-0 blacs-openmpi HINTS /../blacs/ PATH_SUFFIXES lib lib64 lib LIB)
+-- BLACSCINIT_LIBRARY not found! Call:
+--     FIND_LIBRARY(BLACSCINIT_LIBRARY NAMES blacsCinit blacsCinit_MPI-LINUX-0 blacsCinit_MPI-DARWIN-0 blacsCinit-openmpi HINTS /../blacs/ PATH_SUFFIXES lib lib64 lib LIB)
+-- BLACSF77INIT_LIBRARY not found! Call:
+--     FIND_LIBRARY(BLACSF77INIT_LIBRARY NAMES blacsF77init blacsF77init_MPI-LINUX-0 blacsF77init_MPI-DARWIN-0 blacsF77init-openmpi HINTS /../blacs/ PATH_SUFFIXES lib lib64 lib LIB)
+-- MUMPS_INCLUDE_DIR not found! Call:
+--     FIND_PATH(MUMPS_INCLUDE_DIR dmumps_c.h HINTS PATH_SUFFIXES mumps include/mumps include)
+-- DMUMPS_LIBRARY not found! Call:
+--     FIND_LIBRARY(DMUMPS_LIBRARY NAMES dmumps HINTS PATH_SUFFIXES lib lib64 lib)
+-- MUMPS_COMMON_LIBRARY not found! Call:
+--     FIND_LIBRARY(MUMPS_COMMON_LIBRARY NAMES mumps_common HINTS PATH_SUFFIXES lib lib64 lib)
+-- PORD_LIBRARY not found! Call:
+--     FIND_LIBRARY(PORD_LIBRARY NAMES pord HINTS PATH_SUFFIXES lib lib64 lib)
+--   MUMPS_LIBRARIES: *** Required variable "DMUMPS_LIBRARY" set to NOTFOUND ***
+--   MUMPS_INCLUDE_DIRS: *** Required variable "MUMPS_INCLUDE_DIR" set to NOTFOUND ***
+--   MUMPS_USER_INCLUDE_DIRS: *** Required variable "MUMPS_INCLUDE_DIR" set to NOTFOUND ***
+--   MUMPS_LINKER_FLAGS: -Wl,-rpath,/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -L/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib -lflapack -lfblas
+-- Could NOT find MUMPS
+-- DEAL_II_WITH_MUMPS has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_muparser.cmake
+-- DEAL_II_WITH_MUPARSER is set to off.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_netcdf.cmake
+-- NETCDF_INCLUDE_DIR not found! Call:
+--     FIND_PATH(NETCDF_INCLUDE_DIR netcdfcpp.h HINTS PATH_SUFFIXES netcdf include)
+-- NETCDF_CPLUSPLUS_LIBRARY not found! Call:
+--     FIND_LIBRARY(NETCDF_CPLUSPLUS_LIBRARY NAMES netcdf_c++ netcdf_cpp HINTS PATH_SUFFIXES lib lib64 lib)
+-- NETCDF_C_LIBRARY not found! Call:
+--     FIND_LIBRARY(NETCDF_C_LIBRARY NAMES netcdf HINTS PATH_SUFFIXES lib lib64 lib)
+--   NETCDF_LIBRARIES: *** Required variable "NETCDF_CPLUSPLUS_LIBRARY" set to NOTFOUND ***
+--   NETCDF_INCLUDE_DIRS: *** Required variable "NETCDF_INCLUDE_DIR" set to NOTFOUND ***
+-- Could NOT find NETCDF
+-- DEAL_II_WITH_NETCDF has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_opencascade.cmake
+-- OPENCASCADE_INCLUDE_DIR not found! Call:
+--     FIND_PATH(OPENCASCADE_INCLUDE_DIR Standard_Version.hxx HINTS PATH_SUFFIXES include include/oce inc)
+-- OPENCASCADE_TKBO not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKBO NAMES TKBO HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKBool not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKBool NAMES TKBool HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKBRep not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKBRep NAMES TKBRep HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKernel not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKernel NAMES TKernel HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKFeat not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKFeat NAMES TKFeat HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKFillet not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKFillet NAMES TKFillet HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKG2d not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKG2d NAMES TKG2d HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKG3d not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKG3d NAMES TKG3d HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKGeomAlgo not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKGeomAlgo NAMES TKGeomAlgo HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKGeomBase not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKGeomBase NAMES TKGeomBase HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKHLR not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKHLR NAMES TKHLR HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKIGES not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKIGES NAMES TKIGES HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKMath not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKMath NAMES TKMath HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKMesh not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKMesh NAMES TKMesh HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKOffset not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKOffset NAMES TKOffset HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKPrim not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKPrim NAMES TKPrim HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKShHealing not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKShHealing NAMES TKShHealing HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKSTEP not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKSTEP NAMES TKSTEP HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKSTEPAttr not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKSTEPAttr NAMES TKSTEPAttr HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKSTEPBase not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKSTEPBase NAMES TKSTEPBase HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKSTL not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKSTL NAMES TKSTL HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKTopAlgo not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKTopAlgo NAMES TKTopAlgo HINTS PATH_SUFFIXES lib lib64 lib)
+-- OPENCASCADE_TKXSBase not found! Call:
+--     FIND_LIBRARY(OPENCASCADE_TKXSBase NAMES TKXSBase HINTS PATH_SUFFIXES lib lib64 lib)
+--   OPENCASCADE_LIBRARIES: *** Required variable "OPENCASCADE_TKBO" set to NOTFOUND ***
+--   OPENCASCADE_INCLUDE_DIRS: *** Required variable "OPENCASCADE_INCLUDE_DIR" set to NOTFOUND ***
+--   OPENCASCADE_USER_INCLUDE_DIRS: *** Required variable "OPENCASCADE_INCLUDE_DIR" set to NOTFOUND ***
+-- Could NOT find OPENCASCADE
+-- DEAL_II_WITH_OPENCASCADE has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_p4est.cmake
+-- SC_INCLUDE_DIR not found! Call:
+--     FIND_PATH(SC_INCLUDE_DIR sc.h HINTS /FAST /DEBUG /FAST /DEBUG PATH_SUFFIXES sc include/p4est include src sc/src)
+-- P4EST_LIBRARY_OPTIMIZED not found! Call:
+--     FIND_LIBRARY(P4EST_LIBRARY_OPTIMIZED NAMES p4est HINTS /FAST /DEBUG PATH_SUFFIXES lib lib64 lib src)
+-- SC_LIBRARY_OPTIMIZED not found! Call:
+--     FIND_LIBRARY(SC_LIBRARY_OPTIMIZED NAMES sc HINTS /FAST /DEBUG /FAST /DEBUG PATH_SUFFIXES lib lib64 lib src sc/src)
+-- P4EST_LIBRARY_DEBUG not found! Call:
+--     FIND_LIBRARY(P4EST_LIBRARY_DEBUG NAMES p4est HINTS /DEBUG PATH_SUFFIXES lib lib64 lib src)
+-- SC_LIBRARY_DEBUG not found! Call:
+--     FIND_LIBRARY(SC_LIBRARY_DEBUG NAMES sc HINTS /DEBUG /DEBUG PATH_SUFFIXES lib lib64 lib src sc/src)
+-- P4EST_INCLUDE_DIR not found! Call:
+--     FIND_PATH(P4EST_INCLUDE_DIR p4est_config.h HINTS /FAST /DEBUG PATH_SUFFIXES p4est include/p4est include src)
+--   P4EST_LIBRARIES: *** Required variable "P4EST_LIBRARY_OPTIMIZED" set to NOTFOUND ***
+--   P4EST_INCLUDE_DIRS: *** Required variable "P4EST_INCLUDE_DIR" set to NOTFOUND ***
+--   P4EST_USER_INCLUDE_DIRS: *** Required variable "P4EST_INCLUDE_DIR" set to NOTFOUND ***
+-- Could NOT find P4EST
+-- DEAL_II_WITH_P4EST has unmet external dependencies.
+-- 
+-- Include /home/jan-hybs/projects/Flow123d/flow123d/src/dealii/cmake/configure/configure_slepc.cmake
+-- SLEPC_LIBRARY not found! Call:
+--     FIND_LIBRARY(SLEPC_LIBRARY NAMES slepc HINTS /flow123d_release /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/petsc_3.6_build/src PATH_SUFFIXES lib lib64 lib)
+-- SLEPC_INCLUDE_DIR_ARCH not found! Call:
+--     FIND_PATH(SLEPC_INCLUDE_DIR_ARCH slepcconf.h HINTS /flow123d_release /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/petsc_3.6_build/src PATH_SUFFIXES slepc include include/slepc)
+-- SLEPC_INCLUDE_DIR_COMMON not found! Call:
+--     FIND_PATH(SLEPC_INCLUDE_DIR_COMMON slepcversion.h HINTS /flow123d_release /home/jan-hybs/projects/Flow123d/flow123d/../external_projects/petsc_3.6_build/src PATH_SUFFIXES slepc include include/slepc)
+--   SLEPC_LIBRARIES: *** Required variable "SLEPC_LIBRARY" set to NOTFOUND ***
+--   SLEPC_INCLUDE_DIRS: *** Required variable "SLEPC_INCLUDE_DIR_ARCH" set to NOTFOUND ***
+--   SLEPC_USER_INCLUDE_DIRS: *** Required variable "SLEPC_INCLUDE_DIR_ARCH" set to NOTFOUND ***
+-- Could NOT find SLEPC
+-- DEAL_II_WITH_SLEPC has unmet external dependencies.
+-- 
+-- Configuring done. Proceed to target definitions now.
+-- Setting up compat_files
+-- Setting up compat_files - Done
+-- Setting up library
+-- Setting up library - Done
+-- Setting up project configuration
+-- Setting up project configuration - Done
+-- Configuring deal.II library - Done
+-- ===========================================
+-- Could NOT find Doxygen (missing:  DOXYGEN_EXECUTABLE) 
+-- Found PythonInterp: /usr/bin/python (found version "2.7.6") 
+-- Looking for include file pthread.h
+-- Looking for include file pthread.h - found
+-- Looking for pthread_create
+-- Looking for pthread_create - found
+-- Found Threads: TRUE  
+-- Gtest tests allowed
+-- ==== child CMake for Latex sources ====
+-- The C compiler identification is GNU 4.8.4
+-- The CXX compiler identification is GNU 4.8.4
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Targets for LaTeX documentation...
+CMake Error at /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:545 (MESSAGE):
+  I need the latex command.
+Call Stack (most recent call first):
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:586 (LATEX_NEEDIT)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1386 (LATEX_SETUP_VARIABLES)
+  CMakeLists.txt:47 (INCLUDE)
+
+
+-- I could not find the pdflatex command.
+CMake Error at /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:545 (MESSAGE):
+  I need the bibtex command.
+Call Stack (most recent call first):
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:588 (LATEX_NEEDIT)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1386 (LATEX_SETUP_VARIABLES)
+  CMakeLists.txt:47 (INCLUDE)
+
+
+CMake Error at /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:545 (MESSAGE):
+  I need the makeindex command.
+Call Stack (most recent call first):
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:589 (LATEX_NEEDIT)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1386 (LATEX_SETUP_VARIABLES)
+  CMakeLists.txt:47 (INCLUDE)
+
+
+-- I could not find the dvips command.
+-- I could not find the latex2html command.
+-- UseLATEX.cmake included.
+CMake Error at /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:787 (MESSAGE):
+  Could not find convert program.  Please download ImageMagick from
+  http://www.imagemagick.org and install.
+Call Stack (most recent call first):
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:854 (LATEX_ADD_CONVERT_COMMAND)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:889 (LATEX_CONVERT_IMAGE)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1076 (LATEX_PROCESS_IMAGES)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1354 (ADD_LATEX_TARGETS_INTERNAL)
+  CMakeLists.txt:50 (ADD_LATEX_DOCUMENT)
+
+
+CMake Error at /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:787 (MESSAGE):
+  Could not find convert program.  Please download ImageMagick from
+  http://www.imagemagick.org and install.
+Call Stack (most recent call first):
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:854 (LATEX_ADD_CONVERT_COMMAND)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:889 (LATEX_CONVERT_IMAGE)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1076 (LATEX_PROCESS_IMAGES)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1354 (ADD_LATEX_TARGETS_INTERNAL)
+  CMakeLists.txt:50 (ADD_LATEX_DOCUMENT)
+
+
+CMake Error at /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:787 (MESSAGE):
+  Could not find convert program.  Please download ImageMagick from
+  http://www.imagemagick.org and install.
+Call Stack (most recent call first):
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:854 (LATEX_ADD_CONVERT_COMMAND)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:889 (LATEX_CONVERT_IMAGE)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1076 (LATEX_PROCESS_IMAGES)
+  /home/jan-hybs/projects/Flow123d/flow123d/CMake/Modules/UseLATEX.cmake:1354 (ADD_LATEX_TARGETS_INTERNAL)
+  CMakeLists.txt:50 (ADD_LATEX_DOCUMENT)
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts/doc/reference_manual/CMakeFiles/CMakeOutput.log".
+-- ==== back in main CMake ====
+CMake Warning at CMakeLists.txt:866 (message):
+  Some problem with Latex, 'make ref-doc' may not work.
+
+
+-- =============== Summary ===================
+-- Boost:      
+-- Petsc:      /home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpetsc.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/usr/lib/x86_64-linux-gnu/libX11.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpifort.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgfortran.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libquadmath.so;/usr/lib/x86_64-linux-gnu/libm.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpicxx.a;/usr/lib/gcc/x86_64-linux-gnu/4.8/libstdc++.so;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmpi.a;/usr/lib/x86_64-linux-gnu/libpthread.so;/usr/lib/x86_64-linux-gnu/librt.so;/usr/lib/gcc/x86_64-linux-gnu/4.8/libgcc_s.so;/usr/lib/x86_64-linux-gnu/libdl.so
+--    + :      
+-- BDDCML:     /home/jan-hybs/projects/Flow123d/external_projects/bddcml_petsc_3.6_build/src/lib/libbddcml.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libcmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libdmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libsmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libzmumps.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmumps_common.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libpord.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libparmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libmetis.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libscalapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libflapack.a;/home/jan-hybs/projects/Flow123d/external_projects/petsc_3.6_build/src/flow123d_release/lib/libfblas.a;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/multivector/multi_vector.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/pcg_multi/pcg_multi.o;/home/jan-hybs/projects/Flow123d/flow123d/../external_projects/blopex_petsc_3.6_build/src/blopex_serial_double/matmultivec/matmultivec.o;/home/jan-hybs/projects/Flow123d/external_projects/blopex_petsc_3.6_build/src/blopex_abstract/lib/libBLOPEX.a
+-- Armadillo:  armadillo
+-- Python:     /usr/include/python2.7;/usr/include/x86_64-linux-gnu/python2.7
+-- YamlCpp:    /home/jan-hybs/projects/Flow123d/external_projects/yaml_cpp_build/lib/libyaml-cpp.a
+-- ===========================================
+CMake Warning (dev) in CMakeLists.txt:
+  A logical block opening on the line
+
+    /home/jan-hybs/projects/Flow123d/flow123d/CMakeLists.txt:978 (foreach)
+
+  closes on the line
+
+    /home/jan-hybs/projects/Flow123d/flow123d/CMakeLists.txt:981 (endforeach)
+
+  with mis-matching arguments.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/jan-hybs/projects/Flow123d/build-JHy_py_scripts
+make[1]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[2]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[3]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target update_source_tree
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target expand_instantiations_exe
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target obj_base.inst
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target rev_num_always
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  0%] [  0%] make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Built target obj_base.inst
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Building CXX object src/dealii/cmake/scripts/CMakeFiles/expand_instantiations_exe.dir/expand_instantiations.cc.o
+-- CREATING REV_NUM.H
+Scanning dependencies of target fparser
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+
+POST-CHECKOUT(JHy_py_scripts -> JHy_py_scripts):
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+-- Found Git: /usr/bin/git (found version "1.9.1") 
+[  0%] Built target update_source_tree
+[  0%] [  1%] make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Building CXX object third_party/fparser-4.5.1/CMakeFiles/fparser.dir/fparser.cc.o
+Building CXX object third_party/fparser-4.5.1/CMakeFiles/fparser.dir/fpoptimizer.cc.o
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  1%] Built target rev_num_always
+Scanning dependencies of target semchem
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  2%] [  2%] Building CXX object src/CMakeFiles/semchem.dir/semchem/che_semchem.cc.o
+Building CXX object src/CMakeFiles/semchem.dir/semchem/che_read.cc.o
+Scanning dependencies of target json_spirit
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  2%] Building CXX object src/input/json_spirit/CMakeFiles/json_spirit.dir/json_spirit_reader.cpp.o
+Linking CXX executable ../../common/scripts/expand_instantiations
+Scanning dependencies of target system_lib
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  2%] Built target expand_instantiations_exe
+[  4%] make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Building CXX object src/input/json_spirit/CMakeFiles/json_spirit.dir/json_spirit_value.cpp.o
+Scanning dependencies of target obj_lac.inst
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  4%] Generating block_vector.inst
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  5%] Building CXX object src/CMakeFiles/system_lib.dir/system/python_loader.cc.o
+[  7%] Generating parallel_vector.inst
+Scanning dependencies of target obj_base.debug
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  7%] Generating sparse_matrix.inst
+[  8%] Generating trilinos_sparse_matrix.inst
+[  8%] Generating trilinos_vector_base.inst
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[  8%] [  8%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/config.cc.o
+Generating vector.inst
+[ 10%] Generating vector_memory.inst
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 10%] Built target obj_lac.inst
+[ 10%] Building CXX object src/CMakeFiles/system_lib.dir/system/math_fce.cc.o
+[ 11%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/exceptions.cc.o
+Linking CXX static library ../lib/libsemchem.a
+[ 13%] Building CXX object src/CMakeFiles/system_lib.dir/system/sys_profiler.cc.o
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 13%] Built target semchem
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 13%] Building CXX object src/input/json_spirit/CMakeFiles/json_spirit.dir/json_spirit_writer.cpp.o
+Scanning dependencies of target obj_lac.debug
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 14%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/block_vector.cc.o
+[ 14%] [ 14%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/index_set.cc.o
+Building CXX object src/CMakeFiles/system_lib.dir/system/time_point.cc.o
+[ 15%] Building CXX object src/CMakeFiles/system_lib.dir/system/system.cc.o
+[ 15%] Building CXX object src/CMakeFiles/system_lib.dir/system/xio.cc.o
+[ 15%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/job_identifier.cc.o
+[ 17%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/logstream.cc.o
+[ 17%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/memory_consumption.cc.o
+[ 17%] Building CXX object src/CMakeFiles/system_lib.dir/system/exceptions.cc.o
+In file included from /home/jan-hybs/projects/Flow123d/flow123d/src/system/sys_profiler.cc:27:0:
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/sys_profiler.hh:217:50: warning: ‘__func__’ is not defined outside of function scope [enabled by default]
+ #define CODE_POINT(tag) CodePoint(tag, __FILE__, __func__, __LINE__)
+                                                  ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/sys_profiler.cc:294:39: note: in expansion of macro ‘CODE_POINT’
+ static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
+                                       ^
+Linking CXX static library ../../lib/libfparser.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 17%] Built target fparser
+[ 18%] Building CXX object src/CMakeFiles/system_lib.dir/system/stack_trace.cc.o
+[ 20%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/mpi.cc.o
+[ 20%] Building CXX object src/CMakeFiles/system_lib.dir/system/asserts.cc.o
+[ 20%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/compressed_set_sparsity_pattern.cc.o
+[ 20%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/multithread_info.cc.o
+[ 21%] Building CXX object src/CMakeFiles/system_lib.dir/io/read_ini.cc.o
+[ 21%] Building CXX object src/CMakeFiles/system_lib.dir/system/file_path.cc.o
+[ 23%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/parallel.cc.o
+[ 24%] Building CXX object src/CMakeFiles/system_lib.dir/system/tokenizer.cc.o
+[ 24%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/parameter_handler.cc.o
+[ 24%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/compressed_simple_sparsity_pattern.cc.o
+[ 24%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/partitioner.cc.o
+[ 24%] Building CXX object src/CMakeFiles/system_lib.dir/system/application_base.cc.o
+[ 26%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/path_search.cc.o
+[ 26%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/subscriptor.cc.o
+[ 27%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/thread_management.cc.o
+[ 28%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/compressed_sparsity_pattern.cc.o
+[ 28%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/parallel_vector.cc.o
+[ 28%] Building CXX object src/dealii/source/base/CMakeFiles/obj_base.debug.dir/utilities.cc.o
+[ 30%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/petsc_parallel_vector.cc.o
+[ 30%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/petsc_vector_base.cc.o
+Linking CXX static library libsystem_lib.a
+[ 31%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/petsc_vector.cc.o
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 31%] Built target system_lib
+[ 31%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/solver_control.cc.o
+Linking CXX static library libjson_spirit.a
+[ 31%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/sparse_matrix.cc.o
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 31%] Built target json_spirit
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 33%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/sparsity_pattern.cc.o
+[ 33%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/sparsity_tools.cc.o
+Scanning dependencies of target input_lib
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 33%] Building CXX object src/CMakeFiles/input_lib.dir/input/type_base.cc.o
+[ 34%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/tridiagonal_matrix.cc.o
+[ 34%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/trilinos_block_vector.cc.o
+[ 36%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/trilinos_sparse_matrix.cc.o
+[ 37%] Building CXX object src/CMakeFiles/input_lib.dir/input/type_record.cc.o
+[ 37%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/trilinos_sparsity_pattern.cc.o
+[ 39%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/trilinos_vector_base.cc.o
+[ 39%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/trilinos_vector.cc.o
+[ 39%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/vector.cc.o
+[ 40%] Building CXX object src/dealii/source/lac/CMakeFiles/obj_lac.debug.dir/vector_memory.cc.o
+[ 40%] Building CXX object src/CMakeFiles/input_lib.dir/input/type_abstract.cc.o
+[ 42%] Building CXX object src/CMakeFiles/input_lib.dir/input/type_selection.cc.o
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 42%] Built target obj_base.debug
+[ 42%] Building CXX object src/CMakeFiles/input_lib.dir/input/type_generic.cc.o
+[ 42%] Building CXX object src/CMakeFiles/input_lib.dir/input/type_tuple.cc.o
+[ 43%] Building CXX object src/CMakeFiles/input_lib.dir/input/storage.cc.o
+[ 43%] Building CXX object src/CMakeFiles/input_lib.dir/input/reader_to_storage.cc.o
+[ 44%] Building CXX object src/CMakeFiles/input_lib.dir/input/path_base.cc.o
+[ 44%] Building CXX object src/CMakeFiles/input_lib.dir/input/path_json.cc.o
+[ 46%] Building CXX object src/CMakeFiles/input_lib.dir/input/path_yaml.cc.o
+[ 46%] Building CXX object src/CMakeFiles/input_lib.dir/input/type_output.cc.o
+[ 46%] Building CXX object src/CMakeFiles/input_lib.dir/input/accessors.cc.o
+Linking CXX static library libinput_lib.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 46%] Built target input_lib
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target tools_lib
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 47%] [ 47%] Building CXX object src/CMakeFiles/tools_lib.dir/tools/interpolant.cc.o
+Building CXX object src/CMakeFiles/tools_lib.dir/tools/adaptivesimpson.cc.o
+[ 47%] Building CXX object src/CMakeFiles/tools_lib.dir/tools/time_marks.cc.o
+[ 49%] Building CXX object src/CMakeFiles/tools_lib.dir/tools/time_governor.cc.o
+Scanning dependencies of target la_lib
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 50%] [ 50%] Building CXX object src/CMakeFiles/la_lib.dir/la/distribution.cc.o
+Building CXX object src/CMakeFiles/la_lib.dir/la/local_to_global_map.cc.o
+[ 52%] Building CXX object src/CMakeFiles/la_lib.dir/la/schur.cc.o
+[ 52%] Building CXX object src/CMakeFiles/la_lib.dir/la/linsys.cc.o
+[ 53%] [ 53%] Building CXX object src/CMakeFiles/la_lib.dir/la/linsys_BDDC.cc.o
+Building CXX object src/CMakeFiles/la_lib.dir/la/linsys_PETSC.cc.o
+[ 53%] Building CXX object src/CMakeFiles/la_lib.dir/la/sparse_graph.cc.o
+Linking CXX static library libtools_lib.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 53%] Built target tools_lib
+In file included from /home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.hpp:30:0,
+                 from /home/jan-hybs/projects/Flow123d/flow123d/src/la/linsys_BDDC.cc:25:
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp: In member function ‘void la::BddcmlWrapper::loadRawMesh(int, int, int, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<double>&, const std::vector<double>&, int)’:
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:129:34: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     OLD_ASSERT( isvgvn.size() == numDofsSub_,
+                                  ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:99:11: note: in definition of macro ‘OLD_ASSERT’
+     if (!(i))  {\
+           ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:131:32: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     OLD_ASSERT( nnet.size() == numElemSub_,
+                                ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:99:11: note: in definition of macro ‘OLD_ASSERT’
+     if (!(i))  {\
+           ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:133:32: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     OLD_ASSERT( nndf.size() == numNodesSub_,
+                                ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:99:11: note: in definition of macro ‘OLD_ASSERT’
+     if (!(i))  {\
+           ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:135:46: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     OLD_ASSERT( xyz.size() == numNodesSub_ * nDim_,
+                                              ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:99:11: note: in definition of macro ‘OLD_ASSERT’
+     if (!(i))  {\
+           ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:101:34: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘std::vector<double>::size_type {aka long unsigned int}’ [-Wformat=]
+         sprintf( msg, __VA_ARGS__);\
+                                  ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:135:5: note: in expansion of macro ‘OLD_ASSERT’
+     OLD_ASSERT( xyz.size() == numNodesSub_ * nDim_,
+     ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp: In member function ‘void la::BddcmlWrapper::solveSystem(double, int, std::vector<int>*, int, int, int, bool)’:
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:329:57: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+         OLD_ASSERT( numLevels == (*numSubAtLevels).size(), 
+                                                         ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:99:11: note: in definition of macro ‘OLD_ASSERT’
+     if (!(i))  {\
+           ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:101:34: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘std::vector<int>::size_type {aka long unsigned int}’ [-Wformat=]
+         sprintf( msg, __VA_ARGS__);\
+                                  ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:329:9: note: in expansion of macro ‘OLD_ASSERT’
+         OLD_ASSERT( numLevels == (*numSubAtLevels).size(), 
+         ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:472:51: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     OLD_ASSERT( lsub_diagonal == diag_sparse.size(),
+                                                   ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:99:11: note: in definition of macro ‘OLD_ASSERT’
+     if (!(i))  {\
+           ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:101:34: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘std::vector<double>::size_type {aka long unsigned int}’ [-Wformat=]
+         sprintf( msg, __VA_ARGS__);\
+                                  ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/bddcml_wrapper.ipp:472:5: note: in expansion of macro ‘OLD_ASSERT’
+     OLD_ASSERT( lsub_diagonal == diag_sparse.size(),
+     ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/linsys_BDDC.cc: In member function ‘void LinSys_BDDC::load_mesh(int, int, int, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<double>&, const std::vector<double>&, int)’:
+/home/jan-hybs/projects/Flow123d/flow123d/src/la/linsys_BDDC.cc:140:28: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     OLD_ASSERT( numDofs == size_, "Global problem size mismatch!" );
+                            ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:99:11: note: in definition of macro ‘OLD_ASSERT’
+     if (!(i))  {\
+           ^
+Linking CXX static library libla_lib.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 53%] Built target la_lib
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target mesh_lib
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 53%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/region.cc.o
+[ 55%] [ 55%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/msh_gmshreader.cc.o
+[ 56%] [ 56%] [ 56%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/boundaries.cc.o
+Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/elements.cc.o
+[ 57%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/edges.cc.o
+Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/mesh.cc.o
+Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/neighbours.cc.o
+[ 57%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/sides.cc.o
+[ 59%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/intersection.cc.o
+[ 59%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ref_element.cc.o
+[ 60%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/partitioning.cc.o
+[ 60%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/region_set.cc.o
+[ 60%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/bounding_box.cc.o
+[ 62%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/bih_tree.cc.o
+[ 62%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/reader_instances.cc.o
+[ 63%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/abscissa.cpp.o
+/home/jan-hybs/projects/Flow123d/flow123d/src/mesh/region_set.cc: In constructor ‘RegionSetFromElements::RegionSetFromElements(const Input::Record&, Mesh*)’:
+/home/jan-hybs/projects/Flow123d/flow123d/src/mesh/region_set.cc:150:9: warning: variable ‘reg’ set but not used [-Wunused-but-set-variable]
+  Region reg = mesh->region_db().find_label(region_label);
+         ^
+[ 63%] [ 65%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/bisector.cpp.o
+Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/intersection.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/intersectionLocal.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/mathfce.cpp.o
+In file included from /home/jan-hybs/projects/Flow123d/flow123d/src/system/system.hh:25:0,
+                 from /home/jan-hybs/projects/Flow123d/flow123d/src/mesh/bih_node.hh:21,
+                 from /home/jan-hybs/projects/Flow123d/flow123d/src/mesh/bih_tree.hh:21,
+                 from /home/jan-hybs/projects/Flow123d/flow123d/src/mesh/bih_tree.cc:18:
+/home/jan-hybs/projects/Flow123d/flow123d/src/mesh/bih_tree.cc: In member function ‘void BIHTree::find_bounding_box(const BoundingBox&, std::vector<unsigned int>&)’:
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:110:27: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     OLD_ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
+                           ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:99:11: note: in definition of macro ‘OLD_ASSERT’
+     if (!(i))  {\
+           ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/mesh/bih_tree.cc:235:2: note: in expansion of macro ‘OLD_ASSERT_EQUAL’
+  OLD_ASSERT_EQUAL(cpy.size() , it - cpy.begin());
+  ^
+[ 66%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/matrix.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/plain.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/point.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/polygon.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/tetrahedron.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/triangle.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/vector.cpp.o
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 69%] Built target obj_lac.debug
+[ 71%] Building CXX object src/CMakeFiles/mesh_lib.dir/mesh/ngh/src/vertex.cpp.o
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target deal_II.g
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 72%] Building CXX object src/dealii/source/CMakeFiles/deal_II.g.dir/dummy.cc.o
+Linking CXX static library ../lib/libdeal_II.g.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 72%] Built target deal_II.g
+Linking CXX static library libmesh_lib.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 72%] Built target mesh_lib
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target fem_lib
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 73%] [ 73%] Building CXX object src/CMakeFiles/fem_lib.dir/quadrature/quadrature_lib.cc.o
+[ 75%] Building CXX object src/CMakeFiles/fem_lib.dir/fem/fe_p.cc.o
+[ 75%] Building CXX object src/CMakeFiles/fem_lib.dir/fem/dofhandler.cc.o
+[ 75%] Building CXX object src/CMakeFiles/fem_lib.dir/fem/fe_values.cc.o
+Building CXX object src/CMakeFiles/fem_lib.dir/fem/finite_element.cc.o
+[ 76%] Building CXX object src/CMakeFiles/fem_lib.dir/fem/mapping_p1.cc.o
+Scanning dependencies of target coupling_lib
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 76%] [ 76%] Building CXX object src/CMakeFiles/coupling_lib.dir/io/output_time.cc.o
+Building CXX object src/CMakeFiles/coupling_lib.dir/io/output_vtk.cc.o
+[ 78%] Building CXX object src/CMakeFiles/coupling_lib.dir/io/output_msh.cc.o
+[ 78%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/field_values.cc.o
+[ 79%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/field_common.cc.o
+[ 79%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/field.cc.o
+[ 81%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/bc_field.cc.o
+[ 81%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/multi_field.cc.o
+Linking CXX static library libfem_lib.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 81%] Built target fem_lib
+[ 81%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/bc_multi_field.cc.o
+[ 82%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/field_algo_base.cc.o
+[ 82%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/field_flag.cc.o
+[ 84%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/field_set.cc.o
+[ 84%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/unit_si.cc.o
+[ 85%] Building CXX object src/CMakeFiles/coupling_lib.dir/fields/generic_field.cc.o
+[ 85%] Building CXX object src/CMakeFiles/coupling_lib.dir/coupling/equation.cc.o
+[ 85%] Building CXX object src/CMakeFiles/coupling_lib.dir/coupling/balance.cc.o
+Linking CXX static library libcoupling_lib.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 85%] Built target coupling_lib
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target flow123d_lib
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[ 85%] [ 86%] Building CXX object src/CMakeFiles/flow123d_lib.dir/flow/mh_dofhandler.cc.o
+[ 86%] [ 88%] Building CXX object src/CMakeFiles/flow123d_lib.dir/flow/darcy_flow_mh_output.cc.o
+Building CXX object src/CMakeFiles/flow123d_lib.dir/flow/darcy_flow_mh.cc.o
+Building CXX object src/CMakeFiles/flow123d_lib.dir/flow/richards_lmh.cc.o
+[ 88%] [ 89%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/reaction_term.cc.o
+[ 89%] [ 91%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/first_order_reaction.cc.o
+Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/first_order_reaction_base.cc.o
+Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/radioactive_decay.cc.o
+[ 91%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/pade_approximant.cc.o
+[ 91%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/sorption_base.cc.o
+In file included from /home/jan-hybs/projects/Flow123d/flow123d/src/system/system.hh:25:0,
+                 from /home/jan-hybs/projects/Flow123d/flow123d/src/flow/darcy_flow_mh.cc:32:
+/home/jan-hybs/projects/Flow123d/flow123d/src/flow/darcy_flow_mh.cc: In member function ‘void DarcyMH::assembly_steady_mh_matrix()’:
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:101:34: warning: zero-length gnu_printf format string [-Wformat-zero-length]
+         sprintf( msg, __VA_ARGS__);\
+                                  ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/flow/darcy_flow_mh.cc:729:25: note: in expansion of macro ‘OLD_ASSERT’
+                         OLD_ASSERT(rows_ds->is_local(side_row), "" );
+                         ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:101:34: warning: zero-length gnu_printf format string [-Wformat-zero-length]
+         sprintf( msg, __VA_ARGS__);\
+                                  ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/flow/darcy_flow_mh.cc:749:25: note: in expansion of macro ‘OLD_ASSERT’
+                         OLD_ASSERT(rows_ds->is_local(edge_row), "" );
+                         ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/system/global_defs.h:101:34: warning: zero-length gnu_printf format string [-Wformat-zero-length]
+         sprintf( msg, __VA_ARGS__);\
+                                  ^
+/home/jan-hybs/projects/Flow123d/flow123d/src/flow/darcy_flow_mh.cc:783:21: note: in expansion of macro ‘OLD_ASSERT’
+                     OLD_ASSERT(rows_ds->is_local(edge_row), "" );
+                     ^
+[ 92%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/sorption.cc.o
+[ 92%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/dual_porosity.cc.o
+[ 94%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/isotherm.cc.o
+[ 94%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/linear_ode_solver.cc.o
+In file included from /home/jan-hybs/projects/Flow123d/flow123d/src/fields/bc_field.hh:22:0,
+                 from /home/jan-hybs/projects/Flow123d/flow123d/src/flow/darcy_flow_mh.hh:46,
+                 from /home/jan-hybs/projects/Flow123d/flow123d/src/flow/darcy_flow_mh.cc:47:
+/home/jan-hybs/projects/Flow123d/flow123d/src/fields/field.hh: At global scope:
+/home/jan-hybs/projects/Flow123d/flow123d/src/fields/field.hh:238:24: warning: inline function ‘FieldResult Field<spacedim, Value>::field_result(RegionSet) const [with int spacedim = 3; Value = FieldValue_<1, 1, double>; RegionSet = std::vector<Region>]’ used but never defined [enabled by default]
+     inline FieldResult field_result( RegionSet region_set) const;
+                        ^
+[ 95%] Building CXX object src/CMakeFiles/flow123d_lib.dir/reaction/linear_ode_analytic.cc.o
+[ 95%] Building CXX object src/CMakeFiles/flow123d_lib.dir/semchem/semchem_interface.cc.o
+[ 95%] Building CXX object src/CMakeFiles/flow123d_lib.dir/transport/concentration_model.cc.o
+[ 97%] Building CXX object src/CMakeFiles/flow123d_lib.dir/transport/heat_model.cc.o
+[ 97%] Building CXX object src/CMakeFiles/flow123d_lib.dir/transport/transport.cc.o
+[ 98%] Building CXX object src/CMakeFiles/flow123d_lib.dir/transport/transport_operator_splitting.cc.o
+[ 98%] Building CXX object src/CMakeFiles/flow123d_lib.dir/transport/transport_dg.cc.o
+[100%] Building CXX object src/CMakeFiles/flow123d_lib.dir/transport/substance.cc.o
+[100%] Building CXX object src/CMakeFiles/flow123d_lib.dir/coupling/hc_explicit_sequential.cc.o
+Linking CXX static library ../lib/libflow123d_lib.a
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[100%] Built target flow123d_lib
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+Scanning dependencies of target flow123d
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[4]: Entering directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[100%] Building CXX object CMakeFiles/bin/flow123d.dir/src/main.cc.o
+Linking CXX executable bin/flow123d
+make[4]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+[100%] Built target bin/flow123d
+make[3]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[2]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'
+make[1]: Leaving directory `/home/jan-hybs/projects/Flow123d/build-JHy_py_scripts'

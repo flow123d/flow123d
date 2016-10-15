@@ -160,7 +160,7 @@ protected:
   /**
    * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
    */
-  double **compute_reaction(double **concentrations, int loc_el);
+  double **compute_reaction(double **concentrations, int loc_el) override;
   
   /// Reinitializes the isotherm.
   /**

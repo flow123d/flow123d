@@ -43,28 +43,28 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
-
-
-    ADD_FIELD(water_content_saturated,
-R"(
+    string desc;
+    
+    desc = R"(
 Saturated water content (($ \theta_s $)).
 relative volume of the water in a reference volume of a saturated porous media.
-)"  , "0.0");
+)" ;
+    ADD_FIELD(water_content_saturated, desc, "0.0");
     water_content_saturated.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(water_content_residual,
-R"(
+    desc = R"(
 Residual water content (($ \theta_r $)).
 Relative volume of the water in a reference volume of an ideally dry porous media.
-)"  , "0.0");
+)";
+    ADD_FIELD(water_content_residual, desc, "0.0");
     water_content_residual.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(genuchten_p_head_scale,
-R"(
+    desc = R"(
 The van Genuchten pressure head scaling parameter (($ \alpha $)).
 The parameter of the van Genuchten's model to scale the pressure head.
 Related to the inverse of the air entry pressure, i.e. the pressure where the relative water content starts to decrease below 1.
-)"  ,"0.0");
+)";
+    ADD_FIELD(genuchten_p_head_scale, desc, "0.0");
     genuchten_p_head_scale.units( UnitSI().m(-1) );
 
     ADD_FIELD(genuchten_n_exponent,
@@ -311,4 +311,3 @@ void RichardsLMH::postprocess() {
     VecAssemblyEnd(schur0->get_solution());
 
 }
-

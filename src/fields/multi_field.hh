@@ -163,6 +163,8 @@ public:
      */
     FieldResult field_result( RegionSet region_set) const override;
 
+    std::string get_value_attribute() const override;
+
     /**
      * Virtual destructor.
      */

@@ -33,7 +33,7 @@ find_library(YamlCpp_LIBRARY
              NAMES ${YamlCpp_STATIC} yaml-cpp
              PATH_SUFFIXES lib64 lib
              HINTS
-                 ${YamlCpp_ROOT_HINT}
+                 ${YamlCpp_ROOT_HINT}/lib/
              PATHS  
                 /usr/local
                 /usr

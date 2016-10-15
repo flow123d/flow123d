@@ -80,6 +80,7 @@ public:
         string key_;
         string description_;
         int value;
+        TypeBase::attribute_map attributes_;
     };
 
     /// Public typedef of constant iterator into array of keys
@@ -100,7 +101,8 @@ public:
      *
      * The @p description of meaning of the value could be provided.
      */
-    Selection &add_value(const int value, const std::string &key, const std::string &description = "");
+    Selection &add_value(const int value, const std::string &key,
+            const std::string &description = "", TypeBase::attribute_map attributes = TypeBase::attribute_map() );
 
     Selection &add_attribute(std::string key, TypeBase::json_string value);
 
@@ -211,7 +213,8 @@ private:
         {}
 
         /// Inster new value to the Selection
-        void add_value(const int value, const std::string &key, const std::string &description);
+        void add_value(const int value, const std::string &key,
+                const std::string &description, TypeBase::attribute_map attributes);
 
 
         /// Name of the Selection.

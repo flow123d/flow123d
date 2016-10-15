@@ -239,13 +239,13 @@ public:
 
 		// make field init it form the init string
 	    FieldType field("test_field", false); // bulk field
+		field.units(UnitSI::one());
 		field.input_default(init);
 		field.set_components(component_names);
 		field.input_selection( get_test_selection() );
 
 		field.set_mesh(*my_mesh);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
-		field.units(UnitSI::one());
         
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>(*my_mesh);
