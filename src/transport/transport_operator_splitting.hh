@@ -182,7 +182,7 @@ public:
 
     {
         // make module solved for ever
-        time_=new TimeGovernor();
+        time_= new TimeGovernor(0.0, 0.0);
         time_->next_time();
     };
 

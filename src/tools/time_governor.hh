@@ -258,8 +258,8 @@ public:
     * 
     * Has a private pointer to static TimeMarks and can access them by marks().
     */
-   explicit TimeGovernor(double init_time=0.0,
-		   	    TimeMark::Type fixed_time_mask = TimeMark::none_type);
+   //explicit TimeGovernor(double init_time=0.0,
+	//	   	    TimeMark::Type fixed_time_mask = TimeMark::none_type);
 
    /**
     * The aim of this constuctor is simple way to make a time governor without Input interface.
@@ -267,6 +267,14 @@ public:
     * TODO: Partially tested as part of field test. Needs its own unit test.
     */
    TimeGovernor(double init_time, double dt);
+
+   /**
+    * Returns true if the time governor was set from default values
+    */
+   bool is_default() {
+       return (end_time_ == max_end_time)
+               && (max_time_step_ == end_time_ - init_time_);
+   }
 
    /**
     * @brief Sets permanent constraints for time step.
@@ -490,6 +498,9 @@ public:
      *
      */
     void view(const char *name="") const;
+
+    // Maximal tiem of simulation. More then age of the universe in seconds.
+    static const double max_end_time;
 
     /// Infinity time used for steady case.
     static const double inf_time;
