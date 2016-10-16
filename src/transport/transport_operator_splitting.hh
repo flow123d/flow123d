@@ -182,7 +182,8 @@ public:
 
     {
         // make module solved for ever
-        time_= new TimeGovernor(0.0, 0.0);
+        auto eq_mark_type = TimeGovernor::marks().new_mark_type();
+        time_= new TimeGovernor(TimeGovernor::inf_time, TimeGovernor::inf_time);
         time_->next_time();
     };
 
