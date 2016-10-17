@@ -720,13 +720,13 @@ execute_process(COMMAND
 # without targets for Latex doc.
 message(STATUS "==== child CMake for Latex sources ====") 
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc/reference_manual)
-execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/doc/reference_manual
-                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/doc/reference_manual
-                RESULT_VARIABLE res_var)
+#execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/doc/reference_manual
+#                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/doc/reference_manual
+#                RESULT_VARIABLE res_var)
 message(STATUS "==== back in main CMake ====")
-if(NOT "${res_var}" STREQUAL "0")
-  message(WARNING "Some problem with Latex, 'make ref-doc' may not work.")
-endif()
+#if(NOT "${res_var}" STREQUAL "0")
+#  message(WARNING "Some problem with Latex, 'make ref-doc' may not work.")
+#endif()
 
 
 #################################################################### add targets

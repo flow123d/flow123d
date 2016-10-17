@@ -117,6 +117,7 @@ ref-doc:
 	$(BUILD_DIR)/bin/flow123d --input_format "$(DOC_DIR)/input_reference.json"
 	python $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(DOC_DIR)/input_reference.json.tex --format=tex
 	cp $(DOC_DIR)/input_reference.json.tex $(DOC_DIR)/input_reference.tex 
+	cd $(BUILD_DIR)/doc/reference_manual && cmake $(SOURCE_DIR)/doc/reference_manual
 	make -C $(BUILD_DIR)/doc/reference_manual pdf
 
 # call Flow123d and extract petsc command line arguments
