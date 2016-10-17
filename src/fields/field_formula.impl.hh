@@ -48,6 +48,7 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
                                         "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
 			.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
 										"Definition of unit.")
+	        .allow_auto_conversion("value")
 			.close();
 }
 
