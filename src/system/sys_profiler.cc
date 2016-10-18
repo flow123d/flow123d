@@ -188,7 +188,7 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
 
 void Timer::pause() {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (this->petsc_monitor_memory && Profiler::get_petsc_memory_monitoring()) {
         // get the maximum resident set size (memory used) for the program.
         PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
         if (petsc_peak_memory < petsc_local_peak_memory)
@@ -199,7 +199,7 @@ void Timer::pause() {
 
 void Timer::resume() {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (this->petsc_monitor_memory && Profiler::get_petsc_memory_monitoring()) {
         // tell PETSc to monitor the maximum memory usage so
         //   that PetscMemoryGetMaximumUsage() will work.
         PetscMemorySetGetMaximumUsage();
@@ -209,7 +209,7 @@ void Timer::resume() {
 
 void Timer::start() {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (this->petsc_monitor_memory && Profiler::get_petsc_memory_monitoring()) {
         // Tell PETSc to monitor the maximum memory usage so
         //   that PetscMemoryGetMaximumUsage() will work.
         PetscMemorySetGetMaximumUsage();
@@ -228,7 +228,7 @@ void Timer::start() {
 
 bool Timer::stop(bool forced) {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (this->petsc_monitor_memory && Profiler::get_petsc_memory_monitoring()) {
         // get current memory usage
         PetscMemoryGetCurrentUsage (&petsc_end_memory);
         petsc_memory_difference += petsc_end_memory - petsc_start_memory;
@@ -311,6 +311,9 @@ Profiler::Profiler()
 {
 #ifdef FLOW123D_DEBUG_PROFILER
     timers_.push_back( Timer(main_cp, 0) );
+    // turn petsc memory monitor for main frame, so that other frames can call
+    // PetscMemory... methods
+    timers_[0].petsc_monitor_memory = true;
     timers_[0].start();
 #endif
 }
@@ -345,8 +348,7 @@ void Profiler::set_program_info(string program_name, string program_version, str
 }
 
 
-
-int  Profiler::start_timer(const CodePoint &cp) {
+int Profiler::start_timer(const CodePoint &cp, bool petsc_monitor_memory) {
     unsigned int parent_node = actual_node;
     //DebugOut().fmt("Start timer: {}\n", cp.tag_);
     int child_idx = find_child(cp);
@@ -356,6 +358,8 @@ int  Profiler::start_timer(const CodePoint &cp) {
         child_idx=timers_.size();
         timers_.push_back( Timer(cp, actual_node) );
         timers_[actual_node].add_child(child_idx , timers_.back() );
+        // set petsc memory flag before start call
+        timers_[child_idx].petsc_monitor_memory = petsc_monitor_memory;
     }
     actual_node=child_idx;
     
@@ -365,6 +369,11 @@ int  Profiler::start_timer(const CodePoint &cp) {
     timers_[actual_node].start();
     
     return actual_node;
+}
+
+// shortcut to full method
+int Profiler::start_timer(const CodePoint &cp) {
+    return start_timer(cp, false);
 }
 
 

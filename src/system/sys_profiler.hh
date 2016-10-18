@@ -107,9 +107,23 @@ using namespace std;
  * @endcode
  */
 #ifdef FLOW123D_DEBUG_PROFILER
-#define START_TIMER(tag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__) )
+#define START_TIMER(tag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__), false )
 #else
 #define START_TIMER(tag)
+#endif
+
+/**
+ * \def START_TIMER(tag)
+ *
+ * @brief Starts a timer with specified tag with petsc memory monitoring on.
+ *
+ * This cannot be done after macro START_TIMER call since it is already too late.
+ * After macro START_TIMER call TimerFrame class already inserts timer and starts it. 
+ */
+#ifdef FLOW123D_DEBUG_PROFILER
+#define START_TIMER_PETSC(tag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__), true )
+#else
+#define START_TIMER_PETSC(tag)
 #endif
 
 /**
@@ -334,6 +348,13 @@ public:
      * Adds given index @p child_index of the timer @p child to the correct place in the hash table.
      */
     void add_child(int child_index, const Timer &child);
+    
+    /**
+     * flag which indicates whether to monitor petsc usage in this timer
+     * @default value is false, since petsc overhead can be little too much
+     * in frequently called frames
+     */
+    bool petsc_monitor_memory = false;
 
 
 protected:
@@ -544,9 +565,17 @@ public:
     /**
      * Starts a timer with code point, tag and hashes specified by CodePoint object @p cp.
      * If the timer is not already created, it creates a new one. It returns index of
-     * the actual timer.
+     * the actual timer. By default this method create frame (if needed) which does
+     * not monitor petsc memory.
      */
     int start_timer(const CodePoint &cp);
+    /**
+     * Starts a timer with code point, tag and hashes specified by CodePoint object @p cp.
+     * If the timer is not already created, it creates a new one. It returns index of
+     * the actual timer. if petsc_monitor_memory is true, the frame will monitor petsc
+     * allocation and deallocations
+     */
+    int start_timer(const CodePoint &cp, bool petsc_monitor_memory);
     /**
      * Stops actual timer. It check if the hash of given code point match hash of the
      * tag of actual timer node. If not we print out warning and try to find the correct tag
@@ -778,6 +807,7 @@ protected:
     Profiler(); // private constructor
     Profiler(Profiler const&); // copy constructor is private
     Profiler & operator=(Profiler const&); // assignment operator is private
+    friend class TimerFrame;
 };
 
 
@@ -806,7 +836,21 @@ private:
 public:
     inline TimerFrame(const CodePoint &cp)
     : timer_index_( Profiler::instance()->start_timer(cp) )
-    {}
+    {};
+    
+    inline TimerFrame(const CodePoint &cp, bool petsc_monitor_memory)
+    : timer_index_( Profiler::instance()->start_timer(cp, petsc_monitor_memory) )
+    {};
+    
+    // /**
+    //  * Sets petsc_memory value on Timer, causing to turn memory monitor on/off
+    //  * @param  value true/false
+    //  * @return       reference to this TimerFrame, allowing to method chain
+    //  */
+    // TimerFrame& petsc_memory(bool value) {
+    //     Profiler::instance()->timers_[timer_index_].petsc_monitor_memory = value;
+    //     return *this;
+    // }
 
     ~TimerFrame() {
         Profiler::instance()->stop_timer(timer_index_);
