@@ -247,6 +247,8 @@ public:
    /**
     * @brief Default constructor - steady time governor.
     * 
+    * OBSOLETE.
+    *
     * We can have "zero step" steady problem (no computation, e.g. EquationNothing) and one step steady problem
     * (e.g. steady water flow).
     * 
@@ -258,8 +260,8 @@ public:
     * 
     * Has a private pointer to static TimeMarks and can access them by marks().
     */
-   //explicit TimeGovernor(double init_time=0.0,
-	//	   	    TimeMark::Type fixed_time_mask = TimeMark::none_type);
+    explicit TimeGovernor(double init_time=0.0,
+		   	    TimeMark::Type fixed_time_mask = TimeMark::none_type);
 
    /**
     * The aim of this constuctor is simple way to make a time governor without Input interface.

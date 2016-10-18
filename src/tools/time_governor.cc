@@ -180,7 +180,7 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
     //time_step_=dt;
 }
 
-/*
+
 // steady time governor constructor
 TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 {
@@ -190,7 +190,6 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 	init_common(init_time, inf_time, eq_mark_type);
 	steady_ = true;
 }
-*/
 
 
 // common part of constructors
