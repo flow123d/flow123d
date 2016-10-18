@@ -53,8 +53,11 @@ public:
 
 	/// Currently we set dimension to 3.
 	static const unsigned int dimension = 3;
-	/// Currently we assume
-	typedef Space<dimension>::Point Point;
+    /// stabilization parameter
+    static const double epsilon;
+    /// Currently we assume
+    typedef Space<dimension>::Point Point;
+
 
 	/**
 	 * Default constructor.
@@ -250,9 +253,8 @@ public:
 			   	   :  ( diff[2] > diff[0] ? 2 : 0 );
    }
 
+
 private:
-    /// stabilization parameter
-    static const double epsilon;
     /// minimal coordinates of bounding box
     Point min_vertex_;
     /// maximal coordinates of bounding box
