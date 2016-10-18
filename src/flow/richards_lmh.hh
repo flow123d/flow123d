@@ -84,7 +84,7 @@ protected:
     /// Registrar of class to factory
     static const int registrar;
 
-    bool zero_time_term() override;
+    bool zero_time_term(bool time_global=false) override;
 
     void initialize_specific() override;
     //void local_assembly_specific(LocalAssemblyData &local_data) override;

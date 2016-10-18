@@ -144,6 +144,8 @@ public:
     DECLARE_EXCEPTION(ExcSolverDiverge,
             << "Diverged nonlinear solver. Reason: " << EI_Reason::val
              );
+    DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
+            << "Missing the key 'time', obligatory for the transient problems.");
 
     typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembler;
 
@@ -256,9 +258,13 @@ public:
 
 
 protected:
-
-    virtual bool zero_time_term();
-
+    /**
+     * Returns true is the fields involved in the time term have values that makes the time term zero.
+     * For time_global==true, it returns true if there are no field descriptors in the input list, so the
+     * fields )of the time ter) have their default values for whole simulation.
+     * If time_global==false (default), only the actual values are considered.
+     */
+    virtual bool zero_time_term(bool time_global=false);
 
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
