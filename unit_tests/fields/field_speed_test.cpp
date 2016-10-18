@@ -34,8 +34,6 @@
 #include <iostream>
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-
 
 using namespace std;
 

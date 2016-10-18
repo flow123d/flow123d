@@ -44,8 +44,6 @@
 
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-
 
 // tests are started from 'build/test_units'
 string input = R"CODE(

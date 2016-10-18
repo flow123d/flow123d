@@ -23,8 +23,6 @@
 #include "mesh/msh_gmshreader.h"
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-
 
 string input = R"INPUT(
 {   

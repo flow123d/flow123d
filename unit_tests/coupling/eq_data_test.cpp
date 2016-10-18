@@ -52,8 +52,6 @@ namespace IT=Input::Type;
 
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-
 class SomeEquationBase : public EquationBase {
 protected:
     class EqData : public FieldSet {
