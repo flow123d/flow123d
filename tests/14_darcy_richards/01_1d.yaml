@@ -7,7 +7,7 @@ flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
-    mesh_file: ../00_mesh/line_0.25_250el.msh
+    mesh_file: ../00_mesh/line_z_0.25_250el.msh
   flow_equation: !Flow_Richards_LMH
     output_specific:
     soil_model: irmay
