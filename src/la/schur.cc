@@ -336,9 +336,9 @@ void SchurComplement::resolve()
 
     START_TIMER("SchurComplemet::resolve without form schur");
 
-    MatMult(IAB,Compl->get_solution(),Sol1);
-    VecScale(Sol1,-1);
-    MatMultAdd(IA,RHS1,Sol1,Sol1);
+    chkerr(MatMult(IAB,Compl->get_solution(),Sol1));
+    chkerr(VecScale(Sol1,-1));
+    chkerr(MatMultAdd(IA,RHS1,Sol1,Sol1));
 }
 
 
