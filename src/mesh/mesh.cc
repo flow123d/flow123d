@@ -21,8 +21,10 @@
 
 
 #include "system/system.hh"
+#include "system/exceptions.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
@@ -229,15 +231,20 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 void Mesh::init_from_input() {
     START_TIMER("Reading mesh - init_from_input");
     
-    Input::Array region_list;
-    // read raw mesh, add regions from GMSH file
-    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-    reader.read_physical_names(this);
-    // create regions from input
-    if (in_record_.opt_val("regions", region_list)) {
-        this->read_regions_from_input(region_list);
-    }
-    reader.read_mesh(this);
+	try {
+	    Input::Array region_list;
+	    // read raw mesh, add regions from GMSH file
+	    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
+	    reader.read_physical_names(this);
+	    // create regions from input
+	    if (in_record_.opt_val("regions", region_list)) {
+	        this->read_regions_from_input(region_list);
+	    }
+	    reader.read_mesh(this);
+	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
+	catch (ExceptionBase const &e) {
+		throw;
+	}
     // possibly add implicit_boundary region.
     setup_topology();
     // finish mesh initialization
