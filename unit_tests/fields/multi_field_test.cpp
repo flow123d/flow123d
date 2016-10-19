@@ -14,6 +14,7 @@
 #include <fields/field_constant.hh>
 #include <fields/field_formula.hh>
 #include <fields/field_elementwise.hh>
+#include <fields/field_interpolated_p0.hh>
 #include <fields/field_set.hh>
 #include <fields/unit_si.hh>
 #include <input/type_base.hh>
@@ -44,6 +45,8 @@ TEST(MultiField, transposition) {
     // necessary only for registration of Fields to Abstract
     FieldConstant<3, FieldValue<3>::TensorFixed > constant_field;
     FieldFormula<3, FieldValue<3>::TensorFixed > formula_field;
+    FieldElementwise<3, FieldValue<3>::TensorFixed > elementwise_field;
+    FieldInterpolatedP0<3, FieldValue<3>::TensorFixed > interpolated_field;
 
 	MultiField<3, FieldValue<3>::Scalar> empty_mf;
 	Input::Type::Record in_rec = Input::Type::Record("MultiFieldTest","")
