@@ -21,6 +21,7 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "fields/field_constant.hh"
+#include "fields/field_formula.hh"
 #include "fields/field_set.hh"
 
 #include "system/sys_profiler.hh"
@@ -580,6 +581,9 @@ static const it::Selection &get_sorption_type_selection() {
 TEST(Field, init_from_input) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	Profiler::initialize();
+
+    // necessary only for registration of FieldFormula to Abstract
+    FieldFormula<3, FieldValue<3>::TensorFixed > formula_field;
 
 	Mesh mesh;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");

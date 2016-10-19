@@ -11,6 +11,8 @@
 #include <flow_gtest.hh>
 
 #include <fields/multi_field.hh>
+#include <fields/field_constant.hh>
+#include <fields/field_formula.hh>
 #include <fields/field_elementwise.hh>
 #include <fields/field_set.hh>
 #include <fields/unit_si.hh>
@@ -39,6 +41,10 @@ transposed:
 )YAML";
 
 TEST(MultiField, transposition) {
+    // necessary only for registration of Fields to Abstract
+    FieldConstant<3, FieldValue<3>::TensorFixed > constant_field;
+    FieldFormula<3, FieldValue<3>::TensorFixed > formula_field;
+
 	MultiField<3, FieldValue<3>::Scalar> empty_mf;
 	Input::Type::Record in_rec = Input::Type::Record("MultiFieldTest","")
 	    .declare_key("common", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )

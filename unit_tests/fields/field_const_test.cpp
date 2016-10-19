@@ -59,6 +59,9 @@ TEST(FieldConst, read_from_input) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
+    // necessary only for registration of FieldConstant to Abstract
+    FieldConstant<3, FieldValue<3>::TensorFixed > tensor_const_field;
+
     Input::Type::Record rec_type = Input::Type::Record("FieldConstTest","")
         .declare_key("tensor1", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
         .declare_key("tensor2", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
