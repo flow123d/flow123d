@@ -82,7 +82,6 @@ LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
 
 void LinSys_PETSC::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
 {
-    DebugOut() << "Set tolerances.";
     if (! in_rec_.is_empty()) {
         // input record is set
         r_tol_ = in_rec_.val<double>("r_tol", r_tol);

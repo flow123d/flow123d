@@ -7,17 +7,17 @@ flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Horizontal infiltration into dry sample. Should end in the steady state pressure 10m.
   mesh:
-    mesh_file: ../00_mesh/line_x_200el.msh
+    mesh_file: ../00_mesh/strip_xy.msh
     #mesh_file: ./input/test10_bentonit_0.005.msh
   flow_equation: !Flow_Richards_LMH
     output_specific:
     soil_model: { model_type: irmay, cut_fraction: 0.9999 }
     time: # time in hours (consistent with conductivity)
-        end_time: 1500     # original experiment from UGN up to time 6000 h
+        end_time: 1300     # original experiment from UGN up to time 6000 h
         init_dt: 0.1       # s
         # current time step enlargement logic do not allow to extent time step up to the output timestep
         # maximum timestep wil be just 50.
-        max_dt: 20        
+        max_dt: 100        
         min_dt: 0.1
 
     input_fields:
@@ -38,12 +38,10 @@ problem: !Coupling_Sequential
         bc_pressure: 10                 # m
 
     nonlinear_solver:
-      tolerance: 1e-8
+      tolerance: 1e-6
       max_it: 20 # should stop after 5 iterations due to stagnation
-      min_it: 2
+      min_it: 1
       converge_on_stagnation: false
-      linear_solver: !Petsc 
-        a_tol: 1e-11
     n_schurs: 2
     output:
       fields:
@@ -60,12 +58,12 @@ problem: !Coupling_Sequential
       times:
         - step: 100
       observe_points:
-        - [ 0.0, 0, 0 ]
-        - [ 0.1, 0, 0 ]
-        - [ 0.2, 0, 0 ]
-        - [ 0.5, 0, 0 ]
-        - [ 0.7, 0, 0 ]
-        - [ 0.8, 0, 0 ]
-        - [ 0.9, 0, 0 ]
-        - [ 1, 0, 0.0 ]
+        - [ 0.0, 0.001, 0 ]
+        - [ 0.1, 0.001, 0 ]
+        - [ 0.2, 0.001, 0 ]
+        - [ 0.5, 0.001, 0 ]
+        - [ 0.7, 0.001, 0 ]
+        - [ 0.8, 0.001, 0 ]
+        - [ 0.9, 0.001, 0 ]
+        - [ 1, 0.001, 0.0 ]
         
