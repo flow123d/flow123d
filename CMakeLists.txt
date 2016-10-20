@@ -512,10 +512,17 @@ message(STATUS "=======================================================")
 set(PYTHON_EXTRA_MODULES_PATH lib/python/flow123d)
 flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 execute_process(COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/lib/python)
-execute_process(COMMAND
-    ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
+if (COPY_INSTEAD_OF_SYMLINK)
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
+	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	)
+else()
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
+	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	)
+endif()
 
 # use python on demand
 if(USE_PYTHON)
@@ -680,10 +687,17 @@ set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
 macro(make_link_in_source FILE)
   # get relative filename if absolute address is given
   string(REPLACE "${CMAKE_SOURCE_DIR}/" "" rel_path "${FILE}")
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  )
+  if (COPY_INSTEAD_OF_SYMLINK)
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  else()
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  endif()
   
   set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
 endmacro()
