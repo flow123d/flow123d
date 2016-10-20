@@ -11,7 +11,7 @@ problem: !Coupling_Sequential
     #mesh_file: ./input/test10_bentonit_0.005.msh
   flow_equation: !Flow_Richards_LMH
     output_specific:
-    soil_model: irmay
+    soil_model: { model_type: irmay, cut_fraction: 0.9999 }
     time: # time in hours (consistent with conductivity)
         end_time: 1500     # original experiment from UGN up to time 6000 h
         init_dt: 0.1       # s
