@@ -165,7 +165,8 @@ transpose_legend(legend_handle, n_col)
 legend = plt.legend(legend_handle, legend_label,  ncol=n_col, handletextpad = -2, frameon=False,
            loc = 'lower right', bbox_to_anchor=(1.0,0.0))
 
-plt.axis((1000,1500, -200, 10))
+#plt.axis((1000,1500, -200, 10))
+plt.axis((00,1500, -2000, 10))
 plt.xlabel("time [s]")
 plt.ylabel("phead [m]")
 #plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
@@ -192,8 +193,8 @@ transpose_legend(legend_handle, n_col)
 legend = plt.legend(legend_handle, legend_label,  ncol=n_col, handletextpad = -2, frameon=False,
            loc = 'lower right', bbox_to_anchor=(1.0,0.0))
 
-plt.axis((1000,1500, 0, 1e-6))
-#plt.axis((0,1500, 0, 1e-4))
+#plt.axis((1000,1500, 0, 1e-6))
+plt.axis((0,1500, 0, 1e-4))
 plt.xlabel("time [hour]")
 plt.ylabel("velocity [m/s]")
 #plt.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)

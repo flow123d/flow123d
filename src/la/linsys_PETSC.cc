@@ -82,11 +82,17 @@ LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
 
 void LinSys_PETSC::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
 {
+    DebugOut() << "Set tolerances.";
     if (! in_rec_.is_empty()) {
         // input record is set
         r_tol_ = in_rec_.val<double>("r_tol", r_tol);
         a_tol_ = in_rec_.val<double>("a_tol", a_tol);
         max_it_ = in_rec_.val<unsigned int>("max_it", max_it);
+    } else {
+        r_tol_ = r_tol;
+        a_tol_ = a_tol;
+        max_it_ = max_it;
+
     }
 }
 
@@ -350,6 +356,7 @@ int LinSys_PETSC::solve()
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
     chkerr(KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT));
+    chkerr(KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,  max_it_));
     KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero
     // unless KSP type is preonly.

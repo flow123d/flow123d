@@ -490,7 +490,7 @@ void DarcyMH::solve_nonlinear()
 
     if (! is_linear_common) {
         // set tolerances of the linear solver unless they are set by user.
-        schur0->set_tolerances(0.1, 0.1*this->tolerance_, 10);
+        schur0->set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
     }
     vector<double> convergence_history;
 
@@ -525,7 +525,13 @@ void DarcyMH::solve_nonlinear()
         double alpha = 1; // how much of new solution
         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
-
+        /*
+        double * sol;
+        unsigned int sol_size;
+        get_solution_vector(sol, sol_size);
+        if (mh_dh.el_ds->myp() == 0)
+            VecView(sol_vec, PETSC_VIEWER_STDOUT_SELF);
+        */
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", convergedReason );
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
