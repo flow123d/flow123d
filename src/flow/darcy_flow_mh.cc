@@ -130,7 +130,7 @@ const it::Record & DarcyMH::type_field_descriptor() {
 const it::Record & DarcyMH::get_input_type() {
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
-        .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
+        .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
         .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"),
             "Residual tolerance.")
