@@ -218,36 +218,6 @@ package: all
 	make -C build_tree package
 .PHONY : package
 
-
-# target will pack flow123d and create install image
-PACKAGE_NAME=Flow123d-2.0.0-Linux.tar.gz
-IMAGE_NAME=flow123d-image.tar.gz
-create-install-image: package
-	docker run    -tid --name flow_rel flow123d/install bash
-	docker exec   flow_rel mkdir -p /opt/flow123d/flow123d
-	docker cp     build_tree/$(PACKAGE_NAME) flow_rel:/tmp/$(PACKAGE_NAME)
-	docker exec   flow_rel tar -xzf /tmp/$(PACKAGE_NAME) -C /opt/flow123d/flow123d --strip-components=1
-	docker exec   flow_rel rm -rf /tmp/$(PACKAGE_NAME)
-	docker export flow_rel > build_tree/$(IMAGE_NAME)
-	docker stop   flow_rel
-	docker rm     flow_rel
-.PHONY : create-install-image
-
-
-INSTALLER_NAME=flow123d-2.0.0.exe
-create-windows-nsis: 
-	docker run -tid --name nsis flow123d/nsis
-	docker exec nsis mkdir -p /pack/build/libs/
-	docker      cp build_tree/DockerToolbox-1.12.2.exe nsis:/pack/libs/
-	docker      cp build_tree/flow123d-image.tar.gz    nsis:/pack/libs/
-	
-	docker exec nsis make all
-	docker cp   nsis:/pack/build/Flow123d-0.1.1-Linux.exe build_tree/
-	docker stop nsis
-	docker rm   nsis
-	mv build_tree/Flow123d-0.1.1-Linux.exe build_tree/$(INSTALLER_NAME)
-.PHONY : create-windows-nsis
-	
 	
 ################################################################################################
 # Help Target
