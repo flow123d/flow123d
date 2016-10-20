@@ -471,7 +471,6 @@ bool DarcyMH::zero_time_term(bool time_global) {
 void DarcyMH::solve_nonlinear()
 {
 
-	DebugOut().fmt("dt: {}\n", time_->step().length());
     assembly_linear_system();
     double residual_norm = schur0->compute_residual();
     unsigned int l_it=0;
