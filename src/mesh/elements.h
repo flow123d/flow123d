@@ -30,6 +30,7 @@ class Mesh;
 class Side;
 class SideIter;
 class Neighbour;
+class XFEMElementSingularData;
 
 
 
@@ -179,7 +180,9 @@ public:
 
     Mesh *mesh_; // should be removed as soon as the element is also an Accessor
 
-
+    /// Pointer to enrichment data for the current element.
+    XFEMElementSingularData* xfem_data;
+    
 protected:
     // Data readed from mesh file
     RegionIdx region_idx_;
