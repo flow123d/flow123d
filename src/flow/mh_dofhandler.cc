@@ -20,6 +20,14 @@
 #include "mesh/side_impl.hh"
 #include "system/sys_profiler.hh"
 
+#include "intersection/inspect_elements.hh"
+#include "intersection/intersection_local.hh"
+
+#include "fem/singularity.hh"
+#include "fem/xfem_element_data.hh"
+
+const int MH_DofHandler::empty_node_idx = -1;
+
 MH_DofHandler::MH_DofHandler()
 :
 el_4_loc(nullptr),
@@ -60,9 +68,37 @@ void MH_DofHandler::reinit(Mesh *mesh) {
     }
 
     prepare_parallel();
-
+    
+    // convert row_4_id arrays from separate numberings to global numbering of rows
+    make_row_numberings();
 }
 
+
+void MH_DofHandler::reinit(Mesh *mesh,
+                           shared_ptr< computeintersection::InspectElements > intersections,
+                           Field<3, FieldValue<3>::Scalar>& cross_section) {
+    mesh_ = mesh;
+    elem_side_to_global.resize(mesh->n_elements() );
+    FOR_ELEMENTS(mesh, ele) elem_side_to_global[ele.index()].resize(ele->n_sides());
+
+    unsigned int i_side_global=0;
+    FOR_ELEMENTS(mesh, ele) {
+        for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
+            elem_side_to_global[ele.index()][i_lside] = i_side_global++;
+    }
+
+    prepare_parallel();
+    
+//     // convert row_4_id arrays from separate numberings to global numbering of rows
+//     make_row_numberings();
+    
+    create_enrichment(intersections,singularities_12d_, cross_section);
+    
+    //HACK for a single processor
+    unsigned int rows_starts = total_size();
+    rows_ds = std::make_shared<Distribution>(&rows_starts, PETSC_COMM_WORLD);
+    rows_ds->view(cout);
+}
 
 
 
@@ -151,10 +187,6 @@ void MH_DofHandler::prepare_parallel() {
             side_id_4_loc, side_row_4_id);
     delete [] loc_part;
     delete [] id_4_old;
-
-    // convert row_4_id arrays from separate numberings to global numbering of rows
-    make_row_numberings();
-
 }
 
 // ========================================================================
@@ -280,4 +312,346 @@ double MH_DofHandler::element_scalar( ElementFullIter &ele ) const {
 
 LocalElementAccessorBase<3> MH_DofHandler::accessor(uint local_ele_idx) {
     return LocalElementAccessorBase<3>(this, local_ele_idx);
+}
+
+
+
+
+
+/*************************************************************************************************************
+ * ***********************************************************************************************************
+ * **********************************************************************************************************/
+
+void MH_DofHandler::print_array(int* array, unsigned int length, std::string name)
+{
+    DBGCOUT("print '" << name  << "' (" << length << "): \n");
+    for(unsigned int i=0; i < length; i++){
+        DBGCOUT(<< "[" << i << "]:  " << array[i] << "\n");
+    }
+}
+
+void MH_DofHandler::clear_mesh_flags()
+{
+    mesh_flags_.resize(mesh_->n_elements(), false);
+}
+
+
+void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectElements > intersections,
+                                      vector< Singularity0D<3> >& singularities,
+                                      Field<3, FieldValue<3>::Scalar>& cross_section)
+{
+    DBGCOUT("MH_DofHandler - create_singularities_12d\n");
+    //TODO:
+    //- count different types of intersections inside InspectElements to be able to allocate other objects
+    //- differ 1d-2d intersections: one point intersection in plane versus in 3D
+    
+    ASSERT_PTR_DBG(intersections);
+    
+    singularities.clear();
+    clear_node_aux();
+    
+    unsigned int sing_count_guess = 100;
+    singularities.reserve(sing_count_guess);
+    node_values.reserve(sing_count_guess);
+    node_vec_values.reserve(sing_count_guess);
+    
+    //TODO propose some allocation size for xfem data
+    xfem_data.reserve(mesh_->n_elements()*0.3);
+    
+    std::vector<unsigned int> ele_to_enrich;
+    
+    
+//     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+//         auto ele_ac = mh_dh.accessor(i_loc);
+//         
+//         unsigned int idx = ele_ac.ele_global_idx();
+//         if(ele_ac.dim() == 1) {
+//             std::vector<ILpair>& ilpairs = intersections->intersection_map_[idx];
+//             if(ilpairs.size() == 0) continue;
+//             DBGCOUT("ele 1d: " << idx << "\n");
+//             
+//             for(ILpair& ilp : ilpairs){
+//                 ASSERT_PTR_DBG(ilp.second);
+//                 //TODO: check different intersection
+//                 computeintersection::IntersectionLocal<1,2>* il = static_cast<computeintersection::IntersectionLocal<1,2>*>(ilp.second);
+//                 ASSERT_PTR_DBG(il);
+//                 // we want to consider here only singularities (line segment and triangle not in a plane)
+//                 if(il->size() != 1) continue;   //process only IL with one IP
+//                 
+//                 ElementFullIter ele2d = mesh_->element(il->bulk_ele_idx());
+//                 Space<3>::Point center = (*il)[0].coords(ele);
+//                 double radius = data_->cross_section.value(center,ele->element_accessor());
+//                 
+// //                 DebugOut().fmt("intersection:  c {} b {}\n", il->component_idx(), il->bulk_ele_idx());
+// //                 center.print(MessageOut(),"center");
+// //                 DebugOut() << "radius " << radius << "\n";
+//                 
+//                 singularities.push_back(Singularity0D<3>(center, radius, ele, ele2d));
+//                 
+//                 //TODO: suggest proper enrichment radius
+//                 double enr_radius = 6*std::sqrt(ele2d->measure());
+//                 DBGCOUT(<< enr_radius);
+//                 find_ele_to_enrich(singularities.back(), ele_to_enrich, ele2d, enr_radius);
+//             }
+//         }
+//     }
+    
+    int new_enrich_node_idx = 0;
+    
+    FOR_ELEMENTS(mesh_,ele){
+        unsigned int idx = ele->index();
+        if(ele->dim() == 1) {
+            std::vector<computeintersection::ILpair>& ilpairs = intersections->intersection_map_[idx];
+            if(ilpairs.size() == 0) continue;
+            DBGCOUT("ele 1d: " << idx << "\n");
+            
+            for(computeintersection::ILpair& ilp : ilpairs){
+                ASSERT_PTR_DBG(ilp.second);
+                //TODO: check different intersection
+                computeintersection::IntersectionLocal<1,2>* il = static_cast<computeintersection::IntersectionLocal<1,2>*>(ilp.second);
+                ASSERT_PTR_DBG(il);
+                // we want to consider here only singularities (line segment and triangle not in a plane)
+                if(il->size() != 1) continue;   //process only IL with one IP
+                
+                ElementFullIter ele2d = mesh_->element(il->bulk_ele_idx());
+                
+                //create singularity
+                Space<3>::Point center = (*il)[0].coords(ele);
+                double radius = cross_section.value(center,ele->element_accessor());               
+//                 DebugOut().fmt("intersection:  c {} b {}\n", il->component_idx(), il->bulk_ele_idx());
+//                 center.print(MessageOut(),"center");
+//                 DebugOut() << "radius " << radius << "\n";
+                Space<3>::Point n = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
+                                                ele2d->node[2]->point() - ele2d->node[0]->point());
+                Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
+                
+                singularities.push_back(Singularity0D<3>(center, radius, direction_vector, n));
+                node_values.push_back(std::map<int, double>());
+                node_vec_values.push_back(std::map<int, Space<3>::Point>());
+                
+                //TODO: suggest proper enrichment radius
+                double enr_radius = 6*std::sqrt(ele2d->measure());
+                DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
+                clear_mesh_flags();
+                find_ele_to_enrich(singularities.back(), ele_to_enrich, ele2d, enr_radius, new_enrich_node_idx);
+                
+//                 // fill xfem data
+//                 for(unsigned int ele_idx : ele_to_enrich){
+//                     
+//                 }
+            }
+        }
+    }
+    
+//     DebugOut() << ele_to_enrich.size() << "\n";
+//     for(auto& idx : ele_to_enrich){
+//         DebugOut() << idx << "\n";
+//     }
+    
+    // set dof offsets:
+    offset_velocity = 0;
+    offset_enr_velocity = mesh_->n_sides_;
+    
+    int temp_offset;
+    unsigned int max_enr_per_node = 1;
+    // temporary dof vectors
+    std::vector<std::vector<int>> enr_dofs_velocity(new_enrich_node_idx, std::vector<int>(max_enr_per_node, empty_node_idx));
+    std::vector<std::vector<int>> enr_dofs_pressure(new_enrich_node_idx, std::vector<int>(max_enr_per_node, empty_node_idx));
+    
+    //distribute enriched dofs:
+    temp_offset = offset_enr_velocity; // will return last dof + 1 (it means new available dof)
+    distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+    offset_pressure = temp_offset;
+    offset_enr_pressure = offset_pressure + mesh_->n_elements();
+    
+    temp_offset = offset_enr_pressure; // will return last dof + 1 (it means new available dof)
+    distribute_enriched_dofs(enr_dofs_pressure, temp_offset, Quantity::pressure);
+    offset_edges = temp_offset;
+    offset_enr_lagrange = offset_edges + mesh_->n_edges();
+    
+    DBGCOUT(<< "\noffset_velocity " << offset_velocity << "\n"
+            << "offset_enr_velocity " << offset_enr_velocity << "\n"
+            << "offset_pressure " << offset_pressure << "\n"
+            << "offset_enr_pressure " << offset_enr_pressure << "\n"
+            << "offset_edges " << offset_edges << "\n"
+            << "offset_enr_lagrange " << offset_enr_lagrange << "\n"
+            << "total_size " << total_size() << "\n"
+    );
+    
+    //correct standard dofs:
+    update_standard_dofs();
+    
+    
+    xfem_data.shrink_to_fit();
+    singularities.shrink_to_fit();
+    node_values.shrink_to_fit();
+    node_vec_values.shrink_to_fit();
+    clear_mesh_flags();
+}
+
+void MH_DofHandler::update_standard_dofs()
+{
+    unsigned int dof;
+    dof = offset_pressure;
+    for(unsigned int i=0; i < mesh_->n_elements(); i++, dof++){
+        row_4_el[i] = dof;
+    }
+    
+    dof = offset_edges;
+    for(unsigned int i=0; i < mesh_->n_edges(); i++, dof++){
+        row_4_edge[i] = dof;
+    }
+    
+    dof = offset_enr_lagrange;
+    row_4_sing = new int[singularities_12d_.size()];
+    for(unsigned int i=0; i < singularities_12d_.size(); i++, dof++){
+        row_4_sing[i] = dof;
+    }
+}
+
+
+int MH_DofHandler::total_size()
+{
+    return offset_enr_lagrange + singularities_12d_.size();
+}
+
+
+void MH_DofHandler::find_ele_to_enrich(Singularity0D<3>& sing,
+                                   std::vector< unsigned int >& ele_to_enrich,
+                                   ElementFullIter ele,
+                                   double radius,
+                                   int& new_enrich_node_idx
+                                  )
+{   
+    // check flag at the element so element is checked only once
+    
+    if(mesh_flags_[ele->index()]) return;
+    
+    //flag the element
+    mesh_flags_[ele->index()] = true;
+        
+    bool enrich = false;
+    for(unsigned int i=0; i < ele->n_nodes(); i++){
+        double d = arma::norm(sing.center() - ele->node[i]->point(),2);
+//         DBGCOUT(<< d << "\n");
+        if(d < radius){
+            enrich = true;
+            
+            //XDataCell* xdata_pointer = static_cast<XDataCell*> (cell->user_pointer());
+//             ele->xfem_data = nullptr;
+            
+            //TODO enriched node, add dofs
+            //TODO flux dof - oposite to the node ??
+        }
+    }
+    
+    // front advancing enrichment of neighboring elements
+    if(enrich){
+        ele_to_enrich.push_back(ele->index());
+        
+        // add new xfem data
+        unsigned int sing_idx = singularities_12d_.size()-1;
+        
+        XFEMElementSingularData* xdata = ele->xfem_data;
+        if(xdata == nullptr){   //possibly create new one
+            xfem_data.push_back(XFEMElementSingularData());
+            xdata = & xfem_data.back();
+            xdata->set_node_values(&node_values, &node_vec_values);
+            //TODO: set number of quantities
+            xdata->global_enriched_dofs().resize(3);
+            xdata->set_element(ele->index());
+            ele->xfem_data = xdata;
+        }
+         
+        xdata->add_data(&sing, sing_idx);
+        
+        Node* node; //shortcut
+        // number the enriched nodes and compute node values
+        for(unsigned int i=0; i < ele->n_nodes(); i++){
+            node = ele->node[i];
+            // number enriched nodes
+            if (node->aux == empty_node_idx){
+//                 DBGCOUT(<< "node number: " << new_enrich_node_idx << "\n");
+                node->aux = new_enrich_node_idx;
+                new_enrich_node_idx++;
+            }
+            
+            // map.insert does not do anything if key already exists
+            node_values[sing_idx].insert(std::make_pair(node->aux, sing.value(node->point())) );       //pressure
+            node_vec_values[sing_idx].insert(std::make_pair(node->aux, sing.grad(node->point())) );    //velocity
+        }
+        
+//         DebugOut() << "n_neighs_vb " << ele->n_neighs_vb << "\n";
+        for(unsigned int n=0; n < ele->n_sides(); n++) {
+            Edge* edge = ele->side(n)->edge();
+            for(int j=0; j < edge->n_sides;j++) {
+                if (edge->side(j)->element() != ele){
+//                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
+                    find_ele_to_enrich(sing,ele_to_enrich,edge->side(j)->element(),radius, new_enrich_node_idx);
+                }
+            }
+        }
+    }
+}
+
+void MH_DofHandler::clear_node_aux()
+{
+    FOR_ELEMENTS(mesh_, ele){
+        for(unsigned int i=0; i < ele->n_nodes(); i++){
+            ele->node[i]->aux = empty_node_idx;
+        }
+    }
+}
+
+
+void MH_DofHandler::fill_xfem_data(const Singularity0D<3>& sing,
+                                     ElementFullIter ele,
+                                     XFEMElementSingularData* data)
+{
+    ele->xfem_data = data;
+    
+    // singularity is at the back at the moment.
+    unsigned int sing_idx = singularities_12d_.size()-1;
+    //fill auxiliary vectors:
+    int enrich_node_idx = 0;
+    for(unsigned int i=0; i < ele->n_nodes(); i++){
+//         node_values[sing_idx];
+//         node_vec_values;
+        
+        // number enriched nodes
+        if (ele->node[i]->aux != empty_node_idx) ele->node[i]->aux = enrich_node_idx;
+        
+        enrich_node_idx++;
+    }
+    
+}
+
+
+void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_dofs,
+                                               int& offset,
+                                               Quantity quant)
+{
+    unsigned int w,i,node_idx;
+//     int new_dof = offset;
+    
+    for(XFEMElementSingularData& xdata : xfem_data){
+        ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+        auto dofs = xdata.global_enriched_dofs()[quant];
+        dofs.resize(xdata.n_enrichments(), std::vector<int>(ele->n_nodes()));
+//         DBGCOUT(<<"dofs xdata\n");
+        for(w=0; w < xdata.n_enrichments(); w++){
+            for(i=0; i < ele->n_nodes(); i++){
+                node_idx = ele->node[i]->aux;
+                if(temp_dofs[node_idx][w] == empty_node_idx){
+//                     DBGCOUT(<< node_idx << " new dof " << offset << "\n");
+                    dofs[w][i] = temp_dofs[node_idx][w] = offset;
+                    offset++;
+                }
+                else{
+//                     DBGCOUT(<< node_idx << " old dof " << temp_dofs[node_idx][w] << "\n");
+                    dofs[w][i] = temp_dofs[node_idx][w];
+                }
+            }
+        }
+    }
 }

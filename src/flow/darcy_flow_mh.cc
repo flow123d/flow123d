@@ -322,25 +322,6 @@ void DarcyMH::initialize() {
 
     init_eq_data();
     output_object = new DarcyFlowMHOutput(this, input_record_);
-
-    if(use_xfem){
-        // intersections
-        intersections_ = std::make_shared<computeintersection::InspectElements>(data_->mesh);
-        intersections_->compute_intersections(computeintersection::IntersectionType::d12_2);
-        
-//         // enrichments
-//         mh_dh = std::make_shared<XFEM_DofHandler>();
-//         mh_dh->reinit(mesh_, intersections_, data_->cross_section);
-        mh_dh.reinit(mesh_);
-//         
-//         mh_dh->print_array(mh_dh->side_row_4_id, mesh_->n_sides(), "side dofs-velocity");
-//         mh_dh->print_array(mh_dh->row_4_el, mesh_->n_elements(), "ele dofs-pressure");
-//         mh_dh->print_array(mh_dh->row_4_edge, mesh_->n_edges(), "edge dofs-pressure lagrange");
-    }
-    else{
-        mh_dh.reinit(mesh_);
-    }
-    
     
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
@@ -353,6 +334,24 @@ void DarcyMH::initialize() {
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_->set_time(time_->step(), LimitSide::right);
+    
+    if(use_xfem){
+        // intersections
+        intersections_ = std::make_shared<computeintersection::InspectElements>(data_->mesh);
+        intersections_->compute_intersections(computeintersection::IntersectionType::d12_2);
+        
+        // init dofhandler including enrichments
+        mh_dh.reinit(mesh_, intersections_, data_->cross_section);
+        
+//         mh_dh.print_array(mh_dh.side_row_4_id, mesh_->n_sides(), "side dofs-velocity");
+//         mh_dh.print_array(mh_dh.row_4_el, mesh_->n_elements(), "ele dofs-pressure");
+//         mh_dh.print_array(mh_dh.row_4_edge, mesh_->n_edges(), "edge dofs-pressure lagrange");
+    }
+    else{
+        mh_dh.reinit(mesh_);
+    }
+    
+    
     create_linear_system(rec);
 
 

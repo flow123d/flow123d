@@ -40,6 +40,16 @@ class MH_DofHandler;
 template <int spacedim>
 class LocalElementAccessorBase;
 
+
+#include "fields/field.hh"
+#include "fem/xfem_element_data.hh"
+
+class XFEMElementSingularData;
+template<unsigned int spacedim> class Singularity0D;
+namespace computeintersection{
+    class InspectElements;
+}
+
 /// temporary solution to provide access to results
 /// from DarcyFlowMH independent of mesh
 class MH_DofHandler {
@@ -103,6 +113,53 @@ public:
     double time_;
 
     friend LocalElementAccessorBase<3>;
+    
+    
+    
+    // XFEM:
+public:
+    void reinit(Mesh *mesh,
+                shared_ptr< computeintersection::InspectElements > intersections,
+                Field<3, FieldValue<3>::Scalar>& cross_section);
+    
+    void print_array(int * array, unsigned int length, std::string name = "array");
+    
+    int total_size();
+    
+protected:
+    static const int empty_node_idx;
+    
+    int *row_4_sing;        //< singularity index to matrix row (lagrange multiplier)
+    
+    void create_enrichment(std::shared_ptr<computeintersection::InspectElements> intersections,
+                           std::vector<Singularity0D<3>> &singularities,
+                           Field<3, FieldValue<3>::Scalar>& cross_section);
+    
+    void find_ele_to_enrich(Singularity0D<3>& sing, std::vector<unsigned int>& ele_to_enrich,
+                            ElementFullIter ele, double radius, int& new_enrich_node_idx);
+    
+    void clear_mesh_flags();
+    
+    void clear_node_aux();
+    
+    void fill_xfem_data(const Singularity0D<3>& sing, ElementFullIter ele, XFEMElementSingularData* data);
+    
+    void distribute_enriched_dofs(std::vector<std::vector<int>>& temp_dofs, int& offset, Quantity quant);
+    
+    void update_standard_dofs();
+    
+    std::vector<Singularity0D<3>> singularities_12d_;
+    
+    std::vector<XFEMElementSingularData> xfem_data;
+    
+    std::vector<std::map<int, double> > node_values;
+    
+    std::vector<std::map<int, Space<3>::Point> > node_vec_values;
+    
+    std::vector<bool> mesh_flags_;
+    
+    unsigned int offset_velocity, offset_pressure, offset_enr_velocity,
+                 offset_enr_pressure, offset_edges, offset_enr_lagrange;
 };
 
 
