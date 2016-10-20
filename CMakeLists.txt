@@ -514,10 +514,17 @@ message(STATUS "=======================================================")
 set(PYTHON_EXTRA_MODULES_PATH lib/python/flow123d)
 flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
 execute_process(COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/lib/python)
-execute_process(COMMAND
-    ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
+if (COPY_INSTEAD_OF_SYMLINK)
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
+	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	)
+else()
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
+	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	)
+endif()
 
 # use python on demand
 if(USE_PYTHON)
@@ -682,10 +689,17 @@ set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
 macro(make_link_in_source FILE)
   # get relative filename if absolute address is given
   string(REPLACE "${CMAKE_SOURCE_DIR}/" "" rel_path "${FILE}")
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  )
+  if (COPY_INSTEAD_OF_SYMLINK)
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  else()
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  endif()
   
   set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
 endmacro()
@@ -722,13 +736,13 @@ execute_process(COMMAND
 # without targets for Latex doc.
 message(STATUS "==== child CMake for Latex sources ====") 
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc/reference_manual)
-execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/doc/reference_manual
-                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/doc/reference_manual
-                RESULT_VARIABLE res_var)
+#execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/doc/reference_manual
+#                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/doc/reference_manual
+#                RESULT_VARIABLE res_var)
 message(STATUS "==== back in main CMake ====")
-if(NOT "${res_var}" STREQUAL "0")
-  message(WARNING "Some problem with Latex, 'make ref-doc' may not work.")
-endif()
+#if(NOT "${res_var}" STREQUAL "0")
+#  message(WARNING "Some problem with Latex, 'make ref-doc' may not work.")
+#endif()
 
 
 #################################################################### add targets

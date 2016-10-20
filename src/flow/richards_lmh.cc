@@ -197,9 +197,17 @@ void RichardsLMH::prepare_new_time_step()
     //VecCopy(schur0->get_solution(), previous_solution);
 }
 
-bool RichardsLMH::zero_time_term() {
-    return data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros &&
-           data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+bool RichardsLMH::zero_time_term(bool time_global) {
+    if (time_global) {
+        return (data_->storativity.input_list_size() == 0)
+                && (data_->water_content_saturated.input_list_size() == 0);
+
+    } else {
+        return (data_->storativity.field_result(mesh_->region_db().get_region_set("BULK"))
+                == result_zeros)
+                && (data_->water_content_saturated.field_result(mesh_->region_db().get_region_set("BULK"))
+                == result_zeros);
+    }
 }
 
 

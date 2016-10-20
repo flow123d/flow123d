@@ -26,14 +26,16 @@
 TimeMarks TimeGovernor::time_marks_ = TimeMarks();
 
 //const double TimeGovernor::time_step_lower_bound = numeric_limits<double>::epsilon();
+
+#define MAX_END_TIME 5.0e+17
+#define MAX_END_TIME_STR "5.0e+17"
+
 const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
+const double TimeGovernor::max_end_time = MAX_END_TIME; // more then age of universe in seconds.
 const double TimeGovernor::time_step_precision = 16*numeric_limits<double>::epsilon();
 
 
 using namespace Input::Type;
-
-
-
 
 
 const Record & TimeGovernor::get_input_type() {
@@ -42,8 +44,8 @@ const Record & TimeGovernor::get_input_type() {
 		.allow_auto_conversion("max_dt")
 		.declare_key("start_time", Double(), Default("0.0"),
 					"Start time of the simulation.")
-		.declare_key("end_time", Double(), Default::read_time("Infinite end time."),
-					"End time of the simulation.")
+		.declare_key("end_time", Double(), Default(MAX_END_TIME_STR),
+					"End time of the simulation. Default value is more then age of universe in seconds.")
 		.declare_key("init_dt", Double(0.0), Default("0.0"),
 				"Initial guess for the time step.\n"
 				"Only useful for equations that use adaptive time stepping."
@@ -126,9 +128,14 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
 
     try {
+
+        // Get rid of rounding errors.
+        double end_time = input.val<double>("end_time");
+        if (end_time> 0.99*max_end_time) end_time = max_end_time;
+
         // set permanent limits
     	init_common(input.val<double>("start_time"),
-    				input.val<double>("end_time", inf_time),
+    				end_time,
     				eq_mark_type);
         set_permanent_constraint(
             input.val<double>("min_dt", min_time_step_),
@@ -185,11 +192,9 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 }
 
 
-
 // common part of constructors
 void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type type)
 {
-
 
     if (init_time < 0.0) {
 		THROW(ExcTimeGovernorMessage()
@@ -217,11 +222,7 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 
     	min_time_step_=lower_constraint_=time_step_precision;
         lower_constraint_message_ = "Permanent minimal constraing, default, time_step_precision.";
-    	if (end_time_ == inf_time) {
-        	max_time_step_=upper_constraint_=inf_time;
-    	} else {
-    		max_time_step_=upper_constraint_= end_time - init_time_;
-    	}
+   		max_time_step_=upper_constraint_= end_time - init_time_;
     	upper_constraint_message_ = "Permanent maximal constraint, default, total simulation time.";
     	// choose maximum possible time step
     	//time_step_=max_time_step_;
@@ -244,8 +245,8 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 	eq_mark_type_=type;
 	steady_=false;
     time_marks_.add( TimeMark(init_time_, equation_fixed_mark_type()) );
-    if (end_time_ != inf_time)
-    	time_marks_.add( TimeMark(end_time_, equation_fixed_mark_type()) );
+    //if (end_time_ != inf_time)
+    time_marks_.add( TimeMark(end_time_, equation_fixed_mark_type()) );
 }
 
 

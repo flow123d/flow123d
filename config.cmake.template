@@ -175,9 +175,16 @@ set(FLOW_BUILD_TYPE debug)
 # e.g. linux_x86_64, windows_x86_64, windows_x86_32
 # set(PLATFORM_NAME linux_x86_64)
 
+### Using copy instead of symlink ##########################################################
+# Performs copy_directory command instead of create_symlink.
+# It's necessary for build under Windows
+#set(COPY_INSTEAD_OF_SYMLINK true)
+
+
 ### External Projects directory ##########################################################
 #
 # The directory where possible external projects should be stored and built.
 # The default location is ${PROJECT_SOURCE_DIR}/../external_projects.
 
 #set(EXTERNAL_PROJECT_DIR "") 
+

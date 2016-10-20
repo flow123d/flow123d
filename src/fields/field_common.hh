@@ -242,6 +242,13 @@ public:
     }
 
     /**
+     * Returns number of field descriptors containing the field.
+     */
+    unsigned int input_list_size() const {
+        return shared_->input_list_.size();
+    }
+
+    /**
      * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true
      * otherwise it returns false.
      * Then one can call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm

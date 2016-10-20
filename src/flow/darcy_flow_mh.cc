@@ -159,7 +159,7 @@ const it::Record & DarcyMH::get_input_type() {
                 "Parameters of output form MH module.")
         .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
-        .declare_key("time", TimeGovernor::get_input_type(),
+        .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
                 "Time governor setting for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
@@ -255,11 +255,11 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 
     START_TIMER("Darcy constructor");
     {
-        Input::Record time_record;
-        if ( in_rec.opt_val("time", time_record) )
+        auto time_record = input_record_.val<Input::Record>("time");
+        //if ( in_rec.opt_val("time", time_record) )
             time_ = new TimeGovernor(time_record);
-        else
-            time_ = new TimeGovernor();
+        //else
+        //    time_ = new TimeGovernor();
     }
 
     data_ = make_shared<EqData>();
@@ -309,6 +309,11 @@ void DarcyMH::init_eq_data()
 
 
     data_->set_input_list( this->input_record_.val<Input::Array>("input_fields") );
+    // Check that the time step was set for the transient simulation.
+    if (! zero_time_term(true) && time_->is_default() ) {
+        THROW(ExcMissingTimeGovernor() << input_record_.ei_address());
+    }
+
     data_->mark_input_times(*time_);
 }
 
@@ -450,8 +455,12 @@ void DarcyMH::update_solution()
 
 }
 
-bool DarcyMH::zero_time_term() {
-    return data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+bool DarcyMH::zero_time_term(bool time_global) {
+    if (time_global) {
+        return (data_->storativity.input_list_size() == 0);
+    } else {
+        return data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    }
 }
 
 
