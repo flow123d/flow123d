@@ -69,6 +69,11 @@ template<unsigned int dim, unsigned int spacedim> class FEValues;
 template<unsigned int dim, unsigned int spacedim> class FESideValues;
 template<unsigned int dim> class QGauss;
 
+//XFEM:
+namespace computeintersection{
+    class InspectElements;
+}
+
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
  *
@@ -359,6 +364,13 @@ protected:
     Vec previous_solution;
 
 	std::shared_ptr<EqData> data_;
+    
+    //XFEM:
+    bool use_xfem;  ///< Flag determines using XFEM
+    
+    /// Computes intersections.
+    std::shared_ptr<computeintersection::InspectElements> intersections_;
+    
 
     friend class DarcyFlowMHOutput;
     friend class P0_CouplingAssembler;
