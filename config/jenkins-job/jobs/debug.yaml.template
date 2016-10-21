@@ -114,7 +114,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
+          $(exit ${{RUN_UNIT_TESTS}}) || docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
 
 
 # ---------------------------------------------------------------------------- #
@@ -129,7 +129,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
+          $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
 
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #
@@ -163,6 +163,16 @@
                   <name>BRANCH_NAME</name>
                   <description>Specify branch name you want to build. Default value will build master branch.</description>
                   <defaultValue>$GIT_BRANCH</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>RUN_UNIT_TESTS</name>
+                  <description>If set to '0' will not run any unit-test.</description>
+                  <defaultValue>1</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>RUN_INTEGRATION_TESTS</name>
+                  <description>If set to '0' will not run any integration tests.</description>
+                  <defaultValue>1</defaultValue>
                 </hudson.model.StringParameterDefinition>
               </parameterDefinitions>
             </hudson.model.ParametersDefinitionProperty>
