@@ -110,18 +110,18 @@ plot '< grep \\\".right_points\\\" ../ref_out/06_frac_dualpor/mass_balance.txt' 
 
 
 
-# Tutorial 05 (heat)
+# Tutorial 07 (heat)
 
 #image with bc and mesh
-gmsh make_05.geo
-pdfjam 05_bc.pdf 05_mesh.pdf --nup 2x1 --papersize '{20cm,10cm}' --outfile 05_bcmesh.pdf
-rm -rf 05_mesh.pdf
+gmsh make_07.geo
+pdfjam 07_bc.pdf 07_mesh.pdf --nup 2x1 --papersize '{20cm,10cm}' --outfile 07_bcmesh.pdf
+rm -rf 07_mesh.pdf
 
 #make plot of production power
 echo "
 set terminal pdf color enhanced lw 2
-set output '05_power.pdf'
+set output '07_power.pdf'
 set xlabel 'time [years]'
-plot [1:] \"< sed -n '/\\\\.well[12]_surface\\\"/p' ../ref_out/05_heat/energy_balance.txt | awk 'BEGIN {t=0;v=0} {if (t==\$1) v+=\$4; else {print t, v; t=\$1;v=\$4}} END {print t,v}'\" u (\$1/365.25/86400):(-\$2/1e6) w lp t 'power [MW]',\\
+plot [1:] \"< sed -n '/\\\\.well[12]_surface\\\"/p' ../ref_out/07_heat/energy_balance.txt | awk 'BEGIN {t=0;v=0} {if (t==\$1) v+=\$4; else {print t, v; t=\$1;v=\$4}} END {print t,v}'\" u (\$1/365.25/86400):(-\$2/1e6) w lp t 'power [MW]',\\
           25 dt 2 not
 " | gnuplot
