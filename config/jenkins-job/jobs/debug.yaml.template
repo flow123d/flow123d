@@ -48,7 +48,9 @@
           cd flow123d
           make initialize-submodules
           git submodule update bin/docker
-          cd bin/docker/bin
+          cd bin/docker
+          git pull origin master
+          cd bin
           ./configure --yes-to-all --do-not-override
           echo ${{_GIT_BRANCH}}
 
