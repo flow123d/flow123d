@@ -31,7 +31,7 @@ Draw;
 Print Sprintf("07_flow.pdf");
 
 
-Merge "../ref_out/05_heat/heat.msh";
+Merge "../ref_out/07_heat/heat.msh";
 View[0].Visible = 0;
 View[1].Visible = 0;
 View[2].Visible = 1;

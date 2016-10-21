@@ -30,7 +30,7 @@
 ##
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: "Example 3 - Fractures - dual-porosity"
+  description: "Example 6 - Fractures - dual-porosity"
   mesh:
     mesh_file: 04_mesh.msh
     regions:

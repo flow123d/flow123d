@@ -1,6 +1,6 @@
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: "Tutorial 4 - Fractures - diffusion, no blind fractures"
+  description: "Tutorial 4 - Fractures - diffusion, no blind fractures (auxiliary)"
   mesh:
     mesh_file: 04_mesh.msh
     regions:

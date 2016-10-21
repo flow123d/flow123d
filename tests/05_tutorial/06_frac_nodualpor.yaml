@@ -1,6 +1,6 @@
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: "Example 3 - Fractures - flow through blind fractures"
+  description: "Example 6 - Fractures - flow through blind fractures (auxiliary)"
   mesh:
     mesh_file: 04_mesh.msh
     regions:

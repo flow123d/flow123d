@@ -3,7 +3,7 @@
 # Tutorial 01
 
 # make image of mesh, bc and flow field
-gmsh make_01_flow.geo
+gmsh - make_01_flow.geo
 pdfjam 01_mesh.pdf 01_bc.pdf 01_flow.pdf --nup 3x1 --papersize '{20cm,10cm}' --delta '2cm 0cm' --outfile 01_mesh_bc_flux.pdf
 rm 01_mesh.pdf 01_flow.pdf
 
@@ -25,7 +25,7 @@ plot '<grep rock ../ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/3
      '<grep .tunnel ../ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/365):4 w l axes x1y2 t '.tunnel'" | gnuplot
 
 # make image with concentrations
-gmsh make_02_transport.geo
+gmsh - make_02_transport.geo
 pdfjam 02_transport_1.pdf 02_transport_2.pdf 02_transport_3.pdf 02_transport_4.pdf --nup 4x1 --papersize '{20cm,10cm}' --outfile 02_transport.pdf
 rm 02_transport_[1234].pdf
 
@@ -56,14 +56,14 @@ plot '03_conc_tunnel.txt' u (timecolumn(1,\"%d.%m.%Y\")):2 w l lw 0.1 lc \"00000
 " | gnuplot
 
 # make image of flux and pressure
-gmsh make_03.geo
+gmsh - make_03.geo
 
 
 
 # Tutorial 04
 
 # image with geometry and mesh
-gmsh make_04.geo
+gmsh - make_04.geo
 pdfjam 04_geo.pdf 04_mesh.pdf --nup 2x1 --papersize '{20cm,10cm}' --outfile 04_geomesh.pdf
 rm -rf 04_mesh.pdf
 
@@ -113,7 +113,7 @@ plot '< grep \\\".right_points\\\" ../ref_out/06_frac_dualpor/mass_balance.txt' 
 # Tutorial 07 (heat)
 
 #image with bc and mesh
-gmsh make_07.geo
+gmsh - make_07.geo
 pdfjam 07_bc.pdf 07_mesh.pdf --nup 2x1 --papersize '{20cm,10cm}' --outfile 07_bcmesh.pdf
 rm -rf 07_mesh.pdf
 
