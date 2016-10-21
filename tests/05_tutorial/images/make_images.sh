@@ -60,7 +60,57 @@ gmsh make_03.geo
 
 
 
-# Tutorial 05
+# Tutorial 04
+
+# image with geometry and mesh
+gmsh make_04.geo
+pdfjam 04_geo.pdf 04_mesh.pdf --nup 2x1 --papersize '{20cm,10cm}' --outfile 04_geomesh.pdf
+rm -rf 04_mesh.pdf
+
+echo "
+set terminal pdf color enhanced lw 2
+set output '04_mass_flux.pdf'
+set xlabel 'time [years]'
+set ylabel 'flux in rock [kg/year]'
+set y2label 'flux in fractures [kg/year]'
+set ytics nomirror
+set y2tics
+plot '< grep \\\".right\\\" 04_diff_noblind_mass_balance.txt' u 1:4 w l axes x1y1 t 'rock (no blind fractures)',\\
+     '< grep \\\".right\\\" ../ref_out/04_frac_diffusion/mass_balance.txt' u 1:4 w l axes x1y1 t 'rock',\\
+     '< grep \\\".right_points\\\" 04_diff_noblind_mass_balance.txt' u 1:4 w l axes x1y2 t 'fractures (no blind)',\\
+     '< grep \\\".right_points\\\" ../ref_out/04_frac_diffusion/mass_balance.txt' u 1:4 w l axes x1y2 t 'fractures'
+" | gnuplot
+
+
+
+# Tutorial 05 (frac-sorption)
+
+echo "
+set terminal pdf color enhanced lw 2
+set output '05_mass_flux.pdf'
+set xlabel 'time [years]'
+set ylabel 'flux in fracture [kg/year]'
+plot '< grep .right_points ../ref_out/05_frac_sorption/mass_balance.txt | grep \\\"I\\\"' u 1:4 w l t 'I',\\
+     '< grep .right_points ../ref_out/05_frac_sorption/mass_balance.txt | grep \\\"Ra-lin\\\"' u 1:4 w l t 'Ra',\\
+     '< grep .right_points ../ref_out/05_frac_sorption/mass_balance.txt | grep \\\"Se-lang\\\"' u 1:4 w l t 'Se'
+" | gnuplot
+
+
+# Tutorial 06 (dual porosity)
+
+echo "
+set terminal pdf color enhanced lw 2
+set output '06_mass_flux.pdf'
+set xlabel 'time [years]'
+set ylabel 'flux in fracture [kg/year]'
+plot '< grep \\\".right_points\\\" ../ref_out/06_frac_dualpor/mass_balance.txt' u 1:4 w l t 'dual porosity',\\
+     '< grep \\\".right_points\\\" 06_frac_nodualpor_mass_balance.txt' u 1:4 w l t 'flow in blind fractures'
+" | gnuplot
+
+
+
+
+# Tutorial 05 (heat)
 
 #image with bc and mesh
 gmsh make_05.geo
