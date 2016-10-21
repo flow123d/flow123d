@@ -54,7 +54,9 @@
           cd flow123d
           make initialize-submodules
           git submodule update bin/docker
-          cd bin/docker/bin
+          cd bin/docker
+          git pull origin master
+          cd bin
           ./configure --yes-to-all --do-not-override
           echo ${{_GIT_BRANCH}}
 
@@ -137,7 +139,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          $(exit {{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
+          $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
 
 
 # ---------------------------------------------------------------------------- #
@@ -172,9 +174,18 @@
           docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/Flow123d-2.0.0-Linux.tar.gz publish/
           make -C flow123d/bin/docker/bin/package \
                 DESTINATION=$(pwd)/publish \
+                create-install-image
+          make -C flow123d/bin/docker/bin/package \
+                DESTINATION=$(pwd)/publish \
                 DOCKER_PATH=~/jenkins/static/DockerToolbox-1.12.2.exe \
+                DOCKER_IMAGE_NAME=${{DOCKER_IMAGE_NAME}} \
                 create-windows-installer
-
+    publishers:
+      - cifs: 
+          site: 'flow123d@intec'
+          target: '/docker-images/${{DOCKER_IMAGE_NAME}}/'
+          source: publish/**/*
+          remove-prefix: publish/
 
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #
@@ -187,8 +198,8 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          # docker stop ${{DOCKER_PID}}
-          # docker rm   -f ${{DOCKER_PID}}
+          docker stop ${{DOCKER_PID}}
+          docker rm   -f ${{DOCKER_PID}}
 
 # 
 # # ---------------------------------------------------------------------------- #
@@ -296,8 +307,9 @@
       - inject:
           script-content: |
             rm -f prop.file && touch prop.file
-            echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
-            echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                    >> prop.file
+            echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}"          >> prop.file
+            echo "DOCKER_IMAGE_NAME=${{BRANCH_NAME#origin/}}-${{GIT_COMMIT:0:6}}"   >> prop.file
+            echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                             >> prop.file
             
       - build-name:
           name:  "${{PROPFILE,file=\"prop.file\",property=\"_GIT_BRANCH\"}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
