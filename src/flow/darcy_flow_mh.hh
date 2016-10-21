@@ -353,6 +353,7 @@ protected:
 
 	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
 	double tolerance_;
+	unsigned int min_n_it_;
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 

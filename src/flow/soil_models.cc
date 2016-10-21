@@ -12,15 +12,35 @@
 #include "fadbad.h"
 #include "badiff.h"
 #include "fadiff.h"
+#include "system/logger.hh"
 
 #include "system/asserts.hh"
 #include "flow/soil_models.hh"
 
 
 template <class Model>
+SoilModelImplBase<Model>::SoilModelImplBase(double cut_fraction)
+: cut_fraction_(cut_fraction)
+{}
+
+
+template <class Model>
 void SoilModelImplBase<Model>::reset(SoilData data)
 {
+    data.cut_fraction = cut_fraction_;
     model_.reset_(data);
+    /*
+    // Check table of hydraulic functions
+    static int checked=0;
+    if (! checked) {
+        checked=1;
+
+        double factor=pow(10, 0.1);
+        for(double h=0.1; h < 1e4; h*=factor) {
+            LogOut().fmt("h: {:g} sat: {:g} cond: {:g}", -h, water_content(-h), conductivity(-h));
+        }
+    }
+    */
 }
 
 template <class Model>
@@ -74,8 +94,12 @@ void VanGenuchten::reset_(SoilData soil)
 
 
     Hs = Q_rel_inv(soil_param_.cut_fraction);
-    //std::cout << "Hs : " << Hs << " qs: " << soil_param_.Qs << " qsnc: " << Qs_nc << std::endl;
-
+    /*
+    std::cout << "Hs : " << Hs
+              << " qs: " << soil_param_.Qs
+              << " qsnc: " << Qs_nc
+              << " Q: "  << Q_rel(Hs) << std::endl;
+    */
 }
 
 
