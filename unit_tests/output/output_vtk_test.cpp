@@ -78,8 +78,8 @@ public:
 		field.set_components(component_names);
 
 		field.set_mesh( *(this->_mesh) );
-		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 		field.units(UnitSI::one());
+		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
