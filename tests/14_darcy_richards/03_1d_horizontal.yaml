@@ -5,45 +5,42 @@
 # 
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
+  description: Horizontal infiltration into dry sample. Should end in the steady state pressure 10m.
   mesh:
-    mesh_file: ../00_mesh/line_z_0.25_250el.msh
+    mesh_file: ../00_mesh/line_x_200el.msh
+    #mesh_file: ./input/test10_bentonit_0.005.msh
   flow_equation: !Flow_Richards_LMH
     output_specific:
-    soil_model: irmay
+    soil_model: { model_type: irmay, cut_fraction: 0.9999 }
     time: # time in hours (consistent with conductivity)
-        end_time: 3000     # original experiment from UGN up to time 6000 h
-        init_dt: 1
+        end_time: 1500     # original experiment from UGN up to time 6000 h
+        init_dt: 0.1       # s
         # current time step enlargement logic do not allow to extent time step up to the output timestep
         # maximum timestep wil be just 50.
-        max_dt: 300        
+        max_dt: 20        
         min_dt: 0.1
 
     input_fields:
       - region: plane
-        # pressure -65 MPa; for g and density see conductivity below
-        init_pressure: -6619    
+        init_pressure: -6619             # m
         
 
-        # Bentonit
-        #storativity: 5.846e-5
-        water_content_saturated: 0.42
-        water_content_residual: 0.04
-        
-        # permeability 5e-21 m^2; g 9.82 kg m s^{-2}; water density 988; viscosity 0.001 Pa.s
-        conductivity: 1.778e-10          # m/h 
+        # Bentonite, parameters similar to the vertical test, based on the experiment.
+        water_content_saturated: 0.5    # m^3 / m^3 
+        water_content_residual: 0       # m^3 / m^3    
+        conductivity: 100e-10           # m/s 
         genuchten_n_exponent: 1.24
-        genuchten_p_head_scale: 5e-3
+        genuchten_p_head_scale: 1e-4    # 1/m
         
         # effective Dirichlet BC
-      - region: .bc_bottom
-        bc_type: total_flux
-        bc_pressure: 0
-        bc_robin_sigma: 1e6
+      - region: .right
+        bc_type: dirichlet
+        bc_pressure: 10                 # m
 
     nonlinear_solver:
-      tolerance: 1e-7
+      tolerance: 1e-8
       max_it: 20 # should stop after 5 iterations due to stagnation
+      min_it: 2
       converge_on_stagnation: false
       linear_solver: !Petsc 
         a_tol: 1e-11
@@ -57,16 +54,18 @@ problem: !Coupling_Sequential
       cumulative: true
     
     output_stream: 
-      file: ./flow.pvd
-      format: !vtk
+      file: ./flow.msh
+      format: !gmsh
         variant: ascii
       times:
         - step: 100
       observe_points:
-        - [ 0, 0, -0.25 ]
-        - [ 0, 0, -0.2 ]
-        - [ 0, 0, -0.15 ]
-        - [ 0, 0, -0.1 ]
-        - [ 0, 0, -0.05 ]
-        - [ 0, 0, 0.0 ]
+        - [ 0.0, 0, 0 ]
+        - [ 0.1, 0, 0 ]
+        - [ 0.2, 0, 0 ]
+        - [ 0.5, 0, 0 ]
+        - [ 0.7, 0, 0 ]
+        - [ 0.8, 0, 0 ]
+        - [ 0.9, 0, 0 ]
+        - [ 1, 0, 0.0 ]
         

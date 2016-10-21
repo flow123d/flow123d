@@ -73,6 +73,8 @@ public:
      */
     SchurComplement(SchurComplement &other);
 
+    void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
+
     /**
      * Returns pointer to LinSys object representing the schur complement.
      */
