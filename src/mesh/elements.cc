@@ -44,8 +44,8 @@ Element::Element()
   n_neighs_vb(0),
   neigh_vb(NULL),
 
-  dim_(0)
-
+  dim_(0),
+  xfem_data(nullptr)
 {
 }
 
@@ -63,6 +63,7 @@ void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
     neigh_vb=NULL;
     dim_=dim;
     mesh_=mesh_in;
+    xfem_data = nullptr;
     region_idx_=reg;
 
     node = new Node * [ n_nodes()];
