@@ -254,11 +254,14 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
     /// Getter for enriched dofs by a single well.
     std::vector<std::vector<std::vector<int>>> &global_enriched_dofs()
     { return global_enriched_dofs_;}
-                                                          
-      /// Getter for enriched dofs by a single well.
-      const std::vector<int> &global_enriched_dofs(Quantity quant,
-                                                   unsigned int local_enrichment_index)
-      {return global_enriched_dofs_[quant][local_enrichment_index];}
+     
+    /// Getter for enriched dofs by a single well.
+    const std::vector<int> &global_enriched_dofs(Quantity quant,
+                                                 unsigned int local_enrichment_index)
+    {   ASSERT_DBG(quant < global_enriched_dofs_.size());
+        ASSERT_DBG(local_enrichment_index < global_enriched_dofs_[quant].size());
+        return global_enriched_dofs_[quant][local_enrichment_index];
+    }
       
       /// Getter for weights of a single well.
 //       const std::vector<unsigned int> &weights(unsigned int local_enrichment_index);
@@ -325,6 +328,7 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
                                        std::vector<XFEMElementSingularData*> xdata, 
                                        unsigned int n_wells);
     
+    void print(std::ostream& out);
   private:
       
     /** Pointer to a vector that contains the precomputed values of enrichment functions at nodes.
@@ -362,6 +366,18 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
 
 
 
+inline void XFEMElementSingularData::print(ostream& out)
+{
+    out << this << "xdata: ele " << ele_global_idx_ << " enrichments " << n_enrichments();
+    out << " dofs[ ";
+//     for(unsigned int q=0; q<global_enriched_dofs_.size(); q++)
+    for(unsigned int q=0; q<2; q++)
+        for(unsigned int w=0; w<n_enrichments(); w++)
+            for(unsigned int j=0; j<global_enriched_dofs_[q][w].size(); j++){
+                out << global_enriched_dofs_[q][w][j] << " ";
+            }
+    out << "]\n";
+}
 
 
 
