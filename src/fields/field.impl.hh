@@ -173,7 +173,7 @@ void Field<spacedim,Value>::set_mesh(const Mesh &in_mesh) {
 
 /*
 template<int spacedim, class Value>
-boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
+std::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
     OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
@@ -224,7 +224,8 @@ void Field<spacedim, Value>::set_field(
 		const Input::AbstractRecord &a_rec,
 		double time)
 {
-	set_field(domain, FieldBaseType::function_factory(a_rec, n_comp()), time);
+	FieldAlgoBaseInitData init_data(n_comp(), units());
+	set_field(domain, FieldBaseType::function_factory(a_rec, init_data), time);
 }
 
 
@@ -474,7 +475,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         Input::ReaderToStorage reader( default_input, *input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
-        auto field_ptr = FieldBaseType::function_factory( a_rec , n_comp() );
+    	FieldAlgoBaseInitData init_data(n_comp(), units());
+        auto field_ptr = FieldBaseType::function_factory( a_rec , init_data );
         field_ptr->set_mesh( mesh(), is_bc() );
         for(const Region &reg: regions_to_init) {
     		data_->region_history_[reg.idx()]
@@ -499,8 +501,10 @@ void Field<spacedim,Value>::add_factory(const std::shared_ptr<FactoryBase> facto
 template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
 	Input::AbstractRecord field_record;
-	if (rec.opt_val(field.input_name(), field_record))
-		return FieldBaseType::function_factory(field_record, field.n_comp() );
+	if (rec.opt_val(field.input_name(), field_record)) {
+		FieldAlgoBaseInitData init_data(field.n_comp(), field.units());
+		return FieldBaseType::function_factory(field_record, init_data );
+	}
 	else
 		return FieldBasePtr();
 }

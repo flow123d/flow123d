@@ -64,12 +64,12 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
-    virtual void init_from_input(const Input::Record &rec) override;
+    virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) override;
 
     /**
      * Set row of boundary data. Used to implement old BC input.
      */
-    void set_data_row(unsigned int boundary_idx, typename Value::return_type &value);
+    //void set_data_row(unsigned int boundary_idx, typename Value::return_type &value);
 
     /**
      * Update time and possibly update data from GMSH file.
@@ -100,6 +100,8 @@ public:
     virtual ~FieldElementwise();
 
 private:
+    /// Multiply @p data_ with @p unit_conversion_coefficient_
+    void scale_data();
     /// Is flase whne the data vector is provided at construction. Then, we disallow initialization form input
     /// and do not delete data pointer in destructor.
     bool internal_raw_data;

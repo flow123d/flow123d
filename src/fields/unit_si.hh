@@ -94,6 +94,24 @@ public:
 	/// Return true if the unit is defined.
 	bool is_def() const;
 
+	/// Multiply with power of given unit
+	void multiply(const UnitSI &other, int exp = 1);
+
+	/// Reset UnitSI object (set vector of exponents to zeros and set undef flag)
+	void reset();
+
+	/**
+	 * @brief Convert and check user-defined unit.
+	 *
+	 * - converts unit SI define by user as string
+	 * - checks if converted unit is equal with self
+	 * - return multiplicated coeficient
+	 */
+	double convert_unit_from(std::string actual_unit) const;
+
+	/// Comparison operator
+	bool operator==(const UnitSI &other) const;
+
 private:
 	/// Values determine positions of exponents in exponents_ vector
 	enum UnitOrder {
