@@ -664,6 +664,7 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
         auto ele_ac = mh_dh.accessor(i_loc);
         assembler.assemble(ele_ac, true);
         
+        //temporary
         if(ele_ac.is_enriched()){
             XFEMElementSingularData* xdata = ele_ac.xfem_data();
             ASSERT_PTR(xdata);
@@ -679,6 +680,7 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
             }
         }
     }
+    //temporary
     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
         int w_idx = mh_dh.row_4_sing[w];
         schur0->mat_set_value(w_idx, w_idx, 1.0);
@@ -894,47 +896,38 @@ void DarcyMH::allocate_mh_matrix()
 {
     START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix");
 
-    // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
     LinSys *ls = schur0;
 
     int rank;
-    int my_rank = 1;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
    
-    class Boundary *bcd;
+    unsigned int nsides;
+    int ele_row;
+    int *edge_rows; 
     class Neighbour *ngh;
 
-    int side_row, edge_row = 0;
     int tmp_rows[100];
-    int side_rows[4], edge_rows[4];
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[1000];
     for(int i=0; i<1000; i++) zeros[i] = 0.0;
 
-    int dofs_vel[100],
-        dofs_press[100];
+    const unsigned int max_dofs = 100;
+    int dofs_vel[max_dofs],
+        dofs_press[max_dofs];
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
-        unsigned int nsides = ele_ac.n_sides();
-        int ele_row = ele_ac.ele_row();
+        nsides = ele_ac.n_sides();
+        ele_row = ele_ac.ele_row();
         
-         unsigned int loc_size = 1 + nsides;
-//         unsigned int loc_size = 1 + 2*nsides;
-        std::vector<int> dofs(loc_size);
-        dofs[nsides] = ele_row;
-           
-        for (unsigned int i = 0; i < nsides; i++) {
-
-                side_rows[i] = side_row = ele_ac.side_row(i);
-                edge_rows[i] = edge_row = ele_ac.edge_row(i);
-                dofs[i] = ele_ac.side_row(i);
-        }
+        edge_rows = ele_ac.edge_rows();
         
         uint ndofs_vel = ele_ac.get_dofs_vel(dofs_vel);
         uint ndofs_press = ele_ac.get_dofs_press(dofs_press);
+        ASSERT_DBG(ndofs_vel < max_dofs);
+        ASSERT_DBG(ndofs_press < max_dofs);
         
         // sides-sides
         ls->mat_set_values(ndofs_vel, dofs_vel, ndofs_vel, dofs_vel, zeros);
@@ -950,52 +943,6 @@ void DarcyMH::allocate_mh_matrix()
         // sides-edges
         ls->mat_set_values(nsides, edge_rows, ndofs_vel, dofs_vel, zeros);
         
-        
-//         if(ele_ac.is_enriched()){
-//             XFEMElementSingularData* xdata = ele_ac.xfem_data();
-//             ASSERT_PTR(xdata);
-//             
-//             for(unsigned int w=0; w<xdata->n_enrichments(); w++){
-// //                 DBGCOUT(<< xdata << " " << ele_ac.ele_global_idx() << "  " << xdata->ele_global_idx() << "\n");
-// //                 DBGCOUT(<<"q " << Quantity::velocity << " w " << w << " size " << xdata->global_enriched_dofs().size() << "\n");
-// //                 DBGCOUT(<< xdata->global_enriched_dofs()[0].size() << "\n");
-// //                 xdata->print(cout);
-// //                 auto enr_dofs = xdata->global_enriched_dofs(Quantity::velocity, w);
-// //                 for(unsigned int i=0; i<enr_dofs.size(); i++)
-// //                     ls->mat_set_value(enr_dofs[i], enr_dofs[i], 0.0);
-// //                 
-// //                 enr_dofs = xdata->global_enriched_dofs(Quantity::pressure, w);
-// //                 for(unsigned int i=0; i<enr_dofs.size(); i++)
-// //                     ls->mat_set_value(enr_dofs[i], enr_dofs[i], 0.0);
-//                 
-//                 auto enr_dofs = xdata->global_enriched_dofs(Quantity::velocity, w);
-//                 for(unsigned int i=0; i<enr_dofs.size(); i++){
-//                     ls->mat_set_value(enr_dofs[i], enr_dofs[i], 0.0);
-//                 }
-//                 
-//                 enr_dofs = xdata->global_enriched_dofs(Quantity::pressure, w);
-//                 for(unsigned int i=0; i<enr_dofs.size(); i++)
-//                     ls->mat_set_value(enr_dofs[i], enr_dofs[i], 0.0);
-//             }
-//         }
-//         else{
-//     //         if(rank == my_rank){
-//     //             for (unsigned int i = 0; i < loc_size; i++) {
-//     //                 std::cout <<  dofs[i] << " ";
-//     //             }
-//     //             std::cout << endl;
-//     //         }
-//             
-//             // sides-sides, sides-ele, ele-sides, ele-ele
-//             ls->mat_set_values(loc_size, dofs.data(), loc_size, dofs.data(), zeros);
-//             // sides-edges
-//             ls->mat_set_values(nsides, side_rows, nsides, edge_rows, zeros);
-//             // sides-edges
-//             ls->mat_set_values(nsides, edge_rows, nsides, side_rows, zeros);
-//             
-//             
-//         }
-
         for (unsigned int i = 0; i < nsides; i++)
                 for (unsigned int j = 0; j < nsides; j++){
                     if(i != j)
@@ -1005,16 +952,6 @@ void DarcyMH::allocate_mh_matrix()
         ls->mat_set_values(ndofs_press, dofs_press, nsides, edge_rows, zeros);
         // edges-ele
         ls->mat_set_values(nsides, edge_rows, ndofs_press, dofs_press, zeros);
-        
-//         // set block A: side-side on one element - block diagonal matrix
-//         ls->mat_set_values(nsides, side_rows, nsides, side_rows, zeros);
-//         // set block B, B': element-side, side-element
-//         ls->mat_set_values(1, &ele_row, nsides, side_rows, zeros);
-//         ls->mat_set_values(nsides, side_rows, 1, &ele_row, zeros);
-// 
-// 
-//         // D block:  diagonal: element-element
-//         ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
 
         // D, E',E block: compatible connections: element-edge
         
@@ -1064,6 +1001,7 @@ void DarcyMH::allocate_mh_matrix()
         }
     }
 
+    //temporary
     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
         int w_idx = mh_dh.row_4_sing[w];
         ls->mat_set_value(w_idx, w_idx, 0.0);
