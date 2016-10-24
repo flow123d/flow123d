@@ -7,6 +7,7 @@
 #include "darcy_flow_mh.hh"
 #include "richards_lmh.hh"
 #include "darcy_flow_assembly.hh"
+#include "darcy_flow_assembly_xfem.hh"
 #include "assembly_lmh.hh"
 
 
@@ -160,6 +161,16 @@ public:
     : AssemblerBase(d)
     {
         dim_assembler = AssemblyBase::create< AssemblyMH >(d);
+    }
+};
+
+class AssemblerMHXFEM : public AssemblerBase
+{
+public:
+    AssemblerMHXFEM(AssemblyDataPtr d)
+    : AssemblerBase(d)
+    {
+        dim_assembler = AssemblyBase::create< AssemblyMHXFEM >(d);
     }
 };
 

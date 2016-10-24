@@ -1408,8 +1408,15 @@ void DarcyMH::assembly_linear_system() {
 
         assembly_source_term();
         
-        auto multidim_assembler = AssemblerMH(data_);
-	    assembly_mh_matrix( multidim_assembler ); // fill matrix
+        // create proper assembler
+        AssemblerBase* multidim_assembler;
+        if(use_xfem)
+            multidim_assembler = new AssemblerMHXFEM(data_);
+        else 
+            multidim_assembler = new AssemblerMH(data_);
+        
+        assembly_mh_matrix( *multidim_assembler );
+        delete multidim_assembler;
 
 	    schur0->finish_assembly();
         print_matlab_matrix("matrix");
