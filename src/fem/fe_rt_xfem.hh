@@ -152,7 +152,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
     //  - jacobian (and its inverse and determinant) is constant on the element
     //  - abuse mapping to compute the normals
     
-    DBGMSG("FE_RT0_XFEM fill fe_values\n");
+    DBGCOUT("FE_RT0_XFEM fill fe_values\n");
     
 //     pu.get_node_matrix().print(cout,"pu_node_matrix");
 //     fe->get_node_matrix().print(cout,"fe_rt_node_matrix");
@@ -290,7 +290,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             
             //switches 0. and 2. shape function for RT0 (for delta property)
             pu_values = fe->get_node_matrix() * pu_values;
-            real_pu_grads = fe->get_node_matrix() * pu_grads;
+            real_pu_grads = fe->get_node_matrix() * real_pu_grads;
             
             pu_grads.print(cout,"pu_grads");
             real_pu_grads.print(cout,"real_pu_grads");
@@ -302,10 +302,10 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
                 for (unsigned int l=0; l<dim+1; l++)
                     unit_grad += fe->basis_grad_vector(l, quad.point(q)) * fe->get_node_matrix()(k,l);
                 
-//                 unit_grad.print(cout,"unit grad");
+                unit_grad.print(cout,"unit grad");
                 
                 grads[k] = fv_data.jacobians[q] * unit_grad * fv_data.inverse_jacobians[q] / fv_data.determinants[q];
-//                 grads[k].print(cout,"unit grad");
+                grads[k].print(cout,"grad");
             }
             
 //             for (unsigned int k=0; k<dim+1; k++)

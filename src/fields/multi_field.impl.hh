@@ -346,7 +346,8 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 				++it; ++position;
 			}
 
-		typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
+		FieldAlgoBaseInitData init_data(field.n_comp(), field.units());
+		typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), init_data );
 		field_algo_base->set_component_idx(index_);
 		return field_algo_base;
 	}
