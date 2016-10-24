@@ -663,7 +663,26 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         assembler.assemble(ele_ac, true);
-    }    
+        
+        if(ele_ac.is_enriched()){
+            XFEMElementSingularData* xdata = ele_ac.xfem_data();
+            ASSERT_PTR(xdata);
+            
+            for(unsigned int w=0; w<xdata->n_enrichments(); w++){
+                auto enr_dofs = xdata->global_enriched_dofs(Quantity::velocity, w);
+                for(unsigned int i=0; i<enr_dofs.size(); i++)
+                    schur0->mat_set_value(enr_dofs[i], enr_dofs[i], 1.0);
+                
+                enr_dofs = xdata->global_enriched_dofs(Quantity::pressure, w);
+                for(unsigned int i=0; i<enr_dofs.size(); i++)
+                    schur0->mat_set_value(enr_dofs[i], enr_dofs[i], 1.0);
+            }
+        }
+    }
+    for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
+        int w_idx = mh_dh.row_4_sing[w];
+        schur0->mat_set_value(w_idx, w_idx, 1.0);
+    }
     
     if (balance_ != nullptr)
         balance_->finish_flux_assembly(water_balance_idx_);
@@ -894,6 +913,8 @@ void DarcyMH::allocate_mh_matrix()
     double zeros[1000];
     for(int i=0; i<1000; i++) zeros[i] = 0.0;
 
+    int dofs_vel[100],
+        dofs_press[100];
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
@@ -904,47 +925,87 @@ void DarcyMH::allocate_mh_matrix()
 //         unsigned int loc_size = 1 + 2*nsides;
         std::vector<int> dofs(loc_size);
         dofs[nsides] = ele_row;
-        
+           
         for (unsigned int i = 0; i < nsides; i++) {
 
-            side_rows[i] = side_row = ele_ac.side_row(i);
-            edge_rows[i] = edge_row = ele_ac.edge_row(i);
-            dofs[i] = side_row;
-//             dofs[nsides+1 + i] = edge_row;
-            
-//             bcd=ele_ac.side(i)->cond();
-//             
-//             if (bcd) {
-//                 ls->mat_set_value(edge_row, edge_row, 0.0);
-//             }
-//             ls->mat_set_value(side_row, edge_row, 0.0);
-//             ls->mat_set_value(edge_row, side_row, 0.0);
+                side_rows[i] = side_row = ele_ac.side_row(i);
+                edge_rows[i] = edge_row = ele_ac.edge_row(i);
+                dofs[i] = ele_ac.side_row(i);
         }
         
-//         if(rank == my_rank){
-//             for (unsigned int i = 0; i < loc_size; i++) {
-//                 std::cout <<  dofs[i] << " ";
+        uint ndofs_vel = ele_ac.get_dofs_vel(dofs_vel);
+        uint ndofs_press = ele_ac.get_dofs_press(dofs_press);
+        
+        // sides-sides
+        ls->mat_set_values(ndofs_vel, dofs_vel, ndofs_vel, dofs_vel, zeros);
+        // ele-sides
+        ls->mat_set_values(ndofs_press, dofs_press, ndofs_vel, dofs_vel, zeros);
+        // sides-ele
+        ls->mat_set_values(ndofs_vel, dofs_vel, ndofs_press, dofs_press, zeros);
+        // ele-ele
+        ls->mat_set_values(ndofs_press, dofs_press, ndofs_press, dofs_press, zeros);
+        
+        // sides-edges
+        ls->mat_set_values(ndofs_vel, dofs_vel, nsides, edge_rows, zeros);
+        // sides-edges
+        ls->mat_set_values(nsides, edge_rows, ndofs_vel, dofs_vel, zeros);
+        
+        
+//         if(ele_ac.is_enriched()){
+//             XFEMElementSingularData* xdata = ele_ac.xfem_data();
+//             ASSERT_PTR(xdata);
+//             
+//             for(unsigned int w=0; w<xdata->n_enrichments(); w++){
+// //                 DBGCOUT(<< xdata << " " << ele_ac.ele_global_idx() << "  " << xdata->ele_global_idx() << "\n");
+// //                 DBGCOUT(<<"q " << Quantity::velocity << " w " << w << " size " << xdata->global_enriched_dofs().size() << "\n");
+// //                 DBGCOUT(<< xdata->global_enriched_dofs()[0].size() << "\n");
+// //                 xdata->print(cout);
+// //                 auto enr_dofs = xdata->global_enriched_dofs(Quantity::velocity, w);
+// //                 for(unsigned int i=0; i<enr_dofs.size(); i++)
+// //                     ls->mat_set_value(enr_dofs[i], enr_dofs[i], 0.0);
+// //                 
+// //                 enr_dofs = xdata->global_enriched_dofs(Quantity::pressure, w);
+// //                 for(unsigned int i=0; i<enr_dofs.size(); i++)
+// //                     ls->mat_set_value(enr_dofs[i], enr_dofs[i], 0.0);
+//                 
+//                 auto enr_dofs = xdata->global_enriched_dofs(Quantity::velocity, w);
+//                 for(unsigned int i=0; i<enr_dofs.size(); i++){
+//                     ls->mat_set_value(enr_dofs[i], enr_dofs[i], 0.0);
+//                 }
+//                 
+//                 enr_dofs = xdata->global_enriched_dofs(Quantity::pressure, w);
+//                 for(unsigned int i=0; i<enr_dofs.size(); i++)
+//                     ls->mat_set_value(enr_dofs[i], enr_dofs[i], 0.0);
 //             }
-//             std::cout << endl;
 //         }
-        
-        // sides-sides, sides-ele, ele-sides, ele-ele
-        ls->mat_set_values(loc_size, dofs.data(), loc_size, dofs.data(), zeros);
-        // ele-edges
-        ls->mat_set_values(1, &ele_row, ele_ac.n_sides(), edge_rows, zeros);
-        // edges-ele
-        ls->mat_set_values(nsides, edge_rows, 1, &ele_row, zeros);
-        // sides-edges
-        ls->mat_set_values(nsides, side_rows, nsides, edge_rows, zeros);
-        // sides-edges
-        ls->mat_set_values(nsides, edge_rows, nsides, side_rows, zeros);
-        
+//         else{
+//     //         if(rank == my_rank){
+//     //             for (unsigned int i = 0; i < loc_size; i++) {
+//     //                 std::cout <<  dofs[i] << " ";
+//     //             }
+//     //             std::cout << endl;
+//     //         }
+//             
+//             // sides-sides, sides-ele, ele-sides, ele-ele
+//             ls->mat_set_values(loc_size, dofs.data(), loc_size, dofs.data(), zeros);
+//             // sides-edges
+//             ls->mat_set_values(nsides, side_rows, nsides, edge_rows, zeros);
+//             // sides-edges
+//             ls->mat_set_values(nsides, edge_rows, nsides, side_rows, zeros);
+//             
+//             
+//         }
+
         for (unsigned int i = 0; i < nsides; i++)
-            for (unsigned int j = 0; j < nsides; j++){
-                if(i != j)
-                    ls->mat_set_value(edge_rows[i], edge_rows[j], 0.0);
-            }
-            
+                for (unsigned int j = 0; j < nsides; j++){
+                    if(i != j)
+                        ls->mat_set_value(edge_rows[i], edge_rows[j], 0.0);
+                }
+        // ele-edges
+        ls->mat_set_values(ndofs_press, dofs_press, nsides, edge_rows, zeros);
+        // edges-ele
+        ls->mat_set_values(nsides, edge_rows, ndofs_press, dofs_press, zeros);
+        
 //         // set block A: side-side on one element - block diagonal matrix
 //         ls->mat_set_values(nsides, side_rows, nsides, side_rows, zeros);
 //         // set block B, B': element-side, side-element
@@ -1003,6 +1064,11 @@ void DarcyMH::allocate_mh_matrix()
         }
     }
 
+    for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
+        int w_idx = mh_dh.row_4_sing[w];
+        ls->mat_set_value(w_idx, w_idx, 0.0);
+    }
+    
     // alloc edge diagonal entries
     if(rank == 0)
     FOR_EDGES(mesh_, edg){
