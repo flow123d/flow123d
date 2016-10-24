@@ -38,7 +38,8 @@ edge_4_loc(nullptr),
 row_4_edge(nullptr),
 edge_ds(nullptr),
 el_ds(nullptr),
-side_ds(nullptr)
+side_ds(nullptr),
+row_4_sing(nullptr)
 {}
 
 MH_DofHandler::~MH_DofHandler()
@@ -53,6 +54,7 @@ MH_DofHandler::~MH_DofHandler()
     delete [] side_row_4_id;
     delete [] edge_4_loc;
     delete []  row_4_edge;
+    delete [] row_4_sing;
 }
 
 
@@ -336,6 +338,12 @@ void MH_DofHandler::clear_mesh_flags()
 }
 
 
+unsigned int MH_DofHandler::n_enrichments()
+{
+    return singularities_12d_.size();
+}
+
+
 void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectElements > intersections,
                                       vector< Singularity0D<3> >& singularities,
                                       Field<3, FieldValue<3>::Scalar>& cross_section)
@@ -442,6 +450,8 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
             }
         }
     }
+    //shrink here (invalidates iterators, pointers); element xdata pointer is set in distribute_enriched_dofs()
+    xfem_data.shrink_to_fit();
     
 //     DebugOut() << ele_to_enrich.size() << "\n";
 //     for(auto& idx : ele_to_enrich){
@@ -481,8 +491,9 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     //correct standard dofs:
     update_standard_dofs();
     
+//     for(XFEMElementSingularData& xd: xfem_data)
+//         xd.print(cout);
     
-    xfem_data.shrink_to_fit();
     singularities.shrink_to_fit();
     node_values.shrink_to_fit();
     node_vec_values.shrink_to_fit();
@@ -560,7 +571,6 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0D<3>& sing,
             //TODO: set number of quantities
             xdata->global_enriched_dofs().resize(3);
             xdata->set_element(ele->index());
-            ele->xfem_data = xdata;
         }
          
         xdata->add_data(&sing, sing_idx);
@@ -604,29 +614,6 @@ void MH_DofHandler::clear_node_aux()
 }
 
 
-void MH_DofHandler::fill_xfem_data(const Singularity0D<3>& sing,
-                                     ElementFullIter ele,
-                                     XFEMElementSingularData* data)
-{
-    ele->xfem_data = data;
-    
-    // singularity is at the back at the moment.
-    unsigned int sing_idx = singularities_12d_.size()-1;
-    //fill auxiliary vectors:
-    int enrich_node_idx = 0;
-    for(unsigned int i=0; i < ele->n_nodes(); i++){
-//         node_values[sing_idx];
-//         node_vec_values;
-        
-        // number enriched nodes
-        if (ele->node[i]->aux != empty_node_idx) ele->node[i]->aux = enrich_node_idx;
-        
-        enrich_node_idx++;
-    }
-    
-}
-
-
 void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_dofs,
                                                int& offset,
                                                Quantity quant)
@@ -636,8 +623,8 @@ void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_
     
     for(XFEMElementSingularData& xdata : xfem_data){
         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
-        auto dofs = xdata.global_enriched_dofs()[quant];
-        dofs.resize(xdata.n_enrichments(), std::vector<int>(ele->n_nodes()));
+        std::vector<std::vector<int>>& dofs = xdata.global_enriched_dofs()[quant];
+        dofs.resize(xdata.n_enrichments(), std::vector<int>(ele->n_nodes(), -1));
 //         DBGCOUT(<<"dofs xdata\n");
         for(w=0; w < xdata.n_enrichments(); w++){
             for(i=0; i < ele->n_nodes(); i++){
@@ -653,5 +640,9 @@ void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_
                 }
             }
         }
+//         xdata.print(cout);
+        ele->xfem_data = &xdata;
+        
+//         DBGCOUT(<< "xd[0]: " <<  xdata.global_enriched_dofs()[0].size() << "\n");
     }
 }

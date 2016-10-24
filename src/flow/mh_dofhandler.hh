@@ -126,10 +126,12 @@ public:
     
     int total_size();
     
+    int *row_4_sing;        //< singularity index to matrix row (lagrange multiplier)
+    
+    unsigned int n_enrichments();
+    
 protected:
     static const int empty_node_idx;
-    
-    int *row_4_sing;        //< singularity index to matrix row (lagrange multiplier)
     
     void create_enrichment(std::shared_ptr<computeintersection::InspectElements> intersections,
                            std::vector<Singularity0D<3>> &singularities,
@@ -141,8 +143,6 @@ protected:
     void clear_mesh_flags();
     
     void clear_node_aux();
-    
-    void fill_xfem_data(const Singularity0D<3>& sing, ElementFullIter ele, XFEMElementSingularData* data);
     
     void distribute_enriched_dofs(std::vector<std::vector<int>>& temp_dofs, int& offset, Quantity quant);
     
@@ -234,7 +234,7 @@ public:
     }
 
     int *edge_rows() {
-        for(uint i=0; i< dim(); i++) edge_rows_[i] = edge_row(i);
+        for(uint i=0; i< n_sides(); i++) edge_rows_[i] = edge_row(i);
         return edge_rows_;
     }
 
@@ -259,10 +259,62 @@ public:
     }
 
     int *side_rows() {
-        for(uint i=0; i< dim(); i++) side_rows_[i] = side_row(i);
+        for(uint i=0; i< n_sides(); i++) side_rows_[i] = side_row(i);
         return side_rows_;
     }
 
+    
+    XFEMElementSingularData* xfem_data(){
+        return ele->xfem_data;
+    }
+    
+    bool is_enriched(){
+        return ele->xfem_data != nullptr;
+    }
+    
+    int sing_row(uint local_enrichment_index){
+        return dh->row_4_sing[ele->xfem_data->global_enrichment_index(local_enrichment_index)];
+    }
+    
+//     int get_dofs(Quantity quant, int dofs[])
+//     {
+//         uint i;
+//         for(i=0; i< dim(); i++) dofs[i] = side_row(i);
+//         
+//         if(ele->xfem_data != nullptr)
+//             for(uint w=0; w< ele->xfem_data->n_enrichments(); w++)
+//                 for(uint j=0; j< dim(); j++, i++){
+//                     dofs[i] = ele->xfem_data->global_enriched_dofs(Quantity::velocity, w)[j];
+//                 }
+//         return i;
+//     }
+    
+    int get_dofs_vel(int dofs[])
+    {
+        uint i;
+        for(i=0; i< n_sides(); i++) dofs[i] = side_row(i);
+        
+        if(ele->xfem_data != nullptr)
+            for(uint w=0; w< ele->xfem_data->n_enrichments(); w++)
+                for(uint j=0; j< ele->xfem_data->n_enriched_dofs(Quantity::velocity,w); j++, i++){
+                    dofs[i] = ele->xfem_data->global_enriched_dofs(Quantity::velocity, w)[j];
+                }
+        return i;
+    }
+    
+    int get_dofs_press(int dofs[])
+    {
+        dofs[0] = ele_row();
+        uint i = 1;
+        
+        if(ele->xfem_data != nullptr)
+            for(uint w=0; w< ele->xfem_data->n_enrichments(); w++)
+                for(uint j=0; j< ele->xfem_data->n_enriched_dofs(Quantity::pressure,w); j++, i++){
+                    dofs[i] = ele->xfem_data->global_enriched_dofs(Quantity::pressure, w)[j];
+                }
+        return i;
+    }
+    
 private:
     int side_rows_[4];
     int edge_rows_[4];
