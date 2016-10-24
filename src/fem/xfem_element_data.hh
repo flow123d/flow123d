@@ -280,11 +280,21 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
       /// Number of all degrees of freedom on the cell (from all quantities, all enrichments).
       unsigned int n_enriched_dofs();
       
-      /// Number of degrees of freedom on the cell (from a single quantity @p quant, all enrichments).
-      unsigned int n_enriched_dofs(Quantity quant);
+    /// Number of degrees of freedom on the cell (from a single quantity @p quant, all enrichments).
+    unsigned int n_enriched_dofs(Quantity quant){
+        ASSERT_DBG(quant < global_enriched_dofs_.size());
+        ASSERT_DBG(global_enriched_dofs_[quant].size() > 0);
+        ASSERT_DBG(global_enriched_dofs_[quant][0].size() > 0);
+        //FIXME:
+        return global_enriched_dofs_[quant].size() * global_enriched_dofs_[quant][0].size();
+    }
       
-      /// Number of degrees of freedom on the cell (from a single @p quant, a single enrichment @p local_enrichment_index).
-      unsigned int n_enriched_dofs(Quantity quant, unsigned int local_enrichment_index);
+    /// Number of degrees of freedom on the cell (from a single @p quant, a single enrichment @p local_enrichment_index).
+    unsigned int n_enriched_dofs(Quantity quant, unsigned int local_enrichment_index){
+        ASSERT_DBG(quant < global_enriched_dofs_.size());
+        ASSERT_DBG(local_enrichment_index < global_enriched_dofs_[quant].size());
+        return global_enriched_dofs_[quant][local_enrichment_index].size();
+    }
       
       /// Number of wells that has nonzero cross-section with the cell.
       unsigned int n_wells_inside();
