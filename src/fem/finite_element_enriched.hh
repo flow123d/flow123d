@@ -33,18 +33,20 @@ protected:
     using FiniteElement<dim,spacedim>::number_of_dofs;
     using FiniteElement<dim,spacedim>::number_of_single_dofs;
     
+    typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
+    
     FiniteElement<dim,spacedim> *fe;
     FE_P_disc<1,dim, spacedim> pu;
     
     unsigned int n_regular_dofs_;
     
-    std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr;
+    std::vector<EnrichmentPtr> enr;
 public:
     /**
      * @brief Constructor.
      */
     FiniteElementEnriched(FiniteElement<dim,spacedim>* fe,
-                          std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr);
+                          std::vector<EnrichmentPtr> enr);
     
     virtual ~FiniteElementEnriched(){}
     
@@ -94,7 +96,7 @@ public:
 
 template <unsigned int dim, unsigned int spacedim>
 FiniteElementEnriched<dim,spacedim>::FiniteElementEnriched(FiniteElement<dim,spacedim>* fe,
-                                                           std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr)
+                                                           std::vector<EnrichmentPtr> enr)
 : fe(fe), enr(enr)
 {
     this->init();

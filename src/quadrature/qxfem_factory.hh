@@ -47,6 +47,7 @@ template<int dim, int spacedim>
 class QXFEMFactory {
 public:
     typedef typename Space<spacedim>::Point Point;
+    typedef typename std::shared_ptr<Singularity0D<spacedim>> SingularityPtr;
     /**
      * @brief Create a formula of given order.
      *
@@ -56,7 +57,7 @@ public:
     : max_level_(max_level), level_offset_(0){}
     
     
-    std::shared_ptr<QXFEM<dim,spacedim>> create_singular(const std::vector<Singularity0D<spacedim>> & sing,
+    std::shared_ptr<QXFEM<dim,spacedim>> create_singular(const std::vector<SingularityPtr> & sing,
                                                          ElementFullIter ele);
     
     /// Clears temporary refinement simplices, resets the factory to initial state.
@@ -72,7 +73,7 @@ public:
     void gnuplot_refinement(ElementFullIter ele,
                             const string& output_dir,
                             const QXFEM<dim,spacedim>& quad,
-                            const std::vector<Singularity0D<spacedim>> & sing);
+                            const std::vector<SingularityPtr> & sing);
     
     
 protected:
@@ -94,7 +95,7 @@ protected:
      * Criterions:
      * 1] refine simplex which intersects with the edge of the singularity
      */
-    unsigned int refine_edge(const std::vector<Singularity0D<spacedim>> & sing);
+    unsigned int refine_edge(const std::vector<SingularityPtr> & sing);
     
     /// Refines marked simplices.
     void refine_level(unsigned int n_simplices_to_refine);
@@ -103,7 +104,7 @@ protected:
     
     void distribute_qpoints(std::vector< Point >& real_points, 
                             std::vector< double >& weights,
-                            const std::vector<Singularity0D<spacedim>> & sing);
+                            const std::vector<SingularityPtr> & sing);
     
     void map_real_to_unit_points(const std::vector<Point>& real_points,
                                  std::vector< typename Space< dim >::Point >& unit_points,

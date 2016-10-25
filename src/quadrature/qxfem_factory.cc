@@ -38,7 +38,7 @@ void QXFEMFactory< dim, spacedim >::clear()
 
 template<>
 std::shared_ptr< QXFEM< 2, 2 > > QXFEMFactory<2,2>::create_singular(
-                                                const std::vector<Singularity0D<2>> & sing,
+                                                const std::vector<SingularityPtr> & sing,
                                                 ElementFullIter ele)
 {
     clear();
@@ -49,7 +49,7 @@ std::shared_ptr< QXFEM< 2, 2 > > QXFEMFactory<2,2>::create_singular(
 
 template<>
 std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
-                                                const std::vector<Singularity0D<3>> & sing,
+                                                const std::vector<SingularityPtr> & sing,
                                                 ElementFullIter ele)
 {
     clear();
@@ -71,7 +71,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
     
     // WORKS only for single well
     // project the simplex into the plane of the circle
-    sing[0].geometry().project_to_circle_plane(s.nodes);
+    sing[0]->geometry().project_to_circle_plane(s.nodes);
     
     s.active = true;
     simplices_.push_back(s);
@@ -88,7 +88,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
     
     // project the simplices back to the plane of the ellipse
     for(AuxSimplex& simp : simplices_){
-        sing[0].geometry().project_to_ellipse_plane(simp.nodes);
+        sing[0]->geometry().project_to_ellipse_plane(simp.nodes);
     }
     
     distribute_qpoints(qxfem->real_points_, qxfem->weights, sing);
@@ -118,7 +118,7 @@ void QXFEMFactory<dim,spacedim>::refine_level(unsigned int n_simplices_to_refine
 
 
 template<int dim, int spacedim>
-unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singularity0D<spacedim>> & sing)
+unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<SingularityPtr> & sing)
 {
     ASSERT_DBG(dim == 2);
     ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
@@ -146,7 +146,7 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
 //             DebugOut().fmt("QXFEM test simplex {}, singularity {}\n",i,j);
             double distance_sqr = -1;
             double max_h;
-            int res = simplex_sigularity_intersection(sing[j],s, distance_sqr, max_h);
+            int res = simplex_sigularity_intersection(*sing[j],s, distance_sqr, max_h);
             if(res > 0) {
                 s.refine = true;
                 s.sing_id = j;
@@ -156,7 +156,7 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
             // distance criterion
             if(distance_sqr > 0)
             {
-                double rmin = std::sqrt(distance_sqr)-sing[j].radius();
+                double rmin = std::sqrt(distance_sqr)-sing[j]->radius();
                 rmin = rmin*rmin;
                 if( max_h > distance_criteria_factor_ * rmin)
                 //if( max_h > distance_criteria_factor_ * distance_sqr)
@@ -177,7 +177,7 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
 }
 
 template<int dim, int spacedim>
-int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularity0D< spacedim >& w,
+int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularity0D<spacedim>& w,
                                                                 const AuxSimplex& s,
                                                                 double& distance_sqr,
                                                                 double& max_h)
@@ -386,7 +386,7 @@ void QXFEMFactory<dim,spacedim>::refine_simplex(const AuxSimplex& aux_simplex)
 template<int dim, int spacedim>
 void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_points,
                                                        std::vector<double>& weights,
-                                                       const std::vector<Singularity0D<spacedim>> & sing)
+                                                       const std::vector<SingularityPtr> & sing)
 {
     const unsigned int order = 3;
     QGauss<dim> gauss(order);
@@ -435,7 +435,7 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                 //skip points inside singularity
                 if(check_qpoint_inside_sing)   //simplex is intersecting singularity
                 {
-                    if(sing[s.sing_id].geometry().point_in_ellipse(p)) continue;
+                    if(sing[s.sing_id]->geometry().point_in_ellipse(p)) continue;
                 }
                 
                 real_points.push_back(p);
@@ -497,7 +497,7 @@ template<int dim, int spacedim>
 void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
                                                     const string& output_dir,
                                                     const QXFEM<dim,spacedim>& quad,
-                                                    const std::vector<Singularity0D<spacedim>> & sing)
+                                                    const std::vector<SingularityPtr> & sing)
 {
     
     std::string fgnuplot_ref = "adaptive_integration_refinement_",
@@ -581,7 +581,7 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
     for(unsigned int j = 0; j < sing.size(); j++)
     {
         //print ellipse
-        const CircleEllipseProjection& g = sing[j].geometry();
+        const CircleEllipseProjection& g = sing[j]->geometry();
         strs << "[t=0:2*pi] " 
             << g.center()[0] << " + " << g.ellipse_b()[0] << "*cos(t) + " <<  g.ellipse_a()[0] << "*sin(t), "
             << g.center()[1] << " + " << g.ellipse_b()[1] << "*cos(t) + " <<  g.ellipse_a()[1] << "*sin(t), "
