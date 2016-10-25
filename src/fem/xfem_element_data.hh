@@ -24,6 +24,7 @@ template<int dim, int spacedim>
 class XFEMElementDataBase
 {
 public:
+    typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
     
     XFEMElementDataBase()
     {}
@@ -64,7 +65,7 @@ public:
      * @param local_well_index is local well index in the cell
      * @return pointer to well
      */
-    GlobalEnrichmentFunc<dim,spacedim>* enrichment_func(unsigned int local_enrichment_index)
+    EnrichmentPtr enrichment_func(unsigned int local_enrichment_index)
     {   ASSERT_DBG(local_enrichment_index < n_enrichments());
         return enrichment_func_[local_enrichment_index];}
     
@@ -73,7 +74,7 @@ public:
      * @param local_well_index is local well index in the cell
      * @return constant reference to a vector of pointers to wells
      */
-    const std::vector<GlobalEnrichmentFunc<dim,spacedim>*> & enrichment_func_vec()
+    const std::vector<EnrichmentPtr> & enrichment_func_vec()
     { return enrichment_func_;}
     
     /// Returns global index of the well.
@@ -108,7 +109,7 @@ public:
      * @param well is pointer to well which lies in the cell
      * @param well_index is index of the well in the global vector of wells in model class
      */
-    void add_data(GlobalEnrichmentFunc<dim,spacedim> *enrichment_func, unsigned int global_enrichment_index)
+    void add_data(EnrichmentPtr enrichment_func, unsigned int global_enrichment_index)
     {
         enrichment_func_.push_back(enrichment_func);
         global_enrichment_indices_.push_back(global_enrichment_index);
@@ -127,7 +128,7 @@ protected:
     unsigned int ele_global_idx_;
     
     ///vector of pointers to wells
-    std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enrichment_func_;
+    std::vector<EnrichmentPtr> enrichment_func_;
     ///global indices of the wells
     std::vector<unsigned int> global_enrichment_indices_;
     ///global dof indices of the wells

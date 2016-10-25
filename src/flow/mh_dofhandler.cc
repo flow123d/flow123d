@@ -345,7 +345,7 @@ unsigned int MH_DofHandler::n_enrichments()
 
 
 void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectElements > intersections,
-                                      vector< Singularity0D<3> >& singularities,
+                                      vector< SingularityPtr >& singularities,
                                       Field<3, FieldValue<3>::Scalar>& cross_section)
 {
     DBGCOUT("MH_DofHandler - create_singularities_12d\n");
@@ -433,7 +433,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                                                 ele2d->node[2]->point() - ele2d->node[0]->point());
                 Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
                 
-                singularities.push_back(Singularity0D<3>(center, radius, direction_vector, n));
+                singularities.push_back(std::make_shared<Singularity0D<3>>(center, radius, direction_vector, n));
                 node_values.push_back(std::map<int, double>());
                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
                 
@@ -527,7 +527,7 @@ int MH_DofHandler::total_size()
 }
 
 
-void MH_DofHandler::find_ele_to_enrich(Singularity0D<3>& sing,
+void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
                                    std::vector< unsigned int >& ele_to_enrich,
                                    ElementFullIter ele,
                                    double radius,
@@ -543,7 +543,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0D<3>& sing,
         
     bool enrich = false;
     for(unsigned int i=0; i < ele->n_nodes(); i++){
-        double d = arma::norm(sing.center() - ele->node[i]->point(),2);
+        double d = arma::norm(sing->center() - ele->node[i]->point(),2);
 //         DBGCOUT(<< d << "\n");
         if(d < radius){
             enrich = true;
@@ -573,7 +573,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0D<3>& sing,
             xdata->set_element(ele->index());
         }
          
-        xdata->add_data(&sing, sing_idx);
+        xdata->add_data(sing, sing_idx);
         
         Node* node; //shortcut
         // number the enriched nodes and compute node values
@@ -587,8 +587,8 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0D<3>& sing,
             }
             
             // map.insert does not do anything if key already exists
-            node_values[sing_idx].insert(std::make_pair(node->aux, sing.value(node->point())) );       //pressure
-            node_vec_values[sing_idx].insert(std::make_pair(node->aux, sing.grad(node->point())) );    //velocity
+            node_values[sing_idx].insert(std::make_pair(node->aux, sing->value(node->point())) );       //pressure
+            node_vec_values[sing_idx].insert(std::make_pair(node->aux, sing->grad(node->point())) );    //velocity
         }
         
 //         DebugOut() << "n_neighs_vb " << ele->n_neighs_vb << "\n";

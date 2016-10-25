@@ -118,6 +118,9 @@ public:
     
     // XFEM:
 public:
+    
+    typedef typename std::shared_ptr<Singularity0D<3>> SingularityPtr;
+    
     void reinit(Mesh *mesh,
                 shared_ptr< computeintersection::InspectElements > intersections,
                 Field<3, FieldValue<3>::Scalar>& cross_section);
@@ -134,10 +137,10 @@ protected:
     static const int empty_node_idx;
     
     void create_enrichment(std::shared_ptr<computeintersection::InspectElements> intersections,
-                           std::vector<Singularity0D<3>> &singularities,
+                           std::vector<SingularityPtr> &singularities,
                            Field<3, FieldValue<3>::Scalar>& cross_section);
     
-    void find_ele_to_enrich(Singularity0D<3>& sing, std::vector<unsigned int>& ele_to_enrich,
+    void find_ele_to_enrich(SingularityPtr sing, std::vector<unsigned int>& ele_to_enrich,
                             ElementFullIter ele, double radius, int& new_enrich_node_idx);
     
     void clear_mesh_flags();
@@ -148,7 +151,7 @@ protected:
     
     void update_standard_dofs();
     
-    std::vector<Singularity0D<3>> singularities_12d_;
+    std::vector<SingularityPtr> singularities_12d_;
     
     std::vector<XFEMElementSingularData> xfem_data;
     
