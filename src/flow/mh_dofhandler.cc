@@ -100,6 +100,20 @@ void MH_DofHandler::reinit(Mesh *mesh,
     unsigned int rows_starts = total_size();
     rows_ds = std::make_shared<Distribution>(&rows_starts, PETSC_COMM_WORLD);
     rows_ds->view(cout);
+    
+    
+    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+        auto ele_ac = accessor(i_loc);
+        int dofs[200];
+        int ndofs = ele_ac.get_dofs(dofs);
+        
+        DBGCOUT("### DOFS ele " << ele_ac.ele_global_idx() << "   ");
+        cout << "[" << ele_ac.is_enriched() << "]  ";
+        for(int i =0; i < ndofs; i++){
+            cout << dofs[i] << " ";
+        }
+        cout << "\n";
+    }
 }
 
 
@@ -438,7 +452,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
                 
                 //TODO: suggest proper enrichment radius
-                double enr_radius = 6*std::sqrt(ele2d->measure());
+                double enr_radius = 2*std::sqrt(ele2d->measure());
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
                 clear_mesh_flags();
                 find_ele_to_enrich(singularities.back(), ele_to_enrich, ele2d, enr_radius, new_enrich_node_idx);

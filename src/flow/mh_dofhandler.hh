@@ -318,6 +318,36 @@ public:
         return i;
     }
     
+    int get_dofs(int dofs[])
+    {
+        int d = get_dofs_vel(dofs);
+        d += get_dofs_press(dofs+d);
+        for(uint i=0; i< n_sides(); i++, d++) dofs[d] = edge_row(i);
+        
+        return d;
+    }
+    
+    unsigned int n_dofs_vel(){
+        unsigned int n = n_sides();
+        if(is_enriched())
+            n += xfem_data()->n_enriched_dofs(Quantity::velocity);
+        return n;
+    }
+    
+    unsigned int n_dofs_press(){
+        unsigned int n = 1;
+        if(is_enriched())
+            n += xfem_data()->n_enriched_dofs(Quantity::pressure);
+        return n;
+    }
+    
+    unsigned int n_dofs()
+    {
+        // velocity, pressure, edge pressure(lagrange)
+        // exclude xfem pressure(lagrange)
+        return n_dofs_vel() + n_dofs_press() + n_sides(); // + xfem_data()->n_enrichments();
+    }
+    
 private:
     int side_rows_[4];
     int edge_rows_[4];
