@@ -26,11 +26,12 @@
 #include "system/file_path.hh"
 
 #include "fields/field.hh"
-#include "fields/field_constant.hh"
 
 
 
 
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
 
 
@@ -344,9 +345,6 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 
 #define FV FieldValue
 TEST_F(TestOutputTime, compute_field_data) {
-    // necessary only for registration of FieldConstant to Abstract
-    FieldConstant<3, FV<3>::TensorFixed > tensor_const_field;
-
 	test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
 	test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
 	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");

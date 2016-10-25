@@ -15,7 +15,6 @@
 #include "system/sys_profiler.hh"
 
 #include "fields/field_constant.hh"
-#include "fields/field_formula.hh"
 #include <fields/field.hh>
 #include <fields/field_set.hh>
 #include <io/equation_output.hh>
@@ -26,6 +25,8 @@
 
 #include "io/output_mesh.hh"
 #include "io/output_element.hh"
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 
@@ -141,10 +142,6 @@ TEST(OutputMesh, write_on_output_mesh) {
     typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > AlgScalarField;
     typedef Field<3,FieldValue<3>::Scalar> ScalarField;
   
-    // necessary only for registration of FieldConstant to Abstract
-    FieldConstant<3, FieldValue<3>::Scalar > const_field;
-    FieldFormula<3, FieldValue<3>::Scalar > formula_field;
-
     // setup FilePath directories
     FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
 

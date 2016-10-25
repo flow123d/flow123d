@@ -19,13 +19,14 @@
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "fields/field_set.hh"
-#include "fields/field_constant.hh"
-#include "fields/field_formula.hh"
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "../arma_expect.hh"
 #include <fstream>
 
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 /**
  * Supposed to be used on 'simplest_cube':
@@ -209,10 +210,6 @@ public:
 
 
 TEST(ObservePoint, find_observe_point) {
-    // necessary only for registration of Fields to Abstract
-    FieldConstant<3, FieldValue<3>::TensorFixed > const_field;
-    FieldFormula<3, FieldValue<3>::TensorFixed > formula_field;
-
     Profiler::initialize();
     armadillo_setup();
 

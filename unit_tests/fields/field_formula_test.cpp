@@ -12,11 +12,12 @@
 
 
 #include "fields/field_constant.hh"
-#include "fields/field_formula.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 string input = R"INPUT(
@@ -44,9 +45,6 @@ TEST(FieldFormula, read_from_input) {
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-    // necessary only for registration of FieldFormula to Abstract
-    FieldFormula<3, FieldValue<3>::TensorFixed > formula_field;
 
     Input::Type::Record rec_type = Input::Type::Record("FieldFormulaTest","")
         .declare_key("conductivity_3d", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )

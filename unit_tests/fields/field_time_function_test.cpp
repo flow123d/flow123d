@@ -22,6 +22,8 @@
 
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(field_time_function)
+
 typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
 typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
 typedef FieldAlgorithmBase<3, FieldValue<0>::Scalar > ScalarField;
@@ -58,10 +60,6 @@ TEST(FieldTableFunction, table_function) {
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-    // necessary only for registration of Fields to Abstract
-    FieldConstant<3, FieldValue<3>::TensorFixed > const_field;
-    FieldTimeFunction<3, FieldValue<3>::TensorFixed > time_func_field;
 
     Input::Type::Record rec_type = Input::Type::Record("FieldTableFunctionTest","")
         .declare_key("table_function_scalar", ScalarField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
