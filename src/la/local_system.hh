@@ -44,6 +44,12 @@ public:
     /// Resets the matrix, RHS, dofs to zero and clears solution settings
     void reset();
     
+    /** Resets the matrix, RHS, dofs to zero and clears solution settings
+     * @p nrows is number of rows of local system
+     * @p ncols is number of columns of local system
+     */
+    void reset(unsigned int nrows, unsigned int ncols);
+    
     const arma::mat& get_matrix() {return matrix;}
     const arma::vec& get_rhs() {return rhs;}
     

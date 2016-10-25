@@ -24,6 +24,20 @@ void LocalSystem::reset()
     col_dofs.resize(matrix.n_cols,0);
 }
 
+void LocalSystem::reset(unsigned int nrows, unsigned int ncols)
+{
+    // zeros in local system
+    matrix.zeros(nrows, ncols);
+    rhs.zeros(nrows);
+    // drop all dirichlet values
+    loc_solution_rows.clear();
+    loc_solution.clear();
+    // reset global degrees of freedom vectors
+    row_dofs.resize(nrows,0);
+    col_dofs.resize(ncols,0);
+}
+
+
 
 void LocalSystem::set_solution(unsigned int loc_row, double solution)
 {
