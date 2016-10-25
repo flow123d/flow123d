@@ -332,7 +332,7 @@ TEST(qxfem, qxfem_factory) {
     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
                           ele->node[2]->point() - ele->node[0]->point());
     
-    Singularity0D<3> func({1,2,2},0.1,{0,0,1},n);
+    auto func = std::make_shared<Singularity0D<3>>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n);
     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func},ele);
     
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
@@ -355,7 +355,7 @@ TEST(qxfem, qxfem_factory) {
     for(unsigned int q=0; q<qxfem-> size(); q++) sum += qxfem->weight(q);
     
 //     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - (ele->measure()-func.geometry().ellipse_area()) << "\n";
-    EXPECT_NEAR(sum,ele->measure()-func.geometry().ellipse_area(),1e-5);
+    EXPECT_NEAR(sum,ele->measure()-func->geometry().ellipse_area(),1e-5);
     
     
 //     func.evaluate_q_points(100, ele);

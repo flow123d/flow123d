@@ -53,12 +53,14 @@ class FE_P0_XFEM : public FiniteElementEnriched<dim,spacedim>
     using FiniteElementEnriched<dim,spacedim>::enr;
     using FiniteElementEnriched<dim,spacedim>::n_regular_dofs_;
     
+    typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
+    
 public:
 
     /**
      * @brief Constructor.
      */
-    FE_P0_XFEM(FE_P_disc<0,dim,spacedim>* fe,std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr);
+    FE_P0_XFEM(FE_P_disc<0,dim,spacedim>* fe,std::vector<EnrichmentPtr> enr);
 
 
     /**
@@ -104,7 +106,7 @@ public:
 
 template <unsigned int dim, unsigned int spacedim>
 FE_P0_XFEM<dim,spacedim>::FE_P0_XFEM(FE_P_disc<0,dim,spacedim>* fe,
-                                     std::vector<GlobalEnrichmentFunc<dim,spacedim>*> enr)
+                                     std::vector<EnrichmentPtr> enr)
 : FiniteElementEnriched<dim,spacedim>(fe,enr)
 {
     order = 0;
