@@ -67,6 +67,9 @@ if (COPY_INSTEAD_OF_SYMLINK)
 	execute_process(COMMAND
 	    ${CMAKE_COMMAND} -E copy_directory ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
 	)
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E copy ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
+	)
 else()
 	execute_process(COMMAND
 	    ${CMAKE_COMMAND} -E create_symlink ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
