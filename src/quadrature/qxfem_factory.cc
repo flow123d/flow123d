@@ -441,9 +441,11 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                 
                 real_points.push_back(p);
                 
-                // We want to have: sum w_q * |T| = |T| - |S_w|
-                // therefore for T without singularity, it holds: sum w_q = 1
-                double weight = gauss.weight(q) * area / ele_measure;
+                // We want to have: sum JxW_q = |T|-|S_w|
+                // which means for an affine mapping: sum w_q * |J| = |T| - |S_w|
+                // therefore for T without singularity, it holds: sum w_q = |T| / |J|
+                // which is for 2D equal 0.5
+                double weight = gauss.weight(q) * area / (2*ele_measure);
                 weights.push_back(weight);
             }
         }
