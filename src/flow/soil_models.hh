@@ -59,10 +59,10 @@ public:
     virtual void reset(SoilData soil)=0;
 
     virtual double conductivity( const double &phead) const =0;
-    virtual auto conductivity(const DiffDouble &p_head)->DiffDouble const =0;
+    virtual auto conductivity_diff(const DiffDouble &p_head)->DiffDouble const =0;
 
     virtual double water_content( const double &phead) const =0;
-    virtual auto water_content(const DiffDouble &p_head)->DiffDouble const =0;
+    virtual auto water_content_diff(const DiffDouble &p_head)->DiffDouble const =0;
 
     virtual ~SoilModelBase() {};
 };
@@ -80,10 +80,10 @@ public:
     void reset(SoilData data) override;
 
     double conductivity( const double &p_head) const override;
-    auto conductivity(const DiffDouble &p_head)->DiffDouble const override;
+    auto conductivity_diff(const DiffDouble &p_head)->DiffDouble const override;
 
     double water_content( const double &p_head) const override;
-    auto water_content(const DiffDouble &p_head)->DiffDouble const override;
+    auto water_content_diff(const DiffDouble &p_head)->DiffDouble const override;
 
     ~SoilModelImplBase() {}
 

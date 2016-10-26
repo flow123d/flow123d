@@ -274,6 +274,14 @@ public:
      */
     virtual FieldResult field_result( RegionSet region_set) const =0;
 
+    /**
+     * Return specification of the field value type in form of the string:
+     * [ <element type>, NRows, NCols]
+     *
+     * Result is valid JSON (and/or flow style YAML).
+     * For multifields not implemented.
+     */
+    virtual std::string get_value_attribute() const =0;
 
     /**
      * Returns true if set_time_result_ is not @p TimeStatus::constant.

@@ -173,7 +173,7 @@ public:
     /**
      * Direct read access to the table of Field pointers on regions.
      */
-    //boost::shared_ptr< FieldBaseType > operator[] (Region reg);
+    //std::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().
@@ -241,6 +241,14 @@ public:
      */
     FieldResult field_result( RegionSet region_set) const override;
 
+    /**
+     * Return specification of the field value type in form of the string:
+     * [ <element type>, NRows, NCols]
+     *
+     * Result is valid JSON (and/or flow style YAML).
+     * For multifields not implemented.
+     */
+    std::string get_value_attribute() const override;
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

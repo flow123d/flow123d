@@ -190,8 +190,8 @@ f(t)\approx \sum\limits_{j=0}^{m+n} c_j t^j = R_{mn}(t),
 % \sum\limits_{j=0}^{m+n} c_jt^j \sum\limits_{j=0}^{m} q_jt^j = \sum\limits_{j=0}^{n} p_jt^j,
 % \end{equation}
 is called Pad{\' e} approximant. From \eqref{eqn:pade_coef_equations}, we obtain $m+n+2$ equations for
-coefficients of the nominator $P_m$ (polynomial of \hyperA{PadeApproximant::nominator-degree}{degree} $m$) and 
-the denominator $Q_n$ (polynomial of \hyperA{PadeApproximant::denominator-degree}{degree} $n$). We also see that the error 
+coefficients of the nominator $P_m$ (polynomial of \hyperA{PadeApproximant::pade-nominator-degree}{degree} $m$) and 
+the denominator $Q_n$ (polynomial of \hyperA{PadeApproximant::pade-denominator-degree}{degree} $n$). We also see that the error 
 of the approximation is $O(t^{m+n+1})$. By convention, the denominator is normalized such that $q_0=1$.
 Theoretical results show that for $m=n-1$ and $m=n-2$ the Pad\'e approximant corresponds to an implicit Runge-Kutta method
 which is A-stable and L-stable (see \cite{ehle1973}).

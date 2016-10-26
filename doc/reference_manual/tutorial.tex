@@ -1,6 +1,7 @@
 
 
 \section{Tutorial Problem}
+\tbd{Update according new scheme or rather generate from commented YAML input file.}
 In the following section, we shall provide an example cook book for preparing and running a model. It is 
 one of the test problem with the main input file:
 \begin{verbatim}
@@ -103,18 +104,18 @@ Having the computational mesh from the previous step, we can create the main inp
 \end{Verbatim}
 The file starts with a selection of problem type (\verb'SequentialCoupling'), and a textual problem description.
 Next, we specify the computational mesh, here it consists of the name of the mesh file and the declaration of one {\it region set} 
-composed of all 1D regions i.e. representing the whole fracture. Other keys of the \hyperlink{IT::Mesh}{\tt mesh} record allow labeling regions given only by numbers, 
+composed of all 1D regions i.e. representing the whole fracture. Other keys of the \Alink{IT::Mesh}{\tt mesh} record allow labeling regions given only by numbers, 
 defining new regions in terms of element numbers (e.g to have leakage on single element), 
 defining boundary regions, and set operations with region sets, see Section \ref{sec:Mesh} for details.
 
 \subsection{Flow Setting}
 Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
 setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
-The \Alink{DarcyFlowMH-Data::conductivity}{\tt conductivity} will be $k_2=10^{-7}$ \unitss{}{1}{-1} on the 2D domain and $k_1=10^{-6}$ \unitss{}{1}{-1} on the 1D domain.
-Both 2D domain and 1D domain \Alink{DarcyFlowMH-Data::cross-section}{\tt cross\_section} will be set by default,
+The \Alink{Flow-Darcy-MH-Data::conductivity}{\tt conductivity} will be $k_2=10^{-7}$ \unitss{}{1}{-1} on the 2D domain and $k_1=10^{-6}$ \unitss{}{1}{-1} on the 1D domain.
+Both 2D domain and 1D domain \Alink{Flow-Darcy-MH-Data::cross-section}{\tt cross\_section} will be set by default,
 meaning that the thickness of 2D domain is $\delta_2=1$ \unitss{}{1}{} and the fracture cross section is $\delta_1=1$ \unitss{}{2}{}.
 The transition coefficient $\sigma_2$ between dimensions can be scaled by setting the dimensionless parameter 
-$\sigma_{21}$ (\Alink{DarcyFlowMH-Data::sigma}{\tt sigma}). This can be used for simulating additional
+$\sigma_{21}$ (\Alink{Flow-Darcy-MH-Data::sigma}{\tt sigma}). This can be used for simulating additional
 effects which prevent the liquid transition from/to a fracture, like a thin resistance layer. Read Section 
 \ref{sec:darcy_flow} for more details.
 
@@ -150,27 +151,27 @@ effects which prevent the liquid transition from/to a fracture, like a thin resi
 \end{Verbatim}
 On line 15, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
 solver for steady problems. On lines 17 -- 24, we set both mathematical fields that live on the computational domain 
-and those defining the boundary conditions. We set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Data}{\tt input\_fields} have appropriate default values.
+and those defining the boundary conditions. We set only the conductivity field since other \hyperA{IT::Flow-Darcy-MH-Data}{\tt input\_fields} have appropriate default values.
 We use implicitly defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
 pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt TYPE="FieldFormula"}.
 See Section \ref{sec:Fields} for other field types. 
 On lines 26 -- 32, we specify which output fields should be written to the output stream (that means particular output file, with given format).
 Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
-See Section \ref{section_output} for the list of available \hyperlink{IT::DarcyMHOutput-Selection}{\tt output\_fields}.
+See Section \ref{section_output} for the list of available \Alink{IT::Flow-Darcy-MH-output-fields}{\tt output\_fields}.
 Finally, we specify type of the linear solver and its tolerances.
 
 
 
 \subsection{Transport Setting}
-The flow model is followed by a transport model in the \Alink{SequentialCoupling::secondary-equation}{\tt secondary\_equation}
-beginning on line 40. For the transport problem, we use an implementation called \hyperlink{IT::TransportOperatorSplitting}{TransportOperatorSplitting}
+The flow model is followed by a transport model in the \Alink{Coupling-Sequential::solute-equation}{\tt solute\_equation}
+beginning on line 40. For the transport problem, we use an implementation called \hyperA{IT::Solute-Advection-FV}{Solute\_Advection\_FV}
 which stands for an explicit finite volume solver of the convection equation (without diffusion).
 The operator splitting method is used for equilibrium sorption as well as for dual porosity model and 
 first order reactions simulation.
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
     secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
+      TYPE = "Solute-Advection-FV", 
 
       substances = [ 
         {name = "age", molar_mass = 0.018},     // water age
@@ -192,12 +193,12 @@ first order reactions simulation.
       mass_balance = { cumulative = true },
 \end{Verbatim}
 
-On lines 43 -- 46, we set the transported \Alink{TransportOperatorSplitting::substances}{\tt substances}, 
+On lines 43 -- 46, we set the transported \Alink{Coupling-OperatorSplitting::substances}{\tt substances}, 
 which are identified by their names. Here, the first one is the \verb'age' of the water, with the molar mass of water, 
 and the second one \verb'U235' is the uranium isotope 235. 
 On lines 48 -- 57, we set the input fields, in particular zero initial concentration for all substances,
-\Alink{TransportOperatorSplitting-Data::porosity}{\tt porosity} $\theta = 0.25$ and 
-sources of concentration by \Alink{TransportOperatorSplitting-Data::sources-density}{\tt sources\_density}. 
+\Alink{Solute-Advection-FV-Data::porosity}{\tt porosity} $\theta = 0.25$ and 
+sources of concentration by \Alink{Solute-Advection-FV-Data::sources-density}{\tt sources\_density}. 
 Notice line 50 where we can see only single value since an automatic conversion is applied to turn the scalar 
 zero into the zero vector (of size 2 according to the number of substances). 
 
@@ -205,7 +206,7 @@ The boundary fields are set on lines 54 -- 56. We need not to specify the type o
 only one type in the current transport model. The boundary condition is equal to $1$ for the uranium 235 and $0$ 
 for the age of the water and is automatically applied only on the inflow part of the boundary. 
 
-We also have to prescribe the \hyperlink{IT::TimeGovernor}{\tt time} setting, here only the end time of the simulation
+We also have to prescribe the \hyperA{IT::TimeGovernor}{\tt time} setting, here only the end time of the simulation
 (in seconds: $10^6\,\rm{s}\approx 11.57$ days) is required since the step size is determined from the CFL condition. 
 However, a smaller time step can be enforced if necessary.
 
@@ -213,7 +214,7 @@ Reaction term of the transport model is described in the next subsection, includ
 
 \subsection{Reaction Term}\label{subsubsec:reactions}
 The input information for dual porosity, equilibrial sorption and possibly first order reations are enclosed in the record 
-\Alink{TransportOperatorSplitting::reaction-term}{\tt reaction\_term}, lines 61 -- 100. Go to section \ref{sec:reaction_term}
+\Alink{Coupling-OperatorSplitting::reaction-term}{\tt reaction\_term}, lines 61 -- 100. Go to section \ref{sec:reaction_term}
 to see how the models can be chained.
 
 The type of the first process is determined by {\tt TYPE="DualPorosity"}, on line 62. 
@@ -273,8 +274,8 @@ of dual porosity model are set on lines 64 -- 71 and the output is disabled by s
 }
 \end{Verbatim}
 
-Next, we define the equilibrial sorption model such that \hyperlink{IT::SorptionMobile}{\tt SorptionMobile} type takes place in the mobile 
-zone of the dual porosity model while \hyperlink{IT::SorptionImmobile}{\tt SorptionImmobile} type takes place in its immobile zone, see lines 76 and 93.
+Next, we define the equilibrial sorption model such that \hyperA{IT::SorptionMobile}{\tt SorptionMobile} type takes place in the mobile 
+zone of the dual porosity model while \hyperA{IT::SorptionImmobile}{\tt SorptionImmobile} type takes place in its immobile zone, see lines 76 and 93.
 Isothermally described sorption simulation can be used in the case of low concentrated solutions without competition between multiple dissolved species.
 
 On lines 77 -- 89, we set the sorption related input information. The solvent is water so the \Alink{Sorption::solvent-density}{\tt solvent\_density} 
@@ -286,7 +287,7 @@ This constrain is necessary because some substances might have limited solubilit
 its limit they start to precipitate. {\tt solubility} is a crucial parameter for solving a set of nonlinear 
 equations, described further. 
 
-The record \hyperlink{IT::Sorption-Data}{\tt input\_fields} covers the region specific parameters.
+The record \hyperA{IT::Sorption-Data}{\tt input\_fields} covers the region specific parameters.
 All implemented types of sorption can take the rock density in the region into account. The value of 
 \Alink{Sorption-Data::rock-density}{\tt rock\_density} is a constant in our case. 
 The \Alink{Sorption-Data::sorption-type}{\tt sorption\_type} represents the empirically determined isotherm 

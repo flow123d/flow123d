@@ -13,15 +13,15 @@ $\tn K_d$ is the conductivity tensor, and $H$ \units{}{1}{} is the piezometric h
 \[
     \vc q_d = \delta_d \vc w_d,
 \]
-where $\delta_d$ \units{}{3-d}{} is the \hyperA{DarcyFlowMH-Data::cross-section}{cross section} coefficient,
+where $\delta_d$ \units{}{3-d}{} is the \hyperA{Flow-Darcy-MH-Data::cross-section}{cross section} coefficient,
 in particular $\delta_3=1$, $\delta_2$ \units{}{1}{} is the thickness of a fracture, and $\delta_1$ \units{}{2}{} is the cross-section of a channel.
 The flux $\vc q_d\cdot\vc n$ is the volume of the liquid (water) that passes through a unit square ($d=3$),
 unit line ($d=2$), or through a point ($d=1$) per one second. 
 The conductivity tensor is given by the product \penalty-500
 $\tn K_d = k_d \tn A_d$, where $k_d>0$ \units{}{1}{-1}
- is the \hyperA{DarcyFlowMH-Data::conductivity}{hydraulic conductivity}  and 
+ is the \hyperA{Flow-Darcy-MH-Data::conductivity}{hydraulic conductivity}  and 
 $\tn A_d$  is the 
-$3\times 3$ dimensionless \hyperA{DarcyFlowMH-Data::anisotropy}{anisotropy tensor} which has to be symmetric and positive definite.
+$3\times 3$ dimensionless \hyperA{Flow-Darcy-MH-Data::anisotropy}{anisotropy tensor} which has to be symmetric and positive definite.
 The piezometric-head $H_d$ is related to the pressure head
 $h_d$ through
 \begin{equation}
@@ -41,7 +41,7 @@ Next, we employ the continuity equation for saturated porous medium and the dime
     \label{eq:continuity}
     \prtl_t (\delta S\, h) + \div \vc q = F \qquad \text{in }\Omega_d,\ \text{for $d=1,2,3$},
 \end{equation}
-where  $S_d$ \units{}{-1}{} is the \hyperA{DarcyFlowMH-Data::storativity}{storativity} and $F_d$ \units{}{3-d}{-1} is 
+where  $S_d$ \units{}{-1}{} is the \hyperA{Flow-Darcy-MH-Data::storativity}{storativity} and $F_d$ \units{}{3-d}{-1} is 
 the source term. In our setting the principal unknowns of the system 
 (\ref{eq:darcy_flux}, \ref{eq:continuity}) are the pressure head $h_d$ and the flux $\vc q_d$.
 
@@ -54,7 +54,7 @@ where $\gamma_w$ \units{1}{-2}{-2} is the specific weight of water, $\vartheta$ 
 $\beta_r$ is compressibility of the bulk material of the pores (rock)
 and $\beta_w$ is compressibility of the water, both with units \units{-1}{1}{-2}. For steady problems, we set $S_d=0$ for all dimensions $d=1,2,3$.
 The source term $F_d$ on the right hand side of \eqref{eq:continuity} consists of the volume density of the 
-\hyperA{DarcyFlowMH-Data::water-source-density}{water source} 
+\hyperA{Flow-Darcy-MH-Data::water-source-density}{water source} 
  $f_d$\units{}{}{-1} and flux from the from the higher dimension. 
 Precise form of $F_d$ slightly differs for every dimension and will be discussed presently.
 
@@ -100,7 +100,7 @@ Sum of the fluxes forms a part of $F_1$ \units{}{2}{-1}:
    F_1 = \delta_1 f_1 + \sum_{i=1}^n q_{21}^{i}. 
 \end{equation}
 We remark that the direct communication between 3D and 1D (e.g. model of a well) is not supported yet.
-The \hyperA{DarcyFlowMH-Data::sigma}{transition coefficients} 
+The \hyperA{Flow-Darcy-MH-Data::sigma}{transition coefficients} 
 {$\sigma_{32}$} \units{}{}{} and
 {$\sigma_{21}$} \units{}{}{} are independent scaling parameters which represent 
 the ratio of the crosswind and the tangential conductivity in the fracture. For example, in the case of impermeable film
@@ -113,43 +113,33 @@ Currently we consider a disjoint decomposition of the boundary
     \prtl\Omega_d = \Gamma_d^D \cup \Gamma_d^{TF} \cup \Gamma_d^{Sp} \cup \Gamma_d^{Ri}
 \]
 where we support the following
-\hyperA{DarcyFlowMH-Data::bc-type}{types of boundary conditions}:
+\hyperA{Flow-Darcy-MH-Data::bc-type}{types of boundary conditions}:
 
 {\bf Dirichlet} boundary condition
 \[
     h_d = h_d^D        \text{ on }\Gamma_d^D,
 \]
-where $h_d^D$ \units{}{1}{} is the \hyperA{DarcyFlowMH-Data::bc-pressure}{boundary pressure head} .
-Alternatively one can prescribe the \hyperA{DarcyFlowMH-Data::bc-piezo-head}{boundary piezometric head}
+where $h_d^D$ \units{}{1}{} is the \hyperA{Flow-Darcy-MH-Data::bc-pressure}{boundary pressure head} .
+Alternatively one can prescribe the \hyperA{Flow-Darcy-MH-Data::bc-piezo-head}{boundary piezometric head}
 $H_d^D$ \units{}{1}{} related to the pressure head through \eqref{eq:piezo_head}.
 
 {\bf Total flux} boundary condition (combination of Neumann and Robin type)
 \[
     -\vc q_d \cdot \vc n = q_d^N + \sigma_d^R ( h_d^R - h_d)        \text{ on }\Gamma_d^{TF},
 \]
-where $q_d^N$ \units{}{4-d}{-1} is the \hyperA{DarcyFlowMH-Data::bc-flux}{surface density of the water inflow},
-$h_d^R$ is the \Alink{DarcyFlowMH-Data::bc-pressure}{boundary pressure head} and
+where $q_d^N$ \units{}{4-d}{-1} is the \hyperA{Flow-Darcy-MH-Data::bc-flux}{surface density of the water inflow},
+$h_d^R$ is the \Alink{Flow-Darcy-MH-Data::bc-pressure}{boundary pressure head} and
 $\sigma_d^R$ \units{}{3-d}{-1}  
-is the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient}.
-As before one can also prescribe the \Alink{DarcyFlowMH-Data::bc-piezo-head}{boundary piezo head}
+is the \hyperA{Flow-Darcy-MH-Data::bc-robin-sigma}{transition coefficient}.
+As before one can also prescribe the \Alink{Flow-Darcy-MH-Data::bc-piezo-head}{boundary piezo head}
 $H_d^R$ to specify $h_d^R$.
-
-% {\bf Robin} boundary condition 
-% \[
-%     \vc q_d \cdot \vc n = \sigma_d^R ( h_d - h_d^R)     \text{ on }\Gamma_d^R.
-% \]
-% where $h_d^R$ is the \Alink{DarcyFlowMH-Data::bc-pressure}{boundary pressure head} and
-% $\sigma_d^R$ \units{}{3-d}{-1}  
-% is the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient}.
-% As before one can also prescribe the \Alink{DarcyFlowMH-Data::bc-piezo-head}{boundary piezo head}
-% $H_d^R$ to specify $h_d^R$.
 
 {\bf Seepage face} This condition is used to model surface with possible springs:
 \[
     h_d \le h_d^S\quad \text{and} \quad \vc q_d \cdot \vc n \ge q_d^N
 \]    
-while the equality holds in at least one inequality. The \hyperA{DarcyFlowMH-Data::bc-switch-pressure}{switch pressure head} 
-$h_d^S$ \units{1}{}{} can alternatively be given by \hyperA{DarcyFloeMH-Data::bc-switch-piezo-head}{switch piezometric head}.
+while the equality holds in at least one inequality. The \hyperA{Flow-Darcy-MH-Data::bc-switch-pressure}{switch pressure head} 
+$h_d^S$ \units{1}{}{} can alternatively be given by \hyperA{Flow-Darcy-MH-Data::bc-switch-piezo-head}{switch piezometric head}.
 
 The former inequality
 (usually with default value $h_d^S=0$) disallow non-zero water height on the surface, the later
@@ -166,9 +156,9 @@ We prescribe:
 \end{align}
 where $H_d$ is piezometric head.
 The parameters of the condition are given by similar fields of other boundary conditions: 
-the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient} of the bedrock $\sigma_d^R$ \units{}{3-d}{-1}, 
-the piezometric head of the water surface given as \hyperA{DarcyFlowMH-Data::bc-piezo-head}{boundary piezometric head}  $H_d^D$ \units{}{1}{},
-the head of the bottom of the river given as the \hyperA{DarcyFlowMH-Data::bc-switch-piezo-head}{switch piezometric head} 
+the \hyperA{Flow-Darcy-MH-Data::bc-robin-sigma}{transition coefficient} of the bedrock $\sigma_d^R$ \units{}{3-d}{-1}, 
+the piezometric head of the water surface given as \Alink{Flow-Darcy-MH-Data::bc-piezo-head}{boundary piezometric head}  $H_d^D$ \units{}{1}{},
+the head of the bottom of the river given as the \Alink{Flow-Darcy-MH-Data::bc-switch-piezo-head}{switch piezometric head} 
 $h_d^S$ \units{1}{}{}. The boundary flux $q_d^N$ is zero by default, but can be used to express approximation of the seepage face condition 
 (see discussion below).  The piezometric heads  $H_d^S$ and $H_d^R$ may be alternatively 
 given by pressure heads $h_d^S$ and $h_d^R$, respectively.
@@ -230,11 +220,11 @@ where the additional terms are to preserve continuity of the condition in the sw
 %where the critical piezometric head $H_c$ is a weighted average of the river head and the average height $H_s$ of the real surface.
 %
 %
-%Parameters: $\alpha_r$ \units{}{}{} the \hyperA{DarcyFlowMH-Data::bc-river-fraction}{river surface fraction}, $H_r$ \units{1}{}{} 
-%the \hyperA{DarcyFlowMH-Data::bc-river-head}{river head}, 
+%Parameters: $\alpha_r$ \units{}{}{} the \hyperA{Flow-Darcy-MH-Data::bc-river-fraction}{river surface fraction}, $H_r$ \units{1}{}{} 
+%the \hyperA{Flow-Darcy-MH-Data::bc-river-head}{river head}, 
 %alternatively $H_c=H_d^D$ \units{1}{}{} the critical piezometric head or $h_c=h_d^D$ \units{1}{}{} the critical pressure head, $q_i=q_d^N$ \units{}{4-d}{-1}
 %the infiltration or evapotranspiration rate, $\sigma=\sigma_d^R$ \units{}{3-d}{-1}  
-%the \hyperA{DarcyFlowMH-Data::bc-robin-sigma}{transition coefficient} of the bedrock.
+%the \hyperA{Flow-Darcy-MH-Data::bc-robin-sigma}{transition coefficient} of the bedrock.
 %
 %Implementation: prescribing $\alpha_r$ as a field makes only sense for the case of element-wise field since the value depends on the cross-section 
 %of the river and the boundary element. Ultimate goal should be to prescribe river as an 1D line and set width of the river on its elements. Then we can 
@@ -246,9 +236,9 @@ where the additional terms are to preserve continuity of the condition in the sw
 
 
 For unsteady problems one has to specify an initial condition in terms of the 
-\hyperA{DarcyFlowMH-Data::init-pressure}{initial pressure head}
+\hyperA{Flow-Darcy-MH-Data::init-pressure}{initial pressure head}
 $h_d^0$ \units{}{1}{}
-or the \hyperA{DarcyFlowMH-Data::init-piezo-head}{initial piezometric head}
+or the \hyperA{Flow-Darcy-MH-Data::init-piezo-head}{initial piezometric head}
 $H_d^0$ \units{}{1}{}.
 
 \paragraph{Volume balance.}
@@ -262,6 +252,60 @@ $$ f(t) := -\sum_{d=1}^3\int_{\partial\Omega^d}\vc q(t,\vc x)\cdot\vc n(\vc x) \
 is the volume \units{}{3}{}, the volume source \units{}{3}{-1} and the volume flux \units{}{3}{-1} of the liquid at time $t$, respectively.
 The volume, flux and source on every geometrical region is calculated at each output time and the values together with the control sums are written to the \Alink{Balance::file}{file} \texttt{water\_balance.\{dat\textbar txt\}}.
 If, in addition, \Alink{Balance::cumulative}{cumulative} is set to true then the time-integrated flux and source is written.
+
+\subsection{Richards Equation}
+This section contains a preliminary documentation to the unsaturated water flow model. We use the Richards equation in the form:
+
+\begin{equation}
+ \prtl_t \delta \theta_t + \div \vc q = F\quad \in\Omega_d, \text{ for } d=1,2,3
+\end{equation}
+where the total water content $\theta_t(h)$ \units{}{}{} is a function of the principal unknown $h$ and the water flux $\vc q$ is given by \eqref{eq:darcy_flux} 
+in which the conductivity $k_d$ is function of the pressure head $h$ as well.
+Currently the total water content is given as:
+\begin{equation}
+    \theta_t(h) = \theta(h) + Sh
+\end{equation}
+where $S$ is the storativity and $\theta(h)$ is the water content. The functions $\theta(h)$ and $k(h)$ are given by the choosen soil model.
+Two soil models are currently supported.
+
+\subsubsection{van Genuchen}
+Classical van Genuchten model use:
+\[
+    \theta(h) = (\theta_s-\theta_r)\theta_e + \theta_r,\quad \theta_e = (1+ (\alpha h)^n)^m
+\]
+for the negative pressure head $h<0$ and $\theta = \theta_s$ for $h\ge 0$.
+
+The model parameters are:
+    $\theta_s$ \units{}{}{} the saturated water content,
+    $\theta_r$ \units{}{}{} the residual water content,
+    $\alpha$ \units{-1}{}{} the pressure scaling parameter,
+    $n$ \units{}{}{} the exponent parameter.
+The exponent $m$ is taken as $1/n-1$ and $\theta_e$ \units{}{}{} is called the effective water content.
+
+The conductivity function $k(h)$ is then derived from the capilary model due to Mualem with result:
+\[
+    k(h) = \theta_e^{0.5} \left[ \frac{1-F(\theta)}{1-F(\theta_s)} \right]^2,\quad F(\theta)= \left[ 1- \theta_e^{1/m} \right]^m
+\]
+In fact we use slight modification due to Vogel and Císlerová where the saturation happens at some preassure head slightly smaller then zero.
+Then the water content curve is given by 
+\[
+    \theta(h) = (\theta_m-\theta_r)\theta_e + \theta_r,
+\]
+for $h< h_s$ and $\theta = \theta_s$ for $h\ge h_s$. Currently the fraction $\theta_m / \theta_s$ is fixed to $0.001$.
+
+\subsubsection{Irmay}
+The model used for bentonite is due to Irmay and use simple power relation for the conductivity:
+\[
+   k(h) = \theta_e^{2}.
+\]
+
+
+
+    
+
+\subsubsection{Irmay}
+
+
 
 
 

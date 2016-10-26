@@ -75,6 +75,7 @@ protected:
      */
     virtual void after_run();
 
+
     /**
      * Parse command line parameters.
      * @param[in] argc       command line argument count

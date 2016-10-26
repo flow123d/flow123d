@@ -26,8 +26,6 @@
 
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/pointer_cast.hpp>
@@ -402,6 +400,10 @@ string FileName::type_name() const {
     }
 }
 
+bool FileName::operator==(const TypeBase &other) const
+{ return  typeid(*this) == typeid(other) &&
+                 (type_== static_cast<const FileName *>(&other)->get_file_type() );
+}
 
 
 bool FileName::match(const string &str) const {

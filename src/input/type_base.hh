@@ -28,8 +28,6 @@
 
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include "system/global_defs.h"
@@ -622,13 +620,10 @@ public:
     string class_name() const override { return "FileName"; }
 
     /// Comparison of types.
-    bool operator==(const TypeBase &other) const
-    { return  typeid(*this) == typeid(other) &&
-                     (type_== static_cast<const FileName *>(&other)->get_file_type() );
-    }
+    bool operator==(const TypeBase &other) const override;
 
     /// Checks relative output paths.
-    bool match(const string &str) const;
+    bool match(const string &str) const override;
 
 
     /**
@@ -648,7 +643,7 @@ private:
     ::FilePath::FileType    type_;
 
     /// Forbids default constructor.
-    FileName() {}
+    FileName();
 
     /// Forbids direct construction.
     FileName(enum ::FilePath::FileType type)

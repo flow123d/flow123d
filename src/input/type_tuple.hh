@@ -83,7 +83,7 @@ public:
 	Tuple &allow_auto_conversion(const string &from_key) override;
 
     /// Class comparison and Tuple type name comparison.
-    bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const override;
 
     /**
      * @brief Close the Tuple for further declarations of keys.
@@ -104,7 +104,7 @@ public:
      *
      * Deriving of Tuple type is forbidden. Type is determined for small simple data.
      */
-    Tuple &derive_from(Abstract &parent);
+    Tuple &derive_from(Abstract &parent) override;
 
     /**
      * @brief Return count of obligatory keys.

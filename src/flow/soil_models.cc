@@ -30,7 +30,7 @@ double SoilModelImplBase<Model>::conductivity( const double &p_head) const
 }
 
 template <class Model>
-auto SoilModelImplBase<Model>::conductivity(const DiffDouble &p_head)->DiffDouble const
+auto SoilModelImplBase<Model>::conductivity_diff(const DiffDouble &p_head)->DiffDouble const
 {
     return model_.conductivity_(p_head);
 }
@@ -42,7 +42,7 @@ double SoilModelImplBase<Model>::water_content( const double &p_head) const
 }
 
 template <class Model>
-auto SoilModelImplBase<Model>::water_content(const DiffDouble &p_head)->DiffDouble const
+auto SoilModelImplBase<Model>::water_content_diff(const DiffDouble &p_head)->DiffDouble const
 {
     return model_.water_content_(p_head);
 }
