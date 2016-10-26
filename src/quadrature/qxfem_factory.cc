@@ -91,7 +91,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
         sing[0].geometry().project_to_ellipse_plane(simp.nodes);
     }
     
-    distribute_qpoints(qxfem->real_points_, qxfem->weights, sing);
+    distribute_qpoints(qxfem->real_points_, qxfem->weights, sing, ele->measure());
     map_real_to_unit_points(qxfem->real_points_, qxfem->quadrature_points, ele);
     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
@@ -386,7 +386,8 @@ void QXFEMFactory<dim,spacedim>::refine_simplex(const AuxSimplex& aux_simplex)
 template<int dim, int spacedim>
 void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_points,
                                                        std::vector<double>& weights,
-                                                       const std::vector<Singularity0D<spacedim>> & sing)
+                                                       const std::vector<Singularity0D<spacedim>> & sing,
+                                                       double ele_measure)
 {
     const unsigned int order = 3;
     QGauss<dim> gauss(order);
@@ -440,7 +441,9 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                 
                 real_points.push_back(p);
                 
-                double weight = gauss.weight(q) * area;
+                // We want to have: sum w_q * |T| = |T| - |S_w|
+                // therefore for T without singularity, it holds: sum w_q = 1
+                double weight = gauss.weight(q) * area / ele_measure;
                 weights.push_back(weight);
             }
         }

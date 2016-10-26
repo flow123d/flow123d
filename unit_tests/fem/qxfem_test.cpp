@@ -322,7 +322,7 @@ TEST(qxfem, singularity) {
 
 TEST(qxfem, qxfem_factory) {
 
-    QXFEMFactory<2,3> qfactory(10);
+    QXFEMFactory<2,3> qfactory(12);
     
     // read mesh - simplset cube from test1
     Mesh* mesh = new Mesh();
@@ -354,8 +354,9 @@ TEST(qxfem, qxfem_factory) {
     double sum=0;
     for(unsigned int q=0; q<qxfem-> size(); q++) sum += qxfem->weight(q);
     
-//     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - (ele->measure()-func.geometry().ellipse_area()) << "\n";
-    EXPECT_NEAR(sum,ele->measure()-func.geometry().ellipse_area(),1e-5);
+    double exact_sum = (ele->measure()-func.geometry().ellipse_area()) / ele->measure();
+    MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
+    EXPECT_NEAR(sum,exact_sum,1e-7);
     
     
 //     func.evaluate_q_points(100, ele);
