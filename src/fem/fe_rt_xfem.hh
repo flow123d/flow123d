@@ -267,8 +267,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
     // divergence
     if (fv_data.update_flags & update_divergence)
     {
-        arma::mat::fixed<dim,dim> unit_grad;            
-        vector<arma::mat::fixed<spacedim,spacedim> > grads(dim+1);
+//         arma::mat::fixed<dim,dim> unit_grad;
         vector<double> divs(number_of_dofs);
         
         arma::vec pu_values(RefElement<dim>::n_nodes);
@@ -294,28 +293,22 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             pu_values = fe->get_node_matrix() * pu_values;
             real_pu_grads = fe->get_node_matrix() * real_pu_grads;
             
-            pu_grads.print(cout,"pu_grads");
-            real_pu_grads.print(cout,"real_pu_grads");
+//             pu_grads.print(cout,"pu_grads");
+//             real_pu_grads.print(cout,"real_pu_grads");
             
             //fill regular shape functions
             for (unsigned int k=0; k<dim+1; k++)
             {
-                unit_grad.zeros();
-                for (unsigned int l=0; l<dim+1; l++)
-                    unit_grad += fe->basis_grad_vector(l, quad.point(q)) * fe->get_node_matrix()(k,l);
+//                 unit_grad.zeros();
+//                 for (unsigned int l=0; l<dim+1; l++)
+//                     unit_grad += fe->basis_grad_vector(l, quad.point(q)) * fe->get_node_matrix()(k,l);
                 
-                unit_grad.print(cout,"unit grad");
+//                 unit_grad.print(cout,"unit grad");
                 
-                grads[k] = fv_data.jacobians[q] * unit_grad * fv_data.inverse_jacobians[q] / fv_data.determinants[q];
-                grads[k].print(cout,"grad");
+//                 divs[k] = arma::trace(unit_grad) / fv_data.determinants[q];
+//                 DBGCOUT(<< "div=" << fe->basis_div(k, quad.point(q)) << "  |J|=" << fv_data.determinants[q] << "\n");
+                divs[k] = fe->basis_div(k, quad.point(q)) / fv_data.determinants[q];
             }
-            
-//             for (unsigned int k=0; k<dim+1; k++)
-//                 grads[k] = fv_data.jacobians[q] * unit_grads[k] * fv_data.inverse_jacobians[q] / fv_data.determinants[q];
-//             fv_data.shape_grad_vectors[q] = grads;
-
-            for (unsigned int k=0; k<dim+1; k++)
-                divs[k] = arma::trace(grads[k]);
             
             
             //fill enriched shape functions
