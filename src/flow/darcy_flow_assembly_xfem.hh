@@ -315,31 +315,34 @@ protected:
         double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());
         double scale = 1 / cs /conduct;
         
-        assemble_sides_scale(ele_ac, scale);
+        if(ele_ac.is_enriched())
+            assemble_sides_scale(ele_ac, scale, *fe_values_rt_xfem_);
+        else
+            assemble_sides_scale(ele_ac, scale, fe_values_);
     }
     
-    void assemble_sides_scale(LocalElementAccessorBase<3> ele_ac, double scale)
+    void assemble_sides_scale(LocalElementAccessorBase<3> ele_ac, double scale, FEValues<dim,3> & fe_values)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         
         ElementFullIter ele =ele_ac.full_iter();
-        fe_values_.reinit(ele);
-        unsigned int ndofs = fe_values_.get_fe()->n_dofs();
-        unsigned int qsize = fe_values_.get_quadrature()->size();
+        fe_values.reinit(ele);
+        unsigned int ndofs = fe_values.get_fe()->n_dofs();
+        unsigned int qsize = fe_values.get_quadrature()->size();
 
         for (unsigned int k=0; k<qsize; k++)
             for (unsigned int i=0; i<ndofs; i++){
                 double rhs_val =
-                        arma::dot(gravity_vec,fe_values_.shape_vector(i,k))
-                        * fe_values_.JxW(k);
+                        arma::dot(gravity_vec,fe_values.shape_vector(i,k))
+                        * fe_values.JxW(k);
                 loc_system_.add_value(i,i , 0.0, rhs_val);
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
-                        arma::dot(fe_values_.shape_vector(i,k), //TODO: compute anisotropy before
+                        arma::dot(fe_values.shape_vector(i,k), //TODO: compute anisotropy before
                                     (ad_->anisotropy.value(ele_ac.centre(), ele_ac.element_accessor() )).i()
-                                        * fe_values_.shape_vector(j,k))
-                        * scale * fe_values_.JxW(k);
+                                        * fe_values.shape_vector(j,k))
+                        * scale * fe_values.JxW(k);
                     
                     loc_system_.add_value(i,j , mat_val, 0.0);
                 }
@@ -369,14 +372,16 @@ protected:
     }
     
     
-    void assemble_element(LocalElementAccessorBase<3> ele_ac){
-        // set block B, B': element-side, side-element
+    void assemble_element(LocalElementAccessorBase<3> ele_ac){        
         
-//         ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
-        
-        for(unsigned int side = 0; side < ele_ac.n_sides(); side++){
-            loc_system_.set_mat_values({loc_ele_dof}, {loc_vel_dofs[side]}, {-1.0});
-            loc_system_.set_mat_values({loc_vel_dofs[side]}, {loc_ele_dof}, {-1.0});
+        if(ele_ac.is_enriched())
+            assemble_element(ele_ac, *fe_values_rt_xfem_, *fe_values_p0_xfem_);
+        else 
+        {
+            for(unsigned int side = 0; side < ele_ac.n_sides(); side++){
+                loc_system_.set_mat_values({loc_ele_dof}, {loc_vel_dofs[side]}, {-1.0});
+                loc_system_.set_mat_values({loc_vel_dofs[side]}, {loc_ele_dof}, {-1.0});
+            }
         }
         
 //         if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
@@ -384,6 +389,34 @@ protected:
 //             static_cast<LinSys_BDDC*>(ad_->lin_sys)->
 //                             diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
 //         }
+    }
+    
+    void assemble_element(LocalElementAccessorBase<3> ele_ac,
+                          FEValues<dim,3>& fv_vel, FEValues<dim,3>& fv_press){
+        
+        ElementFullIter ele =ele_ac.full_iter();
+        fv_vel.reinit(ele);
+        fv_press.reinit(ele);
+        
+        unsigned int ndofs_vel = fv_vel.get_fe()->n_dofs();
+        unsigned int ndofs_press = fv_press.get_fe()->n_dofs();
+        unsigned int qsize = qxfem_->size();
+
+        for (unsigned int k=0; k<qsize; k++)
+            for (unsigned int i=0; i<ndofs_vel; i++){
+                for (unsigned int j=0; j<ndofs_press; j++){
+                    double mat_val = 
+                        - fv_press.shape_value(j,k)
+                        * fv_vel.shape_divergence(i,k)
+                        * fv_vel.JxW(k);
+                    loc_system_.add_value(loc_vel_dofs[i],loc_press_dofs[j] , mat_val, 0.0);
+                }
+            }
+        
+//         for (unsigned int i=0; i<ndofs_vel; i++)
+//             for (unsigned int j=0; j<ndofs_press; j++)
+//                 DBGCOUT(<< i << " " << j << " " << loc_system_.get_matrix()(loc_vel_dofs[i],loc_press_dofs[j]) 
+//                         << " " << ele_ac.full_iter()->measure()  << "  " << fv_vel.determinant(0) << "\n");
     }
     
     // assembly volume integrals
@@ -454,9 +487,8 @@ void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
         
         fe_p0_xfem_ = std::make_shared<FE_P0_XFEM<2,3>>(&fe_p_disc_,ele_ac.xfem_data()->enrichment_func_vec());
         fe_values_p0_xfem_ = std::make_shared<FEValues<2,3>> 
-                         (map_, *qxfem_, *fe_p0_xfem_, update_values | update_gradients | 
-                                                      update_JxW_values | update_jacobians |
-                                                      update_inverse_jacobians | update_quadrature_points |
-                                                      update_divergence);
+                         (map_, *qxfem_, *fe_p0_xfem_, update_values |
+                                                      update_JxW_values |
+                                                      update_quadrature_points);
     }
 #endif /* SRC_FLOW_DARCY_FLOW_ASSEMBLY_XFEM_HH_ */

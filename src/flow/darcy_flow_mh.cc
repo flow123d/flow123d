@@ -665,20 +665,20 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
         assembler.assemble(ele_ac, true);
         
         //temporary
-        if(ele_ac.is_enriched()){
-            XFEMElementSingularData* xdata = ele_ac.xfem_data();
-            ASSERT_PTR(xdata);
-            
-            for(unsigned int w=0; w<xdata->n_enrichments(); w++){
-                auto enr_dofs = xdata->global_enriched_dofs(Quantity::velocity, w);
-                for(unsigned int i=0; i<enr_dofs.size(); i++)
-                    schur0->mat_set_value(enr_dofs[i], enr_dofs[i], 1.0);
-                
-                enr_dofs = xdata->global_enriched_dofs(Quantity::pressure, w);
-                for(unsigned int i=0; i<enr_dofs.size(); i++)
-                    schur0->mat_set_value(enr_dofs[i], enr_dofs[i], 1.0);
-            }
-        }
+//         if(ele_ac.is_enriched()){
+//             XFEMElementSingularData* xdata = ele_ac.xfem_data();
+//             ASSERT_PTR(xdata);
+//             
+//             for(unsigned int w=0; w<xdata->n_enrichments(); w++){
+//                 auto enr_dofs = xdata->global_enriched_dofs(Quantity::velocity, w);
+//                 for(unsigned int i=0; i<enr_dofs.size(); i++)
+//                     schur0->mat_set_value(enr_dofs[i], enr_dofs[i], 1.0);
+//                 
+//                 enr_dofs = xdata->global_enriched_dofs(Quantity::pressure, w);
+//                 for(unsigned int i=0; i<enr_dofs.size(); i++)
+//                     schur0->mat_set_value(enr_dofs[i], enr_dofs[i], 1.0);
+//             }
+//         }
     }
     //temporary
     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
