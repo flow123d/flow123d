@@ -104,7 +104,8 @@ protected:
     
     void distribute_qpoints(std::vector< Point >& real_points, 
                             std::vector< double >& weights,
-                            const std::vector<SingularityPtr> & sing);
+                            const std::vector<SingularityPtr> & sing,
+                            double ele_measure);
     
     void map_real_to_unit_points(const std::vector<Point>& real_points,
                                  std::vector< typename Space< dim >::Point >& unit_points,
