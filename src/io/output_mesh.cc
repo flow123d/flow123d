@@ -301,12 +301,12 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     // index of last node added; set at the end of original ones
     unsigned int last_offset = 0;
     
-    DebugOut() << "start refinement\n";
+//     DebugOut() << "start refinement\n";
     FOR_ELEMENTS(orig_mesh_, ele) {
         const unsigned int 
             dim = ele->dim(),
             ele_idx = ele->index();
-        DebugOut() << "ele index " << ele_idx << "\n";
+//         DebugOut() << "ele index " << ele_idx << "\n";
         
         AuxElement aux_ele;
         aux_ele.nodes.resize(ele->n_nodes());
@@ -336,7 +336,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
         connectivity_->data_.resize(connectivity_->data_.size() + refinement.size()*(dim+1));
 //         orig_element_indices_->resize(orig_element_indices_->size() + refinement.size()*(dim+1));
         
-        DebugOut() << "ref size = " << refinement.size() << "\n";
+//         DebugOut() << "ref size = " << refinement.size() << "\n";
         //gather coords and connectivity (in a continous way inside element)
         for(unsigned int i=0; i < refinement.size(); i++)
         {
