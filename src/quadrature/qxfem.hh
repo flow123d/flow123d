@@ -47,6 +47,16 @@ public:
     const Point & real_point(unsigned int i) const;
     //@}
     
+    /**
+     * @brief Sets individual quadrature point coordinates.
+     * @param i Number of the quadrature point.
+     * @param p New coordinates.
+     */
+    void set_real_point(unsigned int i, const Point &p);
+    
+    /// Hides the original function. Resizes also the real poitns.
+    void resize(const unsigned int n_q);
+    
 private:
     /// Vector of quadrature points in real coordinates.
     std::vector<Point> real_points_;
@@ -65,6 +75,24 @@ template<int dim, int spacedim>
 inline const std::vector< typename Space<spacedim>::Point >& QXFEM<dim, spacedim>::get_real_points() const
 {   return real_points_;}
 
+template<int dim, int spacedim>
+inline void QXFEM<dim, spacedim>::set_real_point(unsigned int i, const typename Space<spacedim>::Point &p)
+{   ASSERT_DBG(i < real_points_.size());
+    real_points_[i] = p;
+}
 
+
+template<int dim, int spacedim>
+void QXFEM<dim,spacedim>::resize(const unsigned int n_q)
+{
+    arma::vec::fixed<dim> v;
+    v.fill(0);
+    this->quadrature_points.resize(n_q, v);
+    this->weights.resize(n_q, 0);
+    
+    Point vv;
+    vv.fill(0);
+    real_points_.resize(n_q, vv);
+}
 
 #endif // QXFEM_HH_
