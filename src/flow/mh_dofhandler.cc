@@ -511,6 +511,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
         //TODO: distribute quad points around the well more effectively
         ElementFullIter ele = mesh_->element(xd.ele_global_idx());
         xd.create_sing_quads(ele);
+        DBGVAR(xd.n_singularities_inside());
 //         xd.print(cout);
     }
     
@@ -555,7 +556,6 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
                                   )
 {   
     // check flag at the element so element is checked only once
-    
     if(mesh_flags_[ele->index()]) return;
     
     //flag the element
@@ -583,16 +583,22 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         // add new xfem data
         unsigned int sing_idx = singularities_12d_.size()-1;
         
-        XFEMElementSingularData* xdata = ele->xfem_data;
-        if(xdata == nullptr){   //possibly create new one
+        XFEMElementSingularData * xdata;
+        
+        if(ele->xfem_data == nullptr){   //possibly create new one
             xfem_data.push_back(XFEMElementSingularData());
             xdata = & xfem_data.back();
             xdata->set_node_values(&node_values, &node_vec_values);
             //TODO: set number of quantities
             xdata->global_enriched_dofs().resize(3);
             xdata->set_element(ele->index());
+            ele->xfem_data = xdata;
         }
-         
+        else{
+            xdata = static_cast<XFEMElementSingularData*>(ele->xfem_data);
+            ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMElementSingularData Type!");
+        }
+        
         xdata->add_data(sing, sing_idx);
         
         Node* node; //shortcut

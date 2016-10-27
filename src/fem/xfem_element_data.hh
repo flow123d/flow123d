@@ -26,31 +26,48 @@
 class Well;
 template<int dim, int spacedim> class QXFEM;
 
-/** @brief Base class for data distributed umong enriched elements.
- * These are pointers to @p GlobalEnrichmentFunc objects, quadrature points of wells,
- * and enriched degrees of freedom.
+
+/** @brief Base class for XFEM element data.
  */
-template<int dim, int spacedim>
 class XFEMElementDataBase
 {
 public:
-    typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
-    
-    /// Constructor.
-    XFEMElementDataBase()
-    {}
-    
-    ///Destructor
-    virtual ~XFEMElementDataBase()
-    {}
-
-    /// @name Getters
-    //@{
     unsigned int ele_global_idx() const
     { return ele_global_idx_;}
     
     void set_element(int global_idx)
     { ele_global_idx_ = global_idx;}
+    
+protected:
+///iterator of the cell to which this data object belongs
+//     LocalElementAccessorBase<spacedim> ele_ac_;
+//     ElementFullIter ele_;
+    
+    /// Index of element to which this data belongs to.
+    unsigned int ele_global_idx_;
+};
+
+
+/** @brief Base class for data distributed umong enriched elements.
+ * These are pointers to @p GlobalEnrichmentFunc objects, quadrature points of wells,
+ * and enriched degrees of freedom.
+ */
+template<int dim, int spacedim>
+class XFEMElementData : public XFEMElementDataBase
+{
+public:
+    typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
+    
+    /// Constructor.
+    XFEMElementData()
+    {}
+    
+    ///Destructor
+    virtual ~XFEMElementData()
+    {}
+
+    /// @name Getters
+    //@{
     
     ///Returns number of wells comunicating with the cell
     unsigned int n_enrichments() const
@@ -118,12 +135,7 @@ public:
         node_vec_values = node_vec_vals;
     }
   
-protected:
-    ///iterator of the cell to which this data object belongs
-//     LocalElementAccessorBase<spacedim> ele_ac_;
-//     ElementFullIter ele_;
-    unsigned int ele_global_idx_;
-    
+protected:   
     ///vector of pointers to wells
     std::vector<EnrichmentPtr> enrichment_func_;
     ///global indices of the wells
@@ -164,10 +176,12 @@ enum Quantity{
  * but also the enriched degrees of freedom belonging to the current cell.
  */
 // template<int dim, int spacedim>
-class XFEMElementSingularData : public XFEMElementDataBase<2,3>
+class XFEMElementSingularData : public XFEMElementData<2,3>
 {
   public:
-     
+    
+    using XFEMElementDataBase::ele_global_idx;
+    using XFEMElementDataBase::set_element;
     
     /// Constructor.
     XFEMElementSingularData();

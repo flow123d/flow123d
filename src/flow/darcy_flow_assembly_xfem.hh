@@ -144,13 +144,13 @@ protected:
         loc_vel_dofs.resize(ele_ac.n_dofs_vel());
         loc_press_dofs.resize(ele_ac.n_dofs_press());
         loc_edge_dofs.resize(ele_ac.n_sides());
-        for(int j =0; j < ele_ac.n_dofs_vel(); j++)
+        for(unsigned int j =0; j < ele_ac.n_dofs_vel(); j++)
             loc_vel_dofs[j] = j;
         
-        for(int j =0; j < ele_ac.n_dofs_press(); j++)
+        for(unsigned int j =0; j < ele_ac.n_dofs_press(); j++)
             loc_press_dofs[j] = ele_ac.n_dofs_vel() + j;
         
-        for(int j =0; j < ele_ac.n_sides(); j++)
+        for(unsigned int j =0; j < ele_ac.n_sides(); j++)
             loc_edge_dofs[j] = ele_ac.n_dofs_vel() + ele_ac.n_dofs_press() + j;
         
         loc_ele_dof = ele_ac.n_dofs_vel();
@@ -419,6 +419,10 @@ protected:
 //                         << " " << ele_ac.full_iter()->measure()  << "  " << fv_vel.determinant(0) << "\n");
     }
     
+    void assembly_singular_communication(){
+        
+    }
+    
     // assembly volume integrals
     FE_RT0<dim,3> fe_rt_;
     MappingP1<dim,3> map_;
@@ -475,20 +479,24 @@ protected:
 template<> inline
 void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
         
-        std::shared_ptr<Singularity0D<3>> func = std::static_pointer_cast<Singularity0D<3>>(ele_ac.xfem_data()->enrichment_func(0));
-        qxfem_ = qfactory_.create_singular({func}, ele_ac.full_iter());
-        
-        fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,ele_ac.xfem_data()->enrichment_func_vec());
-        fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
-                         (map_, *qxfem_, *fe_rt_xfem_, update_values | update_gradients |
-                                                      update_JxW_values | update_jacobians |
-                                                      update_inverse_jacobians | update_quadrature_points 
-                                                      | update_divergence);
-        
-        fe_p0_xfem_ = std::make_shared<FE_P0_XFEM<2,3>>(&fe_p_disc_,ele_ac.xfem_data()->enrichment_func_vec());
-        fe_values_p0_xfem_ = std::make_shared<FEValues<2,3>> 
-                         (map_, *qxfem_, *fe_p0_xfem_, update_values |
-                                                      update_JxW_values |
-                                                      update_quadrature_points);
-    }
+    XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+    ASSERT_PTR_DBG(xdata).error("XFEM data object is not of XFEMElementSingularData Type!");
+    
+    std::shared_ptr<Singularity0D<3>> func = std::static_pointer_cast<Singularity0D<3>>(xdata->enrichment_func(0));
+    
+    qxfem_ = qfactory_.create_singular({func}, ele_ac.full_iter());
+    
+    fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
+    fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
+                        (map_, *qxfem_, *fe_rt_xfem_, update_values | update_gradients |
+                                                    update_JxW_values | update_jacobians |
+                                                    update_inverse_jacobians | update_quadrature_points 
+                                                    | update_divergence);
+    
+    fe_p0_xfem_ = std::make_shared<FE_P0_XFEM<2,3>>(&fe_p_disc_,xdata->enrichment_func_vec());
+    fe_values_p0_xfem_ = std::make_shared<FEValues<2,3>> 
+                        (map_, *qxfem_, *fe_p0_xfem_, update_values |
+                                                    update_JxW_values |
+                                                    update_quadrature_points);
+}
 #endif /* SRC_FLOW_DARCY_FLOW_ASSEMBLY_XFEM_HH_ */

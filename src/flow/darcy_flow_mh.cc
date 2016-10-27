@@ -954,8 +954,8 @@ void DarcyMH::allocate_mh_matrix()
         // edges-ele
         ls->mat_set_values(nsides, edge_rows, ndofs_press, dofs_press, zeros);
         
-        if(ele_ac.is_enriched()){
-            const XFEMElementSingularData& xd = *ele_ac.xfem_data();
+        if(ele_ac.is_enriched() && ele_ac.dim() == 2){
+            const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
             const int nw = xd.n_singularities_inside();
             
             if(nw > 0){
