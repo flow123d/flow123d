@@ -71,6 +71,7 @@
 
 //XFEM:
 #include "intersection/inspect_elements.hh"
+#include <fem/xfem_element_data.hh>
 
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
 
@@ -935,7 +936,7 @@ void DarcyMH::allocate_mh_matrix()
         ls->mat_set_values(ndofs_press, dofs_press, ndofs_vel, dofs_vel, zeros);
         // sides-ele
         ls->mat_set_values(ndofs_vel, dofs_vel, ndofs_press, dofs_press, zeros);
-        // ele-ele
+        // ele-ele (includes singularity integral on pressure diagonal)
         ls->mat_set_values(ndofs_press, dofs_press, ndofs_press, dofs_press, zeros);
         
         // sides-edges
@@ -952,6 +953,26 @@ void DarcyMH::allocate_mh_matrix()
         ls->mat_set_values(ndofs_press, dofs_press, nsides, edge_rows, zeros);
         // edges-ele
         ls->mat_set_values(nsides, edge_rows, ndofs_press, dofs_press, zeros);
+        
+        if(ele_ac.is_enriched()){
+            const XFEMElementSingularData& xd = *ele_ac.xfem_data();
+            const int nw = xd.n_singularities_inside();
+            
+            if(nw > 0){
+//                 DBGVAR(nw);
+                int w_idx[nw];
+                for(unsigned int w=0; w < xd.n_enrichments(); w++){
+                    if(xd.is_singularity_inside(w)){
+                        w_idx[w] =  xd.global_enrichment_index(w);
+                    }
+                }
+                
+                // singularity edge integrals for velocity
+                ls->mat_set_values(nw, w_idx, ndofs_vel, dofs_vel, zeros);
+                ls->mat_set_values(ndofs_vel, dofs_vel, nw, w_idx, zeros);
+            }
+        }
+        
 
         // D, E',E block: compatible connections: element-edge
         
@@ -1001,10 +1022,14 @@ void DarcyMH::allocate_mh_matrix()
         }
     }
 
-    //temporary
+    // singularity lagrange multiplier (diagonal)
     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
         int w_idx = mh_dh.row_4_sing[w];
         ls->mat_set_value(w_idx, w_idx, 0.0);
+        
+//                 // lower dim element singularity integrals
+//                 ls->mat_set_values(nw, w_idx, ndofs_press, dofs_press, zeros);
+//                 ls->mat_set_values(ndofs_press, dofs_press, nw, w_idx, zeros);
     }
     
     // alloc edge diagonal entries
