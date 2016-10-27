@@ -46,14 +46,14 @@ public:
 
     /// @name Getters
     //@{
-    unsigned int ele_global_idx()
+    unsigned int ele_global_idx() const
     { return ele_global_idx_;}
     
     void set_element(int global_idx)
     { ele_global_idx_ = global_idx;}
     
     ///Returns number of wells comunicating with the cell
-    unsigned int n_enrichments()
+    unsigned int n_enrichments() const
     { return enrichment_func_.size();}
     
     /// Returns pointer to one of the wells comunicating with the cell this data belong to.
@@ -61,7 +61,7 @@ public:
      * @param local_well_index is local well index in the cell
      * @return pointer to well
      */
-    EnrichmentPtr enrichment_func(unsigned int local_enrichment_index)
+    EnrichmentPtr enrichment_func(unsigned int local_enrichment_index) const
     {   ASSERT_DBG(local_enrichment_index < n_enrichments());
         return enrichment_func_[local_enrichment_index];}
     
@@ -70,16 +70,16 @@ public:
      * @param local_well_index is local well index in the cell
      * @return constant reference to a vector of pointers to wells
      */
-    const std::vector<EnrichmentPtr> & enrichment_func_vec()
+    const std::vector<EnrichmentPtr> & enrichment_func_vec() const
     { return enrichment_func_;}
     
     /// Returns global index of the well.
     /** @param local_well_index is local well index in the cell
      */
-    unsigned int global_enrichment_index(unsigned int local_enrichment_index)
+    unsigned int global_enrichment_index(unsigned int local_enrichment_index) const
     {   ASSERT_DBG(local_enrichment_index < n_enrichments());
         return global_enrichment_indices_[local_enrichment_index];}
-    
+        
     /// Returns global dof index of the well.
     /** @param local_well_index is local well index in the cell_
      */
@@ -105,7 +105,8 @@ public:
      * @param well is pointer to well which lies in the cell
      * @param well_index is index of the well in the global vector of wells in model class
      */
-    void add_data(EnrichmentPtr enrichment_func, unsigned int global_enrichment_index)
+    void add_data(EnrichmentPtr enrichment_func,
+                  unsigned int global_enrichment_index)
     {
         enrichment_func_.push_back(enrichment_func);
         global_enrichment_indices_.push_back(global_enrichment_index);
@@ -205,7 +206,7 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
      
     /// Getter for enriched dofs by a single quantity and a single well.
     const std::vector<int> &global_enriched_dofs(Quantity quant,
-                                                 unsigned int local_enrichment_index);
+                                                 unsigned int local_enrichment_index) const;
        
       /// Getter for weights of a single well.
 //       const std::vector<unsigned int> &weights(unsigned int local_enrichment_index);
@@ -222,16 +223,23 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
       void get_dof_indices(std::vector<int> &local_dof_indices, unsigned int fe_dofs_per_cell);
       
       /// Number of all degrees of freedom on the cell (from all quantities, all enrichments).
-      unsigned int n_enriched_dofs();
+      unsigned int n_enriched_dofs() const;
       
     /// Number of degrees of freedom from a single quantity @p quant, all enrichments.
-    unsigned int n_enriched_dofs(Quantity quant);
+    unsigned int n_enriched_dofs(Quantity quant) const;
       
     /// Number of degrees of freedom from a single @p quant, a single enrichment @p local_enrichment_index.
-    unsigned int n_enriched_dofs(Quantity quant, unsigned int local_enrichment_index);
+    unsigned int n_enriched_dofs(Quantity quant, unsigned int local_enrichment_index) const;
       
-      /// Number of wells that has nonzero cross-section with the cell.
-//       unsigned int n_wells_inside();
+    /** Number of wells that has nonzero cross-section with the element.
+     * It is determined by non-zero count of quadrature points along the singularity edge.
+     */
+    unsigned int n_singularities_inside() const;
+    
+    /** Returns true if @p local_enrichment_index singularity has nonzero cross-section with the element.
+     * It is determined by non-zero count of quadrature points along the singularity edge.
+     */
+    bool is_singularity_inside(unsigned int local_enrichment_index) const;
       
       /// Number of all degrees of freedom on the cell.
 //       unsigned int n_standard_dofs();
@@ -239,7 +247,7 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
       /// Number of all degrees of freedom on the cell.
 //       unsigned int n_dofs();
       
-    const QXFEM<2,3>& sing_quadrature(unsigned int local_enrichment_index);
+    const QXFEM<2,3>& sing_quadrature(unsigned int local_enrichment_index) const;
       
       /// Number of polar quadratures for wells.
 //       unsigned int n_polar_quadratures(void);
@@ -276,7 +284,7 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
 //                                        std::vector<XFEMElementSingularData*> xdata, 
 //                                        unsigned int n_wells);
     
-    void print(std::ostream& out);
+    void print(std::ostream& out) const;
   private:
     
     std::vector<QXFEM<2,3>> sing_quads_;
