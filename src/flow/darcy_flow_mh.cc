@@ -130,12 +130,16 @@ const it::Record & DarcyMH::type_field_descriptor() {
 const it::Record & DarcyMH::get_input_type() {
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
-        .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
+        .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
         .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"),
             "Residual tolerance.")
+        .declare_key("min_it", it::Integer(0), it::Default("1"),
+            "Minimum number of iterations (linear solves) to use. This is usefull if the convergence criteria "
+            "does not characterize your goal well enough so it converges prematurely possibly without the single linear solve."
+            "If greater then 'max_it' the value is set to 'max_it'.")
         .declare_key("max_it", it::Integer(0), it::Default("100"),
-            "Maximal number of iterations (linear solves) of the non-linear solver.")
+            "Maximum number of iterations (linear solves) of the non-linear solver.")
         .declare_key("converge_on_stagnation", it::Bool(), it::Default("false"),
             "If a stagnation of the nonlinear solver is detected the solver stops. "
             "A divergence is reported by default forcing the end of the simulation. Setting this flag to 'true', the solver"
@@ -472,7 +476,6 @@ bool DarcyMH::zero_time_term(bool time_global) {
 void DarcyMH::solve_nonlinear()
 {
 
-	DebugOut().fmt("dt: {}\n", time_->step().length());
     assembly_linear_system();
     double residual_norm = schur0->compute_residual();
     unsigned int l_it=0;
@@ -486,16 +489,19 @@ void DarcyMH::solve_nonlinear()
     Input::Record nl_solver_rec = input_record_.val<Input::Record>("nonlinear_solver");
     this->tolerance_ = nl_solver_rec.val<double>("tolerance");
     this->max_n_it_  = nl_solver_rec.val<unsigned int>("max_it");
+    this->min_n_it_  = nl_solver_rec.val<unsigned int>("min_it");
+    if (this->min_n_it_ > this->max_n_it_) this->min_n_it_ = this->max_n_it_;
 
     if (! is_linear_common) {
         // set tolerances of the linear solver unless they are set by user.
-        schur0->set_tolerances(0.1, 0.1*this->tolerance_, 10);
+        schur0->set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
     }
     vector<double> convergence_history;
 
     Vec save_solution;
     VecDuplicate(schur0->get_solution(), &save_solution);
-    while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
+    while (nonlinear_iteration_ < this->min_n_it_ ||
+           (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
 
@@ -523,7 +529,13 @@ void DarcyMH::solve_nonlinear()
         double alpha = 1; // how much of new solution
         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
-
+        /*
+        double * sol;
+        unsigned int sol_size;
+        get_solution_vector(sol, sol_size);
+        if (mh_dh.el_ds->myp() == 0)
+            VecView(sol_vec, PETSC_VIEWER_STDOUT_SELF);
+        */
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", convergedReason );
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
