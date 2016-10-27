@@ -425,7 +425,6 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
         if(ele->dim() == 1) {
             std::vector<computeintersection::ILpair>& ilpairs = intersections->intersection_map_[idx];
             if(ilpairs.size() == 0) continue;
-            DBGCOUT("ele 1d: " << idx << "\n");
             
             for(computeintersection::ILpair& ilp : ilpairs){
                 ASSERT_PTR_DBG(ilp.second);
@@ -437,6 +436,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 
                 ElementFullIter ele2d = mesh_->element(il->bulk_ele_idx());
                 
+                DBGCOUT("singularity: ele 1d: " << idx << "  2d: " << ele2d->index() << "\n");
                 //create singularity
                 Space<3>::Point center = (*il)[0].coords(ele);
                 double radius = cross_section.value(center,ele->element_accessor());               
@@ -447,7 +447,8 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                                                 ele2d->node[2]->point() - ele2d->node[0]->point());
                 Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
                 
-                singularities.push_back(std::make_shared<Singularity0D<3>>(center, radius, direction_vector, n));
+                auto sing = std::make_shared<Singularity0D<3>>(center, radius, direction_vector, n);
+                singularities.push_back(sing);
                 node_values.push_back(std::map<int, double>());
                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
                 
@@ -505,8 +506,13 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     //correct standard dofs:
     update_standard_dofs();
     
-//     for(XFEMElementSingularData& xd: xfem_data)
+    // Evaluate singularity quad points around the circle/ellipse.
+    for(XFEMElementSingularData& xd: xfem_data){
+        //TODO: distribute quad points around the well more effectively
+        ElementFullIter ele = mesh_->element(xd.ele_global_idx());
+        xd.create_sing_quads(ele);
 //         xd.print(cout);
+    }
     
     singularities.shrink_to_fit();
     node_values.shrink_to_fit();
@@ -626,7 +632,6 @@ void MH_DofHandler::clear_node_aux()
         }
     }
 }
-
 
 void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_dofs,
                                                int& offset,
