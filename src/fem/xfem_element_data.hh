@@ -1,25 +1,34 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * 
+ * @file    xfem_element_data.hh
+ * @brief   XFEM data class associated with an enriched element.
+ * @author  Pavel Exner
+ */
 #ifndef XFEM_ELEMENT_DATA_HH_
 #define XFEM_ELEMENT_DATA_HH_
 
 #include "mesh/mesh.h"
-#include "flow/mh_dofhandler.hh"
-// #include <flow/darcy_flow_xfem.hh>
+// #include "flow/mh_dofhandler.hh"
 #include "fem/global_enrichment_func.hh"
-
-class XQuadratureWell;
-
-//forward declarations
-// namespace dealii{
-//     template<int,int> class Mapping;
-// }
+#include "quadrature/qxfem.hh"
 
 class Well;
 template<int dim, int spacedim> class QXFEM;
 
-/** @brief Base class for data distributed umong cells.
- * We need to distribute some data from wells umong the cells
- * These are pointers to @p Well objects, quadrature points of wells,
- * in case of XFEM additional enriched degrees of freedom.
+/** @brief Base class for data distributed umong enriched elements.
+ * These are pointers to @p GlobalEnrichmentFunc objects, quadrature points of wells,
+ * and enriched degrees of freedom.
  */
 template<int dim, int spacedim>
 class XFEMElementDataBase
@@ -27,30 +36,16 @@ class XFEMElementDataBase
 public:
     typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
     
+    /// Constructor.
     XFEMElementDataBase()
     {}
     
-    /** @brief Constructor.
-     * @param cell iterator to cell which this data belongs to
-     */
-//     XFEMElementDataBase(LocalElementAccessorBase<spacedim> ele_ac)
-//       : ele_ac_(ele_ac)
-//     XFEMElementDataBase(ElementFullIter ele)
-//     : ele_(ele)
-//     {
-//         ASSERT_DBG(ele->dim() == dim);
-//     }
-
     ///Destructor
     virtual ~XFEMElementDataBase()
     {}
 
     /// @name Getters
     //@{
-    /// Returns pointer to the cell which this data belong to.
-//     LocalElementAccessorBase<spacedim> element();
-//     ElementFullIter element()
-//     { return ele_;}
     unsigned int ele_global_idx()
     { return ele_global_idx_;}
     
@@ -138,8 +133,6 @@ protected:
     std::vector<std::map<int, double> > *node_values;
     
     std::vector<std::map<int, Space<3>::Point> > *node_vec_values;
-    
-//     unsigned int n_vertices_;             ///< Number of vertices.
   
     /** Pointers to quadrature points of wells that lies inside the cell.
      * Access: Point = [local_well_index][q] 
@@ -154,57 +147,12 @@ protected:
 };
 
 
-//*************************************************************************************
-//*************************************************************************************
 
-/** @brief Class storing data from wells distributed to cells. Used in class @p Model.
- * 
- * This class is used to store data at the cell in the class @p Model.
- */
-// class DataCell : public XFEMElementDataBase
-// {
-// public:
-//   ///Constructor.
-//   /**
-//    * @param cell iterator to cell which this data belongs to
-//    */
-//   DataCell(LocalElementAccessorBase<3> element) 
-//     : XFEMElementDataBase(element)
-//   {}
-//   
-//   ///Constructor.
-//   /**
-//    * @param cell iterator to cell which this data belongs to
-//    * @param well is pointer to well which lies in the cell
-//    * @param well_index is index of the well in the global vector of wells in model class
-//    * @param q_points is vector of pointers to quadrature points of the well that lie in the cell
-//    * */
-//   DataCell(LocalElementAccessorBase<spacedim> ele_ac, 
-//             Well *well, 
-//             const unsigned int &well_index,
-//             const std::vector<const dealii::Point<2>* > &q_points);
-//   
-//   ///Destructor.
-//   virtual ~DataCell()
-//   {}
-//       
-//   /// Adds new data to this object.
-//   /**
-//    * @param well is pointer to well which lies in the cell
-//    * @param well_index is index of the well in the global vector of wells in model class
-//    * @param q_points is vector of pointers to quadrature points
-//    */
-//   void add_data(Well* well, 
-//                 const unsigned int &well_index, 
-//                 const std::vector<const dealii::Point<2>* > &q_points);
-// };
-
-
-    enum Quantity{
-        velocity = 0,
-        pressure = 1,
-        pressure_lagrange = 2
-    };
+enum Quantity{
+    velocity = 0,
+    pressure = 1,
+    pressure_lagrange = 2
+};
     
 //*************************************************************************************
 //*************************************************************************************
@@ -221,8 +169,7 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
      
     
     /// Constructor.
-    XFEMElementSingularData()
-    {}
+    XFEMElementSingularData();
     
 //     XFEMElementSingularData(LocalElementAccessorBase<3> ele_ac)
 //       : XFEMElementDataBase<2,3>(ele_ac)
@@ -248,22 +195,17 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
 //               const std::vector<const dealii::Point<2>* > &q_points);
     
     /// Destructor
-    virtual ~XFEMElementSingularData()
-    {}
+    virtual ~XFEMElementSingularData();
     
     /// @name Getters
     //@{    
-    /// Getter for enriched dofs by a single well.
-    std::vector<std::vector<std::vector<int>>> &global_enriched_dofs()
-    { return global_enriched_dofs_;}
+    /// Getter for enriched dofs vectors: [quantity][local_enrichment_index][local_dof].
+    std::vector<std::vector<std::vector<int>>> &global_enriched_dofs();
+    
      
-    /// Getter for enriched dofs by a single well.
+    /// Getter for enriched dofs by a single quantity and a single well.
     const std::vector<int> &global_enriched_dofs(Quantity quant,
-                                                 unsigned int local_enrichment_index)
-    {   ASSERT_DBG(quant < global_enriched_dofs_.size());
-        ASSERT_DBG(local_enrichment_index < global_enriched_dofs_[quant].size());
-        return global_enriched_dofs_[quant][local_enrichment_index];
-    }
+                                                 unsigned int local_enrichment_index);
        
       /// Getter for weights of a single well.
 //       const std::vector<unsigned int> &weights(unsigned int local_enrichment_index);
@@ -282,35 +224,22 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
       /// Number of all degrees of freedom on the cell (from all quantities, all enrichments).
       unsigned int n_enriched_dofs();
       
-    /// Number of degrees of freedom on the cell (from a single quantity @p quant, all enrichments).
-    unsigned int n_enriched_dofs(Quantity quant){
-        ASSERT_DBG(quant < global_enriched_dofs_.size());
-        ASSERT_DBG(global_enriched_dofs_[quant].size() > 0);
-        ASSERT_DBG(global_enriched_dofs_[quant][0].size() > 0);
-        //FIXME: supposing that all enrichments have the same number of enr dofs
-        return global_enriched_dofs_[quant].size() * global_enriched_dofs_[quant][0].size();
-    }
+    /// Number of degrees of freedom from a single quantity @p quant, all enrichments.
+    unsigned int n_enriched_dofs(Quantity quant);
       
-    /// Number of degrees of freedom on the cell (from a single @p quant, a single enrichment @p local_enrichment_index).
-    unsigned int n_enriched_dofs(Quantity quant, unsigned int local_enrichment_index){
-        ASSERT_DBG(quant < global_enriched_dofs_.size());
-        ASSERT_DBG(local_enrichment_index < global_enriched_dofs_[quant].size());
-        return global_enriched_dofs_[quant][local_enrichment_index].size();
-    }
+    /// Number of degrees of freedom from a single @p quant, a single enrichment @p local_enrichment_index.
+    unsigned int n_enriched_dofs(Quantity quant, unsigned int local_enrichment_index);
       
       /// Number of wells that has nonzero cross-section with the cell.
-      unsigned int n_wells_inside();
+//       unsigned int n_wells_inside();
       
       /// Number of all degrees of freedom on the cell.
-      unsigned int n_standard_dofs();
+//       unsigned int n_standard_dofs();
       
       /// Number of all degrees of freedom on the cell.
-      unsigned int n_dofs();
+//       unsigned int n_dofs();
       
-    const QXFEM<2,3>& sing_quadrature(unsigned int local_enrichment_index)
-    {   ASSERT_DBG(local_enrichment_index < sing_quads_.size());
-        return sing_quads_[local_enrichment_index];
-    }
+    const QXFEM<2,3>& sing_quadrature(unsigned int local_enrichment_index);
       
       /// Number of polar quadratures for wells.
 //       unsigned int n_polar_quadratures(void);
@@ -334,18 +263,18 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
     
 //     void set_polar_quadrature(XQuadratureWell* xquad);
     
-    void clear_polar_quadratures(void);
+//     void clear_polar_quadratures(void);
     
     void create_sing_quads(ElementFullIter ele);
     
-    /** STATIC function. Goes through given XFEMElementSingularDatas objects and initialize node values of enrichment before system assembly.
-     * @param data_vector is given output vector (by wells) of maps which map enrichment values to the nodes
-     * @param xdata is given vector of XFEMElementSingularData objects (includes enrichment functions and cells)
-     * @param n_wells is the total number of wells in the model
-     */
-    static void initialize_node_values(std::vector<std::map<unsigned int, double> > &data_vector, 
-                                       std::vector<XFEMElementSingularData*> xdata, 
-                                       unsigned int n_wells);
+//     /** STATIC function. Goes through given XFEMElementSingularDatas objects and initialize node values of enrichment before system assembly.
+//      * @param data_vector is given output vector (by wells) of maps which map enrichment values to the nodes
+//      * @param xdata is given vector of XFEMElementSingularData objects (includes enrichment functions and cells)
+//      * @param n_wells is the total number of wells in the model
+//      */
+//     static void initialize_node_values(std::vector<std::map<unsigned int, double> > &data_vector, 
+//                                        std::vector<XFEMElementSingularData*> xdata, 
+//                                        unsigned int n_wells);
     
     void print(std::ostream& out);
   private:
@@ -377,88 +306,5 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
 //     std::vector<std::vector<unsigned int> > weights_;
 };
 
-
-#include "fem/singularity.hh"
-#include "quadrature/qxfem.hh"
-#include <armadillo>
-
-inline void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
-{
-    const unsigned int n_qpoints = 100;
-//     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
-    sing_quads_.resize(n_enrichments());
-    
-    arma::mat proj = ele->element_map();
-    
-    std::map<unsigned int, arma::vec> unit_points_inside;
-    
-    DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
-    for(unsigned int w=0; w < n_enrichments(); w++){
-        std::shared_ptr<Singularity0D<3>> sing = static_pointer_cast<Singularity0D<3>>(enrichment_func(w));
-        sing->evaluate_q_points(n_qpoints);
-        
-        unit_points_inside.clear();
-        
-//         DBGCOUT(<< "test q_points\n");
-        for(unsigned int q=0; q < n_qpoints; q++){
-            const Space<3>::Point & p = sing->q_points()[q];
-            arma::vec unit_p = ele->project_point(p, proj);
-            
-//             if(ele->index() == 42){
-//                 sing->q_points()[q].print(cout,"real_p");
-//                 unit_p.print(cout,"unit_p");
-//             }
-            
-            if( unit_p(0) >= 0 && unit_p(0) <= 1 &&
-                unit_p(1) >= 0 && unit_p(1) <= 1 &&
-                unit_p(2) >= 0 && unit_p(2) <= 1){
-        
-//                 DBGCOUT(<< "qpoint inside\n");
-                unit_points_inside[q] = unit_p;
-            }
-        }
-        
-        QXFEM<2,3>& qxfem = sing_quads_[w];
-        qxfem.resize(unit_points_inside.size());
-        std::map<unsigned int, arma::vec>::const_iterator pair;
-        for(pair = unit_points_inside.begin(); pair != unit_points_inside.end(); pair++){
-            
-            qxfem.set_point(pair->first, RefElement<2>::bary_to_local(pair->second));
-            qxfem.set_real_point(pair->first, sing->q_points()[pair->first]);
-        }
-        DBGCOUT(<< "quad[" << global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
-    }
-}
-
-
-inline void XFEMElementSingularData::print(ostream& out)
-{
-    out << this << "xdata: ele " << ele_global_idx_ << " enrichments " << n_enrichments();
-    out << " dofs[ ";
-//     for(unsigned int q=0; q<global_enriched_dofs_.size(); q++)
-    for(unsigned int q=0; q<2; q++)
-        for(unsigned int w=0; w<n_enrichments(); w++)
-            for(unsigned int j=0; j<global_enriched_dofs_[q][w].size(); j++){
-                out << global_enriched_dofs_[q][w][j] << " ";
-            }
-    out << "]\n";
-}
-
-
-
-
-
-
-/****************************************            Implementation          ********************************/
-/*
-template<int dim, int spacedim>
-// inline LocalElementAccessorBase<spacedim> XFEMElementDataBase<dim,spacedim>::element() { return ele_ac_; }
-inline ElementFullIter XFEMElementDataBase<dim,spacedim>::element() { return ele_; }
-
-template<int dim, int spacedim>
-inline unsigned int XFEMElementDataBase<dim,spacedim>::n_enrichments() { return enrichment_func_.size(); } */
-
-// template<int dim, int spacedim>
-// inline const std::vector< GlobalEnrichmentFunc<dim,spacedim>* >& XFEMElementDataBase<dim,spacedim>::get_wells() { return enrichment_func_;}
 
 #endif // XFEM_ELEMENT_DATA_HH_
