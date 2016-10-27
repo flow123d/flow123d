@@ -44,7 +44,7 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
     // ellipse axes sizes
     a_ = radius;
     b_ = radius / cos_a;
-    
+       
     // ellipse axes unit vectors
     if(sin_a > std::numeric_limits<double>::epsilon()){
         ea_ = arma::cross(n,u);
@@ -55,7 +55,8 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
         //we make the circle axes using the z axis
         Point z = {0,0,1};
         double cos_z = arma::dot(z,u);
-        if( abs(1-cos_z) > std::numeric_limits<double>::epsilon()){
+//         DBGVAR(cos_z);
+        if( 1-abs(cos_z) > std::numeric_limits<double>::epsilon()){
             ea_ = arma::cross(u,z);
             eb_ = arma::cross(u,ea_);
         }

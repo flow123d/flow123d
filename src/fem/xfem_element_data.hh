@@ -14,6 +14,7 @@ class XQuadratureWell;
 // }
 
 class Well;
+template<int dim, int spacedim> class QXFEM;
 
 /** @brief Base class for data distributed umong cells.
  * We need to distribute some data from wells umong the cells
@@ -263,7 +264,7 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
         ASSERT_DBG(local_enrichment_index < global_enriched_dofs_[quant].size());
         return global_enriched_dofs_[quant][local_enrichment_index];
     }
-      
+       
       /// Getter for weights of a single well.
 //       const std::vector<unsigned int> &weights(unsigned int local_enrichment_index);
       
@@ -286,7 +287,7 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
         ASSERT_DBG(quant < global_enriched_dofs_.size());
         ASSERT_DBG(global_enriched_dofs_[quant].size() > 0);
         ASSERT_DBG(global_enriched_dofs_[quant][0].size() > 0);
-        //FIXME:
+        //FIXME: supposing that all enrichments have the same number of enr dofs
         return global_enriched_dofs_[quant].size() * global_enriched_dofs_[quant][0].size();
     }
       
@@ -305,6 +306,11 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
       
       /// Number of all degrees of freedom on the cell.
       unsigned int n_dofs();
+      
+    const QXFEM<2,3>& sing_quadrature(unsigned int local_enrichment_index)
+    {   ASSERT_DBG(local_enrichment_index < sing_quads_.size());
+        return sing_quads_[local_enrichment_index];
+    }
       
       /// Number of polar quadratures for wells.
 //       unsigned int n_polar_quadratures(void);
@@ -330,6 +336,8 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
     
     void clear_polar_quadratures(void);
     
+    void create_sing_quads(ElementFullIter ele);
+    
     /** STATIC function. Goes through given XFEMElementSingularDatas objects and initialize node values of enrichment before system assembly.
      * @param data_vector is given output vector (by wells) of maps which map enrichment values to the nodes
      * @param xdata is given vector of XFEMElementSingularData objects (includes enrichment functions and cells)
@@ -341,14 +349,8 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
     
     void print(std::ostream& out);
   private:
-      
-    /** Pointer to a vector that contains the precomputed values of enrichment functions at nodes.
-     * It is filled by function @p initialize_node_values and the values are then accessed
-     * by function @p node_enrich_value. 
-     */
-//     std::vector<std::map<unsigned int, double> > *node_values;
-//     
-//     std::vector<std::map<unsigned int, Space<3>::Point> > *node_vec_values;
+    
+    std::vector<QXFEM<2,3>> sing_quads_;
     
     /// Quadratures in polar coordinates in vicinity of wells affecting the current cell.
 //     std::vector<XQuadratureWell*> well_xquadratures_;
@@ -359,12 +361,13 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
      */
     std::vector<std::vector<std::vector<int>>> global_enriched_dofs_;
     
-    std::vector<unsigned int> n_enriched_dofs_per_well_; ///<Number of enriched dofs by a single well.
-    unsigned int n_enriched_dofs_,              ///< Number of all enriched dofs.
-                 n_wells_inside_,               ///< Number of wells inside the cell.
-                 n_standard_dofs_,              ///< Number of standard dofs.
-                 n_dofs_,                       ///< Total number of dofs.
-                 n_polar_quadratures_;          ///< Number of polar quadratures for wells.
+//     std::vector<unsigned int> n_enriched_dofs_per_well_; ///<Number of enriched dofs by a single well.
+//     unsigned int 
+//                 n_enriched_dofs_,              ///< Number of all enriched dofs.
+//                  n_wells_inside_,               ///< Number of wells inside the cell.
+//                  n_standard_dofs_,              ///< Number of standard dofs.
+//                  n_dofs_,                       ///< Total number of dofs.
+//                  n_polar_quadratures_;          ///< Number of polar quadratures for wells.
     
     /** Weights of enriched nodes. 
      * Weight is equal \f$ g_u = 1 \$ at enriched node from subset \f$ \mathcal{N}_w \f$.
@@ -375,6 +378,57 @@ class XFEMElementSingularData : public XFEMElementDataBase<2,3>
 };
 
 
+#include "fem/singularity.hh"
+#include "quadrature/qxfem.hh"
+#include <armadillo>
+
+inline void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
+{
+    const unsigned int n_qpoints = 100;
+//     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+    sing_quads_.resize(n_enrichments());
+    
+    arma::mat proj = ele->element_map();
+    
+    std::map<unsigned int, arma::vec> unit_points_inside;
+    
+    DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
+    for(unsigned int w=0; w < n_enrichments(); w++){
+        std::shared_ptr<Singularity0D<3>> sing = static_pointer_cast<Singularity0D<3>>(enrichment_func(w));
+        sing->evaluate_q_points(n_qpoints);
+        
+        unit_points_inside.clear();
+        
+//         DBGCOUT(<< "test q_points\n");
+        for(unsigned int q=0; q < n_qpoints; q++){
+            const Space<3>::Point & p = sing->q_points()[q];
+            arma::vec unit_p = ele->project_point(p, proj);
+            
+//             if(ele->index() == 42){
+//                 sing->q_points()[q].print(cout,"real_p");
+//                 unit_p.print(cout,"unit_p");
+//             }
+            
+            if( unit_p(0) >= 0 && unit_p(0) <= 1 &&
+                unit_p(1) >= 0 && unit_p(1) <= 1 &&
+                unit_p(2) >= 0 && unit_p(2) <= 1){
+        
+//                 DBGCOUT(<< "qpoint inside\n");
+                unit_points_inside[q] = unit_p;
+            }
+        }
+        
+        QXFEM<2,3>& qxfem = sing_quads_[w];
+        qxfem.resize(unit_points_inside.size());
+        std::map<unsigned int, arma::vec>::const_iterator pair;
+        for(pair = unit_points_inside.begin(); pair != unit_points_inside.end(); pair++){
+            
+            qxfem.set_point(pair->first, RefElement<2>::bary_to_local(pair->second));
+            qxfem.set_real_point(pair->first, sing->q_points()[pair->first]);
+        }
+        DBGCOUT(<< "quad[" << global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
+    }
+}
 
 
 inline void XFEMElementSingularData::print(ostream& out)
