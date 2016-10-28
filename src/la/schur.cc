@@ -106,6 +106,13 @@ SchurComplement::SchurComplement(SchurComplement &other)
 }
 
 
+
+void SchurComplement::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
+{
+    LinSys_PETSC::set_tolerances(r_tol, a_tol, max_it);
+    if (Compl !=nullptr) Compl->set_tolerances(r_tol, a_tol, max_it);
+}
+
 /**
  *  COMPUTE A SCHUR COMPLEMENT OF A PETSC MATRIX
  *
@@ -227,6 +234,7 @@ void SchurComplement::set_complement(LinSys_PETSC *ls)
     if (!in_rec_.is_empty()) {
         Compl->set_from_input( in_rec_ );
     }
+    Compl->set_tolerances(r_tol_, a_tol_, max_it_);
 }
 
 
@@ -336,14 +344,15 @@ void SchurComplement::resolve()
 
     START_TIMER("SchurComplemet::resolve without form schur");
 
-    MatMult(IAB,Compl->get_solution(),Sol1);
-    VecScale(Sol1,-1);
-    MatMultAdd(IA,RHS1,Sol1,Sol1);
+    chkerr(MatMult(IAB,Compl->get_solution(),Sol1));
+    chkerr(VecScale(Sol1,-1));
+    chkerr(MatMultAdd(IA,RHS1,Sol1,Sol1));
 }
 
 
 double SchurComplement::compute_residual()
 {
+    //DebugOut() << print_var(LinSys_PETSC::compute_residual());
     resolve();
     return LinSys_PETSC::compute_residual();
 }

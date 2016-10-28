@@ -1,0 +1,10 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- files:
+    - 07_square_compatible.yaml
+    - 08_square_noncomp_p0.yaml
+    - 09_square_noncomp_p1.yaml
+  proc: [1]

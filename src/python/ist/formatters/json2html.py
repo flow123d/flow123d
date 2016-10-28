@@ -74,7 +74,7 @@ class HTMLSelection(HTMLItemFormatter):
                     for ref in refs:
                         with self.open('span'):
                             self.link_to_main(ref)
-                            if refs.index(ref) != len(refs)-1:
+                            if refs.index(ref) != len(refs) - 1:
                                 self.info(', ')
             self.main_section_title(selection)
             self.description(selection.description)
@@ -153,7 +153,7 @@ class HTMLRecord(HTMLItemFormatter):
                     for ref in refs:
                         with self.open('span'):
                             self.link_to_main(ref)
-                            if refs.index(ref) != len(refs)-1:
+                            if refs.index(ref) != len(refs) - 1:
                                 self.info(', ')
             self.main_section_title(record)
 
@@ -376,7 +376,7 @@ class HTMLAbstractRecord(HTMLItemFormatter):
                     for ref in refs:
                         with self.open('span'):
                             self.link_to_main(ref)
-                            if refs.index(ref) != len(refs)-1:
+                            if refs.index(ref) != len(refs) - 1:
                                 self.info(', ')
 
             self.main_section_title(abstract_record)
@@ -448,7 +448,6 @@ class HTMLUniversal(HTMLItemFormatter):
     def _end_format_as_child(self, self_object, record_key, record):
         # HTMLRecordKeyDefault(self).format_as_child(record_key.default, record_key, record)
         self.description(record_key.description)
-
 
     def format_as_child(self, self_object, record_key, record):
         """
@@ -743,7 +742,6 @@ class HTMLFormatter(object):
 
         return html
 
-
     @staticmethod
     def tree_navigation_bar(items):
         """
@@ -758,7 +756,6 @@ class HTMLFormatter(object):
         HTMLFormatter._add_items(items, html)
 
         return html
-
 
     @staticmethod
     def _add_items(items, html, type=None, reverse=False):

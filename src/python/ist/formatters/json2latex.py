@@ -11,6 +11,10 @@ from ist.utils.texlist import texlist
 
 
 class LatexItemFormatter(object):
+    """
+    Class LatexItemFormatter is abstract interface for other formatters
+    """
+
     def __init__(self, tag_name=None):
         self.tag_name = tag_name
 
@@ -22,6 +26,10 @@ class LatexItemFormatter(object):
 
 
 class LatexSelection(LatexItemFormatter):
+    """
+    Class LatexSelection is formatter for type Selection
+    """
+
     def __init__(self):
         super(LatexSelection, self).__init__('SelectionType')
 
@@ -69,6 +77,10 @@ class LatexSelection(LatexItemFormatter):
 
 
 class LatexRecordKey(LatexItemFormatter):
+    """
+    Class LatexRecordKey is formatter for type key in record
+    """
+
     def __init__(self):
         super(LatexRecordKey, self).__init__('KeyItem')
 
@@ -91,6 +103,10 @@ class LatexRecordKey(LatexItemFormatter):
 
 
 class LatexAbstractRecord(LatexItemFormatter):
+    """
+    Class LatexAbstractRecord is formatter for module
+    """
+
     def __init__(self):
         super(LatexAbstractRecord, self).__init__('AbstractType')
 
@@ -148,6 +164,10 @@ class LatexAbstractRecord(LatexItemFormatter):
 
 
 class LatexString(LatexItemFormatter):
+    """
+    Class LatexString is formatter for type string
+    """
+
     def __init__(self):
         super(LatexString, self).__init__('String')
 
@@ -172,6 +192,10 @@ class LatexString(LatexItemFormatter):
 
 
 class LatexRecord(LatexItemFormatter):
+    """
+    Class LatexRecord is formatter for type record
+    """
+
     def __init__(self):
         super(LatexRecord, self).__init__('RecordType')
 
@@ -239,6 +263,10 @@ class LatexRecord(LatexItemFormatter):
 
 
 class LatexRecordKeyDefault(LatexItemFormatter):
+    """
+    Class LatexRecordKeyDefault is formatter for default type in record key
+    """
+
     def __init__(self):
         super(LatexRecordKeyDefault, self).__init__('')
 
@@ -285,6 +313,10 @@ class LatexRecordKeyDefault(LatexItemFormatter):
 
 
 class LatexUniversal(LatexItemFormatter):
+    """
+    Class LatexUniversal is formatter for all types (abstract formatter)
+    """
+
     def __init__(self):
         super(LatexUniversal, self).__init__('')
 
@@ -338,6 +370,10 @@ class LatexUniversal(LatexItemFormatter):
 
 
 class LatexArray(LatexUniversal):
+    """
+    Class LatexArray is formatter for type array
+    """
+
     def _format_as_child(self, self_array, record_key, record):
         """
         :type self_array: ist.nodes.TypeArray
@@ -370,6 +406,10 @@ class LatexArray(LatexUniversal):
 
 
 class LatexInteger(LatexUniversal):
+    """
+    Class LatexInteger is formatter for type int
+    """
+
     def _format_as_child(self, self_int, record_key, record):
         """
         :type self_int: ist.nodes.TypeInteger
@@ -396,6 +436,10 @@ class LatexInteger(LatexUniversal):
 
 
 class LatexDouble(LatexUniversal):
+    """
+    Class LatexDouble is formatter for type double
+    """
+
     def _format_as_child(self, self_double, record_key, record):
         """
         :type self_double: ist.nodes.TypeDouble
@@ -422,6 +466,10 @@ class LatexDouble(LatexUniversal):
 
 
 class LatexBool(LatexUniversal):
+    """
+    Class LatexBool is formatter for type boolean
+    """
+
     def _format_as_child(self, self_bool, record_key, record):
         """
         :type self_bool: ist.nodes.TypeBool
@@ -447,6 +495,10 @@ class LatexBool(LatexUniversal):
 
 
 class LatexFileName(LatexUniversal):
+    """
+    Class LatexFileName is formatter for type filename
+    """
+
     def _format_as_child(self, self_fn, record_key, record):
         """
         :type self_fn: ist.nodes.TypeFilename
@@ -459,6 +511,10 @@ class LatexFileName(LatexUniversal):
 
 
 class LatexFormatter(object):
+    """
+    Class LatexFormatter if main formatter which processes entire file
+    """
+
     formatters = {
         'TypeRecord': LatexRecord,
         'TypeRecordKey': LatexRecordKey,

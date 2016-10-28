@@ -38,8 +38,6 @@
 #
 #=============================================================================
 
-message(STATUS "Armadillo hint: ${Armadillo_ROOT_HINT}")
-
 if ( WIN32 )
 
   FIND_LIBRARY(Armadillo_LIBRARY
@@ -76,8 +74,6 @@ else ( WIN32 )  # UNIX LIKE SYSTEMS
       HINTS ${Armadillo_ROOT_HINT}/share/Armadillo/CMake 
       )  
 endif ( WIN32 )
-
-message(STATUS "${Armadillo_LIBRARY} ${Armadillo_INCLUDE_DIR} ${Armadillo_CONFIGURE_FILE}")
 
 SET(Armadillo_HEADERS_FOUND FALSE)  
 if(Armadillo_INCLUDE_DIR)

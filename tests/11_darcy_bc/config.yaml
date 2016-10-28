@@ -1,0 +1,7 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- files: 08_interpolated.yaml
+  proc: [1, 2, 3]

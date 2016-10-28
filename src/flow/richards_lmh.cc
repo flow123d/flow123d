@@ -43,28 +43,28 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
-
-
-    ADD_FIELD(water_content_saturated,
-R"(
+    string desc;
+    
+    desc = R"(
 Saturated water content (($ \theta_s $)).
 relative volume of the water in a reference volume of a saturated porous media.
-)"  , "0.0");
+)" ;
+    ADD_FIELD(water_content_saturated, desc, "0.0");
     water_content_saturated.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(water_content_residual,
-R"(
+    desc = R"(
 Residual water content (($ \theta_r $)).
 Relative volume of the water in a reference volume of an ideally dry porous media.
-)"  , "0.0");
+)";
+    ADD_FIELD(water_content_residual, desc, "0.0");
     water_content_residual.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(genuchten_p_head_scale,
-R"(
+    desc = R"(
 The van Genuchten pressure head scaling parameter (($ \alpha $)).
 The parameter of the van Genuchten's model to scale the pressure head.
 Related to the inverse of the air entry pressure, i.e. the pressure where the relative water content starts to decrease below 1.
-)"  ,"0.0");
+)";
+    ADD_FIELD(genuchten_p_head_scale, desc, "0.0");
     genuchten_p_head_scale.units( UnitSI().m(-1) );
 
     ADD_FIELD(genuchten_n_exponent,
@@ -85,15 +85,22 @@ const it::Record & RichardsLMH::get_input_type() {
             .add_value(SoilModelBase::irmay, "irmay", "Irmay model for conductivity, Van Genuchten model for the water content. Suitable for bentonite.")
             .close();
 
+    auto soil_rec = it::Record("SoilModel", "Setting for the soil model.")
+        .allow_auto_conversion("model_type")
+        .declare_key("model_type", model_selection, it::Default("\"van_genuchten\""),
+            "Selection of the globally applied soil model. In future we replace this key by a field for selection of the model."
+            "That will allow usage of different soil model in a single simulation.")
+        .declare_key("cut_fraction", it::Double(0.0,1.0), it::Default("0.999"),
+                "Fraction of the water content where we cut  and rescale the curve.")
+        .close();
 
     return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
-        .declare_key("soil_model", model_selection, it::Default("\"van_genuchten\""),
-                "Selection of the globally applied soil model. In future we replace this key by a field for selection of the model."
-                "That will allow usage of different soil model in a single simulation.")
+        .declare_key("soil_model", soil_rec, it::Default("\"van_genuchten\""),
+                "Setting for the soil model.")
         .close();
 }
 
@@ -115,11 +122,13 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
 
 void RichardsLMH::initialize_specific() {
 
-    auto model_type = input_record_.val<SoilModelBase::SoilModelType>("soil_model");
+    auto model_rec = input_record_.val<Input::Record>("soil_model");
+    auto model_type = model_rec.val<SoilModelBase::SoilModelType>("model_type");
+    double fraction= model_rec.val<double>("cut_fraction");
     if (model_type == SoilModelBase::van_genuchten)
-        data_->soil_model_ = std::make_shared<SoilModel_VanGenuchten>();
+        data_->soil_model_ = std::make_shared<SoilModel_VanGenuchten>(fraction);
     else if (model_type == SoilModelBase::irmay)
-        data_->soil_model_ = std::make_shared<SoilModel_Irmay>();
+        data_->soil_model_ = std::make_shared<SoilModel_Irmay>(fraction);
     else
         ASSERT(false);
 
@@ -197,9 +206,17 @@ void RichardsLMH::prepare_new_time_step()
     //VecCopy(schur0->get_solution(), previous_solution);
 }
 
-bool RichardsLMH::zero_time_term() {
-    return data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros &&
-           data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+bool RichardsLMH::zero_time_term(bool time_global) {
+    if (time_global) {
+        return (data_->storativity.input_list_size() == 0)
+                && (data_->water_content_saturated.input_list_size() == 0);
+
+    } else {
+        return (data_->storativity.field_result(mesh_->region_db().get_region_set("BULK"))
+                == result_zeros)
+                && (data_->water_content_saturated.field_result(mesh_->region_db().get_region_set("BULK"))
+                == result_zeros);
+    }
 }
 
 
@@ -311,4 +328,3 @@ void RichardsLMH::postprocess() {
     VecAssemblyEnd(schur0->get_solution());
 
 }
-

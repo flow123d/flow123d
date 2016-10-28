@@ -1,0 +1,250 @@
+##---
+##title: Flow123d tutorial 5 -- ``Heat transport''
+##---
+### Description
+##The task is inspired by the hot-dry-rock method of geothermal heat exchanger.
+##The exchanger should be in progress for 30 years and give the power of 25 MW.
+##
+##The user will learn how to:
+##
+##* Set up heat transfer model;
+##* Use transition parameters at interfaces;
+##* Specify linear algebra solver.
+##
+##
+### Input
+#### Geometry
+##We consider a two-dimensional model 5000 × 5000 m with two vertical wells at the distance of 3000 m. The wells are 4300 m deep with the diameter approx. 11 cm (Figure {@fig:BCD}).
+##In order to better capture the 3D nature of the problem, we set ```cross_section``` (width) of the rock region to 100 m (the value was gained from calibration), and the cross section of the wells to 0.04 m${}^2$.
+##
+##Parameter |Value
+##------------|-------:
+##Model width	| 5000 m
+##Model depth	| 5000 m
+##Depth of heat exchanger	| 4100 – 4300 m
+##Distance of wells	| 3000 m
+##Depth of wells	| 4200 m
+##Model cross section   | 100 m
+##Well cross section	| 0.04 m${}^2$
+##
+##: Geometrical parameters. {#tbl:water_balance}
+##
+##![Geometry, boundary conditions and computational mesh.](images/05_bcmesh.pdf){#fig:BCD}
+##
+##
+##
+#### Hydraulic model
+##The hydraulic conductivity was set to 1 × $10^{-10}$ m/s for the rock and to 1 × $10^{-4}$ m/s for the exchanger zone.
+##
+##      - region: rock
+##        cross_section: 100
+##        conductivity: 1.0e-10
+##      - region: exchanger
+##        conductivity: 1e-4
+##
+##The flow in the wells is modelled using the Darcy equation with a high hydraulic conductivity (10 m/s).
+##The transition coefficient ```sigma``` [--], determines the rate of exchange between 2D rock and 1D wells.
+##Its default value 1 is kept at the lower well ends, elsewhere the wells are isolated and hence we set ```sigma``` to zero.
+##
+##      - region: wells
+##        conductivity: 10.0
+##        cross_section: 0.04
+##        sigma: 0
+##      - region: wells_deep
+##        sigma: 1
+##
+##On the injection well (".well1_surface"), we prescribe the flux 60 l/s, i.e. the flux velocity is 1.5 m/s.
+##On the production well (".well2_surface") we prescribe zero pressure.
+##
+##      - region: .well1_surface
+##        bc_type: total_flux
+##        bc_flux: 1.5
+##      - region: .well2_surface
+##        bc_type: dirichlet
+##        bc_pressure: 0
+##
+##We assume that the system does not have contact with its surrounding because of high depth and intact granite massive.
+##Hence no flow boundary conditions are given on the sides, on the bottom and on the surface.
+##
+##For the solution of the flow problem we choose the LU decomposition as the linear algebra solver:
+##
+##      nonlinear_solver:
+##        linear_solver: !Petsc
+##          options: -ksp_type preonly -pc_type lu
+##
+#### Heat transport model
+##The heat transport model (```Heat_AdvectionDiffusion_DG```) assumes that the fluid and solid phase are at thermal equilibrium.
+##For the whole model (```- region: ALL```) we prescribe the parameters for water and granite (density, thermal conductivity and capacity): 
+##
+##      heat_equation: !Heat_AdvectionDiffusion_DG
+##        balance:
+##          cumulative: true
+##        input_fields:
+##          - region: ALL
+##            fluid_density: 1000.0
+##            fluid_heat_capacity: 4000
+##            fluid_heat_conductivity: 0.5
+##            solid_density: 2700.0
+##            solid_heat_capacity: 790
+##            solid_heat_conductivity: 2.5
+##
+##The temperature on the surface is set to 283 K (=10°C):
+##
+##      - region: .surface
+##        bc_type: dirichlet
+##        bc_temperature: !FieldFormula
+##          value: 10+273.15
+##
+##The injected water has temperature 15°C:
+##
+##      - region: .well1_surface
+##        bc_type: dirichlet
+##        bc_temperature: !FieldFormula
+##          value: 15+273.15
+##
+##The temperature on the bottom and sides as well as the initial temperature in the rock and the wells is then prescribed in agreement with typical geological gradient, approx. 1°C / 33 m:
+##
+##        init_temperature: !FieldFormula
+##          value: 10-z/5000*150+273.15
+##
+##
+##The porosity was set to 1 × $10^{-5}$ for rock and 1 × $10^{-4}$ for exchanger.
+##The transition coefficient of wells ("fracture_sigma") was set to 0 in rock surrounding and to 1 in deep surrounding:
+##
+##      - region: wells
+##        init_temperature: !FieldFormula
+##          value: 15-z/5000*150+273.15
+##        porosity: 1.0e-05
+##        fracture_sigma: 0
+##      - region: wells_deep
+##        fracture_sigma: 1
+##
+##
+### Results
+##The evolution of power of the heat exchanger (difference of absolute energy flux on the surface of the two wells) is depicted in Figure {@fig:tempr}. The result of water flow is depicted in Figure {@fig:flux} and the temperature field of the whole massif after 30 years is depicted in Figure {@fig:tempr_grad}.
+##
+##
+##![The power of heat exchanger system in 30 years.](images/05_power.pdf){#fig:tempr}
+##
+##![The flux field with piezometric head.](images/05_flow.pdf){#fig:flux}
+##
+##![The temperature of exchanger after 30 years.](images/05_transport.pdf){#fig:tempr_grad}
+##
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: "Example 5 - Heat transport"
+  mesh:
+    mesh_file: 05_mesh.msh
+    regions:
+      - !Union
+        name: rock
+        regions:
+          - near_surface
+          - exchanger
+          - deep
+      - !Union
+        name: well1
+        regions:
+          - well1_surface
+          - well1_middle
+          - well1_deep
+      - !Union
+        name: well2
+        regions:
+          - well2_surface
+          - well2_middle
+          - well2_deep
+      - !Union
+        name: wells
+        regions:
+          - well1
+          - well2
+      - !Union
+        name: wells_deep
+        regions:
+          - well1_deep
+          - well2_deep
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        options: -ksp_type preonly -pc_type lu
+    input_fields:
+      - region: rock
+        cross_section: 100
+        conductivity: 1.0e-10
+      - region: exchanger
+        conductivity: 1e-4 
+      - region: wells
+        conductivity: 10.0
+        cross_section: 0.04
+        sigma: 0
+      - region: wells_deep
+        sigma: 1
+      - region: .well1_surface
+        bc_type: total_flux
+        bc_flux: 1.5
+      - region: .well2_surface
+        bc_type: dirichlet
+        bc_pressure: 0
+    balance: {}
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
+    output:
+      fields:
+        - piezo_head_p0
+        - velocity_p0
+  heat_equation: !Heat_AdvectionDiffusion_DG
+    balance:
+      cumulative: true
+    input_fields:
+      - region: ALL
+        fluid_density: 1000.0
+        fluid_heat_capacity: 4000
+        fluid_heat_conductivity: 0.5
+        solid_density: 2700.0
+        solid_heat_capacity: 790
+        solid_heat_conductivity: 2.5
+      - region: rock
+        init_temperature: !FieldFormula
+          value: 10-z/5000*150+273.15
+        porosity: 1.0e-05
+      - region: exchanger
+        porosity: 1.0e-05
+      - region: wells
+        init_temperature: !FieldFormula
+          value: 15-z/5000*150+273.15
+        porosity: 1.0e-05
+        fracture_sigma: 0
+      - region: wells_deep
+        fracture_sigma: 1
+      - region: .well1_surface
+        bc_type: dirichlet
+        bc_temperature: !FieldFormula
+          value: 15+273.15
+      - region: .deep
+        bc_type: dirichlet
+        bc_temperature: !FieldFormula
+          value: 10-z/5000*150+273.15
+      - region: .surface
+        bc_type: dirichlet
+        bc_temperature: !FieldFormula
+          value: 10+273.15
+      - region: .sides
+        bc_type: dirichlet
+        bc_temperature: !FieldFormula
+          value: 10-z/5000*150+273.15
+    output_stream:
+      file: heat.msh
+      format: !gmsh
+        variant: ascii
+      times:
+        - step: 31557600       # 1 yr
+    output_fields:
+      - temperature
+    solver: !Petsc
+      a_tol: 1.0e-14
+      r_tol: 1.0e-14
+    time:
+      end_time: 946728000       # 30 yr

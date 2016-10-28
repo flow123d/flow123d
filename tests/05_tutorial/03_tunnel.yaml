@@ -1,0 +1,413 @@
+##---
+##title: Flow123d tutorial 3 -- ``2D tunnel''
+##---
+##
+###Description
+##The tutorial models the seepage site 23 m under the surface of the water treatment plant tunnel Bedřichov in the granite rock massif.
+##This seepage site has fast reaction to the precipitation and measurements of various chemical values are available.
+##
+##The user will learn how to:
+##
+##* Prescribe time-dependent input data.
+##
+##The geometry consists of a rectangle 500 × 300 m with a circular hole of diameter 3.6 m placed 23 meters under the surface, which represents a plane perpendicular to the tunnel.
+##
+### Hydraulic model
+##The hydraulic model was fitted on the shape of the flux field, where it was assumed that the tunnel drains only a part of the model surface.
+##In particular, the model was fitted on the estimated discharge of the seepage site.
+##
+##We impose the following input data (see Figure {@fig:geom}):
+##
+##* The hydraulic conductivity of the rock medium is set to 2.59e-2 m/day (= 3e-7 m/s);
+##* On the surface we prescribe the annual precipitation 2.33e-3 m/day (= 852 mm/yr);
+##* On the bottom part ".base" we prescribe the pressure 270 m because of assumption of local groundwater flow;
+##* In the tunnel, the measured flux -9.16e-2 m/day (= -1.06e-6 m/s) is prescribed.
+##
+##For convenience we use day as the unit of time. The corresponding YAML code is:
+##
+##    input_fields:
+##      - region: rock
+##        conductivity: 2.59E-02
+##      - region: .tunnel
+##        bc_type: total_flux
+##        bc_flux: -9.16E-02
+##      - region: .base
+##        bc_type: dirichlet
+##        bc_pressure: 270
+##      - region: .surface
+##        bc_type: total_flux
+##        bc_flux: 2.33E-03
+##
+##![Geometry and boundary condition of model.](images/03_bc.pdf){#fig:geom}
+##
+##
+##The results are shown in Figure {@fig:flow}, where the flux field and the pressure is shown.
+##In the unsaturated layer the piezometric head is depicted.
+##
+##![Pressure, boundary of water level and piezometric head in unsaturated zone and flux field.](images/03_flow.pdf){#fig:flow}
+##
+### Transport of real isotopes
+##The stable isotope O-18 was sampled in monthly steps in precipitation at nearby experimental catchment Uhlirska and at the seepage site 23m depth.
+##The measured values are used for the boundary condition on the surface in the transport model as well as reference values in the tunnel.
+##
+#### Input
+##
+##We use the value 0.067 for porosity. The initial concentration of O-18 is set to -10.5 kg/m^3^:
+##
+##    transport: !Solute_Advection_FV
+##      input_fields:
+##        - region: rock
+##          porosity: 0.067
+##          init_conc: -10.5
+##
+##The monthly measured values of $\delta18\text{O}$ [per mil V-SMOW] on the surface from the period 1/2006 till 6/2013 are supplied as the boundary condition:
+##
+##        - region: .surface
+##          bc_conc: -12.85443
+##          time: 11
+##        - region: .surface
+##          bc_conc: -14.00255
+##          time: 42
+##        - region: .surface
+##          bc_conc: -12.80081
+##          time: 72
+##        - region: .surface
+##          bc_conc: -12.34748
+##          time: 103
+##      ...
+##
+#### Results
+##
+##In Figure {@fig:conc_graph}, the computed mass flux through tunnel is compared to the measured data.
+##The evolution of the transported substance is depicted in Figure {@fig:mass_real}.
+##
+##![Concentration of O-18 on the seepage site 23m under the surface.](images/03_mass_flux.pdf){#fig:conc_graph}
+##
+##![Transport of isotopes in two-dimensional model.](images/03_transport.pdf){#fig:mass_real}
+##
+##
+##
+### The control file
+##
+##Below is the complete YAML source.
+##
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Example 2 inspirated of real locality - 2D model of the tunnel with transport
+  mesh:
+    mesh_file: 03_mesh.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-15
+        r_tol: 1.0e-15
+    input_fields:
+      - region: rock
+        conductivity: 2.59E-02
+      - region: .tunnel
+        bc_type: total_flux
+        bc_flux: -9.16E-02 
+      - region: .base
+        bc_type: dirichlet
+        bc_pressure: 270
+      - region: .surface
+        bc_type: total_flux
+        bc_flux: 2.33E-03
+    balance: {}
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: rock
+          porosity: 0.067
+          init_conc: -10.5
+        - region: .surface
+          bc_conc: -12.85443
+          time: 11
+        - region: .surface
+          bc_conc: -14.00255
+          time: 42
+        - region: .surface
+          bc_conc: -12.80081
+          time: 72
+        - region: .surface
+          bc_conc: -12.34748
+          time: 103
+        - region: .surface
+          bc_conc: -11.69056
+          time: 134
+        - region: .surface
+          bc_conc: -5.57036
+          time: 166
+        - region: .surface
+          bc_conc: -4.12469
+          time: 196
+        - region: .surface
+          bc_conc: -10.64047
+          time: 227
+        - region: .surface
+          bc_conc: -6.13211
+          time: 257
+        - region: .surface
+          bc_conc: -8.91885
+          time: 287
+        - region: .surface
+          bc_conc: -9.2128
+          time: 318
+        - region: .surface
+          bc_conc: -11.60327
+          time: 348
+        - region: .surface
+          bc_conc: -11.90417
+          time: 379
+        - region: .surface
+          bc_conc: -13.59872
+          time: 410
+        - region: .surface
+          bc_conc: -11.38297
+          time: 438
+        - region: .surface
+          bc_conc: -11.22253
+          time: 469.5
+        - region: .surface
+          bc_conc: -9.12168
+          time: 499
+        - region: .surface
+          bc_conc: -6.64882
+          time: 530.5
+        - region: .surface
+          bc_conc: -8.28722
+          time: 560
+        - region: .surface
+          bc_conc: -6.29825
+          time: 591
+        - region: .surface
+          bc_conc: -9.52325
+          time: 622
+        - region: .surface
+          bc_conc: -10.06889
+          time: 652.5
+        - region: .surface
+          bc_conc: -11.45036
+          time: 683
+        - region: .surface
+          bc_conc: -12.81734
+          time: 713.5
+        - region: .surface
+          bc_conc: -10.28309
+          time: 744
+        - region: .surface
+          bc_conc: -10.45338
+          time: 774.5
+        - region: .surface
+          bc_conc: -11.5138
+          time: 804
+        - region: .surface
+          bc_conc: -11.23509
+          time: 835.5
+        - region: .surface
+          bc_conc: -9.20653
+          time: 865
+        - region: .surface
+          bc_conc: -4.75257
+          time: 896.5
+        - region: .surface
+          bc_conc: -7.29354
+          time: 926
+        - region: .surface
+          bc_conc: -8.18397
+          time: 957.5
+        - region: .surface
+          bc_conc: -11.17229
+          time: 988
+        - region: .surface
+          bc_conc: -10.13945
+          time: 1018.5
+        - region: .surface
+          bc_conc: -10.41511
+          time: 1049
+        - region: .surface
+          bc_conc: -10.92845
+          time: 1079.5
+        - region: .surface
+          bc_conc: -14.78398
+          time: 1110
+        - region: .surface
+          bc_conc: -13.24067
+          time: 1141.5
+        - region: .surface
+          bc_conc: -11.10512
+          time: 1169
+        - region: .surface
+          bc_conc: -12.54885
+          time: 1199.5
+        - region: .surface
+          bc_conc: -8.90522
+          time: 1230
+        - region: .surface
+          bc_conc: -6.32787
+          time: 1261.5
+        - region: .surface
+          bc_conc: -7.05611
+          time: 1292
+        - region: .surface
+          bc_conc: -6.0089
+          time: 1323.5
+        - region: .surface
+          bc_conc: -7.05956
+          time: 1355
+        - region: .surface
+          bc_conc: -10.84582
+          time: 1385.5
+        - region: .surface
+          bc_conc: -12.256
+          time: 1417
+        - region: .surface
+          bc_conc: -15.56566
+          time: 1447.5
+        - region: .surface
+          bc_conc: -14.80394
+          time: 1477.9
+        - region: .surface
+          bc_conc: -15.43502
+          time: 1508.3
+        - region: .surface
+          bc_conc: -11.08503
+          time: 1538.7
+        - region: .surface
+          bc_conc: -13.34144
+          time: 1565
+        - region: .surface
+          bc_conc: -8.72689
+          time: 1595
+        - region: .surface
+          bc_conc: -8.04992
+          time: 1626
+        - region: .surface
+          bc_conc: -7.87742
+          time: 1656
+        - region: .surface
+          bc_conc: -10.21281
+          time: 1687
+        - region: .surface
+          bc_conc: -11.67132
+          time: 1718
+        - region: .surface
+          bc_conc: -9.86934
+          time: 1748
+        - region: .surface
+          bc_conc: -14.29788
+          time: 1779
+        - region: .surface
+          bc_conc: -15.83779
+          time: 1809
+        - region: .surface
+          bc_conc: -11.34214
+          time: 1840
+        - region: .surface
+          bc_conc: -12.86511
+          time: 1871
+        - region: .surface
+          bc_conc: -12.93357
+          time: 1899
+        - region: .surface
+          bc_conc: -10.51149
+          time: 1930
+        - region: .surface
+          bc_conc: -8.19156
+          time: 1960
+        - region: .surface
+          bc_conc: -7.615
+          time: 1991
+        - region: .surface
+          bc_conc: -9.10695
+          time: 2021
+        - region: .surface
+          bc_conc: -6.36307
+          time: 2052
+        - region: .surface
+          bc_conc: -10.0023
+          time: 2083
+        - region: .surface
+          bc_conc: -7.9214
+          time: 2113
+        - region: .surface
+          bc_conc: -10.62
+          time: 2144
+        - region: .surface
+          bc_conc: -13.28369
+          time: 2174
+        - region: .surface
+          bc_conc: -10.53405
+          time: 2205
+        - region: .surface
+          bc_conc: -10.18778
+          time: 2236
+        - region: .surface
+          bc_conc: -10.20346
+          time: 2265
+        - region: .surface
+          bc_conc: -11.66542
+          time: 2296
+        - region: .surface
+          bc_conc: -6.83685
+          time: 2326
+        - region: .surface
+          bc_conc: -8.64656
+          time: 2357
+        - region: .surface
+          bc_conc: -6.62866
+          time: 2387
+        - region: .surface
+          bc_conc: -8.66687
+          time: 2418
+        - region: .surface
+          bc_conc: -8.02979
+          time: 2449
+        - region: .surface
+          bc_conc: -10.50304
+          time: 2479
+        - region: .surface
+          bc_conc: -14.00857
+          time: 2510
+        - region: .surface
+          bc_conc: -15.60331
+          time: 2540
+        - region: .surface
+          bc_conc: -10.49306
+          time: 2571
+        - region: .surface
+          bc_conc: -16.0443
+          time: 2602
+        - region: .surface
+          bc_conc: -15.3727
+          time: 2630
+        - region: .surface
+          bc_conc: -12.28302
+          time: 2661
+        - region: .surface
+          bc_conc: -11.15953
+          time: 2691
+        - region: .surface
+          bc_conc: -9.84281
+          time: 2722
+    output_stream:
+      times:
+        - step: 30
+      file: transport.msh
+      format: !gmsh
+        variant: ascii
+    substances: O-18
+    time:
+      end_time: 2780
+    balance:
+      cumulative: true
