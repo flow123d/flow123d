@@ -24,6 +24,9 @@
 using namespace std;
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
+FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
+FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
 
 string field_constant_input = R"YAML(
 common: !FieldConstant 
