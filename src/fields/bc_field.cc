@@ -15,7 +15,7 @@
  * @brief   
  */
 
-#include "fields/field_algo_base.impl.hh"	// for instantiation macros
+#include "fields/field_instances.hh"	// for instantiation macros
 
 #include "fields/field.hh"
 #include "fields/bc_field.hh"

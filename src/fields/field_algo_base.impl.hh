@@ -192,34 +192,5 @@ void FieldAlgorithmBase<spacedim, Value>::init_unit_conversion_coefficient(const
 
 
 
-/****************************************************************************
- *  Macros for explicit instantiation of particular field class template.
- */
-
-
-// Instantiation of fields with values dependent of the dimension of range space
-#define INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_to)                                                               \
-template class field<dim_from, FieldValue<dim_to>::VectorFixed >;                       \
-template class field<dim_from, FieldValue<dim_to>::TensorFixed >;                       \
-
-// Instantiation of fields with domain in the ambient space of dimension @p dim_from
-#define INSTANCE_TO_ALL(field, dim_from) \
-template class field<dim_from, FieldValue<0>::Enum >;                       \
-template class field<dim_from, FieldValue<0>::Integer >;                       \
-template class field<dim_from, FieldValue<0>::Scalar >;                       \
-\
-INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
-
-
-// All instances of one field class template @p field.
-// currently we need only fields on 3D ambient space (and 2D for some tests)
-// so this is to save compilation time and avoid memory problems on the test server
-#define INSTANCE_ALL(field) \
-INSTANCE_TO_ALL( field, 3) \
-INSTANCE_TO_ALL( field, 2)
-// currently we use only 3D ambient space
-
-
-
 
 #endif //FUNCTION_BASE_IMPL_HH_
