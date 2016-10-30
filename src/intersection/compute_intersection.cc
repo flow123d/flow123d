@@ -1041,7 +1041,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 
 };
 
-void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3  >& intersection){
+void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3  >& intersection)
 {
 
     IP23_list.clear();
@@ -1155,9 +1155,9 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     }
 
     // Catch cases of two degenerated IPs for same edge. That means triangle touching
-    if (degenerate_ips.size() == 2 && IP23_list.size==2 && IP23_list[0].idx_B() == IP23_list[1].idx_B()) {
-        ASSERT_DBG_EQ(IP23_list[0].dim_B(), 1);
-        ASSERT_DBG_EQ(IP23_list[1].dim_B(), 1);
+    if (degenerate_ips.size() == 2 && IP23_list.size()==2 && IP23_list[0].idx_B() == IP23_list[1].idx_B()) {
+        ASSERT_EQ_DBG(IP23_list[0].dim_B(), 1);
+        ASSERT_EQ_DBG(IP23_list[1].dim_B(), 1);
 
         for( auto &p : IP23_list) {
                 intersection.points().push_back(p);
