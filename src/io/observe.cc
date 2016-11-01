@@ -359,7 +359,22 @@ void Observe::output_header(string observe_name) {
 
 void Observe::output_time_frame(double time) {
     if (points_.size() == 0) return;
-
+    
+    static bool first_call = true;
+    if ( first_call ) {
+        // check that observe fields are set
+        if (std::isnan(observe_values_time_)) {
+            // first call and no fields
+            ASSERT(observe_field_values_.size() == 0);
+            WarningOut() << "No observe fields for the observe file: " << observe_file_path << endl;
+            observe_values_time_ = numeric_limits<double>::signaling_NaN();
+            return;
+        }
+        first_call=false;
+    }
+    
+    ASSERT(observe_values_time_ != numeric_limits<double>::signaling_NaN());
+    
     if (rank_ == 0) {
         unsigned int indent = 2;
         observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
@@ -370,6 +385,6 @@ void Observe::output_time_frame(double time) {
         }
     }
 
-    observe_values_time_ = numeric_limits<double>::signaling_NaN();
+    
 
 }
