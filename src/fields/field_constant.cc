@@ -11,14 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    field_constant.impl.hh
+ * @file    field_constant.cc
  * @brief   
  */
 
-#ifndef FIELD_CONSTANT_IMPL_HH_
-#define FIELD_CONSTANT_IMPL_HH_
-
 #include "fields/field_constant.hh"
+#include "fields/field_algo_base.impl.hh"
+#include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
 
 
@@ -144,5 +143,9 @@ FieldConstant<spacedim, Value>::~FieldConstant() {
 }
 
 
+// Instantiations of FieldConstant
+INSTANCE_ALL(FieldConstant)
 
-#endif /* FIELD_CONSTANT_IMPL_HH_ */
+// temporary solution for computing more fields at once in python
+template class FieldConstant<3, FieldValue<0>::Vector >; // Necessary due to default value of the abstract.
+

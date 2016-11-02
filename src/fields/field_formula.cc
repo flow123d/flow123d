@@ -11,15 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    field_formula.impl.hh
+ * @file    field_formula.cc
  * @brief   
  */
 
-#ifndef FIELD_FORMULA_IMPL_HH_
-#define FIELD_FORMULA_IMPL_HH_
-
 
 #include "fields/field_formula.hh"
+#include "fields/field_instances.hh"	// for instantiation macros
 #include "fparser.hh"
 #include "input/input_type.hh"
 #include <boost/foreach.hpp>
@@ -48,6 +46,7 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
                                         "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
 			.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
 										"Definition of unit.")
+	        .allow_auto_conversion("value")
 			.close();
 }
 
@@ -193,4 +192,5 @@ FieldFormula<spacedim, Value>::~FieldFormula() {
 }
 
 
-#endif /* FIELD_FORMULA_IMPL_HH_ */
+// Instantiations of FieldFormula
+INSTANCE_ALL(FieldFormula)

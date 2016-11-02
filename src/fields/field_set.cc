@@ -145,6 +145,13 @@ FieldCommon &FieldSet::operator[](const std::string &field_name) const {
 }
 
 
+bool FieldSet::set_time(const TimeStep &time, LimitSide limit_side) {
+    bool changed_all=false;
+    for(auto field : field_list) changed_all = field->set_time(time, limit_side) || changed_all;
+    return changed_all;
+}
+
+
 
 bool FieldSet::changed() const {
     bool changed_all=false;

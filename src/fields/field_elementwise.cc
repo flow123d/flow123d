@@ -11,15 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    field_elementwise.impl.hh
+ * @file    field_elementwise.cc
  * @brief   
  */
 
-#ifndef FIELD_ELEMENTWISE_IMPL_HH_
-#define FIELD_ELEMENTWISE_IMPL_HH_
-
 
 #include "fields/field_elementwise.hh"
+#include "fields/field_instances.hh"	// for instantiation macros
 #include "system/file_path.hh"
 #include "input/input_type.hh"
 #include "mesh/msh_gmshreader.h"
@@ -35,13 +33,13 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_elementwise)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
 {
-    return it::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return IT::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
-		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
 				"Definition of unit.")
         .close();
 }
@@ -219,5 +217,5 @@ template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::~FieldElementwise() {}
 
 
-
-#endif /* FIELD_ELEMENTWISE_IMPL_HH_ */
+// Instantiations of FieldElementwise
+INSTANCE_ALL(FieldElementwise)

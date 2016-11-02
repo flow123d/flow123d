@@ -194,7 +194,7 @@ PathBase * PathYAML::find_ref_node()
 
 
 
-std::string PathYAML::get_descendant_name() const {
+std::string PathYAML::get_record_name() const {
 	std::string tag = head().Tag();
 	if (tag == "?") {
 		return "";

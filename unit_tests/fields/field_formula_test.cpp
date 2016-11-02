@@ -17,7 +17,7 @@
 #include "input/reader_to_storage.hh"
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 string input = R"INPUT(

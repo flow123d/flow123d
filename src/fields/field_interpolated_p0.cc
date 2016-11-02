@@ -11,14 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    field_interpolated_p0.impl.hh
+ * @file    field_interpolated_p0.cc
  * @brief   
  */
 
-#ifndef FIELD_INTERPOLATED_P0_IMPL_HH_
-#define FIELD_INTERPOLATED_P0_IMPL_HH_
 
 #include "field_interpolated_p0.hh"
+#include "fields/field_instances.hh"	// for instantiation macros
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
@@ -247,6 +246,5 @@ void FieldInterpolatedP0<spacedim, Value>::scale_data()
 
 
 
-
-
-#endif /* FIELD_INTERPOLATED_P0_IMPL_HH_ */
+// Instantiations of FieldInterpolatedP0
+INSTANCE_ALL(FieldInterpolatedP0)

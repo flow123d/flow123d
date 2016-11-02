@@ -21,7 +21,6 @@
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
-
 string input = R"INPUT(
 {   
    tensor1=3.14,
@@ -110,4 +109,3 @@ TEST(FieldConst, read_from_input) {
     auto tensor4=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor4"), init_data_tensor);
     check_tensor_field(tensor4, "1 2 3; 4 5 6; 7 8 9", {point_1, point_2}, elm);
 }
-

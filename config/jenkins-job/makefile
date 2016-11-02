@@ -6,18 +6,18 @@
 # ${CMAKE_COMMAND} -DINPUT=jenkins_jobs_template.yaml -DOUTPUT=${JENKINS_JOBS_FILE} -P ${CMAKE_CURRENT_SOURCE_DIR}/expand_placeholders.cmake
 
 # default configuration for jenkins-jobs-builder
-CONFIG=jenkins.ini
+#CONFIG=--conf jenkins.ini
 
 # target which replaces placeholders in all *.yaml.template files
 # located in jobs dir
-.PHONY: jobs/*.yaml.template
-jobs/*.yaml.template:
-	cmake -DINPUT=$@ -DOUTPUT=$(@:%.template=%) -P expand_placeholders.cmake
+.PHONY: *.template.yaml
+*.template.yaml:
+	cmake -DINPUT=$@ -DOUTPUT=jobs/$(@:%.template.yaml=%.yaml) -P expand_placeholders.cmake
 
 
 # target which call replacement on all yaml.template files
 .PHONY: expand
-expand: jobs/*.yaml.template
+expand: *.template.yaml
 
 
 # target which runs "test" on jenkins-jobs
@@ -26,7 +26,7 @@ test: expand
 	@echo "-----------------------------------------------"
 	@echo "Using configuration scripts $(CONFIG)"
 	@echo "-----------------------------------------------"
-	jenkins-jobs --conf $(CONFIG) test jobs/main.yaml
+	jenkins-jobs $(CONFIG) test jobs/main.yaml
 
 
 # target which runs "test" on jenkins-jobs
@@ -35,22 +35,22 @@ upload: expand
 	@echo "-----------------------------------------------"
 	@echo "Using configuration scripts $(CONFIG)"
 	@echo "-----------------------------------------------"
-	jenkins-jobs --conf $(CONFIG) --ignore-cache update jobs/main.yaml
+	jenkins-jobs $(CONFIG) --ignore-cache update jobs/main.yaml
 
 
 # target which uploads configuration via jenkins-jobs to server
 .PHONY: delete
-delete: which
-	jenkins-jobs --conf $(CONFIG) --ignore-cache delete-all
+delete: #which
+	jenkins-jobs $(CONFIG) --ignore-cache delete-all
 
 
-.PHONY: which
-which:
-	@echo "-----------------------------------------------"
-	@echo "Using configuration scripts $(CONFIG)"
-	@echo "-----------------------------------------------"
-	cat $(CONFIG)
-	@echo "-----------------------------------------------"
+#.PHONY: which
+#which:
+#	@echo "-----------------------------------------------"
+#	@echo "Using configuration scripts $(CONFIG)"
+#	@echo "-----------------------------------------------"
+#	cat $(CONFIG)
+#	@echo "-----------------------------------------------"
 
 .PHONY: help
 help:
