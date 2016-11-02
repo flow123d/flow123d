@@ -32,12 +32,26 @@ template<int dim, int spacedim> class QXFEM;
 class XFEMElementDataBase
 {
 public:
+    /// Constructor.
+    XFEMElementDataBase()
+    : ele_global_idx_(-1),complement_(false)
+    {}
+    
+    ///Destructor
+    virtual ~XFEMElementDataBase()
+    {}
+    
     unsigned int ele_global_idx() const
     { return ele_global_idx_;}
     
     void set_element(int global_idx)
     { ele_global_idx_ = global_idx;}
     
+    void set_complement()
+    { complement_ = true;}
+    
+    bool is_complement()
+    { return complement_;}
 protected:
 ///iterator of the cell to which this data object belongs
 //     LocalElementAccessorBase<spacedim> ele_ac_;
@@ -45,6 +59,8 @@ protected:
     
     /// Index of element to which this data belongs to.
     unsigned int ele_global_idx_;
+    
+    bool complement_;
 };
 
 
@@ -97,6 +113,9 @@ public:
     {   ASSERT_DBG(local_enrichment_index < n_enrichments());
         return global_enrichment_indices_[local_enrichment_index];}
         
+    const std::vector<unsigned int> & global_enrichment_indices() const
+    {   return global_enrichment_indices_;}
+    
     /// Returns global dof index of the well.
     /** @param local_well_index is local well index in the cell_
      */
@@ -167,6 +186,26 @@ enum Quantity{
     pressure_lagrange = 2
 };
     
+
+
+class XFEMComplementData : public XFEMElementData<2,3>
+{
+public:
+    //typedef typename std::shared_ptr<GlobalEnrichmentFunc<2,3>> EnrichmentPtr;
+    
+    /// Constructor.
+    XFEMComplementData(EnrichmentPtr enrichment_func,
+                       unsigned int global_enrichment_index)
+    {
+        add_data(enrichment_func, global_enrichment_index);
+    }
+    
+    ///Destructor
+    virtual ~XFEMComplementData()
+    {}
+};
+
+
 //*************************************************************************************
 //*************************************************************************************
 

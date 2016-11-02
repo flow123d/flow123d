@@ -452,6 +452,19 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 node_values.push_back(std::map<int, double>());
                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
                 
+                unsigned int sing_idx = singularities_12d_.size()-1;
+                if(ele->xfem_data == nullptr){
+                    xfem_data_1d.push_back(XFEMComplementData(sing, sing_idx));
+                    xfem_data_1d.back().set_element(idx);        
+                    xfem_data_1d.back().set_complement();
+                    ele->xfem_data = & xfem_data_1d.back();
+                }
+                else{
+                    auto xdata = static_cast<XFEMComplementData*>(ele->xfem_data);
+                    ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMComplementData Type!");
+                    xdata->add_data(sing, sing_idx);
+                }
+                
                 //TODO: suggest proper enrichment radius
                 double enr_radius = 2*std::sqrt(ele2d->measure());
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");

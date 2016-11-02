@@ -153,6 +153,7 @@ protected:
     
     std::vector<SingularityPtr> singularities_12d_;
     
+    std::vector<XFEMComplementData> xfem_data_1d;
     std::vector<XFEMElementSingularData> xfem_data;
     
     std::vector<std::map<int, double> > node_values;
@@ -273,9 +274,7 @@ public:
     
     XFEMElementSingularData* xfem_data_sing(){
         if(is_enriched()){
-            XFEMElementSingularData * xd = static_cast<XFEMElementSingularData*>(ele->xfem_data);
-            if(xd) return xd;
-            else ASSERT_DBG(0).error("XFEM data object is not of XFEMElementSingularData Type!");
+            return static_cast<XFEMElementSingularData*>(ele->xfem_data);
         }
         ASSERT_DBG(0).error("Element not enriched with any XFEM data!");
         return nullptr;
@@ -307,7 +306,7 @@ public:
         uint i;
         for(i=0; i< n_sides(); i++) dofs[i] = side_row(i);
         
-        if(is_enriched()){
+        if(is_enriched() && ! ele->xfem_data->is_complement()){
             XFEMElementSingularData* xd = xfem_data_sing();
             for(uint w=0; w< xd->n_enrichments(); w++)
                 for(uint j=0; j< xd->n_enriched_dofs(Quantity::velocity,w); j++, i++){
@@ -322,7 +321,7 @@ public:
         dofs[0] = ele_row();
         uint i = 1;
         
-        if(is_enriched()){
+        if(is_enriched() && ! ele->xfem_data->is_complement()){
             XFEMElementSingularData* xd = xfem_data_sing();
             for(uint w=0; w< xd->n_enrichments(); w++)
                 for(uint j=0; j< xd->n_enriched_dofs(Quantity::pressure,w); j++, i++){
@@ -343,14 +342,14 @@ public:
     
     unsigned int n_dofs_vel(){
         unsigned int n = n_sides();
-        if(is_enriched())
+        if(is_enriched() && ! ele->xfem_data->is_complement())
             n += xfem_data_sing()->n_enriched_dofs(Quantity::velocity);
         return n;
     }
     
     unsigned int n_dofs_press(){
         unsigned int n = 1;
-        if(is_enriched())
+        if(is_enriched() && ! ele->xfem_data->is_complement())
             n += xfem_data_sing()->n_enriched_dofs(Quantity::pressure);
         return n;
     }

@@ -31,13 +31,15 @@
 #include "la/local_to_global_map.hh"
 #include "la/local_system.hh"
 
-
+#include "flow/darcy_flow_mh.hh"
 #include "darcy_flow_assembly.hh"
 
 template<int dim>
 class AssemblyMHXFEM : public AssemblyBase
 {
 public:
+    using AssemblyBase::AssemblyDataPtr;
+    
     AssemblyMHXFEM<dim>(AssemblyDataPtr data)
     : quad_(3),
         fe_values_(map_, quad_, fe_rt_,
@@ -68,13 +70,17 @@ public:
 //         unsigned int ndofs = ele_ac.n_dofs();
         setup_local(ele_ac);
         
-        if(ele_ac.is_enriched()) prepare_xfem(ele_ac);
+        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
+            prepare_xfem(ele_ac);
     
         set_dofs_and_bc(ele_ac);
         
         assemble_sides(ele_ac);
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
+        
+        if(ele_ac.is_enriched() && ele_ac.xfem_data_pointer()->is_complement())
+            assemble_singular_communication(ele_ac);
         
         loc_system_.fix_diagonal();
     }
@@ -315,7 +321,7 @@ protected:
         double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());
         double scale = 1 / cs /conduct;
         
-        if(ele_ac.is_enriched())
+        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
             assemble_sides_scale(ele_ac, scale, *fe_values_rt_xfem_);
         else
             assemble_sides_scale(ele_ac, scale, fe_values_);
@@ -374,7 +380,7 @@ protected:
     
     void assemble_element(LocalElementAccessorBase<3> ele_ac){        
         
-        if(ele_ac.is_enriched())
+        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
             assemble_element(ele_ac, *fe_values_rt_xfem_, *fe_values_p0_xfem_);
         else 
         {
@@ -419,9 +425,43 @@ protected:
 //                         << " " << ele_ac.full_iter()->measure()  << "  " << fv_vel.determinant(0) << "\n");
     }
     
-    void assembly_singular_communication(){
+    void assemble_singular_communication(LocalElementAccessorBase<3> ele_ac){
         
+        double sigma = ad_->sigma.value(ele_ac.centre(), ele_ac.element_accessor());
+        
+        XFEMComplementData* xd = static_cast<XFEMComplementData*>(ele_ac.xfem_data_pointer());
+        
+        int sing_row, ele_row;
+        double val, press_shape_val, sing_lagrange_val;
+        
+        ele_row = ele_ac.ele_row();
+        
+        for(unsigned int w=0; w < xd->n_enrichments(); w++){
+            sing_row = ele_ac.sing_row(w);
+            press_shape_val = 1;
+            sing_lagrange_val = 1;
+            auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
+            val = sing->circumference() * sigma * press_shape_val * sing_lagrange_val;
+            
+            ad_->lin_sys->mat_set_value(sing_row, ele_row, val);
+            ad_->lin_sys->mat_set_value(ele_row, sing_row, val);
+            ad_->lin_sys->mat_set_value(sing_row, sing_row, val);
+        }
     }
+    
+    
+//     void assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
+//         
+//         XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
+//         
+//         for(unsigned int w=0; w < xd->n_enrichments(); w++){
+//             if(xd->is_singularity_inside(w)){
+//                 fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
+//                                 (map_, xd->sing_quadrature(w), *fe_rt_xfem_, update_values | update_JxW_values);
+//                                 
+//             }
+//         }
+//     }
     
     // assembly volume integrals
     FE_RT0<dim,3> fe_rt_;
@@ -480,7 +520,6 @@ template<> inline
 void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
         
     XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
-    ASSERT_PTR_DBG(xdata).error("XFEM data object is not of XFEMElementSingularData Type!");
     
     std::shared_ptr<Singularity0D<3>> func = std::static_pointer_cast<Singularity0D<3>>(xdata->enrichment_func(0));
     
