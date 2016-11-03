@@ -82,6 +82,9 @@ public:
         if(ele_ac.is_enriched() && ele_ac.xfem_data_pointer()->is_complement())
             assemble_singular_communication(ele_ac);
         
+        if(ele_ac.is_enriched())
+            assemble_singular_velocity(ele_ac);
+        
         loc_system_.fix_diagonal();
     }
 
@@ -400,7 +403,7 @@ protected:
     void assemble_element(LocalElementAccessorBase<3> ele_ac,
                           FEValues<dim,3>& fv_vel, FEValues<dim,3>& fv_press){
         
-        ElementFullIter ele =ele_ac.full_iter();
+        ElementFullIter ele = ele_ac.full_iter();
         fv_vel.reinit(ele);
         fv_press.reinit(ele);
         
@@ -416,6 +419,7 @@ protected:
                         * fv_vel.shape_divergence(i,k)
                         * fv_vel.JxW(k);
                     loc_system_.add_value(loc_vel_dofs[i],loc_press_dofs[j] , mat_val, 0.0);
+                    loc_system_.add_value(loc_press_dofs[j], loc_vel_dofs[i] , mat_val, 0.0);
                 }
             }
         
@@ -432,7 +436,7 @@ protected:
         XFEMComplementData* xd = static_cast<XFEMComplementData*>(ele_ac.xfem_data_pointer());
         
         int sing_row, ele_row;
-        double val, press_shape_val, sing_lagrange_val;
+        double temp_val, val, val_diag_sing, val_diag_press, press_shape_val, sing_lagrange_val;
         
         ele_row = ele_ac.ele_row();
         
@@ -441,27 +445,22 @@ protected:
             press_shape_val = 1;
             sing_lagrange_val = 1;
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
-            val = sing->circumference() * sigma * press_shape_val * sing_lagrange_val;
+            
+            temp_val = sing->circumference() * sigma;
+            val =  temp_val * press_shape_val * sing_lagrange_val;
+            val_diag_press = - temp_val * press_shape_val * press_shape_val;
+            val_diag_sing = - temp_val * sing_lagrange_val * sing_lagrange_val;
             
             ad_->lin_sys->mat_set_value(sing_row, ele_row, val);
             ad_->lin_sys->mat_set_value(ele_row, sing_row, val);
-            ad_->lin_sys->mat_set_value(sing_row, sing_row, val);
+            ad_->lin_sys->mat_set_value(ele_row, ele_row, val_diag_press);
+            ad_->lin_sys->mat_set_value(sing_row, sing_row, val_diag_sing);
         }
     }
     
     
-//     void assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
-//         
-//         XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
-//         
-//         for(unsigned int w=0; w < xd->n_enrichments(); w++){
-//             if(xd->is_singularity_inside(w)){
-//                 fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
-//                                 (map_, xd->sing_quadrature(w), *fe_rt_xfem_, update_values | update_JxW_values);
-//                                 
-//             }
-//         }
-//     }
+    void assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
+    }
     
     // assembly volume integrals
     FE_RT0<dim,3> fe_rt_;
@@ -538,4 +537,48 @@ void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
                                                     update_JxW_values |
                                                     update_quadrature_points);
 }
+
+
+template<> inline
+void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
+
+    ElementFullIter ele = ele_ac.full_iter();
+    //FIXME: sigma of lower dimensional element
+    double sigma = ad_->sigma.value(ele_ac.centre(), ele_ac.element_accessor());
+    
+    XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
+    double sing_lagrange_val;
+    int sing_row;
+    int nvals = loc_vel_dofs.size();
+    double val[nvals];
+    int vel_dofs[nvals];
+    
+    for(unsigned int w=0; w < xd->n_enrichments(); w++){
+        if(xd->is_singularity_inside(w)){
+            sing_row = ele_ac.sing_row(w);
+            auto quad = xd->sing_quadrature(w);
+            fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
+                            (map_, quad, *fe_rt_xfem_, update_values | update_JxW_values);
+
+            fe_values_rt_xfem_->reinit(ele);
+            auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
+            sing_lagrange_val = 1;
+            for (unsigned int i=0; i < nvals; i++){
+                val[i] = 0;
+                vel_dofs[i] = loc_system_.row_dofs[i];
+                for(unsigned int q=0; q < quad.size();q++){
+                    arma::vec n = sing->center() - quad.real_point(q);
+                    n = n / arma::norm(n,2);
+                    val[i] += sigma * sing_lagrange_val
+                                * arma::dot(fe_values_rt_xfem_->shape_vector(i,q),n)
+                                * fe_values_rt_xfem_->JxW(q);
+                }
+            }
+            
+            ad_->lin_sys->mat_set_values(1, &sing_row, nvals, vel_dofs, val);
+            ad_->lin_sys->mat_set_values(nvals, vel_dofs, 1, &sing_row, val);
+        }
+    }
+}
+    
 #endif /* SRC_FLOW_DARCY_FLOW_ASSEMBLY_XFEM_HH_ */
