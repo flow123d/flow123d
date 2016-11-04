@@ -146,22 +146,22 @@ template<> const IdxVector<3> RefElement<2>::topology_zeros_[] = {
 };
 
 template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
-   {(unsigned int)~(1 << 3) - ~(15),  //node 0
-    (unsigned int)~(1 << 2) - ~(15),  //node 1
-    (unsigned int)~(1 << 1) - ~(15),  //node 2
-    (unsigned int)~(1 << 0) - ~(15),  //node 3
+   {(1 << 1) | (1 << 2) | (1 << 3),  //node 0
+    (1 << 0) | (1 << 2) | (1 << 3),  //node 1
+    (1 << 0) | (1 << 1) | (1 << 3),  //node 2
+    (1 << 0) | (1 << 1) | (1 << 2),  //node 3
     0,
     0},
-   {(1 << 0) | (1 << 1),    //line 0
-    (1 << 0) | (1 << 2),    //line 1
-    (1 << 0) | (1 << 3),    //line 2
-    (1 << 1) | (1 << 2),    //line 3
-    (1 << 1) | (1 << 3),    //line 4
-    (1 << 2) | (1 << 3)},   //line 5
-   {1 << 0,    //side 0
-    1 << 1,    //side 1
-    1 << 2,    //side 2
-    1 << 3,    //side 3
+   {(1 << 2) | (1 << 3),    //line 0
+    (1 << 1) | (1 << 3),    //line 1
+    (1 << 1) | (1 << 2),    //line 2
+    (1 << 0) | (1 << 3),    //line 3
+    (1 << 0) | (1 << 2),    //line 4
+    (1 << 0) | (1 << 1)},   //line 5
+   {1 << 3,    //side 0
+    1 << 2,    //side 1
+    1 << 1,    //side 2
+    1 << 0,    //side 3
     0,
     0}
 };

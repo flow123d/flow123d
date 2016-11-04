@@ -498,6 +498,8 @@ public:
     void compute(IntersectionAux<2,3> &intersection);
     typedef std::array<uint, 2> FacePair;
 
+    bool ips_topology_equal(const IPAux23 &first, const IPAux23 &second);
+    bool obj_have_back_link(unsigned int i_obj);
     auto edge_faces(uint i_edge) -> FacePair;
     auto vertex_faces(uint i_vtx) -> FacePair;
 
@@ -508,8 +510,9 @@ public:
 
 private:
     const unsigned int no_idx;
-    std::vector<unsigned int> s4_dim_starts;
-    const unsigned int s3_side_start; // 3 sides
+    // TODO rename s4 to s3, s3 to s2
+    std::vector<unsigned int> s3_dim_starts; // get global index of n-face i of dimension d: s4_dim_starts[d]+i
+    std::vector<unsigned int> s2_dim_starts;  // same for n-faces of S2
 
     std::vector<IPAux12> IP12s_;
     std::vector<IPAux23> IP23_list, degenerate_ips;

@@ -9,7 +9,7 @@
 #include "plucker.hh"
 #include "intersection_point_aux.hh"
 #include "intersection_aux.hh"
-#include "tracing_algorithm.hh"
+//#include "tracing_algorithm.hh"
 
 using namespace std;
 namespace computeintersection{
@@ -858,6 +858,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
             // cut every IP to its end of the line segment
             if (sign[ip] == ip_sign[ip]) {
                 t[ip]=ip;
+                sign[ip] /=2; // -2 to -1; +2 to +1
                 correct_tetrahedron_ip_topology(t[ip], ip, IP13s);
             }
             if (sign[ip] == -1)  IP13s[ip].set_topology_A(0, 0);
@@ -896,11 +897,18 @@ void ComputeIntersection< Simplex< 1  >, Simplex< 3  > >::correct_tetrahedron_ip
     for(char i=0; i < 4; i++){
         if(std::fabs(ips[ip].local_bcoords_B()[i]) < geometry_epsilon)
         {
-            zeros = zeros | (1 << (3-i));
+            zeros = zeros | (1 << i);
             n_zeros++;
         }
     }
     
+    /**
+     * TODO:
+     * 1. Try to avoid setting topology from coords. Try to use just topology information.
+     * 2. If can not be done. Use interact method to setup a map mapping 16 possible zeros positions to appropriate topology,
+     *    remove topology_idx from RefElement.
+     */
+
     switch(n_zeros)
     {
         default: ips[ip].set_topology_B(0,3);  //inside tetrahedon
@@ -949,8 +957,8 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::print_plucker_coordinates_tree
  ************************************************************************************************************/
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection()
 : no_idx(100),
-s4_dim_starts({0, 4, 10, 14}),
-s3_side_start(15) // 3 sides
+s3_dim_starts({0, 4, 10, 14}), // vertices, edges, faces, volume
+s2_dim_starts({15, 18, 21})  // vertices, sides, surface
 
 {
 
@@ -1050,10 +1058,21 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	std::vector<IPAux13> IP13s;
 
 	std::vector<unsigned int> IP_next;
-	// 4 vertices, 6 edges, 4 faces, 1 volume
-	std::vector<unsigned int> object_next(18, no_idx);
+	// 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
+	std::vector<unsigned int> object_next(22, no_idx);
 
-    unsigned int last_triangle_vertex=30; // no vertex at last IP
+	std::function<bool(unsigned int)> have_backlink_lambda = [&IP_next, &object_next, this](uint i_obj)
+	        {
+                 ASSERT_LT_DBG(i_obj, object_next.size());
+	             auto ip = object_next[i_obj];
+	             if (ip == no_idx) return false;
+	             ASSERT_LT_DBG(ip, IP_next.size());
+	             return IP_next[ip] == i_obj;
+	        };
+
+    unsigned int object_before_ip, object_after_ip;
+
+    //unsigned int last_triangle_vertex=30; // no vertex at last IP
     unsigned int current_triangle_vertex;
 
 	// pass through the ccwise oriented sides in ccwise oriented order
@@ -1072,6 +1091,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
         ASSERT_DBG(IP13s.size() < 3);
         if (IP13s.size() == 0) continue;
         for(unsigned int _ip=0; _ip < IP13s.size(); _ip++) {
+            //int ip_topo_position = _ip*2-1; // -1 (incoming ip), +1 (outcoming ip), 0 both
+
             // fix order of IPs
             unsigned int ip = (side_cycle_orientation[_i_side] + _ip) % IP13s.size();
             // convert from 13 to 23 IP
@@ -1079,17 +1100,56 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             IntersectionPointAux<3,1> IP31 = IP.switch_objects();   // switch idx_A and idx_B and coords
             IntersectionPointAux<3,2> IP32(IP31, i_side);    // interpolation uses local_bcoords_B and given idx_B
             IPAux23 IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
-            
+
+            // Tracking info
+            unsigned int tetra_object = s3_dim_starts[IP23.dim_B()] + IP23.idx_B();
+            unsigned int side_object = s2_dim_starts[1] + i_side;
+
+
+            object_before_ip = tetra_object;
+            object_after_ip = side_object;
+
+
             if( IP.dim_A() == 0 ) // IP is vertex of triangle,
             {
                 // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
                 current_triangle_vertex=RefElement<2>::interact(Interaction<0,1>(i_side))[IP.idx_A()];
                 IP23.set_topology_A(current_triangle_vertex, 0);
-            } else current_triangle_vertex=3+IP23_list.size(); // no vertex, and unique
+                object_before_ip = s2_dim_starts[0]+current_triangle_vertex;
 
-            if (IP13s.size() == 1) {
-                if (IP23.dim_B() != 0) {
+            }// else current_triangle_vertex=3+IP23_list.size(); // no vertex, and unique
+
+            if (IP13s.size() == 1 ) {
+                if (IP.dim_B() == 0) continue; // S3 vertices are better detected in phase 2
+                if (IP.dim_A() == 0) {
+                    object_before_ip = tetra_object;
+                    object_after_ip = s2_dim_starts[0]+current_triangle_vertex;
+                } else {
+                    std::swap(object_before_ip, object_after_ip);
+                }
+            }
+
+            IP23_list.push_back(IP23);
+            IP_next.push_back(no_idx);
+
+            /*
+            if (IP13s.size() == 2 ) {
+                // regular case, line intersection of side with S3
+                if ( IP.dim_A() == 0 ) tetra_object = current_triangle_vertex;
+
+            } else {
+                if (IP.dim_A()==0) {
+                    if (IP.idx_A()==0) ip_topo_position=-1;
+                    else ip_topo_position=+1;
+                }
+
+                // side touching S3. Cases:
+                // S2 vertex - treat as any other vertex, using ip_topo_position.
+                // S3 vertex skip - will be rediscovered later.
+                if (IP23.dim_A() == 1 && IP23.dim_B() == 1 ) {
+
+                    // S2 interior, S3 vertex, S3 edge
                     ASSERT_EQ_DBG(IP23.dim_B(), 1);
                     // Side i_side touching edge e inside e.
                     // The intersection will be rediscovered again as edge-trinagle IP save the case when
@@ -1097,64 +1157,33 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                     // However this case can not be identified
                     // at this place. So we store the IP into degenerate list to no not have duplicities
                     // IP23_list.
+                    ip_topo_position=0;
                     DebugOut() << "possible degenerate on tria. side.";
                     DebugOut() << IP23;
                     degenerate_ips.push_back(IP23);
                 }
-                current_triangle_vertex=30;
-                break;
-            }
+            }*/
 
-            //DebugOut().VarFmt(current_triangle_vertex).VarFmt(last_triangle_vertex);
-            // avoid adding vertex twice
-            if (current_triangle_vertex != last_triangle_vertex)  {
-                IP23_list.push_back(IP23);
-                IP_next.push_back(no_idx);
-            }
 
-            // Tracking info
-            unsigned int tetra_object = s4_dim_starts[IP23.dim_B()] + IP23.idx_B();
-            unsigned int side_object = s3_side_start + i_side;
+
             unsigned int ip_idx = IP23_list.size()-1;
             ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size());
-            //DebugOut().VarFmt(IP23.dim_B()).VarFmt(IP23.idx_B()).VarFmt(tetra_object).VarFmt(ip_idx).VarFmt(side_object);
-            if (_ip == 0) {
-                //DebugOut() << "first"  <<  tetra_object << " to " << ip_idx;
-
-                object_next[tetra_object] = ip_idx;
-                IP_next[ip_idx] =  side_object;
-            } else {
-                //DebugOut() << "second " <<  side_object << " to " << ip_idx;
-                object_next[side_object] = ip_idx;
-                IP_next[ip_idx] = tetra_object;
-                if (object_next[tetra_object] == no_idx) {
-                    //DebugOut() << "back link " <<  side_object << " to " << ip_idx;
-                    object_next[tetra_object] = ip_idx;
+            if (have_backlink_lambda(object_after_ip)) {
+                // target object is already target of other IP, so it must be source object
+                std::swap(object_before_ip, object_after_ip);
+            }
+            ASSERT_DBG( ! have_backlink_lambda(object_after_ip) ); // at least one could be target object
+            object_next[object_before_ip] = ip_idx;
+            IP_next[ip_idx] = object_after_ip;
+            if (object_next[object_after_ip] == no_idx) {
+                    object_next[object_after_ip] = ip_idx;
                 }
             }
-        }
-        last_triangle_vertex = current_triangle_vertex;
     }
 
-
-    // remove possible duplicity of the first vertex
-    if (IP23_list.size() > 1 &&
-        IP23_list.front().dim_A()==0 && IP23_list.back().dim_A()==0 &&
-        IP23_list.front().idx_A()==0 && IP23_list.back().idx_A()==0)
-    {
-        unsigned int i_point = IP23_list.size() -1;
-        unsigned int i_object = IP_next[ i_point ];
-        if ( object_next[ i_object ] == i_point )  object_next[ i_object ] = 0;
-        //DebugOut() << "vtx" <<  i_object << " to " << 0;
-        //DebugOut() << "vtx" <<  s3_side_start + 2 << " to " << 0;
-        object_next[ s3_side_start + cycle_sides[2] ] = 0;
-
-        IP23_list.pop_back();
-        IP_next.pop_back();
-        //DebugOut().VarFmt(i_object).VarFmt(object_next[ i_object ]).VarFmt(i_point);
-    }
 
     // Catch cases of two degenerated IPs for same edge. That means triangle touching
+	/*
     if (degenerate_ips.size() == 2 && IP23_list.size()==2 && IP23_list[0].idx_B() == IP23_list[1].idx_B()) {
         ASSERT_EQ_DBG(IP23_list[0].dim_B(), 1);
         ASSERT_EQ_DBG(IP23_list[1].dim_B(), 1);
@@ -1163,7 +1192,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                 intersection.points().push_back(p);
         }
         return;
-    }
+    }*/
     // now we have at most single true degenerate IP in IP23
     // TODO:
     // - deal with degenerate IPs in the edge-trinagle phase
@@ -1209,6 +1238,9 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	            // i_edge is a vertex index in this case
 	            i_edge = RefElement<3>::interact(Interaction<0,1>(tetra_edge))[IP12.idx_A()];
 	            face_pair = vertex_faces(i_edge);
+
+
+/*
 	            if (face_pair[0] == s4_dim_starts[3] && IP12.dim_B()==2) {
 	                // catch 1 point and 2 point IPs; skip IPs on S2 boundary (already in degenerate list)
                     IPAux23 IP23(IP12.switch_objects(), tetra_edge);
@@ -1216,16 +1248,19 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                     DebugOut() << "vertex or edge S3 touch";
                     DebugOut() << IP23;
                     degenerate_ips.push_back(IP23);
-	            }
-                // mark edges coincident with the vertex
+	            }*/
+
+	            // mark edges coincident with the vertex
                 for( uint ie : RefElement<3>::interact(Interaction<1,0>(i_edge)) )
                     processed_edge[ie] = 1;
 
 	        }
 
 	        if (IP12.dim_B() < 2 ) { // boundary of S2
-	            unsigned int s4_object = s4_dim_starts[edge_dim] + i_edge;
-	            unsigned int ip = object_next[s4_object];
+
+	            unsigned int s3_object = s3_dim_starts[edge_dim] + i_edge;
+	            //unsigned int s2_ip = object_next[s3_object];
+	            /*
 	            // check that IPs match
 	            //ASSERT_EQ_DBG(edge_dim, IP23_list[ip].dim_B());
 	            //ASSERT_EQ_DBG(tetra_edge, IP23_list[ip].idx_B());
@@ -1235,23 +1270,53 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	            if ( ip != no_idx) {
                     //DebugOut().VarFmt(tetra_edge).VarFmt(s4_object).VarFmt(ip);
                     ASSERT_LT_DBG(ip, IP_next.size());  // in particular ip !=no_idx
-                    if ( IP_next[ip] == s4_object) { // back link
+                    if ( IP_next[ip] == s3_object) { // back link
                         // Have backlink, so the S3 n-face follows S2 side.
                         IP_next[ip] = face_pair[1];
                     } else {
                         // No backlink, so the S3 n-face precedes  S2 side.
                         object_next[face_pair[0]] = ip;
                     }
-                    object_next[s4_object] = 2*no_idx;
+                    object_next[s3_object] = 2*no_idx;
+	            }*/
+
+	            if ( have_backlink_lambda(s3_object) ) {
+	                object_before_ip = s3_object;
+	                object_after_ip = face_pair[1];
+	            } else {
+                    object_before_ip = face_pair[0];
+                    object_after_ip = s3_object;
 	            }
+
+	            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
+                IP23.set_topology_B(i_edge, edge_dim);
+
+	            IP23_list.push_back(IP23);
+	            unsigned int ip_idx = IP23_list.size()-1;
+	            object_next[object_before_ip] = ip_idx;
+	            IP_next.push_back( object_after_ip);
+	            if (object_next[object_after_ip] == no_idx) {
+	                    object_next[object_after_ip] = ip_idx;
+	                }
+
 	        } else { // interior of S2, just use the face pair
 	            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
 	            IP23.set_topology_B(i_edge, edge_dim);
 
                 IP23_list.push_back(IP23);
-	            unsigned int ip = IP23_list.size()-1;
-	            object_next[ face_pair[0] ] = ip;
-	            IP_next.push_back( face_pair[1] );
+	            unsigned int ip_idx = IP23_list.size()-1;
+
+	            if ( have_backlink_lambda(face_pair[1]) ) {
+                    object_next[ face_pair[1] ] = ip_idx;
+                    IP_next.push_back( face_pair[0] );
+	            } else {
+                    object_next[ face_pair[0] ] = ip_idx;
+                    IP_next.push_back( face_pair[1] );
+                    if (object_next[face_pair[1]] == no_idx) {
+                            object_next[face_pair[1]] = ip_idx;
+                        }
+
+	            }
 	        }
 	    }
 	}
@@ -1261,6 +1326,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
 
 	ASSERT_EQ(0, intersection.size());
+	/*
 	if (IP23_list.size() <= 2 ) {
 	    /**
 	     * Ideally we have every IP detected just once, so there is at most 2 IPs in
@@ -1272,7 +1338,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
          * - touching vertex or edge of S3 by vertex of S2 (third times in degenerate_list 2x from S2 side and
          *   from S3 edge)
 	     *
-	     */
+	     *//*
 
 	    // Need to deal with degenerate_list
 	    DebugOut()<< "IP23 list";
@@ -1303,22 +1369,56 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	        ASSERT_DBG( arma::norm(p0_coords - p1_coords, 1) > geometry_epsilon );
 	    }
 
-	} else {
-	    // regular case
-	    unsigned int ip=0;
-	    while( intersection.points().size() < IP23_list.size() ) {
-	        // DebugOut().VarFmt(ip) << IP23_list[ip];
+	} else {*/
 
-	        intersection.points().push_back(IP23_list[ip]);
+
+	    if (IP23_list.size() == 0) return; // empty intersection
+	    // regular case, merge duplicit IPs
+	    unsigned int ip=0;
+	    ASSERT_EQ_DBG(IP_next.size(), IP23_list.size());
+        intersection.points().push_back(IP23_list[ip]);
+        DebugOut().VarFmt(ip) << IP23_list[ip];
+	    while (1)  {
+	        //DebugOut().VarFmt(ip) << IP23_list[ip];
+
 	        unsigned int object = IP_next[ip];
-	        ASSERT_LT_DBG(object, no_idx);
-	        ip = object_next[object];
-	        ASSERT_LT_DBG(ip, no_idx);
-	        // DebugOut().VarFmt(object).VarFmt(ip);
+	        //IP_next[ip]=no_idx;
+            ASSERT_LT_DBG(object, object_next.size());
+            ip = object_next[object];
+            object_next[object]=no_idx;
+            if ((ip == no_idx)) break;
+	        ASSERT_LT_DBG(ip, IP_next.size());
+
+	        if ( ! ips_topology_equal(intersection.points().back(), IP23_list[ip]) ) {
+	            //DebugOut().VarFmt(ip) << IP23_list[ip];
+	            intersection.points().push_back(IP23_list[ip]);
+	        }
+
+
 	    }
-	}
+
+	    if (intersection.points().size() == 1) return;
+
+	    if (ips_topology_equal(intersection.points().back(), IP23_list[0]) )
+	        intersection.points().pop_back();
+
+	    //DebugOut().VarFmt(0) << "//" << IP23_list[0];
+	    //DebugOut().VarFmt(intersection.points().size()-1) << "//" << intersection.points().back();
+	//}
 
 	
+}
+
+
+
+
+bool ComputeIntersection<Simplex<2>, Simplex<3>>::ips_topology_equal(const IPAux23 &first, const IPAux23 &second)
+{
+    return
+            first.dim_A() == second.dim_A() &&
+            first.dim_B() == second.dim_B() &&
+            first.idx_A() == second.idx_A() &&
+            first.idx_B() == second.idx_B();
 }
 
 auto ComputeIntersection<Simplex<2>, Simplex<3>>::edge_faces(uint i_edge)-> FacePair
@@ -1330,7 +1430,7 @@ auto ComputeIntersection<Simplex<2>, Simplex<3>>::edge_faces(uint i_edge)-> Face
     // RefElement returns edge faces in clockwise order (edge pointing to us)
     // negative ip sign (ori 0) = faces counter-clockwise
     // positive ip sign (ori 1) = faces clockwise
-    return { s4_dim_starts[2] + line_faces[1-ip_ori], s4_dim_starts[2] + line_faces[ip_ori] };
+    return { s3_dim_starts[2] + line_faces[1-ip_ori], s3_dim_starts[2] + line_faces[ip_ori] };
 }
 
 auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> FacePair
@@ -1358,10 +1458,10 @@ auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> 
         FacePair pair = edge_faces(vtx_edges[i_edge]);
         auto &vtx_faces = RefElement<3>::interact(Interaction<2,0>(i_vertex));
         // replace faces by edges
-        if (pair[0] == s4_dim_starts[2] + vtx_faces[(i_edge+1)%3])
-            return { s4_dim_starts[1] + (i_edge+2)%3,  s4_dim_starts[1] + (i_edge+1)%3 };
+        if (pair[0] == s3_dim_starts[2] + vtx_faces[(i_edge+1)%3])
+            return { s3_dim_starts[1] + (i_edge+2)%3,  s3_dim_starts[1] + (i_edge+1)%3 };
         else
-            return { s4_dim_starts[1] + (i_edge+1)%3,  s4_dim_starts[1] + (i_edge+2)%3 };
+            return { s3_dim_starts[1] + (i_edge+1)%3,  s3_dim_starts[1] + (i_edge+2)%3 };
 
     } else if (n_degen == 1) {
         // One edge in S2 plane.
@@ -1372,16 +1472,16 @@ auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> 
             FacePair pair = edge_faces(vtx_edges[(i_edge+1)%3]);
             unsigned int face = RefElement<3>::interact(Interaction<2,0>(i_vertex))[i_edge];
             // assign edges to faces
-            if (pair[0] == s4_dim_starts[2] + face)
-                return { s4_dim_starts[2] + face, s4_dim_starts[1] + vtx_edges[i_edge]};
+            if (pair[0] == s3_dim_starts[2] + face)
+                return { s3_dim_starts[2] + face, s3_dim_starts[1] + vtx_edges[i_edge]};
             else
-                return { s4_dim_starts[1] + vtx_edges[i_edge], s4_dim_starts[2] + face };
+                return { s3_dim_starts[1] + vtx_edges[i_edge], s3_dim_starts[2] + face };
         } else {
-            // same signs, S2 plane touch S3 in edge
-            DebugOut() << "Touch in edge.";
+            // same signs; S2 plane touch S3 vertex and a single edge
+            //DebugOut() << "Touch in edge.";
             // same signs S2 plane touchs S3
             ASSERT(n_positive == 0 || n_positive== 2);
-            return { s4_dim_starts[3], s4_dim_starts[3]};
+            return { s3_dim_starts[0]+i_vertex, s3_dim_starts[1] + vtx_edges[i_edge]};
         }
 
 
@@ -1398,7 +1498,7 @@ auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> 
         } else {
             // S2 touch vertex of S3 in
             ASSERT( n_positive == 0 ||  n_positive == 3);
-            return { s4_dim_starts[3], s4_dim_starts[3]};
+            return { s3_dim_starts[0]+i_vertex, s3_dim_starts[0]+i_vertex};
         }
     }
 }
