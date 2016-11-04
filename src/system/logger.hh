@@ -183,6 +183,9 @@ private:
 	/// Print header to file stream, helper method called from \p print_to_file.
 	void print_file_header(std::ofstream& stream, std::stringstream& file_stream);
 
+	/// Return compact (relative) path to the given source file.
+	std::string compact_file_name(std::string file_name);
+
 	std::stringstream cout_stream_;       ///< Store messages printed to cout output stream
 	std::stringstream cerr_stream_;       ///< Store messages printed to cerr output stream
 	std::stringstream file_stream_;       ///< Store messages printed to file

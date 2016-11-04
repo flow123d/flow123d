@@ -219,6 +219,17 @@ void Logger::print_to_file(std::ofstream& stream, std::stringstream& file_stream
 	}
 }
 
+
+std::string Logger::compact_file_name(std::string file_name)
+{
+    // if constant FLOW123D_SOURCE_DIR is defined, we try to erase it from beginning of each CodePoint's filepath
+    #ifdef FLOW123D_SOURCE_DIR
+        string common_path = cmn_prefix(string(FLOW123D_SOURCE_DIR), file_name);
+        file_name.erase (0, common_path.size());
+    #endif
+    return file_name;
+}
+
 bool Logger::print_screen_header(std::ostream& stream, std::stringstream& scr_stream)
 {
 	stream << date_time_ << " ";
@@ -231,7 +242,11 @@ bool Logger::print_screen_header(std::ostream& stream, std::stringstream& scr_st
 	}
 
 	if (type_ != MsgType::message) { // type of message (besides Message)
-		stream << msg_type_string(type_) << "\n";
+	    stream << msg_type_string(type_);
+	    if (type_ == MsgType::debug) {
+	        stream << "(" << compact_file_name(file_name_) << ":" << line_ << ")";
+	    }
+		stream << "\n";
 		return false; // logger message starts at new line
 	} else {
 		return true; // logger message continues on the same line as header
@@ -251,12 +266,7 @@ void Logger::print_file_header(std::ofstream& stream, std::stringstream& file_st
 		stream << " , null";
 	}
 	stream << ", \"" << date_time_ << "\"";
-    // if constant FLOW123D_SOURCE_DIR is defined, we try to erase it from beginning of each CodePoint's filepath
-    #ifdef FLOW123D_SOURCE_DIR
-        string common_path = cmn_prefix(string(FLOW123D_SOURCE_DIR), file_name_);
-        file_name_.erase (0, common_path.size());
-    #endif
-	stream << ", \"" << file_name_ << "\", " << line_ << ", \"" << function_ << "\"";
+	stream << ", \"" << compact_file_name(file_name_) << "\", " << line_ << ", \"" << function_ << "\"";
 	stream << " ]\n";
 }
 
