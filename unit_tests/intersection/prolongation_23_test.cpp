@@ -170,7 +170,7 @@ TEST(intersection_prolongation_23d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_23d/";
     std::vector<string> filenames;
     
-    read_files_form_dir(dir_name, "msh", filenames);
+    read_files_from_dir(dir_name, "msh", filenames);
         
     std::vector<std::vector<std::vector<arma::vec3>>> solution;
     std::vector<unsigned int> n_components;

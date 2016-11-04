@@ -125,7 +125,7 @@ TEST(intersections_22d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_22d/";
     std::vector<string> filenames;
     
-    read_files_form_dir(dir_name, "msh", filenames);
+    read_files_from_dir(dir_name, "msh", filenames);
     
     std::vector<computeintersection::IntersectionLocal<2,2>> solution;
     fill_22d_solution(solution);

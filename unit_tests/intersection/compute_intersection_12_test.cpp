@@ -104,7 +104,7 @@ TEST(intersections_12d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_12d/";
     std::vector<string> filenames;
     
-    read_files_form_dir(dir_name, "msh", filenames);
+    read_files_from_dir(dir_name, "msh", filenames);
     
     std::vector<computeintersection::IntersectionLocal<1,2>> solution;
     fill_12d_solution(solution);

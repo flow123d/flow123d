@@ -78,7 +78,7 @@ TEST(area_intersections, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d/";
     std::vector<string> filenames;
     
-    read_files_form_dir(dir_name, "msh", filenames);
+    read_files_from_dir(dir_name, "msh", filenames);
 
     // for each mesh, compute intersection area and compare with old NGH
     unsigned int i_file=0;

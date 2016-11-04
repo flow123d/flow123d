@@ -111,7 +111,7 @@ TEST(intersection_prolongation_12d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_12d/";
     std::vector<string> filenames;
     
-    read_files_form_dir(dir_name, "msh", filenames);
+    read_files_from_dir(dir_name, "msh", filenames);
         
     std::vector<std::vector<arma::vec3>> solution;
     fill_12d_solution(solution);

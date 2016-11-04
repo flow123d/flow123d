@@ -122,7 +122,7 @@ TEST(intersections_13d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_13d/";
     std::vector<string> filenames;
     
-    read_files_form_dir(dir_name, "msh", filenames);
+    read_files_from_dir(dir_name, "msh", filenames);
     
     std::vector<computeintersection::IntersectionLocal<1,3>> solution;
     fill_13d_solution(solution);
