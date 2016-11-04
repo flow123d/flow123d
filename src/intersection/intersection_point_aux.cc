@@ -128,12 +128,15 @@ arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementFullIter ele) co
     return c;
 }
  
-
+/*
 template<> bool IntersectionPointAux<2,3>::operator<(const IntersectionPointAux<2,3> &ip) const{
 	return local_bcoords_A_[1] < ip.local_bcoords_A()[1] ||     // compare by x coordinate
            (local_bcoords_A_[1] == ip.local_bcoords_A()[1] &&   // in case of tie
            local_bcoords_A_[2] < ip.local_bcoords_A()[2]);      // compare by y coordinate
 };
+*/
+
+
 
 template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPointAux< N,M >& s)
 {

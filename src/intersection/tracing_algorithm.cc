@@ -26,7 +26,7 @@
 #include "system/sys_profiler.hh"
 
 namespace computeintersection{
-    
+/*
 void Tracing::trace_polygon(IntersectionAux<2,3> &p){
     
 //     DebugOut().fmt("{} intersections:\n",p.size());
@@ -106,7 +106,7 @@ void Tracing::trace_polygon_opt(IntersectionAux<2,3> &p){
                  * 
                  * if RES == 1 -> intersection direction is E-S
                  * if RES == 0 -> intersection direction is S-E (tetrahedron Side -> triangle Edge)
-                 */
+                 *//*
                 ASSERT_DBG( ip.dim_B() == 2 );
                 unsigned int sign = (unsigned int)(ip.orientation());
                 ASSERT_DBG( sign < 2);
@@ -140,7 +140,7 @@ void Tracing::trace_polygon_opt(IntersectionAux<2,3> &p){
                  * sides: let edge be oriented up and let us see the tetrahedron from outside ->
                  *  then the right side [0] is in and left side [1] is out
                  *  - this is determined by IP orientation
-                 */
+                 *//*
 
                 DebugOut().VarFmt(ip.idx_B()).VarFmt(first_side);
                 row = RefElement<3>::interact(Interaction<2,1>(tetrahedron_line))[1-first_side];
@@ -206,6 +206,7 @@ void Tracing::trace_polygon_opt(IntersectionAux<2,3> &p){
     END_TIMER("CI trace opt");
 };
 
+/*
 void Tracing::trace_polygon_convex_hull(IntersectionAux<2,3> &p){
 
     START_TIMER("CI trace convex hull");
@@ -282,6 +283,6 @@ int Tracing::side_content_prolongation(IntersectionAux<2,3> &p){
     }
     return -1;
 
-}
+}*/
 
 } // END NAMESPACE

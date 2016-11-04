@@ -178,8 +178,8 @@ public:
 	/** @brief Comparison operator for sorting the IPs in convex hull tracing algorithm.
      * Compares the points by x-coordinate (in case of a tie, compares by y-coordinate).
 	 */
-	bool operator<(const IntersectionPointAux<N,M> &ip) const;
-    
+	//bool operator<(const IntersectionPointAux<N,M> &ip) const;
+
     /// Friend output operator.
     friend std::ostream& operator<< <>(std::ostream& os, const IntersectionPointAux<N,M>& IP);
 };
