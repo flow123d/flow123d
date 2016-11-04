@@ -47,80 +47,108 @@ using namespace computeintersection;
  * - TODO: when finished, remove NGH comparison
  */
 
-
+typedef std::vector< arma::vec3>    TestCaseIPs;
+typedef std::pair<std::string, TestCaseIPs>   TestCaseResult ;
 
 /// Create results for the meshes in directory 'prolong_meshes_13d'.
-void fill_solution(std::vector<std::vector<arma::vec3>> &c)
+void fill_solution(std::vector< TestCaseResult> &c)
 {
     c.clear();
-    
-    c.push_back({
-                {0.2, 0, 0.2},
+
+    // regular cases
+    c.push_back({ "31_r", {
                 {0.2, 0.5, 0.2},
-                {0.4, 0, 0.3}});
-    c.push_back({
+                {0.2, 0, 0.2},
+                {0.4, 0, 0.3}}});
+
+    c.push_back({ "32_r", {
                 {0, 0.3, 0.1},
-                {0, 0.4, 0},
-                {0.2, 0.1, 0}});
-    c.push_back({
+                {0.2, 0.1, 0},
+                {0, 0.4, 0}}});
+    c.push_back({ "33_r", {
                 {0, 0.2, 0},
                 {0, 0.5, 0.5},
-                {0.2, 0.8, 0}});
-    c.push_back({
+                {0.2, 0.8, 0}}});
+    c.push_back({ "34_r", {
                 {0.1, 0.15, 0.3},
-                {0.2, 0.25, 0.15},
-                {0.4, 0.05, 0.1}});
-    
-    c.push_back({
+                {0.4, 0.05, 0.1},
+                {0.2, 0.25, 0.15}}});
+
+    c.push_back({ "40_r", {
+                {0.6, 0, 0},
                 {0, 0, 0.6},
                 {0, 0.2, 0.8},
-                {0.6, 0, 0},
-                {0.8, 0.2, 0}});
-    c.push_back({
-                {0-1e-16, 0, 0.14},     //FIXME: rounding error, should be zero 
-                {0, 0.375, 0.125},
+                {0.8, 0.2, 0}}});
+    c.push_back({ "41_r", {
                 {0.2, 0.5, 0.2},
-                {0.4, 0, 0.3}});
-    c.push_back({
+                {0, 0.375, 0.125},
+                {0, 0, 0.14},     //FIXME: rounding error, should be zero
+                {0.4, 0, 0.3}}});
+    c.push_back({ "42_r", {
                 {0.05, 0.3, 0.2},
                 {0.1, 0.2, 0},
                 {0.3, 0.1, 0},
-                {0.35, 0.15, 0.2}});
+                {0.35, 0.15, 0.2}}});
     
-    c.push_back({
-                {0, 0, 0.475},
-                {0, 0.4, 0.25},
+    c.push_back({ "50_r", {
                 {0.035, 0.57, 0.15},
-                {0.5, 0.2, 0.3},
-                {0.6, 0, 0.4}});
-    
+                {0, 0.4, 0.25},
+                {0, 0, 0.475},
+                {0.6, 0, 0.4},
+                {0.5, 0.2, 0.3}
+                }});
+
     // special cases:
-    c.push_back({
-                {0, 0, 0.3},
-                {0.2, 0.5, 0.2},
-                {0.4, 0, 0.3}});
-    c.push_back({
+    // s3 touch cases (intersection on boundary of s3)
+    c.push_back({ "00_s", {{0, 0, 1}} }); // s2 corner - s3 vertex
+    c.push_back({ "01_s", {{0.5, 0, 0.5}} }); // s2 corner - s3 edge
+
+    c.push_back({ "05_s", {{0.2, 0, 0.8}, {0.8,0, 0.2}} }); // s2 plane - s3 edge
+    c.push_back({ "06_s", {{0, 0, 0}, {1, 0, 0}}}); // s2 side identical with s3 edge
+    c.push_back({ "07_s", {{0, 0, 0}, {0, 0, 1}}}); // s3 edge in s2 plane
+
+
+    c.push_back({ "11_s", { // s2 in face of s3
                 {0, 0.5, 0},
-                {0, 0.7, 0},
-                {0.3, 0.7, 0},
                 {0.5, 0, 0},
                 {0.8, 0, 0},
-                {0.8, 0.2, 0}});
-    c.push_back({
+                {0.8, 0.2, 0},
+                {0.3, 0.7, 0},
+                {0, 0.7, 0}
+                }});
+
+    c.push_back({ "12_s", { // s2 identical with face of s3
                 {0, 0, 0},
-                {0, 1, 0},
-                {1, 0, 0}});
-    
-    c.push_back({{0, 0, 1}});
-    
-    c.push_back({
+                {1, 0, 0},
+                {0, 1, 0}}});
+    c.push_back({ "13_s", { // s2 side on s3 edge; s2 corner on s3 edge
+                {0.2, 0, 0},
+                {0.2, 0.8, 0},
+                {0.8, 0.2, 0}}});
+    c.push_back({ "14_s", { // s2 side on s3 edge; s2 corner on s3 edge
                 {0, 0, 0},
-                {1, 0, 0}});
-    c.push_back({
-                {0, 0.5, 0.25},
-                {0.2, 0.4, 0.4},
-                {0.3, 0.3, 0.4},
-                {0.5, 0, 0.25}});
+                {0.5, 0.5, 0},
+                {0.4, 0.6, 0},
+                {0.2, 0.6, 0},
+                {0, 0.2, 0}}});
+    
+    // special polygon, on S3 boundary
+
+    c.push_back({ "22_s", {
+                {0.2, 0.2, 0.4},
+                {0, 0, 0.4},
+                {0.2, 0, 0.4}
+                }});
+    c.push_back({ "25_s", { // s2 corners on : s3 vertex, edge , face
+                {0.5, 0.5, 0},
+                {0, 0, 0.5},
+                {0, 0, 1}}});
+    c.push_back({ "26_s", { // s2 corners on : s3 vertex, edge , face; two s2 sides in s3 faces
+                {0.5, 0.5, 0},
+                {0, 0.25, 0.25},
+                {0, 0, 1}}});
+
+
 }
 
 /// auxiliary function for sorting intersection point according to x,y local coordinates of component triangle
@@ -147,17 +175,15 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     Simplex<3> tetra = create_simplex<3>(mesh->element(tetra_ele_idx));
     
     IntersectionAux<2,3> is;
-//     std::vector<unsigned int> prolong_table;    //FIXME with merge PE_prolong, remove prolong_table
     ComputeIntersection< Simplex<2>, Simplex<3>> CI(triangle, tetra);
     CI.init();
-//     CI.compute(is, prolong_table);
     CI.compute(is);
     
 //     cout << is;
-    for(IntersectionPointAux<2,3> &ip: is.points())
-    {
-        ip.coords(mesh->element(0)).print(std::cout,"ip");
-    }
+//    for(IntersectionPointAux<2,3> &ip: is.points())
+//    {
+//        ip.coords(mesh->element(0)).print(std::cout,"ip");
+//    }
 
     EXPECT_EQ(il.size(), is.size());
     
@@ -169,14 +195,14 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
         coords[i] = temp_ilc[i].coords(mesh->element(triangle_ele_idx));
     }
     // sort computed coords according to real coordinates
-    std::sort(coords.begin(), coords.end(),compare_coords);    
+    //std::sort(coords.begin(), coords.end(),compare_coords);
     
     
     for(unsigned int i=0; i < coords.size(); i++)
     {
-        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
+        std::cout << "---------- check IP[" << i << "] ----------\n";
         
-        EXPECT_ARMA_EQ(il[i],coords[i]);
+        EXPECT_ARMA_EQ(il[i], coords[i]);
 //         EXPECT_ARMA_EQ(il[i].comp_coords(), ilc[i].comp_coords());
 //         EXPECT_ARMA_EQ(il[i].bulk_coords(), ilc[i].bulk_coords());
     }
@@ -227,27 +253,30 @@ TEST(area_intersections, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d_new/";
     std::vector<string> filenames;
     
-    read_files_form_dir(dir_name, "msh", filenames);
+    read_files_from_dir(dir_name, "msh", filenames);
     
     //std::vector<computeintersection::IntersectionAux<2,3>> solution;
-    std::vector<std::vector<arma::vec3>> solution_coords;
+    std::vector<TestCaseResult> solution_coords;
     fill_solution(solution_coords);
-    EXPECT_EQ(solution_coords.size(), filenames.size());
+    //EXPECT_EQ(solution_coords.size(), filenames.size());
     
     // for each mesh, compute intersection area and compare with old NGH
     unsigned int i_file=0;
-    for(auto &fname : filenames)
+    for(auto &test_case : solution_coords)
     {
-        FilePath mesh_file(dir_name + fname, FilePath::input_file);
+        string file_name=test_case.first+"_triangle_tetrahedron.msh";
+        TestCaseIPs &case_ips=test_case.second;
+
+        FilePath mesh_file(dir_name + file_name, FilePath::input_file);
         
-        const unsigned int np = permutations_triangle.size();
+        const unsigned int np = 1;//permutations_triangle.size();
         for(unsigned int p=0; p<np; p++){
 //             if (p>0) break; //FIXME dont forget to remove later
             
-            const unsigned int npt = permutations_tetrahedron.size();
+            const unsigned int npt = 1;//permutations_tetrahedron.size();
             for(unsigned int pt=0; pt<npt; pt++){
 //                 if (pt>0) break; //FIXME dont forget to remove later
-                MessageOut().fmt("Computing intersection on mesh #{}: {} \n permutations  triangle #{}, tetrahedron #{}\n", i_file,  fname, p, pt);
+                MessageOut().fmt("## Computing intersection on mesh #{}: {} \n ## permutation:  triangle #{}, tetrahedron #{}\n", i_file,  file_name, p, pt);
                 
                 Mesh mesh;
                 // read mesh with gmshreader
@@ -265,7 +294,7 @@ TEST(area_intersections, all) {
                 mesh.setup_topology();
                 
                 compare_with_ngh(&mesh);
-                compute_intersection_23d(&mesh, solution_coords[i_file]);
+                compute_intersection_23d(&mesh, case_ips);
             }
         }
         i_file++;

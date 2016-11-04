@@ -47,7 +47,7 @@ static const std::vector<std::vector<unsigned int>> permutations_tetrahedron = {
 //         {3,2,0,1},
     {3,2,1,0}};
 
-void read_files_form_dir(const string &dir_name, 
+void read_files_from_dir(const string &dir_name,
                          const string &extension, 
                          std::vector<string> &filenames,
                          bool sort_filenames = true)
