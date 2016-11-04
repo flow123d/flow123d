@@ -171,7 +171,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
         for (j = 0; j < RefElement<dim>::n_sides; j++){
             normals[j] = trans(fv_data.inverse_jacobians[0])*RefElement<dim>::normal_vector(j);
             normals[j] = normals[j]/norm(normals[j],2);
-//             normals[j].print(cout);
+//             normals[j].print(cout, "normal");
         }
                 
         enr_dof_val.resize(enr.size());

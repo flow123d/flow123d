@@ -125,7 +125,13 @@ public:
                 shared_ptr< computeintersection::InspectElements > intersections,
                 Field<3, FieldValue<3>::Scalar>& cross_section);
     
-    void print_array(int * array, unsigned int length, std::string name = "array");
+    template<class T>
+    void print_array(T * array, unsigned int length, std::string name = "array"){
+        DBGCOUT("print '" << name  << "' (" << length << "): \n");
+        for(unsigned int i=0; i < length; i++){
+            DBGCOUT(<< "[" << i << "]:  " << array[i] << "\n");
+        }
+    }
     
     int total_size();
     

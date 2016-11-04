@@ -338,13 +338,13 @@ LocalElementAccessorBase<3> MH_DofHandler::accessor(uint local_ele_idx) {
  * ***********************************************************************************************************
  * **********************************************************************************************************/
 
-void MH_DofHandler::print_array(int* array, unsigned int length, std::string name)
-{
-    DBGCOUT("print '" << name  << "' (" << length << "): \n");
-    for(unsigned int i=0; i < length; i++){
-        DBGCOUT(<< "[" << i << "]:  " << array[i] << "\n");
-    }
-}
+// void MH_DofHandler::print_array(int* array, unsigned int length, std::string name)
+// {
+//     DBGCOUT("print '" << name  << "' (" << length << "): \n");
+//     for(unsigned int i=0; i < length; i++){
+//         DBGCOUT(<< "[" << i << "]:  " << array[i] << "\n");
+//     }
+// }
 
 void MH_DofHandler::clear_mesh_flags()
 {

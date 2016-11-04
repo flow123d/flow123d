@@ -315,11 +315,21 @@ protected:
             }
             loc_system_.set_mat_values({side_row}, {edge_row}, {1.0});
             loc_system_.set_mat_values({edge_row}, {side_row}, {1.0});
+            
+            
+            if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+                assemble_enriched_side_edge(ele_ac, i);
+            }
         }
     }
-        
-     void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
-     {
+    
+    
+    void assemble_enriched_side_edge(LocalElementAccessorBase<3> ele_ac, unsigned int local_side){
+    }
+    
+    
+    void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
+    {
         double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
         double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());
         double scale = 1 / cs /conduct;
@@ -447,6 +457,8 @@ protected:
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
             
             temp_val = sing->circumference() * sigma;
+            DBGVAR(temp_val);
+            DBGVAR(sing_row);
             val =  temp_val * press_shape_val * sing_lagrange_val;
             val_diag_press = - temp_val * press_shape_val * press_shape_val;
             val_diag_sing = - temp_val * sing_lagrange_val * sing_lagrange_val;
@@ -494,6 +506,7 @@ protected:
     
     shared_ptr<FE_RT0_XFEM<dim,3>> fe_rt_xfem_;
     shared_ptr<FEValues<dim,3>> fe_values_rt_xfem_;
+    shared_ptr<FESideValues<dim,3>> fv_side_xfem_;
     
     shared_ptr<FE_P0_XFEM<dim,3>> fe_p0_xfem_;
     shared_ptr<FEValues<dim,3>> fe_values_p0_xfem_;
@@ -580,5 +593,29 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
         }
     }
 }
+
+template<> inline
+void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> ele_ac, unsigned int local_side){
+        ElementFullIter ele = ele_ac.full_iter();
+        double val;
+        int side_row, edge_row;
+        
+        edge_row = loc_system_.row_dofs[loc_edge_dofs[local_side]];
+        
+        fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_, 
+                                                            update_values
+                                                            | update_quadrature_points
+                                                            | update_normal_vectors);
+        fv_side_xfem_->reinit(ele, local_side);
+        
+        for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
+            side_row = loc_system_.row_dofs[loc_vel_dofs[j]];
+            //suppose one point quadrature at the moment
+            val = arma::dot(fv_side_xfem_->shape_vector(j,0),fv_side_xfem_->normal_vector(0))
+                    * ele->side(local_side)->measure();
+            ad_->lin_sys->mat_set_value(side_row, edge_row, val);
+            ad_->lin_sys->mat_set_value(edge_row, side_row, val);
+        }
+    }
     
 #endif /* SRC_FLOW_DARCY_FLOW_ASSEMBLY_XFEM_HH_ */

@@ -553,7 +553,6 @@ void DarcyMH::solve_nonlinear()
     }
 
     solution_changed_for_scatter=true;
-
 }
 
 
@@ -592,6 +591,7 @@ void DarcyMH::output_data() {
     //time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 
+    mh_dh.print_array(mh_dh.mh_solution, mh_dh.total_size(), "MH solution");
 
 	if (balance_ != nullptr)
 	{
@@ -682,10 +682,10 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
 //         }
     }
     //temporary
-    for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
-        int w_idx = mh_dh.row_4_sing[w];
-        schur0->mat_set_value(w_idx, w_idx, 1.0);
-    }
+//     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
+//         int w_idx = mh_dh.row_4_sing[w];
+//         schur0->mat_set_value(w_idx, w_idx, 1.0);
+//     }
     
     if (balance_ != nullptr)
         balance_->finish_flux_assembly(water_balance_idx_);
