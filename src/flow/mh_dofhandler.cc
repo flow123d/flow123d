@@ -311,6 +311,7 @@ void MH_DofHandler::set_solution( double time, double * solution, double precisi
 
 /// temporary replacement for DofHandler accessor, flux through given side
 double MH_DofHandler::side_flux(const Side &side) const {
+//     DBGVAR(elem_side_to_global[ side.element().index() ][ side.el_idx() ]);
     return mh_solution[ elem_side_to_global[ side.element().index() ][ side.el_idx() ] ];
 }
 
@@ -470,11 +471,6 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
                 clear_mesh_flags();
                 find_ele_to_enrich(singularities.back(), ele_to_enrich, ele2d, enr_radius, new_enrich_node_idx);
-                
-//                 // fill xfem data
-//                 for(unsigned int ele_idx : ele_to_enrich){
-//                     
-//                 }
             }
         }
     }
@@ -498,12 +494,17 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     
     //distribute enriched dofs:
     temp_offset = offset_enr_velocity; // will return last dof + 1 (it means new available dof)
-    distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+    if(enrich_velocity) {
+        distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+    }
+    
     offset_pressure = temp_offset;
     offset_enr_pressure = offset_pressure + mesh_->n_elements();
     
     temp_offset = offset_enr_pressure; // will return last dof + 1 (it means new available dof)
-    distribute_enriched_dofs(enr_dofs_pressure, temp_offset, Quantity::pressure);
+    if(enrich_pressure){
+        distribute_enriched_dofs(enr_dofs_pressure, temp_offset, Quantity::pressure);
+    }
     offset_edges = temp_offset;
     offset_enr_lagrange = offset_edges + mesh_->n_edges();
     
@@ -526,6 +527,10 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
         xd.create_sing_quads(ele);
         DBGVAR(xd.n_singularities_inside());
 //         xd.print(cout);
+        
+        //HACK:
+        if(! enrich_pressure)
+            xd.global_enriched_dofs()[Quantity::pressure].resize(xd.n_enrichments());
     }
     
     singularities.shrink_to_fit();
@@ -603,7 +608,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
             xdata = & xfem_data.back();
             xdata->set_node_values(&node_values, &node_vec_values);
             //TODO: set number of quantities
-            xdata->global_enriched_dofs().resize(3);
+            xdata->global_enriched_dofs().resize(2);
             xdata->set_element(ele->index());
             ele->xfem_data = xdata;
         }

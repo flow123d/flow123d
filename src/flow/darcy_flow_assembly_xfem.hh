@@ -42,7 +42,7 @@ public:
     
     AssemblyMHXFEM<dim>(AssemblyDataPtr data)
     : quad_(3),
-        fe_values_(map_, quad_, fe_rt_,
+        fe_values_rt_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
 
         side_quad_(1),
@@ -72,16 +72,18 @@ public:
         
         if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
             prepare_xfem(ele_ac);
-    
+        
         set_dofs_and_bc(ele_ac);
         
         assemble_sides(ele_ac);
+        
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
         if(ele_ac.is_enriched() && ele_ac.xfem_data_pointer()->is_complement())
             assemble_singular_communication(ele_ac);
         
+        //mast be last due to overriding xfem fe values
         if(ele_ac.is_enriched())
             assemble_singular_velocity(ele_ac);
         
@@ -113,6 +115,7 @@ public:
     arma::vec3 make_element_vector(ElementFullIter ele) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
+        DBGVAR(ele->index());
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
 
@@ -337,7 +340,7 @@ protected:
         if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
             assemble_sides_scale(ele_ac, scale, *fe_values_rt_xfem_);
         else
-            assemble_sides_scale(ele_ac, scale, fe_values_);
+            assemble_sides_scale(ele_ac, scale, fe_values_rt_);
     }
     
     void assemble_sides_scale(LocalElementAccessorBase<3> ele_ac, double scale, FEValues<dim,3> & fe_values)
@@ -393,8 +396,9 @@ protected:
     
     void assemble_element(LocalElementAccessorBase<3> ele_ac){        
         
-        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
-            assemble_element(ele_ac, *fe_values_rt_xfem_, *fe_values_p0_xfem_);
+        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement()){
+                assemble_element(ele_ac, *fe_values_rt_xfem_, *fe_values_p0_xfem_);
+        }
         else 
         {
             for(unsigned int side = 0; side < ele_ac.n_sides(); side++){
@@ -417,8 +421,8 @@ protected:
         fv_vel.reinit(ele);
         fv_press.reinit(ele);
         
-        unsigned int ndofs_vel = fv_vel.get_fe()->n_dofs();
-        unsigned int ndofs_press = fv_press.get_fe()->n_dofs();
+        unsigned int ndofs_vel = loc_vel_dofs.size();
+        unsigned int ndofs_press = loc_press_dofs.size();
         unsigned int qsize = qxfem_->size();
 
         for (unsigned int k=0; k<qsize; k++)
@@ -478,7 +482,7 @@ protected:
     FE_RT0<dim,3> fe_rt_;
     MappingP1<dim,3> map_;
     QGauss<dim> quad_;
-    FEValues<dim,3> fe_values_;
+    FEValues<dim,3> fe_values_rt_;
 
     // assembly face integrals (BC)
     QGauss<dim-1> side_quad_;
@@ -604,7 +608,6 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
         
         fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_, 
                                                             update_values
-                                                            | update_quadrature_points
                                                             | update_normal_vectors);
         fv_side_xfem_->reinit(ele, local_side);
         

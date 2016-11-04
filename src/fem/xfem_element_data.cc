@@ -29,7 +29,8 @@ unsigned int XFEMElementSingularData::n_enriched_dofs(Quantity quant) const
 {
     ASSERT_DBG(quant < global_enriched_dofs_.size());
     ASSERT_DBG(global_enriched_dofs_[quant].size() > 0);
-    ASSERT_DBG(global_enriched_dofs_[quant][0].size() > 0);
+//     ASSERT_DBG(global_enriched_dofs_[quant][0].size() > 0);
+    // if quantity not enriched, then returns 0
     //FIXME: supposing that all enrichments have the same number of enr dofs
     return global_enriched_dofs_[quant].size() * global_enriched_dofs_[quant][0].size();
 }
