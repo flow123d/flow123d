@@ -28,6 +28,7 @@
 #include "flow/darcy_flow_assembly.hh"
 #include "flow/darcy_flow_assembler.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/field_velocity.hh"
 
 #include "io/output_time.hh"
 #include "io/observe.hh"
@@ -125,9 +126,13 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
-	ele_flux.resize(3*mesh_->n_elements());
-	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
-	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+    field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section);
+    
+// 	ele_flux.resize(3*mesh_->n_elements());
+// 	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
+// 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+    
+    output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
@@ -191,10 +196,11 @@ void DarcyFlowMHOutput::output()
         else
                 make_element_scalar(observed_elements);
 
-        if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) )
-                make_element_vector(all_element_idx_);
-        else
-                make_element_vector(observed_elements);
+//         if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) ){
+//                 make_element_vector(all_element_idx_);
+//         }
+//         else
+//                 make_element_vector(observed_elements);
 
         if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
                 make_node_scalar_param(all_element_idx_);
@@ -254,8 +260,6 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     darcy_flow->get_mh_dofhandler();
 
     DBGCOUT("DarcyFlowMHOutput::make_element_vector\n");
-    
-    if(darcy_flow->use_xfem && darcy_flow->mh_dh.enrich_velocity);
     
     // create proper assembler
     AssemblerBase* multidim_assembler;

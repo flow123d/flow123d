@@ -37,6 +37,7 @@
 class DarcyMH;
 class OutputTime;
 class DOFHandlerMultiDim;
+class FieldVelocity;
 
 
 /**
@@ -149,6 +150,8 @@ private:
     // that we can pass there directly vector< arma:: vec3 >
     VectorSeqDouble ele_flux;
 
+    std::shared_ptr<FieldVelocity> field_velocity;
+    
     // A vector of all element indexes
     std::vector<unsigned int> all_element_idx_;
 
