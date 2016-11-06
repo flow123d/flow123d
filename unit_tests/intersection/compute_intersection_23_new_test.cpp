@@ -106,7 +106,9 @@ void fill_solution(std::vector< TestCaseResult> &c)
     c.push_back({ "05_s", {{0.2, 0, 0.8}, {0.8,0, 0.2}} }); // s2 plane - s3 edge
     c.push_back({ "06_s", {{0, 0, 0}, {1, 0, 0}}}); // s2 side identical with s3 edge
     c.push_back({ "07_s", {{0, 0, 0}, {0, 0, 1}}}); // s3 edge in s2 plane
-
+    c.push_back({ "08_s", {{0, 0, 0}, {0, 0, 0.5}}}); // s3 edge in s2 plane
+    c.push_back({ "09_s", {{0.5, 0.5, 0}, {1, 0, 0}}}); // s3 edge in s2 plane
+    c.push_back({ "10_s", {{1, 0, 0}, {0.5, 0.5, 0} }}); // s3 edge in s2 plane
 
     c.push_back({ "11_s", { // s2 in face of s3
                 {0, 0.5, 0},

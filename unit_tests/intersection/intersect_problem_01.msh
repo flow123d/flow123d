@@ -1,0 +1,26 @@
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$PhysicalNames
+5
+1 4 "channelY"
+1 5 "channelX"
+2 1 "2Dfracture1"
+2 2 "2Dfracture2"
+3 3 "volume"
+$EndPhysicalNames
+$Nodes
+7
+4 0 1 0
+18 0 0.6 0
+41 0.2 0.8 0
+42 0.4 0.6 0
+60 0.317575516954585 0.6824244830454149 0.2859034831411898
+91 0 0.7490079365076474 0.2509920634923956
+135 0.2509920634923669 0.7490079365076119 0
+$EndNodes
+$Elements
+2
+11 2 2 2 19 41 60 42
+291 4 2 3 35 135 91 4 18
+$EndElements
