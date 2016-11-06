@@ -20,6 +20,8 @@
 #include "intersection/intersection_local.hh"
 
 #include "compute_intersection_test.hh"
+#include "arma_expect.hh"
+
 
 using namespace std;
 using namespace computeintersection;
@@ -119,8 +121,8 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     
     ils[6][3] = {arma::vec3({0,0,0})};
     ils[6][4] = {arma::vec3({0,0,0})};
-    ils[6][5] = {arma::vec3({0,0,0}),arma::vec3({0.3,0.1,0.1})};
-    ils[6][6] = {arma::vec3({-0.1,-0.3,-0.1}),arma::vec3({0,0,0})};
+    ils[6][5] = {arma::vec3({-0.1,-0.3,-0.1}),arma::vec3({0,0,0})};
+    ils[6][6] = {arma::vec3({0,0,0}),arma::vec3({0.3,0.1,0.1})};
     ils[6][7] = {arma::vec3({0,0,0})};
     ils[6][8] = {arma::vec3({0,0,0})};
     
@@ -188,9 +190,10 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
                 ilc[i].component_ele_idx(), ilc[i].bulk_ele_idx());
         DebugOut()<< "bary: " << ilc[i][j].comp_coords();
         arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
-        EXPECT_NEAR(il[i][j][0], ip[0], 1e-14);
-        EXPECT_NEAR(il[i][j][1], ip[1], 1e-14);
-        EXPECT_NEAR(il[i][j][2], ip[2], 1e-14);
+        EXPECT_ARMA_EQ(il[i][j], ip);
+        //EXPECT_NEAR(il[i][j][0], ip[0], 1e-14);
+        //EXPECT_NEAR(il[i][j][1], ip[1], 1e-14);
+        //EXPECT_NEAR(il[i][j][2], ip[2], 1e-14);
     }
     
     computed_length = ie.measure_13();

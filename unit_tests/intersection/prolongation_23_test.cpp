@@ -17,6 +17,7 @@
 #include "intersection/intersection_aux.hh"
 #include "intersection/intersection_local.hh"
 
+#include "arma_expect.hh"
 #include "compute_intersection_test.hh"
 
 using namespace std;
@@ -34,11 +35,11 @@ void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     n_components.resize(n_files, 1);
     
     ils[0].resize(4);
-    ils[0][0] = {   {0.475, 0.325, 0}, 
-                    {0.25, 0.25, 0},
+    ils[0][0] = {   {0.25, 0.25, 0},
                     {0, 0.05, 0.05},
                     {0.2, 0, 0.1},
-                    {0.41, 0, 0.13}};
+                    {0.41, 0, 0.13},
+                    {0.475, 0.325, 0}};
     ils[0][1] = {   {0.2, 0, 0.1},
                     {0.4, -0.05, 0.15},
                     {0.41, 0, 0.13}};
@@ -53,9 +54,9 @@ void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     // no prolongation over a gap between two tetrahedra
     ils[1].resize(4);
     n_components[1] = 4;
-    ils[1][0] = {   {0.2, 0.25, 0},
-                    {0.25, 0.25, 0.25},
-                    {0.25, 0.25, 0}};
+    ils[1][0] = {   {0.25, 0.25, 0.25},
+                    {0.25, 0.25, 0},
+                    {0.2, 0.25, 0}};
     ils[1][1] = {   {0.25, 0.25, -1},
                     {0.25, 0.25, -1.25},
                     {0.2, 0.25, -1}};
@@ -97,10 +98,10 @@ void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     // edge - edge
     ils[7].resize(2);
     ils[7][0] = {   {0, 0.25, 0}};
-    ils[7][1] = {   {0.25, 0.25, 0.25},
-                    {0, 0.25, 0.25},
-                    {0, 0.25, 0},
-                    {0.25, 0.25, 0}};
+    ils[7][1] = {   {0, 0.25, 0},
+                    {0.25, 0.25, 0},
+                    {0.25, 0.25, 0.25},
+                    {0, 0.25, 0.25}};
     
     // side - node
     ils[8].resize(3, {{0, 0, 1}} );
@@ -130,12 +131,14 @@ void compute_intersection_23d(Mesh *mesh,
     std::vector<computeintersection::IntersectionLocal<2,3>> ilc = ie.intersection_storage23_;
     
     // write computed intersections
+    /*
     for(unsigned int i = 0; i < ilc.size(); i++)
     {
         DebugOut() << &ilc[i] << ilc[i];
         for(unsigned int j=0; j < ilc[i].size(); j++)
             DebugOut() << ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
     }
+    */
     
     // sort the storage, so it is the same for every algorithm (BIH, BB ...)
     // and we avoid creating the intersection map for exact IPs
@@ -147,11 +150,9 @@ void compute_intersection_23d(Mesh *mesh,
     for(unsigned int i=0; i < ilc.size(); i++)
         for(unsigned int j=0; j < ilc[i].size(); j++)
     {
-        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
+        MessageOut().fmt("---------- check Polygon: {} IP: {} ----------\n",i, j);
         arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
-        EXPECT_NEAR(ip[0], il[i][j][0], 1e-14);
-        EXPECT_NEAR(ip[1], il[i][j][1], 1e-14);
-        EXPECT_NEAR(ip[2], il[i][j][2], 1e-14);
+        EXPECT_ARMA_EQ(il[i][j], ip);
     }
     
     area = ie.measure_23();
