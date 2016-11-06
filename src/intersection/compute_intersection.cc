@@ -302,7 +302,9 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
                     signed_plucker_product(2)};
     double w_sum = w[0] + w[1] + w[2];
     // if all products 0, we need avoiding zero division
-    if(std::abs(w_sum) > rounding_epsilonX)
+    //DebugOut().VarFmt(w_sum);
+
+    if(std::abs(w_sum) > rounding_epsilon)
         w = w / w_sum;
     
     unsigned int n_positive = 0;
@@ -310,6 +312,7 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
     unsigned int zero_idx_sum =0;
 
     for (unsigned int i=0; i < 3; i++) {
+        //DebugOut().VarFmt(i).VarFmt(w[i]);
         if (w[i] > rounding_epsilon) n_positive++;
         else if ( w[i] > -rounding_epsilon) zero_idx_sum+=i;
         else n_negative++;
@@ -1052,6 +1055,10 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
 void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3  >& intersection)
 {
 
+    //DebugOut().fmt("2d ele: {} 3d ele: {}\n",
+    //        intersection.component_ele_idx(),
+    //        intersection.bulk_ele_idx());
+
     IP23_list.clear();
     degenerate_ips.clear();
 
@@ -1122,9 +1129,11 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
             if (IP13s.size() == 1 ) {
                 if (IP.dim_B() == 0) continue; // S3 vertices are better detected in phase 2
-                if (IP.dim_A() == 0) {
+                if (IP.dim_A() == 0) { // vertex of triangle
                     object_before_ip = tetra_object;
                     object_after_ip = s2_dim_starts[0]+current_triangle_vertex;
+                    if ( (IP.idx_A()+side_cycle_orientation[_i_side])%2 == 0)
+                        std::swap(object_before_ip, object_after_ip);
                 } else {
                     std::swap(object_before_ip, object_after_ip);
                 }
@@ -1165,13 +1174,14 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             }*/
 
 
-
             unsigned int ip_idx = IP23_list.size()-1;
+            //DebugOut().fmt("before: {} after: {} ip: {}\n", object_before_ip, object_after_ip, ip_idx);
             ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size());
             if (have_backlink_lambda(object_after_ip)) {
                 // target object is already target of other IP, so it must be source object
                 std::swap(object_before_ip, object_after_ip);
             }
+            //DebugOut().fmt("_before: {} _after: {}\n", object_before_ip, object_after_ip);
             ASSERT_DBG( ! have_backlink_lambda(object_after_ip) ); // at least one could be target object
             object_next[object_before_ip] = ip_idx;
             IP_next[ip_idx] = object_after_ip;
@@ -1207,6 +1217,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
 	    std::vector<IPAux12> IP12_local;
 	    IntersectionResult result = CI12[tetra_edge].compute(IP12_local, false);
+	    //DebugOut().VarFmt(tetra_edge).VarFmt(int(result));
 	    if (result < IntersectionResult::degenerate) {
 	        ASSERT_DBG(IP12_local.size() ==1);
 	        IP12s_.push_back(IP12_local[0]);
@@ -1230,13 +1241,14 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
 	        uint edge_dim = IP12.dim_A();
 	        uint i_edge = tetra_edge;
-	        ASSERT_DBG(edge_dim < 2);
+	        ASSERT_LT_DBG(edge_dim, 2);
 
 	        if ( edge_dim == 1) {
 	            face_pair = edge_faces(i_edge);
 	        } else { // edge_dim == 0
 	            // i_edge is a vertex index in this case
 	            i_edge = RefElement<3>::interact(Interaction<0,1>(tetra_edge))[IP12.idx_A()];
+	            //DebugOut().VarFmt(tetra_edge).VarFmt(i_edge);
 	            face_pair = vertex_faces(i_edge);
 
 
@@ -1373,11 +1385,23 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
 
 	    if (IP23_list.size() == 0) return; // empty intersection
+	    // detect first IP, this needs to be done only in case of
+	    // point or line intersections, where IPs links do not form closed cycle
+	    // Possibly we do this only if we detect such case through previous phases.
+	    vector<char> have_predecessor(IP23_list.size(), 0);
+	    for(auto obj : IP_next) {
+            ASSERT_LT_DBG(obj, object_next.size());
+            unsigned int ip = object_next[obj];
+            if (ip < IP_next.size()) have_predecessor[ip]=1;
+	    }
+	    unsigned int ip_init=0;
+	    for(unsigned int i=0; i< IP23_list.size(); i++) if (! have_predecessor[i]) ip_init=i;
+
 	    // regular case, merge duplicit IPs
-	    unsigned int ip=0;
+	    unsigned int ip=ip_init;
 	    ASSERT_EQ_DBG(IP_next.size(), IP23_list.size());
         intersection.points().push_back(IP23_list[ip]);
-        DebugOut().VarFmt(ip) << IP23_list[ip];
+        //DebugOut().VarFmt(ip) << IP23_list[ip];
 	    while (1)  {
 	        //DebugOut().VarFmt(ip) << IP23_list[ip];
 
@@ -1399,7 +1423,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
 	    if (intersection.points().size() == 1) return;
 
-	    if (ips_topology_equal(intersection.points().back(), IP23_list[0]) )
+	    if (ips_topology_equal(intersection.points().back(), IP23_list[ip_init]) )
 	        intersection.points().pop_back();
 
 	    //DebugOut().VarFmt(0) << "//" << IP23_list[0];
@@ -1442,7 +1466,7 @@ auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> 
     sum_idx.fill(0);
     for(unsigned int ie=0; ie <3; ie++) {
         unsigned int edge_ip_ori = (unsigned int)(IP12s_[ vtx_edges[ie]].orientation());
-        ASSERT_DBG(edge_ip_ori < 3);
+        ASSERT_LT_DBG(edge_ip_ori, 3);
         n_ori[edge_ip_ori]++;
         sum_idx[edge_ip_ori]+=ie;
     }
