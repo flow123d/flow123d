@@ -112,6 +112,11 @@ public:
     }
 
 
+    arma::vec3 make_element_vector_xfem(LocalElementAccessorBase<3> ele_ac){
+        ASSERT_DBG(0).error("Not implemented!");
+        return arma::vec({0,0,0});
+    }
+    
     arma::vec3 make_element_vector(ElementFullIter ele) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
@@ -119,12 +124,22 @@ public:
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
 
-        velocity_interpolation_fv_.reinit(ele);
-        for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
-                        * velocity_interpolation_fv_.shape_vector(li,0);
+        //TODO: use LocalElementAccessor
+        
+        if(ele->xfem_data != nullptr && ! ele->xfem_data->is_complement()){
+            // suppose single proc. so we can create accessor with local ele index
+            auto ele_ac = LocalElementAccessorBase<3>(ad_->mh_dh, ele->index());
+            flux_in_center = make_element_vector_xfem(ele_ac);
         }
-
+        else{
+        
+            velocity_interpolation_fv_.reinit(ele);
+            for (unsigned int li = 0; li < ele->n_sides(); li++) {
+                flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
+                            * velocity_interpolation_fv_.shape_vector(li,0);
+            }
+        }
+        
         flux_in_center /= ad_->cross_section.value(ele->centre(), ele->element_accessor() );
         return flux_in_center;
     }
@@ -580,7 +595,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
             fe_values_rt_xfem_->reinit(ele);
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
             sing_lagrange_val = 1;
-            for (unsigned int i=0; i < nvals; i++){
+            for (int i=0; i < nvals; i++){
                 val[i] = 0;
                 vel_dofs[i] = loc_system_.row_dofs[i];
                 for(unsigned int q=0; q < quad.size();q++){
@@ -620,5 +635,35 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
             ad_->lin_sys->mat_set_value(edge_row, side_row, val);
         }
     }
+    
+
+template<> inline
+arma::vec3 AssemblyMHXFEM<2>::make_element_vector_xfem(LocalElementAccessorBase<3> ele_ac){
+    arma::vec3 flux_in_center;
+    flux_in_center.zeros();
+    ElementFullIter ele = ele_ac.full_iter();
+    
+    XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+    fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
+    
+    FEValues<2,3> fv_xfem(map_,velocity_interpolation_quad_, *fe_rt_xfem_, update_values | update_quadrature_points);
+    fv_xfem.reinit(ele);
+    
+    unsigned int li = 0;
+    for (; li < ele->n_sides(); li++) {
+        flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
+                        * fv_xfem.shape_vector(li,0);
+    }
+    
+    for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
+        std::vector<int>& wdofs = xdata->global_enriched_dofs()[Quantity::velocity][w];
+        for (unsigned int j = 0; j < wdofs.size(); j++, li++) {
+            flux_in_center += ad_->mh_dh->mh_solution[wdofs[li]]
+                            * fv_xfem.shape_vector(li,0);
+        }
+    }
+    
+    return flux_in_center;
+}    
     
 #endif /* SRC_FLOW_DARCY_FLOW_ASSEMBLY_XFEM_HH_ */

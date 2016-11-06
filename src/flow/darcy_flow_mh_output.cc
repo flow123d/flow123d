@@ -26,6 +26,7 @@
 
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_assembly.hh"
+#include "flow/darcy_flow_assembler.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
 #include "io/output_time.hh"
@@ -252,16 +253,30 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     // need to call this to create mh solution vector
     darcy_flow->get_mh_dofhandler();
 
-    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
+    DBGCOUT("DarcyFlowMHOutput::make_element_vector\n");
+    
+    if(darcy_flow->use_xfem && darcy_flow->mh_dh.enrich_velocity);
+    
+    // create proper assembler
+    AssemblerBase* multidim_assembler;
+//     if(use_xfem)
+    if(darcy_flow->use_xfem && darcy_flow->mh_dh.enrich_velocity)
+        multidim_assembler = new AssemblerMHXFEM(darcy_flow->data_);
+    else 
+        multidim_assembler = new AssemblerMH(darcy_flow->data_);
+    
+//     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
     for(unsigned int i_ele : element_indices) {
         ElementFullIter ele = mesh_->element(i_ele);
 
-        flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
+        flux_in_center = multidim_assembler->make_element_vector(ele);
 
         // place it in the sequential vector
         for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];
     }
+    
+    delete multidim_assembler;
 }
 
 

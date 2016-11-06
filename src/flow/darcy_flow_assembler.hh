@@ -4,12 +4,12 @@
 #ifndef DARCY_FLOW_ASSEMBLER_HH_
 #define DARCY_FLOW_ASSEMBLER_HH_
 
+#include "coupling/balance.hh"
 #include "darcy_flow_mh.hh"
 #include "richards_lmh.hh"
 #include "darcy_flow_assembly.hh"
 #include "darcy_flow_assembly_xfem.hh"
 #include "assembly_lmh.hh"
-
 
 class AssemblerBase
 {
@@ -40,6 +40,13 @@ public:
         
         if (ad_->balance != nullptr && fill_matrix)
             add_fluxes_in_balance_matrix(ele_ac);
+    }
+    
+    // compute velocity value in the barycenter
+    // TODO: implement and use general interpolations between discrete spaces
+    arma::vec3 make_element_vector(ElementFullIter ele){
+        unsigned int dim = ele->dim();
+        return dim_assembler[dim-1]->make_element_vector(ele);
     }
     
 protected:
