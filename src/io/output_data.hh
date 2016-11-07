@@ -10,6 +10,7 @@
 
 #include "io/output_data_base.hh"
 #include "system/asserts.hh"
+#include <type_traits>
 
 
 class FieldCommon;
@@ -42,16 +43,21 @@ public:
      *
      * \note This method is used only by MSH file format.
      */
-    void print(ostream &out_stream, unsigned int idx) override;
+    void print_ascii(ostream &out_stream, unsigned int idx) override;
 
     /**
-     * \brief Print all data stored in output data
+     * \brief Print all data stored in output data ro ascii format
      *
      * TODO: indicate if the tensor data are output in column-first or raw-first order
      *       and possibly implement transposition. Set such property for individual file formats.
      *       Class OutputData stores always in raw-first order.
      */
-    void print_all(ostream &out_stream) override;
+    void print_ascii_all(ostream &out_stream) override;
+
+    /**
+     * \brief Print all data stored in output data to appended binary format
+     */
+    void print_binary_all(ostream &out_stream) override;
 
     void print_all_yaml(ostream &out_stream, unsigned int precision) override;
 
@@ -74,6 +80,11 @@ public:
      * Normalize values at given index
      */
     void normalize(unsigned int idx, unsigned int divisor);
+
+    /**
+     * Find minimal and maximal range of stored data
+     */
+    void get_min_max_range(double &min, double &max) override;
 
 private:
 

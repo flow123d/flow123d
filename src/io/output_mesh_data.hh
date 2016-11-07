@@ -12,6 +12,7 @@
 #include <string>
 #include "system/asserts.hh"
 #include "io/output_data_base.hh"
+#include <type_traits>
 
 /// Class representing data vector of geometry and topology information (especially for VTK).
 /// Filling the vector is the users responsibility.
@@ -24,19 +25,30 @@ public:
     ~MeshData() override;
 
     /// Prints @p idx element of data vector into stream.
-    void print(std::ostream& out_stream, unsigned int idx) override;
+    void print_ascii(std::ostream& out_stream, unsigned int idx) override;
 
     /// Prints the whole data vector into stream.
-    void print_all(std::ostream& out_stream) override;
+    void print_ascii_all(std::ostream& out_stream) override;
+
+    /**
+     * Prints the whole data vector into stream in appended binary format.
+     */
+    void print_binary_all(ostream &out_stream) override;
 
     /// Prints the whole data vector into stream. UNSUPPORTED.
     void print_all_yaml(std::ostream& out_stream, unsigned int precision) override;
+
+    /**
+     * Find minimal and maximal range of stored data
+     */
+    void get_min_max_range(double &min, double &max) override;
 
     /// Access i-th element in the data vector.
     T& operator[](unsigned int i);
 
     /// Data vector.
     std::vector<T> data_;
+
 };
 
 
