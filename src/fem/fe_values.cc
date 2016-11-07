@@ -154,7 +154,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
     //UpdateFlags map_update_flags = this->data.update_flags;
     
     if(typeid(_quadrature) == typeid(QXFEM<dim,spacedim>)){
-        DBGCOUT("FEValues: quad XFEM - dismiss update_quadrature_points flag.\n");
+//         DBGCOUT("FEValues: quad XFEM - dismiss update_quadrature_points flag.\n");
         QXFEM<dim,spacedim>* q = static_cast<QXFEM<dim,spacedim>*>(&_quadrature);
         
 //         map_update_flags = map_update_flags & (~update_quadrature_points);

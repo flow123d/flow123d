@@ -151,7 +151,7 @@ inline void FE_P0_XFEM<dim,spacedim>::fill_fe_values(
     //  - jacobian (and its inverse and determinant) is constant on the element
     //  - abuse mapping to compute the normals
     
-    DBGCOUT("FE_P0_XFEM fill fe_values\n");
+//     DBGCOUT("FE_P0_XFEM fill fe_values\n");
     
     // shape values
     if (fv_data.update_flags & update_values)

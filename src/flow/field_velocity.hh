@@ -56,6 +56,7 @@ public:
         
         if(elm.element()->xfem_data != nullptr && ! elm.element()->xfem_data->is_complement()){
             flux =  value_vector_xfem(ele_ac, p);
+//             flux = value_vector_regular(ele_ac.full_iter(), p);
         }
         else{
             flux = value_vector_regular(ele_ac.full_iter(), p);
@@ -71,6 +72,8 @@ public:
         quad_.set_point(0, RefElement<dim>::bary_to_local(unit_p));
         quad_.set_real_point(0,p);
         quad_.set_weight(0,1.0);
+//         DBGCOUT(<< "p: [" << p(0) << " " << p(1) << " " << p(2) << "]\n");
+//         if(dim == 2) DBGCOUT(<< "p: [" << unit_p(0) << " " << unit_p(1) << " " << unit_p(2) << "]\n");
     }
     
     Value value_vector_regular(ElementFullIter ele, const Point &p){
@@ -80,12 +83,13 @@ public:
         fv_rt_ = std::make_shared<FEValues<dim,3>>(map_, quad_, fe_rt_, update_values);
         fv_rt_->reinit(ele);
         
-        unsigned int li = 0;
-        for (; li < ele->n_sides(); li++) {
-            flux += mh_dh_->side_flux( *(ele->side( li ) ) )
-                        * fv_rt_->shape_vector(li,0);
+        for (unsigned int li = 0; li < ele->n_sides(); li++) {
+//             DBGCOUT(<< "ele " << ele->index() << " flux " << mh_dh_->side_flux( *(ele->side( li ) ) ) 
+//                 << " [" << fv_rt_->shape_vector(li,0)(0) << " " << fv_rt_->shape_vector(li,0)(1) << " " << fv_rt_->shape_vector(li,0)(2) << "]\n");
+            flux += mh_dh_->side_flux( *(ele->side( li ) ) ) * fv_rt_->shape_vector(li,0);
         }
         
+//         DBGCOUT(<< "ele " << ele->index() << " flux [" << flux(0) << " " << flux(1) << " " << flux(2) << "]\n");
         return flux;
     }
     

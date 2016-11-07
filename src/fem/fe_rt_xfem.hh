@@ -154,7 +154,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
     //  - jacobian (and its inverse and determinant) is constant on the element
     //  - abuse mapping to compute the normals
     
-    DBGCOUT("FE_RT0_XFEM fill fe_values\n");
+//     DBGCOUT("FE_RT0_XFEM fill fe_values\n");
     
 //     pu.get_node_matrix().print(cout,"pu_node_matrix");
 //     fe->get_node_matrix().print(cout,"fe_rt_node_matrix");

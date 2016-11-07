@@ -590,7 +590,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
             sing_row = ele_ac.sing_row(w);
             auto quad = xd->sing_quadrature(w);
             fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
-                            (map_, quad, *fe_rt_xfem_, update_values | update_JxW_values);
+                            (map_, quad, *fe_rt_xfem_, update_values);
 
             fe_values_rt_xfem_->reinit(ele);
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
@@ -598,13 +598,17 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
             for (int i=0; i < nvals; i++){
                 val[i] = 0;
                 vel_dofs[i] = loc_system_.row_dofs[i];
+//                 double sum = 0;
                 for(unsigned int q=0; q < quad.size();q++){
                     arma::vec n = sing->center() - quad.real_point(q);
                     n = n / arma::norm(n,2);
                     val[i] += sigma * sing_lagrange_val
                                 * arma::dot(fe_values_rt_xfem_->shape_vector(i,q),n)
-                                * fe_values_rt_xfem_->JxW(q);
+                                * quad.weight(q);
+//                     sum += quad.weight(q);
                 }
+//                 DBGVAR(sum);
+//                 DBGVAR(sing->circumference());
             }
             
             ad_->lin_sys->mat_set_values(1, &sing_row, nvals, vel_dofs, val);
