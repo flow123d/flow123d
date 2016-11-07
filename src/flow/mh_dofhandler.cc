@@ -73,6 +73,16 @@ void MH_DofHandler::reinit(Mesh *mesh) {
     
     // convert row_4_id arrays from separate numberings to global numbering of rows
     make_row_numberings();
+    
+    // set dof offsets:
+    offset_velocity = 0;
+    offset_enr_velocity = mesh_->n_sides_;
+    
+    offset_pressure = offset_enr_velocity;
+    offset_enr_pressure = offset_pressure + mesh_->n_elements();
+    
+    offset_edges = offset_enr_pressure;
+    offset_enr_lagrange = offset_edges + mesh_->n_edges();
 }
 
 
