@@ -193,6 +193,8 @@ else ()
     message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
 endif()
 
+# set encoding of VTU output files to Little Endian, VTU files can be encoded in Little Endian or Big Endian format  
+flow_define(LITTLE_ENDIAN true)
 
 #########################################################################
 # Determining timer with highest resolution
