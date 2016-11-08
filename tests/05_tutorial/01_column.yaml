@@ -1,0 +1,156 @@
+##---
+##title: Flow123d tutorial 1 -- ``1D column''
+##---
+##
+### Description
+##The first example is inspired by a real locality of a water treatment plant tunnel Bedřichov in the granite rock massif.
+##There is a particular seepage site 23 m under the surface which has a very fast reaction on rainfall events.
+##Real data of discharge and concentration of stable isotopes are used.
+##
+## The user will learn how to:
+##
+##* Set up the mesh and flow model input parameters;
+##* Set up the solver and output parameters.
+##
+##A pseudo one-dimensional model is considered in the range 10 × 23 m with the atmospheric pressure on the surface and on the bottom, and no flow boundary condition on the edges (Figure {@fig:geom}).
+##
+##![a) the mesh; b) the boundary conditions; c) computed piezometric head and flux.](images/01_mesh_bc_flux.pdf){#fig:geom}
+##
+##
+##
+### Input
+##The model settings are given in the control file, which is in YAML format.
+##Every line contains one parameter and its value(s).
+##The indentation of lines is important, since it indicates the section to which the parameter belongs.
+##
+#### Setting the computational mesh
+##
+##The mesh file can be generated using the software [GMSH](http://www.gmsh.info).
+##It has to contain:
+##
+##* point coordinates;
+##* simplicial elements (lines, triangles, tetrahedra). Elements of lower dimensions represent fractures or channels;
+##* physical regions (groups of elements, labeled either by numerical id or string caption). Names of regions defining boundary have to start by a dot;
+##
+##The mesh file is specified by the following lines:
+##
+##      mesh:
+##        mesh_file: 01_mesh.msh
+##
+##
+#### Setting the model and physical parameters
+##In this example we use the Darcy flow model, which is set by:
+##    
+##      flow_equation: !Flow_Darcy_MH
+##
+##Note:
+##The equation name consists of three parts: physical process (flow), mathematical model (Darcy) and numerical method (MH = mixed hybrid finite element method).
+##
+##The bulk parameters and boundary conditions are defined in the section ```input_fields```.
+##For the rock massif (```- region: rock```) we prescribe the hydraulic conductivity $K = 10^{-8}$ m/s (typical value for the granite rock massif):
+##
+##      input_fields:
+##        - region: rock
+##          conductivity: 1e-8
+##
+##We prescribe the atmospheric presure both at the surface and the tunnel:
+##
+##        - region: .tunnel
+##          bc_type: dirichlet
+##          bc_pressure: 0
+##        - region: .surface
+##          bc_type: dirichlet
+##          bc_pressure: 0
+##
+##If no boundary condition is given then the default "no flow" is applied.
+##
+#### Setting solver parameters
+##For the solution of the linear algebra problem we have to specify solver type and tolerances for controlling the residual.
+##In ```flow_equation``` we can use either ```Petsc``` solver which performs well for small and moderate size problems, or ```Bddc``` (a scalable domain decomposition solver).
+##Two stopping criteria can be given: absolute and relative tolerance of residual.
+##
+##      nonlinear_solver:
+##        linear_solver: !Petsc
+##          a_tol: 1e-15
+##          r_tol: 1e-15
+##
+##The key ```nonlinear_solver``` has further parameters which play role in other (nonlinear) flow models.
+##
+#### Setting output
+##In the section ```output_stream``` we define the file name and type (supported types are ```gmsh``` and ```vtk```, which can be viewed by GMSH, ParaView, respectively) to which the solution is saved:
+##
+##      output_stream:
+##        file: flow.msh
+##        format: !gmsh
+##          variant: ascii
+##
+##The list of fields (solution components, input fields etc.) to be saved is specified by:
+##
+##      output:
+##        fields:
+##          - piezo_head_p0
+##          - pressure_p0
+##          - pressure_p1
+##          - velocity_p0
+##
+##The above code can be alternatively written in a more compact form, namely
+##
+##      output:
+##        fields: [piezo_head_p0, pressure_p0, pressure_p1, velocity_p0]
+##
+##In addition to the output of solution, Flow123d provides computation of balance of fluid volume, flux through boundaries and volume sources.
+##This is turned on by
+##
+##      balance: {}
+##
+### Results
+##The results of computation are generated to the files ```flow.msh``` and ```water_balance.txt```.
+##From the balance file, one can see that the input flux on the surface is 1 × $10^{-7}$ and the output flux on the tunnel is -1 × $10^{-7}$ (Table @tbl:water_balance).
+##
+##"time"|    "region"|    "quantity [m(3)]"|    "flux"|    "flux_in"|    "flux_out"|
+##----|-----------|-------------|-----:|----------:|------------:|
+##0|    "rock"|    "water_volume"|    0|    0|    0|
+##0|    ".surface"|    "water_volume"|    1e-07|    1e-07|    0|
+##0|    ".tunnel"|    "water_volume"|    -1e-07|    0|    -1e-07|
+##0|    "IMPLICIT BOUNDARY"|    "water_volume"|    2.58e-26|    6.46e-26|    -3.87e-26|
+##
+##: Results in ```water_balanced.txt``` (edited table, extract from the file). {#tbl:water_balance}
+##
+### Variant
+##Control file ```02_column_transport.yaml``` contains modified boundary conditions and solute transport model for the same physical problem.
+##
+##
+### The control file
+##
+##Below is the complete YAML source.
+##
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Example 1 of real locality - column 1D model
+  mesh:
+    mesh_file: 01_mesh.msh
+  flow_equation: !Flow_Darcy_MH
+    input_fields:
+      - region: rock
+        conductivity: 1e-8
+      - region: .tunnel
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .surface
+        bc_type: dirichlet
+        bc_pressure: 0
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1e-15
+        r_tol: 1e-15
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: {}

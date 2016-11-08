@@ -46,6 +46,8 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
                                         " - array of strings of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                         " - just one string to enter (spatially variable) multiple of the unit matrix.\n"
                                         "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
+			.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+										"Definition of unit.")
 			.close();
 }
 
@@ -72,8 +74,10 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
-    // read formulas form input
+void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+	this->init_unit_conversion_coefficient(rec, init_data);
+
+	// read formulas form input
     STI::init_from_input( formula_matrix_, rec.val<typename STI::AccessType>("value") );
     value_input_address_ = rec.address_string();
 }
@@ -94,6 +98,10 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             std::vector<std::string> var_list;
 
             FunctionParser tmp_parser;
+            tmp_parser.AddConstant("Pi", 3.14159265358979323846);
+            tmp_parser.AddConstant("E", 2.71828182845904523536);
+
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
             {
@@ -107,10 +115,13 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                 if (var_name == std::string("t") ) time_dependent=true;
                 else if (var_name == "x" || var_name == "y" || var_name == "z") continue;
                 else
-                    xprintf(Warn, "Unknown variable '%s' in the  FieldFormula[%d][%d] == '%s'\n at the input address:\n %s \n",
-                            var_name.c_str(), row, col, formula_matrix_.at(row,col).c_str(),
-                            value_input_address_.c_str() );
+                	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
+                            var_name, row, col, formula_matrix_.at(row,col), value_input_address_ );
             }
+
+            // Seems that we can not just add 't' constant to tmp_parser, since it was already Parsed.
+            parser_matrix_[row][col].AddConstant("Pi", 3.14159265358979323846);
+            parser_matrix_[row][col].AddConstant("E", 2.71828182845904523536);
             if (time_dependent) {
                 parser_matrix_[row][col].AddConstant("t", time.end());
             }
@@ -118,7 +129,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             // TODO:
             // - possibly add user defined constants and units here ...
             // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
-
+            //parser_matrix_[row][col] = tmp_parser;
             if (time_dependent || this->time_ == TimeStep() ) {
                 parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
 
@@ -149,7 +160,7 @@ typename Value::return_type const & FieldFormula<spacedim, Value>::value(const P
 {
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            this->value_(row,col) = parser_matrix_[row][col].Eval(p.memptr());
+            this->value_(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p.memptr());
         }
     return this->r_value_;
 }
@@ -171,7 +182,7 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)
             for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-                envelope(row,col) = parser_matrix_[row][col].Eval(point_list[i].memptr());
+                envelope(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(point_list[i].memptr());
             }
     }
 }

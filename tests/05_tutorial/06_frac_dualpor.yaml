@@ -1,0 +1,136 @@
+##---
+##title: Flow123d tutorial 6 -- ``Fractures and dual porosity''
+##---
+##
+### Description
+##
+##This is a variant of ```04_frac_diffusion.yaml```. Instead of diffusion we consider advective transport with dual porosity.
+##
+###Input
+##Dual porosity substitutes blind fractures in this task. The dual-porosity parameter ```diffusion_rate_immobile``` was calibrated to the value 5.64742e-06 for identical results with the model with the blind fractures. Other settings of transport are identical to the diffusion model.
+##
+##The dual porosity model is set by the following lines:
+##
+##    reaction_term: !DualPorosity
+##      input_fields:
+##        - region: rock
+##          init_conc_immobile: 0
+##        - region: flow_fractures
+##          diffusion_rate_immobile: 5.64742e-06
+##          porosity_immobile: 0.01
+##          init_conc_immobile: 0
+##        - region: blind_fractures
+##          init_conc_immobile: 0
+##
+###Results and comparison
+##Results of calibration of the model with dual porosity and model with flow in blind fractures is depicted in Figure {@fig:calib}.
+##
+##
+##![Results of calibration.](images/06_mass_flux.pdf){#fig:calib}
+##
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: "Example 6 - Fractures - dual-porosity"
+  mesh:
+    mesh_file: 04_mesh.msh
+    regions:
+      - !Union
+        name: flow_fractures
+        regions:
+          - flow_fracture1
+          - flow_fracture2
+      - !Union
+        name: blind_fractures
+        regions:
+          - blind_fracture1
+          - blind_fracture2
+      - !Union
+        name: BC_right
+        regions:
+          - .right
+          - .right_points
+      - !Union
+        name: BC_left
+        regions:
+          - .left
+          - .left_points
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-15
+        r_tol: 1.0e-15
+    input_fields:
+    - region: rock
+      conductivity: 0.000315
+      cross_section: 1
+    - region: flow_fractures
+      conductivity: 31.5
+      cross_section: 0.01
+    - region: blind_fractures
+      conductivity: 0.000315
+      cross_section: 0.01
+    - region: BC_left
+      bc_type: dirichlet
+      bc_piezo_head: 0.1
+    - region: BC_right
+      bc_type: dirichlet
+      bc_piezo_head: 0
+    balance: {}
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    solver: !Petsc
+      r_tol: 1.0e-10
+      a_tol: 1.0e-10
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+      - region: rock
+        init_conc: 0
+        porosity: 0.005
+      - region: flow_fractures
+        init_conc: 0
+        porosity: 0.1
+      - region: blind_fractures
+        init_conc: 0
+        porosity: 0.005
+      - region: BC_left
+        bc_type: dirichlet
+        bc_conc: 1.0e-05
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    substances:
+      - I
+    time:
+      end_time: 1000
+    reaction_term: !DualPorosity
+      input_fields:
+        - region: rock
+          init_conc_immobile: 0
+        - region: flow_fractures
+          diffusion_rate_immobile: 5.64742e-06
+          porosity_immobile: 0.01
+          init_conc_immobile: 0
+        - region: blind_fractures
+          init_conc_immobile: 0
+      scheme_tolerance: 0.0
+      output:
+        fields:
+          - conc_immobile
+    balance:
+      cumulative: true
+    output_stream:
+      file: transport.pvd
+      format: !gmsh
+        variant: ascii
+      times:
+        - step: 20

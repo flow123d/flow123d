@@ -1,0 +1,947 @@
+{
+"name": "Main transformation file",
+"description": "Template for creating transformation file",
+"old_format": "1.8.2",
+"new_format": "2.0.0",
+"actions":
+  [
+
+    {
+      "NAME": "Add new obligatory key, flow123d_version.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/",
+        "key": "flow123d_version",
+        "value": "2.0.0"  
+      }  
+    },
+    {
+        "NAME": "Rename key denominator_degree in linear ODE solver",
+        "action": "move-key",
+        "parameters": {
+          "source_path": "/problem/secondary_equation/**/ode_solver/denominator_degree",
+          "destination_path": "/problem/secondary_equation/$1/ode_solver/pade_denominator_degree",
+          "parent-type-filter": "PadeApproximant"
+        }
+    },
+    {
+      "NAME": "Rename key nominator_degree in ODE solver",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/**/ode_solver/nominator_degree",
+        "destination_path": "/problem/secondary_equation/$1/ode_solver/pade_nominator_degree"
+      }
+    },
+    {
+        "NAME": "Change sign in bc_flux in transport and heat (constant value)",
+        "action": "scale-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_flux",
+          "scale" : "-1"
+        }
+    },
+    {
+        "NAME": "Change sign in bc_flux in SteadyDarcy_MH (constant value)",
+        "action": "scale-value",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_flux",
+          "scale" : "-1"
+        }
+    },
+    {
+        "NAME": "Change sign in bc_flux in transport and heat (formula)",
+        "action": "replace-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_flux/value",
+          "parent-type-filter" : "FieldFormula",
+          "pattern" : "^(.*)$",
+          "replacement" : "-(\\1)"
+        }
+    },
+    {
+        "NAME": "Change sign in bc_flux in SteadyDarcy_MH (formula)",
+        "action": "replace-value",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_flux/value",
+          "parent-type-filter" : "FieldFormula",
+          "pattern" : "^(.*)$",
+          "replacement" : "-(\\1)"
+        }
+    },
+    {
+        "NAME": "Warn about change of sign in bc_flux in transport and heat (elementwise)",
+        "action": "rename-type",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_flux",
+          "old_name": "FieldElementwise",
+          "new_name": "FieldElementwise_PLEASE_SWITCH_FLUX_SIGN_IN_GMSH_FILE",
+          "type-filter" : "FieldElementwise"
+        }
+    },
+    {
+        "NAME": "Warn about change of sign in bc_flux in flow (elementwise)",
+        "action": "rename-type",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_flux",
+          "old_name": "FieldElementwise",
+          "new_name": "FieldElementwise_PLEASE_SWITCH_FLUX_SIGN_IN_GMSH_FILE",
+          "type-filter" : "FieldElementwise"
+        }
+    },
+    {
+        "NAME": "Change flow bc_type neumann to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_type",
+          "old_value" : "neumann",
+          "new_value" : "total_flux"
+        }
+    },
+    {
+        "NAME": "Change flow bc_type robin to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/primary_equation/input_fields/*/bc_type",
+          "old_value" : "robin",
+          "new_value" : "total_flux"
+        }
+    },
+    {
+        "NAME": "Rename SoluteTransportDG neumann bc to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
+          "old_value" : "neumann",
+          "new_value" : "diffusive_flux"
+        }          
+    },
+    {
+        "NAME": "Rename SoluteTransportDG robin bc to total_flux",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/secondary_equation/input_fields/*/bc_type",
+          "old_value" : "robin",
+          "new_value" : "diffusive_flux"
+        }          
+    },
+    {
+      "NAME": "Rename TransportOperatorSplitting to Transport_OS",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "old_name": "TransportOperatorSplitting",
+        "new_name": "Coupling_OperatorSplitting"
+      }
+    },
+    {
+      "NAME": "Add key transport to Transport_OS",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "key": "transport",
+        "parent": "Transport",
+        "type": "Solute_Advection_FV",
+        "type-filter": "Coupling_OperatorSplitting"
+      }
+    },
+    {
+      "NAME": "Move output_fields from Transport_OS to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/output_fields",
+        "destination_path": "/problem/secondary_equation/transport/output_fields",
+        "parent-type-filter": "Coupling_OperatorSplitting"
+      }
+    },  
+    {
+      "NAME": "Move input_fields from Transport_OS to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/input_fields",
+        "destination_path": "/problem/secondary_equation/transport/input_fields",
+        "parent-type-filter": "Coupling_OperatorSplitting"
+      }
+    },
+    {
+      "NAME": "Add key transport to SoluteTransport_DG",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "key": "transport",
+        "parent": "Transport",
+        "type": "Solute_AdvectionDiffusion_DG",
+        "type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move input_fields from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/input_fields",
+        "destination_path": "/problem/secondary_equation/transport/input_fields",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move output_fields from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/output_fields",
+        "destination_path": "/problem/secondary_equation/transport/output_fields",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },        
+    {
+      "NAME": "Move solver from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/solver",
+        "destination_path": "/problem/secondary_equation/transport/solver",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move dg_order from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/dg_order",
+        "destination_path": "/problem/secondary_equation/transport/dg_order",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move solvent_density from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/solvent_density",
+        "destination_path": "/problem/secondary_equation/transport/solvent_density",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Move dg_variant from SoluteTransport_DG to transport",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation/dg_variant",
+        "destination_path": "/problem/secondary_equation/transport/dg_variant",
+        "parent-type-filter": "SoluteTransport_DG"
+      }
+    },
+    {
+      "NAME": "Rename SoluteTransport_DG to Transport_OS",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "old_name": "SoluteTransport_DG",
+        "new_name": "Coupling_OperatorSplitting"
+      }
+    },
+    {
+      "NAME": "Rename SoluteTransport_DG to Transport_OS",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/secondary_equation",
+        "old_name": "HeatTransfer_DG",
+        "new_name": "Heat_AdvectionDiffusion_DG"
+      }
+    },      
+    { 
+      "NAME" : "region to r_set",
+      "TODO": "Need to check that target key 'region' is not used.",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/**/input_fields/*/r_set",
+        "destination_path":"$1/input_fields/$2/region"
+      }
+    },
+    { 
+      "NAME" : "mesh elementary regions setup, name",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/regions/*/name",
+        "destination_path":"/problem/mesh/regions_elementary/$1/name",
+        "create_path":true
+      }
+    },
+    { 
+      "NAME" : "mesh elementary regions setup, from_id",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/regions/*/id",
+        "destination_path":"/problem/mesh/regions_elementary/$1/id",
+        "set_type_path":"/problem/mesh/regions_elementary/$1",
+        "new_type":"From_ID"  
+      }
+    },
+    { 
+      "NAME" : "mesh elementary regions setup, from_element_list",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/regions/*/element_list",
+        "destination_path":"/problem/mesh/regions_elementary/$1/element_list",
+        "set_type_path":"/problem/mesh/regions_elementary/$1",
+        "COMMENT": "We overwrite type From_ID, set by previous rule",
+        "new_type":"From_Elements"  
+      }
+    },
+     { 
+      "NAME" : "mesh sets setup, name",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/name",
+        "destination_path":"/problem/mesh/sets_new/$1/name",
+	      "create_path":true
+      }
+    },   
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, region_ids",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/region_ids",
+        "destination_path":"/problem/mesh/sets_new/$1/region_ids",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Union",
+        "create_path":true  
+      }
+    },
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, region_labels",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/region_labels",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Union", 
+        "create_path":true 
+      }
+    },
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, union",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/union",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Union",
+        "create_path":true  
+      }
+    },
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, intersection",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/intersection",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Intersection",
+        "create_path":true  
+      }
+    },
+    { 
+      "NAME" : "mesh sets setup, elementary regions setup, difference",
+      "action": "move-key",
+      "parameters": {
+        "source_path":"/problem/mesh/sets/*/difference",
+        "destination_path":"/problem/mesh/sets_new/$1/regions",
+        "set_type_path":"/problem/mesh/sets_new/$1",
+        "new_type":"Difference",
+        "create_path":true  
+      }
+    },
+    {
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/mesh/sets/*",
+        "deep": false   
+      }
+    },
+    {
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/mesh/sets",
+        "deep": false	
+      }
+    },
+    {
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/mesh/regions/*",
+        "deep": false
+      }
+    },
+    {
+      "action": "delete-key",
+      "parameters": {
+        "path": "/problem/mesh/regions",
+        "deep": false
+      }
+    },
+    {
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path":"/problem/mesh/regions_elementary",
+        "addition_path":"/problem/mesh/sets_new",
+        "destination_path":"/problem/mesh/regions"        
+      }
+    },           
+    {
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path":"/problem/mesh/sets_new",
+        "addition_path":"/problem/mesh/regions_elementary",
+        "destination_path":"/problem/mesh/regions"        
+      }
+    },
+    {
+      "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "key": "nonlinear_solver"
+      }
+    }, 
+    {
+      "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/primary_equation/solver",
+        "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
+        "create_path":true  
+      }
+    },
+    {
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/primary_equation/solver",
+        "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
+        "create_path":true  
+      }
+    },
+    {
+      "NAME": "Set storativity for Unsteady_LMH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",        
+        "key": "aux_region_key",
+        "value": "ALL",
+        "path-type-filter" : "Unsteady_LMH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },      
+    {
+      "NAME": "Set storativity for Unsteady_LMH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",        
+        "key": "aux_storativity_key",
+        "value": "1.0",
+        "path-type-filter" : "Unsteady_LMH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },      
+    {
+      "NAME": "Set storativity for Unsteady_LMH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/aux_region_key",
+        "destination_path":"/problem/primary_equation/_input_fields/0/region",
+        "path-type-filter" : "Unsteady_LMH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true
+      }  
+    },      
+    {
+      "NAME": "Set storativity for Unsteady_LMH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/aux_storativity_key",
+        "destination_path":"/problem/primary_equation/_input_fields/0/storativity",
+        "path-type-filter" : "Unsteady_LMH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true
+      }  
+    },
+    {
+      "NAME": "Set storativity for Unsteady_LMH.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path":"/problem/primary_equation/_input_fields",
+        "addition_path":"/problem/primary_equation/input_fields",
+        "destination_path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "Unsteady_LMH",
+        "path-type-filter-path" : "/problem/primary_equation"     
+      }
+    },
+    {
+      "NAME": "Set storativity for Unsteady_LMH.",
+      "action" : "move-key-forward",
+      "parameters": {
+        "path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "Unsteady_LMH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },
+    {
+      "NAME": "Set storativity for Unsteady_MH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",        
+        "key": "aux_region_key",
+        "value": "ALL",
+        "path-type-filter" : "Unsteady_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },      
+    {
+      "NAME": "Set storativity for Unsteady_MH.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/primary_equation",        
+        "key": "aux_storativity_key",
+        "value": "1.0",
+        "path-type-filter" : "Unsteady_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },      
+    {
+      "NAME": "Set storativity for Unsteady_MH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/aux_region_key",
+        "destination_path":"/problem/primary_equation/_input_fields/0/region",
+        "path-type-filter" : "Unsteady_MH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true  
+            
+      }
+    },      
+    {
+      "NAME": "Set storativity for Unsteady_MH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/aux_storativity_key",
+        "destination_path":"/problem/primary_equation/_input_fields/0/storativity",
+        "path-type-filter" : "Unsteady_MH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true  
+            
+      }
+    },      
+    {
+      "NAME": "Set storativity for Unsteady_MH.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path":"/problem/primary_equation/_input_fields",
+        "addition_path":"/problem/primary_equation/input_fields",
+        "destination_path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "Unsteady_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },            
+    {
+      "NAME": "Set rename storativity for Steady_MH.",
+      "action" : "move-key",
+      "parameters": {
+        "source_path":"/problem/primary_equation/input_fields/*/storativity",
+        "destination_path":"/problem/primary_equation/input_fields/$1/storativity_STEADY",
+        "path-type-filter" : "Steady_MH",
+        "path-type-filter-path" : "/problem/primary_equation",
+        "create_path":true  
+            
+      }
+    },      
+
+    {
+      "NAME": "Set storativity for Unsteady_MH.",
+      "action" : "move-key-forward",
+      "parameters": {
+        "path":"/problem/primary_equation/input_fields",
+        "path-type-filter" : "Unsteady_MH",
+        "path-type-filter-path" : "/problem/primary_equation"
+      }
+    },
+    
+        
+    {
+      "NAME": "Use time aware Darcy_MH instead of Steady.",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "Steady_MH",
+        "new_name": "Flow_Darcy_MH"
+      }
+    },
+        {
+      "NAME": "Use time aware Darcy_MH instead of Steady.",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "Unsteady_MH",
+        "new_name": "Flow_Darcy_MH"
+      }
+    },
+    {
+      "NAME": "Use time aware Darcy_MH instead of Steady.",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem/primary_equation",
+        "old_name": "Unsteady_LMH",
+        "new_name": "Flow_Richards_LMH"
+      }
+    },
+    {
+      "NAME": "Rename sequential coupling",
+      "action": "rename-type",
+      "parameters": {
+        "path": "/problem",
+        "old_name": "SequentialCoupling",
+        "new_name": "Coupling_Sequential"
+      }
+    },
+    {
+      "NAME": "Rename sequential coupling keys",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/primary_equation",
+        "destination_path": "/problem/flow_equation"
+      }
+    },
+    {
+      "NAME": "Rename sequential coupling keys",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation",
+        "destination_path": "/problem/solute_equation",
+        "type-filter": "Coupling_OperatorSplitting"
+      }
+    },
+    {
+      "NAME": "Rename sequential coupling keys",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/secondary_equation",
+        "destination_path": "/problem/heat_equation",
+        "type-filter": "Heat_AdvectionDiffusion_DG"
+      }
+    },
+
+    {
+      "NAME": "Make output-specific key.",
+      "action": "add-key",
+      "parameters": {
+        "path": "/problem/flow_equation",
+        "key": "output_specific"
+      }
+    },
+    {
+      "NAME": "Move to output specific.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/raw_flow_output",
+        "destination_path": "/problem/flow_equation/output_specific/raw_flow_output",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move to output specific.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/compute_errors",
+        "destination_path": "/problem/flow_equation/output_specific/compute_errors",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move DarcyFlow output_stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/output_stream",
+        "destination_path": "/problem/flow_equation/output_stream",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Rename DarcyFlow output_fields.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output/output_fields",
+        "destination_path": "/problem/flow_equation/output/fields"
+      }
+    },
+    {
+      "NAME": "Move time step for DarcyFlow output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output_stream/time_step",
+        "destination_path": "/problem/flow_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time_list for Darcy.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output_stream/time_list",
+        "addition_path": "/problem/flow_equation/output_stream/times",        
+        "destination_path": "/problem/flow_equation/output_stream/times"
+      }
+    },    
+    {
+      "NAME": "Move time step for DarcyFlow output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/flow_equation/output_stream/add_input_times",
+        "destination_path": "/problem/flow_equation/output/add_input_times",
+        "create_path":true
+      }
+    },
+
+
+
+
+    {
+      "NAME": "Make output_fields in transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/transport/output_fields",
+        "destination_path": "/problem/solute_equation/transport/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in dual porosity.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in mobile reaction.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/reaction_mobile/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_mobile/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make output_fields in immobile reaction.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/reaction_term/reaction_immobile/output_fields",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Make time step for transport output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/time_step",
+        "destination_path": "/problem/solute_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time_list for transport.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/time_list",
+        "addition_path": "/problem/solute_equation/output_stream/times",        
+        "destination_path": "/problem/solute_equation/output_stream/times"
+      }
+    },    
+    {
+      "NAME": "Move add_input_times for transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
+        "destination_path": "/problem/solute_equation/output/add_input_times",
+        "keep_source":true,
+        "create_path":true
+      }
+    },      
+    {
+      "NAME": "Move add_input_times for transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
+        "destination_path": "/problem/solute_equation/reaction_term/output/add_input_times",
+        "keep_source":true,
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move add_input_times for transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_mobile/output/add_input_times",
+        "keep_source":true,
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move add_input_times for transport.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/solute_equation/output_stream/add_input_times",
+        "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/add_input_times",        
+        "create_path":true
+      }
+    },    
+      
+
+
+
+
+    {
+      "NAME": "Rename Heat output_fields.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output/output_fields",
+        "destination_path": "/problem/heat_equation/output/fields",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time step for Heat output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/time_step",
+        "destination_path": "/problem/heat_equation/output_stream/times/0/step",
+        "create_path":true
+      }
+    },
+    {
+      "NAME": "Move time_list for Heat.",
+      "action" : "merge-arrays",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/time_list",
+        "addition_path": "/problem/heat_equation/output_stream/times",        
+        "destination_path": "/problem/heat_equation/output_stream/times"
+      }
+    },    
+    {
+      "NAME": "Move time step for Heat output stream.",
+      "action": "move-key",
+      "parameters": {
+        "source_path": "/problem/heat_equation/output_stream/add_input_times",
+        "destination_path": "/problem/heat_equation/output/add_input_times",
+        "create_path":true
+      }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/flow_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    },
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/heat_equation/balance",
+          "old_value" : "true",
+          "new_value" : "{}"
+        }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/flow_equation/balance",
+          "old_value" : "false",
+          "new_value" : "{add_output_times: false}"
+        }
+    },
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/balance",
+          "old_value" : "false",
+          "new_value" : "{add_output_times: false}"
+        }
+    },    
+    {
+        "NAME": "Change balance:true",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/heat_equation/balance",
+          "old_value" : "false",
+          "new_value" : "{add_output_times: false}"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
+          "old_value" : "BOUNDARY",
+          "new_value" : ".BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY, hack to deal with substitution matching the substrings",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    },
+    {
+        "NAME": "Change BOUNDARY to .BOUNDARY",
+        "action": "change-value",
+        "parameters":{
+          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
+          "old_value" : "IMPLICIT .BOUNDARY",
+          "new_value" : ".IMPLICIT_BOUNDARY"
+        }
+    }
+            
+             
+  ]
+}

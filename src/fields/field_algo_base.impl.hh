@@ -32,6 +32,8 @@ using namespace std;
 
 #include "fields/field_values.hh"
 
+#include "fields/unit_converter.hh"
+
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
 #include "input/accessors.hh"
@@ -50,7 +52,8 @@ template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 : value_(r_value_),
   field_result_(result_other),
-  component_idx_(std::numeric_limits<unsigned int>::max())
+  component_idx_(std::numeric_limits<unsigned int>::max()),
+  unit_conversion_coefficient_(1.0)
 {
     value_.set_n_comp(n_comp);
 }
@@ -77,11 +80,11 @@ Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
 
 
 template <int spacedim, class Value>
-const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(const Input::Type::Selection *value_selection) {
+const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(Input::Type::Selection value_selection) {
 	std::vector<it::TypeBase::ParameterPair> param_vec;
 	if (is_enum_valued) {
-		OLD_ASSERT(value_selection, "Not defined 'value_selection' for enum element type.\n");
-		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<it::Selection>(*value_selection)) );
+		ASSERT( !(value_selection==Input::Type::Selection()) ).error("Not defined 'value_selection' for enum element type.\n");
+		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<it::Selection>(value_selection)) );
 	} else {
 		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<typename Value::ElementInputType>()) );
 	}
@@ -90,21 +93,38 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 }
 
 
+template <int spacedim, class Value>
+const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si() {
+    return it::Record("FieldUnit", "Set unit of Field by user. \n"
+    							   "Unit is defined as product or proportion of base or derived SI units \n"
+			   	   	   	   	       "and it is allowed to use subdefinitions. Example: \n"
+	   	   	       	   	   	       "'MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2', \n"
+  	   	   	       	   	   	       "allows define pressure head in MPa with subdefinitions of density and \n"
+  	   	   	       	   	   	       "gravity acceleration. In subdefinitions can be used multiplicative \n"
+  	   	   	       	   	   	       "coeficient. Resulting unit must correspond with defined Field unit \n"
+  	   	   	       	   	   	       "butit can differ in coefficient.")
+        .declare_key("unit_formula", it::String(), it::Default::obligatory(),
+                                   "Definition of unit." )
+        .allow_auto_conversion("unit_formula")
+		.close();
+}
+
+
 
 template <int spacedim, class Value>
 shared_ptr< FieldAlgorithmBase<spacedim, Value> >
-FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
+FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, const struct FieldAlgoBaseInitData& init_data )
 {
     shared_ptr< FieldAlgorithmBase<spacedim, Value> > func;
-    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(n_comp);
-    func->init_from_input(rec);
+    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(init_data.n_comp_);
+    func->init_from_input(rec, init_data);
     return func;
 }
 
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
     xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
             typeid(this).name());
 }
@@ -138,14 +158,36 @@ void FieldAlgorithmBase<spacedim, Value>::value_list(
         const ElementAccessor<spacedim> &elm,
         std::vector<typename Value::return_type>  &value_list)
 {
-	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
+	ASSERT_EQ( point_list.size(), value_list.size() ).error();
     for(unsigned int i=0; i< point_list.size(); i++) {
-    	OLD_ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
-                "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
-                i, Value(value_list[i]).n_rows(),this->value_.n_rows());
+    	ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows() )(i)(Value(value_list[i]).n_rows())(this->value_.n_rows())
+                .error("value_list has wrong number of rows");
         value_list[i]=this->value(point_list[i], elm);
     }
 
+}
+
+template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::init_unit_conversion_coefficient(const Input::Record &rec,
+		const struct FieldAlgoBaseInitData& init_data)
+{
+    Input::Record unit_record;
+    if ( rec.opt_val("unit", unit_record) ) {
+        if (!Value::is_scalable()) {
+            WarningOut().fmt("Setting unit conversion coefficient of non-floating point field at address {}\nCoefficient will be skipped.\n",
+                    rec.address_string());
+        }
+        std::string unit_str = unit_record.val<std::string>("unit_formula");
+    	try {
+    		this->unit_conversion_coefficient_ = init_data.unit_si_.convert_unit_from(unit_str);
+    	} catch (ExcInvalidUnit &e) {
+    		e << rec.ei_address();
+    		throw;
+    	} catch (ExcNoncorrespondingUnit &e) {
+    		e << rec.ei_address();
+    		throw;
+    	}
+    }
 }
 
 
@@ -163,13 +205,11 @@ template class field<dim_from, FieldValue<dim_to>::TensorFixed >;               
 // Instantiation of fields with domain in the ambient space of dimension @p dim_from
 #define INSTANCE_TO_ALL(field, dim_from) \
 template class field<dim_from, FieldValue<0>::Enum >;                       \
-template class field<dim_from, FieldValue<0>::EnumVector >;                \
 template class field<dim_from, FieldValue<0>::Integer >;                       \
 template class field<dim_from, FieldValue<0>::Scalar >;                       \
-template class field<dim_from, FieldValue<0>::Vector >;                         \
 \
-INSTANCE_DIM_DEP_VALUES( field, dim_from, 2) \
-INSTANCE_DIM_DEP_VALUES( field, dim_from, 3) \
+INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
+
 
 // All instances of one field class template @p field.
 // currently we need only fields on 3D ambient space (and 2D for some tests)

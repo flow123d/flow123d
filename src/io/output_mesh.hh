@@ -32,44 +32,7 @@
 
 class Mesh;
 template<int, class Value> class Field;
-
-/// Class representing data vector of geometry and topology information (especially for VTK).
-/// Filling the vector is the users responsibility.
-template <typename T>
-class MeshData : public OutputDataBase {
-public:
-    /// Constructor. @p name is the possible name of the output vector.
-    MeshData(std::string name, NumCompValueType n_elem = N_SCALAR)
-    {
-        output_field_name = name;
-        n_elem_ = n_elem;
-    }
-    
-    ~MeshData() override 
-    {};
-    
-    /// Prints @p idx element of data vector into stream.
-    void print(std::ostream& out_stream, unsigned int idx) override {
-        ASSERT_LE(idx, this->n_values);
-        out_stream << data_[idx] ;
-    }
-    
-    /// Prints the whole data vector into stream.
-    void print_all(std::ostream& out_stream) override {
-        for(auto &d : data_)
-            out_stream << d << " ";
-    }
-    
-    /// Access i-th element in the data vector.
-    T& operator[](unsigned int i){
-        ASSERT(i < data_.size());
-        return data_[i];
-    }
-    
-    /// Data vector.
-    std::vector<T> data_;
-};
-
+template<class T> class MeshData;
 
 class OutputElement;
 typedef GeneralIterator<OutputElement> OutputElementIterator;
@@ -93,9 +56,9 @@ public:
     static const unsigned int spacedim = 3;
     
     /// Constructor. Takes computational mesh as a parameter.
-    OutputMeshBase(Mesh* mesh);
+    OutputMeshBase(Mesh &mesh);
     /// Constructor. Takes computational mesh and input record as a parameters.
-    OutputMeshBase(Mesh* mesh, const Input::Record &in_rec);
+    OutputMeshBase(Mesh &mesh, const Input::Record &in_rec);
     virtual ~OutputMeshBase();
     
     /**
@@ -110,7 +73,7 @@ public:
     OutputElementIterator end();
     
     /// Selects the error control field out of output field set according to input record.
-    void select_error_control_field(FieldSet * output_fields);
+    void select_error_control_field(FieldSet &output_fields);
     
     /// Vector of element indices in the computational mesh. (Important when refining.)
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
@@ -149,8 +112,8 @@ protected:
 class OutputMesh : public OutputMeshBase
 {
 public:
-    OutputMesh(Mesh* mesh);
-    OutputMesh(Mesh* mesh, const Input::Record &in_rec);
+    OutputMesh(Mesh &mesh);
+    OutputMesh(Mesh &mesh, const Input::Record &in_rec);
     ~OutputMesh();
     
     /// Creates the output mesh identical to the computational one.
@@ -170,8 +133,8 @@ protected:
 class OutputMeshDiscontinuous : public OutputMeshBase
 {
 public:
-    OutputMeshDiscontinuous(Mesh* mesh);
-    OutputMeshDiscontinuous(Mesh* mesh, const Input::Record& in_rec);
+    OutputMeshDiscontinuous(Mesh &mesh);
+    OutputMeshDiscontinuous(Mesh &mesh, const Input::Record& in_rec);
     ~OutputMeshDiscontinuous();
     
     /// Creates output mesh from the given continuous one.

@@ -18,7 +18,8 @@
 #include "system/application_base.hh"
 #include "system/sys_profiler.hh"
 #include "system/logger_options.hh"
-
+#include "system/armadillo_tools.hh"
+#include "system/file_path.hh"
 
 #ifdef FLOW123D_HAVE_PETSC
 #include <petsc.h>
@@ -36,7 +37,8 @@ PetscErrorCode signal_handler(int signal, void *context)
 
 
 ApplicationBase::ApplicationBase(int argc,  char ** argv)
-: log_filename_("")
+: log_filename_(""),
+  signal_handler_off_(false)
 { }
 
 bool ApplicationBase::petsc_initialized = false;
@@ -48,7 +50,7 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     sys_info.comm=comm;
 
 
-    Xio::init(); //Initialize XIO library
+    //Xio::init(); //Initialize XIO library
 
     // TODO : otevrit docasne log file jeste pred ctenim vstupu (kvuli zachyceni chyb), po nacteni dokoncit
     // inicializaci systemu
@@ -67,9 +69,11 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     	LoggerOptions::get_instance().set_log_file("");
     } else	{
     	// construct full log name
-    	log_name << log_filename <<  "." << sys_info.my_proc << ".old.log";
-    	sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
-    	sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
+    	//log_name << log_filename <<  "." << sys_info.my_proc << ".old.log";
+
+    	//sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file);
+    	//sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
+
     	LoggerOptions::get_instance().set_log_file(log_filename);
     }
 
@@ -105,12 +109,16 @@ void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 #ifdef FLOW123D_HAVE_PETSC
     if (petsc_redirect_file_ != "") {
         petsc_output_ = fopen(petsc_redirect_file_.c_str(), "w");
+        if (! petsc_output_)
+            THROW(FilePath::ExcFileOpen() << FilePath::EI_Path(petsc_redirect_file_));
         PetscVFPrintf = this->petscvfprintf;
     }
 
 
     PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
-    PetscPushSignalHandler(signal_handler, nullptr);
+    if (! signal_handler_off_) {
+        PetscPushSignalHandler(signal_handler, nullptr);
+    }
 
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
@@ -145,6 +153,8 @@ void ApplicationBase::init(int argc, char ** argv) {
 	this->parse_cmd_line(argc, argv);
     Profiler::initialize();
 
+    armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
+
 	this->petsc_initialize(argc, argv);
 	petsc_initialized = true;
 
@@ -158,7 +168,7 @@ void ApplicationBase::init(int argc, char ** argv) {
 
 
 ApplicationBase::~ApplicationBase() {
-	if (sys_info.log) xfclose(sys_info.log);
+	//if (sys_info.log) xfclose(sys_info.log);
 	petcs_finalize();
 }
 

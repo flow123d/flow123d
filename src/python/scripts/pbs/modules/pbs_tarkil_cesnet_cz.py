@@ -14,6 +14,10 @@ from scripts.prescriptions.remote_run import PBSModule
 
 
 class Module(PBSModule):
+    """
+    Class Module for TUL hydra cluster PBS system
+    """
+
     def get_pbs_command(self, pbs_script_filename):
         # total parallel process
         np = self.case.proc
@@ -39,7 +43,7 @@ class Module(PBSModule):
         # command
         command = [
             'qsub',
-            '-l', 'nodes={nodes}:ppn={ppn}'.format(**locals()), # :nfs4 option may be set
+            '-l', 'nodes={nodes}:ppn={ppn}'.format(**locals()),  # :nfs4 option may be set
             '-l', 'mem={mem}mb'.format(**locals()),
             '-l', 'walltime={walltime}'.format(**locals()),
             '-l', 'place=infiniband',
@@ -52,6 +56,10 @@ class Module(PBSModule):
 
 
 class ModuleJob(Job):
+    """
+    Class ModuleJob  for TUL hydra cluster PBS system job
+    """
+
     username = None
     instances = list()
 

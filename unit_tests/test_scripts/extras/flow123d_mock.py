@@ -18,9 +18,9 @@ parser.add_option('-s', '--solve',  dest="solve",  help="Solve file")
 parser.add_option('-t', '--time',   dest="time",   help="Computation duration, default %default s", default=0.0001)
 parser.add_option('-i', '--input',  dest="input",  help="output file")
 parser.add_option('-o', '--output', dest="output", help="input file")
-parser.add_option(      '--copy',   dest="copy",   help="Copy reference", action='store_true')
-parser.add_option(      '--clean',  dest="clean",  help="Clean output", action='store_true')
-parser.add_option(      '--random', dest="random", help="Randomize output", action='store_true')
+parser.add_option('--copy',   dest="copy",   help="Copy reference", action='store_true')
+parser.add_option('--clean',  dest="clean",  help="Clean output", action='store_true')
+parser.add_option('--random', dest="random", help="Randomize output", action='store_true')
 
 options, args = parser.parse_args()
 

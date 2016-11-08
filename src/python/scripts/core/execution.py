@@ -1,18 +1,24 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
+# ----------------------------------------------
 import os
 import subprocess
 import sys
 import tempfile
-
+# ----------------------------------------------
 from scripts import psutils
-from scripts.core.base import IO, Paths
+from scripts.core.base import IO, Paths, Command
 from scripts.core.threads import ExtendedThread, BrokenProcess
 from utils.globals import ensure_iterable
+# ----------------------------------------------
 
 
 class OutputMode(object):
+    """
+    Class OutputMode helper class for redirecting output from a command
+    """
+
     WRITE, APPEND, SHOW, HIDE, VARIABLE = range(5)
 
     def __init__(self, mode, filename=None, fp=None):
@@ -26,9 +32,15 @@ class OutputMode(object):
             return {self.SHOW: None, self.HIDE: subprocess.PIPE}.get(self.mode)
 
         if self.mode in {self.WRITE, self.APPEND, self.VARIABLE}:
-            if not self.fp:
+
+            # open file manually when append or write
+            if self.mode in {self.WRITE, self.APPEND}:
                 Paths.ensure_path(self.filename)
                 self.fp = open(self.filename, 'w+' if self.mode is self.WRITE else 'a+')
+
+            # create temp file otherwise
+            if self.mode is self.VARIABLE:
+                self.fp, self.filename = tempfile.mkstemp()
             return self.fp
 
     def close(self):
@@ -69,12 +81,12 @@ class OutputMode(object):
 
     @classmethod
     def variable_output(cls):
-        fd, name = tempfile.mkstemp()
-        return OutputMode(cls.VARIABLE, name, fd)
+        return OutputMode(cls.VARIABLE)
 
 
 class BinExecutor(ExtendedThread):
     """
+    Class which executes command and saves returncode
     :type process: scripts.psutils.Process
     :type threads: list[scripts.core.execution.BinExecutor]
     :type output : OutputMode
@@ -112,6 +124,7 @@ class BinExecutor(ExtendedThread):
         self.process = None
         self.broken = False
         self.output = OutputMode.hidden_output()
+        self.exception = "Unknown error"
 
     def _run(self):
         if self.stopped:
@@ -136,15 +149,20 @@ class BinExecutor(ExtendedThread):
             self.returncode = process.returncode
             self.broken = True
             self.process = process
+            self.exception = str(e)
             return
 
         # process successfully started to wait for result
         # call wait on Popen process
         self.broken = False
-        self.process.process.wait()
+        code = self.process.process.wait()
         self.output.close()
 
         if self.process.terminated:
             self.returncode = 5
             return
         self.returncode = getattr(self.process, 'returncode', None)
+
+    @property
+    def escaped_command(self):
+        return Command.to_string(self.command)

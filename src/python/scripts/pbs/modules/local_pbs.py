@@ -2,42 +2,72 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 import re
-import random
+import os
 
-from scripts.pbs.job import Job
+from scripts.pbs.job import Job, JobState
 from scripts.prescriptions.remote_run import PBSModule
 
 
+def determine_mock_location():
+    # if script are copied out
+    path = os.path.abspath(os.path.join(
+            os.path.dirname(os.path.realpath(os.path.abspath(__file__))),
+            '..', '..', '..', '..', '..',
+            'unit_tests', 'test_scripts', 'extras', 'pbs_mock.py'))
+    if os.path.exists(path):
+        return path
+
+    # if script is still in repo
+    path = os.path.abspath(os.path.join(
+        os.path.dirname(os.path.realpath(os.path.abspath(__file__))),
+        '..', '..', '..', '..',
+        'tests', 'test_scripts', 'extras', 'pbs_mock.py'))
+
+    if os.path.exists(path):
+        return path
+
 class Module(PBSModule):
+    """
+    Class Module dummy local pbs module
+    """
+
+    # points to pbs mock python file in unit tests
+    mock = determine_mock_location()
+
     def __init__(self, case):
         super(Module, self).__init__(case)
 
     def get_pbs_command(self, pbs_script_filename):
-        return ["bash", pbs_script_filename]
+        return [
+            "python",
+            Module.mock,
+            'qsub',
+            '-o', self.case.fs.pbs_output,
+            pbs_script_filename]
 
 
 template = """
 #!/bin/bash
-# $$command$$
-cp /home/jan-hybs/Dokumenty/projects/Flow123d-python-utils/src/foo.json $$json_output$$ > /dev/null 2>&1
-echo 25309
+$$command$$
+
 """.lstrip()
 
 
 class ModuleJob(Job):
+    """
+    Class ModuleJob dummy local pbs module
+    """
+
     def __init__(self, job_id, case):
         super(ModuleJob, self).__init__(job_id, case)
+        self.parser = self.parser_builder(
+            self, 1, JobState.UNKNOWN,
+            queue=2,
+        )
 
     @classmethod
     def update_command(cls):
-        return ['ps', '-a']
-
-    def parse_status(self, output=""):
-        # if random.random() > 0.5:
-        #     return 'Q'
-        if output.find(str(self.id)) == -1:
-            return 'C'
-        return 'R'
+        return ["python", Module.mock, 'qstat']
 
     @classmethod
     def create(cls, command_output, case):

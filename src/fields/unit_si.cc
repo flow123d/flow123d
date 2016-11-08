@@ -18,13 +18,15 @@
 #include <sstream>
 
 #include "fields/unit_si.hh"
-#include "system/xio.h"
+#include "fields/unit_converter.hh"
+#include "system/asserts.hh"
 
 
 using namespace std;
 
 
-UnitSI::UnitSI() {
+UnitSI::UnitSI()
+{
 	exponents_.resize(UnitSI::n_base_units);
 	std::fill(exponents_.begin(), exponents_.end(), 0);
 	undef_ = true;
@@ -53,6 +55,10 @@ UnitSI & UnitSI::Pa() {
 UnitSI & UnitSI::dimensionless() {
 	static UnitSI unit = UnitSI().m(0);
 	return unit;
+}
+
+UnitSI & UnitSI::one() {
+    return dimensionless();
 }
 
 UnitSI & UnitSI::m(int exp) {
@@ -136,7 +142,7 @@ const std::string &UnitSI::unit_symbol(unsigned int idx) {
 
 
 std::string UnitSI::format(OutputFormat form) const {
-	OLD_ASSERT(is_def(), "UnitSI object must be defined!");
+	ASSERT(is_def()).error("UnitSI object must be defined!");
 
 	std::stringstream output;
 
@@ -196,6 +202,35 @@ bool UnitSI::is_def() const {
 	return !undef_;
 }
 
+void UnitSI::multiply(const UnitSI &other, int exp) {
+	for(unsigned int i=0; i < n_base_units; i++ ) {
+		exponents_[i] += exp * other.exponents_[i];
+	}
+	undef_ = false;
+}
+
+void UnitSI::reset() {
+	std::fill(exponents_.begin(), exponents_.end(), 0);
+	undef_ = true;
+}
+
+double UnitSI::convert_unit_from(std::string actual_unit) const {
+	UnitConverter converter;
+	double coef = converter.convert(actual_unit);
+
+	if ( converter.unit_si() == (*this) ) {
+		return coef;
+	} else {
+		THROW( ExcNoncorrespondingUnit() << EI_UnitDefinition(actual_unit) << EI_ExpectedUnit(this->format_text()) );
+		return 0.0;
+	}
+}
+
+
+bool UnitSI::operator==(const UnitSI &other) const
+{
+	return (this->exponents_==other.exponents_);
+}
 
 UnitSI operator *(const UnitSI &a, const UnitSI &b) {
 	UnitSI tmp;

@@ -26,6 +26,44 @@ FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
 
 using namespace Input::Type;
 
+
+/**
+ * Auxiliary implementation of OutputDataBase that performs output of single zero data for the fields that are
+ * off for current time frame.
+ */
+class DummyOutputData : public OutputDataBase {
+public:
+
+    DummyOutputData(std::string field_name_in, OutputDataBase::NumCompValueType n_elem_in)
+   {
+        this->output_field_name = field_name_in;
+        this->n_elem_ = n_elem_in;
+        this->n_values = 1;
+    }
+
+    virtual ~DummyOutputData() override
+    {}
+
+    void print(ostream &out_stream, unsigned int idx) override
+    {
+        for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
+    }
+
+    void print_all(ostream &out_stream) override
+    {
+        for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
+    }
+
+    void print_all_yaml(ostream &out_stream, unsigned int precision) override
+    {}
+};
+
+
+
+
+
+
+
 const Record & OutputMSH::get_input_type() {
 	return Record("gmsh", "Parameters of gmsh output format.")
 		// It is derived from abstract class
@@ -33,8 +71,26 @@ const Record & OutputMSH::get_input_type() {
 		.close();
 }
 
-const int OutputMSH::registrar = Input::register_class< OutputMSH, const Input::Record & >("gmsh") +
+const int OutputMSH::registrar = Input::register_class< OutputMSH >("gmsh") +
 		OutputMSH::get_input_type().size();
+
+
+OutputMSH::OutputMSH()
+{
+    this->enable_refinement_ = false;
+    this->header_written = false;
+
+    dummy_data_list_.resize(OutputTime::N_DISCRETE_SPACES);
+
+
+}
+
+OutputMSH::~OutputMSH()
+{
+    this->write_tail();
+}
+
+
 
 
 void OutputMSH::write_msh_header(void)
@@ -125,84 +181,107 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataPtr output_data)
 }
 
 
-void OutputMSH::write_msh_node_data(double time, int step)
+
+void OutputMSH::write_node_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
-    Mesh *mesh = this->_mesh;
+    double time_fixed = isfinite(this->time)?this->time:0;
 
-    double time_fixed = isfinite(time)?time:0;
 
-    for(OutputDataPtr output_data :  this->output_data_vec_[NODE_DATA])
-        {
-            file << "$NodeData" << endl;
+    file << "$NodeData" << endl;
 
-            file << "1" << endl;     // one string tag
-            file << "\"" << output_data->output_field_name <<"\"" << endl;
+    file << "1" << endl;     // one string tag
+    file << "\"" << output_data->output_field_name <<"\"" << endl;
 
-            file << "1" << endl;     // one real tag
-            file << time_fixed << endl;    // first real tag = time
+    file << "1" << endl;     // one real tag
+    file << time_fixed << endl;    // first real tag = time
 
-            file << "3" << endl;     // 3 integer tags
-            file << step << endl;    // step number (start = 0)
-            file << output_data->n_elem_ << endl;   // number of components
-            file << output_data->n_values << endl;  // number of values
+    file << "3" << endl;     // 3 integer tags
+    file << this->current_step << endl;    // step number (start = 0)
+    file << output_data->n_elem_ << endl;   // number of components
+    file << output_data->n_values << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(mesh->node_vector, output_data);
+    this->write_msh_ascii_cont_data(this->_mesh->node_vector, output_data);
 
-            file << "$EndNodeData" << endl;
-        }
-    for(OutputDataPtr output_data :  this->output_data_vec_[CORNER_DATA] )
-        {
-            file << "$ElementNodeData" << endl;
-
-            file << "1" << endl;     // one string tag
-            file << "\"" << output_data->output_field_name <<"\"" << endl;
-
-            file << "1" << endl;     // one real tag
-            file << time_fixed << endl;    // first real tag = time
-
-            file << "3" << endl;     // 3 integer tags
-            file << step << endl;    // step number (start = 0)
-            file << output_data->n_elem_ << endl;   // number of components
-            file << mesh->n_elements() << endl; // number of values
-
-            this->write_msh_ascii_discont_data(output_data);
-
-            file << "$EndElementNodeData" << endl;
-        }
+    file << "$EndNodeData" << endl;
 }
 
-void OutputMSH::write_msh_elem_data(double time, int step)
+
+void OutputMSH::write_corner_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
+    double time_fixed = isfinite(this->time)?this->time:0;
 
-    double time_fixed = isfinite(time) ? time : 0;
+    file << "$ElementNodeData" << endl;
 
-    for(OutputDataPtr output_data :  this->output_data_vec_[ELEM_DATA] )
-        {
-            file << "$ElementData" << endl;
+    file << "1" << endl;     // one string tag
+    file << "\"" << output_data->output_field_name <<"\"" << endl;
 
-            file << "1" << endl;     // one string tag
-            file << "\"" << output_data->output_field_name <<"\"" << endl;
+    file << "1" << endl;     // one real tag
+    file << time_fixed << endl;    // first real tag = time
 
-            file << "1" << endl;     // one real tag
-            file << time_fixed << endl;    // first real tag = time
+    file << "3" << endl;     // 3 integer tags
+    file << this->current_step << endl;    // step number (start = 0)
+    file << output_data->n_elem_ << endl;   // number of components
+    file << this->_mesh->n_elements() << endl; // number of values
 
-            file << "3" << endl;     // 3 integer tags
-            file << step << endl;    // step number (start = 0)
-            file << output_data->n_elem_ << endl;   // number of components
-            file << output_data->n_values << endl;  // number of values
+    this->write_msh_ascii_discont_data(output_data);
 
-            this->write_msh_ascii_cont_data(this->_mesh->element, output_data);
+    file << "$EndElementNodeData" << endl;
+}
 
-            file << "$EndElementData" << endl;
+void OutputMSH::write_elem_data(OutputDataPtr output_data)
+{
+    ofstream &file = this->_base_file;
+    double time_fixed = isfinite(this->time)?this->time:0;
+
+    file << "$ElementData" << endl;
+
+    file << "1" << endl;     // one string tag
+    file << "\"" << output_data->output_field_name <<"\"" << endl;
+
+    file << "1" << endl;     // one real tag
+    file << time_fixed << endl;    // first real tag = time
+
+    file << "3" << endl;     // 3 integer tags
+    file << this->current_step << endl;    // step number (start = 0)
+    file << output_data->n_elem_ << endl;   // number of components
+    file << output_data->n_values << endl;  // number of values
+
+    this->write_msh_ascii_cont_data(this->_mesh->element, output_data);
+
+    file << "$EndElementData" << endl;
+}
+
+void OutputMSH::write_field_data(OutputTime::DiscreteSpace type_idx, void (OutputMSH::* format_fce)(OutputDataPtr) )
+{
+    auto &dummy_data_list = dummy_data_list_[type_idx];
+    auto &data_list = this->output_data_vec_[type_idx];
+
+    if (dummy_data_list.size() == 0) {
+        // Collect all output fields
+        // If more EquationOutput object with different initial times output into same
+        // output stream, we may need to possibly update this list on every output frame.
+        for(auto out_ptr : data_list)
+            dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->output_field_name, out_ptr->n_elem_));
+    }
+
+
+    auto data_it = data_list.begin();
+    for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
+    	//DebugOut().fmt("dummy field: {} data field: {}\n", (*dummy_it)->output_field_name, (*data_it)->output_field_name);
+        if ((*dummy_it)->output_field_name == (*data_it)->output_field_name) {
+            (this->*format_fce)(*data_it); ++data_it;
+        } else {
+            (this->*format_fce)(*dummy_it);
         }
+    }
+    ASSERT( data_it ==  data_list.end() )(data_it - data_list.begin())(data_list.size());
 }
 
 int OutputMSH::write_head(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
-            this->_base_filename.c_str());
+	LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
     this->write_msh_header();
 
@@ -210,29 +289,37 @@ int OutputMSH::write_head(void)
 
     this->write_msh_topology();
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 
     return 1;
 }
 
 int OutputMSH::write_data(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
-            this->_base_filename.c_str());
-
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
+        if(this->rank == 0) {
+            this->fix_main_file_extension(".msh");
+            try {
+                this->_base_filename.open_stream( this->_base_file );
+            } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
+        }
+
         this->write_head();
         this->header_written = true;
     }
 
-    this->write_msh_node_data(this->time, this->current_step);
-    this->write_msh_elem_data(this->time, this->current_step);
+    LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
+
+
+    this->write_field_data(NODE_DATA, &OutputMSH::write_node_data);
+    this->write_field_data(CORNER_DATA, &OutputMSH::write_corner_data);
+    this->write_field_data(ELEM_DATA, &OutputMSH::write_elem_data);
 
     // Flush stream to be sure everything is in the file now
     this->_base_file.flush();
 
-    xprintf(MsgLog, "O.K.\n");
+    LogOut() << "O.K.";
 
     return 1;
 }
@@ -245,22 +332,4 @@ int OutputMSH::write_tail(void)
 }
 
 
-
-OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
-{
-    this->enable_refinement_ = false;
-	this->fix_main_file_extension(".msh");
-    this->header_written = false;
-    
-    if(this->rank == 0) {
-        this->_base_file.open(this->_base_filename.c_str());
-        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
-        xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
-    }
-}
-
-OutputMSH::~OutputMSH()
-{
-    this->write_tail();
-}
 

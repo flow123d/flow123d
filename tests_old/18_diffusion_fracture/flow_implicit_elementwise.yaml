@@ -1,0 +1,58 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: '[u''test18:'', u''diffusion'', u''through'', u''fractures'']'
+  mesh:
+    mesh_file: ./input/test18.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
+      - rid: 20
+        cross_section: 0.01
+      - rid: 24
+        cross_section: 1
+    output:
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: {}
+    output_stream: 
+      file: ./test18.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: .BOUNDARY
+          bc_conc: 0
+        - region: ALL
+          init_conc: !FieldElementwise
+            gmsh_file: ./input/test18_init.msh
+            field_name: concentration
+          diff_m: 0.1
+          dg_penalty: 100
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    output_stream: 
+      file: ./transport-implicit.pvd
+      format: !vtk
+        variant: ascii
+      name: transport_output_stream
+      times:
+        - step: 0.001
+    substances:
+      - A
+    time:
+      end_time: 0.01
+      max_dt: 0.001
+    balance:
+      cumulative: true

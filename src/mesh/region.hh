@@ -120,6 +120,16 @@ protected:
     friend class Region;
 };
 
+/**
+ * Type representing a set of regions.
+ * CAn be used  to set function(field) on more regions at once, possibly across meshes
+ *
+ * Regions stored in region set are always unique
+ */
+typedef std::vector<Region> RegionSet;
+/// Type representing a map of RegionSets.
+typedef std::map<std::string, RegionSet > RegionSetTable;
+
 
 
 /**
@@ -179,6 +189,8 @@ public:
         return *db_;
     }
 
+    bool is_in_region_set(const RegionSet &set) const;
+
 protected:
     /**
      * Create accessor from the index. Should be private since implementation specific.
@@ -199,15 +211,7 @@ protected:
 
 
 
-/**
- * Type representing a set of regions.
- * CAn be used  to set function(field) on more regions at once, possibly across meshes
- *
- * Regions stored in region set are always unique
- */
-typedef std::vector<Region> RegionSet;
-/// Type representing a map of RegionSets.
-typedef std::map<std::string, RegionSet > RegionSetTable;
+
 
 
 /**
@@ -342,6 +346,8 @@ public:
      * @p dim is dimension of reference elements in the region, @p boundary is true if the region consist of boundary elements
      * (where one can apply boundary condition) and @p address contains source of region (address in input file or section in
      * mesh file).
+     *
+     * When called from GMSH reader the default region name have a form "region_ID".
      */
     Region add_region(unsigned int id, const std::string &label, unsigned int dim, const std::string &address ="implicit");
 
@@ -412,8 +418,7 @@ public:
 
     /**
      * Returns implicit boundary region. Is used for boundary elements created by Flow123d itself.
-     * This region has label "IMPLICIT_BOUNDARY" and it is obsolete, the name is not consistent
-     * with boundary label notation.
+     * This region has label ".IMPLICIT_BOUNDARY".
      */
     Region implicit_boundary_region();
 
@@ -437,7 +442,7 @@ public:
      * Get region set of specified name. Three sets are defined by default:
      * "ALL" - set of all regions both bulk and boundary.
      * "BULK" - set of all bulk regions
-     * "BOUNDARY" - set of all boundary regions
+     * ".BOUNDARY" - set of all boundary regions
      *
      * @param set_name Name of set
      * @return RegionSet of specified name. Returns Empty vector if the set of given name doesn't exist.

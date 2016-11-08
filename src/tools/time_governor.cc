@@ -26,14 +26,16 @@
 TimeMarks TimeGovernor::time_marks_ = TimeMarks();
 
 //const double TimeGovernor::time_step_lower_bound = numeric_limits<double>::epsilon();
+
+#define MAX_END_TIME 5.0e+17
+#define MAX_END_TIME_STR "5.0e+17"
+
 const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
+const double TimeGovernor::max_end_time = MAX_END_TIME; // more then age of universe in seconds.
 const double TimeGovernor::time_step_precision = 16*numeric_limits<double>::epsilon();
 
 
 using namespace Input::Type;
-
-
-
 
 
 const Record & TimeGovernor::get_input_type() {
@@ -42,8 +44,8 @@ const Record & TimeGovernor::get_input_type() {
 		.allow_auto_conversion("max_dt")
 		.declare_key("start_time", Double(), Default("0.0"),
 					"Start time of the simulation.")
-		.declare_key("end_time", Double(), Default::read_time("Infinite end time."),
-					"End time of the simulation.")
+		.declare_key("end_time", Double(), Default(MAX_END_TIME_STR),
+					"End time of the simulation. Default value is more then age of universe in seconds.")
 		.declare_key("init_dt", Double(0.0), Default("0.0"),
 				"Initial guess for the time step.\n"
 				"Only useful for equations that use adaptive time stepping."
@@ -114,15 +116,26 @@ bool TimeStep::safe_compare(double t1, double t0) const
 
 
 
+ostream& operator<<(ostream& out, const TimeStep& t_step) {
+    out << "time: " << t_step.end() << "step: " << t_step.length() << endl;
+}
+
+
+
 TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_type)
 {
     // use new mark type as default
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
 
     try {
+
+        // Get rid of rounding errors.
+        double end_time = input.val<double>("end_time");
+        if (end_time> 0.99*max_end_time) end_time = max_end_time;
+
         // set permanent limits
     	init_common(input.val<double>("start_time"),
-    				input.val<double>("end_time", inf_time),
+    				end_time,
     				eq_mark_type);
         set_permanent_constraint(
             input.val<double>("min_dt", min_time_step_),
@@ -179,11 +192,9 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 }
 
 
-
 // common part of constructors
 void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type type)
 {
-
 
     if (init_time < 0.0) {
 		THROW(ExcTimeGovernorMessage()
@@ -211,11 +222,7 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 
     	min_time_step_=lower_constraint_=time_step_precision;
         lower_constraint_message_ = "Permanent minimal constraing, default, time_step_precision.";
-    	if (end_time_ == inf_time) {
-        	max_time_step_=upper_constraint_=inf_time;
-    	} else {
-    		max_time_step_=upper_constraint_= end_time - init_time_;
-    	}
+   		max_time_step_=upper_constraint_= end_time - init_time_;
     	upper_constraint_message_ = "Permanent maximal constraint, default, total simulation time.";
     	// choose maximum possible time step
     	//time_step_=max_time_step_;
@@ -238,8 +245,8 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 	eq_mark_type_=type;
 	steady_=false;
     time_marks_.add( TimeMark(init_time_, equation_fixed_mark_type()) );
-    if (end_time_ != inf_time)
-    	time_marks_.add( TimeMark(end_time_, equation_fixed_mark_type()) );
+    //if (end_time_ != inf_time)
+    time_marks_.add( TimeMark(end_time_, equation_fixed_mark_type()) );
 }
 
 
@@ -338,6 +345,13 @@ void TimeGovernor::add_time_marks_grid(double step, TimeMark::Type mark_type) co
 }
 
 
+bool TimeGovernor::is_current(const TimeMark::Type &mask) const
+{
+    TimeMark::Type type = equation_mark_type() | mask;
+    return time_marks_.current(step(), type) != time_marks_.end(type);
+}
+
+
 
 double TimeGovernor::estimate_dt() const {
     if (is_end()) return 0.0;
@@ -358,7 +372,6 @@ double TimeGovernor::estimate_dt() const {
     // this always selects shorter time step,
     // but allows time step larger then constraint by a number close to machine epsilon
     //
-    //DBGMSG("%g %g %g\n",full_step , step_estimate, full_step / step_estimate);
     double n_steps = ceil( full_step / step_estimate - time_step_precision);
     step_estimate = full_step / n_steps;
     
@@ -369,9 +382,12 @@ double TimeGovernor::estimate_dt() const {
     
     // if the step estimate gets by rounding lower than lower constraint program will not crash
     // will just output a user warning.
-    if (step_estimate < lower_constraint_)
-        xprintf(Warn, "Time step estimate is below the lower constraint of time step. The difference is: %.16f.\n", 
+    if (step_estimate < lower_constraint_) {
+    	static char buffer[1024];
+    	sprintf(buffer, "Time step estimate is below the lower constraint of time step. The difference is: %.16f.\n",
                 lower_constraint_ - step_estimate);
+    	WarningOut() << buffer;
+    }
     
     return step_estimate;
 }
@@ -411,9 +427,9 @@ void TimeGovernor::next_time()
         // this is done if end_of_fixed_dt_interval is not set (means it is equal to -infinity)
         double dt=estimate_dt();
         TimeStep step_ = recent_steps_.front().make_next(dt);
-        //DBGMSG("step: %f, end: %f\n", step_.length(), step_.end());
+        //DebugOut().fmt("step: {}, end: {}\n", step_.length(), step_.end());
         recent_steps_.push_front(step_);
-        //DBGMSG("last:%f, new: %f\n",step(-1).length(),step().length());
+        //DebugOut().fmt("last: {}, new: {}\n",step(-1).length(),step().length());
         time_step_changed_= (step(-2).length() != step().length());
     }
 
@@ -432,9 +448,9 @@ double TimeGovernor::reduce_timestep(double factor) {
     double new_upper_constraint = factor * dt();
 
     // Revert time.
-//    DBGMSG("tg idx: %d\n", recent_steps_.front().index());
+//    DebugOut().fmt("tg idx: {}\n", recent_steps_.front().index());
     recent_steps_.pop_front();
-//    DBGMSG("tg idx: %d\n", recent_steps_.back().index());
+//    DebugOut().fmt("tg idx: {}\n", recent_steps_.back().index());
     upper_constraint_ = last_upper_constraint_;
     lower_constraint_ = last_lower_constraint_;
 
@@ -470,14 +486,16 @@ const TimeStep &TimeGovernor::step(int index) const {
 
 void TimeGovernor::view(const char *name) const
 {
-    xprintf(Msg, "\nTG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>",
-            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
+	static char buffer[1024];
 #ifdef FLOW123D_DEBUG_MESSAGES
-    xprintf(Msg, "    end_time: %f end_fixed_time: %f type: 0x%x\n" , end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
+	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>    end_time: %f end_fixed_time: %f type: 0x%x\n",
+	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_, end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
 #else
-    xprintf(Msg,"\n");
+	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
+	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
 #endif
-    xprintf(Msg, "Lower time step constraint [%f]: %s \nUpper time step constraint [%f]: %s \n",
+	MessageOut() << buffer;
+    MessageOut().fmt("Lower time step constraint [{}]: {} \nUpper time step constraint [{}]: {} \n",
             lower_constraint_, lower_constraint_message_.c_str(), 
             upper_constraint_, upper_constraint_message_.c_str() );
 }

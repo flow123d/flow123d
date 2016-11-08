@@ -1,0 +1,11 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- files:
+  - 03_unsteady_LMH.yaml
+  time_limit: 60
+- files:
+  - 05_unsteady_LMH_exact.yaml
+  time_limit: 120

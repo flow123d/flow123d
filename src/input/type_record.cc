@@ -23,8 +23,6 @@
 #include "input/reader_to_storage.hh"
 
 #include <boost/typeof/typeof.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 
@@ -209,7 +207,6 @@ Record &Record::derive_from(Abstract &parent) {
 }
 
 
-
 Record &Record::copy_keys(const Record &other) {
 	ASSERT( other.is_closed() )(other.type_name()).error();
 
@@ -242,6 +239,16 @@ bool Record::finish(bool is_generic)
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
+
+      	if (it->key_ != "TYPE") {
+			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
+			if (!is_generic && it->type_->is_root_of_generic_subtree())
+			    THROW( ExcGenericWithoutInstance()
+			            << EI_Object(it->type_->type_name())
+			            << EI_TypeName(this->type_name()));
+           	data_->finished = data_->finished && it->type_->finish(is_generic);
+        }
+
         if (!is_generic) {
             try {
                 it->default_.check_validity(it->type_);
@@ -254,14 +261,6 @@ bool Record::finish(bool is_generic)
             }
         }
 
-    	if (it->key_ != "TYPE") {
-			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-			if (!is_generic && it->type_->is_root_of_generic_subtree())
-			    THROW( ExcGenericWithoutInstance()
-			            << EI_Object(it->type_->type_name())
-			            << EI_TypeName(this->type_name()));
-           	data_->finished = data_->finished && it->type_->finish(is_generic);
-        }
     }
 
     // Check default values of autoconvertible records

@@ -1,6 +1,0 @@
-common_config:
-  proc: [1, 2]
-  memory_limit: 1000
-
-test_cases:
-- file: 01_linear.yaml

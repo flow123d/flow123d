@@ -20,6 +20,7 @@
 
 
 #include <map>
+#include <memory>
 #include "type_base.hh"
 
 
@@ -49,7 +50,7 @@ public:
 	    );
 
 	/// Type stored objects of input types.
-    typedef std::map< Type::TypeBase::TypeHash, boost::shared_ptr<T> > TypeRepositoryMap;
+    typedef std::map< Type::TypeBase::TypeHash, std::shared_ptr<T> > TypeRepositoryMap;
 
     /// Public typedef of constant iterator into map of stored type.
     typedef typename TypeRepositoryMap::const_iterator TypeRepositoryMapIter;
@@ -61,7 +62,7 @@ public:
     };
 
     /// Add @p type to TypeRepository if doesn't exist there or get existing type with same TypeHash
-    boost::shared_ptr<T> add_type(const T & type);
+    std::shared_ptr<T> add_type(const T & type);
 
     /**
      * @brief Finish all stored types.
@@ -97,15 +98,15 @@ private:
 
 
 template <class T>
-boost::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
+std::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
     Type::TypeBase::TypeHash hash = type.content_hash();
 
 	auto search = type_repository_map_.find(hash);
 	if (search != type_repository_map_.end()) {
 		return search->second;
 	} else {
-		auto type_ptr = boost::make_shared<T>( type );
-		type_repository_map_.insert( std::pair<Type::TypeBase::TypeHash, boost::shared_ptr<T>>(hash,type_ptr) );
+		auto type_ptr = std::make_shared<T>( type );
+		type_repository_map_.insert( std::pair<Type::TypeBase::TypeHash, std::shared_ptr<T>>(hash,type_ptr) );
 		return type_ptr;
 	}
 }
@@ -116,7 +117,7 @@ void TypeRepository<T>::finish(bool is_root_of_generic_subtree) {
 	for (typename TypeRepositoryMap::reverse_iterator it = type_repository_map_.rbegin(); it != type_repository_map_.rend(); ++it) {
 		if (is_root_of_generic_subtree == it->second->is_root_of_generic_subtree()) {
 			if (is_root_of_generic_subtree) {
-				ASSERT(it->second->is_finished())(it->second->type_name()).warning("Unused root of generic subtree.");
+				//ASSERT(it->second->is_finished())(it->second->type_name()).warning("Unused root of generic subtree.");
 				it->second->finish(true);
 			} else {
 				it->second->finish();

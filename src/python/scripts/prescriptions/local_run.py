@@ -5,16 +5,19 @@
 import shutil
 # ----------------------------------------------
 from scripts.core.base import Paths, Printer
-from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread
+from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread, MultiThreads
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.prescriptions import AbstractRun
 from scripts.comparisons import file_comparison
+from scripts.yamlc import REF_OUTPUT_DIR
 # ----------------------------------------------
-
-REF_OUTPUT_DIR = 'ref_out'
 
 
 class LocalRun(AbstractRun):
+    """
+    Class LocalRun creates PyPy object and creates comparison threads
+    """
+
     def __init__(self, case):
         super(LocalRun, self).__init__(case)
         self.progress = False
@@ -25,11 +28,10 @@ class LocalRun(AbstractRun):
         pypy.case = self.case
 
         pypy.limit_monitor.set_limits(self.case)
-        pypy.info_monitor.end_fmt = ''
-        pypy.info_monitor.start_fmt = 'Running: {}'.format(self.case)
+        pypy.end_monitor.deactivate()
+        pypy.start_monitor.format = 'Running: {}'.format(self.case)
 
         pypy.progress = self.progress
-        # pypy.executor.output = OutputMode.file_write(Paths.temp_file('runtest-{datetime}.log'))
         pypy.executor.output = OutputMode.file_write(self.case.fs.job_output)
         pypy.full_output = pypy.executor.output.filename
         return pypy
@@ -43,7 +45,7 @@ class LocalRun(AbstractRun):
             module = getattr(file_comparison, 'Compare{}'.format(method.capitalize()), None)
             comp_data = check_rule[method]
             if not module:
-                Printer.err('Warning! No module for check_rule method "{}"', method)
+                Printer.all.err('Warning! No module for check_rule method "{}"', method)
                 continue
 
             pairs = self._get_ref_output_files(comp_data)
@@ -54,10 +56,14 @@ class LocalRun(AbstractRun):
 
                     # if we fail, set error to 13
                     pm.custom_error = 13
-                    pm.info_monitor.active = False
-                    pm.limit_monitor.active = False
-                    pm.progress_monitor.active = False
-                    pm.error_monitor.message = 'Error! Comparison using method {} failed!'.format(method)
+                    pm.start_monitor.deactivate()
+                    pm.end_monitor.deactivate()
+                    pm.progress_monitor.deactivate()
+                    pm.limit_monitor.deactivate() # TODO: maybe some time limit would be useful
+                    pm.output_monitor.policy = pm.output_monitor.POLICY_ERROR_ONLY
+
+                    pm.error_monitor.message = 'Comparison using method {} failed!'.format(method)
+                    pm.error_monitor.indent = 1
 
                     # catch output
                     pm.executor.output = OutputMode.variable_output()
@@ -74,8 +80,18 @@ class LocalRun(AbstractRun):
     def create_clean_thread(self):
         return CleanThread("cleaner", self.case.fs.output)
 
+    def create_dummy_clean_thread(self):
+        return DummyCleanThread("cleaner", self.case.fs.output)
+
+    def create_dummy_comparisons(self):
+        return DummyComparisonThread(self.case.fs.ndiff_log)
+
 
 class CleanThread(ExtendedThread):
+    """
+    Class CleanThread clean directory where results will be stored
+    """
+
     def __init__(self, name, dir):
         super(CleanThread, self).__init__(name)
         self.dir = dir
@@ -96,3 +112,17 @@ class CleanThread(ExtendedThread):
         json['dir'] = self.dir
         json['error'] = self.error
         return json
+
+
+class DummyCleanThread(CleanThread):
+    def _run(self):
+        self.returncode = 0
+
+
+class DummyComparisonThread(ComparisonMultiThread):
+    def _run(self):
+        return
+
+    @property
+    def returncode(self):
+        return 0

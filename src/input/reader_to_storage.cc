@@ -23,7 +23,9 @@
 #include "reader_to_storage.hh"
 #include "input/path_json.hh"
 #include "input/path_yaml.hh"
+#include "input/input_type.hh"
 #include "input/accessors.hh"
+
 
 namespace Input {
 using namespace std;
@@ -38,7 +40,8 @@ using namespace internal;
 ReaderToStorage::ReaderToStorage()
 : storage_(nullptr),
   root_type_(nullptr),
-  try_transpose_read_(false)
+  try_transpose_read_(false),
+  transpose_index_(0)
 {}
 
 
@@ -57,10 +60,8 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &
 		THROW(ExcInputMessage() << EI_Message("Invalid extension of file " + fname + ".\nMust be 'con' or 'yaml'."));
 	}
 
-	std::ifstream in(fname.c_str());
-    if (! in) {
-    	THROW(ExcInputMessage() << EI_Message("Can not open main input file: '" + fname + "'.\n"));
-    }
+	std::ifstream in;
+	in_file.open_stream(in);
 
     // finish all lazy input types
     Input::Type::TypeBase::lazy_finish();
@@ -218,6 +219,13 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
 
             if ( !effectively_null && p.down(it->key_) ) {
                 // key on input => check & use it
+                // check for obsolete key
+
+                auto obsolete_it = it->attributes.find( Type::Attribute::obsolete() );
+                if ( obsolete_it != it->attributes.end()) {
+                    WarningOut() << "Usage of the obsolete key: '" << it->key_ << "'\n" << obsolete_it -> second;
+                }
+
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
                 	delete storage;
@@ -477,7 +485,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
         }
 
 		if ( arr_size > (int)tuple->size() ) {
-            xprintf(Warn, "Unprocessed keys in tuple '%s', tuple has %d keys but the input is specified by %d values.\n",
+			WarningOut().fmt("Unprocessed keys in tuple '{}', tuple has {} keys but the input is specified by {} values.\n",
                     p.as_string().c_str(), tuple->size(), arr_size );
 		}
 

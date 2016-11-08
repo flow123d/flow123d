@@ -28,6 +28,7 @@ namespace it = Input::Type;
 
 it::Abstract & LinSys::get_input_type() {
 	return it::Abstract("LinSys", "Linear solver setting.")
+	        .allow_auto_conversion("Petsc")
 			.close();
 }
 
@@ -101,7 +102,7 @@ void LinSys::start_insert_assembly()
 void LinSys::finalize(MatAssemblyType assembly_type)
 {
     if (status == ALLOCATE) {
-        xprintf(Warn, "Finalizing linear system without setting values.\n");
+    	WarningOut() << "Finalizing linear system without setting values.\n";
         preallocate_matrix();
     }
     MatAssemblyBegin(matrix, assembly_type);
@@ -252,13 +253,13 @@ void LSSetCSR( LinSystem *mtx )
     if (mtx->i == NULL) mtx->i=(int *)xmalloc( (mtx->size+1)*sizeof(int) );
     if (mtx->j == NULL) mtx->j=(int *)xmalloc( nnz*sizeof(int) );
     if (mtx->a == NULL) mtx->a=(double *)xmalloc( nnz*sizeof(double) );
-    DBGMSG("mtx size: %d nnz: %d\n",mtx->size,nnz);
+    DebugOut().fmt("mtx size: {} nnz: {}\n", mtx->size, nnz);
     // setup matrix from PETSC SeqAIJ format
     pos=0;
     for( row=0; row< mtx->size; row++ ) {
         mtx->i[row]=pos;
         MatGetRow(mtx->A,row,&nnz_loc,&cols,&vals);
-        DBGMSG("CSR row: %d nnz_loc %d\n",row,nnz_loc);
+        DebugOut().fmt("CSR row: {} nnz_loc {}\n", row, nnz_loc);
         for(i=0; i<nnz_loc; i++) {
                 OLD_ASSERT(pos<nnz,"More nonzeroes then allocated! row: %d entry: %d\n",row,i);
                 mtx->j[pos]=cols[i];
@@ -354,7 +355,7 @@ void LinSys_MPIAIJ::preallocate_values(int nrow,int *rows,int ncol,int *cols)
 void LinSys_MPIAIJ::view_local_matrix()
 {
      // print local subdomain matrix
-     xprintf(Msg,"Printing of local matrix is not supported yet for MPIAIJ matrix. \n");
+	MessageOut() << "Printing of local matrix is not supported yet for MPIAIJ matrix. \n";
 
 }
 
@@ -369,12 +370,12 @@ LinSys_MPIAIJ:: ~LinSys_MPIAIJ()
 
 //**********************************************************************************************
 
-LinSys_MATIS::LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row, double *sol_array)
+LinSys_MATIS::LinSys_MATIS(std::shared_ptr<LocalToGlobalMap> global_row_4_sub_row, double *sol_array)
 : LinSys(global_row_4_sub_row->get_distr()->lsize(), sol_array), lg_map(global_row_4_sub_row)
 {
     PetscErrorCode err;
 
-    //xprintf(Msg,"sub size %d \n",subdomain_size);
+    //MessageOut().fmt("sub size {} \n", subdomain_size);
 
     // vytvorit mapping v PETSc z global_row_4_sub_row
     // check possible index range of lg_map to fit into signed int type
@@ -420,7 +421,7 @@ void LinSys_MATIS::start_allocation()
 
      status=ALLOCATE;
 
-     DBGMSG("allocation started\n");
+     DebugOut() << "allocation started\n";
      */
 }
 
@@ -519,7 +520,7 @@ LinSys_MATIS:: ~LinSys_MATIS()
      // destroy mapping
      err = ISLocalToGlobalMappingDestroy(&map_local_to_global);
      OLD_ASSERT(err == 0,"Error in ISLocalToGlobalMappingDestroy.");
-     xprintf(Msg,"Error code %d \n",err);
+     MessageOut().fmt("Error code {} \n", err);
 
 
      delete[] loc_rows;

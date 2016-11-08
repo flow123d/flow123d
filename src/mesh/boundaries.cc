@@ -17,7 +17,6 @@
  */
 
 #include "system/system.hh"
-#include "system/xio.h"
 #include "mesh/mesh.h"
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
@@ -30,6 +29,11 @@ Boundary::Boundary()
 : edge_idx_(Mesh::undef_idx), bc_ele_idx_(Mesh::undef_idx),
   mesh_(NULL)
 {}
+
+
+Region Boundary::region() {
+    return element()->region();
+}
 
 
 Element * Boundary::element() {

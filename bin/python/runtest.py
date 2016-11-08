@@ -3,13 +3,16 @@
 # author:   Jan Hybs
 # ----------------------------------------------
 from __future__ import absolute_import
-import pathfix; pathfix.init()
+import pathfix
+pathfix.init()
 # ----------------------------------------------
 import sys
 # ----------------------------------------------
-from scripts.core.base import GlobalResult
+from scripts.core.base import Paths
 from utils.argparser import ArgParser
 from utils.duration import Duration
+from utils.timer import Timer
+from scripts.artifacts.artifacts import ArtifactProcessor
 # ----------------------------------------------
 
 parser = ArgParser("runtest.py [<parametes>] [<test set>]  [-- <test arguments>]")
@@ -39,7 +42,8 @@ parser.add('', '--include', type=list, subtype=str, name='include', docs=[
 ])
 parser.add('', '--exclude', type=list, subtype=str, name='exclude', docs=[
     'Filter tags which should be processed.',
-    'See --include for more information.'
+    'See --include for more information. By default tag "disabled" is set if no',
+    'other --exclude flag is set'
 ])
 # ----------------------------------------------
 parser.add_section('Passable arguments to run_parallel.py')
@@ -81,12 +85,36 @@ parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder=
     'Optional memory limit per node in MB',
     'For precision use float value'
 ])
+parser.add_section('Special options')
 parser.add('', '--root', hidden=True, type=str, name='root', placeholder='<ROOT>', docs=[
     'Path to base dir of flow123d'
 ])
 parser.add('', '--json', hidden=True, type=str, name='json', placeholder='<JSON>', docs=[
     'Output result to json file'
 ])
+parser.add('', '--list', type=True, name='list', docs=[
+    'List tests structure'
+])
+parser.add('', '--dump', hidden=True, type=str, name='dump', placeholder='<FILE>', docs=[
+    'If set will pickle result to given file'
+])
+parser.add('', '--log', type=str, name='log', placeholder='<FILE>', docs=[
+    'Will also redirect output to file'
+])
+parser.add('-x', '--export', type=True, name='artifacts', default=False, docs=[
+    'If set, will process artifacts yaml file in order to save/copy file',
+    'or export them to database.'
+])
+parser.add('', '--random-output-dir', type=True, name='random_output_dir', default=False, docs=[
+    'If set, output directories will have random hash appended.'
+])
+parser.add('', '--no-clean', type=True, name='no_clean', default=False, docs=[
+    'If set, output directories will not be cleaned beforehand.'
+])
+parser.add('', '--no-compare', type=True, name='no_compare', default=False, docs=[
+    'If set, results will not be compared'
+])
+
 # ----------------------------------------------
 
 if __name__ == '__main__':
@@ -99,8 +127,35 @@ if __name__ == '__main__':
     from scripts.core.execution import BinExecutor
     from scripts.runtest_module import do_work
 
+    # determine batched mode after parsing
+    from scripts.core.base import Printer
+    parser.on_parse += Printer.setup_printer
+
+    # import os
+    # Paths.init(os.getcwd())
+
     # run work
-    BinExecutor.register_sigint()
-    do_work(parser)
-    if parser.simple_options.json:
-        GlobalResult.to_json(parser.simple_options.json)
+    with Timer.app_timer:
+        BinExecutor.register_sigint()
+        returncode = do_work(parser)
+
+    # collect artifact if not set otherwise
+    # parser.parse()
+    if parser.simple_options.artifacts:
+        if parser.simple_options.artifacts is True:
+            artifact_yml = Paths.artifact_yaml()
+        else:
+            artifact_yml = parser.simple_options.artifacts
+
+        try:
+            ap = ArtifactProcessor(artifact_yml)
+            ap.run()
+        except Exception as e:
+            # we catch all error coming from artifact system
+            # so it does not affect regular tests
+            pass
+
+    if type(returncode) is int:
+        sys.exit(returncode)
+    else:
+        sys.exit(returncode.returncode)

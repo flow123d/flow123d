@@ -20,8 +20,19 @@
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
 
+
+
 using namespace arma;
 using namespace std;
+
+template<unsigned int n>
+std::vector< std::vector<unsigned int> > _array_to_vec( const unsigned int array[][n], unsigned int m) {
+    std::vector< std::vector<unsigned int> > vec(m);
+    for(unsigned int i=0; i<m; i++)
+        for(unsigned int j=0;j<n; j++)
+            vec[i].push_back(array[i][j]);
+    return vec;
+}
 
 template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side] = { { 0 } };
 
@@ -73,6 +84,25 @@ template<> const unsigned int RefElement<3>::line_nodes[][2] = {
         {0,3},
         {1,3},
         {2,3}
+};
+
+
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<1>::nodes_of_subelements = {
+        _array_to_vec(side_nodes, n_sides),
+        { {0,1} }
+};
+
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<2>::nodes_of_subelements = {
+        { {0}, {1}, {2} },
+        _array_to_vec(side_nodes, n_sides),
+        { {0,1,2} }
+};
+
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<3>::nodes_of_subelements = {
+        { {0}, {1}, {2}, {3} },
+        _array_to_vec(line_nodes, n_lines),
+        _array_to_vec(side_nodes, n_sides),
+        { {0,1,2,3} }
 };
 
 
@@ -158,6 +188,116 @@ vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
 	if (dot(n,bar_side) < 0) n = -n;
 
 	return n;
+}
+
+
+
+template<unsigned int dim>
+auto RefElement<dim>::barycentric_on_face(const BaryPoint &barycentric, unsigned int i_face) -> FaceBaryPoint
+{
+    ASSERT_EQ_DBG(barycentric.n_rows, dim+1);
+    FaceBaryPoint face_barycentric;
+    for(unsigned int i=0; i < dim; i++) {
+        unsigned int i_sub_node = (i+1)%dim;
+        unsigned int i_bary = (dim + side_nodes[i_face][i_sub_node])%(dim+1);
+        face_barycentric[i] = barycentric[ i_bary ];
+    }
+    return face_barycentric;
+}
+
+
+template<unsigned int dim>
+auto RefElement<dim>::barycentric_from_face(const FaceBaryPoint &face_barycentric, unsigned int i_face) -> BaryPoint
+{
+    ASSERT_EQ_DBG(face_barycentric.n_rows, dim);
+    BaryPoint barycentric;
+    barycentric.zeros();
+    for(unsigned int i_sub_coord=0; i_sub_coord<dim; i_sub_coord++) {
+        unsigned int i_sub_node = (i_sub_coord+1)%dim;
+        barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( side_nodes[i_face][i_sub_node]);
+    }
+    return barycentric;
+}
+
+template<>
+auto RefElement<0>::clip(const BaryPoint &barycentric) -> BaryPoint
+{
+    return barycentric;
+}
+
+template<unsigned int dim>
+auto  RefElement<dim>::make_bary_unit_vec()->BarycentricUnitVec
+{
+    std::vector<arma::vec::fixed<dim+1> > bary_unit_vec(dim+1, arma::zeros(dim+1));
+    for(unsigned int i=0; i<dim; i++) {
+        bary_unit_vec[i][i] = 1.0;
+        bary_unit_vec[i][dim] = -1.0;
+        bary_unit_vec[dim][i] = -1.0 / dim;
+    }
+    bary_unit_vec[dim][dim] = 1.0;
+    return bary_unit_vec;
+}
+
+
+template<unsigned int dim>
+auto RefElement<dim>::clip(const BaryPoint &barycentric) -> BaryPoint
+{
+    static BarycentricUnitVec bary_unit_vec = make_bary_unit_vec();
+    ASSERT_EQ_DBG(barycentric.n_rows, dim+1);
+    for(unsigned int i_bary=0; i_bary < dim +1; i_bary ++) {
+        if (barycentric[i_bary] < 0.0) {
+            // index of barycentric coord that is constant on the face i_side
+            // as we use barycentric coords starting with local coordinates:
+            // TODO: rather work only with local coords and/or with canonical barycentric coords
+            unsigned int i_side = (2*dim - i_bary)%(dim +1);
+            // project to face
+            arma::vec projection_to_face(dim+1);
+            //barycentric.print(cout, "input");
+            //cout << "is: " << i_side << endl;
+            //cout << "ibary: " << i_bary << endl;
+            //bary_unit_vec[i_bary].print(cout, "normal");
+            //barycentric.subvec(0, dim-1).print(cout, "bary sub");
+            projection_to_face = barycentric - barycentric[i_bary]*bary_unit_vec[i_bary];
+            //projection_to_face(dim) = 1.0 - arma::sum(projection_to_face.subvec(0, dim-1));
+            //projection_to_face.print(cout, "projection");
+            auto bary_on_face = barycentric_on_face(projection_to_face, i_side);
+            //bary_on_face.print(cout, "b on f");
+            auto sub_clip = RefElement<dim-1>::clip(bary_on_face);
+            //sub_clip.print(cout, "sub clip");
+            return barycentric_from_face(sub_clip, i_side);
+        }
+    }
+    return barycentric;
+
+}
+
+
+
+template<unsigned int dim>
+auto RefElement<dim>::centers_of_subelements(unsigned int sub_dim)->CentersList
+{
+    static std::vector< std::vector<LocalPoint> > list;
+    if (list.size() == 0) {
+        list.resize(dim+1);
+        for(unsigned int sdim=0; sdim < dim+1; sdim++) {
+            // Temporary solution until we have unified interface to
+            // the internal indexing.
+            // We use the fact that numbering of subelements goes as numbering of
+            // k combinations over nodes.
+            std::vector<unsigned int> subel_comb(sdim+2);
+            for(auto &sub_el_nodes : nodes_of_subelements[sdim]) {
+                ASSERT_EQ_DBG(sub_el_nodes.size(), sdim+1);
+                LocalPoint center = arma::zeros(dim);
+                for( unsigned int i_node : sub_el_nodes)
+                    center+=node_coords( i_node );
+                center/=(sdim+1);
+                list[sdim].push_back(center);
+            }
+        }
+    }
+
+    ASSERT_LE_DBG(sub_dim, dim);
+    return list[sub_dim];
 }
 
 

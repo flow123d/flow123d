@@ -43,6 +43,8 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
+		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+				"Definition of unit.")
         .close();
 }
 
@@ -62,7 +64,9 @@ FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_c
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+	this->init_unit_conversion_coefficient(rec, init_data);
+
 
 	// read mesh, create tree
     {
@@ -104,8 +108,9 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     search_header.time = time.end();
     
     bool boundary_domain_ = false;
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<typename Value::element_type>(search_header,
     		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    this->scale_data();
 
     return search_header.actual;
 }
@@ -210,7 +215,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 				}
 			}
 		} else {
-			xprintf(Warn, "Processed element with idx %d is out of source mesh!\n", elm.idx());
+			WarningOut().fmt("Processed element with idx {} is out of source mesh!\n", elm.idx());
 		}
 		END_TIMER("compute_pressure");
 
@@ -226,6 +231,18 @@ void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >
 {
 	OLD_ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
     FieldAlgorithmBase<spacedim, Value>::value_list(point_list, elm, value_list);
+}
+
+
+
+template <int spacedim, class Value>
+void FieldInterpolatedP0<spacedim, Value>::scale_data()
+{
+	if (Value::is_scalable()) {
+		std::vector<typename Value::element_type> &vec = *( data_.get() );
+		for(unsigned int i=0; i<vec.size(); ++i)
+			vec[i] *= this->unit_conversion_coefficient_;
+	}
 }
 
 

@@ -1,2 +1,2 @@
 #!/bin/sh
-@MPIEXEC_PATH@  "$@"         
+@MPIEXEC_PATH@ "$@"

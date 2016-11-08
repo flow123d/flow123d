@@ -31,8 +31,9 @@ using namespace std;
 #include "fields/field_common.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field_flag.hh"
-#include "io/output_time.hh"
+//#include "io/output_time.hh"
 
+class OutputTime;
 
 namespace IT=Input::Type;
 
@@ -47,8 +48,7 @@ namespace IT=Input::Type;
  * we use classes provided by Armadillo library for linear algebra.
  * The @p Value template parameter should FieldValue<> template, usual choices are:
  * FieldValue<spacedim>::Scalar, FieldValue<spacedim>::Integer, FieldValue<spacedim>::Enum,
- * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed
- * deprecated choices: FieldValue<spacedim>::Vector, FieldValue<spacedim>::VectorEnum.
+ * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed.
  *
  * This class assign particular fields (instances of descendants of FiledBase) to the regions. It keeps a table of pointers to fields for every possible bulk
  * region index (very same functionality, but for boundary regions is provided by @p BCField class). This class has interface very similar to  FiledBase, however
@@ -173,7 +173,7 @@ public:
     /**
      * Direct read access to the table of Field pointers on regions.
      */
-    //boost::shared_ptr< FieldBaseType > operator[] (Region reg);
+    //std::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().
@@ -216,6 +216,10 @@ public:
      */
     void output(std::shared_ptr<OutputTime> stream) override;
 
+    /**
+     * Implementation of FieldCommonBase::observe_output().
+     */
+    void observe_output(std::shared_ptr<Observe> observe) override;
 
     /**
      * Returns true, if field is currently set to a time in which it is discontinuous.
@@ -235,7 +239,16 @@ public:
      * Other possible results are: result_zeros, result_eye, result_ones, result_constant, result_other
      * see @p FieldResult for explanation.
      */
-    inline FieldResult field_result( RegionSet region_set) const;
+    FieldResult field_result( RegionSet region_set) const override;
+
+    /**
+     * Return specification of the field value type in form of the string:
+     * [ <element type>, NRows, NCols]
+     *
+     * Result is valid JSON (and/or flow style YAML).
+     * For multifields not implemented.
+     */
+    std::string get_value_attribute() const override;
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

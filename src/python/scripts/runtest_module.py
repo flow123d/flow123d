@@ -2,26 +2,59 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-import subprocess
 import time
 import sys
 # ----------------------------------------------
-from scripts.config.yaml_config import ConfigPool
-from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult
+from scripts.pbs import pbs_control
+from scripts.yamlc.yaml_config import ConfigPool
+from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult, DynamicSleep, StatusPrinter
 from scripts.core.threads import ParallelThreads, RuntestMultiThread
 from scripts.pbs.common import get_pbs_module
-from scripts.pbs.job import JobState, MultiJob, finish_pbs_job
+from scripts.pbs.job import JobState, MultiJob, finish_pbs_runtest
 from scripts.prescriptions.local_run import LocalRun
 from scripts.prescriptions.remote_run import runtest_command, PBSModule
 from scripts.script_module import ScriptModule
+from utils import strings
 # ----------------------------------------------
 
 
 class ModuleRuntest(ScriptModule):
+    """
+    Class ModuleRuntest is backend for script runtest.py
+    """
+
+    @staticmethod
+    def list_tests():
+        test_dir = Paths.join(Paths.flow123d_root(), 'tests')
+        tests = Paths.walk(test_dir, [
+            PathFilters.filter_type_is_file(),
+            PathFilters.filter_endswith('.yaml'),
+            PathFilters.filter_not(PathFilters.filter_name('config.yaml')),
+        ])
+        result = dict()
+        for r in tests:
+            dirname = Paths.dirname(r)
+            basename = Paths.basename(r)
+            if Paths.dirname(dirname) != test_dir:
+                continue
+
+            if dirname not in result:
+                result[dirname] = list()
+            result[dirname].append(basename)
+        keys = sorted(result.keys())
+
+        for dirname in keys:
+            Printer.all.out(Paths.relpath(dirname, test_dir))
+            with Printer.all.with_level(1):
+                for basename in result[dirname]:
+                    Printer.all.out('{: >4s} {: <40s} {}', '', basename, Paths.relpath(Paths.join(dirname, basename), test_dir))
+            Printer.all.newline()
+
     @staticmethod
     def read_configs(all_yamls):
         """
-        :rtype: scripts.config.yaml_config.ConfigPool
+        Add yamls to ConfigPool and parse configs
+        :rtype: ConfigPool
         """
         configs = ConfigPool()
         for y in all_yamls:
@@ -29,25 +62,47 @@ class ModuleRuntest(ScriptModule):
         configs.parse()
         return configs
 
+    @property
+    def include(self):
+        """
+        return all exclude tags in set
+        """
+        return set(self.arg_options.include) if self.arg_options.include else set()
+
+    @property
+    def exclude(self):
+        """
+        return all exclude tags in set
+        """
+        return set(self.arg_options.exclude) if self.arg_options.exclude else {'disabled'}
+
     def create_process_from_case(self, case):
         """
+        Method creates main thread where clean-up, pypy and comparison is stored
         :type case: scripts.config.yaml_config.ConfigCase
         """
         local_run = LocalRun(case)
         local_run.mpi = case.proc > 1
         local_run.progress = self.progress
 
-        seq = RuntestMultiThread(
-            local_run.create_clean_thread(),
-            local_run.create_pypy(self.rest),
-            local_run.create_comparisons()
-        )
+        # on demand we do not clean dirs or run comparisons
+        no_clean = self.arg_options.no_clean
+        no_compare = self.arg_options.no_compare
+
+        clean = local_run.create_dummy_clean_thread() if no_clean else local_run.create_clean_thread()
+        compare = local_run.create_dummy_comparisons() if no_compare else local_run.create_comparisons()
+        pypy = local_run.create_pypy(self.rest)
+
+        seq = RuntestMultiThread(clean, pypy, compare)
 
         seq.stop_on_error = True
         return seq
 
     def create_pbs_job_content(self, module, case):
         """
+        Method creates pbs start script which will be passed to
+        some qsub command
+
         :type case: scripts.config.yaml_config.ConfigCase
         :type module: scripts.pbs.modules.pbs_tarkil_cesnet_cz
         :rtype : str
@@ -55,7 +110,7 @@ class ModuleRuntest(ScriptModule):
 
         import pkgutil
 
-        command = PBSModule.format(
+        command = strings.replace_placeholders(
             runtest_command,
 
             python=sys.executable,
@@ -63,26 +118,19 @@ class ModuleRuntest(ScriptModule):
             yaml=case.file,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.rest else Command.to_string(self.rest),
-            json_output=case.fs.json_output
+            dump_output=case.fs.dump_output,
+            log_file=case.fs.job_output
         )
 
-        template = PBSModule.format(
+        template = strings.replace_placeholders(
             module.template,
             command=command,
-            json_output=case.fs.json_output
+            dump_output=case.fs.dump_output
         )
 
         return template
 
-    def run_pbs_mode(self):
-        """
-        :type debug: bool
-        :type configs: scripts.config.yaml_config.ConfigPool
-        """
-        pbs_module = get_pbs_module(self.arg_options.host)
-        Printer.dynamic_output = not self.arg_options.batch
-        Printer.dyn('Parsing yaml files')
-
+    def prepare_pbs_files(self, pbs_module):
         jobs = list()
         """ :type: list[(str, PBSModule)] """
 
@@ -97,76 +145,27 @@ class ModuleRuntest(ScriptModule):
 
                 qsub_command = pbs_run.get_pbs_command(case.fs.pbs_script)
                 jobs.append((qsub_command, pbs_run))
+        return jobs
 
-        # start jobs
-        Printer.dyn('Starting jobs')
+    def run_pbs_mode(self):
+        """
+        Runs this module in local mode.
+        At this point all configuration files has been loaded what is left
+        to do is to create pbs scripts and put them to queue (qsub).
+        After them we monitor all jobs (qstat) and if some job exits we parse
+        result json file and determine ok/error status for the job
+        """
+        pbs_module = get_pbs_module(self.arg_options.host)
+        jobs = self.prepare_pbs_files(pbs_module)
+        result, multijob = pbs_control.do_work(jobs, pbs_module, finish_pbs_runtest)
 
-        total = len(jobs)
-        job_id = 0
-        multijob = MultiJob(pbs_module.ModuleJob)
-        for qsub_command, pbs_run in jobs:
-            job_id += 1
-
-            Printer.dyn('Starting jobs {:02d} of {:02d}', job_id, total)
-
-            output = subprocess.check_output(qsub_command)
-            job = pbs_module.ModuleJob.create(output, pbs_run.case)
-            job.full_name = "Case {}".format(pbs_run.case)
-            multijob.add(job)
-
-        Printer.out()
-        Printer.out('{} job/s inserted into queue', total)
-
-        # # first update to get more info about multijob jobs
-        Printer.out()
-        Printer.separator()
-        Printer.dyn('Updating job status')
-        multijob.update()
-
-        # print jobs statuses
-        Printer.out()
-        if not self.arg_options.batch:
-            multijob.print_status()
-
-        Printer.separator()
-        Printer.dyn(multijob.get_status_line())
-        returncodes = dict()
-
-        # wait for finish
-        while multijob.is_running():
-            Printer.dyn('Updating job status')
-            multijob.update()
-            Printer.dyn(multijob.get_status_line())
-
-            # if some jobs changed status add new line to dynamic output remains
-            jobs_changed = multijob.get_all(status=JobState.COMPLETED)
-            if jobs_changed:
-                Printer.out()
-                Printer.separator()
-
-            # get all jobs where was status update to COMPLETE state
-            for job in jobs_changed:
-                returncodes[job] = finish_pbs_job(job, self.arg_options.batch)
-
-            if jobs_changed:
-                Printer.separator()
-                Printer.out()
-
-            # after printing update status lets sleep for a bit
-            if multijob.is_running():
-                time.sleep(5)
-
-        Printer.out(multijob.get_status_line())
-        Printer.out('All jobs finished')
-
-        # get max return code or number 2 if there are no returncodes
-        returncode = max(returncodes.values()) if returncodes else 2
-        sys.exit(returncode)
+        return result.singlify()
 
     def run_local_mode(self):
         """
-        :type debug: bool
-        :type configs: scripts.config.yaml_config.ConfigPool
+        Runs this module in local mode.
+        At this point all configuration files has been loaded what is left
+        to do is to prepare execution arguments start whole process
         """
         runner = ParallelThreads(self.arg_options.parallel)
         runner.stop_on_error = not self.arg_options.keep_going
@@ -178,54 +177,33 @@ class ModuleRuntest(ScriptModule):
                 multi_process = self.create_process_from_case(case)
                 runner.add(multi_process)
 
+        if self.include or self.exclude:
+            Printer.all.out('Running {} cases ({}{})'.format(
+                runner.total,
+                'including only tags in set {} '.format(list(self.include)) if self.include else '',
+                'excluding all tags in set {}'.format(list(self.exclude)) if self.exclude else ''))
+        else:
+            Printer.all.out('Running {} cases', runner.total)
+
         # run!
         runner.start()
         while runner.is_running():
             time.sleep(1)
 
-        Printer.separator()
-        Printer.out('Summary: ')
-        Printer.open()
+        Printer.all.sep()
+        Printer.all.out('Summary: ')
 
-        for thread in runner.threads:
-            multithread = thread
-            """ :type: RuntestMultiThread """
-
-            returncode = multithread.returncode
-            GlobalResult.add(multithread)
-
-            if multithread.clean.with_error():
-                Printer.out("[{:^6}]:{:3} | Could not clean directory '{}': {}", 'ERROR',
-                            multithread.clean.returncode,
-                            multithread.clean.dir,
-                            multithread.clean.error)
-                continue
-
-            if not multithread.pypy.with_success():
-                Printer.out("[{:^6}]:{:3} | Run error, case: {}",
-                            multithread.pypy.returncode_map.get(str(multithread.pypy.returncode), 'ERROR'),
-                            multithread.pypy.returncode, multithread.pypy.case.to_string())
-                continue
-
-            if multithread.comp.with_error():
-                Printer.out("[{:^6}]:{:3} | Compare error, case: {}, Details: ",
-                            'FAILED', multithread.comp.returncode, multithread.pypy.case.to_string())
-                Printer.open(2)
-                for t in multithread.comp.threads:
-                    if t:
-                        Printer.out('[{:^6}]: {}', 'OK', t.name)
-                    else:
-                        Printer.out('[{:^6}]: {}', 'FAILED', t.name)
-                Printer.close(2)
-                continue
-
-            Printer.out("[{:^6}]:{:3} | Test passed: {}",
-                        'PASSED', multithread.pypy.returncode, multithread.pypy.case.to_string())
-        Printer.close()
+        with Printer.all.with_level(1):
+            for thread in runner.threads:
+                multithread = thread
+                """ :type: RuntestMultiThread """
+                StatusPrinter.print_test_result(multithread)
+            Printer.all.sep()
+            StatusPrinter.print_runner_stat(runner)
 
         # exit with runner's exit code
         GlobalResult.returncode = runner.returncode
-        return runner if self.debug else runner.returncode
+        return runner
 
     def __init__(self):
         super(ModuleRuntest, self).__init__()
@@ -233,41 +211,50 @@ class ModuleRuntest(ScriptModule):
         self.configs = None
 
     def _check_arguments(self):
+        """
+        Arguments additional check
+        """
+
+        if self.arg_options.list:
+            self.list_tests()
+            sys.exit(0)
+
         # we need flow123d, mpiexec and ndiff to exists in LOCAL mode
         if not self.arg_options.queue and not Paths.test_paths('flow123d', 'mpiexec', 'ndiff'):
-            Printer.err('Missing obligatory files! Exiting')
-            GlobalResult.error = "missing obligatory files"
+            Printer.all.err('Missing obligatory files! Exiting')
             sys.exit(1)
 
         # test yaml args
         if not self.others:
             self.parser.exit_usage('Error: No yaml files or folder given')
-            GlobalResult.error = "no yaml files or folder given"
             sys.exit(2)
 
     def _run(self):
+        """
+        Run method for this module
+        """
+
+        if self.arg_options.random_output_dir:
+            import scripts.yamlc as yamlc
+            from core.base import System
+            yamlc.TEST_RESULTS = 'test_results-{}'.format(System.rnd8)
 
         self.all_yamls = list()
         for path in self.others:
             if not Paths.exists(path):
-                Printer.err('Error! given path does not exists, ignoring path "{}"', path)
-                GlobalResult.error = "path does not exist"
+                Printer.all.err('given path does not exists, ignoring path "{}"', path)
                 sys.exit(3)
 
+            # append files to all_yamls
             if Paths.is_dir(path):
-                self.all_yamls.extend(Paths.walk(path, filters=[
-                    PathFilters.filter_type_is_file(),
-                    PathFilters.filter_ext('.yaml'),
-                    PathFilters.filter_not(PathFilters.filter_name('config.yaml'))
-                ]))
+                self.all_yamls.extend(Paths.walk(path, ConfigPool.yaml_filters))
             else:
                 self.all_yamls.append(path)
 
-        Printer.out("Found {} .yaml file/s", len(self.all_yamls))
+        Printer.all.out("Found {} yaml file/s", len(self.all_yamls))
         if not self.all_yamls:
-            Printer.wrn('Warning! No yaml files found in locations: \n  {}', '\n  '.join(self.others))
-            GlobalResult.error = "no yaml files or folders given"
-            sys.exit(3)
+            Printer.all.wrn('No yaml files found in locations: \n  {}', '\n  '.join(self.others))
+            sys.exit(0)
 
         self.configs = self.read_configs(self.all_yamls)
         self.configs.update(
@@ -276,19 +263,35 @@ class ModuleRuntest(ScriptModule):
             memory_limit=self.arg_options.memory_limit,
         )
 
+        # filter tags for includes and excludes
+        self.configs.filter_tags(
+            include=self.include,
+            exclude=self.exclude
+        )
+
         if self.arg_options.queue:
-            Printer.out('Running in PBS mode')
+            Printer.all.out('Running in PBS mode')
             return self.run_pbs_mode()
         else:
-            Printer.out('Running in LOCAL mode')
+            Printer.all.out('Running in LOCAL mode')
             return self.run_local_mode()
 
 
 def do_work(parser, args=None, debug=False):
     """
+    Main method which invokes ModuleRuntest
+    :rtype: ParallelThreads
     :type debug: bool
     :type args: list
     :type parser: utils.argparser.ArgParser
     """
     module = ModuleRuntest()
-    return module.run(parser, args, debug)
+    result = module.run(parser, args, debug)
+
+    # pickle out result on demand
+    if parser.simple_options.dump:
+        try:
+            import pickle
+            pickle.dump(result.dump(), open(parser.simple_options.dump, 'wb'))
+        except: pass
+    return result

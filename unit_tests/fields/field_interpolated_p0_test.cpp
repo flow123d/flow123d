@@ -52,17 +52,18 @@ string input = R"CODE(
        gmsh_file="fields/simplest_cube_3d.msh",
        field_name="scalar"
    },
+   scalar_unit_conversion={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_3d.msh",
+       field_name="scalar",
+       unit="km"
+   },
    scalar_large={
        TYPE="FieldInterpolatedP0",
        gmsh_file="fields/bigger_3d_cube_0.5.msh",
        field_name="scalar"
    },
    vector_fixed={
-       TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
-       field_name="vector_fixed"
-   },
-   vector={
        TYPE="FieldInterpolatedP0",
        gmsh_file="fields/simplest_cube_3d.msh",
        field_name="vector_fixed"
@@ -120,9 +121,7 @@ public:
     typedef FieldInterpolatedP0<3, FieldValue<3>::Scalar > ScalarField;
     typedef FieldInterpolatedP0<3, FieldValue<3>::Enum > EnumField;
     typedef FieldInterpolatedP0<3, FieldValue<3>::VectorFixed > VecFixField;
-    typedef FieldInterpolatedP0<3, FieldValue<3>::Vector > VecField;
-    typedef FieldInterpolatedP0<3, FieldValue<2>::TensorFixed > TensorField;
-    typedef FieldInterpolatedP0<3, FieldValue<3>::EnumVector > EnumVector;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::TensorFixed > TensorField;
 
     virtual void SetUp() {
         // setup FilePath directories
@@ -137,9 +136,9 @@ public:
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("scalar_large", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .declare_key("vector", VecField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
@@ -153,6 +152,12 @@ public:
 
     }
 
+    const FieldAlgoBaseInitData& init_data() {
+    	static UnitSI unit = UnitSI().m();
+    	static const FieldAlgoBaseInitData init_data(0, unit);
+    	return init_data;
+    }
+
     Mesh *mesh;
     Input::Record rec;
     Space<3>::Point point;
@@ -163,7 +168,7 @@ public:
 
 TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar"));
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data());
 
     for (unsigned int j=1; j<3; j++) {
     	field.set_time(test_time[j-1]);
@@ -179,9 +184,27 @@ TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
 
 }
 
+/*TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_unit_conversion) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data());
+
+    for (unsigned int j=1; j<3; j++) {
+    	field.set_time(test_time[j-1]);
+
+    	EXPECT_DOUBLE_EQ( j*650.0, field.value(point, mesh->element_accessor(0)) );
+        EXPECT_DOUBLE_EQ( j*650.0, field.value(point, mesh->element_accessor(1)) );
+        EXPECT_DOUBLE_EQ( j*650.0, field.value(point, mesh->element_accessor(2)) );
+        EXPECT_DOUBLE_EQ( j*700.0, field.value(point, mesh->element_accessor(3)) );
+        EXPECT_DOUBLE_EQ( j*675.0, field.value(point, mesh->element_accessor(4)) );
+        EXPECT_DOUBLE_EQ( j*675.0, field.value(point, mesh->element_accessor(5)) );
+        EXPECT_DOUBLE_EQ( j*650.0, field.value(point, mesh->element_accessor(0, true)) );
+    }
+
+}*/
+
 TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_large) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_large"));
+    field.init_from_input(rec.val<Input::Record>("scalar_large"), init_data());
     field.set_time(0.0);
 
     //EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0)) );

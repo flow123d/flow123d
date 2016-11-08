@@ -1,0 +1,7 @@
+common_config:
+  proc: [1, 2, 3]
+  memory_limit: 1000
+
+test_cases:
+- files: test-02.yaml
+  proc: [1, 2, 3, 4]
