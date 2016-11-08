@@ -261,7 +261,7 @@ public:
 			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -273,7 +273,7 @@ public:
 			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -285,7 +285,7 @@ public:
 			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}

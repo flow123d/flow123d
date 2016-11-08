@@ -35,7 +35,9 @@
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
+FLOW123D_FORCE_LINK_IN_PARENT(field_python)
+FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
 
 using namespace std;
 

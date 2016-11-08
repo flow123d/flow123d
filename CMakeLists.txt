@@ -193,6 +193,8 @@ else ()
     message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
 endif()
 
+# set encoding of VTU output files to Little Endian, VTU files can be encoded in Little Endian or Big Endian format  
+flow_define(LITTLE_ENDIAN true)
 
 #########################################################################
 # Determining timer with highest resolution
@@ -517,6 +519,10 @@ if (COPY_INSTEAD_OF_SYMLINK)
 	    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
+	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	)
 else()
 	execute_process(COMMAND
 	    ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
@@ -690,6 +696,10 @@ macro(make_link_in_source FILE)
   if (COPY_INSTEAD_OF_SYMLINK)
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
   else()

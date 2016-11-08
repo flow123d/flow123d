@@ -146,17 +146,24 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     bih_tree.find_point(input_point_, candidate_list);
     process_list.swap(candidate_list);
     candidate_list.clear();
-    for(unsigned int i_elm : process_list) {
+
+    unsigned int min_dist_idx=0;
+    double min_dist=numeric_limits<double>::max();
+    for (unsigned int i_candidate=0; i_candidate<process_list.size(); ++i_candidate) {
+        unsigned int i_elm=process_list[i_candidate];
         Element & elm = mesh.element[i_elm];
         arma::mat map = elm.element_map();
+
+        // get barycentric coordinates (1,2,0)
         arma::vec projection = elm.project_point(input_point_, map);
 
         // check that point is on the element
-        if (projection.min() >=0.0) {
+        if (projection.min() >= -BoundingBox::epsilon) {
             // This is initial element.
             //input_point_.print(cout, "input_point");
             //cout << "i_el: " << i_elm << endl;
             //projection.print(cout, "projection");
+
 
             // if element match region filter store it as observe element to the obs. point
             if (elm.region().is_in_region_set(region_set)) {
@@ -171,10 +178,44 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
                 for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
                     candidate_list.push_back(i_node_ele);
             }
+        } else {
+            // Point out of the element. Keep the closest element.
+            double distance = fabs(projection.min());
+            if (distance < min_dist) {
+                min_dist=distance;
+                min_dist_idx = i_candidate;
+            }
+            //DebugOut() << print_var(i_candidate);
+            //DebugOut() << print_var(projection);
         }
     }
 
-    if (candidate_list.size() == 0) THROW( ExcNoInitialPoint() << in_rec_.ei_address() );
+    if (candidate_list.size() == 0) {
+
+        unsigned int i_elm=process_list[min_dist_idx];
+        Element & elm = mesh.element[i_elm];
+        // if element match region filter store it as observe element to the obs. point
+        if (elm.region().is_in_region_set(region_set)) {
+            arma::mat map = elm.element_map();
+            arma::vec projection = elm.project_point(input_point_, map);
+            projection = elm.clip_to_element(projection);
+
+            projection[elm.dim()] = 1.0; // use last coordinates for translation
+            arma::vec global_coord = map*projection;
+            update_projection(i_elm, projection.rows(0, elm.dim()-1), global_coord);
+        }
+
+        WarningOut().fmt("Failed to find the element containing the initial observe point ({}).\n"
+                "Using the closest element instead.\n", in_rec_.address_string());
+
+        closed_elements.insert(i_elm);
+        // add all node neighbours to the next level list
+        for (unsigned int n=0; n < elm.n_nodes(); n++) {
+            for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+                candidate_list.push_back(i_node_ele);
+        }
+
+    }
 
     // Try to snap to the observe element with required snap_region
     for(unsigned int i_level=0; i_level < max_levels_; i_level++) {
@@ -318,7 +359,22 @@ void Observe::output_header(string observe_name) {
 
 void Observe::output_time_frame(double time) {
     if (points_.size() == 0) return;
-
+    
+    static bool first_call = true;
+    if ( first_call ) {
+        // check that observe fields are set
+        if (std::isnan(observe_values_time_)) {
+            // first call and no fields
+            ASSERT(observe_field_values_.size() == 0);
+            WarningOut() << "No observe fields for the observe file: " << observe_file_path << endl;
+            observe_values_time_ = numeric_limits<double>::signaling_NaN();
+            return;
+        }
+        first_call=false;
+    }
+    
+    ASSERT(observe_values_time_ != numeric_limits<double>::signaling_NaN());
+    
     if (rank_ == 0) {
         unsigned int indent = 2;
         observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
@@ -329,6 +385,6 @@ void Observe::output_time_frame(double time) {
         }
     }
 
-    observe_values_time_ = numeric_limits<double>::signaling_NaN();
+    
 
 }

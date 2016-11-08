@@ -1,4 +1,4 @@
-/*
+    /*
  * observe.hh
  *
  *  Created on: Jun 28, 2016
@@ -203,6 +203,9 @@ protected:
     /// Time of fields when the observe values were computed
     double observe_values_time_;
 
+    // Path to observe output file. Need for informative error messages.
+    FilePath observe_file_path;
+    
     /// Output file stream.
     std::ofstream observe_file_;
 

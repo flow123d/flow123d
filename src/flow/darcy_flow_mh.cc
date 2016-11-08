@@ -252,7 +252,8 @@ DarcyMH::EqData::EqData()
 DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
     solution(nullptr),
-    schur0(nullptr)
+    schur0(nullptr),
+    data_changed_(false)
 {
 
     is_linear_=true;
@@ -315,7 +316,10 @@ void DarcyMH::init_eq_data()
     data_->set_input_list( this->input_record_.val<Input::Array>("input_fields") );
     // Check that the time step was set for the transient simulation.
     if (! zero_time_term(true) && time_->is_default() ) {
-        THROW(ExcMissingTimeGovernor() << input_record_.ei_address());
+        //THROW(ExcAssertMsg());
+        //THROW(ExcMissingTimeGovernor() << input_record_.ei_address());
+        MessageOut() << "Missing the key 'time', obligatory for the transient problems." << endl;
+        ASSERT(false);
     }
 
     data_->mark_input_times(*time_);
@@ -339,7 +343,7 @@ void DarcyMH::initialize() {
             .val<Input::AbstractRecord>("linear_solver");
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
-    data_->set_time(time_->step(), LimitSide::right);
+    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     data_->system_.local_matrix = std::make_shared<arma::mat>();
     create_linear_system(rec);
 
@@ -383,7 +387,8 @@ void DarcyMH::zero_time_step()
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
 
-    data_->set_time(time_->step(), LimitSide::right);
+    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
+
     // zero_time_term means steady case
     bool zero_time_term_from_right = zero_time_term();
 
@@ -415,7 +420,7 @@ void DarcyMH::update_solution()
     time_->next_time();
 
     time_->view("DARCY"); //time governor information output
-    data_->set_time(time_->step(), LimitSide::left);
+    data_changed_ = data_->set_time(time_->step(), LimitSide::left) || data_changed_;
     bool zero_time_term_from_left=zero_time_term();
 
     bool jump_time = data_->storativity.is_jump_time();
@@ -442,7 +447,7 @@ void DarcyMH::update_solution()
         return;
     }
 
-    data_->set_time(time_->step(), LimitSide::right);
+    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
@@ -727,12 +732,14 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     data_->system_.dirichlet_edge[i] = 1;
 
                 } else if ( type == EqData::total_flux) {
+
                     // internally we work with outward flux
                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-                            double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-                            ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-                            ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
+                    double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    DebugOut().fmt("erow: {} flux: {} mesure: {} cs: {}", edge_row, bc_flux, bcd->element()->measure(), cross_section);
+                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+                    ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
 
                 } else if (type==EqData::seepage) {
                     is_linear_=false;
@@ -1316,8 +1323,9 @@ void DarcyMH::assembly_linear_system() {
     is_linear_=true;
     bool is_steady = zero_time_term();
 	//DebugOut() << "Assembly linear system\n";
-	if (data_->changed()) {
-		//DebugOut()  << "Data changed\n";
+	if (data_changed_) {
+	    data_changed_ = false;
+	    //DebugOut()  << "Data changed\n";
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
