@@ -214,6 +214,11 @@ protected:
             side_row = loc_vel_dofs[i];    //local
             edge_row = loc_edge_dofs[i];    //local
             
+//             auto c = ele_ac.side(i)->centre();
+//             if(ele_ac.dim() == 2)
+//             DBGCOUT(<< "ele " << ele_ac.ele_global_idx() << " s " << loc_system_.row_dofs[side_row] << " e " << loc_system_.row_dofs[edge_row]
+//                     << " c " << c(0) << " " << c(1) << " " << c(2) << "\n");
+            
             bcd = ele_ac.side(i)->cond();
             dirichlet_edge[i] = 0;
             if (bcd) {
@@ -625,19 +630,55 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
         
         edge_row = loc_system_.row_dofs[loc_edge_dofs[local_side]];
         
-        fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_, 
-                                                            update_values
-                                                            | update_normal_vectors);
-        fv_side_xfem_->reinit(ele, local_side);
+        QGauss<1> qside(9);
+        auto fv_side = std::make_shared<FESideValues<2,3>>(map_, qside, *fe_rt_xfem_, 
+                                                            update_normal_vectors
+                                                            | update_quadrature_points);
+        fv_side->reinit(ele, local_side);
+        
+        QXFEM<2,3> qside_xfem;
+        qside_xfem.resize(qside.size());
+        for(unsigned int q=0; q < qside.size(); q++){
+            //TODO: use mapping for quad from side to element
+            arma::vec unit_p = ele->project_point(fv_side->point(q));
+            qside_xfem.set_point(q, RefElement<2>::bary_to_local(unit_p));
+            qside_xfem.set_real_point(q,fv_side->point(q));
+            qside_xfem.set_weight(q,qside.weight(q));
+        }
+        
+        auto fv_xfem = std::make_shared<FEValues<2,3>>(map_, qside_xfem, *fe_rt_xfem_, 
+                                                        update_values);
+        fv_xfem->reinit(ele);
         
         for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
             side_row = loc_system_.row_dofs[loc_vel_dofs[j]];
-            //suppose one point quadrature at the moment
-            val = arma::dot(fv_side_xfem_->shape_vector(j,0),fv_side_xfem_->normal_vector(0))
-                    * ele->side(local_side)->measure();
-            ad_->lin_sys->mat_set_value(side_row, edge_row, val);
-            ad_->lin_sys->mat_set_value(edge_row, side_row, val);
+
+            for(unsigned int q=0; q < qside.size(); q++){
+                val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(q))
+                      // this makes JxW on the triangle side:
+                      * qside_xfem.weight(q)
+                      * ele->side(local_side)->measure();
+                      
+                ad_->lin_sys->mat_set_value(side_row, edge_row, val);
+                ad_->lin_sys->mat_set_value(edge_row, side_row, val);
+            }
         }
+        
+        
+//         fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_, 
+//                                                             update_values
+//                                                             | update_normal_vectors);
+//         fv_side_xfem_->reinit(ele, local_side);
+// 
+//         for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
+//              side_row = loc_system_.row_dofs[loc_vel_dofs[j]];
+//             //suppose one point quadrature at the moment
+//             val = arma::dot(fv_side_xfem_->shape_vector(j,0),fv_side_xfem_->normal_vector(0))
+//                     * ele->side(local_side)->measure();
+//             ad_->lin_sys->mat_set_value(side_row, edge_row, val);
+//             ad_->lin_sys->mat_set_value(edge_row, side_row, val);
+//         }
+        
     }
     
 
