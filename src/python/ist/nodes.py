@@ -104,6 +104,13 @@ class TypeRecord(Parsable):
                     return sub_item
 
 
+class TypeTuple(TypeRecord):
+    """
+    Class TypeTuple defines input_type of value Tuple
+    """
+    pass
+
+
 class TypeParameters(Parsable):
     """
     Class TypeParameter is abstract parent

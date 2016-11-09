@@ -43,7 +43,7 @@ class ISTFormatter(object):
 
     @staticmethod
     def json2html(items, output_file, focus_element_id='root', skip_block_creation=[],
-                  multi_mode=[False, False, True], info=None):
+                  multi_mode=[1, 0, 0, 0], info=None):
         """
         Method converts given input file to single html output file
         :param items:  list of parsed IST items
@@ -143,17 +143,22 @@ class ISTFormatter(object):
                                             btn_cls = dict()
 
                                             btn_cls['data-type'] = 'record'
-                                            btn_cls['class'] = 'btn btn-warning btn-filter'
+                                            btn_cls['class'] = 'btn btn-warning btn-filter btn-record'
                                             btn_cls['class'] += ' active' if multi_mode.pop() else ''
                                             html_body.tag('a', 'Records', btn_cls.copy())
 
+                                            btn_cls['data-type'] = 'tuple'
+                                            btn_cls['class'] = 'btn btn-danger btn-filter btn-tuple'
+                                            btn_cls['class'] += ' active' if multi_mode.pop() else ''
+                                            html_body.tag('a', 'Tuples', btn_cls.copy())
+
                                             btn_cls['data-type'] = 'abstract-record'
-                                            btn_cls['class'] = 'btn btn-success btn-filter'
+                                            btn_cls['class'] = 'btn btn-success btn-filter btn-abstract'
                                             btn_cls['class'] += ' active' if multi_mode.pop() else ''
                                             html_body.tag('a', 'Abstract records', btn_cls.copy())
 
                                             btn_cls['data-type'] = 'selection'
-                                            btn_cls['class'] = 'btn btn-info btn-filter'
+                                            btn_cls['class'] = 'btn btn-info btn-filter btn-selection'
                                             btn_cls['class'] += ' active' if multi_mode.pop() else ''
                                             html_body.tag('a', 'Selections', btn_cls.copy())
 

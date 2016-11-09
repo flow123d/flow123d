@@ -326,6 +326,12 @@ class HTMLRecord(HTMLItemFormatter):
                     self.link_to_main(reference)
 
 
+class HTMLTuple(HTMLRecord):
+
+    def __init__(self):
+        super(HTMLRecord, self).__init__(cls='main-section tuple hidden')
+
+
 class HTMLAbstractRecord(HTMLItemFormatter):
     """
     Class representing AbstractRecord node in IST
@@ -670,6 +676,7 @@ class HTMLFormatter(object):
     """
     formatters = {
         'TypeRecord': HTMLRecord,
+        'TypeTuple': HTMLTuple,
         'TypeRecordKey': HTMLRecordKey,
         'TypeAbstract': HTMLAbstractRecord,
         'TypeString': HTMLString,
@@ -733,6 +740,9 @@ class HTMLFormatter(object):
 
         html.bold('Records ')
         HTMLFormatter._add_items(sorted_items, html, 'Record', reverse=False)
+
+        html.bold('Tuples ')
+        HTMLFormatter._add_items(sorted_items, html, 'Tuple', reverse=False)
 
         html.bold('Abstract records ')
         HTMLFormatter._add_items(sorted_items, html, 'Abstract', reverse=False)
