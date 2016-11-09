@@ -345,7 +345,7 @@ void DarcyMH::initialize() {
         mh_dh.enrich_pressure = false;
     
         // init dofhandler including enrichments
-        mh_dh.reinit(mesh_, intersections_, data_->cross_section);
+        mh_dh.reinit(mesh_, intersections_, data_->cross_section, data_->sigma);
         
 //         mh_dh.print_array(mh_dh.side_row_4_id, mesh_->n_sides(), "side dofs-velocity");
 //         mh_dh.print_array(mh_dh.row_4_el, mesh_->n_elements(), "ele dofs-pressure");

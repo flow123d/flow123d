@@ -88,7 +88,8 @@ void MH_DofHandler::reinit(Mesh *mesh) {
 
 void MH_DofHandler::reinit(Mesh *mesh,
                            shared_ptr< computeintersection::InspectElements > intersections,
-                           Field<3, FieldValue<3>::Scalar>& cross_section) {
+                           Field<3, FieldValue<3>::Scalar>& cross_section,
+                           Field<3, FieldValue<3>::Scalar>& sigma) {
     mesh_ = mesh;
     elem_side_to_global.resize(mesh->n_elements() );
     FOR_ELEMENTS(mesh, ele) elem_side_to_global[ele.index()].resize(ele->n_sides());
@@ -104,7 +105,7 @@ void MH_DofHandler::reinit(Mesh *mesh,
 //     // convert row_4_id arrays from separate numberings to global numbering of rows
 //     make_row_numberings();
     
-    create_enrichment(intersections,singularities_12d_, cross_section);
+    create_enrichment(intersections,singularities_12d_, cross_section, sigma);
     
     //HACK for a single processor
     unsigned int rows_starts = total_size();
@@ -371,7 +372,8 @@ unsigned int MH_DofHandler::n_enrichments()
 
 void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectElements > intersections,
                                       vector< SingularityPtr >& singularities,
-                                      Field<3, FieldValue<3>::Scalar>& cross_section)
+                                      Field<3, FieldValue<3>::Scalar>& cross_section,
+                                      Field<3, FieldValue<3>::Scalar>& sigma)
 {
     DBGCOUT("MH_DofHandler - create_singularities_12d\n");
     //TODO:
@@ -459,6 +461,8 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
                 
                 auto sing = std::make_shared<Singularity0D<3>>(center, radius, direction_vector, n);
+                // set sigma of 1d element
+                sing->set_sigma(sigma.value(center, ele->element_accessor()));
                 singularities.push_back(sing);
                 node_values.push_back(std::map<int, double>());
                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
@@ -595,14 +599,9 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
 //         DBGCOUT(<< d << "\n");
         if(d < radius){
             enrich = true;
-            
-            //XDataCell* xdata_pointer = static_cast<XDataCell*> (cell->user_pointer());
-//             ele->xfem_data = nullptr;
-            
-            //TODO enriched node, add dofs
-            //TODO flux dof - oposite to the node ??
         }
     }
+//     if(ele->index() == 5) enrich = true;
     
     // front advancing enrichment of neighboring elements
     if(enrich){

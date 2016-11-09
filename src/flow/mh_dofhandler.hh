@@ -123,7 +123,8 @@ public:
     
     void reinit(Mesh *mesh,
                 shared_ptr< computeintersection::InspectElements > intersections,
-                Field<3, FieldValue<3>::Scalar>& cross_section);
+                Field<3, FieldValue<3>::Scalar>& cross_section,
+                Field<3, FieldValue<3>::Scalar>& sigma);
     
     template<class T>
     void print_array(T * array, unsigned int length, std::string name = "array"){
@@ -147,7 +148,8 @@ protected:
     
     void create_enrichment(std::shared_ptr<computeintersection::InspectElements> intersections,
                            std::vector<SingularityPtr> &singularities,
-                           Field<3, FieldValue<3>::Scalar>& cross_section);
+                           Field<3, FieldValue<3>::Scalar>& cross_section,
+                           Field<3, FieldValue<3>::Scalar>& sigma);
     
     void find_ele_to_enrich(SingularityPtr sing, std::vector<unsigned int>& ele_to_enrich,
                             ElementFullIter ele, double radius, int& new_enrich_node_idx);

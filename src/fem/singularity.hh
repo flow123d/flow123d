@@ -159,6 +159,10 @@ public:
     /// Quadrature points on the edge
     const std::vector<Point>& q_points() const;
     
+    /// Value of the permeability coefficient between dimensions.
+    double sigma() const;
+    void set_sigma(double s);
+    
 private:
     
     /// center of the singularity
@@ -172,6 +176,9 @@ private:
     
     /// Geometry fucnctionality - plane projections.
     CircleEllipseProjection geom_;
+    
+    /// Value of the permeability coefficient between dimensions.
+    double sigma_;
 };
 
 
@@ -206,6 +213,14 @@ template<unsigned int spacedim>
 inline const std::vector<typename Singularity0D<spacedim>::Point>& Singularity0D<spacedim>::q_points() const
 {   return q_points_;}
 
+
+template<unsigned int spacedim>
+inline double Singularity0D<spacedim>::sigma() const
+{   return sigma_;}
+
+template<unsigned int spacedim>
+inline void Singularity0D<spacedim>::set_sigma(double s)
+{   sigma_ = s;}
 
 template<unsigned int spacedim>
 double Singularity0D<spacedim>::value(const Point& x) const

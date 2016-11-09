@@ -465,7 +465,7 @@ protected:
     
     void assemble_singular_communication(LocalElementAccessorBase<3> ele_ac){
         
-        double sigma = ad_->sigma.value(ele_ac.centre(), ele_ac.element_accessor());
+//         double sigma = ad_->sigma.value(ele_ac.centre(), ele_ac.element_accessor());
         
         XFEMComplementData* xd = static_cast<XFEMComplementData*>(ele_ac.xfem_data_pointer());
         
@@ -480,7 +480,8 @@ protected:
             sing_lagrange_val = 1;
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
             
-            temp_val = sing->circumference() * sigma;
+            temp_val = sing->circumference() * sing->sigma();
+            DBGVAR(sing->sigma());
             DBGVAR(temp_val);
             DBGVAR(sing_row);
             val =  temp_val * press_shape_val * sing_lagrange_val;
@@ -580,11 +581,9 @@ template<> inline
 void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
 
     ElementFullIter ele = ele_ac.full_iter();
-    //FIXME: sigma of lower dimensional element
-    double sigma = ad_->sigma.value(ele_ac.centre(), ele_ac.element_accessor());
     
     XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
-    double sing_lagrange_val;
+    double sing_lagrange_val, sigma;
     int sing_row;
     int nvals = loc_vel_dofs.size();
     double val[nvals];
@@ -600,6 +599,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
             fe_values_rt_xfem_->reinit(ele);
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
             sing_lagrange_val = 1;
+            sigma = sing->sigma();
             for (int i=0; i < nvals; i++){
                 val[i] = 0;
                 vel_dofs[i] = loc_system_.row_dofs[i];
@@ -631,7 +631,7 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
         edge_row = loc_system_.row_dofs[loc_edge_dofs[local_side]];
         
         QGauss<1> qside(9);
-        auto fv_side = std::make_shared<FESideValues<2,3>>(map_, qside, *fe_rt_xfem_, 
+        auto fv_side = std::make_shared<FESideValues<2,3>>(map_, qside, *fe_rt_xfem_,
                                                             update_normal_vectors
                                                             | update_quadrature_points);
         fv_side->reinit(ele, local_side);
@@ -646,7 +646,7 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
             qside_xfem.set_weight(q,qside.weight(q));
         }
         
-        auto fv_xfem = std::make_shared<FEValues<2,3>>(map_, qside_xfem, *fe_rt_xfem_, 
+        auto fv_xfem = std::make_shared<FEValues<2,3>>(map_, qside_xfem, *fe_rt_xfem_,
                                                         update_values);
         fv_xfem->reinit(ele);
         
@@ -665,7 +665,7 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
         }
         
         
-//         fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_, 
+//         fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_,
 //                                                             update_values
 //                                                             | update_normal_vectors);
 //         fv_side_xfem_->reinit(ele, local_side);
