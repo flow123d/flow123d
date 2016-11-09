@@ -50,6 +50,7 @@ class LatexRecord(TexList):
     """
     Class LatexRecord is formatter class for type record
     """
+    latex_name = 'RecordType'
 
     def format(self, record):
         """
@@ -70,7 +71,7 @@ class LatexRecord(TexList):
 
         :type record: ist.nodes.TypeRecord
         """
-        self.begin('RecordType')
+        self.begin(self.latex_name)
 
         # name
         self._newline()
@@ -111,7 +112,7 @@ class LatexRecord(TexList):
             with self.item_open('KeyItem'):
                 self.macro_key(key)
 
-        self.end('RecordType')
+        self.end(self.latex_name)
 
     def macro_key(self, record_key):
         """
@@ -160,6 +161,16 @@ class LatexRecord(TexList):
             ref_range = (' ' + str(ref.get('range') or '')).rstrip()
             name = str(ref.input_type).capitalize()
             self.add(name + ref_range)
+
+
+class LatexTuple(LatexRecord):
+    """
+    Class LatexTuple is formatter for type tuple
+    """
+    latex_name = 'TupleType'
+
+    def __init__(self):
+        super(LatexRecord, self).__init__()
 
 
 class LatexSelection(TexList):
@@ -280,6 +291,7 @@ class LatexFormatter(object):
         'TypeAbstractRecord': LatexAbstractRecord,
         # 'TypeString': LatexString,
         'TypeSelection': LatexSelection,
+        'TypeTuple': LatexTuple,
         # 'TypeArray': LatexArray,
         # 'TypeInteger': LatexInteger,
         # 'TypeDouble': LatexDouble,

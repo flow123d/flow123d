@@ -124,6 +124,67 @@
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TupleType environment
+%
+% usage:
+% \begin{TupleType}
+%       {<record name>}                 % name of the tuple, used for header and for hypertarget in form IT::<record name>
+%       {<parent abstract record>}      % possible parent abstract record
+%       {<default conversion key>}      % possible auto conversion key
+%       {<link>}                        % possible hyperlink into hand written text
+%       {< record description>}         % description of the record
+%
+%       \KeyItem{<name>}                % name of the key
+%               {<type>}                % type of the key 
+%               {<default value>}       % type of default value and possibly the value itself
+%               {<link>}                %  possible hyperlink to hand written text
+%               {<key description>}     % description of the key
+%       ...
+% \end{RecordType}
+
+\newenvironment{TupleType}[5]
+{
+ \ifstrequal{#4}{\relax}{%
+    % turn off
+    \begingroup
+    \gdef\KeyItem##1##2##3##4##5{}
+ }{
+    \par
+    \vskip 2ex
+    \hrule%
+    \vskip 0.3ex
+    \hrule
+    \noindent%
+    tuple: {\bf #1}%
+    \ifstrempty{#2}{}{ implements abstract type: #2}%
+    \ifstrempty{#3}{}{ constructible from key: #3}%
+    \par%
+    \vskip 0.5ex
+    \hrule%
+    \vskip 0.3ex
+    \hrule
+    {#5#4}
+    \begingroup%records of steady field type which we describe right now 
+    \addtolength{\leftskip}{3em}%
+    %
+    \gdef\KeyItem##1##2##3##4##5{%
+        \par
+        \vskip 0.3ex
+        %\hrule%
+        \noindent%
+        \hspace{-3em}{\bf\tt ##1} = {\textlangle {\it ##2 }\textrangle}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
+        \par
+        Default: {##3}
+        \par
+        {##5##4}
+    }%
+  }
+}{%
+  \vskip 2ex  
+  \endgroup%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % AbstractType environment
 %
 % usage:
