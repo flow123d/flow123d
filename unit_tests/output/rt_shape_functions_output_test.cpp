@@ -188,7 +188,7 @@ TEST(ShapeFunctionOutput, rt_xfem_shape) {
     std::string filename = "test_rt_";
     for(unsigned int i=0; i < fe_rt_xfem.n_dofs(); i++){
         dof_values = {{i, 1.0}};  //select only one shape function
-        output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, true, filename + std::to_string(i));
+        output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, filename + std::to_string(i));
     }
     
     //     //precise enrichment function approx.
@@ -201,9 +201,28 @@ TEST(ShapeFunctionOutput, rt_xfem_shape) {
         { 5, 1.0 }
     };
     
-    output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, true, "test_rt");
+    output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, "test_rt");
 }
 
+// TEST(ShapeFunctionOutput, rt_xfem_shape) {
+//     
+//     auto func = std::make_shared<Singularity0D<3>>(arma::vec({0.2,0.2,0}),0.05,
+//                                                    arma::vec({0, 0, 1}), arma::vec({0, 0, 1}));
+//     
+//     FE_RT0<1,3> fe_rt1;
+//     FE_RT0<2,3> fe_rt2;
+//     FE_RT0_XFEM<2,3> fe_rt_xfem(&fe_rt2,{func});
+//     FE_RT0<3,3> fe_rt3;
+//     
+//    std::map<unsigned int, double> dof_values;
+// 
+//     // print all shape functions
+//     std::string filename = "test_rt_";
+//     
+// //                                                  1.0/sqrt(2)
+//     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{0, 1.0}}, false, filename + std::to_string(0));
+//     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{1, 1.0}}, false, filename + std::to_string(1));   
+// }
 
 TEST(ShapeFunctionOutput, p0_xfem) {
 
