@@ -44,17 +44,25 @@ public:
     virtual ~DummyOutputData() override
     {}
 
-    void print(ostream &out_stream, unsigned int idx) override
+    void print_ascii(ostream &out_stream, unsigned int idx) override
     {
         for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
     }
 
-    void print_all(ostream &out_stream) override
+    void print_ascii_all(ostream &out_stream) override
     {
         for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
+    }
+
+    void print_binary_all(ostream &out_stream) override
+    {
+        ASSERT(false).error("Not implemented.");
     }
 
     void print_all_yaml(ostream &out_stream, unsigned int precision) override
+    {}
+
+    void get_min_max_range(double &min, double &max) override
     {}
 };
 
@@ -151,7 +159,7 @@ void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDa
 
     for(unsigned int i=0; i < output_data->n_values; i ++) {
         file << vec(i).id() << " ";
-        output_data->print(file, i);
+        output_data->print_ascii(file, i);
         file << std::endl;
     }
 
@@ -173,7 +181,7 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataPtr output_data)
         file << ele.id() << " " << ele->n_nodes() << " ";
 
         FOR_ELEMENT_NODES(ele, i_node) {
-            output_data->print(file, i_corner++);
+            output_data->print_ascii(file, i_corner++);
         }
 
         file << std::endl;

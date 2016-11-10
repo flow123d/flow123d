@@ -39,9 +39,6 @@ const Record & OutputVTK::get_input_type() {
 		// The parallel or serial variant
 		.declare_key("parallel", Bool(), Default("false"),
 			"Parallel or serial version of file format.")
-		// Type of compression
-		.declare_key("compression", OutputVTK::get_input_type_compression(), Default("\"none\""),
-			"Compression used in output stream file format.")
 		.close();
 }
 
@@ -50,18 +47,10 @@ const Selection & OutputVTK::get_input_type_variant() {
     return Selection("VTK variant (ascii or binary)")
 		.add_value(OutputVTK::VARIANT_ASCII, "ascii",
 			"ASCII variant of VTK file format")
-		.add_value(OutputVTK::VARIANT_BINARY, "binary",
-			"Binary variant of VTK file format (not supported yet)")
-		.close();
-}
-
-
-const Selection & OutputVTK::get_input_type_compression() {
-    return Selection("Type of compression of VTK file format")
-		.add_value(OutputVTK::COMPRESSION_NONE, "none",
-			"Data in VTK file format are not compressed")
-		.add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
-			"Data in VTK file format are compressed using zlib (not supported yet)")
+		.add_value(OutputVTK::VARIANT_BINARY_UNCOMPRESSED, "binary",
+			"Uncompressed appended binary XML VTK format without usage of base64 encoding of appended data.")
+		.add_value(OutputVTK::VARIANT_BINARY_ZLIB, "binary_zlib",
+			"Appended binary XML VTK format without usage of base64 encoding of appended data. Compressed with ZLib. (Not supported yet)")
 		.close();
 }
 
@@ -97,6 +86,9 @@ int OutputVTK::write_data(void)
     }
 
     if (! this->_base_file.is_open()) {
+        auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
+        variant_type_ = format_rec.val<VTKVariant>("variant");
+
         this->fix_main_file_extension(".pvd");
         try {
             this->_base_filename.open_stream( this->_base_file );
@@ -219,11 +211,17 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
 
 
 
-void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKValueType type)
+void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
 {
+    // names of types in DataArray section
+	static const std::vector<std::string> types = {
+        "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Float32", "Float64" };
+    // formats of DataArray section
+	static const std::vector<std::string> formats = { "ascii", "appended", "appended" };
+
     ofstream &file = this->_data_file;
 
-    file    << "<DataArray type=\"" << vtk_value_type_map(type) << "\" ";
+    file    << "<DataArray type=\"" << types[output_data->vtk_type_] << "\" ";
     // possibly write name
     if( ! output_data->output_field_name.empty()) 
         file << "Name=\"" << output_data->output_field_name <<"\" ";
@@ -233,23 +231,30 @@ void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKV
         file
             << "NumberOfComponents=\"" << output_data->n_elem_ << "\" ";
     }
-    file    << "format=\"ascii\">"
-            << endl;
+    file    << "format=\"" << formats[this->variant_type_] << "\"";
 
-    /* Set precision to max */
-    file.precision(std::numeric_limits<double>::digits10);
-
-    output_data->print_all(file);
-
-    file << "\n</DataArray>" << endl;
+    if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
+    	// ascii output
+    	file << ">" << endl;
+    	file << std::fixed << std::setprecision(10); // Set precision to max
+    	output_data->print_ascii_all(file);
+    	file << "\n</DataArray>" << endl;
+    } else {
+    	// binary output is stored to appended_data_ stream
+    	double range_min, range_max;
+    	output_data->get_min_max_range(range_min, range_max);
+    	file    << " offset=\"" << appended_data_.tellp() << "\" ";
+    	file    << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\"/>" << endl;
+    	output_data->print_binary_all( appended_data_ );
+    }
 
 }
 
 
-void OutputVTK::write_vtk_data_ascii(OutputDataFieldVec &output_data_vec)
+void OutputVTK::write_vtk_field_data(OutputDataFieldVec &output_data_vec)
 {
     for(OutputDataPtr data :  output_data_vec)
-        write_vtk_data_ascii(data, VTK_FLOAT64);
+        write_vtk_data(data);
 }
 
 
@@ -293,10 +298,10 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
         /* Write data on nodes */
-        this->write_vtk_data_ascii(output_data_vec_[NODE_DATA]);
+        this->write_vtk_field_data(output_data_vec_[NODE_DATA]);
 
         /* Write data in corners of elements */
-        this->write_vtk_data_ascii(output_data_vec_[CORNER_DATA]);
+        this->write_vtk_field_data(output_data_vec_[CORNER_DATA]);
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -317,7 +322,7 @@ void OutputVTK::write_vtk_element_data(void)
     file << ">" << endl;
 
     /* Write own data */
-    this->write_vtk_data_ascii(data_map);
+    this->write_vtk_field_data(data_map);
 
     /* Write PointData end */
     file << "</CellData>" << endl;
@@ -329,6 +334,15 @@ void OutputVTK::write_vtk_vtu_tail(void)
     ofstream &file = this->_data_file;
 
     file << "</UnstructuredGrid>" << endl;
+    if ( this->variant_type_ != VTKVariant::VARIANT_ASCII ) {
+    	// appended data of binary compressed output
+    	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB )
+    			WarningOut() << "Zlib library is not supported yet. Appended output is not compressed." << endl;
+    	file << "<AppendedData encoding=\"raw\">" << endl;
+    	// appended data starts with '_' character
+    	file << "_" << appended_data_.str() << endl;
+    	file << "</AppendedData>" << endl;
+    }
     file << "</VTKFile>" << endl;
 }
 
@@ -349,17 +363,17 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
-            write_vtk_data_ascii(output_mesh_->nodes_, VTK_FLOAT64 );
+            write_vtk_data(output_mesh_->nodes_);
         file << "</Points>" << endl;
     
         
         /* Write VTK Topology */
         file << "<Cells>" << endl;
-            write_vtk_data_ascii(output_mesh_->connectivity_, VTK_INT32 );
-            write_vtk_data_ascii(output_mesh_->offsets_, VTK_INT32 );
+            write_vtk_data(output_mesh_->connectivity_);
+            write_vtk_data(output_mesh_->offsets_);
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
-            write_vtk_data_ascii(types, VTK_UINT8 );
+           	write_vtk_data( types );
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
@@ -378,16 +392,16 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK Geometry */
         file << "<Points>" << endl;
-            write_vtk_data_ascii(output_mesh_discont_->nodes_, VTK_FLOAT64 );
+            write_vtk_data(output_mesh_discont_->nodes_);
         file << "</Points>" << endl;
 
         /* Write VTK Topology */
         file << "<Cells>" << endl;
-            write_vtk_data_ascii(output_mesh_discont_->connectivity_, VTK_INT32 );
-            write_vtk_data_ascii(output_mesh_discont_->offsets_, VTK_INT32 );
+            write_vtk_data(output_mesh_discont_->connectivity_);
+            write_vtk_data(output_mesh_discont_->offsets_);
             auto types = std::make_shared<MeshData<unsigned int>>("types");
             fill_element_types_vector(types->data_);
-            write_vtk_data_ascii(types, VTK_UINT8 );
+           	write_vtk_data( types );
         file << "</Cells>" << endl;
 
         /* Write VTK scalar and vector data on nodes to the file */
@@ -443,6 +457,8 @@ int OutputVTK::write_tail(void)
 
     return 1;
 }
+
+
 
 
 

@@ -8,13 +8,13 @@
 </DataArray>
 </Points>
 <Cells>
-<DataArray type="Int32" Name="connectivity" format="ascii">
+<DataArray type="UInt32" Name="connectivity" format="ascii">
 3 13 13 14 14 15 15 0 10 21 17 18 13 22 7 23 19 4 24 20 9 17 23 19 24 6 12 18 21 15 20 22 10 11 21 14 22 13 8 23 7 4 5 24 12 21 11 14 15 22 9 23 8 5 6 24 16 17 21 16 21 18 16 18 22 16 23 17 16 22 20 19 23 16 19 16 24 16 20 24 10 17 25 18 26 13 7 19 27 4 20 28 9 25 17 19 6 27 12 26 18 15 28 20 10 25 2 3 13 26 12 3 26 9 2 25 15 0 28 1 27 6 1 7 27 4 28 0 
 </DataArray>
-<DataArray type="Int32" Name="offsets" format="ascii">
+<DataArray type="UInt32" Name="offsets" format="ascii">
 2 4 6 8 11 14 17 20 23 26 29 32 35 38 41 44 47 50 53 56 59 62 65 68 71 74 77 80 83 86 89 92 95 98 101 104 107 110 113 116 119 122 125 128 
 </DataArray>
-<DataArray type="UInt8" Name="types" format="ascii">
+<DataArray type="UInt32" Name="types" format="ascii">
 3 3 3 3 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 
 </DataArray>
 </Cells>

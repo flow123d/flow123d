@@ -15,6 +15,7 @@ template <class Value>
 OutputData<Value>::OutputData(const FieldCommon &field, unsigned int size)
 : val_aux(aux)
 {
+	this->set_vtk_type<ElemType>();
     this->field_name = field.name();
     this->field_units = field.units();
     this->output_field_name = this->field_name;
@@ -67,9 +68,9 @@ OutputData<Value>::~OutputData()
  * \note This method is used only by MSH file format.
  */
 template <class Value>
-void OutputData<Value>::print(ostream &out_stream, unsigned int idx)
+void OutputData<Value>::print_ascii(ostream &out_stream, unsigned int idx)
 {
-    OLD_ASSERT_LESS(idx, this->n_values);
+	ASSERT_LT(idx, this->n_values).error();
     ElemType *ptr_begin = this->data_ + n_elem_ * idx;
     for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
         out_stream << *ptr << " ";
@@ -83,12 +84,29 @@ void OutputData<Value>::print(ostream &out_stream, unsigned int idx)
  *       Class OutputData stores always in raw-first order.
  */
 template <class Value>
-void OutputData<Value>::print_all(ostream &out_stream)
+void OutputData<Value>::print_ascii_all(ostream &out_stream)
 {
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
             out_stream << *ptr << " ";
+    }
+}
+
+
+/// Prints the whole data vector into stream.
+template <class Value>
+void OutputData<Value>::print_binary_all(ostream &out_stream)
+{
+	// write size of data
+	unsigned long long int data_byte_size = this->n_values * n_elem_ * sizeof(ElemType);
+	out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
+    // write data
+    for(unsigned int idx = 0; idx < this->n_values; idx++) {
+        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
+        	out_stream.write(reinterpret_cast<const char*>(ptr), sizeof(ElemType));
+        }
     }
 }
 
@@ -104,6 +122,21 @@ void OutputData<Value>::print_all_yaml(ostream &out_stream, unsigned int precisi
         out_stream << field_value_to_yaml( Value::from_raw(value, ptr_begin), precision );
     }
     out_stream << " ]";
+}
+
+
+template <class Value>
+void OutputData<Value>::get_min_max_range(double &min, double &max)
+{
+	min = std::numeric_limits<double>::max();
+	max = std::numeric_limits<double>::min();
+    for(unsigned int idx = 0; idx < this->n_values; idx++) {
+        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
+           	if ((double)(*ptr) < min) min = (double)(*ptr);
+           	if ((double)(*ptr) > max) max = (double)(*ptr);
+        }
+    }
 }
 
 

@@ -65,10 +65,10 @@ set(PYTHON_RUNTEST_WRAPPER ${CMAKE_SOURCE_DIR}/bin/runtest.sh)
 configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${PYTHON_RUNTEST_WRAPPER} @ONLY)
 if (COPY_INSTEAD_OF_SYMLINK)
 	execute_process(COMMAND
-	    ${CMAKE_COMMAND} -E copy_directory ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
+	    ${CMAKE_COMMAND} -E copy ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
 	)
 	execute_process(COMMAND
-	    ${CMAKE_COMMAND} -E copy ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
+	    ${CMAKE_COMMAND} -E copy_directory ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
 	)
 else()
 	execute_process(COMMAND

@@ -45,13 +45,13 @@ TEST(OutputMesh, create_identical)
     output_mesh->create_identical_mesh();
     
     std::cout << "nodes: ";
-    output_mesh->nodes_->print_all(std::cout);
+    output_mesh->nodes_->print_ascii_all(std::cout);
     std::cout << endl;
     std::cout << "connectivity: ";
-    output_mesh->connectivity_->print_all(std::cout);
+    output_mesh->connectivity_->print_ascii_all(std::cout);
     std::cout << endl;
     std::cout << "offsets: ";
-    output_mesh->offsets_->print_all(std::cout);
+    output_mesh->offsets_->print_ascii_all(std::cout);
     std::cout << endl;
     
     EXPECT_EQ(output_mesh->nodes_->n_values, mesh->n_nodes());
