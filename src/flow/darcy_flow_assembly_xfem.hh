@@ -561,6 +561,10 @@ void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
     std::shared_ptr<Singularity0D<3>> func = std::static_pointer_cast<Singularity0D<3>>(xdata->enrichment_func(0));
     
     qxfem_ = qfactory_.create_singular({func}, ele_ac.full_iter());
+//     qfactory_.gnuplot_refinement(ele_ac.full_iter(),
+//                                  FilePath("./", FilePath::output_file),
+//                                  *qxfem_,
+//                                  {func});
     
     fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
     fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
@@ -583,7 +587,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
     ElementFullIter ele = ele_ac.full_iter();
     
     XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
-    double sing_lagrange_val, sigma;
+    double sing_lagrange_val;
     int sing_row;
     int nvals = loc_vel_dofs.size();
     double val[nvals];
@@ -599,7 +603,6 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
             fe_values_rt_xfem_->reinit(ele);
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
             sing_lagrange_val = 1;
-            sigma = sing->sigma();
             for (int i=0; i < nvals; i++){
                 val[i] = 0;
                 vel_dofs[i] = loc_system_.row_dofs[i];
@@ -607,7 +610,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
                 for(unsigned int q=0; q < quad.size();q++){
                     arma::vec n = sing->center() - quad.real_point(q);
                     n = n / arma::norm(n,2);
-                    val[i] += sigma * sing_lagrange_val
+                    val[i] += sing_lagrange_val
                                 * arma::dot(fe_values_rt_xfem_->shape_vector(i,q),n)
                                 * quad.weight(q);
 //                     sum += quad.weight(q);

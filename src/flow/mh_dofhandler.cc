@@ -481,7 +481,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 }
                 
                 //TODO: suggest proper enrichment radius
-                double enr_radius = 2*std::sqrt(ele2d->measure());
+                double enr_radius = 1.5*std::sqrt(ele2d->measure());
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
                 clear_mesh_flags();
                 find_ele_to_enrich(singularities.back(), ele_to_enrich, ele2d, enr_radius, new_enrich_node_idx);
@@ -555,6 +555,10 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
 
 void MH_DofHandler::update_standard_dofs()
 {
+    
+//     print_array(row_4_el, mesh_->n_elements(), "row_4_el(pressure)");
+//     print_array(row_4_edge, mesh_->n_edges(), "row_4_edge(lagrange pressure)");
+    
     unsigned int dof;
     dof = offset_pressure;
     for(unsigned int i=0; i < mesh_->n_elements(); i++, dof++){
@@ -571,6 +575,9 @@ void MH_DofHandler::update_standard_dofs()
     for(unsigned int i=0; i < singularities_12d_.size(); i++, dof++){
         row_4_sing[i] = dof;
     }
+    
+//     print_array(row_4_el, mesh_->n_elements(), "row_4_el(pressure)");
+//     print_array(row_4_edge, mesh_->n_edges(), "row_4_edge(lagrange pressure)");
 }
 
 

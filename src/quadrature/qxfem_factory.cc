@@ -504,7 +504,9 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
                                                     const QXFEM<dim,spacedim>& quad,
                                                     const std::vector<SingularityPtr> & sing)
 {
-    
+ 
+    DBGCOUT("XFEM quadrature gnuplot print.\n");
+    DBGVAR(output_dir);
     std::string fgnuplot_ref = "adaptive_integration_refinement_",
               fgnuplot_qpoints = "adaptive_integration_qpoints_",
               script_file = "g_script_adapt_",
