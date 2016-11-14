@@ -509,7 +509,8 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     //distribute enriched dofs:
     temp_offset = offset_enr_velocity; // will return last dof + 1 (it means new available dof)
     if(enrich_velocity) {
-        distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+//         distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+        distribute_enriched_dofs(temp_offset, Quantity::velocity);
     }
     
     offset_pressure = temp_offset;
@@ -697,6 +698,31 @@ void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_
 //                     DBGCOUT(<< node_idx << " old dof " << temp_dofs[node_idx][w] << "\n");
                     dofs[w][i] = temp_dofs[node_idx][w];
                 }
+            }
+        }
+//         xdata.print(cout);
+        ele->xfem_data = &xdata;
+        
+//         DBGCOUT(<< "xd[0]: " <<  xdata.global_enriched_dofs()[0].size() << "\n");
+    }
+}
+
+void MH_DofHandler::distribute_enriched_dofs(int& offset,
+                                             Quantity quant)
+{
+    unsigned int w,i,node_idx;
+//     int new_dof = offset;
+    
+    for(XFEMElementSingularData& xdata : xfem_data){
+        ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+        std::vector<std::vector<int>>& dofs = xdata.global_enriched_dofs()[quant];
+        dofs.resize(xdata.n_enrichments(), std::vector<int>(ele->n_nodes(), -1));
+//         DBGCOUT(<<"dofs xdata\n");
+        for(w=0; w < xdata.n_enrichments(); w++){
+            for(i=0; i < ele->n_nodes(); i++){
+//                     DBGCOUT(<< node_idx << " new dof " << offset << "\n");
+                dofs[w][i] = offset;
+                offset++;
             }
         }
 //         xdata.print(cout);
