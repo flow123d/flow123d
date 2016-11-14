@@ -1,0 +1,5 @@
+"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"bulk"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".left"	"water_volume"	-0.02	0	-0.02	0	0	0	0	0	0	0	0	0
+0	".right"	"water_volume"	0.02	0.02	0	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"water_volume"	8.2833e-15	9.72573e-15	-1.44242e-15	0	0	0	0	0	0	0	0	0
