@@ -27,6 +27,11 @@ const vector< int >& XFEMElementSingularData::global_enriched_dofs(Quantity quan
 
 unsigned int XFEMElementSingularData::n_enriched_dofs(Quantity quant) const
 {
+//     DBGVAR(ele_global_idx_); cout<<endl;
+//     DBGVAR(global_enriched_dofs_.size()); cout<<endl;
+//     DBGVAR(global_enriched_dofs_[quant].size()); cout<<endl;
+//     DBGVAR(global_enriched_dofs_[quant][0].size()); cout<<endl;
+    
     ASSERT_DBG(quant < global_enriched_dofs_.size());
     ASSERT_DBG(global_enriched_dofs_[quant].size() > 0);
 //     ASSERT_DBG(global_enriched_dofs_[quant][0].size() > 0);

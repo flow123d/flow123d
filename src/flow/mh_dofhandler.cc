@@ -480,6 +480,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                     xdata->add_data(sing, sing_idx);
                 }
                 
+                
                 //TODO: suggest proper enrichment radius
                 double enr_radius = 1.5*std::sqrt(ele2d->measure());
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
@@ -490,6 +491,14 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     }
     //shrink here (invalidates iterators, pointers); element xdata pointer is set in distribute_enriched_dofs()
     xfem_data.shrink_to_fit();
+
+    // update invalid pointers //HACK for xfem without enriching:
+    if(! (enrich_pressure || enrich_velocity))
+    for(XFEMElementSingularData& xdata : xfem_data){
+        ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+//         xdata.print(cout);
+        ele->xfem_data = &xdata;
+    }
     
 //     DebugOut() << ele_to_enrich.size() << "\n";
 //     for(auto& idx : ele_to_enrich){
@@ -626,6 +635,12 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
             xdata->set_node_values(&node_values, &node_vec_values);
             //TODO: set number of quantities
             xdata->global_enriched_dofs().resize(2);
+            
+            //HACK for xfem without enriching:
+            if(! (enrich_pressure || enrich_velocity)){
+                xdata->global_enriched_dofs()[0].resize(1);
+                xdata->global_enriched_dofs()[1].resize(1);
+            }
             xdata->set_element(ele->index());
             ele->xfem_data = xdata;
         }
@@ -635,6 +650,10 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         }
         
         xdata->add_data(sing, sing_idx);
+        
+        //HACK for xfem without enriching:
+        // shortcut when not enriching
+        if(! (enrich_velocity || enrich_pressure)) return;
         
         Node* node; //shortcut
         // number the enriched nodes and compute node values
