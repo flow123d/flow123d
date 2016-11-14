@@ -184,6 +184,9 @@ void DarcyFlowMHOutput::output()
 {
     START_TIMER("Darcy fields output");
 
+    // need to call this to create mh solution vector
+    darcy_flow->get_mh_dofhandler();
+    
     ElementSetRef observed_elements = output_stream->observe()->observed_elements();
     {
         START_TIMER("post-process output fields");
@@ -236,15 +239,11 @@ void DarcyFlowMHOutput::output()
 void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
 {
     START_TIMER("DarcyFlowMHOutput::make_element_scalar");
-    unsigned int sol_size;
-    double *sol;
 
-    darcy_flow->get_solution_vector(sol, sol_size);
-    unsigned int soi = mesh_->n_sides();
     for(unsigned int i_ele : element_indices) {
         ElementFullIter ele = mesh_->element(i_ele);
-        ele_pressure[i_ele] = sol[ soi + i_ele];
-        ele_piezo_head[i_ele] = sol[soi + i_ele ] + ele->centre()[Mesh::z_coord];
+        ele_pressure[i_ele] = darcy_flow->mh_dh.element_scalar(ele);
+        ele_piezo_head[i_ele] = ele_pressure[i_ele] + ele->centre()[Mesh::z_coord];
     }
 }
 
@@ -256,8 +255,6 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
  */
 void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     START_TIMER("DarcyFlowMHOutput::make_element_vector");
-    // need to call this to create mh solution vector
-    darcy_flow->get_mh_dofhandler();
 
     DBGCOUT("DarcyFlowMHOutput::make_element_vector\n");
     
