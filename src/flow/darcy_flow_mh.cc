@@ -271,7 +271,6 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     
     data_->is_linear=true;
 
-    size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
@@ -347,12 +346,14 @@ void DarcyMH::initialize() {
         // init dofhandler including enrichments
         mh_dh.reinit(mesh_, intersections_, data_->cross_section, data_->sigma);
         
+        size = mh_dh.total_size();
 //         mh_dh.print_array(mh_dh.side_row_4_id, mesh_->n_sides(), "side dofs-velocity");
 //         mh_dh.print_array(mh_dh.row_4_el, mesh_->n_elements(), "ele dofs-pressure");
 //         mh_dh.print_array(mh_dh.row_4_edge, mesh_->n_edges(), "edge dofs-pressure lagrange");
     }
     else{
         mh_dh.reinit(mesh_);
+        size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     }
     
     
@@ -1728,6 +1729,7 @@ DarcyMH::~DarcyMH() {
 
 void DarcyMH::make_serial_scatter() {
     START_TIMER("prepare scatter");
+    DBGCOUT("SCATTER\n");
     // prepare Scatter form parallel to sequantial in original numbering
     {
             IS is_loc;
@@ -1742,18 +1744,69 @@ void DarcyMH::make_serial_scatter() {
             // use essentialy row_4_id arrays
             loc_idx = new int [size];
             i = 0;
-            FOR_ELEMENTS(mesh_, ele) {
-                FOR_ELEMENT_SIDES(ele,si) {
+            
+            //velocity
+            FOR_ELEMENTS(mesh_, ele)
+                FOR_ELEMENT_SIDES(ele,si)
                     loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
+            
+            //enriched velocity
+            if(use_xfem && mh_dh.enrich_velocity){
+                int dofs[100];
+                int ndofs;
+//                 DBGCOUT("vel\n");
+                for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+                    auto ele_ac = mh_dh.accessor(i_loc);
+//                     DBGVAR(ele_ac.ele_global_idx());
+                    if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+                        ndofs = ele_ac.get_dofs_vel(dofs);
+                        for(int j=ele_ac.n_sides(); j < ndofs; j++){
+//                             loc_idx[i++] = dofs[j];
+                            loc_idx[i] = i;
+                            i++;
+                        }
+                    }
                 }
             }
-            FOR_ELEMENTS(mesh_, ele) {
+            
+            //pressure
+            FOR_ELEMENTS(mesh_, ele)
                 loc_idx[i++] = mh_dh.row_4_el[ele.index()];
+                
+            //enriched pressure
+            if(use_xfem && mh_dh.enrich_pressure){
+                int dofs[100];
+                int ndofs;
+//                 DBGCOUT("press\n");
+                for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+                    auto ele_ac = mh_dh.accessor(i_loc);
+//                     DBGVAR(ele_ac.ele_global_idx());
+                    if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+                        ndofs = ele_ac.get_dofs_press(dofs);
+                        for(int j=1; j < ndofs; j++){
+//                             loc_idx[i++] = dofs[j];
+                            loc_idx[i] = i;
+                            i++;
+                        }
+                    }
+                }
             }
+            
+            //pressure lagrange multiplier
             for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
                 loc_idx[i++] = mh_dh.row_4_edge[i_edg];
             }
-            OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
+            
+            //singualrity lagrange multiplier
+            if(use_xfem){
+                for(unsigned int s=0; s < mh_dh.n_enrichments(); s++)
+                    loc_idx[i++] = mh_dh.row_4_sing[s];
+            }
+            
+            mh_dh.print_array(loc_idx, size, "loc_idx");
+//             DBGVAR(i);
+//             DBGVAR(size);
+            ASSERT_DBG(i==size).error("Size of array does not match number of fills.\n");
             //DBGPRINT_INT("loc_idx",size,loc_idx);
             ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
             delete [] loc_idx;
@@ -1763,6 +1816,7 @@ void DarcyMH::make_serial_scatter() {
     }
     solution_changed_for_scatter=true;
 
+    DBGCOUT("SCATTER\n");
     END_TIMER("prepare scatter");
 
 }
