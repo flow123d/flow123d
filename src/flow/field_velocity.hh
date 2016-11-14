@@ -44,8 +44,8 @@ public:
     typedef typename Space<spacedim>::Point Point;
     typedef typename arma::vec3 Value;
     
-    FieldVelocityInternal(MH_DofHandler* mh_dh, Field<3, FieldValue<3>::Scalar>* cross_section)
-    : mh_dh_(mh_dh), cross_section_(cross_section)
+    FieldVelocityInternal(MH_DofHandler* mh_dh)
+    : mh_dh_(mh_dh)
     {}
     
     Value value_vector(const ElementAccessor<spacedim> &elm, const Point &p){
@@ -62,7 +62,6 @@ public:
             flux = value_vector_regular(ele_ac.full_iter(), p);
         }
         
-        flux /= cross_section_->value(elm.centre(), elm);
         return flux;
     }
     
@@ -101,7 +100,6 @@ public:
     
 private:
     MH_DofHandler* mh_dh_;
-    Field<3, FieldValue<3>::Scalar>* cross_section_;
     
     MappingP1<dim,3> map_;
     QXFEM<dim,3> quad_;
@@ -127,9 +125,10 @@ public:
 
     FieldVelocity(MH_DofHandler* mh_dh, Field<3, FieldValue<3>::Scalar>* cross_section)
     : FieldAlgorithmBase<3, FieldValue<3>::VectorFixed>(0),
-      fe_val_1d_(mh_dh, cross_section),
-      fe_val_2d_(mh_dh, cross_section),
-      fe_val_3d_(mh_dh, cross_section)
+      fe_val_1d_(mh_dh),
+      fe_val_2d_(mh_dh),
+      fe_val_3d_(mh_dh),
+      cross_section_(cross_section)
     {}
 
     /**
@@ -144,6 +143,8 @@ public:
             case 2: val = fe_val_2d_.value_vector(elm,p); break;
             case 3: val = fe_val_3d_.value_vector(elm,p);
         }
+        
+        val /= cross_section_->value(p, elm);
         
 //         val.print(cout,"val");
         for (unsigned int i=0; i<3; i++)
@@ -171,6 +172,8 @@ private:
     FieldVelocityInternal<1> fe_val_1d_;
     FieldVelocityInternal<2> fe_val_2d_;
     FieldVelocityInternal<3> fe_val_3d_;
+    
+    Field<3, FieldValue<3>::Scalar>* cross_section_;
     
     /// Registrar of class to factory
     static const int registrar;
