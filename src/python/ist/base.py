@@ -26,8 +26,9 @@ class InputType(object):
     STRING = 128
     BOOL = 256
     FILENAME = 512
+    TUPLE = 1024
 
-    MAIN_TYPE = SELECTION | RECORD | ABSTRACT
+    MAIN_TYPE = SELECTION | RECORD | ABSTRACT | TUPLE
 
     def __eq__(self, other):
         if type(other) is int:
