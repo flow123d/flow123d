@@ -150,6 +150,8 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
     typedef typename Space<spacedim>::Point Point;
     unsigned int j;
     
+    bool switch_delta = true;
+    
     // can we suppose for this FE and element that:
     //  - jacobian (and its inverse and determinant) is constant on the element
     //  - abuse mapping to compute the normals
@@ -222,7 +224,8 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             pu_values = pu.get_node_matrix() * pu_values;
             
             //switches 0. and 2. shape function for RT0 (for delta property)
-            pu_values = fe->get_node_matrix() * pu_values;
+            if(switch_delta)
+                pu_values = fe->get_node_matrix() * pu_values;
             
 //             DBGMSG("regular shape vectors q[%d]\n",q);
             //fill regular shape functions
@@ -290,8 +293,10 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             real_pu_grads = pu_grads * fv_data.inverse_jacobians[q];
             
             //switches 0. and 2. shape function for RT0 (for delta property)
-            pu_values = fe->get_node_matrix() * pu_values;
-            real_pu_grads = fe->get_node_matrix() * real_pu_grads;
+            if(switch_delta){
+                pu_values = fe->get_node_matrix() * pu_values;
+                real_pu_grads = fe->get_node_matrix() * real_pu_grads;
+            }
             
 //             pu_grads.print(cout,"pu_grads");
 //             real_pu_grads.print(cout,"real_pu_grads");
