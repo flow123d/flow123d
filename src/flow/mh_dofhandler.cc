@@ -323,7 +323,7 @@ void MH_DofHandler::set_solution( double time, double * solution, double precisi
 /// temporary replacement for DofHandler accessor, flux through given side
 double MH_DofHandler::side_flux(const Side &side) const {
 //     DBGVAR(elem_side_to_global[ side.element().index() ][ side.el_idx() ]);
-    return mh_solution[ elem_side_to_global[ side.element().index() ][ side.el_idx() ] ];
+    return mh_solution[ offset_velocity + elem_side_to_global[ side.element().index() ][ side.el_idx() ] ];
 }
 
 /// temporary replacement for DofHandler accessor, scalar (pressure) on edge of the side
@@ -621,6 +621,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         }
     }
 //     if(ele->index() == 5) enrich = true;
+//     if(ele->index() == 49) enrich = true;
     
     // front advancing enrichment of neighboring elements
     if(enrich){

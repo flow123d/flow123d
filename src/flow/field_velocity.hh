@@ -50,7 +50,7 @@ public:
     
     Value value_vector(const ElementAccessor<spacedim> &elm, const Point &p){
         //HACK to get accessor; only for SINGLE processor
-        auto ele_ac = LocalElementAccessorBase<3>(mh_dh_, elm.element()->index());
+        auto ele_ac = mh_dh_->accessor(elm.element()->index());
         update_quad(ele_ac.full_iter(), p);
         Value flux; flux.zeros();
         
@@ -144,7 +144,7 @@ public:
             case 3: val = fe_val_3d_.value_vector(elm,p);
         }
         
-        val /= cross_section_->value(p, elm);
+        val = val / cross_section_->value(p, elm);
         
 //         val.print(cout,"val");
         for (unsigned int i=0; i<3; i++)
@@ -207,6 +207,7 @@ auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele
             temp = mh_dh_->mh_solution[wdofs[j]]
                             * fv_rt_xfem_->shape_vector(li,0);
 //             DBGCOUT(<< "Ele " << ele->index() << " w " << w << " j " << temp[0] << " " << temp[1] << " " << temp[2] << "\n");
+//             DBGCOUT(<< "Ele " << ele->index() << " w " << w << " dof " << wdofs[j] << "\n");
             flux += temp;
         }
     }
