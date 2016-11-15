@@ -88,11 +88,12 @@ void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
         qxfem.resize(unit_points_inside.size());
         double weight =  sing->circumference() / n_qpoints;
         std::map<unsigned int, arma::vec>::const_iterator pair;
-        for(pair = unit_points_inside.begin(); pair != unit_points_inside.end(); pair++){
+        unsigned int i = 0;
+        for(pair = unit_points_inside.begin(); pair != unit_points_inside.end(); pair++, i++){
             
-            qxfem.set_point(pair->first, RefElement<2>::bary_to_local(pair->second));
-            qxfem.set_real_point(pair->first, sing->q_points()[pair->first]);
-            qxfem.set_weight(pair->first,weight);
+            qxfem.set_point(i, RefElement<2>::bary_to_local(pair->second));
+            qxfem.set_real_point(i, sing->q_points()[pair->first]);
+            qxfem.set_weight(i,weight);
         }
         DBGCOUT(<< "quad[" << global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
     }
