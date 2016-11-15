@@ -1745,68 +1745,77 @@ void DarcyMH::make_serial_scatter() {
             loc_idx = new int [size];
             i = 0;
             
+            
+            if(use_xfem){
+                for (; i < mh_dh.total_size(); i++) {
+                    loc_idx[i] = i;
+                }
+            }
+            else{
+                
             //velocity
             FOR_ELEMENTS(mesh_, ele)
                 FOR_ELEMENT_SIDES(ele,si)
                     loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
             
-            //enriched velocity
-            if(use_xfem && mh_dh.enrich_velocity){
-                int dofs[100];
-                int ndofs;
-//                 DBGCOUT("vel\n");
-                for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-                    auto ele_ac = mh_dh.accessor(i_loc);
-//                     DBGVAR(ele_ac.ele_global_idx());
-                    if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
-                        ndofs = ele_ac.get_dofs_vel(dofs);
-                        for(int j=ele_ac.n_sides(); j < ndofs; j++){
-//                             loc_idx[i++] = dofs[j];
-                            loc_idx[i] = i;
-                            i++;
-                        }
-                    }
-                }
-            }
+//             //enriched velocity
+//             if(use_xfem && mh_dh.enrich_velocity){
+//                 int dofs[100];
+//                 int ndofs;
+// //                 DBGCOUT("vel\n");
+//                 for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+//                     auto ele_ac = mh_dh.accessor(i_loc);
+// //                     DBGVAR(ele_ac.ele_global_idx());
+//                     if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+//                         ndofs = ele_ac.get_dofs_vel(dofs);
+//                         for(int j=ele_ac.n_sides(); j < ndofs; j++){
+// //                             loc_idx[i++] = dofs[j];
+//                             loc_idx[i] = i;
+//                             i++;
+//                         }
+//                     }
+//                 }
+//             }
             
             //pressure
             FOR_ELEMENTS(mesh_, ele)
                 loc_idx[i++] = mh_dh.row_4_el[ele.index()];
                 
-            //enriched pressure
-            if(use_xfem && mh_dh.enrich_pressure){
-                int dofs[100];
-                int ndofs;
-//                 DBGCOUT("press\n");
-                for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-                    auto ele_ac = mh_dh.accessor(i_loc);
-//                     DBGVAR(ele_ac.ele_global_idx());
-                    if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
-                        ndofs = ele_ac.get_dofs_press(dofs);
-                        for(int j=1; j < ndofs; j++){
-//                             loc_idx[i++] = dofs[j];
-                            loc_idx[i] = i;
-                            i++;
-                        }
-                    }
-                }
-            }
+//             //enriched pressure
+//             if(use_xfem && mh_dh.enrich_pressure){
+//                 int dofs[100];
+//                 int ndofs;
+// //                 DBGCOUT("press\n");
+//                 for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+//                     auto ele_ac = mh_dh.accessor(i_loc);
+// //                     DBGVAR(ele_ac.ele_global_idx());
+//                     if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+//                         ndofs = ele_ac.get_dofs_press(dofs);
+//                         for(int j=1; j < ndofs; j++){
+// //                             loc_idx[i++] = dofs[j];
+//                             loc_idx[i] = i;
+//                             i++;
+//                         }
+//                     }
+//                 }
+//             }
             
             //pressure lagrange multiplier
             for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
                 loc_idx[i++] = mh_dh.row_4_edge[i_edg];
             }
             
-            //singualrity lagrange multiplier
-            if(use_xfem){
-                for(unsigned int s=0; s < mh_dh.n_enrichments(); s++)
-                    loc_idx[i++] = mh_dh.row_4_sing[s];
-            }
+//             //singualrity lagrange multiplier
+//             if(use_xfem){
+//                 for(unsigned int s=0; s < mh_dh.n_enrichments(); s++)
+//                     loc_idx[i++] = mh_dh.row_4_sing[s];
+//             }
             
-            mh_dh.print_array(loc_idx, size, "loc_idx");
+//             mh_dh.print_array(loc_idx, size, "loc_idx");
 //             DBGVAR(i);
 //             DBGVAR(size);
             ASSERT_DBG(i==size).error("Size of array does not match number of fills.\n");
+            }
             //DBGPRINT_INT("loc_idx",size,loc_idx);
             ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
             delete [] loc_idx;
