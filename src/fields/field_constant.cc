@@ -74,6 +74,7 @@ void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec, c
 
     this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
     this->value_.scale(this->unit_conversion_coefficient_);
+    this->check_field_limits(init_data);
 
     typename Value::return_type tmp_value;
     Value tmp_field_value(tmp_value);
@@ -134,6 +135,20 @@ void FieldConstant<spacedim, Value>::value_list (const std::vector< Point >  &po
 
         value_list[i]=this->r_value_;
     }
+}
+
+
+template <int spacedim, class Value>
+void FieldConstant<spacedim, Value>::check_field_limits(const struct FieldAlgoBaseInitData& init_data)
+{
+    if (Value::is_scalable())
+        for( unsigned int row=0; row<this->value_.n_rows(); row++)
+            for( unsigned int col=0; col<this->value_.n_cols(); col++) {
+            	if ( (this->value_(row,col) < init_data.limits_.first) || (this->value_(row,col) > init_data.limits_.second) ) {
+                    WarningOut().fmt("Value {} of Field is out of limits: <{}, {}>\nUnit of the Field: '{}'\n",
+                    		this->value_(row,col), init_data.limits_.first, init_data.limits_.second, init_data.unit_si_.format_text() );
+            	}
+            }
 }
 
 
