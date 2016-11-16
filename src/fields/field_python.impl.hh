@@ -35,6 +35,7 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
 		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+		.copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
 		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
 				"Python script given as in place string")
 		.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
@@ -42,6 +43,8 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 		.declare_key("function", it::String(), it::Default::obligatory(),
 				"Function in the given script that returns tuple containing components of the return type.\n"
 				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+		//.declare_key("units", FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys(), it::Default::optional(),
+		//		"Definition of unit.")
 		.close();
 }
 

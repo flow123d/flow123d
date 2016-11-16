@@ -34,6 +34,7 @@ const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("value", Value::get_input_type(), it::Default::obligatory(),
                                     "Value of the constant field.\n"
                                     "For vector values, you can use scalar value to enter constant vector.\n"
