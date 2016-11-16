@@ -245,7 +245,8 @@ std::string MultiField<spacedim, Value>::get_value_attribute() const
     if (std::is_floating_point<typename Value::element_type>::value)
         type = "Double";
 
-    return fmt::format("{{ \"subfields\": true, \"shape\": [ {}, {} ], \"type\": \"{}\" }}", nrows, ncols, type);
+    return fmt::format("{{ \"subfields\": true, \"shape\": [ {}, {} ], \"type\": \"{}\", \"limit\": [ {}, {} ] }}",
+    					nrows, ncols, type, this->limits().first, this->limits().second);
 }
 
 
