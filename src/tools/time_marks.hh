@@ -48,7 +48,31 @@ public:
      *  - type_bc_change (hex 0x04)
      *  @see TimeMarks
      */
-    typedef unsigned long int Type;
+	struct Type {
+		Type() : bitmap_(0x1), equation_index_(1) {}
+		Type(unsigned long int bitmap, unsigned char equation_index) : bitmap_(bitmap), equation_index_(equation_index) {}
+
+		Type operator&(const Type& other) const {
+			//ASSERT(equation_index_ == other.equation_index_)((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
+			return Type( (bitmap_ & other.bitmap_), equation_index_);
+		}
+
+		Type operator|(const Type& other) const {
+			//ASSERT(equation_index_ == other.equation_index_)((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
+			return Type( (bitmap_ | other.bitmap_), equation_index_);
+		}
+
+		Type operator~() const {
+			return Type( ~bitmap_, equation_index_);
+		}
+
+		bool operator==(const Type& other) const {
+			return ( (bitmap_ == other.bitmap_) && (equation_index_ == other.equation_index_) );
+		}
+
+		unsigned long int bitmap_;
+		unsigned char equation_index_;
+	};
 
     /// Mark Type with all bits set.
     static const Type every_type;
@@ -83,13 +107,13 @@ public:
      */
 
     inline bool match_mask(const TimeMark::Type &mask) const {
-        return ( mask & (~mark_type_) ) == 0;
+        return (( mask.bitmap_ & (~mark_type_.bitmap_) ) == 0) && (mask.equation_index_ == mark_type_.equation_index_);
     }
 
     /// Add more bits that a mark satisfies.
     /// @param type type that should be modified
     inline void add_to_type(const TimeMark::Type &type) {
-        mark_type_ |= type;
+        mark_type_.bitmap_ |= type.bitmap_;
     }
 
     /// Comparison of time marks according to their time.
@@ -375,6 +399,5 @@ struct TimeMarkHash : std::unary_function<TimeMark, std::size_t>
 {
     std::size_t operator()(TimeMark const& mark) const;
 };
-
 
 #endif /* TIME_MARKS_HH_ */

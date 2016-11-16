@@ -31,11 +31,11 @@
 ostream& operator<<(ostream& stream, const TimeMark &mark)
 {
     //return ( stream << mark.time()<<": 0o" << oct << mark.mark_type() << dec ); //octal output
-    return ( stream << mark.time()<<": 0x" << hex << mark.mark_type() << dec );
+    return ( stream << mark.time()<<": 0x" << hex << mark.mark_type().bitmap_ << dec );
 }
 
-const TimeMark::Type TimeMark::every_type =  ~0x0;
-const TimeMark::Type TimeMark::none_type =  0x0;
+const TimeMark::Type TimeMark::every_type =  TimeMark::Type(~0x0, std::numeric_limits<unsigned char>::min() );
+const TimeMark::Type TimeMark::none_type =  TimeMark::Type(0x0, std::numeric_limits<unsigned char>::max() );
 
 
 // ------------------------------------------------------
@@ -52,7 +52,7 @@ TimeMarks::TimeMarks()
 void TimeMarks::reinit()
 {
     marks_.clear();
-    next_mark_type_ = 0x1;
+    next_mark_type_ = TimeMark::Type(0x1, 1);
 
     // add predefined base mark types
     type_fixed_time_ = new_mark_type();
@@ -66,10 +66,11 @@ void TimeMarks::reinit()
 }
 
 TimeMark::Type TimeMarks::new_mark_type() {
-	OLD_ASSERT(next_mark_type_ != 0, "Can not allocate new mark type. The limit is 32 mark types.\n");
+	OLD_ASSERT(next_mark_type_.bitmap_ != 0, "Can not allocate new mark type. The limit is 32 mark types.\n");
     TimeMark::Type current_type = next_mark_type_;
 
-    next_mark_type_ <<= 1;
+    next_mark_type_.bitmap_ <<= 1;
+    next_mark_type_.equation_index_++;
     return current_type;
 }
 
@@ -200,6 +201,7 @@ std::size_t TimeMarkHash::operator()(TimeMark const& mark) const
 {
     std::size_t seed = 0;
     boost::hash_combine(seed, mark.time());
-    boost::hash_combine(seed, mark.mark_type());
+    boost::hash_combine(seed, mark.mark_type().bitmap_);
+    boost::hash_combine(seed, mark.mark_type().equation_index_);
     return seed;
 }

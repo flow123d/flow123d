@@ -19,22 +19,22 @@
 TEST (TimeMark, time_mark)
 {
     // Constructor.
-    TimeMark tm1(-1.0, 0x01);
-    TimeMark tm2(0.0, TimeMark::every_type);
-    TimeMark tm3(10.0,0x05);
-    TimeMark::Type my_type = 0x0a;
+    TimeMark tm1( -1.0, TimeMark::Type(0x01, 1) );
+    TimeMark tm2( 0.0, TimeMark::every_type );
+    TimeMark tm3( 10.0, TimeMark::Type(0x05, 2) );
+    TimeMark::Type my_type(0x0a, 3);
 
     //checking time values
     EXPECT_EQ(tm1.time(), -1.0);
-    EXPECT_EQ(tm2.mark_type(), TimeMark::Type(~0x0));
+    EXPECT_EQ(tm2.mark_type(), TimeMark::Type(~0x0, 0));
 
     //checking type values - comparing masks
-    EXPECT_TRUE(tm1.match_mask(0x01));
-    EXPECT_TRUE(tm2.match_mask(~0x00));
+    EXPECT_TRUE(tm1.match_mask( TimeMark::Type(0x01, 1) ));
+    EXPECT_TRUE(tm2.match_mask( TimeMark::Type(~0x0, 0) ));
 
     //adding type and checking mask
     tm3.add_to_type(my_type);
-    EXPECT_TRUE(tm3.match_mask(0x0f));      //0x05 + 0x0a = 0x0f
+    EXPECT_TRUE(tm3.match_mask( TimeMark::Type(0x0f, 1) ));      //0x05 + 0x0a = 0x0f
 
     //comparing times
     EXPECT_TRUE( (tm1<tm2) && (tm2<tm3) );

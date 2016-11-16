@@ -489,7 +489,7 @@ void TimeGovernor::view(const char *name) const
 	static char buffer[1024];
 #ifdef FLOW123D_DEBUG_MESSAGES
 	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>    end_time: %f end_fixed_time: %f type: 0x%x\n",
-	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_, end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
+	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_, end_time_,  end_of_fixed_dt_interval_, eq_mark_type_.bitmap_);
 #else
 	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
 	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
