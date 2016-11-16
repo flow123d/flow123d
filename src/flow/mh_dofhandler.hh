@@ -151,7 +151,7 @@ protected:
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma);
     
-    void find_ele_to_enrich(SingularityPtr sing, std::vector<unsigned int>& ele_to_enrich,
+    void find_ele_to_enrich(SingularityPtr sing,
                             ElementFullIter ele, double radius, int& new_enrich_node_idx);
     
     void clear_mesh_flags();
@@ -171,9 +171,8 @@ protected:
     std::vector<XFEMComplementData> xfem_data_1d;
     std::vector<XFEMElementSingularData> xfem_data;
     
-    std::vector<std::map<int, double> > node_values;
-    
-    std::vector<std::map<int, Space<3>::Point> > node_vec_values;
+//     std::vector<std::map<int, double> > node_values;
+//     std::vector<std::map<int, Space<3>::Point> > node_vec_values;
     
     std::vector<bool> mesh_flags_;
     
