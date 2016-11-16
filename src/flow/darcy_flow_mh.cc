@@ -188,7 +188,7 @@ DarcyMH::EqData::EqData()
     	cross_section.units( UnitSI().m(3).md() );
 
     ADD_FIELD(conductivity, "Isotropic conductivity scalar.", "1.0" );
-    	conductivity.units( UnitSI().m().s(-1) );
+    	conductivity.units( UnitSI().m().s(-1) ).set_limits(0.0);
 
     ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
     	sigma.units( UnitSI::dimensionless() );

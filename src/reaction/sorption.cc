@@ -124,7 +124,8 @@ SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
     data_ = new EqData(output_conc_name);
     *data_+=immob_porosity_
         .flags_add(FieldFlag::input_copy)
-        .name("porosity_immobile");
+        .name("porosity_immobile")
+		.set_limits(0.0);
     this->eq_data_ = data_;
     //output_selection = make_output_selection(output_conc_name, output_selection_name);
 }
