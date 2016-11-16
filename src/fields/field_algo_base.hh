@@ -59,10 +59,17 @@ typedef enum  {
 
 /// Helper struct stores data for initizalize descentants of \p FieldAlgorithmBase.
 struct FieldAlgoBaseInitData {
-	FieldAlgoBaseInitData(unsigned int n_comp, const UnitSI &unit_si) : n_comp_(n_comp), unit_si_(unit_si) {}
+	/// Full constructor
+	FieldAlgoBaseInitData(unsigned int n_comp, const UnitSI &unit_si, std::pair<double, double> limits)
+	: n_comp_(n_comp), unit_si_(unit_si), limits_(limits) {}
+	/// Simplified constructor, set limit values automatically (used in unit tests)
+	FieldAlgoBaseInitData(unsigned int n_comp, const UnitSI &unit_si)
+	: n_comp_(n_comp), unit_si_(unit_si),
+	  limits_( std::make_pair(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max()) ) {}
 
 	unsigned int n_comp_;
 	const UnitSI &unit_si_;
+	std::pair<double, double> limits_;
 };
 
 
