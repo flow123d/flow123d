@@ -350,7 +350,7 @@ void DarcyMH::initialize() {
         
         mh_dh.enrich_velocity = xfem_rec.val<bool>("enrich_velocity");
         mh_dh.enrich_pressure = xfem_rec.val<bool>("enrich_pressure");
-//         mh_dh.continuous_pu = xfem_rec.val<bool>("continuous_pu");
+        mh_dh.continuous_pu = xfem_rec.val<bool>("continuous_pu");
         
         DBGVAR(mh_dh.enrich_velocity);
         DBGVAR(mh_dh.enrich_pressure);

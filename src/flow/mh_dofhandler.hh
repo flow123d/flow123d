@@ -140,7 +140,7 @@ public:
     
     unsigned int n_enrichments();
     
-    bool enrich_velocity, enrich_pressure;
+    bool enrich_velocity, enrich_pressure, continuous_pu;
     
 protected:
     static const int empty_node_idx;
@@ -159,10 +159,13 @@ protected:
     
     void print_dofs_dbg();
     
-    /// Distribute continuous enriched DoFs.
+    /// Distribute continuous enriched FE DoFs.
+    void distribute_enriched_dofs(int n_enriched_nodes);
+        
+    /// (Internal) Distribute continuous enriched DoFs.
     void distribute_enriched_dofs(std::vector<std::vector<int>>& temp_dofs, int& offset, Quantity quant);
     
-    /// Distribute discontinuous enriched DoFs.
+    /// (Internal) Distribute discontinuous enriched DoFs.
     void distribute_enriched_dofs(int& offset, Quantity quant);
     
     void update_standard_dofs();

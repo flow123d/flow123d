@@ -39,7 +39,10 @@ row_4_edge(nullptr),
 edge_ds(nullptr),
 el_ds(nullptr),
 side_ds(nullptr),
-row_4_sing(nullptr)
+row_4_sing(nullptr),
+enrich_velocity(false),
+enrich_pressure(false),
+continuous_pu(false)
 {}
 
 MH_DofHandler::~MH_DofHandler()
@@ -548,32 +551,8 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
         ele->xfem_data = &xdata;
     }
     
-    // set dof offsets:
-    offset_velocity = 0;
-    offset_enr_velocity = mesh_->n_sides_;
-    
-    int temp_offset;
-    unsigned int max_enr_per_node = 1;
-    // temporary dof vectors
-    std::vector<std::vector<int>> enr_dofs_velocity(new_enrich_node_idx, std::vector<int>(max_enr_per_node, empty_node_idx));
-    std::vector<std::vector<int>> enr_dofs_pressure(new_enrich_node_idx, std::vector<int>(max_enr_per_node, empty_node_idx));
-    
-    //distribute enriched dofs:
-    temp_offset = offset_enr_velocity; // will return last dof + 1 (it means new available dof)
-    if(enrich_velocity) {
-//         distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
-        distribute_enriched_dofs(temp_offset, Quantity::velocity);
-    }
-    
-    offset_pressure = temp_offset;
-    offset_enr_pressure = offset_pressure + mesh_->n_elements();
-    
-    temp_offset = offset_enr_pressure; // will return last dof + 1 (it means new available dof)
-    if(enrich_pressure){
-        distribute_enriched_dofs(enr_dofs_pressure, temp_offset, Quantity::pressure);
-    }
-    offset_edges = temp_offset;
-    offset_enr_lagrange = offset_edges + mesh_->n_edges();
+    // distribute FE enriched dofs
+    distribute_enriched_dofs(new_enrich_node_idx);
     
     //correct standard dofs:
     update_standard_dofs();
@@ -595,6 +574,43 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
 //     node_values.shrink_to_fit();
 //     node_vec_values.shrink_to_fit();
     clear_mesh_flags();
+}
+
+
+void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
+{
+    // set dof offsets:
+    offset_velocity = 0;
+    offset_enr_velocity = mesh_->n_sides_;
+    
+    int temp_offset;
+    unsigned int max_enr_per_node = 1;
+    
+    //distribute enriched dofs:
+    temp_offset = offset_enr_velocity; // will return last dof + 1 (it means new available dof)
+    if(enrich_velocity) {
+        if(continuous_pu){
+            // temporary dof vector
+            std::vector<std::vector<int>> enr_dofs_velocity(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
+            distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+        }
+        else distribute_enriched_dofs(temp_offset, Quantity::velocity);
+    }
+    
+    offset_pressure = temp_offset;
+    offset_enr_pressure = offset_pressure + mesh_->n_elements();
+    
+    temp_offset = offset_enr_pressure; // will return last dof + 1 (it means new available dof)
+    if(enrich_pressure){
+        if(continuous_pu){
+            // temporary dof vector
+            std::vector<std::vector<int>> enr_dofs_pressure(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
+            distribute_enriched_dofs(enr_dofs_pressure, temp_offset, Quantity::pressure);
+        }
+        else distribute_enriched_dofs(temp_offset, Quantity::pressure);
+    }
+    offset_edges = temp_offset;
+    offset_enr_lagrange = offset_edges + mesh_->n_edges();    
 }
 
 
