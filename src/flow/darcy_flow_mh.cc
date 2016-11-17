@@ -134,6 +134,14 @@ const it::Record & DarcyMH::type_field_descriptor() {
 
 const it::Record & DarcyMH::get_input_type() {
 
+    it::Record xfem_rec = Input::Type::Record("XFEM", "Settings of XFEM.")
+        .allow_auto_conversion("use_xfem")
+        .declare_key("use_xfem", it::Bool(), it::Default::obligatory(), "Use XFEM for 0d-2d.")
+        .declare_key("enrich_velocity", it::Bool(), it::Default("false"), "Use enrichment for velocity.")
+        .declare_key("enrich_pressure", it::Bool(), it::Default("false"), "Use enrichment for pressure.")
+        .declare_key("continuous_pu", it::Bool(), it::Default("false"), "Set true for continuous partition of unity.")
+        .close();
+        
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
             "Linear solver for MH problem.")
@@ -170,7 +178,7 @@ const it::Record & DarcyMH::get_input_type() {
 				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions." )
-        .declare_key("xfem_support", it::Bool(), it::Default("false"), "Use XFEM for 0d-2d.")
+        .declare_key("use_xfem", xfem_rec, it::Default("false"), "XFEM support.")
 		.close();
 }
 
@@ -277,7 +285,6 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
         mesh_->make_intersec_elements();
     }
     
-    use_xfem = in_rec.val<bool>("xfem_support");
 
     //side_ds->view( std::cout );
     //el_ds->view( std::cout );
@@ -335,14 +342,23 @@ void DarcyMH::initialize() {
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_->set_time(time_->step(), LimitSide::right);
     
+    Input::Record xfem_rec = input_record_.val<Input::Record>("use_xfem");
+    use_xfem = xfem_rec.val<bool>("use_xfem");
+    DBGVAR(use_xfem);
+    
     if(use_xfem){
+        
+        mh_dh.enrich_velocity = xfem_rec.val<bool>("enrich_velocity");
+        mh_dh.enrich_pressure = xfem_rec.val<bool>("enrich_pressure");
+//         mh_dh.continuous_pu = xfem_rec.val<bool>("continuous_pu");
+        
+        DBGVAR(mh_dh.enrich_velocity);
+        DBGVAR(mh_dh.enrich_pressure);
+        
         // intersections
         intersections_ = std::make_shared<computeintersection::InspectElements>(data_->mesh);
         intersections_->compute_intersections(computeintersection::IntersectionType::d12_2);
         
-        mh_dh.enrich_velocity = false;
-        mh_dh.enrich_pressure = false;
-    
         // init dofhandler including enrichments
         mh_dh.reinit(mesh_, intersections_, data_->cross_section, data_->sigma);
         

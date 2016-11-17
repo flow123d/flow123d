@@ -140,7 +140,6 @@ public:
     
     unsigned int n_enrichments();
     
-    //TODO: move to input xfem settings, make proper setters
     bool enrich_velocity, enrich_pressure;
     
 protected:
