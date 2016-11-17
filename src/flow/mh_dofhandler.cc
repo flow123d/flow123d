@@ -83,6 +83,8 @@ void MH_DofHandler::reinit(Mesh *mesh) {
     
     offset_edges = offset_enr_pressure;
     offset_enr_lagrange = offset_edges + mesh_->n_edges();
+    
+    print_dofs_dbg();
 }
 
 
@@ -112,6 +114,20 @@ void MH_DofHandler::reinit(Mesh *mesh,
     rows_ds = std::make_shared<Distribution>(&rows_starts, PETSC_COMM_WORLD);
     rows_ds->view(cout);
     
+    print_dofs_dbg();
+}
+
+
+void MH_DofHandler::print_dofs_dbg()
+{
+    DBGCOUT(<< "\noffset_velocity " << offset_velocity << "\n"
+            << "offset_enr_velocity " << offset_enr_velocity << "\n"
+            << "offset_pressure " << offset_pressure << "\n"
+            << "offset_enr_pressure " << offset_enr_pressure << "\n"
+            << "offset_edges " << offset_edges << "\n"
+            << "offset_enr_lagrange " << offset_enr_lagrange << "\n"
+            << "total_size " << total_size() << "\n"
+    );
     
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         auto ele_ac = accessor(i_loc);
@@ -558,15 +574,6 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     }
     offset_edges = temp_offset;
     offset_enr_lagrange = offset_edges + mesh_->n_edges();
-    
-    DBGCOUT(<< "\noffset_velocity " << offset_velocity << "\n"
-            << "offset_enr_velocity " << offset_enr_velocity << "\n"
-            << "offset_pressure " << offset_pressure << "\n"
-            << "offset_enr_pressure " << offset_enr_pressure << "\n"
-            << "offset_edges " << offset_edges << "\n"
-            << "offset_enr_lagrange " << offset_enr_lagrange << "\n"
-            << "total_size " << total_size() << "\n"
-    );
     
     //correct standard dofs:
     update_standard_dofs();

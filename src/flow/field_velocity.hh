@@ -82,6 +82,9 @@ public:
         fv_rt_ = std::make_shared<FEValues<dim,3>>(map_, quad_, fe_rt_, update_values);
         fv_rt_->reinit(ele);
         
+//         unsigned int li = 0;
+//         flux += flux += mh_dh_->side_flux( *(ele->side( li ) ) ) * fv_rt_->shape_vector(li,0);
+            
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
 //             DBGCOUT(<< "ele " << ele->index() << " flux " << mh_dh_->side_flux( *(ele->side( li ) ) ) 
 //                 << " [" << fv_rt_->shape_vector(li,0)(0) << " " << fv_rt_->shape_vector(li,0)(1) << " " << fv_rt_->shape_vector(li,0)(2) << "]\n");

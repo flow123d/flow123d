@@ -158,6 +158,8 @@ protected:
     
     void clear_node_aux();
     
+    void print_dofs_dbg();
+    
     /// Distribute continuous enriched DoFs.
     void distribute_enriched_dofs(std::vector<std::vector<int>>& temp_dofs, int& offset, Quantity quant);
     

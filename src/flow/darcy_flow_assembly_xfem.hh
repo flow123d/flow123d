@@ -340,7 +340,7 @@ protected:
             loc_system_.set_mat_values({edge_row}, {side_row}, {1.0});
             
             
-            if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+            if(ad_->mh_dh->enrich_velocity && ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
                 assemble_enriched_side_edge(ele_ac, i);
             }
         }
@@ -369,7 +369,7 @@ protected:
         
         ElementFullIter ele =ele_ac.full_iter();
         fe_values.reinit(ele);
-        unsigned int ndofs = fe_values.get_fe()->n_dofs();
+        unsigned int ndofs = loc_vel_dofs.size();
         unsigned int qsize = fe_values.get_quadrature()->size();
 
         for (unsigned int k=0; k<qsize; k++)

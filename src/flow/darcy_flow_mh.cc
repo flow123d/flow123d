@@ -340,7 +340,7 @@ void DarcyMH::initialize() {
         intersections_ = std::make_shared<computeintersection::InspectElements>(data_->mesh);
         intersections_->compute_intersections(computeintersection::IntersectionType::d12_2);
         
-        mh_dh.enrich_velocity = true;
+        mh_dh.enrich_velocity = false;
         mh_dh.enrich_pressure = false;
     
         // init dofhandler including enrichments
