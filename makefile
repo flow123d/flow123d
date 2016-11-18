@@ -97,7 +97,7 @@ clean-tests:
 
 # Create html documentation
 .PHONY: html-doc
-html-doc: cmake update-build-tree
+html-doc: 
 	make -C $(BUILD_DIR)/htmldoc htmldoc
 	$(BUILD_DIR)/bin/flow123d --input_format "$(DOC_DIR)/input_reference.json"
 	python $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(BUILD_DIR)/htmldoc/html/src/index.html --format=html

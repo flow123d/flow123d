@@ -208,15 +208,10 @@ class TexList(list):
     def description(cls, value):
         if not value.strip():
             return ''
-        if value.find('butit') != -1:
-            print ''.join(value)
-            print '---'
 
         html = TexList.m2h.parse2latex(str(value))
         latex = Html2Latex(html)
         result = latex.to_latex()
-        if value.find('butit') != -1:
-            print ''.join(result)
         return ''.join(result)
 
     @classmethod

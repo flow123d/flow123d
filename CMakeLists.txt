@@ -516,11 +516,11 @@ flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES
 execute_process(COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/lib/python)
 if (COPY_INSTEAD_OF_SYMLINK)
 	execute_process(COMMAND
-	    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
+	    ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
 	execute_process(COMMAND
-	    ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
+	    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
 else()
@@ -695,11 +695,11 @@ macro(make_link_in_source FILE)
   string(REPLACE "${CMAKE_SOURCE_DIR}/" "" rel_path "${FILE}")
   if (COPY_INSTEAD_OF_SYMLINK)
     execute_process(
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
     execute_process(
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
   else()

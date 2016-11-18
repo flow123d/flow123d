@@ -39,12 +39,13 @@ from utils.logger import Logger
 from ist.base import InputType
 from ist.utils.htmltree import htmltree
 from ist.nodes import TypeRecord, TypeAbstract, TypeSelection, TypeString, TypeDouble, TypeInteger, TypeBool, TypeArray, \
-    TypeParameter, TypeFilename
+    TypeParameter, TypeFilename, TypeTuple
 
 
 # all acceptable input_type values
 registered_nodes = {
     'Record': TypeRecord,
+    'Tuple': TypeTuple,
     'AbstractRecord': TypeAbstract,
     'Abstract': TypeAbstract,
     'Selection': TypeSelection,
