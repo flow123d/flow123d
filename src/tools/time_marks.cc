@@ -144,6 +144,7 @@ TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type
             std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t(),mask));
     while (  ! tg.step().lt(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         ++first_ge;
+        if (first_ge == marks_.end()) { --first_ge; break; }
     }
     return TimeMarksIterator(marks_, first_ge, mask);
 }
