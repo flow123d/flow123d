@@ -29,7 +29,7 @@
 ##
 ##This ensures that the 2D mesh will adapt so that elements do not cross the fracture lines (see Figure {@fig:mesh}).
 ##
-##![Geometry and mesh of simulation area.](images/04_geomesh.pdf){#fig:mesh}
+##![Geometry and mesh of simulation area.](images/04_geomesh.pdf){#fig:mesh width=100%}
 ## 
 ##
 ##
@@ -155,7 +155,7 @@
 ##
 ### Results
 ##
-##The result of model with and without blind fractures is depicted in Figure {@fig:diff_res}. We can see that with blind fractures, the water is more contaminated at the outflow from the rock. The influence on flow fractures is negligible.
+##The result of model with and without blind fractures (file ```04_frac_diffusion_noblind.yaml```) is depicted in Figure {@fig:diff_res}. We can see that with blind fractures, the water is more contaminated at the outflow from the rock. The influence on flow fractures is negligible.
 ##
 ##
 ##

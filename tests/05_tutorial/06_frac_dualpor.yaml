@@ -23,7 +23,7 @@
 ##          init_conc_immobile: 0
 ##
 ###Results and comparison
-##Results of calibration of the model with dual porosity and model with flow in blind fractures is depicted in Figure {@fig:calib}.
+##Results of calibration of the model with dual porosity and model with flow in blind fractures (file ```06_frac_nodualpor.yaml```) is depicted in Figure {@fig:calib}.
 ##
 ##
 ##![Results of calibration.](images/06_mass_flux.pdf){#fig:calib}
