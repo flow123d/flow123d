@@ -74,7 +74,7 @@ class HTMLSelection(HTMLItemFormatter):
                     for ref in refs:
                         with self.open('span'):
                             self.link_to_main(ref)
-                            if refs.index(ref) != len(refs)-1:
+                            if refs.index(ref) != len(refs) - 1:
                                 self.info(', ')
             self.main_section_title(selection)
             self.description(selection.description)
@@ -153,7 +153,7 @@ class HTMLRecord(HTMLItemFormatter):
                     for ref in refs:
                         with self.open('span'):
                             self.link_to_main(ref)
-                            if refs.index(ref) != len(refs)-1:
+                            if refs.index(ref) != len(refs) - 1:
                                 self.info(', ')
             self.main_section_title(record)
 
@@ -326,6 +326,12 @@ class HTMLRecord(HTMLItemFormatter):
                     self.link_to_main(reference)
 
 
+class HTMLTuple(HTMLRecord):
+
+    def __init__(self):
+        super(HTMLRecord, self).__init__(cls='main-section tuple hidden')
+
+
 class HTMLAbstractRecord(HTMLItemFormatter):
     """
     Class representing AbstractRecord node in IST
@@ -376,7 +382,7 @@ class HTMLAbstractRecord(HTMLItemFormatter):
                     for ref in refs:
                         with self.open('span'):
                             self.link_to_main(ref)
-                            if refs.index(ref) != len(refs)-1:
+                            if refs.index(ref) != len(refs) - 1:
                                 self.info(', ')
 
             self.main_section_title(abstract_record)
@@ -448,7 +454,6 @@ class HTMLUniversal(HTMLItemFormatter):
     def _end_format_as_child(self, self_object, record_key, record):
         # HTMLRecordKeyDefault(self).format_as_child(record_key.default, record_key, record)
         self.description(record_key.description)
-
 
     def format_as_child(self, self_object, record_key, record):
         """
@@ -671,6 +676,7 @@ class HTMLFormatter(object):
     """
     formatters = {
         'TypeRecord': HTMLRecord,
+        'TypeTuple': HTMLTuple,
         'TypeRecordKey': HTMLRecordKey,
         'TypeAbstract': HTMLAbstractRecord,
         'TypeString': HTMLString,
@@ -735,6 +741,9 @@ class HTMLFormatter(object):
         html.bold('Records ')
         HTMLFormatter._add_items(sorted_items, html, 'Record', reverse=False)
 
+        html.bold('Tuples ')
+        HTMLFormatter._add_items(sorted_items, html, 'Tuple', reverse=False)
+
         html.bold('Abstract records ')
         HTMLFormatter._add_items(sorted_items, html, 'Abstract', reverse=False)
 
@@ -742,7 +751,6 @@ class HTMLFormatter(object):
         HTMLFormatter._add_items(sorted_items, html, 'Selection', reverse=False)
 
         return html
-
 
     @staticmethod
     def tree_navigation_bar(items):
@@ -758,7 +766,6 @@ class HTMLFormatter(object):
         HTMLFormatter._add_items(items, html)
 
         return html
-
 
     @staticmethod
     def _add_items(items, html, type=None, reverse=False):

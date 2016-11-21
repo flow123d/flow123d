@@ -26,8 +26,6 @@
 
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/pointer_cast.hpp>
@@ -281,6 +279,7 @@ ARRAY_CONSTRUCT(FileName);
 ARRAY_CONSTRUCT(Selection);
 ARRAY_CONSTRUCT(Array);
 ARRAY_CONSTRUCT(Record);
+ARRAY_CONSTRUCT(Tuple);
 ARRAY_CONSTRUCT(Abstract);
 ARRAY_CONSTRUCT(Parameter);
 ARRAY_CONSTRUCT(Instance);

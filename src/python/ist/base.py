@@ -10,6 +10,10 @@ from utils.logger import Logger
 
 
 class InputType(object):
+    """
+    Class InputType is enum-like class for types
+    """
+
     UNKNOWN = 0
     SELECTION = 4
     RECORD = 1
@@ -22,8 +26,9 @@ class InputType(object):
     STRING = 128
     BOOL = 256
     FILENAME = 512
+    TUPLE = 1024
 
-    MAIN_TYPE = SELECTION | RECORD | ABSTRACT
+    MAIN_TYPE = SELECTION | RECORD | ABSTRACT | TUPLE
 
     def __eq__(self, other):
         if type(other) is int:
@@ -50,6 +55,10 @@ class InputType(object):
 
 
 class Field(object):
+    """
+    Class Field registers new field on class
+    """
+
     def __init__(self, names, t=str, index=False, subtype=None, save_as=None, required=False, link_to_parent=False, default=None):
         """
         :type subtype: class
@@ -90,6 +99,10 @@ class Field(object):
 
 
 class Parsable(object):
+    """
+    Class Parsable is abstract helper class for parsable objects
+    """
+
     __fields__ = []
 
     def __init__(self):
@@ -133,7 +146,6 @@ class Parsable(object):
         input_type = getattr(self, 'input_type', None)
         return input_type is not None and input_type == InputType.MAIN_TYPE
 
-
     @property
     def href_name(self):
         """
@@ -149,7 +161,6 @@ class Parsable(object):
 
         if getattr(self, 'name', None):
             return self.name
-
 
     @property
     def href_id(self):
@@ -221,6 +232,10 @@ class Parsable(object):
 
 
 class List(list):
+    """
+    Class List adds extra functionality to classic list (such as parsing)
+    """
+
     def __init__(self):
         super(List, self).__init__()
         self.subtype = str
@@ -246,6 +261,11 @@ class List(list):
 
 
 class SmartList(List):
+    """
+    Class SmartList adds extra functionality to List
+    parsing is compatible with previous versions
+    """
+
     def parse(self, json_data):
         if type(json_data) is dict:
             return super(SmartList, self).parse([dict([x]) for x in json_data.items()])
@@ -253,6 +273,10 @@ class SmartList(List):
 
 
 class Dict(dict):
+    """
+    Class Dict adds extra functionality to classic dict
+    """
+
     def parse(self, json_data):
         for key, value in json_data.items():
             self[key] = value
@@ -264,6 +288,7 @@ class Dict(dict):
 
 class Unicode(Parsable):
     """
+    Class Unicode represents str and unicode data
     :type value          : unicode
     """
 
@@ -304,4 +329,7 @@ class Unicode(Parsable):
 
 
 class NotImplementedException(Exception):
+    """
+    Simple exception class
+    """
     pass

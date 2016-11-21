@@ -239,13 +239,13 @@ public:
 
 		// make field init it form the init string
 	    FieldType field("test_field", false); // bulk field
+		field.units(UnitSI::one());
 		field.input_default(init);
 		field.set_components(component_names);
 		field.input_selection( get_test_selection() );
 
 		field.set_mesh(*my_mesh);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
-		field.units(UnitSI::one());
         
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>(*my_mesh);
@@ -261,7 +261,7 @@ public:
 			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -273,7 +273,7 @@ public:
 			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -285,7 +285,7 @@ public:
 			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}

@@ -36,6 +36,10 @@
 
 
 
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
+
+
 template <class F>
 class FieldFix : public testing::Test, public F {
 public:
@@ -73,7 +77,8 @@ public:
 		root_input = input_list(field_input);
 		Input::Record x_rec = *(root_input.begin<Input::Record>());
 		auto field_rec = *(x_rec.find<Input::AbstractRecord>("a"));
-		my_field_algo_base = FieldType::FieldBaseType::function_factory(field_rec, this->n_comp());
+	    FieldAlgoBaseInitData init_data_conc(this->n_comp(), UnitSI::dimensionless());
+		my_field_algo_base = FieldType::FieldBaseType::function_factory(field_rec, init_data_conc);
 	}
 
 	void TearDown() {
@@ -325,6 +330,7 @@ TYPED_TEST(FieldFix, update_history) {
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
 	this->set_input_list( this->input_list(list_ok) );
+	this->units( UnitSI().m() );
 
 	// time = 0.0
 	TimeGovernor tg(0.0, 1.0);
@@ -456,6 +462,7 @@ TYPED_TEST(FieldFix, set_time) {
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
 	this->set_input_list( this->input_list(list_ok) );
+	this->units( UnitSI().m() );
 
 	// time = 0.0
 	TimeGovernor tg(0.0, 0.5);
@@ -500,6 +507,8 @@ TYPED_TEST(FieldFix, constructors) {
 	    .flags(FieldFlag::input_copy);
 	this->field_.set_mesh( *(this->my_mesh) );
 	field_default.set_mesh( *(this->my_mesh) );
+	this->field_.units( UnitSI().m() );
+	field_default.units( UnitSI().m() );
 
 	string list_ok = "["
 			"{time=2,  region=\"BULK\", a=0, b=1}, "
@@ -606,6 +615,10 @@ TEST(Field, init_from_input) {
     sorption_type.set_mesh(mesh);
     init_conc.set_mesh(mesh);
     conductivity.set_mesh(mesh);
+
+    sorption_type.units( UnitSI().m() );
+    init_conc.units( UnitSI().m() );
+    conductivity.units( UnitSI().m() );
 
     auto region_set = mesh.region_db().get_region_set("BULK");
 
@@ -799,6 +812,7 @@ TEST(Field, init_from_default) {
         // test default initialization of scalar field
         scalar_field.input_default( "45.0" );
         scalar_field.set_mesh(mesh);
+        scalar_field.units( UnitSI().m() );
 
         scalar_field.set_time(TimeGovernor().step(), LimitSide::right);
 
@@ -823,6 +837,7 @@ TEST(Field, init_from_default) {
         enum_field.input_selection( get_test_type_selection() );
         enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
+        enum_field.units( UnitSI().m() );
 
         enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 

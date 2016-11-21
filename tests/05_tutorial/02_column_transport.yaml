@@ -1,0 +1,129 @@
+##---
+##title: Flow123d tutorial 2 -- ``1D column transport''
+##---
+### Description and input
+##This is a variant of ```01_column.yaml```.
+##The user will learn how to:
+##
+##* Use flux boundary conditions;
+##* Set up the advective transport model.
+##
+##For the fluid flow model we change the atmospheric pressure on the surface to the more realistic infiltration 200 mm/yr (= 6.34e-9 m/s):
+##
+##        - region: .surface
+##          bc_type: total_flux
+##          bc_flux: 6.34E-09
+##
+##In the resulting file ```water_balance.txt``` we can see that the value of the input and output flux changes to 6.34e-8. The visual results are similar to the case ```01_column.yaml```.
+##
+##Next we demonstrate a simulation of the transport of a tracer.
+##The equation of advective transport (no diffusion/dispersion) is specified by:
+##
+##      solute_equation: !Coupling_OperatorSplitting
+##        transport: !Solute_Advection_FV
+##
+##The boundary condition of concentration is prescribed on the surface region:
+##
+##        input_fields:
+##          - region: .surface
+##            bc_conc: 100
+##
+##The default type of boundary condition is ```inflow```, i.e. prescribed concentration is applied where water flows into the domain.
+##
+##We provide the name of the transported substance (in general there can be multiple transported substances):
+##
+##      substances: O-18
+##
+##The end time of the simulation is set in the section ```time``` to value 1e10 second (381 years):
+## 
+##      time:
+##        end_time: 1e10
+##
+##The output files can be generated for specific time values. We set the time step for output to 1e8 second (=3 years and 2 months):
+##
+##      output_stream:
+##        times:
+##          - step: 1e8
+##
+##Finally, we turn on computation of mass balance with cumulative sums over the simulation time interval.
+##
+##      balance:
+##        cumulative: true
+##
+### Results
+##The results of the mass balance computation are in the output folder in the file ```mass_balance.txt```.
+##The evolution of concentration is depicted in Figure @fig:transport.
+##A selected part of numerical results of mass balance is in the Table @tbl:mass_balance.
+##On the region ".surface", the mass flux of the tracer is still identical (6 × 10-6 kg/s).
+##On ".tunnel", the mass flux is zero at the beginning and then it changes within around 100 years to the opposite value of inflow -6 × 10-6 kg/s.
+##Figure @fig:mass_plot depicts results from the file ```mass_balance.txt``` for mass transported through the boundaries ".surface" and ".tunnel" and in the volume of "rock".
+##
+##![Tracer concentration after 5, 10, 15 and 20 time steps.](images/02_transport.pdf){#fig:transport}
+##
+##time|    region    |quantity [kg]|    flux|    flux_in|    flux_out|    mass|    error
+##----:|-----------|-------------|-----:|----------:|------------:|-------:|--------:
+##3.9e+09| rock|  O-18|  0|   0|   0|   22654.4| 0
+##3.9e+09| .surface|  O-18|  6.34e-06|    6.34e-06|    0|   0|   0
+##3.9e+09| .tunnel|   O-18|  -4.99e-06|    0|   -4.99e-06|    0| 0
+##3.9e+09| IMPLICIT BOUNDARY| O-18|  -1.02e-19|    0|   -1.02e-19|    0
+##3.9e+09| ALL|   O-18|  1.34e-06| 6.34e-06|    -4.99e-06|    22654.4| -5.78e-10
+##4e+09|   rock|  O-18|  0|   0|   0|   22774.9| 0
+##4e+09|   .surface|  O-18|  6.34e-06|    6.34e-06|    0|   0|   0
+##4e+09|   .tunnel|   O-18|  -5.39e-06|    0|   -5.39e-06|    0|   0
+##4e+09|   IMPLICIT BOUNDARY| O-18|  -1.02e-19|    0|   -1.02e-19|    0|   0
+##4e+09|   ALL|   O-18|  9.40e-07| 6.34e-06|    -5.39e-06|    22774.9| -6.03e-10
+##
+##: Illustration of the results in ```mass_balance.txt``` – selected columns in two time steps. {#tbl:mass_balance}
+##
+##![Results of evolution of mass in the volume and flux through boundaries.](images/02_mass_plot.pdf){#fig:mass_plot}
+##
+### The control file
+##
+##Below is the complete YAML source.
+##
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Example 1 of real locality - column 1D model with transport
+  mesh:
+    mesh_file: 01_mesh.msh
+  flow_equation: !Flow_Darcy_MH
+    input_fields:
+      - region: rock
+        conductivity: 1e-8
+      - region: .tunnel
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .surface
+        bc_type: total_flux
+        bc_flux: 6.34E-09
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1e-15
+        r_tol: 1e-15
+    balance: {}
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: .surface
+          bc_conc: 100
+    substances: O-18
+    time:
+      end_time: 1e10
+    output_stream:
+      times:
+        - step: 1e8
+      file: transport.msh
+      format: !gmsh
+        variant: ascii
+    balance:
+      cumulative: true

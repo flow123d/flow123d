@@ -1,0 +1,8 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- files: 10_vtk_bin_output.yaml
+  proc: [ 1 ]
+  

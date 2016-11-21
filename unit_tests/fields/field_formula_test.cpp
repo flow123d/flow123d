@@ -17,7 +17,7 @@
 #include "input/reader_to_storage.hh"
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 string input = R"INPUT(
@@ -25,6 +25,11 @@ string input = R"INPUT(
    init_conc={ // formula on 2d 
        TYPE="FieldFormula",
        value=["x", "x*y", "y+t"]
+   },
+   init_conc_unit_conversion={ // formula on 2d 
+       TYPE="FieldFormula",
+       value=["x", "x*y", "y+t"],
+       unit="g*cm^-3"
    },
    conductivity_3d={ // 3x3 tensor
        TYPE="FieldFormula",
@@ -44,6 +49,7 @@ TEST(FieldFormula, read_from_input) {
     Input::Type::Record rec_type = Input::Type::Record("FieldFormulaTest","")
         .declare_key("conductivity_3d", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
         .declare_key("init_conc", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
+        .declare_key("init_conc_unit_conversion", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .close();
 
     // read input string
@@ -56,7 +62,9 @@ TEST(FieldFormula, read_from_input) {
     ElementAccessor<3> elm;
 
 
-    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), 3);
+    UnitSI unit_conc = UnitSI().kg().m(-3);
+    FieldAlgoBaseInitData init_data_conc(3, unit_conc);
+    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), init_data_conc);
     {
         arma::vec result;
 
@@ -75,10 +83,34 @@ TEST(FieldFormula, read_from_input) {
         result = conc->value( point_1, elm);
         EXPECT_DOUBLE_EQ( point_1(0) ,              result[0]);
         EXPECT_DOUBLE_EQ( point_1(0)*point_1(1),    result[1]);
-        EXPECT_DOUBLE_EQ( point_1(1) +1.0,               result[2]);
+        EXPECT_DOUBLE_EQ( point_1(1) +1.0,          result[2]);
     }
 
-    auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"));
+    auto conc_unit_conv=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc_unit_conversion"), init_data_conc);
+    {
+        arma::vec result;
+        double c = 1000.0; // multiplicative coefficient
+
+        conc_unit_conv->set_time(0.0);
+        result = conc_unit_conv->value( point_1, elm);
+        EXPECT_DOUBLE_EQ( c*point_1(0) ,              result[0]);
+        EXPECT_DOUBLE_EQ( c*point_1(0)*point_1(1),    result[1]);
+        EXPECT_DOUBLE_EQ( c*point_1(1),               result[2]);
+
+        result = conc_unit_conv->value( point_2, elm);
+        EXPECT_DOUBLE_EQ( c*point_2(0) ,              result[0]);
+        EXPECT_DOUBLE_EQ( c*point_2(0)*point_2(1),    result[1]);
+        EXPECT_DOUBLE_EQ( c*point_2(1),               result[2]);
+
+        conc_unit_conv->set_time(1.0);
+        result = conc_unit_conv->value( point_1, elm);
+        EXPECT_DOUBLE_EQ( c*point_1(0) ,              result[0]);
+        EXPECT_DOUBLE_EQ( c*point_1(0)*point_1(1),    result[1]);
+        EXPECT_DOUBLE_EQ( c*(point_1(1) +1.0),          result[2]);
+    }
+
+    FieldAlgoBaseInitData init_data_conductivity(0, UnitSI::dimensionless());
+    auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"), init_data_conductivity);
     cond->set_time(0.0);
     {
         arma::mat::fixed<3,3> result;
@@ -141,30 +173,31 @@ TEST(FieldFormula, set_time) {
     Input::Array in_array=reader.get_root_interface<Input::Array>();
 
     auto it = in_array.begin<Input::AbstractRecord>();
+    FieldAlgoBaseInitData init_data(3, UnitSI::dimensionless());
 
     {
-        auto field=VectorField::function_factory(*it, 3);
+        auto field=VectorField::function_factory(*it, init_data);
         EXPECT_TRUE( field->set_time(1.0) );
         EXPECT_TRUE( field->set_time(2.0) );
     }
     ++it;
 
     {
-        auto field=VectorField::function_factory(*it, 3);
+        auto field=VectorField::function_factory(*it, init_data);
         EXPECT_TRUE( field->set_time(3.0) );
         EXPECT_FALSE( field->set_time(4.0) );
     }
     ++it;
 
     {
-        auto field=VectorField::function_factory(*it, 3);
+        auto field=VectorField::function_factory(*it, init_data);
         EXPECT_TRUE( field->set_time(1.5) );
         EXPECT_TRUE( field->set_time(2.5) );
     }
     ++it;
 
     {
-        auto field=VectorField::function_factory(*it, 3);
+        auto field=VectorField::function_factory(*it, init_data);
         EXPECT_TRUE( field->set_time(0.0) );
         EXPECT_FALSE( field->set_time(2.0) );
     }

@@ -8,8 +8,9 @@ import xml.etree.ElementTree as ET
 
 class Html2Latex(object):
     """
-    Class which based on given element (html/string) can produce latex format
+    Class Html2Latex which based on given element (html/string) can produce latex format
     """
+
     list_types = {
         'ul': 'itemize',
         'ol': 'enumerate'

@@ -63,9 +63,18 @@ install_python_lib(psutil psutil)
 message(STATUS "Creating python runtest wrapper")
 set(PYTHON_RUNTEST_WRAPPER ${CMAKE_SOURCE_DIR}/bin/runtest.sh)
 configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${PYTHON_RUNTEST_WRAPPER} @ONLY)
-execute_process(COMMAND
-    ${CMAKE_COMMAND} -E create_symlink ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
-)
+if (COPY_INSTEAD_OF_SYMLINK)
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E copy ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
+	)
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E copy_directory ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
+	)
+else()
+	execute_process(COMMAND
+	    ${CMAKE_COMMAND} -E create_symlink ${PYTHON_RUNTEST_WRAPPER} ${CMAKE_SOURCE_DIR}/tests/runtest.sh
+	)
+endif()
 
 # construct PY_WRAPPER_PATHS for wrapper pythonenv
 set(PY_WRAPPER_PATHS "/lib/python2.7")

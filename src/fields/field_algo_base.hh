@@ -36,6 +36,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
 #include "fields/field_values.hh"
+#include "fields/unit_si.hh"
 #include "tools/time_governor.hh"
 
 
@@ -55,6 +56,14 @@ typedef enum  {
     result_eye=21       // identity tensor
 
 } FieldResult;
+
+/// Helper struct stores data for initizalize descentants of \p FieldAlgorithmBase.
+struct FieldAlgoBaseInitData {
+	FieldAlgoBaseInitData(unsigned int n_comp, const UnitSI &unit_si) : n_comp_(n_comp), unit_si_(unit_si) {}
+
+	unsigned int n_comp_;
+	const UnitSI &unit_si_;
+};
 
 
 
@@ -102,14 +111,14 @@ public:
         * Returns shared pointer to  FunctionBase<>.
         */
        static std::shared_ptr< FieldAlgorithmBase<spacedim, Value> >
-           function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
+           function_factory(const Input::AbstractRecord &rec, const struct FieldAlgoBaseInitData& init_data);
 
        /**
         *  Function can provide way to initialize itself from the input data.
         *
         *  TODO: make protected, should be called through function factory
         */
-       virtual void init_from_input(const Input::Record &rec);
+       virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
        /**
         * Set new time value. Some Fields may and some may not implement time dependent values and
@@ -193,6 +202,8 @@ public:
 
 
 protected:
+       /// Init value of @p unit_conversion_coefficient_ from input
+       void init_unit_conversion_coefficient(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
        /// Actual time level; initial value is -infinity.
        TimeStep time_;
        /// Last value, prevents passing large values (vectors) by value.
@@ -202,6 +213,8 @@ protected:
        FieldResult field_result_;
        /// Specify if the field is part of a MultiField and which component it is
        unsigned int component_idx_;
+       /// Coeficient of conversion of user-defined unit
+       double unit_conversion_coefficient_;
 };
 
 

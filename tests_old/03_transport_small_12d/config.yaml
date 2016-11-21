@@ -1,0 +1,52 @@
+# Commom config section, overriding Global config.
+# Global config is wired in python script and default values are
+#   proc: [1]
+#   time_limit: 30
+#   memory_limit: 400
+#   check_rules: 
+#      - ndiff:
+#          files: ["*"]
+# 
+# Override order is following:
+# Global config     | cannot be easily changed, wired in script, default config for all yaml files
+# Common config     | (OPTIONAL) easily changable, default config for all yaml files in the same dir
+# test_case config  | easily changable, config setting for single test_case
+
+
+common_config:
+  proc: [1]
+  time_limit: 30
+  memory_limit: 400
+  check_rules: 
+      - ndiff:
+          files: ["*"]
+  
+# Main list contain one item for every active test.
+test_cases:
+  - files: flow_implicit.yaml
+    tags: [long-run, problematic]
+    proc: [3, 2]
+    time_limit: 5.0
+    check_rules:
+      - ndiff:
+            files: ["*/*.vtu"]
+            r_tol: 1e-3
+            a_tol: 1e-6
+      - ndiff:
+            files: ["*.vtu"]
+            r_tol: 100
+            a_tol: 200
+  - files: flow_implicit.yaml
+    tags: [problematic]
+    proc: [1]
+    time_limit: 5.0
+    memory_limit: 800
+    check_rules:
+      - ndiff:
+            files: ["*/*.vtu"]
+            r_tol: 1e-3
+            a_tol: 1e-6
+      - ndiff:
+            files: ["*.txt"]
+            r_tol: 10
+            a_tol: 20

@@ -53,3 +53,21 @@ doc/reference_manual/flow_version.tex
 bin/pythonenv.sh
 tests/runtest.sh
 bin/runtest.sh
+
+/config/jenkins.ini
+/config/jenkins-job/jobs/*.yaml
+/config/jenkins-job/jenkins.ini
+
+/tests/runtest
+/tests_old/runtest
+
+# add test results to ignore
+/tests/*/test_results*
+/tests/*/output
+
+
+# artifact folder
+/.artifacts*
+
+# folder containing symlink to python sources
+/lib

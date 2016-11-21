@@ -1,0 +1,542 @@
+#########################################################################################
+# Template for project Flow123d
+#########################################################################################
+
+# TODO for some reason including both files at once causes problem, each file seperatedly 
+# included works fine
+
+
+# defaults values
+- defaults:
+    name: flow123d-build
+    node: "{platform}"
+    workspace: "F123-{platform}-{build-type}"
+    # TODO log rotate 200 days
+    wrappers:
+      - build-name:
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
+
+
+#########################################################################################
+# Template for project Flow123d - DEVELOPER BUILDS
+#########################################################################################
+
+- project:
+    name: "Multijob project debug"
+    platform: ci2runner
+    build-type: debug
+    unit-dir:
+      - $PLACEHOLDER_unit_list$
+    test-dir:
+      - $PLACEHOLDER_test_list$
+    jobs:
+      - "Flow123d-{platform}-{build-type}-install-image"
+      - "Flow123d-{platform}-{build-type}-start-image"
+      - "Flow123d-{platform}-{build-type}-configure"
+      - "Flow123d-{platform}-{build-type}-build"
+      - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+      - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-{build-type}-stop-image"
+      - "Flow123d-{platform}-debug-multijob"
+
+# ---------------------------------------------------------------------------- #
+# ---------- INSTALL IMAGE --------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-install-image"
+    display-name: "{build-type} / Flow123d install image"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          whoami
+          ls -la
+          pwd
+          cd flow123d
+          make initialize-submodules
+          git submodule update bin/docker
+          cd bin/docker
+          git pull origin master
+          cd bin
+          ./configure --yes-to-all --do-not-override
+          echo ${{_GIT_BRANCH}}
+
+
+## ---------------------------------------------------------------------------- #
+## ---------- START IMAGE ----------------------------------------------------- #
+## ---------------------------------------------------------------------------- #
+#- job-template:
+#    name: "Flow123d-{platform}-{build-type}-start-image"
+#    display-name: "{build-type} / Flow123d start image"
+#    defaults: flow123d-build
+#    builders:
+#      - inject:
+#          properties-file: prop.file
+#      - shell: |
+#          rm -f /tmp/docker_test_debug.cid
+#          docker run --privileged -di --cidfile /tmp/docker_test_debug.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
+#          docker_pid=`cat /tmp/docker_test_debug.cid`
+#          echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
+#          echo "FLOW=/opt/flow123d/flow123d" >> prop.file
+
+# ---------------------------------------------------------------------------- #
+# ---------- START IMAGE ----------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-start-image"
+    display-name: "{build-type} / Flow123d start image"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          rm -f /tmp/docker_test_{build-type}.cid
+          docker run --privileged -di --cidfile /tmp/docker_test_{build-type}.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-rel:user bash
+          docker_pid=`cat /tmp/docker_test_{build-type}.cid`
+          echo "DOCKER_PID=${{docker_pid}}"                 >> prop.file
+          echo "FLOW=/opt/flow123d/flow123d"                >> prop.file
+          echo "PACK_NAME=Flow123d-2.0.0-Linux.tar.gz"      >> prop.file
+          echo "PACK_PATH=./Flow123d-2.0.0-Linux.tar.gz"    >> prop.file
+
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- CONFIGURE ------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-configure"
+    display-name: "{build-type} / Flow123d configure"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker exec ${{DOCKER_PID}} git clone -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
+          docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-{build-type}.cmake ${{FLOW}}/config.cmake
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} cmake
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- BUILD ----------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-build"
+    display-name: "{build-type} / Flow123d build"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} -j4 all
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj 
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- UNIT-TESTS ------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+    display-name: "{build-type} / Flow123d unit-test {unit-dir}"
+    defaults: flow123d-build
+    disabled: false
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          $(exit ${{RUN_UNIT_TESTS}}) || docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- INT-TESTS ------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-test-{test-dir}"
+    display-name: "{build-type} / Flow123d int-test {test-dir}"
+    defaults: flow123d-build
+    disabled: false
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
+
+# ---------------------------------------------------------------------------- #
+# ---------- STOP IMAGE ------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-stop-image"
+    display-name: "{build-type} / Flow123d stop image"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker stop ${{DOCKER_PID}}
+          docker rm   ${{DOCKER_PID}}
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- MULTIJOB -------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-debug-multijob"
+    display-name: "debug / Flow123d multijob"
+    project-type: multijob
+    defaults: flow123d-build
+    properties:
+      - raw:
+          xml: |
+            <hudson.model.ParametersDefinitionProperty>
+              <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                  <name>BRANCH_NAME</name>
+                  <description>Specify branch name you want to build. Default value will build master branch.</description>
+                  <defaultValue>$GIT_BRANCH</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>RUN_UNIT_TESTS</name>
+                  <description>If set to '0' will not run any unit-test.</description>
+                  <defaultValue>1</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>RUN_INTEGRATION_TESTS</name>
+                  <description>If set to '0' will not run any integration tests.</description>
+                  <defaultValue>1</defaultValue>
+                </hudson.model.StringParameterDefinition>
+              </parameterDefinitions>
+            </hudson.model.ParametersDefinitionProperty>
+    block-downstream: yes
+    scm:
+      - git:
+          url: https://github.com/flow123d/flow123d.git
+          branches:
+              - origin/master
+          basedir: flow123d
+          browser: githubweb
+          browser-url: https://github.com/flow123d/flow123d/
+          skip-tag: true
+
+    wrappers:
+      - inject:
+          script-content: |
+            rm -f prop.file && touch prop.file
+            echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
+            echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                    >> prop.file
+            
+      - build-name:
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"_GIT_BRANCH\"}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+
+    triggers:
+      - github
+
+    builders:
+      - multijob:
+          name: "Install image"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-debug-install-image"
+      - multijob:
+          name: "Start image"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-debug-start-image"
+      # ---------- START IMAGE ----------------------------------------------- #
+      - multijob:
+          name: "Configure flow123d Phase"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-debug-configure"
+
+      - multijob:
+          name: "Build flow123d Phase"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-debug-build"
+
+      - multijob:
+          name: "Unit tests"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-debug-unit-test-$PLACEHOLDER_unit_list$"
+
+      - multijob:
+          name: "Integration tests"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$"
+              kill-phase-on: NEVER
+      # ---------- STOP IMAGE ------------------------------------------------ #
+      - multijob:
+          name: "Stop image"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-debug-stop-image"
+
+
+
+#########################################################################################
+# Template for project Flow123d - RELEASE BUILDS
+#########################################################################################
+
+
+- project:
+    name: "Multijob project release"
+    platform: ci2runner
+    build-type: release
+    unit-dir:
+      - $PLACEHOLDER_unit_list$
+    test-dir:
+      - $PLACEHOLDER_test_list$
+    jobs:
+      - "Flow123d-{platform}-{build-type}-install-image"
+      - "Flow123d-{platform}-{build-type}-start-image"
+      - "Flow123d-{platform}-{build-type}-configure"
+      - "Flow123d-{platform}-{build-type}-build"
+      - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+      - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-{build-type}-make-doc"
+      - "Flow123d-{platform}-{build-type}-package"
+      - "Flow123d-{platform}-{build-type}-stop-image"
+    #   - "Flow123d-{platform}-{build-type}-start-image-b"
+    #   - "Flow123d-{platform}-{build-type}-copy-image-b"
+    #   - "Flow123d-{platform}-{build-type}-create-install-image-b"
+    #   - "Flow123d-{platform}-{build-type}-stop-image-b"
+      - "Flow123d-{platform}-release-multijob"
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- MAKE DOC -------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-make-doc"
+    display-name: "{build-type} / Flow123d make doc"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} html-doc
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} doxy-doc
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} ref-doc
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- PACKAGE --------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-package"
+    display-name: "{build-type} / Flow123d package"
+    defaults: flow123d-build
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          mkdir -p publish
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} package
+          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/Flow123d-2.0.0-Linux.tar.gz publish/
+          make -C flow123d/bin/docker/bin/package \
+                DESTINATION=$(pwd)/publish \
+                create-install-image
+          make -C flow123d/bin/docker/bin/package \
+                DESTINATION=$(pwd)/publish \
+                DOCKER_PATH=~/jenkins/static/DockerToolbox-1.12.2.exe \
+                DOCKER_IMAGE_NAME=${{DOCKER_IMAGE_NAME}} \
+                create-windows-installer
+    publishers:
+      - cifs: 
+          site: 'flow123d@intec'
+          target: '/docker-images/${{DOCKER_IMAGE_NAME}}/'
+          source: publish/**/*
+          remove-prefix: publish/
+
+
+# 
+# # ---------------------------------------------------------------------------- #
+# # ---------- START IMAGE B --------------------------------------------------- #
+# # ---------------------------------------------------------------------------- #
+# - job-template:
+#     name: "Flow123d-{platform}-{build-type}-start-image-b"
+#     display-name: "{build-type} / Flow123d start image B"
+#     defaults: flow123d-build
+#     builders:
+#       - inject:
+#           properties-file: prop.file
+#       - shell: |
+#           rm -f /tmp/docker_test_install.cid
+#           docker run -tid  --cidfile /tmp/docker_test_install.cid flow123d/install
+#           docker_pid=`cat /tmp/docker_test_install.cid`
+#           echo "DOCKER_B_PID=${{docker_pid}}"  >> prop.file
+# 
+# 
+# # ---------------------------------------------------------------------------- #
+# # ---------- COPY IMAGE B ---------------------------------------------------- #
+# # ---------------------------------------------------------------------------- #
+# - job-template:
+#     name: "Flow123d-{platform}-{build-type}-copy-image-b"
+#     display-name: "{build-type} / Flow123d copy image B"
+#     defaults: flow123d-build
+#     builders:
+#       - inject:
+#           properties-file: prop.file
+#       - shell: |
+#             docker   cp ${{PACK_PATH}} ${{DOCKER_B_PID}}:/tmp/${{PACK_NAME}}
+#             docker exec ${{DOCKER_B_PID}} mkdir -p ${{FLOW}}
+#             docker exec ${{DOCKER_B_PID}} tar -xvzf /tmp/${{PACK_NAME}} -C ${{FLOW}} --strip-components=1
+#             docker exec ${{DOCKER_B_PID}} rm -f /tmp/${{PACK_NAME}}
+# 
+# # ---------------------------------------------------------------------------- #
+# # ---------- CREATE INSTALL B ---------------------------------------------------- #
+# # ---------------------------------------------------------------------------- #
+# - job-template:
+#     name: "Flow123d-{platform}-{build-type}-create-install-image-b"
+#     display-name: "{build-type} / Flow123d create install image B"
+#     defaults: flow123d-build
+#     builders:
+#       - inject:
+#           properties-file: prop.file
+#       - shell: |
+#             docker export ${{DOCKER_B_PID}} > flow123d.install.tar.gz
+# 
+# # ---------------------------------------------------------------------------- #
+# # ---------- STOP IMAGE B ---------------------------------------------------- #
+# # ---------------------------------------------------------------------------- #
+# - job-template:
+#     name: "Flow123d-{platform}-{build-type}-stop-image-b"
+#     display-name: "{build-type} / Flow123d stop image B"
+#     defaults: flow123d-build
+#     builders:
+#       - inject:
+#           properties-file: prop.file
+#       - shell: |
+#           docker stop ${{DOCKER_B_PID}}
+#           docker rm   ${{DOCKER_B_PID}}
+
+# ---------------------------------------------------------------------------- #
+# ---------- MULTIJOB -------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "Flow123d-{platform}-release-multijob"
+    display-name: "release / Flow123d multijob"
+    project-type: multijob
+    defaults: flow123d-build
+    properties:
+      - raw:
+          xml: |
+            <hudson.model.ParametersDefinitionProperty>
+              <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                  <name>BRANCH_NAME</name>
+                  <description>Specify branch name you want to build. Default value will build master branch.</description>
+                  <defaultValue>$GIT_BRANCH</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>RUN_UNIT_TESTS</name>
+                  <description>If set to '0' will not run any unit-test.</description>
+                  <defaultValue>1</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>RUN_INTEGRATION_TESTS</name>
+                  <description>If set to '0' will not run any integration tests.</description>
+                  <defaultValue>1</defaultValue>
+                </hudson.model.StringParameterDefinition>
+              </parameterDefinitions>
+            </hudson.model.ParametersDefinitionProperty>
+    block-downstream: yes
+    scm:
+      - git:
+          url: https://github.com/flow123d/flow123d.git
+          branches:
+              - origin/master
+          basedir: flow123d
+          browser: githubweb
+          browser-url: https://github.com/flow123d/flow123d/
+          skip-tag: true
+
+    wrappers:
+      - inject:
+          script-content: |
+            rm -f prop.file && touch prop.file
+            echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}"          >> prop.file
+            echo "DOCKER_IMAGE_NAME=${{BRANCH_NAME#origin/}}-${{GIT_COMMIT:0:6}}"   >> prop.file
+            echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                             >> prop.file
+            
+      - build-name:
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"_GIT_BRANCH\"}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+
+    triggers:
+      - github
+
+    builders:
+      - multijob:
+          name: "Install image"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-release-install-image"
+      - multijob:
+          name: "Start image"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-release-start-image"
+      - multijob:
+          name: "Configure flow123d Phase"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-configure"
+
+      - multijob:
+          name: "Build flow123d Phase"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-build"
+      - multijob:
+          name: "Unit tests"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-unit-test-$PLACEHOLDER_unit_list$"
+      - multijob:
+          name: "Integration tests"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
+              kill-phase-on: NEVER
+      - multijob:
+          name: "Make doc"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-make-doc"
+      - multijob:
+          name: "Package"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-package"
+      - multijob:
+          name: "Stop image"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-stop-image"
+
+
+    #   - multijob:
+    #       name: "Start image B"
+    #       condition: SUCCESSFUL
+    #       projects:
+    #         - name: "Flow123d-{platform}-{build-type}-start-image-b"
+    #   - multijob:
+    #       name: "Copy image B"
+    #       condition: COMPLETED
+    #       projects:
+    #         - name: "Flow123d-{platform}-{build-type}-copy-image-b"
+    #   - multijob:
+    #       name: "Create install image B"
+    #       condition: COMPLETED
+    #       projects:
+    #         - name: "Flow123d-{platform}-{build-type}-create-install-image-b"
+    #   - multijob:
+    #       name: "Stop image B"
+    #       condition: COMPLETED
+    #       projects:
+    #         - name: "Flow123d-{platform}-{build-type}-stop-image-b"

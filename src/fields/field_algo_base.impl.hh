@@ -32,6 +32,8 @@ using namespace std;
 
 #include "fields/field_values.hh"
 
+#include "fields/unit_converter.hh"
+
 #include "tools/time_governor.hh"
 #include "input/factory.hh"
 #include "input/accessors.hh"
@@ -50,7 +52,8 @@ template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 : value_(r_value_),
   field_result_(result_other),
-  component_idx_(std::numeric_limits<unsigned int>::max())
+  component_idx_(std::numeric_limits<unsigned int>::max()),
+  unit_conversion_coefficient_(1.0)
 {
     value_.set_n_comp(n_comp);
 }
@@ -115,18 +118,18 @@ const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_
 
 template <int spacedim, class Value>
 shared_ptr< FieldAlgorithmBase<spacedim, Value> >
-FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
+FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, const struct FieldAlgoBaseInitData& init_data )
 {
     shared_ptr< FieldAlgorithmBase<spacedim, Value> > func;
-    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(n_comp);
-    func->init_from_input(rec);
+    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(init_data.n_comp_);
+    func->init_from_input(rec, init_data);
     return func;
 }
 
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
     xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
             typeid(this).name());
 }
@@ -169,34 +172,28 @@ void FieldAlgorithmBase<spacedim, Value>::value_list(
 
 }
 
-
-
-/****************************************************************************
- *  Macros for explicit instantiation of particular field class template.
- */
-
-
-// Instantiation of fields with values dependent of the dimension of range space
-#define INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_to)                                                               \
-template class field<dim_from, FieldValue<dim_to>::VectorFixed >;                       \
-template class field<dim_from, FieldValue<dim_to>::TensorFixed >;                       \
-
-// Instantiation of fields with domain in the ambient space of dimension @p dim_from
-#define INSTANCE_TO_ALL(field, dim_from) \
-template class field<dim_from, FieldValue<0>::Enum >;                       \
-template class field<dim_from, FieldValue<0>::Integer >;                       \
-template class field<dim_from, FieldValue<0>::Scalar >;                       \
-\
-INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
-
-
-// All instances of one field class template @p field.
-// currently we need only fields on 3D ambient space (and 2D for some tests)
-// so this is to save compilation time and avoid memory problems on the test server
-#define INSTANCE_ALL(field) \
-INSTANCE_TO_ALL( field, 3) \
-INSTANCE_TO_ALL( field, 2)
-// currently we use only 3D ambient space
+template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::init_unit_conversion_coefficient(const Input::Record &rec,
+		const struct FieldAlgoBaseInitData& init_data)
+{
+    Input::Record unit_record;
+    if ( rec.opt_val("unit", unit_record) ) {
+        if (!Value::is_scalable()) {
+            WarningOut().fmt("Setting unit conversion coefficient of non-floating point field at address {}\nCoefficient will be skipped.\n",
+                    rec.address_string());
+        }
+        std::string unit_str = unit_record.val<std::string>("unit_formula");
+    	try {
+    		this->unit_conversion_coefficient_ = init_data.unit_si_.convert_unit_from(unit_str);
+    	} catch (ExcInvalidUnit &e) {
+    		e << rec.ei_address();
+    		throw;
+    	} catch (ExcNoncorrespondingUnit &e) {
+    		e << rec.ei_address();
+    		throw;
+    	}
+    }
+}
 
 
 

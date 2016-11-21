@@ -12,6 +12,8 @@
 #include <flow_gtest.hh>
 
 #include "fields/unit_si.hh"
+#include "fields/unit_converter.hh"
+#include "fields/unit_converter_template.hh"
 
 
 TEST(UnitSI, format_latex) {
@@ -76,4 +78,140 @@ TEST(UnitSI, division_operator) {
 
 	UnitSI pressure2 = UnitSI::N() / area;
 	EXPECT_EQ( UnitSI::Pa().format_latex(), pressure2.format_latex() );
+}
+
+
+class UnitConverterTest : public testing::Test, public UnitConverter {
+public:
+	UnitData unit_data_;
+protected:
+
+    virtual void SetUp() {
+    }
+    virtual void TearDown() {
+    };
+
+};
+
+
+TEST_F(UnitConverterTest, converter_grammar) {
+	{
+		std::string unit = "MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2";
+		unit_data_ = this->read_unit(unit);
+		EXPECT_EQ(unit_data_.size(), 3);
+		EXPECT_TRUE( unit_data_.find("rho") != unit_data_.end() );
+		EXPECT_TRUE( unit_data_.find("g_") != unit_data_.end() );
+		EXPECT_FALSE( unit_data_.find("MPa") != unit_data_.end() );
+		EXPECT_DOUBLE_EQ( unit_data_.find("g_")->second.coef_, 9.8);
+		EXPECT_EQ(unit_data_.find("g_")->second.factors_.size(), 2);
+		EXPECT_DOUBLE_EQ( unit_data_.find("rho")->second.coef_, 990);
+		EXPECT_EQ(unit_data_.find("rho")->second.factors_.size(), 2);
+	}
+
+	{
+		std::string unit = "a*b; a = kg*m^a; b = m*s^-2";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Value of exponent 'a' is not integer" );
+	}
+
+	{
+		std::string unit = "a*b; b*c; b = m*s^-2";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Invalid expression '.*', missing '='" );
+	}
+
+	{
+		std::string unit = "kPa*n; n = m*55";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Invalid shortcut of unit '55'" );
+	}
+
+	{
+		std::string unit = "a*b; a = m*; b = kg*s*m^2";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Missing declaration of shortcut '.*'" );
+	}
+
+	{
+		std::string unit = "a*b; a = m*a; b = kg*s*m^2";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Cyclic declaration of unit 'a'" );
+	}
+
+	{
+		std::string unit = "s*g; g = 9.8*m*s^-2";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Shortcut 'g' is in conflict with predefined unit" );
+	}
+
+	{
+		std::string unit = "a*b*c; a = kg*K; b = m*s^-2";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Unit 'c' is not defined" );
+	}
+
+	{
+		std::string unit = "a+b; a=m*s^-2; b=kg/m^2";
+		EXPECT_THROW_WHAT( { unit_data_ = this->read_unit(unit); }, ExcInvalidUnit,
+				"Invalid shortcut of unit '.*'" );
+	}
+}
+
+TEST_F(UnitConverterTest, convert_function) {
+	double coef;
+	{
+		std::string unit = "N/m^2";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, 1.0 );
+		EXPECT_TRUE( this->unit_si()==UnitSI::Pa() );
+	}
+	{
+		std::string unit = "kN/cm^2";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, 1.0e7 );
+		EXPECT_TRUE( this->unit_si()==UnitSI::Pa() );
+	}
+	{
+		std::string unit = "MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, (1000.0/0.99/9.8) );
+		EXPECT_TRUE( this->unit_si()==UnitSI().m() );
+	}
+	{
+		std::string unit = "g_^2; g_ = 9.8*m*s^-2";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, (9.8*9.8) );
+		EXPECT_TRUE( this->unit_si()==UnitSI().m(2).s(-4) );
+	}
+	{
+		std::string unit = "V*rho; rho = g*cm^-3; V = m^3";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, 1000.0 );
+		EXPECT_TRUE( this->unit_si()==UnitSI().kg() );
+	}
+	{
+		std::string unit = "q/rho^2; q = 100*kg ; rho = 1000*kg*m^-3";
+		coef = this->convert(unit);
+		EXPECT_DOUBLE_EQ( coef, 0.0001 );
+		EXPECT_TRUE( this->unit_si()==UnitSI().kg(-1).m(6) );
+	}
+}
+
+
+TEST(UnitSI, convert_from_string) {
+	{
+		UnitSI unit = UnitSI().m();
+		double coef = unit.convert_unit_from("MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2");
+		EXPECT_DOUBLE_EQ( coef, (1000.0/0.99/9.8) );
+	}
+	{
+		UnitSI unit = UnitSI().kg().m(-3);
+		double coef = unit.convert_unit_from("g*cm^-3");
+		EXPECT_DOUBLE_EQ( coef, 1000.0 );
+	}
+	{
+		UnitSI unit = UnitSI().kg().m(-3);
+		EXPECT_THROW_WHAT( { unit.convert_unit_from("m*rho; rho = g*cm^-3"); }, ExcNoncorrespondingUnit,
+				"Non-corresponding definition of unit" );
+	}
 }

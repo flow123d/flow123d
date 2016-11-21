@@ -34,31 +34,31 @@ add_custom_target(all-unit-test)
 # - add required libraries
 # Should be called from subdirectories
 macro(add_test_directory libs)
-  
+
   string(REPLACE "${CMAKE_SOURCE_DIR}/unit_tests/" "" subdir "${CMAKE_CURRENT_SOURCE_DIR}")
   #message("IN: ${CMAKE_CURRENT_SOURCE_DIR} SUBDIR: ${subdir}")
   set(super_test "${subdir}-test")
   add_custom_target( ${super_test} )
   set(super_test_libs ${libs})
   #message("SUBDIR LIBS: ${libs}")
-  
+
   if (ALLOW_DUPLICATE_CUSTOM_TARGETS)
     #message("allow common targets")
-    
+
     # default all_test target
     add_custom_target(all-test
                     DEPENDS ${super_test}
                     )
-  
+
     # default all_bench target
     add_custom_target(all-bench
                     #DEPENDS ${test_name}
                     )
   endif()
-  
+
   add_dependencies(all-unit-test ${super_test})
-  
-  make_link_in_source("${CMAKE_CURRENT_SOURCE_DIR}/Makefile")    
+
+  make_link_in_source("${CMAKE_CURRENT_SOURCE_DIR}/Makefile")
 endmacro()
 
 
@@ -74,8 +74,8 @@ endmacro()
 # target 'class_name_valgrind' which builds the binary and runs it under valgrind
 # use libraries in ${super_test_libs}
 #
-# We want to run tests from source dir, but since there is no portable way 
-# how to make link from source dir to Makefile generated in build dir 
+# We want to run tests from source dir, but since there is no portable way
+# how to make link from source dir to Makefile generated in build dir
 # I let main makefile to make such links.
 macro(define_test class_name)
   set(test_source "${class_name}_test.cpp")
@@ -83,7 +83,7 @@ macro(define_test class_name)
   set(test_name "${class_name}-test")
   set(test_valgrind "${class_name}-valgrind")
   #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
-  
+
   # executable rule
   add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
   #set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -91,19 +91,19 @@ macro(define_test class_name)
   add_dependencies(${test_binary} update_source_tree)
 
 
-  
+
   # rule to run the test
-  add_custom_target(${test_name} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/pythonenv.sh ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+  add_custom_target(${test_name}
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
   # rule to run the test under valgrind
-  add_custom_target(${test_valgrind} 
+  add_custom_target(${test_valgrind}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      
+
   # register the test into super_test
   add_dependencies(${super_test} ${test_name})
 
@@ -118,7 +118,7 @@ endmacro()
 #
 # It has one more parameter for number of processors N. It provides similar targets as the macro 'define_test'
 # like: 'class_name_N_test' and 'class_name_N_valgrind' which builds the test binary and run it in parallel using bin/mpiexec
-# 
+#
 # To get meaningful output from the parallel tests you should include <gtest_flow.hh> instead of <gtest/gtest.h>
 macro(define_mpi_test class_name n_proc)
   set(test_source "${class_name}_test.cpp")
@@ -126,30 +126,30 @@ macro(define_mpi_test class_name n_proc)
   set(test_name "${class_name}-${n_proc}-test")
   set(test_valgrind "${class_name}-${n_proc}-valgrind")
   #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
-  
+
   # executable rule
   if(TARGET ${test_binary})
-  else() 
-  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>) 
+  else()
+  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
   	target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
   	# add_dependencies(${test_binary} mpiexec_link)      # make
-  endif()	
+  endif()
 
   # rule to run the test
   # set(RUN_COMMAND ulimit -t 300\; )
-  # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")  
+  # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/pythonenv.sh ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      	      
+
 
   # rule to run the test under valgrind
-  add_custom_target(${test_valgrind} 
+  add_custom_target(${test_valgrind}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      
+
   # register the test into super_test
   add_dependencies(${super_test} ${test_name})
 
@@ -164,6 +164,7 @@ endmacro()
 # - has to be done manually to get correct dependencies on CMake's list files.
 
 
+add_subdirectory("test_scripts")
 add_subdirectory("scripts")
 add_subdirectory("input")
 add_subdirectory("flow")
@@ -181,8 +182,8 @@ add_subdirectory("dealii")
 #################################################################################################
 # Targets for Jenkis Jobs Builder
 
-# Make list of integration test names from list of subdirectories in the test directory. 
-# This should be manually finished before it can be used by use it in 
+# Make list of integration test names from list of subdirectories in the test directory.
+# This should be manually finished before it can be used by use it in
 add_custom_target(test-list
                   COMMAND ${CMAKE_COMMAND} -DDIRECTORY="${CMAKE_SOURCE_DIR}/tests" -DOUTPUT="${CMAKE_CURRENT_SOURCE_DIR}/test_list" -P ${CMAKE_CURRENT_SOURCE_DIR}/list_subdirs.cmake
                   )
@@ -196,14 +197,14 @@ add_custom_target(test-list
 # Rule to create XML definitions of Jenkins jobs and upload them to the server.
 set(JENKINS_JOBS_FILE ${CMAKE_CURRENT_BINARY_DIR}/jenkins-jobs-config.yaml)
 add_custom_target(jenkins-upload
-                  COMMAND jenkins-jobs --ignore-cache update ${JENKINS_JOBS_FILE} 
+                  COMMAND jenkins-jobs --ignore-cache --conf ${CMAKE_SOURCE_DIR}/config/jenkins.ini update ${JENKINS_JOBS_FILE}
                   DEPENDS ${JENKINS_JOBS_FILE}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
 
 # Rule to create XML definitions of Jenkins jobs in local directory. (for testing)
 add_custom_target(jenkins-test
-                  COMMAND jenkins-jobs test ${JENKINS_JOBS_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}                 
+                  COMMAND jenkins-jobs --conf ${CMAKE_SOURCE_DIR}/config/jenkins.ini test ${JENKINS_JOBS_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}
                   DEPENDS ${JENKINS_JOBS_FILE}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
@@ -214,4 +215,3 @@ add_custom_command(OUTPUT ${JENKINS_JOBS_FILE}
                   DEPENDS jenkins_jobs_template.yaml
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
-
