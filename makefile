@@ -197,20 +197,20 @@ checkout-submodule-branches:
 #	  > $(DOC_DIR)/flow_version.tex
 
 # make empty file with replace rules if we do not have one
-$(DOC_DIR)/add_to_ref_doc.txt: 
-	touch $(DOC_DIR)/add_to_ref_doc.txt
+#$(DOC_DIR)/add_to_ref_doc.txt: 
+#	touch $(DOC_DIR)/add_to_ref_doc.txt
 	
 # update file with replace rules according to acctual patterns appearing in input_refecence		
-update_add_doc: $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/add_to_ref_doc.txt
-	cat $(DOC_DIR)/input_reference_raw.tex \
-	| grep 'AddDoc' |sed 's/^.*\(\\AddDoc{[^}]*}\).*/\1/' \
-	> $(DOC_DIR)/add_to_ref_doc.list
-	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/add_to_ref_doc.list	
+#update_add_doc: $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/add_to_ref_doc.txt
+#	cat $(DOC_DIR)/input_reference_raw.tex \
+#	| grep 'AddDoc' |sed 's/^.*\(\\AddDoc{[^}]*}\).*/\1/' \
+#	> $(DOC_DIR)/add_to_ref_doc.list
+#	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/add_to_ref_doc.list	
 	
 # make final input_reference.tex, applying replace rules
 #inputref: $(DOC_DIR)/flow_version.tex $(DOC_DIR)/input_reference_raw.tex update_add_doc
-inputref: $(DOC_DIR)/input_reference_raw.tex update_add_doc
-	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/input_reference.tex	
+#inputref: $(DOC_DIR)/input_reference_raw.tex update_add_doc
+#	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/input_reference.tex	
 
 
 # target will run CPack in build_tree directory
