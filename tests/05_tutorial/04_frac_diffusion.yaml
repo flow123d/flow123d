@@ -19,7 +19,7 @@
 ### Input
 ####Geometry and mesh generation
 ##
-##The simulation area 100 × 100 m is cut by two flow fractures from which two blind fractures separate (see Figure {@fig:mesh}).
+##The simulation area $100 \times 100$ m is cut by two flow fractures from which two blind fractures separate (see Figure {@fig:mesh}).
 ##The cross-section of the fractures is 0.01 m.
 ##
 ##Instead of defining a geometry with thin 2D fractures (which would yield too large mesh), in Flow123d one can treat fractures as lines with intrinsic cross-section area (or surfaces with intrinsic width).
@@ -87,7 +87,7 @@
 ##      bc_type: dirichlet
 ##      bc_piezo_head: 0
 ##
-##The above values were chosen in order to obtain filtration flux in the flux-fractures approximately 1 × $10^{-9}$ m/s ($\approx$ 0.1 m/yr). Other sides are nonpermeable.
+##The above values were chosen in order to obtain filtration flux in the flux-fractures approximately $1 \times 10^{-9}$ m/s ($\approx$ 0.1 m/yr). Other sides are nonpermeable.
 ##
 #### Transport model
 ##

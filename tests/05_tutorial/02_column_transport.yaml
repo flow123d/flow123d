@@ -34,12 +34,12 @@
 ##
 ##      substances: O-18
 ##
-##The end time of the simulation is set in the section ```time``` to value 1e10 second (381 years):
+##The end time of the simulation is set in the section ```time``` to value 1e10 seconds (381 years):
 ## 
 ##      time:
 ##        end_time: 1e10
 ##
-##The output files can be generated for specific time values. We set the time step for output to 1e8 second (=3 years and 2 months):
+##The output files can be generated for specific time values. We set the time step for output to 1e8 seconds (=3 years and 2 months):
 ##
 ##      output_stream:
 ##        times:

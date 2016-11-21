@@ -14,7 +14,7 @@
 ##
 ### Input
 #### Geometry
-##We consider a two-dimensional model 5000 × 5000 m with two vertical wells at the distance of 3000 m. The wells are 4300 m deep with the diameter approx. 11 cm (Figure {@fig:BCD}).
+##We consider a two-dimensional model 5000 $\times$ 5000 m with two vertical wells at the distance of 3000 m. The wells are 4300 m deep with the diameter approx. 11 cm (Figure {@fig:BCD}).
 ##In order to better capture the 3D nature of the problem, we set ```cross_section``` (width) of the rock region to 100 m (the value was gained from calibration), and the cross section of the wells to 0.04 m${}^2$.
 ##
 ##Parameter |Value
@@ -34,7 +34,7 @@
 ##
 ##
 #### Hydraulic model
-##The hydraulic conductivity was set to 1 × $10^{-10}$ m/s for the rock and to 1 × $10^{-4}$ m/s for the exchanger zone.
+##The hydraulic conductivity was set to 1 $\times$ $10^{-10}$ m/s for the rock and to 1 $\times$ $10^{-4}$ m/s for the exchanger zone.
 ##
 ##      - region: rock
 ##        cross_section: 100
@@ -88,27 +88,27 @@
 ##            solid_heat_capacity: 790
 ##            solid_heat_conductivity: 2.5
 ##
-##The temperature on the surface is set to 283 K (=10°C):
+##The temperature on the surface is set to 283 K ($=10^\circ$C):
 ##
 ##      - region: .surface
 ##        bc_type: dirichlet
 ##        bc_temperature: !FieldFormula
 ##          value: 10+273.15
 ##
-##The injected water has temperature 15°C:
+##The injected water has temperature $15^\circ$C:
 ##
 ##      - region: .well1_surface
 ##        bc_type: dirichlet
 ##        bc_temperature: !FieldFormula
 ##          value: 15+273.15
 ##
-##The temperature on the bottom and sides as well as the initial temperature in the rock and the wells is then prescribed in agreement with typical geological gradient, approx. 1°C / 33 m:
+##The temperature on the bottom and sides as well as the initial temperature in the rock and the wells is then prescribed in agreement with typical geological gradient, approx. $1^\circ$C / 33 m:
 ##
 ##        init_temperature: !FieldFormula
 ##          value: 10-z/5000*150+273.15
 ##
 ##
-##The porosity was set to 1 × $10^{-5}$ for rock and 1 × $10^{-4}$ for exchanger.
+##The porosity was set to 1 $\times$ $10^{-5}$ for rock and 1 $\times$ $10^{-4}$ for exchanger.
 ##The transition coefficient of wells ("fracture_sigma") was set to 0 in rock surrounding and to 1 in deep surrounding:
 ##
 ##      - region: wells
