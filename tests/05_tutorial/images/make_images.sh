@@ -3,7 +3,7 @@
 # Tutorial 01
 
 # make image of mesh, bc and flow field
-gmsh make_01_flow.geo
+gmsh - make_01_flow.geo
 pdfjam 01_mesh.pdf 01_bc.pdf 01_flow.pdf --nup 3x1 --papersize '{20cm,10cm}' --delta '2cm 0cm' --outfile 01_mesh_bc_flux.pdf
 rm 01_mesh.pdf 01_flow.pdf
 
@@ -25,7 +25,7 @@ plot '<grep rock ../ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/3
      '<grep .tunnel ../ref_out/02_column_transport/mass_balance.txt' u (\$1/86400/365):4 w l axes x1y2 t '.tunnel'" | gnuplot
 
 # make image with concentrations
-gmsh make_02_transport.geo
+gmsh - make_02_transport.geo
 pdfjam 02_transport_1.pdf 02_transport_2.pdf 02_transport_3.pdf 02_transport_4.pdf --nup 4x1 --papersize '{20cm,10cm}' --outfile 02_transport.pdf
 rm 02_transport_[1234].pdf
 
@@ -56,22 +56,72 @@ plot '03_conc_tunnel.txt' u (timecolumn(1,\"%d.%m.%Y\")):2 w l lw 0.1 lc \"00000
 " | gnuplot
 
 # make image of flux and pressure
-gmsh make_03.geo
+gmsh - make_03.geo
 
 
 
-# Tutorial 05
+# Tutorial 04
+
+# image with geometry and mesh
+gmsh - make_04.geo
+pdfjam 04_geo.pdf 04_mesh.pdf --nup 2x1 --papersize '{20cm,10cm}' --outfile 04_geomesh.pdf
+rm -rf 04_mesh.pdf
+
+echo "
+set terminal pdf color enhanced lw 2
+set output '04_mass_flux.pdf'
+set xlabel 'time [years]'
+set ylabel 'flux in rock [kg/year]'
+set y2label 'flux in fractures [kg/year]'
+set ytics nomirror
+set y2tics
+plot '< grep \\\".right\\\" 04_diff_noblind_mass_balance.txt' u 1:4 w l axes x1y1 t 'rock (no blind fractures)',\\
+     '< grep \\\".right\\\" ../ref_out/04_frac_diffusion/mass_balance.txt' u 1:4 w l axes x1y1 t 'rock',\\
+     '< grep \\\".right_points\\\" 04_diff_noblind_mass_balance.txt' u 1:4 w l axes x1y2 t 'fractures (no blind)',\\
+     '< grep \\\".right_points\\\" ../ref_out/04_frac_diffusion/mass_balance.txt' u 1:4 w l axes x1y2 t 'fractures'
+" | gnuplot
+
+
+
+# Tutorial 05 (frac-sorption)
+
+echo "
+set terminal pdf color enhanced lw 2
+set output '05_mass_flux.pdf'
+set xlabel 'time [years]'
+set ylabel 'flux in fracture [kg/year]'
+plot '< grep .right_points ../ref_out/05_frac_sorption/mass_balance.txt | grep \\\"I\\\"' u 1:4 w l t 'I',\\
+     '< grep .right_points ../ref_out/05_frac_sorption/mass_balance.txt | grep \\\"Ra-lin\\\"' u 1:4 w l t 'Ra',\\
+     '< grep .right_points ../ref_out/05_frac_sorption/mass_balance.txt | grep \\\"Se-lang\\\"' u 1:4 w l t 'Se'
+" | gnuplot
+
+
+# Tutorial 06 (dual porosity)
+
+echo "
+set terminal pdf color enhanced lw 2
+set output '06_mass_flux.pdf'
+set xlabel 'time [years]'
+set ylabel 'flux in fracture [kg/year]'
+plot '< grep \\\".right_points\\\" ../ref_out/06_frac_dualpor/mass_balance.txt' u 1:4 w l t 'dual porosity',\\
+     '< grep \\\".right_points\\\" 06_frac_nodualpor_mass_balance.txt' u 1:4 w l t 'flow in blind fractures'
+" | gnuplot
+
+
+
+
+# Tutorial 07 (heat)
 
 #image with bc and mesh
-gmsh make_05.geo
-pdfjam 05_bc.pdf 05_mesh.pdf --nup 2x1 --papersize '{20cm,10cm}' --outfile 05_bcmesh.pdf
-rm -rf 05_mesh.pdf
+gmsh - make_07.geo
+pdfjam 07_bc.pdf 07_mesh.pdf --nup 2x1 --papersize '{20cm,10cm}' --outfile 07_bcmesh.pdf
+rm -rf 07_mesh.pdf
 
 #make plot of production power
 echo "
 set terminal pdf color enhanced lw 2
-set output '05_power.pdf'
+set output '07_power.pdf'
 set xlabel 'time [years]'
-plot [1:] \"< sed -n '/\\\\.well[12]_surface\\\"/p' ../ref_out/05_heat/energy_balance.txt | awk 'BEGIN {t=0;v=0} {if (t==\$1) v+=\$4; else {print t, v; t=\$1;v=\$4}} END {print t,v}'\" u (\$1/365.25/86400):(-\$2/1e6) w lp t 'power [MW]',\\
+plot [1:] \"< sed -n '/\\\\.well[12]_surface\\\"/p' ../ref_out/07_heat/energy_balance.txt | awk 'BEGIN {t=0;v=0} {if (t==\$1) v+=\$4; else {print t, v; t=\$1;v=\$4}} END {print t,v}'\" u (\$1/365.25/86400):(-\$2/1e6) w lp t 'power [MW]',\\
           25 dt 2 not
 " | gnuplot
