@@ -196,13 +196,3 @@ ostream& operator<<(ostream& stream, const TimeMarks &marks)
         stream << *it << endl;
     return stream;
 }
-
-
-std::size_t TimeMarkHash::operator()(TimeMark const& mark) const
-{
-    std::size_t seed = 0;
-    boost::hash_combine(seed, mark.time());
-    boost::hash_combine(seed, mark.mark_type().bitmap_);
-    boost::hash_combine(seed, mark.mark_type().equation_index_);
-    return seed;
-}
