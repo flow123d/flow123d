@@ -44,8 +44,13 @@ public:
     unsigned int ele_global_idx() const
     { return ele_global_idx_;}
     
-    void set_element(int global_idx)
-    { ele_global_idx_ = global_idx;}
+    unsigned int intersection_ele_global_idx() const
+    { return intersection_ele_global_idx_;}
+    
+    void set_element(int global_idx, int intersection_global_idx)
+    { ele_global_idx_ = global_idx;
+      intersection_ele_global_idx_ = intersection_global_idx;
+    }
     
     void set_complement()
     { complement_ = true;}
@@ -59,6 +64,8 @@ protected:
     
     /// Index of element to which this data belongs to.
     unsigned int ele_global_idx_;
+    
+    unsigned int intersection_ele_global_idx_;
     
     bool complement_;
 };
