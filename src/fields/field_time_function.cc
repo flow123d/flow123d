@@ -29,10 +29,11 @@ const Input::Type::Record & FieldTimeFunction<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldTimeFunction", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field time-dependent function in space.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
 		.declare_key("time_function", TableFunction<Value>::get_input_type(), it::Default::obligatory(),
 									"Values of time series initialization of Field.")
-		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
-									"Definition of unit.")
+		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys(), it::Default::optional(),
+		//							"Definition of unit.")
         .allow_auto_conversion("time_function")
 		.close();
 }
