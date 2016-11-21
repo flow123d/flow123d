@@ -33,6 +33,7 @@ cmake_minimum_required(VERSION 2.8)
        tests.tex
        transport_model.tex
        tutorial.tex
+       tutorial_new.tex
        version_comparision.tex
        
        # Also add latex table or image if you have it in a separate file.
@@ -43,6 +44,40 @@ cmake_minimum_required(VERSION 2.8)
       tests_graphics 
       figures
   )
+  
+  
+  # generate latex files from tutorials in yaml format
+  set(tutorial_files
+       01_column.yaml
+       02_column_transport.yaml
+       03_tunnel.yaml
+       04_frac_diffusion.yaml
+       05_frac_sorption.yaml
+       06_frac_dualpor.yaml
+       07_heat.yaml
+  )
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/make_tex.sh
+     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../tests/05_tutorial/make_tex.sh
+     COMMAND "cp" make_tex.sh ${CMAKE_CURRENT_BINARY_DIR}
+     COMMAND "cp" -r images ${CMAKE_CURRENT_BINARY_DIR}
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../tests/05_tutorial/
+  )
+  foreach(f ${tutorial_files})
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${f}
+       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../tests/05_tutorial/${f}
+       COMMAND "cp" ${f} ${CMAKE_CURRENT_BINARY_DIR}
+       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../tests/05_tutorial/
+    )
+    add_custom_command(OUTPUT ${f}.tex
+       DEPENDS ${f} make_tex.sh
+       COMMAND "${CMAKE_CURRENT_BINARY_DIR}/make_tex.sh" ${f}
+       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+    list(APPEND doc_inputs ${f}.tex)
+  endforeach(f)
+
+  
+  
 
   MESSAGE(STATUS "Targets for LaTeX documentation...")
   INCLUDE(${CMAKE_SOURCE_DIR}/../../CMake/Modules/UseLATEX.cmake)

@@ -3,6 +3,8 @@ common_config:
   memory_limit: 1000
 
 test_cases:
-- files: 05_heat.yaml
+- files: 05_frac_sorption.yaml
+  time_limit: 60
+- files: 07_heat.yaml
   proc: [ 1 ]
   time_limit: 60

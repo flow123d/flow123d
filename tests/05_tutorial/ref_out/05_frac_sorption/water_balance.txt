@@ -1,0 +1,13 @@
+"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"flow_fracture1"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"flow_fracture2"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"blind_fracture1"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"blind_fracture2"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"rock"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".left_points"	"water_volume"	0.000633629	0.000633629	0	0	0	0	0	0	0	0	0	0
+0	".right_points"	"water_volume"	-0.000624381	0	-0.000624381	0	0	0	0	0	0	0	0	0
+0	".left"	"water_volume"	3.1676e-05	3.1676e-05	0	0	0	0	0	0	0	0	0	0
+0	".right"	"water_volume"	-4.09276e-05	0	-4.09276e-05	0	0	0	0	0	0	0	0	0
+0	".top"	"water_volume"	3.72838e-17	2.91597e-16	-2.54313e-16	0	0	0	0	0	0	0	0	0
+0	".bottom"	"water_volume"	1.54105e-17	2.27746e-17	-7.3641e-18	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"water_volume"	8.18789e-16	8.18789e-16	0	0	0	0	0	0	0	0	0	0
