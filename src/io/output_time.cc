@@ -36,7 +36,7 @@ FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 namespace IT = Input::Type;
 
 const IT::Record & OutputTime::get_input_type() {
-    return IT::Record("OutputStream", "Parameters of output.")
+    return IT::Record("OutputStream", "Configuration of the spatial output of a single balance equation.")
 		// The stream
 		.declare_key("file", IT::FileName::output(), IT::Default::read_time("Name of the equation associated with the output stream."),
 				"File path to the connected output file.")

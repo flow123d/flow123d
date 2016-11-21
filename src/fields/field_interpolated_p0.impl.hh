@@ -213,7 +213,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 				}
 			}
 		} else {
-			WarningOut().fmt("Processed element with idx {} is out of source mesh!\n", elm.idx());
+			WarningOut().fmt("FieldInterpolatedP0, boundary element with idx {} is out of the source mesh!\n", elm.idx());
 		}
 		END_TIMER("compute_pressure");
 
