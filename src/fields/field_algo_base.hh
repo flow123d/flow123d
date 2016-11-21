@@ -105,7 +105,11 @@ public:
        static const Input::Type::Instance & get_input_type_instance( Input::Type::Selection value_selection=Input::Type::Selection() );
 
        /**
+        * Returns auxiliary record with keys common to all field algorithms.
+        */
        static const Input::Type::Record & get_field_algo_common_keys();
+
+       /**
         * This static method gets accessor to abstract record with function input,
         * dispatch to correct constructor and initialize appropriate function object from the input.
         * Returns shared pointer to  FunctionBase<>.

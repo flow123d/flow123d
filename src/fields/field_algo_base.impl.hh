@@ -92,13 +92,13 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 	return it::Instance(get_input_type(), param_vec).close();
 }
 
-
+template <int spacedim, class Value>
 const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys() {
     auto unit_record = it::Record("Unit", "Specify unit of an input value. \n"
                                    "Evaluation of the unit formula results into a coeficient and a "
                                    "unit in terms of powers of base SI units. The unit must match "
                                    "expected SI unit of the value, while the value provided on the input "
-                                   "is multiplied by the coefficient before further processing.")
+                                   "is multiplied by the coefficient before further processing."
                                    "The unit formula have form: <UnitExpr>;<Variable>=<Number>*<UnitExpr>;..., "
                                    "where <Variable> is a variable name and <UnitExpr> is a units expression "
                                    "which consists of products and divisions of terms, where a term has "
@@ -114,7 +114,7 @@ const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_
                                 "Unit of the field values provided in the main input file, in the external file, or"
                                 "by a function (FieldPython).")
         .close();
-
+}
 
 template <int spacedim, class Value>
 shared_ptr< FieldAlgorithmBase<spacedim, Value> >
