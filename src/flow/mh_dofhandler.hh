@@ -136,11 +136,13 @@ public:
     
     int total_size();
     
-    int *row_4_sing;        //< singularity index to matrix row (lagrange multiplier)
+//     int *row_4_sing;        //< singularity index to matrix row (lagrange multiplier)
+    int *row_4_vel_sing;        //< velocity singularity enr index to matrix row
+    int *row_4_press_sing;        //< velocity singularity enr index to matrix row
     
     unsigned int n_enrichments();
     
-    bool enrich_velocity, enrich_pressure, continuous_pu;
+    bool enrich_velocity, enrich_pressure, continuous_pu, single_enr;
     
 protected:
     static const int empty_node_idx;
@@ -150,7 +152,7 @@ protected:
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma);
     
-    void find_ele_to_enrich(SingularityPtr sing,
+    void find_ele_to_enrich(SingularityPtr sing, int ele1d_idx,
                             ElementFullIter ele, double radius, int& new_enrich_node_idx);
     
     void clear_mesh_flags();
@@ -302,10 +304,19 @@ public:
         return ele->xfem_data != nullptr;
     }
     
-    int sing_row(uint local_enrichment_index){
-        return dh->row_4_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
+//     int sing_row(uint local_enrichment_index){
+//         return dh->row_4_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
+//     }
+
+
+    int vel_sing_row(uint local_enrichment_index){
+        return dh->row_4_vel_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
     }
-    
+
+    int press_sing_row(uint local_enrichment_index){
+        return dh->row_4_press_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
+    }
+
 //     int get_dofs(Quantity quant, int dofs[])
 //     {
 //         uint i;
@@ -326,10 +337,16 @@ public:
         
         if(is_enriched() && ! ele->xfem_data->is_complement()){
             XFEMElementSingularData* xd = xfem_data_sing();
-            for(uint w=0; w< xd->n_enrichments(); w++)
-                for(uint j=0; j< xd->n_enriched_dofs(Quantity::velocity,w); j++, i++){
-                    dofs[i] = xd->global_enriched_dofs(Quantity::velocity, w)[j];
+            for(uint w=0; w< xd->n_enrichments(); w++){
+                if(dh->single_enr && dh->enrich_velocity){
+                    dofs[i] = dh->row_4_vel_sing[xd->global_enrichment_index(w)];
+                    i++;
                 }
+                else{
+                    for(uint j=0; j< xd->n_enriched_dofs(Quantity::velocity,w); j++, i++)
+                        dofs[i] = xd->global_enriched_dofs(Quantity::velocity, w)[j];
+                }
+            }
         }
         return i;
     }
@@ -341,10 +358,16 @@ public:
         
         if(is_enriched() && ! ele->xfem_data->is_complement()){
             XFEMElementSingularData* xd = xfem_data_sing();
-            for(uint w=0; w< xd->n_enrichments(); w++)
-                for(uint j=0; j< xd->n_enriched_dofs(Quantity::pressure,w); j++, i++){
-                    dofs[i] = xd->global_enriched_dofs(Quantity::pressure, w)[j];
+            for(uint w=0; w< xd->n_enrichments(); w++){
+                if(dh->single_enr && dh->enrich_pressure){
+                    dofs[i] = dh->row_4_press_sing[xd->global_enrichment_index(w)];
+                    i++;
                 }
+                else{
+                    for(uint j=0; j< xd->n_enriched_dofs(Quantity::pressure,w); j++, i++)
+                        dofs[i] = xd->global_enriched_dofs(Quantity::pressure, w)[j];
+                }
+            }
         }
         return i;
     }

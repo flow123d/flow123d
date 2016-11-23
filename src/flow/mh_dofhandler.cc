@@ -39,10 +39,13 @@ row_4_edge(nullptr),
 edge_ds(nullptr),
 el_ds(nullptr),
 side_ds(nullptr),
-row_4_sing(nullptr),
+// row_4_sing(nullptr),
+row_4_vel_sing(nullptr),
+row_4_press_sing(nullptr),
 enrich_velocity(false),
 enrich_pressure(false),
-continuous_pu(false)
+continuous_pu(false),
+single_enr(false)
 {}
 
 MH_DofHandler::~MH_DofHandler()
@@ -57,7 +60,9 @@ MH_DofHandler::~MH_DofHandler()
     delete [] side_row_4_id;
     delete [] edge_4_loc;
     delete []  row_4_edge;
-    delete [] row_4_sing;
+//     delete [] row_4_sing;
+    if(row_4_vel_sing) delete []  row_4_vel_sing;
+    if(row_4_press_sing) delete []  row_4_press_sing;
 }
 
 
@@ -412,14 +417,17 @@ void MH_DofHandler::update_standard_dofs()
         row_4_edge[i] = dof;
     }
     
-    dof = offset_enr_lagrange;
-    row_4_sing = new int[singularities_12d_.size()];
-    for(unsigned int i=0; i < singularities_12d_.size(); i++, dof++){
-        row_4_sing[i] = dof;
-    }
-    
+//     dof = offset_enr_lagrange;
+//     row_4_sing = new int[singularities_12d_.size()];
+//     for(unsigned int i=0; i < singularities_12d_.size(); i++, dof++){
+//         row_4_sing[i] = dof;
+//     }
+
 //     print_array(row_4_el, mesh_->n_elements(), "row_4_el(pressure)");
 //     print_array(row_4_edge, mesh_->n_edges(), "row_4_edge(lagrange pressure)");
+//     print_array(row_4_vel_sing, n_enrichments(), "row_4_vel_sing");
+//     print_array(row_4_press_sing, n_enrichments(), "row_4_press_sing");
+    
 }
 
 
@@ -518,25 +526,25 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
 //                 node_values.push_back(std::map<int, double>());
 //                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
                 
-                unsigned int sing_idx = singularities_12d_.size()-1;
-                if(ele->xfem_data == nullptr){
-                    xfem_data_1d.push_back(XFEMComplementData(sing, sing_idx));
-                    xfem_data_1d.back().set_element(idx);        
-                    xfem_data_1d.back().set_complement();
-                    ele->xfem_data = & xfem_data_1d.back();
-                }
-                else{
-                    auto xdata = static_cast<XFEMComplementData*>(ele->xfem_data);
-                    ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMComplementData Type!");
-                    xdata->add_data(sing, sing_idx);
-                }
+//                 unsigned int sing_idx = singularities_12d_.size()-1;
+//                 if(ele->xfem_data == nullptr){
+//                     xfem_data_1d.push_back(XFEMComplementData(sing, sing_idx));
+//                     xfem_data_1d.back().set_element(idx, ele2d->index());        
+//                     xfem_data_1d.back().set_complement();
+//                     ele->xfem_data = & xfem_data_1d.back();
+//                 }
+//                 else{
+//                     auto xdata = static_cast<XFEMComplementData*>(ele->xfem_data);
+//                     ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMComplementData Type!");
+//                     xdata->add_data(sing, sing_idx);
+//                 }
                 
                 
                 //TODO: suggest proper enrichment radius
                 double enr_radius = 1.5*std::sqrt(ele2d->measure());
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
                 clear_mesh_flags();
-                find_ele_to_enrich(singularities.back(), ele2d, enr_radius, new_enrich_node_idx);
+                find_ele_to_enrich(singularities.back(), idx, ele2d, enr_radius, new_enrich_node_idx);
             }
         }
     }
@@ -564,7 +572,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
         xd.create_sing_quads(ele);
         DBGVAR(xd.n_singularities_inside());
 //         xd.print(cout);
-        
+        ele->xfem_data = &xd;
         //HACK:
         if(! enrich_pressure)
             xd.global_enriched_dofs()[Quantity::pressure].resize(xd.n_enrichments());
@@ -589,12 +597,20 @@ void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
     //distribute enriched dofs:
     temp_offset = offset_enr_velocity; // will return last dof + 1 (it means new available dof)
     if(enrich_velocity) {
-        if(continuous_pu){
-            // temporary dof vector
-            std::vector<std::vector<int>> enr_dofs_velocity(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
-            distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+        if(single_enr){
+            row_4_vel_sing = new int[singularities_12d_.size()];
+            for(unsigned int i=0; i < singularities_12d_.size(); i++, temp_offset++)
+                row_4_vel_sing[i] = temp_offset;
         }
-        else distribute_enriched_dofs(temp_offset, Quantity::velocity);
+        else
+        {
+            if(continuous_pu){
+                // temporary dof vector
+                std::vector<std::vector<int>> enr_dofs_velocity(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
+                distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+            }
+            else distribute_enriched_dofs(temp_offset, Quantity::velocity);
+        }
     }
     
     offset_pressure = temp_offset;
@@ -602,19 +618,29 @@ void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
     
     temp_offset = offset_enr_pressure; // will return last dof + 1 (it means new available dof)
     if(enrich_pressure){
-        if(continuous_pu){
-            // temporary dof vector
-            std::vector<std::vector<int>> enr_dofs_pressure(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
-            distribute_enriched_dofs(enr_dofs_pressure, temp_offset, Quantity::pressure);
+        if(single_enr){
+            row_4_press_sing = new int[singularities_12d_.size()];
+            for(unsigned int i=0; i < singularities_12d_.size(); i++, temp_offset++)
+                row_4_press_sing[i] = temp_offset;
         }
-        else distribute_enriched_dofs(temp_offset, Quantity::pressure);
+        else{
+            if(continuous_pu){
+                // temporary dof vector
+                std::vector<std::vector<int>> enr_dofs_pressure(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
+                distribute_enriched_dofs(enr_dofs_pressure, temp_offset, Quantity::pressure);
+            }
+            else distribute_enriched_dofs(temp_offset, Quantity::pressure);
+        }
     }
     offset_edges = temp_offset;
-    offset_enr_lagrange = offset_edges + mesh_->n_edges();    
+//     offset_enr_lagrange = offset_edges + mesh_->n_edges();
+    offset_enr_lagrange = offset_edges + mesh_->n_edges() - 1;
+    
 }
 
 
 void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
+                                       int ele1d_idx,
                                    ElementFullIter ele,
                                    double radius,
                                    int& new_enrich_node_idx
@@ -634,8 +660,10 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
             enrich = true;
         }
     }
+    
 //     if(ele->index() == 5) enrich = true;
 //     if(ele->index() == 49) enrich = true;
+//     if(ele->index() == 645) enrich = true;
     
     // front advancing enrichment of neighboring elements
     if(enrich){
@@ -657,7 +685,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
                 xdata->global_enriched_dofs()[0].resize(1);
                 xdata->global_enriched_dofs()[1].resize(1);
             }
-            xdata->set_element(ele->index());
+            xdata->set_element(ele->index(), ele1d_idx);
             ele->xfem_data = xdata;
         }
         else{
@@ -693,7 +721,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
             for(int j=0; j < edge->n_sides;j++) {
                 if (edge->side(j)->element() != ele){
 //                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
-                    find_ele_to_enrich(sing,edge->side(j)->element(),radius, new_enrich_node_idx);
+                    find_ele_to_enrich(sing,ele1d_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
                 }
             }
         }
