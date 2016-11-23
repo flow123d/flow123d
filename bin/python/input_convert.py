@@ -14,12 +14,13 @@ import sys
 import os
 
 # add common dir to python path
-common_dir = os.path.join(os.path.split(
-    os.path.dirname(os.path.realpath(__file__)))[0], "src/python/GeoMop/common")
+__dir__ = os.path.realpath(os.path.dirname(__file__))
+python_lib = os.path.realpath(os.path.join(__dir__, '..', '..', 'lib', 'python', 'flow123d'))
+
+common_dir = os.path.realpath(os.path.join(python_lib, 'GeoMop', 'common'))
 sys.path.insert(1, common_dir)
 # add importer dir to python path
-importer_dir = os.path.join(os.path.split(
-    os.path.dirname(os.path.realpath(__file__)))[0], "src/python/GeoMop/ModelEditor")
+importer_dir = os.path.realpath(os.path.join(python_lib, 'GeoMop', 'ModelEditor'))
 sys.path.insert(1, importer_dir)
 
 import importer
