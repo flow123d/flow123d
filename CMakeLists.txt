@@ -826,11 +826,12 @@ set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2
 install(DIRECTORY bin/config                DESTINATION bin/)
 install(DIRECTORY bin/ndiff                 DESTINATION bin/)
 install(DIRECTORY bin/paraview              DESTINATION bin/)
-install(DIRECTORY bin/python                DESTINATION bin/)
+install(DIRECTORY bin/python                DESTINATION bin/ PATTERN "*.pyc" EXCLUDE)
 
 # binary files
 install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
 install(PROGRAMS  bin/runtest               DESTINATION bin/)
+install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/) 
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 
@@ -840,7 +841,6 @@ install(FILES     README.md                 DESTINATION .)
 install(FILES     CHANGES.md                DESTINATION .)
 
 # install doc
-install(DIRECTORY doc/con_syntax            DESTINATION doc/)
 install(FILES     doc/petsc_options_help    DESTINATION doc/)
 install(FILES     doc/LICENSE               DESTINATION doc/)
 install(FILES     doc/GPL3                  DESTINATION doc/)
@@ -850,17 +850,16 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/htmldoc/html/src/                     DEST
 
 
 # install tests dir
-install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
 find_program (MAKE_EXECUTABLE               NAMES make gmake)
+install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
 install(DIRECTORY tests                     DESTINATION .)
 install(PROGRAMS  tests/runtest             DESTINATION tests)
 
 
 # python libs, sources and config files
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/python/ DESTINATION lib/python/flow123d)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/python  DESTINATION bin/python)
-install(FILES     config/host_table.yaml          DESTINATION config/)
-install(FILES     config/artifacts.yaml           DESTINATION config/)
+install(DIRECTORY src/python/               DESTINATION lib/python/flow123d)
+install(FILES     config/host_table.yaml    DESTINATION config/)
+# install(FILES     config/artifacts.yaml           DESTINATION config/)
 
 
 # To install MSVC runtime libraries ... ?
