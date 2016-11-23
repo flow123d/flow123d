@@ -140,6 +140,7 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("enrich_velocity", it::Bool(), it::Default("false"), "Use enrichment for velocity.")
         .declare_key("enrich_pressure", it::Bool(), it::Default("false"), "Use enrichment for pressure.")
         .declare_key("continuous_pu", it::Bool(), it::Default("false"), "Set true for continuous partition of unity.")
+        .declare_key("single", it::Bool(), it::Default("false"), "Type of enrichment.")
         .close();
         
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
@@ -351,9 +352,12 @@ void DarcyMH::initialize() {
         mh_dh.enrich_velocity = xfem_rec.val<bool>("enrich_velocity");
         mh_dh.enrich_pressure = xfem_rec.val<bool>("enrich_pressure");
         mh_dh.continuous_pu = xfem_rec.val<bool>("continuous_pu");
+        mh_dh.single_enr = xfem_rec.val<bool>("single");
         
         DBGVAR(mh_dh.enrich_velocity);
         DBGVAR(mh_dh.enrich_pressure);
+        DBGVAR(mh_dh.continuous_pu);
+        DBGVAR(mh_dh.single_enr);
         
         // intersections
         intersections_ = std::make_shared<computeintersection::InspectElements>(data_->mesh);
@@ -974,38 +978,47 @@ void DarcyMH::allocate_mh_matrix()
         // edges-ele
         ls->mat_set_values(nsides, edge_rows, ndofs_press, dofs_press, zeros);
         
-        if(ele_ac.is_enriched()){
-            if(ele_ac.xfem_data_pointer()->is_complement()){
-                auto xd = static_cast<XFEMComplementData*>(ele_ac.xfem_data_pointer());
-                const int nw = xd->n_enrichments();
-                
-                int w_rows[nw];
-                for(int w=0; w < nw; w++){
-                    w_rows[w] = ele_ac.sing_row(w);
-                }
-                    
-                // singularity edge integrals pressure - sing lagrange multiplier
-                ls->mat_set_values(nw, w_rows, 1, &ele_row, zeros);
-                ls->mat_set_values(1, &ele_row, nw, w_rows, zeros);
-            }
-            else{
-                const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
-                const int nw = xd.n_singularities_inside();
-                
-                if(nw > 0){
-    //                 DBGVAR(nw);
-                    int w_rows[nw];
-                    for(int w=0; w < xd.n_enrichments(); w++){
-                        if(xd.is_singularity_inside(w)){
-                            w_rows[w] = ele_ac.sing_row(w);
-                        }
-                    }
-                    
-                    // singularity edge integrals for velocity
-                    ls->mat_set_values(nw, w_rows, ndofs_vel, dofs_vel, zeros);
-                    ls->mat_set_values(ndofs_vel, dofs_vel, nw, w_rows, zeros);
-                }
-            }
+//         if(ele_ac.is_enriched()){
+//             if(ele_ac.xfem_data_pointer()->is_complement()){
+//                 auto xd = static_cast<XFEMComplementData*>(ele_ac.xfem_data_pointer());
+//                 const int nw = xd->n_enrichments();
+//                 
+//                 int w_rows[nw];
+//                 for(int w=0; w < nw; w++){
+//                     w_rows[w] = ele_ac.sing_row(w);
+//                 }
+//                     
+//                 // singularity edge integrals pressure - sing lagrange multiplier
+//                 ls->mat_set_values(nw, w_rows, 1, &ele_row, zeros);
+//                 ls->mat_set_values(1, &ele_row, nw, w_rows, zeros);
+//             }
+//             else{
+//                 const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
+//                 const int nw = xd.n_singularities_inside();
+//                 
+//                 if(nw > 0){
+//     //                 DBGVAR(nw);
+//                     int w_rows[nw];
+//                     for(int w=0; w < xd.n_enrichments(); w++){
+//                         if(xd.is_singularity_inside(w)){
+//                             w_rows[w] = ele_ac.sing_row(w);
+//                         }
+//                     }
+//                     
+//                     // singularity edge integrals for velocity
+//                     ls->mat_set_values(nw, w_rows, ndofs_vel, dofs_vel, zeros);
+//                     ls->mat_set_values(ndofs_vel, dofs_vel, nw, w_rows, zeros);
+//                 }
+//             }
+//         }
+        
+        if(ele_ac.is_enriched() && ele_ac.dim() == 2){
+            int ele1d_row, ele2d_row;
+            ele1d_row = mh_dh.row_4_el[ele_ac.xfem_data_pointer()->intersection_ele_global_idx()];
+            ele2d_row = ele_row;
+            // singularity edge integrals pressure - sing lagrange multiplier
+            ls->mat_set_value(ele1d_row, ele2d_row, 0);
+            ls->mat_set_value(ele2d_row, ele1d_row, 0);
         }
         
 
@@ -1057,12 +1070,12 @@ void DarcyMH::allocate_mh_matrix()
         }
     }
 
-    // singularity lagrange multiplier (diagonal)
-    for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
-        int w_row = mh_dh.row_4_sing[w];
-//         DBGVAR(w_row);
-        ls->mat_set_value(w_row, w_row, 0.0);
-    }
+//     // singularity lagrange multiplier (diagonal)
+//     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
+//         int w_row = mh_dh.row_4_sing[w];
+// //         DBGVAR(w_row);
+//         ls->mat_set_value(w_row, w_row, 0.0);
+//     }
     
     // alloc edge diagonal entries
     if(rank == 0)
