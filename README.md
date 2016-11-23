@@ -22,9 +22,10 @@ development branches can be obtained by
 
 ### Windows OS prerequisities ###
 
-If you are running Windows, you have to install [Cygwin](https://www.cygwin.com/)  for emulation of
-POSIX unix environment (both 32-bit and 64-bit version should work). Then all what follows has to be done in the directories under
-cygwin, e.g "C:\cygwin\home\user\" and within the cygwin shell. In addition to the packages mentioned for the Linux you will need:
+If you are running Windows, you have to install [Docker](https://www.docker.com/products/docker-toolbox). Docker containers wrap
+a piece of software in a complete filesystem that contains everything needed to run: code, runtime, system tools,
+system libraries – anything that can be installed on a server. If docker is not installed it can be automatically installed
+by (requires powershell)
 
 * openssh (for MPICH)
 * some editor that can save Unix like text files (eg. notepad+ or sublime) 
@@ -63,7 +64,7 @@ Flow123d depends also on PETSc library. It can be installed automatically during
 but for good parallel performance it has to be configured manually see appropriate section later on.
 
 
-### Compile Flow123 ###
+### Compile Flow123d ###
 
 Copy file `config.cmake.template` to `config.cmake`:
 
