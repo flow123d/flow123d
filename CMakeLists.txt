@@ -542,9 +542,14 @@ find_package(PythonLibs 2.7   REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 # create shortcuts for runtest
-set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
+
+# use relative path
+set(PYTHON_RUNTEST ../bin/python/runtest.py)
+configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/runtest @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests_old/runtest @ONLY)
+
+set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
 
 message(STATUS "-------------------------------------------------------")
 message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
@@ -825,7 +830,7 @@ install(DIRECTORY bin/python                DESTINATION bin/)
 
 # binary files
 install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
-install(PROGRAMS  bin/ini2json.sh           DESTINATION bin/)
+install(PROGRAMS  bin/runtest               DESTINATION bin/)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 
@@ -840,8 +845,9 @@ install(FILES     doc/petsc_options_help    DESTINATION doc/)
 install(FILES     doc/LICENSE               DESTINATION doc/)
 install(FILES     doc/GPL3                  DESTINATION doc/)
 install(FILES     doc/README                DESTINATION doc/)
-install(FILES     ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf
-                                            DESTINATION doc/ OPTIONAL)
+install(FILES     ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf DESTINATION doc/)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/htmldoc/html/src/                     DESTINATION doc/htmldoc)
+
 
 # install tests dir
 install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
