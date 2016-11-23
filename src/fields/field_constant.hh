@@ -73,12 +73,13 @@ public:
 
     virtual ~FieldConstant();
 
+protected:
+    /// Compare field value with given minimal and maximal limits.
+    void check_field_limits(const struct FieldAlgoBaseInitData& init_data);
+
 private:
     /// Registrar of class to factory
     static const int registrar;
-
-    /// Compare field value with given minimal and maximal limits.
-    void check_field_limits(const struct FieldAlgoBaseInitData& init_data);
 
 };
 

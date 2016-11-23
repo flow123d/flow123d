@@ -64,6 +64,15 @@ private:
     /// Accessor to Input::Record
     Input::Record in_rec_;
 
+    /**
+     * Initialization data of field. Necessary for check limits.
+     *
+     * TODO: Temporary solution will be replaced with shared_ptr to field data in FieldAlgoBase
+     */
+	UnitSI &unit_si_;
+	std::pair<double, double> limits_;
+
+
 };
 
 #endif /* FIELD_TIME_FUNCTION_HH_ */

@@ -45,7 +45,7 @@ const int FieldTimeFunction<spacedim, Value>::registrar =
 
 template <int spacedim, class Value>
 FieldTimeFunction<spacedim, Value>::FieldTimeFunction( unsigned int n_comp)
-: FieldConstant<spacedim, Value>(n_comp)
+: FieldConstant<spacedim, Value>(n_comp), unit_si_( UnitSI::dimensionless() )
 {}
 
 
@@ -54,6 +54,8 @@ void FieldTimeFunction<spacedim, Value>::init_from_input(const Input::Record &re
 {
 	this->init_unit_conversion_coefficient(rec, init_data);
 	this->in_rec_ = rec;
+	this->unit_si_ = init_data.unit_si_;
+	this->limits_ = init_data.limits_;
 }
 
 
@@ -70,6 +72,8 @@ bool FieldTimeFunction<spacedim, Value>::set_time(const TimeStep &time)
 	table_function.init_from_input( in_rec_.val<Input::Record>("time_function") );
 	this->r_value_ = table_function.value( time.end() );
     this->value_.scale(this->unit_conversion_coefficient_);
+    struct FieldAlgoBaseInitData init_data(0, this->unit_si_, this->limits_);
+    this->check_field_limits(init_data);
 
 	return true;
 }

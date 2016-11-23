@@ -100,8 +100,8 @@ public:
     virtual ~FieldElementwise();
 
 private:
-    /// Multiply @p data_ with @p unit_conversion_coefficient_
-    void scale_data();
+    /// Multiply @p data_ with @p unit_conversion_coefficient_ and check limits of field
+    void scale_and_check_limits();
     /// Is flase whne the data vector is provided at construction. Then, we disallow initialization form input
     /// and do not delete data pointer in destructor.
     bool internal_raw_data;
@@ -120,6 +120,14 @@ private:
     FilePath reader_file_;
     const Mesh *mesh_;
     std::string field_name_;
+    /**
+     * Initialization data of field. Necessary for check limits.
+     *
+     * TODO: Temporary solution will be replaced with shared_ptr to field data in FieldAlgoBase
+     */
+	UnitSI &unit_si_;
+	std::pair<double, double> limits_;
+
     /// Registrar of class to factory
     static const int registrar;
 };
