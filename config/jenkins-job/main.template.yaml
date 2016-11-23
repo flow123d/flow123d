@@ -339,7 +339,12 @@
       - shell: |
           mkdir -p publish
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} package
+          # copy out docs
           docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/Flow123d-2.0.0-Linux.tar.gz publish/
+          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
+          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
+          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
+          # create install images
           make -C flow123d/bin/docker/bin/package \
                 DESTINATION=$(pwd)/publish \
                 create-install-image
