@@ -55,11 +55,13 @@ public:
         Value flux; flux.zeros();
         
         if(elm.element()->xfem_data != nullptr && ! elm.element()->xfem_data->is_complement()){
-            flux =  value_vector_xfem(ele_ac, p);
+            
+            if(mh_dh_->single_enr) flux =  value_vector_xfem_single(ele_ac, p);
+            else flux =  value_vector_xfem(ele_ac);
 //             flux = value_vector_regular(ele_ac.full_iter(), p);
         }
         else{
-            flux = value_vector_regular(ele_ac.full_iter(), p);
+            flux = value_vector_regular(ele_ac.full_iter());
         }
         
         return flux;
@@ -75,7 +77,7 @@ public:
 //         if(dim == 2) DBGCOUT(<< "p: [" << unit_p(0) << " " << unit_p(1) << " " << unit_p(2) << "]\n");
     }
     
-    Value value_vector_regular(ElementFullIter ele, const Point &p){
+    Value value_vector_regular(ElementFullIter ele){
         Value flux;
         flux.zeros();
         
@@ -95,7 +97,13 @@ public:
         return flux;
     }
     
-    Value value_vector_xfem(LocalElementAccessorBase<3> ele_ac, const Point &p){
+    Value value_vector_xfem(LocalElementAccessorBase<3> ele_ac){
+        Value flux;
+        ASSERT_DBG(0).error("Not implemented!");
+        return flux;
+    }
+    
+    Value value_vector_xfem_single(LocalElementAccessorBase<3> ele_ac, const Point &p){
         Value flux;
         ASSERT_DBG(0).error("Not implemented!");
         return flux;
@@ -111,7 +119,7 @@ private:
     FE_RT0<dim,3> fe_rt_;
     std::shared_ptr<FEValues<dim,3>> fv_rt_;
     
-    std::shared_ptr<FE_RT0_XFEM<dim,3>> fe_rt_xfem_;
+    std::shared_ptr<FiniteElement<dim,3>> fe_rt_xfem_;
     std::shared_ptr<FEValues<dim,3>> fv_rt_xfem_;
 };
 
@@ -186,7 +194,7 @@ private:
 
 
 template<> inline
-auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele_ac, const Point &p) -> Value
+auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele_ac) -> Value
 {
     Value flux, temp;
     flux.zeros();
@@ -213,6 +221,25 @@ auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele
 //             DBGCOUT(<< "Ele " << ele->index() << " w " << w << " dof " << wdofs[j] << "\n");
             flux += temp;
         }
+    }
+    
+    return flux;
+}
+
+template<> inline
+auto FieldVelocityInternal<2>::value_vector_xfem_single(LocalElementAccessorBase<3> ele_ac, const Point &p) -> Value
+{
+    Value flux, temp;
+    flux.zeros();
+    ElementFullIter ele = ele_ac.full_iter();
+    
+    XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+    
+    flux += value_vector_regular(ele);
+    
+    for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
+        auto sing = xdata->enrichment_func(w);
+        flux += mh_dh_->mh_solution[ele_ac.vel_sing_row(w)] * sing->vector(p);
     }
     
     return flux;
