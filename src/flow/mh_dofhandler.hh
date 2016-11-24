@@ -150,7 +150,7 @@ protected:
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma);
     
-    void find_ele_to_enrich(SingularityPtr sing,
+    void find_ele_to_enrich(SingularityPtr sing, int ele1d_global_idx,
                             ElementFullIter ele, double radius, int& new_enrich_node_idx);
     
     void clear_mesh_flags();

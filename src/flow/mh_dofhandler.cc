@@ -518,25 +518,25 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
 //                 node_values.push_back(std::map<int, double>());
 //                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
                 
-                unsigned int sing_idx = singularities_12d_.size()-1;
-                if(ele->xfem_data == nullptr){
-                    xfem_data_1d.push_back(XFEMComplementData(sing, sing_idx));
-                    xfem_data_1d.back().set_element(idx);        
-                    xfem_data_1d.back().set_complement();
-                    ele->xfem_data = & xfem_data_1d.back();
-                }
-                else{
-                    auto xdata = static_cast<XFEMComplementData*>(ele->xfem_data);
-                    ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMComplementData Type!");
-                    xdata->add_data(sing, sing_idx);
-                }
+//                 unsigned int sing_idx = singularities_12d_.size()-1;
+//                 if(ele->xfem_data == nullptr){
+//                     xfem_data_1d.push_back(XFEMComplementData(sing, sing_idx));
+//                     xfem_data_1d.back().set_element(idx);        
+//                     xfem_data_1d.back().set_complement();
+//                     ele->xfem_data = & xfem_data_1d.back();
+//                 }
+//                 else{
+//                     auto xdata = static_cast<XFEMComplementData*>(ele->xfem_data);
+//                     ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMComplementData Type!");
+//                     xdata->add_data(sing, sing_idx);
+//                 }
                 
                 
                 //TODO: suggest proper enrichment radius
                 double enr_radius = 1.5*std::sqrt(ele2d->measure());
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
                 clear_mesh_flags();
-                find_ele_to_enrich(singularities.back(), ele2d, enr_radius, new_enrich_node_idx);
+                find_ele_to_enrich(singularities.back(),idx, ele2d, enr_radius, new_enrich_node_idx);
             }
         }
     }
@@ -615,6 +615,7 @@ void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
 
 
 void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
+                                       int ele1d_global_idx,
                                    ElementFullIter ele,
                                    double radius,
                                    int& new_enrich_node_idx
@@ -657,7 +658,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
                 xdata->global_enriched_dofs()[0].resize(1);
                 xdata->global_enriched_dofs()[1].resize(1);
             }
-            xdata->set_element(ele->index());
+            xdata->set_element(ele->index(), ele1d_global_idx);
             ele->xfem_data = xdata;
         }
         else{
@@ -693,7 +694,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
             for(int j=0; j < edge->n_sides;j++) {
                 if (edge->side(j)->element() != ele){
 //                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
-                    find_ele_to_enrich(sing,edge->side(j)->element(),radius, new_enrich_node_idx);
+                    find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
                 }
             }
         }
