@@ -35,12 +35,13 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
 {
     return IT::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
-		.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
-				"Definition of unit.")
+		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
+		//		"Definition of unit.")
         .close();
 }
 
