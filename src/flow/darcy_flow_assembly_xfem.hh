@@ -80,12 +80,12 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        if(ele_ac.is_enriched() && ele_ac.xfem_data_pointer()->is_complement())
-            assemble_singular_communication(ele_ac);
-        
         //mast be last due to overriding xfem fe values
-        if(ele_ac.is_enriched())
+        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
             assemble_singular_velocity(ele_ac);
+        
+        if(ele_ac.is_enriched())
+            loc_system_.get_matrix().print(cout, "matrix");
         
         loc_system_.fix_diagonal();
     }
@@ -168,19 +168,22 @@ protected:
         }
 //         cout << "\n";
         
-        loc_vel_dofs.resize(ele_ac.n_dofs_vel());
-        loc_press_dofs.resize(ele_ac.n_dofs_press());
+        int ndofs_vel = ele_ac.get_dofs_vel(dofs),
+            ndofs_pre = ele_ac.get_dofs_press(dofs);
+        
+        loc_vel_dofs.resize(ndofs_vel);
+        loc_press_dofs.resize(ndofs_pre);
         loc_edge_dofs.resize(ele_ac.n_sides());
-        for(unsigned int j =0; j < ele_ac.n_dofs_vel(); j++)
+        for(int j =0; j < ndofs_vel; j++)
             loc_vel_dofs[j] = j;
         
-        for(unsigned int j =0; j < ele_ac.n_dofs_press(); j++)
-            loc_press_dofs[j] = ele_ac.n_dofs_vel() + j;
+        for(int j =0; j < ndofs_pre; j++)
+            loc_press_dofs[j] = ndofs_vel + j;
         
-        for(unsigned int j =0; j < ele_ac.n_sides(); j++)
-            loc_edge_dofs[j] = ele_ac.n_dofs_vel() + ele_ac.n_dofs_press() + j;
+        for(int j =0; j < ele_ac.n_sides(); j++)
+            loc_edge_dofs[j] = ndofs_vel + ndofs_pre + j;
         
-        loc_ele_dof = ele_ac.n_dofs_vel();
+        loc_ele_dof = ndofs_vel;
         
 //         //velocity
 //         int ndofs = ele_ac.get_dofs_vel(dof_tmp);
@@ -463,39 +466,6 @@ protected:
 //                         << " " << ele_ac.full_iter()->measure()  << "  " << fv_vel.determinant(0) << "\n");
     }
     
-    void assemble_singular_communication(LocalElementAccessorBase<3> ele_ac){
-        
-//         double sigma = ad_->sigma.value(ele_ac.centre(), ele_ac.element_accessor());
-        
-        XFEMComplementData* xd = static_cast<XFEMComplementData*>(ele_ac.xfem_data_pointer());
-        
-        int sing_row, ele_row;
-        double temp_val, val, val_diag_sing, val_diag_press, press_shape_val, sing_lagrange_val;
-        
-        ele_row = ele_ac.ele_row();
-        
-        for(unsigned int w=0; w < xd->n_enrichments(); w++){
-            sing_row = ele_ac.sing_row(w);
-            press_shape_val = 1;
-            sing_lagrange_val = 1;
-            auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
-            
-            temp_val = sing->circumference() * sing->sigma();
-            DBGVAR(sing->sigma());
-            DBGVAR(temp_val);
-            DBGVAR(sing_row);
-            val =  temp_val * press_shape_val * sing_lagrange_val;
-            val_diag_press = - temp_val * press_shape_val * press_shape_val;
-            val_diag_sing = - temp_val * sing_lagrange_val * sing_lagrange_val;
-            
-            ad_->lin_sys->mat_set_value(sing_row, ele_row, val);
-            ad_->lin_sys->mat_set_value(ele_row, sing_row, val);
-            ad_->lin_sys->mat_set_value(ele_row, ele_row, val_diag_press);
-            ad_->lin_sys->mat_set_value(sing_row, sing_row, val_diag_sing);
-        }
-    }
-    
-    
     void assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
     }
     
@@ -529,12 +499,14 @@ protected:
     QXFEMFactory<dim,3> qfactory_;
     shared_ptr<QXFEM<dim,3>> qxfem_;
     
-    shared_ptr<FE_RT0_XFEM<dim,3>> fe_rt_xfem_;
+    shared_ptr<FiniteElementEnriched<dim,3>> fe_rt_xfem_;
     shared_ptr<FEValues<dim,3>> fe_values_rt_xfem_;
     shared_ptr<FESideValues<dim,3>> fv_side_xfem_;
     
-    shared_ptr<FE_P0_XFEM<dim,3>> fe_p0_xfem_;
+    shared_ptr<FiniteElementEnriched<dim,3>> fe_p0_xfem_;
     shared_ptr<FEValues<dim,3>> fe_values_p0_xfem_;
+    
+    shared_ptr<FEValues<dim,3>> fv_rt_sing_;
     
     std::vector<unsigned int> loc_vel_dofs;
     std::vector<unsigned int> loc_press_dofs;
@@ -567,6 +539,8 @@ void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
 //                                  {func});
     
     fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
+    
+    
     fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
                         (map_, *qxfem_, *fe_rt_xfem_, update_values | update_gradients |
                                                     update_JxW_values | update_jacobians |
@@ -581,59 +555,208 @@ void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
 }
 
 
+// template<> inline
+// void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
+// 
+//     ElementFullIter ele = ele_ac.full_iter();
+//     
+//     XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
+//     double sing_lagrange_val;
+//     int sing_row;
+//     int nvals = loc_vel_dofs.size();
+//     double val[nvals];
+//     int vel_dofs[nvals];
+//     
+//     for(unsigned int w=0; w < xd->n_enrichments(); w++){
+//         if(xd->is_singularity_inside(w)){
+//             sing_row = ele_ac.sing_row(w);
+//             auto quad = xd->sing_quadrature(w);
+//             fv_rt_sing_ = std::make_shared<FEValues<2,3>> 
+//                             (map_, quad, *fe_rt_xfem_, update_values);
+// 
+//             fv_rt_sing_->reinit(ele);
+//             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
+//             sing_lagrange_val = 1;
+//             for (int i=0; i < nvals; i++){
+//                 val[i] = 0;
+//                 vel_dofs[i] = loc_system_.row_dofs[i];
+// //                 double sum = 0;
+//                 for(unsigned int q=0; q < quad.size();q++){
+//                     arma::vec n = sing->center() - quad.real_point(q);
+//                     n = n / arma::norm(n,2);
+//                     val[i] += sing_lagrange_val
+//                                 * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
+//                                 * quad.weight(q);
+// //                     sum += quad.weight(q);
+//                 }
+// //                 DBGVAR(sum);
+// //                 DBGVAR(sing->circumference());
+//             }
+//             
+//             ad_->lin_sys->mat_set_values(1, &sing_row, nvals, vel_dofs, val);
+//             ad_->lin_sys->mat_set_values(nvals, vel_dofs, 1, &sing_row, val);
+//         }
+//     }
+// }
+
 template<> inline
 void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
 
     ElementFullIter ele = ele_ac.full_iter();
-    
     XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
-    double sing_lagrange_val;
     int sing_row;
+    double sing_lagrange_val = 1.0;
+    
+    //as long as pressure is not enriched and is P0
+    ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
+    int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
+    
     int nvals = loc_vel_dofs.size();
-    double val[nvals];
+    double val;
+    double vals[nvals];
     int vel_dofs[nvals];
     
     for(unsigned int w=0; w < xd->n_enrichments(); w++){
         if(xd->is_singularity_inside(w)){
-            sing_row = ele_ac.sing_row(w);
             auto quad = xd->sing_quadrature(w);
-            fe_values_rt_xfem_ = std::make_shared<FEValues<2,3>> 
+            fv_rt_sing_ = std::make_shared<FEValues<2,3>> 
                             (map_, quad, *fe_rt_xfem_, update_values);
 
-            fe_values_rt_xfem_->reinit(ele);
+            fv_rt_sing_->reinit(ele);
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
-            sing_lagrange_val = 1;
+            sing_row = ele_ac.sing_row(w);
+            
+            // Bw integral p2-(v.n)
             for (int i=0; i < nvals; i++){
-                val[i] = 0;
+                vals[i] = 0;
                 vel_dofs[i] = loc_system_.row_dofs[i];
 //                 double sum = 0;
                 for(unsigned int q=0; q < quad.size();q++){
                     arma::vec n = sing->center() - quad.real_point(q);
                     n = n / arma::norm(n,2);
-                    val[i] += sing_lagrange_val
-                                * arma::dot(fe_values_rt_xfem_->shape_vector(i,q),n)
+                    vals[i] += sing_lagrange_val
+                                * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
                                 * quad.weight(q);
 //                     sum += quad.weight(q);
                 }
 //                 DBGVAR(sum);
 //                 DBGVAR(sing->circumference());
+//                 DBGVAR(val[i]);
+//                 loc_system_.add_value(loc_ele_dof, loc_vel_dofs[i], val, 0.0);
+//                 loc_system_.add_value(loc_vel_dofs[i], loc_ele_dof, val, 0.0);
+            }
+            ad_->lin_sys->mat_set_values(1, &sing_row, nvals, vel_dofs, vals);
+            ad_->lin_sys->mat_set_values(nvals, vel_dofs, 1, &sing_row, vals);
+            
+            
+            // Bw integral p1-lambda_w            
+            if(quad.size() == sing->q_points().size()) val = sing->circumference() * sing->sigma();
+            else{
+                val = 0;
+                for(unsigned int q=0; q < quad.size();q++)
+                    val += quad.weight(q);
+                val = sing_lagrange_val * sing->sigma() * val;
             }
             
-            ad_->lin_sys->mat_set_values(1, &sing_row, nvals, vel_dofs, val);
-            ad_->lin_sys->mat_set_values(nvals, vel_dofs, 1, &sing_row, val);
+            DBGVAR(val);
+            DBGVAR(sing_row);
+            DBGVAR(ele1d_row);
+            ad_->lin_sys->mat_set_value(sing_row, ele1d_row, val);
+            ad_->lin_sys->mat_set_value(ele1d_row, sing_row, val);
+            ad_->lin_sys->mat_set_value(sing_row, sing_row, -val);
+            ad_->lin_sys->mat_set_value(ele1d_row, ele1d_row, -val);
         }
     }
 }
+
+// template<> inline
+// void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
+// 
+//     ElementFullIter ele = ele_ac.full_iter();
+//     XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
+//     
+//     //as long as pressure is not enriched and is P0
+//     ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
+//     double p2_val = 1.0;
+//     int ele_row = loc_system_.row_dofs[loc_ele_dof],
+//         ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
+//     
+//     int nvals = loc_vel_dofs.size();
+//     double val;
+//     
+//     for(unsigned int w=0; w < xd->n_enrichments(); w++){
+//         if(xd->is_singularity_inside(w)){
+//             auto quad = xd->sing_quadrature(w);
+//             fv_rt_sing_ = std::make_shared<FEValues<2,3>> 
+//                             (map_, quad, *fe_rt_xfem_, update_values);
+// 
+//             fv_rt_sing_->reinit(ele);
+//             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
+//             
+//             // Bw integral p2-(v.n)
+//             for (int i=0; i < nvals; i++){
+//                 val = 0;
+// //                 double sum = 0;
+//                 for(unsigned int q=0; q < quad.size();q++){
+//                     arma::vec n = sing->center() - quad.real_point(q);
+//                     n = n / arma::norm(n,2);
+//                     val += p2_val
+//                                 * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
+//                                 * quad.weight(q);
+// //                     sum += quad.weight(q);
+//                 }
+// //                 DBGVAR(sum);
+// //                 DBGVAR(sing->circumference());
+//                 DBGVAR(val);
+//                 loc_system_.add_value(loc_ele_dof, loc_vel_dofs[i], val, 0.0);
+//                 loc_system_.add_value(loc_vel_dofs[i], loc_ele_dof, val, 0.0);
+//             }
+//             
+//             // Bw integral p1-p2            
+//             if(quad.size() == sing->q_points().size()) val = sing->circumference() * sing->sigma();
+//             else{
+//                 val = 0;
+//                 for(unsigned int q=0; q < quad.size();q++)
+//                     val += quad.weight(q);
+//                 val = sing->sigma() * val;
+//             }
+//             
+//             DBGVAR(val);
+//             DBGVAR(ele_row);
+//             DBGVAR(ele1d_row);
+//             ad_->lin_sys->mat_set_value(ele_row, ele1d_row, val);
+//             ad_->lin_sys->mat_set_value(ele1d_row, ele_row, val);
+//             ad_->lin_sys->mat_set_value(ele_row, ele_row, -val);
+//             ad_->lin_sys->mat_set_value(ele1d_row, ele1d_row, -val);
+//                 
+// //             ad_->lin_sys->mat_set_values(1, &ele_row, nvals, vel_dofs, val);
+// //             ad_->lin_sys->mat_set_values(nvals, vel_dofs, 1, &ele_row, val);
+//         }
+//     }
+// }
+
 
 template<> inline
 void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> ele_ac, unsigned int local_side){
         ElementFullIter ele = ele_ac.full_iter();
         double val;
-        int side_row, edge_row;
+        DBGVAR(local_side);
         
-        edge_row = loc_system_.row_dofs[loc_edge_dofs[local_side]];
+//         int side_row, edge_row;
+//         edge_row = loc_system_.row_dofs[loc_edge_dofs[local_side]];
         
-        QGauss<1> qside(9);
+//         QGauss<1> qside(29);
+        QGauss<1> qside(1);
+        const uint qsize=100;
+        qside.resize(qsize);
+        double qweight = 1.0/qsize;
+        for(unsigned int q=0; q<qsize; q++){
+            qside.set_point(q, arma::vec({0.5*qweight + q*qweight}));
+            qside.set_weight(q,qweight);
+        }
+        
+        
+        
         auto fv_side = std::make_shared<FESideValues<2,3>>(map_, qside, *fe_rt_xfem_,
                                                             update_normal_vectors
                                                             | update_quadrature_points);
@@ -646,6 +769,7 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
             arma::vec unit_p = ele->project_point(fv_side->point(q));
             qside_xfem.set_point(q, RefElement<2>::bary_to_local(unit_p));
             qside_xfem.set_real_point(q,fv_side->point(q));
+//             fv_side->point(q).print(cout, "side point");
             qside_xfem.set_weight(q,qside.weight(q));
         }
         
@@ -654,19 +778,25 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
         fv_xfem->reinit(ele);
         
         for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
-            side_row = loc_system_.row_dofs[loc_vel_dofs[j]];
-
+//             side_row = loc_system_.row_dofs[loc_vel_dofs[j]];
+            double sum_val = 0;
+            double side_measure = ele->side(local_side)->measure();
             for(unsigned int q=0; q < qside.size(); q++){
                 val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(q))
                       // this makes JxW on the triangle side:
                       * qside_xfem.weight(q)
-                      * ele->side(local_side)->measure();
+                      * side_measure;
                       
-                ad_->lin_sys->mat_set_value(side_row, edge_row, val);
-                ad_->lin_sys->mat_set_value(edge_row, side_row, val);
+//                 ad_->lin_sys->mat_set_value(side_row, edge_row, val);
+//                 ad_->lin_sys->mat_set_value(edge_row, side_row, val);
+                   loc_system_.add_value(loc_vel_dofs[j], loc_edge_dofs[local_side], val, 0.0);
+                   loc_system_.add_value(loc_edge_dofs[local_side], loc_vel_dofs[j], val, 0.0);
+                sum_val += val;
             }
-        }
+            DBGVAR(sum_val);
+        }        
         
+
         
 //         fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_,
 //                                                             update_values
