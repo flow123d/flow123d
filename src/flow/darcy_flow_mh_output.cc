@@ -77,6 +77,8 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
     *this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
 	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
 	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
+    *this += field_ele_flux_enr.name("velocity_enr").units(UnitSI().m().s(-1));
+    *this += field_ele_flux_reg.name("velocity_reg").units(UnitSI().m().s(-1));
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
 					  .flags(FieldFlag::equation_external_output);
@@ -126,13 +128,18 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
-    field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section);
-    
 // 	ele_flux.resize(3*mesh_->n_elements());
 // 	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
 // 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
     
+    field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, true, true);
     output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);
+    
+    field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, true, false);
+    output_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
+    
+    field_velocity_reg_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, false, true);
+    output_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_reg_part);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
