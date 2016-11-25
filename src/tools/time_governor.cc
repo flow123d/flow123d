@@ -162,7 +162,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
 TimeGovernor::TimeGovernor(double init_time, double dt)
 {
-	init_common( init_time, inf_time, TimeMark::none_type);
+	init_common( init_time, inf_time, TimeMark::every_type);
     // fixed time step
     if (dt < time_step_precision)
         THROW(ExcTimeGovernorMessage() << EI_Message("Fixed time step smaller then machine precision. \n") );

@@ -52,14 +52,20 @@ public:
 		Type() : bitmap_(0x1), equation_index_(1) {}
 		Type(unsigned long int bitmap, unsigned char equation_index) : bitmap_(bitmap), equation_index_(equation_index) {}
 
-		Type operator&(const Type& other) const {
+		/*Type operator&(const Type& other) const {
 			//ASSERT(equation_index_ == other.equation_index_)((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
 			return Type( (bitmap_ & other.bitmap_), equation_index_);
-		}
+		}*/
 
 		Type operator|(const Type& other) const {
-			//ASSERT(equation_index_ == other.equation_index_)((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
-			return Type( (bitmap_ | other.bitmap_), equation_index_);
+			// equation_indexes must be same or one of them must be zero
+			if (equation_index_ == 0) {
+				return Type( (bitmap_ | other.bitmap_), other.equation_index_);
+			} else {
+				ASSERT( (equation_index_ == other.equation_index_) || (other.equation_index_ == 0) )
+						((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
+				return Type( (bitmap_ | other.bitmap_), equation_index_);
+			}
 		}
 
 		Type operator~() const {
@@ -67,7 +73,7 @@ public:
 		}
 
 		bool operator==(const Type& other) const {
-			return ( (bitmap_ == other.bitmap_) && (equation_index_ == other.equation_index_) );
+			return ( (bitmap_ == other.bitmap_) && ((equation_index_ == other.equation_index_) || (other.equation_index_ == 0)) );
 		}
 
 		unsigned long int bitmap_;
@@ -107,12 +113,14 @@ public:
      */
 
     inline bool match_mask(const TimeMark::Type &mask) const {
-        return (( mask.bitmap_ & (~mark_type_.bitmap_) ) == 0) && (mask.equation_index_ == mark_type_.equation_index_);
+        return (( mask.bitmap_ & (~mark_type_.bitmap_) ) == 0) && (mask.equation_index_ == mark_type_.equation_index_ || mask.equation_index_ == 0);
     }
 
     /// Add more bits that a mark satisfies.
     /// @param type type that should be modified
     inline void add_to_type(const TimeMark::Type &type) {
+        ASSERT( (this->mark_type_.equation_index_ == type.equation_index_) || (type.equation_index_ == 0) )
+                ((unsigned int)this->mark_type_.equation_index_)((unsigned int)type.equation_index_).error();
         mark_type_.bitmap_ |= type.bitmap_;
     }
 
@@ -132,6 +140,8 @@ private:
     double time_;
     /// The type of the TimeMark.
     Type mark_type_;
+
+    friend class TimeMarks;
 };
 
 /**
@@ -289,10 +299,16 @@ public:
     TimeMarks::iterator last(const TimeMark::Type &mask) const;
 
     /// Iterator for the begin mimics container-like  of TimeMarks
-    TimeMarks::iterator begin(TimeMark::Type mask = TimeMark::every_type) const;
+    TimeMarks::iterator begin(TimeMark::Type mask) const;
+
+    /// Same as previous, but constructs TimeMark::Type from equation index
+    TimeMarks::iterator begin(unsigned char ei) const;
 
     /// Iterator for the end mimics container-like  of TimeMarks
-    TimeMarks::iterator end(TimeMark::Type mask = TimeMark::every_type) const;
+    TimeMarks::iterator end(TimeMark::Type mask) const;
+
+    /// Same as previous, but constructs TimeMark::Type from equation index
+    TimeMarks::iterator end(unsigned char ei) const;
 
     /// Friend output operator.
     friend std::ostream& operator<<(std::ostream& stream, const TimeMarks &marks);
@@ -303,7 +319,7 @@ private:
     TimeMark::Type next_mark_type_;
 
     /// TimeMarks list sorted according to the their time.
-    std::vector<TimeMark> marks_;
+    std::vector< std::vector<TimeMark> > marks_;
 
     /// Predefined type for fixed time.
     TimeMark::Type type_fixed_time_;
