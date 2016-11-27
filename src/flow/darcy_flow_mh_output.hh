@@ -67,6 +67,8 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
+        Field<3, FieldValue<3>::VectorFixed> field_ele_flux_enr;
+        Field<3, FieldValue<3>::VectorFixed> field_ele_flux_reg;
 	    Field<3, FieldValue<3>::Integer> subdomain;
 	    Field<3, FieldValue<3>::Integer> region_id;
 
@@ -151,6 +153,9 @@ private:
     VectorSeqDouble ele_flux;
 
     std::shared_ptr<FieldVelocity> field_velocity;
+    
+    std::shared_ptr<FieldVelocity> field_velocity_enr_part;
+    std::shared_ptr<FieldVelocity> field_velocity_reg_part;
     
     // A vector of all element indexes
     std::vector<unsigned int> all_element_idx_;

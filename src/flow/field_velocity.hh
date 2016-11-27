@@ -44,8 +44,8 @@ public:
     typedef typename Space<spacedim>::Point Point;
     typedef typename arma::vec3 Value;
     
-    FieldVelocityInternal(MH_DofHandler* mh_dh)
-    : mh_dh_(mh_dh)
+    FieldVelocityInternal(MH_DofHandler* mh_dh, bool enr=false, bool reg=true)
+    : mh_dh_(mh_dh), enr_(enr), reg_(reg)
     {}
     
     Value value_vector(const ElementAccessor<spacedim> &elm, const Point &p){
@@ -54,13 +54,11 @@ public:
         update_quad(ele_ac.full_iter(), p);
         Value flux; flux.zeros();
         
-        if(elm.element()->xfem_data != nullptr && ! elm.element()->xfem_data->is_complement()){
-            
-            if(mh_dh_->single_enr) flux =  value_vector_xfem_single(ele_ac, p);
+        if(enr_ && elm.element()->xfem_data != nullptr && ! elm.element()->xfem_data->is_complement()){
+            if(mh_dh_->single_enr) flux = value_vector_xfem_single(ele_ac, p); 
             else flux =  value_vector_xfem(ele_ac);
-//             flux = value_vector_regular(ele_ac.full_iter(), p);
         }
-        else{
+        else if(reg_){
             flux = value_vector_regular(ele_ac.full_iter());
         }
         
@@ -121,6 +119,8 @@ private:
     
     std::shared_ptr<FiniteElement<dim,3>> fe_rt_xfem_;
     std::shared_ptr<FEValues<dim,3>> fv_rt_xfem_;
+    
+    bool enr_, reg_;
 };
 
 
@@ -134,10 +134,11 @@ public:
     typedef typename FieldAlgorithmBase<3, FieldValue<3>::VectorFixed>::Point Point;
     typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed> FactoryBaseType;
 
-    FieldVelocity(MH_DofHandler* mh_dh, Field<3, FieldValue<3>::Scalar>* cross_section)
+    FieldVelocity(MH_DofHandler* mh_dh, Field<3, FieldValue<3>::Scalar>* cross_section,
+                  bool enriched_part=false, bool regular_part=true)
     : FieldAlgorithmBase<3, FieldValue<3>::VectorFixed>(0),
       fe_val_1d_(mh_dh),
-      fe_val_2d_(mh_dh),
+      fe_val_2d_(mh_dh, enriched_part, regular_part),
       fe_val_3d_(mh_dh),
       cross_section_(cross_section)
     {}
@@ -207,10 +208,14 @@ auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele
     fv_rt_xfem_->reinit(ele);
     
     unsigned int li = 0;
-    for (; li < ele->n_sides(); li++) {
-        flux += mh_dh_->side_flux( *(ele->side( li ) ) )
-                        * fv_rt_xfem_->shape_vector(li,0);
+    if(reg_){
+        for (; li < ele->n_sides(); li++) {
+            flux += mh_dh_->side_flux( *(ele->side( li ) ) )
+                            * fv_rt_xfem_->shape_vector(li,0);
+        }
     }
+    
+    li = ele->n_sides();
     
     for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
         std::vector<int>& wdofs = xdata->global_enriched_dofs()[Quantity::velocity][w];
@@ -235,7 +240,7 @@ auto FieldVelocityInternal<2>::value_vector_xfem_single(LocalElementAccessorBase
     
     XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
     
-    flux += value_vector_regular(ele);
+    if(reg_) flux += value_vector_regular(ele);
     
     for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
         auto sing = xdata->enrichment_func(w);

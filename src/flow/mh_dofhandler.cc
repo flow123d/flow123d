@@ -544,6 +544,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 double enr_radius = 1.5*std::sqrt(ele2d->measure());
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
                 clear_mesh_flags();
+
                 find_ele_to_enrich(singularities.back(), idx, ele2d, enr_radius, new_enrich_node_idx);
             }
         }
@@ -640,7 +641,7 @@ void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
 
 
 void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
-                                       int ele1d_idx,
+                                       int ele1d_global_idx,
                                    ElementFullIter ele,
                                    double radius,
                                    int& new_enrich_node_idx
@@ -653,16 +654,16 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
     mesh_flags_[ele->index()] = true;
         
     bool enrich = false;
-    for(unsigned int i=0; i < ele->n_nodes(); i++){
-        double d = arma::norm(sing->center() - ele->node[i]->point(),2);
-//         DBGCOUT(<< d << "\n");
-        if(d < radius){
-            enrich = true;
-        }
-    }
+//     for(unsigned int i=0; i < ele->n_nodes(); i++){
+//         double d = arma::norm(sing->center() - ele->node[i]->point(),2);
+// //         DBGCOUT(<< d << "\n");
+//         if(d < radius){
+//             enrich = true;
+//         }
+//     }
     
 //     if(ele->index() == 5) enrich = true;
-//     if(ele->index() == 49) enrich = true;
+    if(ele->index() == 49) enrich = true;
 //     if(ele->index() == 645) enrich = true;
     
     // front advancing enrichment of neighboring elements
@@ -685,7 +686,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
                 xdata->global_enriched_dofs()[0].resize(1);
                 xdata->global_enriched_dofs()[1].resize(1);
             }
-            xdata->set_element(ele->index(), ele1d_idx);
+            xdata->set_element(ele->index(), ele1d_global_idx);
             ele->xfem_data = xdata;
         }
         else{
@@ -721,7 +722,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
             for(int j=0; j < edge->n_sides;j++) {
                 if (edge->side(j)->element() != ele){
 //                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
-                    find_ele_to_enrich(sing,ele1d_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
+                    find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
                 }
             }
         }

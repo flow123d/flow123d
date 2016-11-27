@@ -1011,7 +1011,7 @@ void DarcyMH::allocate_mh_matrix()
 //                 }
 //             }
 //         }
-        
+
         if(ele_ac.is_enriched() && ele_ac.dim() == 2){
             int ele1d_row, ele2d_row;
             ele1d_row = mh_dh.row_4_el[ele_ac.xfem_data_pointer()->intersection_ele_global_idx()];
@@ -1020,6 +1020,54 @@ void DarcyMH::allocate_mh_matrix()
             ls->mat_set_value(ele1d_row, ele2d_row, 0);
             ls->mat_set_value(ele2d_row, ele1d_row, 0);
         }
+
+//         if(ele_ac.is_enriched()){
+//                 const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
+//                 {
+//                     const int nw = xd.n_enrichments();
+//                     
+//                     int w_rows[nw];
+//                     for(int w=0; w < nw; w++){
+//                         w_rows[w] = ele_ac.sing_row(w);
+//                     }
+//                         
+//                     // singularity edge integrals pressure - sing lagrange multiplier
+//                     ls->mat_set_values(nw, w_rows, 1, &ele_row, zeros);
+//                     ls->mat_set_values(1, &ele_row, nw, w_rows, zeros);
+//                 }
+//                 
+//                 {
+//                 const int nw_in = xd.n_singularities_inside();
+//                 
+//                 if(nw_in > 0){
+//     //                 DBGVAR(nw);
+// //                     int w_rows[nw_in];
+// //                     int ww=0;
+// //                     for(int w=0; w < xd.n_enrichments(); w++){
+// //                         if(xd.is_singularity_inside(w)){
+// //                             w_rows[ww] = ele_ac.sing_row(w);
+// //                             w++;
+// //                         }
+// //                     }
+//                     //FIXME: enable more wells inside 2d ele
+//                     int w_row;
+//                     for(int w=0; w < xd.n_enrichments(); w++){
+//                         if(xd.is_singularity_inside(w)){
+//                             w_row = ele_ac.sing_row(w);
+//                         }
+//                     }
+//                     
+//                     // singularity edge integrals for velocity
+//                     ls->mat_set_values(1, &w_row, ndofs_vel, dofs_vel, zeros);
+//                     ls->mat_set_values(ndofs_vel, dofs_vel, nw_in, &w_row, zeros);
+//                     
+//                     // singularity edge integrals for p1d
+//                     int ele1d_row = mh_dh.row_4_el[xd.intersection_ele_global_idx()];
+//                     ls->mat_set_value(w_row, ele1d_row, 0.0);
+//                     ls->mat_set_value(ele1d_row, w_row, 0.0);
+//                 }
+//             }
+//         }
         
 
         // D, E',E block: compatible connections: element-edge
