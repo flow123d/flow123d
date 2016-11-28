@@ -117,7 +117,7 @@ private:
     FE_RT0<dim,3> fe_rt_;
     std::shared_ptr<FEValues<dim,3>> fv_rt_;
     
-    std::shared_ptr<FiniteElement<dim,3>> fe_rt_xfem_;
+    std::shared_ptr<FiniteElementEnriched<dim,3>> fe_rt_xfem_;
     std::shared_ptr<FEValues<dim,3>> fv_rt_xfem_;
     
     bool enr_, reg_;
@@ -207,25 +207,19 @@ auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele
     fv_rt_xfem_ = std::make_shared<FEValues<2,3>>(map_,quad_, *fe_rt_xfem_, update_values);
     fv_rt_xfem_->reinit(ele);
     
+    int dofs[fv_rt_xfem_->n_dofs()];
+    int ndofs = ele_ac.get_dofs_vel(dofs);
+    ASSERT_DBG(fv_rt_xfem_->n_dofs() == ndofs);
+    
+//     DBGCOUT("####################### DOFS\n");
+//     for(int i =0; i < ndofs; i++) cout << dofs[i] << " ";
+//     cout << "\n";
+    
     unsigned int li = 0;
-    if(reg_){
-        for (; li < ele->n_sides(); li++) {
-            flux += mh_dh_->side_flux( *(ele->side( li ) ) )
-                            * fv_rt_xfem_->shape_vector(li,0);
-        }
-    }
-    
-    li = ele->n_sides();
-    
-    for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
-        std::vector<int>& wdofs = xdata->global_enriched_dofs()[Quantity::velocity][w];
-        for (unsigned int j = 0; j < wdofs.size(); j++, li++) {
-            temp = mh_dh_->mh_solution[wdofs[j]]
-                            * fv_rt_xfem_->shape_vector(li,0);
-//             DBGCOUT(<< "Ele " << ele->index() << " w " << w << " j " << temp[0] << " " << temp[1] << " " << temp[2] << "\n");
-//             DBGCOUT(<< "Ele " << ele->index() << " w " << w << " dof " << wdofs[j] << "\n");
-            flux += temp;
-        }
+    if(!reg_) li = fe_rt_xfem_->n_regular_dofs();  //skip regular part
+    for (; li < ndofs; li++) {
+        flux += mh_dh_->mh_solution[dofs[li]]
+                    * fv_rt_xfem_->shape_vector(li,0);
     }
     
     return flux;
