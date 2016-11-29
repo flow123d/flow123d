@@ -68,7 +68,7 @@ class TypeSelectionValue(Parsable):
                     return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.name))
                 return '{}::{}'.format(parent_id, TexList.name_mode(self.name))
 
-            return '{self.parent.href_id}-{self.name}'.format(self=self)
+            return '{self.parent.href_id}:{self.name}'.format(self=self)
         return self.name
 
     @property
@@ -118,7 +118,7 @@ class TypeRecordKey(Parsable):
         self.description = None
 
     def include_in_format(self):
-        return True
+        return self.key != 'TYPE'
 
     @property
     def href_id(self):
@@ -129,7 +129,7 @@ class TypeRecordKey(Parsable):
                     return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.key))
                 return '{}::{}'.format(parent_id, TexList.name_mode(self.key))
 
-            return '{self.parent.href_id}-{self.key}'.format(self=self)
+            return '{self.parent.href_id}:{self.key}'.format(self=self)
         return self.key
 
     @property
