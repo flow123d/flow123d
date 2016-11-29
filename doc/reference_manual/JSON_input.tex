@@ -336,10 +336,10 @@ grouped into composed regions called also region sets. A simple region may be pa
 Initial assignment of the simple regions to the elements is given by the physical groups of the input GMSH file. Further
 modification of this assignment as well as creation of new simple or composed regions can be done 
 through the list of operations under the key \hyperA{Mesh::regions}{{\tt regions}}. The operations are performed in the order given by the input.
-Operation \hyperA{Region::From-Id}{{\tt From\_Id}} sets the name of a simple region having only ID in the input GMSH file. Operation 
-\hyperA{Region::From-Label}{{\tt From\_Label}} can rename a simple region. Operation \hyperA{Region::From-Elements}{{\tt From\_Elements}}
+Operation \hyperA{IT::From-Id}{{\tt From\_Id}} sets the name of a simple region having only ID in the input GMSH file. Operation 
+\hyperA{IT::From-Label}{{\tt From\_Label}} can rename a simple region. Operation \hyperA{IT::From-Elements}{{\tt From\_Elements}}
 assign new simple region to the given list of elements overwriting their region given by the input mesh file. Finally operations 
-\hyperA{Region::Union}{{\tt Union}}, \hyperA{Region::Difference}{{\tt Difference}} and \hyperA{Region::Intersection}{{\tt Intersection}}
+\hyperA{IT::Union}{{\tt Union}}, \hyperA{IT::Difference}{{\tt Difference}} and \hyperA{IT::Intersection}{{\tt Intersection}}
 implements standard set operations with both simple and complex regions resulting in new composed regions.
 
 
@@ -399,7 +399,8 @@ input_fields = [
 
 
 \subsubsection{Field Algorithms}
-\label{sec:Fields}
+\label{sec:Fields}\hypertarget{sec:Fields}{}
+
 A general time and space dependent, scalar, vector, or  tensor valued function can be specified through the family of abstract records 
 \verb'Field:R3 -> X', where $X$ is a type of value returned by the field, which can be:
 \begin{itemize}
@@ -477,8 +478,8 @@ Example, unit for the pressure head:
 
 
 \subsection{Output Records}
-Output from the models is controlled by an interplay of following records: \hyperA{OutputStream}{{\tt OutputStream}},
-\hyperA{Balance}{{\tt Balance}}, and \hyperA{EquationOutput}{{\tt EquationOutput}}. The first two are part of the 
+Output from the models is controlled by an interplay of following records: \hyperA{IT::OutputStream}{{\tt OutputStream}},
+\hyperA{IT::Balance}{{\tt Balance}}, and \hyperA{IT::EquationOutput}{{\tt EquationOutput}}. The first two are part of the 
 records of so called {\it balance equations} which provides complete description of some balanced quantity. 
 Every such equation have its own balance output controlled by the \verb'Balance' record and its own output stream for the 
 spatial data controled by the \verb'OutputStream' record. Further every equation with its own output fields 
@@ -507,6 +508,7 @@ The outputs times for the spatial output can be selected individually for every 
 using the key \hyperA{EquationOutput::add-input-times}{{\tt add\_input\_times}}.
 
 \subsubsection{TimeGrid Array}
-\ref{sec:TimeGrid}
-An array of the \hyperA{TimeGrid}{{\tt TimeGrid}} records may be used to setup a sequence of times. Such sequence is used in particular 
+\hypertarget{sec:TimeGrid}{}
+
+An array of the \hyperA{IT::TimeGrid}{{\tt TimeGrid}} records may be used to setup a sequence of times. Such sequence is used in particular 
 to triger various types of output. A single TimeGrid represents a regular grid of times with given start time, end time and step.
