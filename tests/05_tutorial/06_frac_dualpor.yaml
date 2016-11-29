@@ -26,7 +26,7 @@
 ##Results of calibration of the model with dual porosity and model with flow in blind fractures (file ```06_frac_nodualpor.yaml```) is depicted in Figure {@fig:calib}.
 ##
 ##
-##![Results of calibration.](images/06_mass_flux.pdf){#fig:calib}
+##![Results of calibration.](tutor_figures/06_mass_flux.pdf){#fig:calib}
 ##
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential

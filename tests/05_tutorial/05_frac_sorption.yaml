@@ -35,7 +35,7 @@
 ##
 ##Figure {@fig:sorp_res} depicts the influence of linear and Langmuir isotherm on the transport of substances. The substance I without sorption flows out of the fracture fastest and the substance Ra flows out slowest.
 ##
-##![Results of sorption.](images/05_mass_flux.pdf){#fig:sorp_res}
+##![Results of sorption.](tutor_figures/05_mass_flux.pdf){#fig:sorp_res}
 ##
 ##
 flow123d_version: 2.0.0
