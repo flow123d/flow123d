@@ -23,6 +23,8 @@
 # This makefile just provide main rules for: build, documentation and testing
 # Build itself takes place in ../<branch>-build
 #
+# Variable FORCE_DOC_UPDATE=1 may be used to fail when generated doc files con not be updated.
+#
 
 # following depends on git_post_checkout_hook
 # every target using var. BUILD_DIR has to depend on 'update-build-tree'
@@ -140,7 +142,12 @@ update-input-ref:
 		$(BUILD_DIR)/bin/flow123d --input_format "$(DOC_DIR)/input_reference.json"; \
 		python $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(DOC_DIR)/input_reference.tex --format=tex; \
 	else \
-		echo "Warning: No flow123d binary. Can not update $(DOC_DIR)/input_reference.tex."; \
+		if [ -z $(FORCE_DOC_UPDATE) ];\
+		then \
+			echo "Warning: No flow123d binary. Can not update $(DOC_DIR)/input_reference.tex."; \
+		else \
+			echo "Error: No flow123d binary. Can not update $(DOC_DIR)/input_reference.tex." && false; \
+		fi \
 	fi	
 
 
@@ -152,7 +159,13 @@ update-tutorials: $(TUTORIALS_IN_DOC)
 $(TUTORIALS_IN_DOC):
 	@cp $(TUTOR_DIR)/$@ $(DOC_DIR)
 	@if ! ( cd $(DOC_DIR) && $(TUTOR_DIR)/make_tex.sh $@ ); \
-	then echo "Waring: Can not update TEX file for tutorial $@."; \
+	then \
+		if [ -z $(FORCE_DOC_UPDATE) ];\
+		then \
+			echo "Waring: Can not update TEX file for tutorial $@."; \
+		else \
+			echo "Error: Can not update TEX file for tutorial $@." && false; \
+		fi \
 	fi
 
 

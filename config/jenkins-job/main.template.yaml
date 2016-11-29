@@ -323,7 +323,7 @@
       - shell: |
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} html-doc
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} doxy-doc
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} ref-doc
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
 
 
 # ---------------------------------------------------------------------------- #
