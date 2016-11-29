@@ -43,6 +43,9 @@ doc/reference_manual/*.out
 doc/reference_manual/*.synctex.gz
 doc/reference_manual/*.toc
 doc/reference_manual/flow_version.tex
+doc/reference_manual/images/*
+doc/reference_manual/*.yaml
+
 
 .cproject
 .project
