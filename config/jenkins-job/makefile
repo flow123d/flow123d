@@ -6,7 +6,9 @@
 # ${CMAKE_COMMAND} -DINPUT=jenkins_jobs_template.yaml -DOUTPUT=${JENKINS_JOBS_FILE} -P ${CMAKE_CURRENT_SOURCE_DIR}/expand_placeholders.cmake
 
 # default configuration for jenkins-jobs-builder
-#CONFIG=--conf jenkins.ini
+ifdef CONFIG
+CONFIG_ARG=--conf $(CONFIG)
+endif
 
 # target which replaces placeholders in all *.yaml.template files
 # located in jobs dir
@@ -26,7 +28,7 @@ test: expand
 	@echo "-----------------------------------------------"
 	@echo "Using configuration scripts $(CONFIG)"
 	@echo "-----------------------------------------------"
-	jenkins-jobs $(CONFIG) test jobs/main.yaml
+	jenkins-jobs $(CONFIG_ARG) test jobs/main.yaml
 
 
 # target which runs "test" on jenkins-jobs
@@ -35,13 +37,13 @@ upload: expand
 	@echo "-----------------------------------------------"
 	@echo "Using configuration scripts $(CONFIG)"
 	@echo "-----------------------------------------------"
-	jenkins-jobs $(CONFIG) --ignore-cache update jobs/main.yaml
+	jenkins-jobs $(CONFIG_ARG) --ignore-cache update jobs/main.yaml
 
 
 # target which uploads configuration via jenkins-jobs to server
 .PHONY: delete
 delete: #which
-	jenkins-jobs $(CONFIG) --ignore-cache delete-all
+	jenkins-jobs $(CONFIG_ARG) --ignore-cache delete-all
 
 
 #.PHONY: which
@@ -59,7 +61,7 @@ help:
 	@echo "              upload and prints result xml"
 	@echo ""
 	@echo "    - upload: expands placeholders and uploads configuration to server"
-	@echo "              by default $(CONFIG) is used."
+	@echo "              by default config file is used."
 	@echo "              You can override this behaviour by specifying variable"
 	@echo "              CONFIG in make step, example:"
 	@echo "              make CONFIG=foo.ini upload"

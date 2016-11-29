@@ -212,7 +212,7 @@
       - git:
           url: https://github.com/flow123d/flow123d.git
           branches:
-              - origin/master
+              - "*"
           basedir: flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
@@ -397,7 +397,9 @@
       - git:
           url: https://github.com/flow123d/flow123d.git
           branches:
-              - origin/master
+              - master
+              - 2.0.0
+              - 2.1.0
           basedir: flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/

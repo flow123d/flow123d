@@ -12,4 +12,4 @@ ignore_cache=True
 [jenkins]
 user=admin
 password=
-url=http://ciflow.nti.tul.cz:8081/
+url=http://ciflow.nti.tul.cz:8080/
