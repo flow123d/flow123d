@@ -48,7 +48,7 @@ cmake_minimum_required(VERSION 2.8)
   set(doc_img_dirs
       tests_graphics 
       figures
-      images
+      tutor_figures
   )
   
   

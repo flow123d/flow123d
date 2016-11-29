@@ -29,7 +29,7 @@
 ##
 ##: Geometrical parameters. {#tbl:water_balance}
 ##
-##![Geometry, boundary conditions and computational mesh.](images/07_bcmesh.pdf){#fig:BCD width=100%}
+##![Geometry, boundary conditions and computational mesh.](tutor_figures/07_bcmesh.pdf){#fig:BCD width=100%}
 ##
 ##
 ##
@@ -124,11 +124,11 @@
 ##The evolution of power of the heat exchanger (difference of absolute energy flux on the surface of the two wells) is depicted in Figure {@fig:tempr}. The result of water flow is depicted in Figure {@fig:flux} and the temperature field of the whole massif after 30 years is depicted in Figure {@fig:tempr_grad}.
 ##
 ##
-##![The power of heat exchanger system in 30 years.](images/07_power.pdf){#fig:tempr}
+##![The power of heat exchanger system in 30 years.](tutor_figures/07_power.pdf){#fig:tempr}
 ##
-##![The flux field with piezometric head.](images/07_flow.pdf){#fig:flux width=80%}
+##![The flux field with piezometric head.](tutor_figures/07_flow.pdf){#fig:flux width=80%}
 ##
-##![The temperature of exchanger after 30 years.](images/07_transport.pdf){#fig:tempr_grad width=80%}
+##![The temperature of exchanger after 30 years.](tutor_figures/07_transport.pdf){#fig:tempr_grad width=80%}
 ##
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential

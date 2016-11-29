@@ -29,7 +29,7 @@
 ##
 ##This ensures that the 2D mesh will adapt so that elements do not cross the fracture lines (see Figure {@fig:mesh}).
 ##
-##![Geometry and mesh of simulation area.](images/04_geomesh.pdf){#fig:mesh width=100%}
+##![Geometry and mesh of simulation area.](tutor_figures/04_geomesh.pdf){#fig:mesh width=100%}
 ## 
 ##
 ##
@@ -159,7 +159,7 @@
 ##
 ##
 ##
-##![Outgoing mass flux through the right part of the boundary. Comparison of results with and without blind fractures.](images/04_mass_flux.pdf){#fig:diff_res} 
+##![Outgoing mass flux through the right part of the boundary. Comparison of results with and without blind fractures.](tutor_figures/04_mass_flux.pdf){#fig:diff_res} 
 ##
 ##
 flow123d_version: 2.0.0
