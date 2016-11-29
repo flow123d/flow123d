@@ -6,6 +6,9 @@
 \BeforeBeginEnvironment{longtable}{\begin{table}[h]\scriptsize}
 \AfterEndEnvironment{longtable}{\end{table}}
 
+% suppress subsections in table of contents
+\addtocontents{toc}{\setcounter{tocdepth}{1}}
+
 In this chapter we describe several tutorial files that demonstrate various features of Flow123d.
 The tutorial files are placed in \texttt{tests/05\_tutorial}.
 
@@ -20,3 +23,6 @@ The tutorial files are placed in \texttt{tests/05\_tutorial}.
 % use normal font in long tables in the rest of document
 \BeforeBeginEnvironment{longtable}{}
 \AfterEndEnvironment{longtable}{}
+
+% allow again subsections in table of contents
+\addtocontents{toc}{\setcounter{tocdepth}{3}}

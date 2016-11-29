@@ -139,7 +139,7 @@ people:
 \begin{itemize}
  \item Unquoted string values can not contain characters: colon \verb':', hash \verb'#', 
  brackets \verb'[]', braces \verb'{}', less then \verb'<', vertical bar \verb'|'.
- \item For indentation one can use only spaces tabs are not allowed. However, your editor editor may automatically convert tab to spaces.
+ \item For indentation one can use only spaces; tabs are not allowed. However, your editor may automatically convert tabs to spaces.
  \item Boolean special strings must be quoted if you want to express a string. This is not problem for the Flow123d input.
  \item Numbers starting with digit zero are interpreted as octal numbers. 
 \end{itemize}
@@ -366,34 +366,24 @@ the evaluation algorithms, these are always assumed to be continuous and the tim
 
 Example:
 \begin{verbatim}
-input_fields = [   
-    { // time=0.0  - default value
-        r_set="BULK",
-        conductivity=1   // setting the conductivity field on all regions
-    },
-    {
-        region="2d_part",
-        conductivity=2  // overwriting the previous value
-    },
-    {   time=1.0,
-        region="2d_part",
-        conductivity={
-            // from time=1.0 we switch to the linear function in time
-            TYPE=FieldFormula,
-            value="2+t"      
-        }    
-    },
-    {   time=2.0,
-        region="2d_part",
-        conductivity={
-            // from time=2.0 we switch to elementwise field, but only
-            // on the region "2d_part"
-            TYPE=FieldElementwise,
-            gmsh_file="./input/data.msh",
-            field_name="conductivity"
-        }
-    }    
-]               
+input_fields:
+  - # time=0.0  - default value
+    region: BULK
+    conductivity: 1   # setting the conductivity field on all regions
+  - region: 2d_part
+    conductivity: 2  # overwriting the previous value
+  - time: 1.0
+    region: 2d_part
+    conductivity: !FieldFormula
+      # from time=1.0 we switch to the linear function in time
+      value: 2+t
+  - time: 2.0
+    region: 2d_part
+    conductivity: !FieldElementwise
+      # from time=2.0 we switch to elementwise field, but only
+      # on the region "2d_part"
+      gmsh_file: ./input/data.msh
+      field_name: conductivity
 \end{verbatim}
 
 
