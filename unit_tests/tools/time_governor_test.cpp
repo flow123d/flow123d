@@ -250,6 +250,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     // new_mark_type = next_mark_type = 0x05<<1 = 0x08
     TimeMark::Type my_mark_type = tm.new_mark_type();	
     TimeMark::Type your_mark_type = tm.new_mark_type();
+    std::cout << "equation idxs - my_mark_type: " << (unsigned int)my_mark_type.equation_index_ << ", your_mark_type " << (unsigned int)your_mark_type.equation_index_ << std::endl;
     
     //adding equally spaced marks of my_mark_type type
     tm.add_time_marks(2.0, 0.25, 3.0, my_mark_type);
@@ -257,7 +258,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm.add(TimeMark(5.0, your_mark_type | tm.type_fixed_time() ));
     
     //inserting TimeMark
-    tm.add(TimeMark(1.0,my_mark_type | tm.type_input()  ));
+    tm.add(TimeMark(1.0, my_mark_type | tm.type_input()  ));
     //adding mark type at previously defined time
     tm.add(TimeMark(3.0, your_mark_type));
     
@@ -271,7 +272,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     }
     )JSON";
     //constructing Time Governor from json input string
-    TimeGovernor *tm_tg = new TimeGovernor( read_input(flow_json), my_mark_type  );
+    TimeGovernor *tm_tg = new TimeGovernor( read_input(flow_json), your_mark_type  );
     
     cout << tm;
     
@@ -285,42 +286,41 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ(0 ,tm_tg->tlevel());
     EXPECT_TRUE(tm_tg->is_changed_dt()); 	//changed from ZERO
 	 
-    //----------------- first testing of TimeMarks with TimeGovernor
-    //next() is now done always from the time of governor = 0.0
-    TimeMarks::iterator it = tm.begin();
-    
+    {
+        //----------------- first testing of TimeMarks with TimeGovernor
+        //next() is now done always from the time of governor = 0.0
+        TimeMarks::iterator it = tm.begin(your_mark_type);
 
-    EXPECT_EQ(TimeMark::every_type ,it->mark_type()); //begins with ~0x0
-    EXPECT_EQ(100 ,(++it)->time());
-    EXPECT_EQ(-inf_time ,(--it)->time());
+        EXPECT_EQ(TimeMark::every_type.bitmap_, it->mark_type().bitmap_); //begins with ~0x0
+        EXPECT_EQ(0 ,(++it)->time());
+        EXPECT_EQ(3 ,(++it)->time());
+        EXPECT_EQ(5 ,(++it)->time());
+        EXPECT_EQ(20,(++it)->time());
+
+        it = tm_tg->next(your_mark_type);
+        EXPECT_EQ(3.0 ,(it)->time());
+        EXPECT_EQ(0 ,(--it)->time());
+        EXPECT_EQ(-inf_time ,(--it)->time());
+    }
     
-    it = tm_tg->next(tm.type_fixed_time());
-    EXPECT_EQ(5.0 ,(it)->time());		//this goes from start time 0.0 not from -inf
+    {
+        TimeMarks::iterator it = tm.begin(my_mark_type);
+        //it = tm_tg->next(my_mark_type);     //this goes from start time 0.8 not from -inf
+        EXPECT_EQ(0.8 ,(++it)->time());
+        EXPECT_EQ(1.0 ,(++it)->time());
+        EXPECT_EQ(2.0 ,(++it)->time());
+        EXPECT_EQ(2.25 ,(++it)->time());
+        EXPECT_EQ(2.5 ,(++it)->time());
+        EXPECT_EQ(2.75 ,(++it)->time());
+        EXPECT_EQ(3.0 ,(++it)->time());	//is included in 0x18
+    }
     
-    it = tm_tg->next(my_mark_type);
-    EXPECT_EQ(0.8 ,(it)->time());		//is included in every_type
-    EXPECT_EQ(1.0 ,(++it)->time());
-    EXPECT_EQ(2.0 ,(++it)->time());
-    EXPECT_EQ(2.25 ,(++it)->time());
-    EXPECT_EQ(2.5 ,(++it)->time());
-    EXPECT_EQ(2.75 ,(++it)->time());
-    EXPECT_EQ(3.0 ,(++it)->time());	//is included in 0x18
-    
-    it = tm_tg->next(your_mark_type);
-    EXPECT_EQ(3.0 ,(it)->time());	//is included in your_mark_type
-    
-    it = tm_tg->next(tm.type_fixed_time());
-    EXPECT_EQ(5.0 ,(it)->time());
-    EXPECT_EQ(20.0 ,(++it)->time());	//end_time = 20.0
-    
-    EXPECT_EQ(5.0 ,(--it)->time());
-    EXPECT_FLOAT_EQ( 0.0, (--it)->time());
-    EXPECT_EQ(-1.0 ,(--it)->time());
-    EXPECT_EQ(-inf_time ,(--it)->time());	//is included in every_type
-    
-    it = tm_tg->next( TimeMark::every_type);
-    EXPECT_EQ(100 ,it->time());
-    EXPECT_EQ(inf_time ,(++it)->time());
+    {
+        TimeMarks::iterator it = tm.begin(TimeMark::every_type);
+        //it = tm_tg->next( TimeMark::every_type);
+        EXPECT_EQ(100 ,(++it)->time());
+        EXPECT_EQ(inf_time ,(++it)->time());
+    }
     //-----------------
 
     //set permanent min_dt and max_dt
@@ -356,7 +356,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ(2 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 0.5
-    EXPECT_TRUE(tm_tg->is_current(my_mark_type) ); // time 1.0 (of tg) is lt time 1.5 (of last timemark + dt = 1.0+0.5 = 1.5)
+    EXPECT_FALSE(tm_tg->is_current(your_mark_type) ); // time 1.0 (of tg) is not lt time 1.5 (of last timemark + dt = 1.0+0.5 = 1.5)
     // time mark 0x8 in time 1.0 is the last in interval (0.5;1.0]
     // time mark 0x8 in time 0.8 in interval (0.5;1.0] is skipped
     
@@ -379,7 +379,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ(4 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 0.5
-    EXPECT_TRUE(tm_tg->is_current(my_mark_type)); // time 2.0 (of tg) is lt time 2.5 (of last timemark + dt = 2.0+0.5 = 2.5)
+    EXPECT_FALSE(tm_tg->is_current(your_mark_type)); // time 2.0 (of tg) is lt time 2.5 (of last timemark + dt = 2.0+0.5 = 2.5)
     // time mark 0x8 in time 2.0 is the last in interval (1.5;2.0]
     
     
@@ -391,15 +391,13 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ(4.0 ,tm_tg->t());
+    EXPECT_EQ(3.5 ,tm_tg->t());
     EXPECT_EQ(5 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     // FAILURE
     EXPECT_TRUE(tm_tg->is_changed_dt()); 	//is changed from 0.5 to 1.5
     // FAILURE
     EXPECT_FALSE(tm_tg->is_current(TimeMark::every_type)); // time 3.5 (of tg) is NOT lt time 1.5 (of last timemark + dt =0.0+1.5 = 1.5)
-    // FAILURE
-    EXPECT_TRUE(tm_tg->is_current(my_mark_type));
     // FAILURE
     EXPECT_TRUE(tm_tg->is_current(your_mark_type)); // time 3.5 (of tg) is lt time 4.5 (of last timemark + dt =3.0+1.5 = 4.5)
     // time mark 0x18 (0x08 included) in time 3.0 is the last in interval (2.0;3.5]
@@ -408,35 +406,42 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ(6.0 ,tm_tg->t());
+    EXPECT_EQ(5.0 ,tm_tg->t());
     EXPECT_EQ(6 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 1.5
     // FAILURE
-    EXPECT_FALSE(tm_tg->is_current(tm.type_fixed_time())); // time 5.0 (of tg) is NOT lt time 4.5 (of last timemark + dt =3.0+1.5 = 4.5)
+    EXPECT_TRUE(tm_tg->is_current(tm.type_fixed_time())); // time 5.0 (of tg) is NOT lt time 4.5 (of last timemark + dt =3.0+1.5 = 4.5)
     //no time mark 0x08 is in interval (3.5;5.0]
     // FAILURE
-    EXPECT_FALSE(tm_tg->is_current(your_mark_type)); // time 5.0 (of tg) is lt time 6.5 (of last timemark + dt =5.0+1.5 = 6.5)
+    EXPECT_TRUE(tm_tg->is_current(your_mark_type)); // time 5.0 (of tg) is lt time 6.5 (of last timemark + dt =5.0+1.5 = 6.5)
     // time mark 0x11 (0x10 included) in time 3.0 is the last in interval (2.0;3.5]
      
     //-----------------
     
     
     //-----------------testing TimeMarks, TimeMarkIterator and last()
-    it = tm_tg->next(TimeMark::every_type);
-    EXPECT_EQ(100 ,(it)->time());
+    {
+        TimeMarks::iterator it = tm.begin(TimeMark::every_type);
+        //it = tm_tg->next(TimeMark::every_type);
+        EXPECT_EQ(100 ,(++it)->time());
+
+        it = tm_tg->last(TimeMark::every_type);
+        EXPECT_EQ(-inf_time ,(it)->time());
+    }
     
-    it = tm_tg->last(TimeMark::every_type);
-    EXPECT_EQ(-inf_time ,(it)->time());
+    {
+        TimeMarks::iterator it = tm.begin(my_mark_type);
+        it = tm_tg->last(my_mark_type);	//is included there
+        EXPECT_EQ(3.0 ,(it)->time());
+    }
     
-    it = tm_tg->last(my_mark_type);	//is included there
-    EXPECT_EQ(3.0 ,(it)->time());
     
-    it = tm_tg->last(your_mark_type);	//is equal to time of TimeGovernor
-    EXPECT_EQ(5.0 ,(it)->time());
-    
-    it = tm_tg->last(tm.type_fixed_time());	//is included
-    EXPECT_EQ(5.0 ,(it)->time());
+    {
+        TimeMarks::iterator it = tm.begin(your_mark_type);
+        it = tm_tg->last(your_mark_type);
+        EXPECT_EQ(5.0 ,(it)->time());
+    }
     
     delete tm_tg;
 }
@@ -477,7 +482,7 @@ TEST (TimeGovernor, simple_constructor)
     TimeGovernor::marks().reinit();
 
 	// Test of constructor without JSON input
-	TimeGovernor tg(10, 0.5);
+    TimeGovernor tg(10, 0.5);
 
 	EXPECT_EQ(tg.t(), 10);
 //	EXPECT_EQ(tg.dt(), 0.5);
@@ -502,11 +507,14 @@ TEST (TimeGovernor, steady_time_governor)
     TimeGovernor *steady_tg = new TimeGovernor();
     TimeMarks &tm=steady_tg->marks();
     tm.add(TimeMark(100,TimeMark::every_type));
+    tm.add(TimeMark(100,TimeMark::Type(~0x0, 1)));
 
     
     steady_tg->view("first_steady");
     tm.add(TimeMark(0.0, tm.type_output() | steady_tg->equation_mark_type()) );
     
+    cout << tm;
+
     EXPECT_EQ( steady_tg->t(), 0.0 );
     EXPECT_EQ( steady_tg->end_time(), inf_time );
     EXPECT_FLOAT_EQ( 0.0, steady_tg->end_of_fixed_dt() );
