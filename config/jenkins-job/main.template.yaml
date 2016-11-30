@@ -31,13 +31,13 @@
       - $PLACEHOLDER_test_list$
     jobs:
       - "Flow123d-{platform}-{build-type}-install-image"
-      - "Flow123d-{platform}-{build-type}-start-image"
       - "Flow123d-{platform}-{build-type}-configure"
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
       - "Flow123d-{platform}-{build-type}-test-{test-dir}"
       - "Flow123d-{platform}-{build-type}-make-doc"
       - "Flow123d-{platform}-{build-type}-stop-image"
+      - "Flow123d-{platform}-debug-start-image"
       - "Flow123d-{platform}-debug-multijob"
 
 # ---------------------------------------------------------------------------- #
@@ -64,28 +64,28 @@
           echo ${{_GIT_BRANCH}}
 
 
-## ---------------------------------------------------------------------------- #
-## ---------- START IMAGE ----------------------------------------------------- #
-## ---------------------------------------------------------------------------- #
-#- job-template:
-#    name: "Flow123d-{platform}-{build-type}-start-image"
-#    display-name: "{build-type} / Flow123d start image"
-#    defaults: flow123d-build
-#    builders:
-#      - inject:
-#          properties-file: prop.file
-#      - shell: |
-#          rm -f /tmp/docker_test_debug.cid
-#          docker run --privileged -di --cidfile /tmp/docker_test_debug.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
-#          docker_pid=`cat /tmp/docker_test_debug.cid`
-#          echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
-#          echo "FLOW=/opt/flow123d/flow123d" >> prop.file
+# ---------------------------------------------------------------------------- #
+# ---------- START IMAGE ----------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+   name: "Flow123d-{platform}-debug-start-image"
+   display-name: "{build-type} / Flow123d start image"
+   defaults: flow123d-build
+   builders:
+     - inject:
+         properties-file: prop.file
+     - shell: |
+         rm -f /tmp/docker_test_debug.cid
+         docker run --privileged -di --cidfile /tmp/docker_test_debug.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
+         docker_pid=`cat /tmp/docker_test_debug.cid`
+         echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
+         echo "FLOW=/opt/flow123d/flow123d" >> prop.file
 
 # ---------------------------------------------------------------------------- #
 # ---------- START IMAGE ----------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 - job-template:
-    name: "Flow123d-{platform}-{build-type}-start-image"
+    name: "Flow123d-{platform}-release-start-image"
     display-name: "{build-type} / Flow123d start image"
     defaults: flow123d-build
     builders:
@@ -296,7 +296,6 @@
       - $PLACEHOLDER_test_list$
     jobs:
       - "Flow123d-{platform}-{build-type}-install-image"
-      - "Flow123d-{platform}-{build-type}-start-image"
       - "Flow123d-{platform}-{build-type}-configure"
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
@@ -304,6 +303,7 @@
       - "Flow123d-{platform}-{build-type}-make-doc"
       - "Flow123d-{platform}-{build-type}-package"
       - "Flow123d-{platform}-{build-type}-stop-image"
+      - "Flow123d-{platform}-release-start-image"
       - "Flow123d-{platform}-release-multijob"
 
 
