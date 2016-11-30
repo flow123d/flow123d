@@ -1,8 +1,8 @@
-\section{1D column}\label{d-column}
+\section{1D column}
 
 File: \texttt{01\_column.yaml}
 
-\subsection{Description}\label{description}
+\subsection{Description}
 
 The first example is inspired by a real locality of a water treatment
 plant tunnel Bedřichov in the granite rock massif. There is a particular
@@ -22,24 +22,23 @@ The user will learn how to:
 
 A pseudo one-dimensional model is considered in the range 10 \(\times\)
 23 m with the atmospheric pressure on the surface and on the bottom, and
-no flow boundary condition on the edges (Figure \ref{fig:geom}).
+no flow boundary condition on the edges (Figure \ref{fig:column_geom}).
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=1.00000\textwidth]{tutor_figures/01_mesh_bc_flux.pdf}
 \caption{a) the mesh; b) the boundary conditions; c) computed
-piezometric head and flux.\label{fig:geom}}
+piezometric head and flux.\label{fig:column_geom}}
 \end{figure}
 
-\subsection{Input}\label{input}
+\subsection{Input}
 
 The model settings are given in the control file, which is in YAML
 format. Every line contains one parameter and its value(s). The
 indentation of lines is important, since it indicates the section to
 which the parameter belongs.
 
-\subsubsection{Setting the computational
-mesh}\label{setting-the-computational-mesh}
+\subsubsection{Setting the computational mesh}
 
 The mesh file can be generated using the software
 \href{http://www.gmsh.info}{GMSH}. It has to contain:
@@ -64,8 +63,7 @@ The mesh file is specified by the following lines:
     mesh_file: 01_mesh.msh
 \end{verbatim}
 
-\subsubsection{Setting the model and physical
-parameters}\label{setting-the-model-and-physical-parameters}
+\subsubsection{Setting the model and physical parameters}
 
 In this example we use the Darcy flow model, which is set by:
 
@@ -102,8 +100,7 @@ We prescribe the atmospheric presure both at the surface and the tunnel:
 If no boundary condition is given then the default ``no flow'' is
 applied.
 
-\subsubsection{Setting solver
-parameters}\label{setting-solver-parameters}
+\subsubsection{Setting solver parameters}
 
 For the solution of the linear algebra problem we have to specify solver
 type and tolerances for controlling the residual. In
@@ -122,7 +119,7 @@ given: absolute and relative tolerance of residual.
 The key \texttt{nonlinear\_solver} has further parameters which play
 role in other (nonlinear) flow models.
 
-\subsubsection{Setting output}\label{setting-output}
+\subsubsection{Setting output}
 
 In the section \texttt{output\_stream} we define the file name and type
 (supported types are \texttt{gmsh} and \texttt{vtk}, which can be viewed
@@ -163,7 +160,7 @@ This is turned on by
   balance: {}
 \end{verbatim}
 
-\subsection{Results}\label{results}
+\subsection{Results}
 
 The results of computation are generated to the files \texttt{flow.msh}
 and \texttt{water\_balance.txt}. From the balance file, one can see that
@@ -192,7 +189,7 @@ from the file). \label{tbl:tunnel_water_balance}}\tabularnewline
 \bottomrule
 \end{longtable}
 
-\subsection{Variant}\label{variant}
+\subsection{Variant}
 
 Control file \texttt{02\_column\_transport.yaml} contains modified
 boundary conditions and solute transport model for the same physical

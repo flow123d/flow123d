@@ -1,8 +1,8 @@
-\section{Heat transport}\label{heat-transport}
+\section{Heat transport}
 
 File: \texttt{07\_heat.yaml}
 
-\subsection{Description}\label{description}
+\subsection{Description}
 
 The task is inspired by the hot-dry-rock method of geothermal heat
 exchanger. The exchanger should be in progress for 30 years and give the
@@ -20,9 +20,9 @@ The user will learn how to:
   Specify linear algebra solver.
 \end{itemize}
 
-\subsection{Input}\label{input}
+\subsection{Input}
 
-\subsubsection{Geometry}\label{geometry}
+\subsubsection{Geometry}
 
 We consider a two-dimensional model 5000 \(\times\) 5000 m with two
 vertical wells at the distance of 3000 m. The wells are 4300 m deep with
@@ -59,7 +59,7 @@ Well cross section & 0.04 m\({}^2\)\tabularnewline
 mesh.\label{fig:BCD}}
 \end{figure}
 
-\subsubsection{Hydraulic model}\label{hydraulic-model}
+\subsubsection{Hydraulic model}
 
 The hydraulic conductivity was set to 1 \(\times\) \(10^{-10}\) m/s for
 the rock and to 1 \(\times\) \(10^{-4}\) m/s for the exchanger zone.
@@ -114,7 +114,7 @@ the linear algebra solver:
       options: -ksp_type preonly -pc_type lu
 \end{verbatim}
 
-\subsubsection{Heat transport model}\label{heat-transport-model}
+\subsubsection{Heat transport model}
 
 The heat transport model (\texttt{Heat\_AdvectionDiffusion\_DG}) assumes
 that the fluid and solid phase are at thermal equilibrium. For the whole
@@ -177,7 +177,7 @@ deep surrounding:
     fracture_sigma: 1
 \end{verbatim}
 
-\subsection{Results}\label{results}
+\subsection{Results}
 
 The evolution of power of the heat exchanger (difference of absolute
 energy flux on the surface of the two wells) is depicted in Figure
