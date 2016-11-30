@@ -16,7 +16,7 @@
 ##The hydraulic model was fitted on the shape of the flux field, where it was assumed that the tunnel drains only a part of the model surface.
 ##In particular, the model was fitted on the estimated discharge of the seepage site.
 ##
-##We impose the following input data (see Figure {@fig:geom}):
+##We impose the following input data (see Figure {@fig:tunnel_geom}):
 ##
 ##* The hydraulic conductivity of the rock medium is set to 2.59e-2 m/day (= 3e-7 m/s);
 ##* On the surface we prescribe the annual precipitation 2.33e-3 m/day (= 852 mm/yr);
@@ -38,13 +38,13 @@
 ##        bc_type: total_flux
 ##        bc_flux: 2.33E-03
 ##
-##![Geometry and boundary condition of model.](images/03_bc.pdf){#fig:geom}
+##![Geometry and boundary condition of model.](tutor_figures/03_bc.pdf){#fig:tunnel_geom}
 ##
 ##
 ##The results are shown in Figure {@fig:flow}, where the flux field and the pressure is shown.
 ##In the unsaturated layer the piezometric head is depicted.
 ##
-##![Pressure, boundary of water level and piezometric head in unsaturated zone and flux field.](images/03_flow.pdf){#fig:flow}
+##![Pressure, boundary of water level and piezometric head in unsaturated zone and flux field.](tutor_figures/03_flow.pdf){#fig:flow width=100%}
 ##
 ### Transport of real isotopes
 ##The stable isotope O-18 was sampled in monthly steps in precipitation at nearby experimental catchment Uhlirska and at the seepage site 23m depth.
@@ -81,15 +81,11 @@
 ##In Figure {@fig:conc_graph}, the computed mass flux through tunnel is compared to the measured data.
 ##The evolution of the transported substance is depicted in Figure {@fig:mass_real}.
 ##
-##![Concentration of O-18 on the seepage site 23m under the surface.](images/03_mass_flux.pdf){#fig:conc_graph}
+##![Concentration of O-18 on the seepage site 23m under the surface.](tutor_figures/03_mass_flux.pdf){#fig:conc_graph}
 ##
-##![Transport of isotopes in two-dimensional model.](images/03_transport.pdf){#fig:mass_real}
+##![Transport of isotopes in two-dimensional model.](tutor_figures/03_transport.pdf){#fig:mass_real width=100%}
 ##
 ##
-##
-### The control file
-##
-##Below is the complete YAML source.
 ##
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential

@@ -35,6 +35,7 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 
     return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
             .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+            .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
             .declare_key("value", STI::get_input_type() , it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
                                         "entries of scalar, vector, or tensor value respectively.\n"
@@ -44,8 +45,8 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
                                         " - array of strings of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                         " - just one string to enter (spatially variable) multiple of the unit matrix.\n"
                                         "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
-			.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
-										"Definition of unit.")
+			//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
+			//							"Definition of unit.")
 	        .allow_auto_conversion("value")
 			.close();
 }
