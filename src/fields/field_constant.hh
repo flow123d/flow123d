@@ -75,7 +75,7 @@ public:
 
 protected:
     /// Compare field value with given minimal and maximal limits.
-    void check_field_limits(const struct FieldAlgoBaseInitData& init_data);
+    void check_field_limits(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
 private:
     /// Registrar of class to factory

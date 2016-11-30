@@ -69,6 +69,7 @@ private:
      *
      * TODO: Temporary solution will be replaced with shared_ptr to field data in FieldAlgoBase
      */
+    std::string field_name_;
 	UnitSI &unit_si_;
 	std::pair<double, double> limits_;
 

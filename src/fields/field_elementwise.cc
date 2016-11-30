@@ -80,6 +80,7 @@ internal_raw_data(false), mesh_(NULL), unit_si_( UnitSI::dimensionless() )
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
 	this->unit_si_ = init_data.unit_si_;
 	this->limits_ = init_data.limits_;
 
@@ -211,8 +212,10 @@ void FieldElementwise<spacedim, Value>::scale_and_check_limits()
 		for(unsigned int i=0; i<vec.size(); ++i) {
 			vec[i] *= this->unit_conversion_coefficient_;
 			if ( (vec[i] < limits_.first) || (vec[i] > limits_.second) ) {
-                WarningOut().fmt("Value {} of Field is out of limits: <{}, {}>\nUnit of the Field: '{}'\n",
-                		vec[i], limits_.first, limits_.second, unit_si_.format_text() );
+				int el_id = mesh_->elements_id_maps(boundary_domain_)[(unsigned int)(i / this->n_components_)];
+                WarningOut().fmt("Value '{}' of FieldElementwise '{}', element id '{}' at address '{}' is out of limits: <{}, {}>\n"
+                		"Unit of the Field: [{}]\n",
+						vec[i], field_name_, el_id, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );
 			}
 		}
 	}

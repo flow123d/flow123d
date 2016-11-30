@@ -53,6 +53,7 @@ template <int spacedim, class Value>
 void FieldTimeFunction<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data)
 {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->field_name_ = init_data.field_name_;
 	this->in_rec_ = rec;
 	this->unit_si_ = init_data.unit_si_;
 	this->limits_ = init_data.limits_;
@@ -72,8 +73,8 @@ bool FieldTimeFunction<spacedim, Value>::set_time(const TimeStep &time)
 	table_function.init_from_input( in_rec_.val<Input::Record>("time_function") );
 	this->r_value_ = table_function.value( time.end() );
     this->value_.scale(this->unit_conversion_coefficient_);
-    struct FieldAlgoBaseInitData init_data(0, this->unit_si_, this->limits_);
-    this->check_field_limits(init_data);
+    struct FieldAlgoBaseInitData init_data(this->field_name_, 0, this->unit_si_, this->limits_);
+    this->check_field_limits(this->in_rec_, init_data);
 
 	return true;
 }

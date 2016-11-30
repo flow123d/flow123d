@@ -120,6 +120,10 @@ private:
     FilePath reader_file_;
     const Mesh *mesh_;
     std::string field_name_;
+
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
+
     /**
      * Initialization data of field. Necessary for check limits.
      *

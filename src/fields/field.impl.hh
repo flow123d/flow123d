@@ -225,7 +225,7 @@ void Field<spacedim, Value>::set_field(
 		const Input::AbstractRecord &a_rec,
 		double time)
 {
-	FieldAlgoBaseInitData init_data(n_comp(), units(), limits());
+	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
 	set_field(domain, FieldBaseType::function_factory(a_rec, init_data), time);
 }
 
@@ -477,7 +477,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         Input::ReaderToStorage reader( default_input, *input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
-    	FieldAlgoBaseInitData init_data(n_comp(), units(), limits());
+    	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
         auto field_ptr = FieldBaseType::function_factory( a_rec , init_data );
         field_ptr->set_mesh( mesh(), is_bc() );
         for(const Region &reg: regions_to_init) {
@@ -504,7 +504,7 @@ template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
 	Input::AbstractRecord field_record;
 	if (rec.opt_val(field.input_name(), field_record)) {
-		FieldAlgoBaseInitData init_data(field.n_comp(), field.units(), field.limits());
+		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits());
 		return FieldBaseType::function_factory(field_record, init_data );
 	}
 	else
