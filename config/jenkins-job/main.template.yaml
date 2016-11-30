@@ -145,6 +145,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
+          echo  ${{RUN_UNIT_TESTS}}
           $(exit ${{RUN_UNIT_TESTS}}) || docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
 
 
@@ -160,6 +161,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
+          echo  ${{RUN_INTEGRATION_TESTS}}
           $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
 
 # ---------------------------------------------------------------------------- #
@@ -222,6 +224,8 @@
       - inject:
           script-content: |
             rm -f prop.file && touch prop.file
+            echo "RUN_UNIT_TESTS=1" >> prop.file
+            echo "RUN_INTEGRATION_TESTS=1" >> prop.file 
             echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
             echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                    >> prop.file
             
@@ -410,6 +414,8 @@
       - inject:
           script-content: |
             rm -f prop.file && touch prop.file
+            echo "RUN_UNIT_TESTS=1" >> prop.file
+            echo "RUN_INTEGRATION_TESTS=1" >> prop.file 
             echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}"          >> prop.file
             echo "DOCKER_IMAGE_NAME=${{BRANCH_NAME#origin/}}-${{GIT_COMMIT:0:6}}"   >> prop.file
             echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                             >> prop.file
