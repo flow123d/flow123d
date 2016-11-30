@@ -321,9 +321,10 @@
       - inject:
           properties-file: prop.file
       - shell: |
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} html-doc
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} doxy-doc
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
+          
 
 
 # ---------------------------------------------------------------------------- #
