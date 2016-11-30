@@ -117,7 +117,7 @@ protected:
 
     void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
     	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
-    	    FieldAlgoBaseInitData init_data(3, UnitSI::dimensionless());
+    	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
     		auto subfield = ScalarField::function_factory((*it), init_data);
     		subfield->set_mesh(mesh, false);
     		subfield->set_time(0.0);
