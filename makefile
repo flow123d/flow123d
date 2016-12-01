@@ -153,7 +153,7 @@ update-input-ref:
 
 .PHONY: update-tutorials
 update-tutorials: $(TUTORIALS_IN_DOC)
-	@cp -r $(TUTOR_DIR)/images $(DOC_DIR)		
+	@cp -r $(TUTOR_DIR)/tutor_figures $(DOC_DIR)		
 
 .PHONY: $(TUTORIALS_IN_DOC)
 $(TUTORIALS_IN_DOC):
