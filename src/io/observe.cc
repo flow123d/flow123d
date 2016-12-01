@@ -386,6 +386,6 @@ void Observe::output_time_frame(double time) {
         }
     }
 
-    
+    observe_values_time_=numeric_limits<double>::signaling_NaN();
 
 }

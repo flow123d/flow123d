@@ -5,3 +5,4 @@ common_config:
 test_cases:
 - files: 08_interpolated.yaml
   proc: [1, 2, 3]
+  memory_limit: 2000
