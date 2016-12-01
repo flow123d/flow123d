@@ -107,6 +107,9 @@ const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_
                                    "Example, unit for the pressure head: "
                                    "'MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2'"
                                     )
+        .allow_auto_conversion("unit_formula")
+        .declare_key("unit_formula", it::String(), it::Default::obligatory(),
+                                   "Definition of unit." )
         .close();
 
     return it::Record("FieldAlgorithmBase_common_aux", "")
