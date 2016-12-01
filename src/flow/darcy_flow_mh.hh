@@ -47,7 +47,7 @@
 #include "fields/field.hh"
 #include "fields/field_set.hh"
 #include "flow/darcy_flow_interface.hh"
-
+#include "input/input_exception.hh"
 
 /// external types:
 class LinSys;
@@ -200,6 +200,8 @@ public:
 
         RichardsSystem system_;
         uint water_balance_idx_;
+
+
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;
@@ -350,6 +352,7 @@ protected:
 	// Propagate test for the time term to the assembly.
 	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
 	bool use_steady_assembly_;
+	bool data_changed_;
 
 	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
 	double tolerance_;

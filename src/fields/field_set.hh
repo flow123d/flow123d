@@ -192,9 +192,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    void set_time(const TimeStep &time, LimitSide limit_side) {
-        for(FieldCommon *field : field_list) field->set_time(time, limit_side);
-    }
+    bool set_time(const TimeStep &time, LimitSide limit_side);
 
     /**
      * Collective interface to @p FieldCommonBase::output_type().
