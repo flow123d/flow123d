@@ -525,6 +525,7 @@ void DarcyMH::solve_nonlinear()
 
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common) break;
+        data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
