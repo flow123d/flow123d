@@ -85,7 +85,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				// input data
 		.declare_key("transport", ConcentrationTransportBase::get_input_type(), Default::obligatory(),
 				"Type of numerical method for solute transport.")
-		.declare_key("reaction_term", ReactionTerm::get_input_type(), Default::optional(),
+		.declare_key("reaction_term", ReactionTerm::it_abstract_term(), Default::optional(),
 					"Reaction model involved in transport.")
 /*
 		.declare_key("output_fields", Array(ConvectionTransport::get_output_selection()),
