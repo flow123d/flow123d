@@ -150,7 +150,7 @@ TimeMarks::iterator TimeMarks::current(const TimeStep &time_step, const TimeMark
 TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
 	ASSERT(tg.equation_mark_type().equation_index_ == mask.equation_index_)
-			(tg.equation_mark_type().equation_index_)(mask.equation_index_).error();
+			((unsigned int)tg.equation_mark_type().equation_index_)((unsigned int)mask.equation_index_).error();
 
 	unsigned char eq_index = mask.equation_index_;
     // first time mark which does not compare less then then actual tg time
