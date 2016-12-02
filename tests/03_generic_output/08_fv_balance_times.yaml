@@ -36,7 +36,11 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {add_output_times: false}
+    balance: 
+      add_output_times: false
+      times:
+        - 0.0
+
   # primary equation
     output_stream:
       file: flow.pvd

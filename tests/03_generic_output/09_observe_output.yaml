@@ -57,6 +57,8 @@ problem: !Coupling_Sequential
       end_time: 1000000.0
     balance:
       cumulative: true
+      times:
+        - 20000.0
     output_stream:
       file: transport.msh
       format: !gmsh {}
