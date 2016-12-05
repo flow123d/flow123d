@@ -148,7 +148,7 @@ and brief user manual.
 
 
 
-\noindent \textbf{\Large{Liberec, 2015}}
+\noindent \textbf{\Large{Liberec, \the\year}}
 
 \vspace{1cm}
 \pagebreak
@@ -159,7 +159,7 @@ and brief user manual.
 
 \vspace{3ex}    
 \noindent
-Jan B\v rezina, Jan Stebel, David Flanderka, Pavel Exner, Ji\v r\' i Hn\' idek,
+Jan B\v rezina, Jan Stebel, David Flanderka, Pavel Exner, Ji\v r\' i Hn\' idek, Jan Hyb\v s
 
 \vspace{3cm}
 \noindent
@@ -180,6 +180,7 @@ Jan B\v rezina, Jan Stebel, David Flanderka, Pavel Exner, Ji\v r\' i Hn\' idek,
 
 \chapter{Getting Started} \label{chapter:getting_started}
 
+\tbd{TODO-JAN BŘEZINA: update after all new sections are written.}
 \section{Introduction}
 Flow123D is a software for simulation of water flow, reactionary solute transport and heat transfer in a heterogeneous 
 porous and fractured medium. In particular it is suited for simulation of underground processes in a granite rock massive.
@@ -226,35 +227,31 @@ generated. It mirrors directly the code and contains the whole input tree of the
 of input records, their structure and default values are supplied there and bidirectional links to the user 
 manual are provided.
 
-
-\section{Running Flow123d}
-On the Linux system the program can be started either directly or through a script \verb'flow123d.sh', both placed in the \verb'bin' directory of the installation 
-package or of the source tree. When started directly, e.g. by the command
+\section{Installing Flow123d (Linux)}
+Download \verb'Flow123d-<version>-Linux.tar.gz' package archive and extract it to any folder. For extraction, use the command
 \begin{verbatim}
-  > flow123d -s example.con
+  > tar -xzf Flow123d-<version>-Linux.tar.gz 
 \end{verbatim}
-the program requires one argument after switch \verb'-s' which is the name of the principal input file. Full list of possible command line arguments is as follows.
+This will create a directory \verb'Flow123d-<version>-Linux' which we further refer as \verb'<flow base>' directory.
+The binary and some supporting scripts depends on working python interpreter.
 
-%  --help                  produce help message
-%  -s [ --solve ] arg      Main input file to solve.
-%  -i [ --input_dir ] arg  Directory for the ${INPUT} placeholder in the main 
-%                          input file.
-%  -o [ --output_dir ] arg Directory for all produced output files.
-%  -l [ --log ] arg        Set base name for log files.
-%  --no_log                Turn off logging.
-%  --no_profiler           Turn off profiler output.
-%  --full_doc              Prints full structure of the main input file.
-%  --JSON_template         Prints description of the main input file as a valid 
-%                          CON file.
-%  --latex_doc             Prints description of the main input file in Latex 
-%                          format using particular macros.
+
+\section{Running Flow123d (Linux)}
+On the Linux system the program can be started either directly or through a script \verb'flow123d.sh', 
+both placed in the \verb'bin' directory of the flow base directory. When started directly, e.g. by the command
+\begin{verbatim}
+  > flow123d example.yaml
+\end{verbatim}
+the program requires at least one argument, which is the name of the principal input file. Full list of possible command line arguments is as follows.
+
 
 
 \begin{description}
  \item[{\tt --help}] \hfill\\
-        Parameters interpreted by Flow123d. Remaining parameters are passed to PETSC.
+        Help for parameters interpreted by Flow123d. Remaining parameters are passed to PETSC.
  \item[ {\tt -s, --solve} ] \verb'<file>' \hfill\\
- 	 Set principal CON input file. All relative paths in the CON file are relative against current directory.
+ 	 Set principal input file. Can be in YAML (or  JSON) file format. All relative paths of the input 
+ 	 files are relative to the location of the principal input file.
  \item[{\tt -i, --input\_dir}] \verb'<directory>' \hfill\\
  	The placeholder \verb"${INPUT}" %$
   	used in the path of an input file will be replaced by the \verb'<directory>'. Default value is \verb'input'.
@@ -267,15 +264,21 @@ the program requires one argument after switch \verb'-s' which is the name of th
         Turn off logging.
  \item[{\tt --no\_profiler}] \hfill\\
         Turn off profiler output.
- \item[{\tt --full\_doc}] \hfill\\
-        Prints full structure of the main input file.
- \item[{\tt --latex\_doc}] \hfill\\ 
-        Prints a description of the main input file in LaTeX format using particular macros.
+ \item[{\tt --petsc\_redirect <file>}] \hfill\\
+        Redirect all PETSc stdout and stderr to given file.       
+ \item[{\tt --input\_format}] \hfill\\ 
+        Prints a description of the main input file in JSON format. Is used by GeoMop model editor and by python scripts for 
+        generating reference documentation in Latex or HTML format.
+ \item[{\tt --yaml\_balance}] \hfill\\
+        Generate balance file also in machine readable YAML format. Will be default in future, used by GeoMop.
+ \item[{\tt --no\_signal\_handler}] \hfill\\
+        For debugging purpose.
+        
 \end{description}
 All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solvers. In order to get list of supported options 
 use parameter \verb'-help' together with some valid input. Options for various PETSC modules are displayed when the module is used for the first time.
 
-
+\tbd{TODO-JAN HYBŠ: modify flow123d.sh to be just abbreviation of python exec\_parallel.py flow123d. Update description.}
 Alternatively, you can use script \verb'flow123d.sh' to start parallel jobs or limit resources used by the program. 
 The syntax is as follows:
 
@@ -309,6 +312,13 @@ where everything after double dash is passed as parameters to the flow123d binar
        it redirects stdout and stderr to the file \verb'<queue>.<date>', which appended date and time of the start of the job.
 \end{description}
 
+
+\section{Installing Flow123d (Windows)}
+\tbd{TODO-JAN HYBŠ: install instructions}
+
+\section{Running Flow123d (Windows)}
+\tbd{TODO-JAN HYBŠ: update this section specific to running under docker. For parameters refer to the Linux doc.}
+
 On the windows operating systems, we use Cygwin libraries in order to emulate Linux API.
 Therefore you have to keep the Cygwin libraries within the same directory as the program executable.
 The Windows package that can be downloaded from project web page contains both the Cygwin libraries
@@ -326,16 +336,19 @@ The program accepts the same parameters as the Linux version, but there is no sc
 
 
 
-
 \input{tutorial}
 
-In the following chapter we describe mathematical models used in Flow123d.
-Then in chapter \ref{chapter:file-formats} we briefly describe structure of individual input files, in particular the main CON file.
-The complete description of the CON format is given in chapter \ref{chapter:input-tree-reference}.
+
+
+
 
 
 \chapter[Mathematical Models of Physical Reality]{Mathematical Models \\of Physical Reality}
 \label{chapter:mathematical_models}
+
+In this chapter we describe mathematical models used in Flow123d.
+Then in chapter \ref{chapter:file-formats} we briefly describe structure of individual input files, in particular the main CON file.
+The complete description of the CON format is given in chapter \ref{chapter:input-tree-reference}.
 
 Flow123d provides models for Darcy flow in porous media as well as for the transport and reactions of solutes. In this section, we describe 
 mathematical formulations of these models together with physical meaning and units of all involved quantities. In the first section we present 
@@ -530,6 +543,8 @@ the surrounding continuum which we shall later apply to individual processes.
 
 \input{heat}
 
+
+
 \chapter{Numerical Methods}
 % TODO: Update numerical topics
 \input{lumped_mh}
@@ -560,6 +575,9 @@ the surrounding continuum which we shall later apply to individual processes.
 %  \chapter{Comparision of versions (WORK IN PROGRESS)}
 %  \label{chapter:version_comparision}
 %  \input{version_comparision}
+
+\chapter{Tutorials}\label{ch:tutorials}
+\input{tutorial_new}
 
 \chapter{Main Input File Reference}
 \label{chapter:input-tree-reference}

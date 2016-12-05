@@ -80,7 +80,7 @@ const it::Record & RichardsLMH::get_input_type() {
     .copy_keys( RichardsLMH::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
 
-    auto model_selection = it::Selection("Flow_Darcy_BC_Type")
+    auto model_selection = it::Selection("Soil_Model_Type", "")
             .add_value(SoilModelBase::van_genuchten, "van_genuchten", "Van Genuchten soil model with cutting near zero.")
             .add_value(SoilModelBase::irmay, "irmay", "Irmay model for conductivity, Van Genuchten model for the water content. Suitable for bentonite.")
             .close();

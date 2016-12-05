@@ -48,7 +48,37 @@ public:
      *  - type_bc_change (hex 0x04)
      *  @see TimeMarks
      */
-    typedef unsigned long int Type;
+	struct Type {
+		Type() : bitmap_(0x1), equation_index_(1) {}
+		Type(unsigned long int bitmap, unsigned char equation_index) : bitmap_(bitmap), equation_index_(equation_index) {}
+
+		/*Type operator&(const Type& other) const {
+			//ASSERT(equation_index_ == other.equation_index_)((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
+			return Type( (bitmap_ & other.bitmap_), equation_index_);
+		}*/
+
+		Type operator|(const Type& other) const {
+			// equation_indexes must be same or one of them must be zero
+			if (equation_index_ == 0) {
+				return Type( (bitmap_ | other.bitmap_), other.equation_index_);
+			} else {
+				ASSERT( (equation_index_ == other.equation_index_) || (other.equation_index_ == 0) )
+						((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
+				return Type( (bitmap_ | other.bitmap_), equation_index_);
+			}
+		}
+
+		Type operator~() const {
+			return Type( ~bitmap_, equation_index_);
+		}
+
+		bool operator==(const Type& other) const {
+			return ( (bitmap_ == other.bitmap_) && ((equation_index_ == other.equation_index_) || (other.equation_index_ == 0)) );
+		}
+
+		unsigned long int bitmap_;
+		unsigned char equation_index_;
+	};
 
     /// Mark Type with all bits set.
     static const Type every_type;
@@ -83,13 +113,15 @@ public:
      */
 
     inline bool match_mask(const TimeMark::Type &mask) const {
-        return ( mask & (~mark_type_) ) == 0;
+        return (( mask.bitmap_ & (~mark_type_.bitmap_) ) == 0) && (mask.equation_index_ == mark_type_.equation_index_ || mask.equation_index_ == 0);
     }
 
     /// Add more bits that a mark satisfies.
     /// @param type type that should be modified
     inline void add_to_type(const TimeMark::Type &type) {
-        mark_type_ |= type;
+        ASSERT( (this->mark_type_.equation_index_ == type.equation_index_) || (type.equation_index_ == 0) )
+                ((unsigned int)this->mark_type_.equation_index_)((unsigned int)type.equation_index_).error();
+        mark_type_.bitmap_ |= type.bitmap_;
     }
 
     /// Comparison of time marks according to their time.
@@ -108,6 +140,8 @@ private:
     double time_;
     /// The type of the TimeMark.
     Type mark_type_;
+
+    friend class TimeMarks;
 };
 
 /**
@@ -265,10 +299,16 @@ public:
     TimeMarks::iterator last(const TimeMark::Type &mask) const;
 
     /// Iterator for the begin mimics container-like  of TimeMarks
-    TimeMarks::iterator begin(TimeMark::Type mask = TimeMark::every_type) const;
+    TimeMarks::iterator begin(TimeMark::Type mask) const;
+
+    /// Same as previous, but constructs TimeMark::Type from equation index
+    TimeMarks::iterator begin(unsigned char ei) const;
 
     /// Iterator for the end mimics container-like  of TimeMarks
-    TimeMarks::iterator end(TimeMark::Type mask = TimeMark::every_type) const;
+    TimeMarks::iterator end(TimeMark::Type mask) const;
+
+    /// Same as previous, but constructs TimeMark::Type from equation index
+    TimeMarks::iterator end(unsigned char ei) const;
 
     /// Friend output operator.
     friend std::ostream& operator<<(std::ostream& stream, const TimeMarks &marks);
@@ -279,7 +319,7 @@ private:
     TimeMark::Type next_mark_type_;
 
     /// TimeMarks list sorted according to the their time.
-    std::vector<TimeMark> marks_;
+    std::vector< std::vector<TimeMark> > marks_;
 
     /// Predefined type for fixed time.
     TimeMark::Type type_fixed_time_;
@@ -367,13 +407,6 @@ private:
     std::vector<TimeMark>::const_iterator it_;
     /// Mask type.
     TimeMark::Type mask_;
-};
-
-
-
-struct TimeMarkHash : std::unary_function<TimeMark, std::size_t>
-{
-    std::size_t operator()(TimeMark const& mark) const;
 };
 
 

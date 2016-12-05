@@ -1,0 +1,156 @@
+##---
+##title: Flow123d tutorial 5 -- ``Fractures and sorption''
+##---
+##
+### Description
+##
+##This is a variant of ```04_frac_diffusion.yaml```. Instead of diffusion we consider advective transport with equilibrial sorption.
+##
+###Input
+##
+##Flow123d provides several types of sorption (linear, Langmuir and Freundlich isotherm). Each substance can be assigned its own sorption type.
+##In this test, the transport of three substances is computed: Iodium without sorption, Radium with liner sorption and Selenium with Langmuir isotherm. The solvent density and solubility was set to 1. Initial condition of solid was set to zero; rock density to 1 and parameter of liner and Langmuir isotherm was set to 0.6.
+##
+##    reaction_term: !Sorption
+##      substances:
+##        - I
+##        - Ra-lin
+##        - Se-lang
+##      solvent_density: 1.0
+##      solubility: [ 1.0, 1.0, 1.0 ]
+##      input_fields:
+##        - region: ALL
+##          init_conc_solid: 0
+##          rock_density: 1.0
+##          sorption_type:
+##            - none           
+##            - linear           
+##            - langmuir
+##          isotherm_mult: 0.6          
+##          isotherm_other: 0.4
+##
+##In fact, the fields ```init_conc_solid```, ```isotherm_mult```, ```isotherm_other``` can have different values for each substance. In that case we define them as YAML arrays.
+##
+### Results
+##
+##Figure {@fig:sorp_res} depicts the influence of linear and Langmuir isotherm on the transport of substances. The substance I without sorption flows out of the fracture fastest and the substance Ra flows out slowest.
+##
+##![Results of sorption.](tutor_figures/05_mass_flux.pdf){#fig:sorp_res}
+##
+##
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: "Example 5 - Fractures - sorption"
+  mesh:
+    mesh_file: 04_mesh.msh
+    regions:
+      - !Union
+        name: flow_fractures
+        regions:
+          - flow_fracture1
+          - flow_fracture2
+      - !Union
+        name: blind_fractures
+        regions:
+          - blind_fracture1
+          - blind_fracture2
+      - !Union
+        name: BC_right
+        regions:
+          - .right
+          - .right_points
+      - !Union
+        name: BC_left
+        regions:
+          - .left
+          - .left_points
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-15
+        r_tol: 1.0e-15
+    input_fields:
+    - region: rock
+      conductivity: 0.000315
+      cross_section: 1
+    - region: flow_fractures
+      conductivity: 31.5
+      cross_section: 0.01
+    - region: blind_fractures
+      conductivity: 3.15
+      cross_section: 0.01
+    - region: BC_left
+      bc_type: dirichlet
+      bc_piezo_head: 0.1
+    - region: BC_right
+      bc_type: dirichlet
+      bc_piezo_head: 0
+    balance: {}
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    solver: !Petsc
+      r_tol: 1.0e-10
+      a_tol: 1.0e-10
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+      - region: ALL
+        init_conc: 0
+        porosity: 0.005
+      - region: flow_fractures
+        porosity: 0.1
+      - region: blind_fractures
+        porosity: 0.1
+      - region: .left_points
+        bc_type: dirichlet
+        bc_conc: !FieldFormula
+          value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    substances:
+      - I
+      - Ra-lin
+      - Se-lang
+    reaction_term: !Sorption
+      substances:
+        - I
+        - Ra-lin
+        - Se-lang
+      solvent_density: 1.0
+      solubility: [ 1.0, 1.0, 1.0 ]
+      input_fields:
+        - region: ALL
+          init_conc_solid: 0
+          rock_density: 1.0
+          sorption_type:
+            - none
+            - linear
+            - langmuir
+          isotherm_mult: 0.6            
+          isotherm_other: 0.4
+    time:
+      end_time: 10000
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
+    balance:
+      cumulative: true
+    output_stream:
+      file: transport.pvd
+      format: !gmsh
+        variant: ascii
+      times:
+        - step: 250
+          end: 5000
+        - begin: 5000
+          step: 1000

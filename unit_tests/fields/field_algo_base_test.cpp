@@ -247,7 +247,7 @@ TYPED_TEST(FieldFix, mark_input_times) {
 	this->field_.set_input_list(this->input_list(list_ok));
 
 	TimeGovernor tg;
-	TimeMark::Type mark_type = tg.marks().type_fixed_time();
+	TimeMark::Type mark_type = TimeMark::Type(tg.marks().type_fixed_time().bitmap_, tg.equation_mark_type().equation_index_);
 	this->field_.mark_input_times(tg);
 	auto it = tg.marks().next(tg, mark_type);
 	EXPECT_EQ( 1, it->time());

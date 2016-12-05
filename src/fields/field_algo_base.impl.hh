@@ -92,24 +92,32 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 	return it::Instance(get_input_type(), param_vec).close();
 }
 
-
 template <int spacedim, class Value>
-const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si() {
-    return it::Record("FieldUnit", "Set unit of Field by user. \n"
-    							   "Unit is defined as product or proportion of base or derived SI units \n"
-			   	   	   	   	       "and it is allowed to use subdefinitions. Example: \n"
-	   	   	       	   	   	       "'MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2', \n"
-  	   	   	       	   	   	       "allows define pressure head in MPa with subdefinitions of density and \n"
-  	   	   	       	   	   	       "gravity acceleration. In subdefinitions can be used multiplicative \n"
-  	   	   	       	   	   	       "coeficient. Resulting unit must correspond with defined Field unit \n"
-  	   	   	       	   	   	       "butit can differ in coefficient.")
+const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys() {
+    auto unit_record = it::Record("Unit", "Specify unit of an input value. \n"
+                                   "Evaluation of the unit formula results into a coeficient and a "
+                                   "unit in terms of powers of base SI units. The unit must match "
+                                   "expected SI unit of the value, while the value provided on the input "
+                                   "is multiplied by the coefficient before further processing."
+                                   "The unit formula have form: <UnitExpr>;<Variable>=<Number>*<UnitExpr>;..., "
+                                   "where <Variable> is a variable name and <UnitExpr> is a units expression "
+                                   "which consists of products and divisions of terms, where a term has "
+                                   "form <Base>^<N>, where <N> is an integer exponent and <Base> "
+                                   "is either a base SI unit, a derived unit, or a variable defined in the same unit formula."
+                                   "Example, unit for the pressure head: "
+                                   "'MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2'"
+                                    )
+        .allow_auto_conversion("unit_formula")
         .declare_key("unit_formula", it::String(), it::Default::obligatory(),
                                    "Definition of unit." )
-        .allow_auto_conversion("unit_formula")
-		.close();
+        .close();
+
+    return it::Record("FieldAlgorithmBase_common_aux", "")
+        .declare_key("unit", unit_record, it::Default::optional(),
+                                "Unit of the field values provided in the main input file, in the external file, or"
+                                "by a function (FieldPython).")
+        .close();
 }
-
-
 
 template <int spacedim, class Value>
 shared_ptr< FieldAlgorithmBase<spacedim, Value> >

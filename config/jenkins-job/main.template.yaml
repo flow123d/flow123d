@@ -31,12 +31,13 @@
       - $PLACEHOLDER_test_list$
     jobs:
       - "Flow123d-{platform}-{build-type}-install-image"
-      - "Flow123d-{platform}-{build-type}-start-image"
       - "Flow123d-{platform}-{build-type}-configure"
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
       - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-{build-type}-make-doc"
       - "Flow123d-{platform}-{build-type}-stop-image"
+      - "Flow123d-{platform}-debug-start-image"
       - "Flow123d-{platform}-debug-multijob"
 
 # ---------------------------------------------------------------------------- #
@@ -63,28 +64,28 @@
           echo ${{_GIT_BRANCH}}
 
 
-## ---------------------------------------------------------------------------- #
-## ---------- START IMAGE ----------------------------------------------------- #
-## ---------------------------------------------------------------------------- #
-#- job-template:
-#    name: "Flow123d-{platform}-{build-type}-start-image"
-#    display-name: "{build-type} / Flow123d start image"
-#    defaults: flow123d-build
-#    builders:
-#      - inject:
-#          properties-file: prop.file
-#      - shell: |
-#          rm -f /tmp/docker_test_debug.cid
-#          docker run --privileged -di --cidfile /tmp/docker_test_debug.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
-#          docker_pid=`cat /tmp/docker_test_debug.cid`
-#          echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
-#          echo "FLOW=/opt/flow123d/flow123d" >> prop.file
+# ---------------------------------------------------------------------------- #
+# ---------- START IMAGE ----------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+   name: "Flow123d-{platform}-debug-start-image"
+   display-name: "{build-type} / Flow123d start image"
+   defaults: flow123d-build
+   builders:
+     - inject:
+         properties-file: prop.file
+     - shell: |
+         rm -f /tmp/docker_test_debug.cid
+         docker run --privileged -di --cidfile /tmp/docker_test_debug.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
+         docker_pid=`cat /tmp/docker_test_debug.cid`
+         echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
+         echo "FLOW=/opt/flow123d/flow123d" >> prop.file
 
 # ---------------------------------------------------------------------------- #
 # ---------- START IMAGE ----------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 - job-template:
-    name: "Flow123d-{platform}-{build-type}-start-image"
+    name: "Flow123d-{platform}-release-start-image"
     display-name: "{build-type} / Flow123d start image"
     defaults: flow123d-build
     builders:
@@ -144,6 +145,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
+          echo  ${{RUN_UNIT_TESTS}}
           $(exit ${{RUN_UNIT_TESTS}}) || docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
 
 
@@ -159,6 +161,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
+          echo  ${{RUN_INTEGRATION_TESTS}}
           $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
 
 # ---------------------------------------------------------------------------- #
@@ -211,7 +214,7 @@
       - git:
           url: https://github.com/flow123d/flow123d.git
           branches:
-              - origin/master
+              - "*"
           basedir: flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
@@ -221,6 +224,8 @@
       - inject:
           script-content: |
             rm -f prop.file && touch prop.file
+            echo "RUN_UNIT_TESTS=1" >> prop.file
+            echo "RUN_INTEGRATION_TESTS=1" >> prop.file 
             echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
             echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                    >> prop.file
             
@@ -266,6 +271,11 @@
           projects:
             - name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$"
               kill-phase-on: NEVER
+      - multijob:
+          name: "Make doc"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-debug-make-doc"
       # ---------- STOP IMAGE ------------------------------------------------ #
       - multijob:
           name: "Stop image"
@@ -290,7 +300,6 @@
       - $PLACEHOLDER_test_list$
     jobs:
       - "Flow123d-{platform}-{build-type}-install-image"
-      - "Flow123d-{platform}-{build-type}-start-image"
       - "Flow123d-{platform}-{build-type}-configure"
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
@@ -298,10 +307,7 @@
       - "Flow123d-{platform}-{build-type}-make-doc"
       - "Flow123d-{platform}-{build-type}-package"
       - "Flow123d-{platform}-{build-type}-stop-image"
-    #   - "Flow123d-{platform}-{build-type}-start-image-b"
-    #   - "Flow123d-{platform}-{build-type}-copy-image-b"
-    #   - "Flow123d-{platform}-{build-type}-create-install-image-b"
-    #   - "Flow123d-{platform}-{build-type}-stop-image-b"
+      - "Flow123d-{platform}-release-start-image"
       - "Flow123d-{platform}-release-multijob"
 
 
@@ -319,9 +325,10 @@
       - inject:
           properties-file: prop.file
       - shell: |
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} html-doc
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} doxy-doc
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} ref-doc
+          
 
 
 # ---------------------------------------------------------------------------- #
@@ -337,14 +344,19 @@
       - shell: |
           mkdir -p publish
           docker exec ${{DOCKER_PID}} make -C ${{FLOW}} package
+          # copy out docs
           docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/Flow123d-2.0.0-Linux.tar.gz publish/
+          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
+          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
+          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
+          # create install images
           make -C flow123d/bin/docker/bin/package \
                 DESTINATION=$(pwd)/publish \
                 create-install-image
           make -C flow123d/bin/docker/bin/package \
                 DESTINATION=$(pwd)/publish \
                 DOCKER_PATH=~/jenkins/static/DockerToolbox-1.12.2.exe \
-                DOCKER_IMAGE_NAME=${{DOCKER_IMAGE_NAME}} \
+                DOCKER_IMAGE_NAME=flow123d/${{DOCKER_IMAGE_NAME}} \
                 create-windows-installer
     publishers:
       - cifs: 
@@ -354,66 +366,6 @@
           remove-prefix: publish/
 
 
-# 
-# # ---------------------------------------------------------------------------- #
-# # ---------- START IMAGE B --------------------------------------------------- #
-# # ---------------------------------------------------------------------------- #
-# - job-template:
-#     name: "Flow123d-{platform}-{build-type}-start-image-b"
-#     display-name: "{build-type} / Flow123d start image B"
-#     defaults: flow123d-build
-#     builders:
-#       - inject:
-#           properties-file: prop.file
-#       - shell: |
-#           rm -f /tmp/docker_test_install.cid
-#           docker run -tid  --cidfile /tmp/docker_test_install.cid flow123d/install
-#           docker_pid=`cat /tmp/docker_test_install.cid`
-#           echo "DOCKER_B_PID=${{docker_pid}}"  >> prop.file
-# 
-# 
-# # ---------------------------------------------------------------------------- #
-# # ---------- COPY IMAGE B ---------------------------------------------------- #
-# # ---------------------------------------------------------------------------- #
-# - job-template:
-#     name: "Flow123d-{platform}-{build-type}-copy-image-b"
-#     display-name: "{build-type} / Flow123d copy image B"
-#     defaults: flow123d-build
-#     builders:
-#       - inject:
-#           properties-file: prop.file
-#       - shell: |
-#             docker   cp ${{PACK_PATH}} ${{DOCKER_B_PID}}:/tmp/${{PACK_NAME}}
-#             docker exec ${{DOCKER_B_PID}} mkdir -p ${{FLOW}}
-#             docker exec ${{DOCKER_B_PID}} tar -xvzf /tmp/${{PACK_NAME}} -C ${{FLOW}} --strip-components=1
-#             docker exec ${{DOCKER_B_PID}} rm -f /tmp/${{PACK_NAME}}
-# 
-# # ---------------------------------------------------------------------------- #
-# # ---------- CREATE INSTALL B ---------------------------------------------------- #
-# # ---------------------------------------------------------------------------- #
-# - job-template:
-#     name: "Flow123d-{platform}-{build-type}-create-install-image-b"
-#     display-name: "{build-type} / Flow123d create install image B"
-#     defaults: flow123d-build
-#     builders:
-#       - inject:
-#           properties-file: prop.file
-#       - shell: |
-#             docker export ${{DOCKER_B_PID}} > flow123d.install.tar.gz
-# 
-# # ---------------------------------------------------------------------------- #
-# # ---------- STOP IMAGE B ---------------------------------------------------- #
-# # ---------------------------------------------------------------------------- #
-# - job-template:
-#     name: "Flow123d-{platform}-{build-type}-stop-image-b"
-#     display-name: "{build-type} / Flow123d stop image B"
-#     defaults: flow123d-build
-#     builders:
-#       - inject:
-#           properties-file: prop.file
-#       - shell: |
-#           docker stop ${{DOCKER_B_PID}}
-#           docker rm   ${{DOCKER_B_PID}}
 
 # ---------------------------------------------------------------------------- #
 # ---------- MULTIJOB -------------------------------------------------------- #
@@ -450,7 +402,9 @@
       - git:
           url: https://github.com/flow123d/flow123d.git
           branches:
-              - origin/master
+              - master
+              - 2.0.0
+              - 2.1.0
           basedir: flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
@@ -460,6 +414,8 @@
       - inject:
           script-content: |
             rm -f prop.file && touch prop.file
+            echo "RUN_UNIT_TESTS=1" >> prop.file
+            echo "RUN_INTEGRATION_TESTS=1" >> prop.file 
             echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}"          >> prop.file
             echo "DOCKER_IMAGE_NAME=${{BRANCH_NAME#origin/}}-${{GIT_COMMIT:0:6}}"   >> prop.file
             echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                             >> prop.file
@@ -518,25 +474,3 @@
           condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-release-stop-image"
-
-
-    #   - multijob:
-    #       name: "Start image B"
-    #       condition: SUCCESSFUL
-    #       projects:
-    #         - name: "Flow123d-{platform}-{build-type}-start-image-b"
-    #   - multijob:
-    #       name: "Copy image B"
-    #       condition: COMPLETED
-    #       projects:
-    #         - name: "Flow123d-{platform}-{build-type}-copy-image-b"
-    #   - multijob:
-    #       name: "Create install image B"
-    #       condition: COMPLETED
-    #       projects:
-    #         - name: "Flow123d-{platform}-{build-type}-create-install-image-b"
-    #   - multijob:
-    #       name: "Stop image B"
-    #       condition: COMPLETED
-    #       projects:
-    #         - name: "Flow123d-{platform}-{build-type}-stop-image-b"

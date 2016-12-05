@@ -106,7 +106,9 @@ public:
     /**
      * Require virtual destructor also for child classes.
      */
-    virtual ~EquationBase() {};
+    virtual ~EquationBase() {
+    	balance_.reset();
+    };
 
 
     /**

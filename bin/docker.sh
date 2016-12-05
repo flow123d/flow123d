@@ -18,6 +18,16 @@ get_dev_dir()
     project_dir="${project_dir%%/*}"
 }
 
+cp_to_docker () {
+    source=$1
+    target=$D_HOME/$2
+    target_file=$D_HOME/$2/${source##*/}
+    docker cp $source ${running_cont}:$target
+    if ! docker exec ${running_cont} chown $U_ID:$G_ID $target_file
+    then    
+        docker exec ${running_cont} chown $U_ID:$G_ID $target
+    fi        
+}
 
 make_work_image () 
 {
@@ -35,6 +45,7 @@ make_work_image ()
         # setup user and group
         docker exec ${running_cont} addgroup --gid $G_ID $GNAME
         docker exec ${running_cont} adduser --home "$D_HOME" --shell /bin/bash --uid $U_ID --gid $G_ID --disabled-password --system $UNAME
+        docker exec ${running_cont} chown $U_ID:$G_ID $D_HOME
         
         # add git user
         docker exec ${running_cont} git config --global user.email "jbrezmorf@gmail.com"
@@ -42,23 +53,21 @@ make_work_image ()
         
         # add git-completion
         curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o .git-completion.bash
-        docker cp .git-completion.bash ${running_cont}:$D_HOME/
+        cp_to_docker .git-completion.bash .
         
         # add bashrc, the prompt in particular
-        docker cp $WORKDIR/_bashrc_docker ${running_cont}:$D_HOME/.bashrc
+        cp_to_docker $WORKDIR/_bashrc_docker .bashrc
                 
         # add pmake script
-        docker exec ${running_cont} mkdir "$D_HOME/bin"
-        docker cp $HOME/bin/pmake ${running_cont}:$D_HOME/bin
-        docker exec ${running_cont} chown jb:jb $HOME/bin/pmake
+        docker exec -u $U_ID:$G_ID ${running_cont} mkdir "$D_HOME/bin"
+        cp_to_docker $HOME/bin/pmake bin
         
         # add ssh keys
-        docker exec ${running_cont} mkdir "$D_HOME/.ssh"
+        docker exec -u $U_ID:$G_ID ${running_cont} mkdir "$D_HOME/.ssh"
         #docker exec ${running_cont} chown jb:jb $HOME/.ssh
-        docker cp $HOME/.ssh/id_rsa     ${running_cont}:$D_HOME/.ssh
-        docker cp $HOME/.ssh/id_rsa.pub ${running_cont}:$D_HOME/.ssh
-        
-        
+        cp_to_docker $HOME/.ssh/id_rsa  .ssh
+        cp_to_docker $HOME/.ssh/id_rsa.pub  .ssh
+                
         docker stop ${running_cont}
         docker commit ${running_cont}  $WORK_IMAGE        
     fi    

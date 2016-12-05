@@ -162,7 +162,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
 TimeGovernor::TimeGovernor(double init_time, double dt)
 {
-	init_common( init_time, inf_time, TimeMark::none_type);
+	init_common( init_time, inf_time, TimeMark::every_type);
     // fixed time step
     if (dt < time_step_precision)
         THROW(ExcTimeGovernorMessage() << EI_Message("Fixed time step smaller then machine precision. \n") );
@@ -489,7 +489,7 @@ void TimeGovernor::view(const char *name) const
 	static char buffer[1024];
 #ifdef FLOW123D_DEBUG_MESSAGES
 	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>    end_time: %f end_fixed_time: %f type: 0x%x\n",
-	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_, end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
+	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_, end_time_,  end_of_fixed_dt_interval_, eq_mark_type_.bitmap_);
 #else
 	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
 	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
