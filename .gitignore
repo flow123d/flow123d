@@ -45,7 +45,8 @@ doc/reference_manual/*.toc
 doc/reference_manual/flow_version.tex
 doc/reference_manual/tutor_figures/*
 doc/reference_manual/*.yaml
-
+doc/reference_manual/input_reference.json
+doc/reference_manual/input_reference.json.tex
 
 .cproject
 .project
@@ -74,3 +75,5 @@ bin/runtest.sh
 
 # folder containing symlink to python sources
 /lib
+/publish
+/bin/runtest

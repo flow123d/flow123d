@@ -227,23 +227,97 @@ generated. It mirrors directly the code and contains the whole input tree of the
 of input records, their structure and default values are supplied there and bidirectional links to the user 
 manual are provided.
 
-\section{Installing Flow123d (Linux)}
-Download \verb'Flow123d-<version>-Linux.tar.gz' package archive and extract it to any folder. For extraction, use the command
+
+\section{Installing Flow123d}
+Software Flow123d requires tool \href{https://www.docker.com}{Docker}. Docker is an open-source project that automates the deployment of Linux applications inside software containers. Entire Flow123d software is wrapped in docker image and contains necessary libraries and also operating system.
+
+Installation process imports docker image into your machine and personalise the docker image.
+
+\subsection{Installing Flow123d on Linux}
+Download Linux installation package archive \verb'Flow123d-<version>-linux.tar.gz' and extract it to any folder.
+For extraction, use the command
 \begin{verbatim}
-  > tar -xzf Flow123d-<version>-Linux.tar.gz 
+  > tar -xzf Flow123d-<version>-linux.tar.gz 
 \end{verbatim}
-This will create a directory \verb'Flow123d-<version>-Linux' which we further refer as \verb'<flow base>' directory.
-The binary and some supporting scripts depends on working python interpreter.
-
-
-\section{Running Flow123d (Linux)}
-On the Linux system the program can be started either directly or through a script \verb'flow123d.sh', 
-both placed in the \verb'bin' directory of the flow base directory. When started directly, e.g. by the command
+This will create a directory \verb'Flow123d-<version>-linux'. In next step, navigate to \verb'Flow123d-<version>-linux' directory
+and execute \verb'install.sh' script:
 \begin{verbatim}
-  > flow123d example.yaml
+  > cd Flow123d-<version>-linux
+  > ./install.sh
 \end{verbatim}
-the program requires at least one argument, which is the name of the principal input file. Full list of possible command line arguments is as follows.
 
+
+\subsection{Installing Flow123d on Windows}
+On the Windows system we require Powershell. Make sure \verb'powershell' command is in the system path. To install Flow123d on Windows,
+first download windows installation package archive \verb'Flow123d-<version>-windows.zip	' and extract it to any folder.
+
+Navigate to directory \verb'Flow123d-<version>-windows' and execute \verb'install.bat' file:
+
+Executing \verb'install.bat' will start an installation process which will:
+\begin{enumerate}
+	\item install \href{https://www.docker.com/products/docker-toolbox}{Docker toolbox} to your system.
+	If your system did not contain Docker Toolbox before, you need to run installation again (since system path variable was modified new shell is required)
+	\item import downloaded image to your docker environment.
+	\item modify imported image
+\end{enumerate}
+
+Docker Toolbox system uses virtual environment software \href{https://www.virtualbox.org/}{VirtualBox} which 
+is installed along with Docker Toolbox.
+
+\section{Running Flow123d}
+
+\subsection{Running Flow123d on Linux}
+\label{subsec:running-flow123d-on-linux}
+All necessary scripts for Flow123d are located in the \verb'bin' directory of installation directory \verb'Flow123d-<version>-linux'.
+Docker container by default cannot easily interact with host file system. But using scripts in \verb'bin' will make things easier.
+Directory \verb'bin' contains:
+\begin{itemize}
+	\item \verb'fterm.sh' \\
+	 Script will invoke shell inside docker container and mount current directory into \verb'/cwd' directory.
+	 In this shell you have access to system where Flow123d is installed. By default command \verb'flow123d' is in the \verb'PATH' variable.
+
+	\item \verb'flow123d.sh' \\
+	 Script will run Flow123d inside docker container and mount current directory into \verb'/cwd' directory.
+	 All arguments passed to this script will be passed to \verb'flow123d' binary file inside docker.
+	 
+	\item \verb'configure' \\
+	 Script is part of installation process and it modifies imported image for current active user. It will create user inside docker
+	 with same name, user id and group id as current user.	 	 
+\end{itemize}
+
+
+\subsection{Running Flow123d on Windows}
+On system Windows \verb'bat' files are located in the \verb'bin' directory of installation directory \verb'Flow123d-<version>-windows'.
+Docker container by default cannot easily interact with host file system. But using scripts in \verb'bin' will make things easier.
+Directory \verb'bin' contains two \verb'bat' files:
+\begin{itemize}
+	\item \verb'fterm.sh' see section \ref{subsec:running-flow123d-on-linux}
+	
+	\item \verb'fterm.bat' \\
+	File serves as wrapper for script \verb'fterm.sh'. Executing this file will open up docker container shell.
+
+	\item \verb'flow123d.sh' see section \ref{subsec:running-flow123d-on-linux}	
+	
+	\item \verb'flow123d.bat' \\
+	File serves as wrapper for script \verb'flow123d.sh'. Executing this file will open up docker container shell and execute 
+	Flow123d with given arguments. After execution \verb'bat' file exit itself. To see Flow123d output use file \verb'fterm.bat'
+	and manually enter the command:
+	\begin{verbatim}
+		> fterm.bat
+		me@v2.0.0 $ flow123d --help
+	\end{verbatim}
+\end{itemize}
+
+\textbf{Note:}
+\textit{Docker Engine daemon has only limited access to your Windows file system. Docker Machine tries to auto-share your}
+\verb'C:\Users' \textit{directory. Directories outside this directory will not be automatically mounted.} 
+
+\subsection{Flow123d arguments}
+When you are inside docker container, you have access to entire file system. Flow123d is installed in 
+\verb'/opt/flow123d/flow123d' directory. Folder \verb'/bin' contains binary files and is automatically 
+added to \verb'PATH' variable, meaning every executable in this folder can be called from anywhere.
+
+Main Flow123d binary is located in \verb'bin/flow123d' and accepts following arguments:
 
 
 \begin{description}
@@ -278,61 +352,47 @@ the program requires at least one argument, which is the name of the principal i
 All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solvers. In order to get list of supported options 
 use parameter \verb'-help' together with some valid input. Options for various PETSC modules are displayed when the module is used for the first time.
 
-\tbd{TODO-JAN HYBŠ: modify flow123d.sh to be just abbreviation of python exec\_parallel.py flow123d. Update description.}
-Alternatively, you can use script \verb'flow123d.sh' to start parallel jobs or limit resources used by the program. 
-The syntax is as follows:
+Alternatively, you can use python script \verb'exec_parallel.py' located in \verb'bin/python' to start parallel jobs or limit resources used by the program.
+
+After double dash specify which \verb'mpiexec' binary will be used (\verb'MPI-EXECUTABLE') and then specify what should be run. 
+The script does not need to run solely \verb'flow123d'.
+
+If we want to run command \verb'whoami' in parallel we can do:
+\begin{verbatim}
+	bin $> exec_parallel -n 4 -- ./mpiexec whoami
+\end{verbatim}
+
+To execute Flow123d in parallel we can do:
+\begin{verbatim}
+	bin $> exec_parallel -n 4 -- ./mpiexec ./flow123d --help
+\end{verbatim}
+
 
 \begin{verbatim}
-  flow123d.sh [OPTIONS] -- [FLOW_PARAMS]
+  exec_parallel [OPTIONS] -- [MPI-EXECUTABLE] [PARAMS]
 \end{verbatim}
-where everything after double dash is passed as parameters to the flow123d binary. The script accepts following options:
+
+The script has following options:
 
 \begin{description}
   \item[{\tt -h, --help}] \hfill\\
   	Usage overview.
   \item[{\tt --host}] \verb'<hostname>' \hfill\\
-        Default value is the host name obtained by system \verb'hostname' command, this argument can be used to override it. 
-        Resulting value is used to select a backend script \verb'config/<hostname>.sh', which describes particular method how to start 
-        parallel jobs, usually through some sort of PBS job queue system. If the script is not found, we try to start parallel processes 
-        directly on the actual host."
-  \item[{\tt -t, --walltime}] \verb'<timeout>' \hfill\\
-  	Upper estimate for real running time of the calculation. Kill calculation after {\it timeout} seconds. 
-  	Can also be used by PBS to choose appropriate job queue. 
-  \item[{\tt -np}] \verb'<number of processes>' \hfill\\
+  		Valid only when option \verb'--queue' is set.
+        Default value is the host name obtained by python \verb'platform.node()' call, this argument can be used to override it. 
+        Resulting value is used to select a correct PBS module from lookup table \verb'config/host_table.yaml'.
+  \item[{\tt -n}] \verb'<number of processes>' \hfill\\
   	Specify number of MPI parallel processes for calculation.
-  \item[{\tt -m, --mem}] \verb'<memory limit>' \hfill\\
-  	Limits total available memory to \verb'<memory limit>' bytes per process.
-  \item[{\tt -n, --nice}] \verb'<niceness>' \hfill\\
-  	Change priority of the calculation, higher values means lower priority. See the {\tt nice} command.
-  \item[{\tt -ppn}] \verb'<processes per node>' \hfill\\
-       Set number of processes started on one node for multicore systems. 
-       Number of processes set by \verb'-np' parameter should be divisible by \verb'<processes per node>'.
+  \item[{\tt -t, --limit-time}] \verb'<timeout>' \hfill\\
+  	Upper estimate for real running time of the calculation. Kill calculation after {\it timeout} seconds. 
+  	Value can also be \verb'float' number. When in PBS mode, value can also affect PBS queue. 
+  \item[{\tt -m, --limit-memory}] \verb'<memory limit>' \hfill\\
+  	Limits total available memory to \verb'<memory limit>' MB in total.
   \item[{\tt -q, --queue}] \verb'<queue>' \hfill\\
-       Select particular job queue on PBS systems. If running without PBS, 
-       it redirects stdout and stderr to the file \verb'<queue>.<date>', which appended date and time of the start of the job.
+  		If set activates PBS mode. If argument \verb'queue' is also set selects particular job queue
+  		on PBS systems otherwise default PBS queue is used. Default PBS queue automatically
+  		choose valid queue based on resources.
 \end{description}
-
-
-\section{Installing Flow123d (Windows)}
-\tbd{TODO-JAN HYBŠ: install instructions}
-
-\section{Running Flow123d (Windows)}
-\tbd{TODO-JAN HYBŠ: update this section specific to running under docker. For parameters refer to the Linux doc.}
-
-On the windows operating systems, we use Cygwin libraries in order to emulate Linux API.
-Therefore you have to keep the Cygwin libraries within the same directory as the program executable.
-The Windows package that can be downloaded from project web page contains both the Cygwin libraries
-and the mpiexec command for starting parallel jobs on the windows based workstations.
-
-Then you can start the sequential run by the command:
-\begin{verbatim}
-  > flow123d.exe -s example.con
-\end{verbatim}
-or the parallel run by the command:
-\begin{verbatim}
-  > mpiexec.exe -np 2 flow123d.exe -s example.con
-\end{verbatim}
-The program accepts the same parameters as the Linux version, but there is no script similar to \verb'flow123d.sh' for the windows operating systems.
 
 
 
