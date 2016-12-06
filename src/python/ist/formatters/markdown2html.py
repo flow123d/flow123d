@@ -54,9 +54,9 @@ class markdown2html(object):
         except Exception as e:
             return ET.fromstring('<' + reduce_tag + '>' + html + '</' + reduce_tag + '>')
 
-
     def parse(self, md_text, reduce_to_tree=False, reduce_tag='div'):
         secured_markdown = self._md_latex.prepare(md_text)
+        secured_markdown = cgi.escape(secured_markdown)
 
         html_secured = markdown.markdown(secured_markdown, extensions=[
             'markdown.extensions.sane_lists',

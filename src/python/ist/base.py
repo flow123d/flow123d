@@ -109,9 +109,24 @@ class Parsable(object):
         self.parent = None
         self.unique_name = None
         self.references = list()
+        self.secnerefer = list()
+
+    def add_link(self, target):
+        """
+        :type target: Parsable
+        """
+        left = self.get_generic_root()
+        right = target.get_generic_root()
+        left.add_ref(right)
+        right.add_fer(left)
 
     def add_ref(self, ref):
-        self.references.append(ref)
+        if ref.input_type == InputType.MAIN_TYPE:
+            self.references.append(ref)
+
+    def add_fer(self, fer):
+        if fer.input_type == InputType.MAIN_TYPE:
+            self.secnerefer.append(fer)
 
     def parse(self, json_data={}):
         for field in self.__fields__:
@@ -144,7 +159,21 @@ class Parsable(object):
 
     def include_in_format(self):
         input_type = getattr(self, 'input_type', None)
-        return input_type is not None and input_type == InputType.MAIN_TYPE
+        return input_type is not None and input_type == InputType.MAIN_TYPE and not self.has_generic_link()
+
+    def has_generic_link(self):
+        return getattr(self, 'generic_type', None) is not None
+
+    def get_generic_root(self):
+        root = self
+        while True:
+            try:
+                if root.generic_type:
+                    root = root.generic_type.get_reference()
+                else:
+                    break
+            except: break
+        return root
 
     @property
     def href_name(self):
@@ -324,7 +353,7 @@ class Unicode(Parsable):
                     return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.value))
                 return '{}::{}'.format(parent_id, TexList.name_mode(self.value))
 
-            return '{self.parent.href_id}-{self.value}'.format(self=self)
+            return '{self.parent.href_id}:{self.value}'.format(self=self)
         return self.value
 
 

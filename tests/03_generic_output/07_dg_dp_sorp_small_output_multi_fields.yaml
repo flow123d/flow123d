@@ -24,6 +24,7 @@ problem: !Coupling_Sequential
         bc_pressure: !FieldFormula
           value: x+y
     output:
+      add_input_times: true
       fields: []
     balance: {}
     nonlinear_solver:
