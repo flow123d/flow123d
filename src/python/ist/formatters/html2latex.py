@@ -117,7 +117,7 @@ class Html2Latex(object):
 
         elif self.tag_is('ul', 'ol'):
             self.tex.begin(self.get_list_type())
-            self.tex.append(self.text())
+            self.tex.append(self.text().strip())
             self.extend_children()
             self.tex.end(self.get_list_type())
             self.add_tail()

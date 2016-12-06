@@ -43,6 +43,11 @@ class htmltree(object):
         self.current().append(element)
         return element
 
+    def tagc(self, tag_name, cls='', value=''):
+        if cls:
+            return self.tag(tag_name, value, {'class': cls})
+        return self.tag(tag_name, value)
+
     def current(self):
         """
         :return: current top
@@ -55,7 +60,7 @@ class htmltree(object):
         """
         return self.current().append(element)
 
-    def item_list_title(self, item_field, add_link=False, add_id=True):
+    def item_list_title(self, item_field, add_link=False, add_id=True, text=None):
         """
         Method creates and appends header with level
         If subtitle is given href to title will consist of subtitle
@@ -68,11 +73,11 @@ class htmltree(object):
         """
         if add_link:
             with self.open('a', attrib={'href': '#' + item_field.href_id}):
-                self.item_list_title(item_field, add_link=False, add_id=add_id)
+                self.item_list_title(item_field, add_link=False, add_id=add_id, text=text)
         else:
             attrib = {'id': item_field.href_id} if add_id else {}
             with self.open('h3', attrib=attrib):
-                self.span(item_field.get('name', 'key', 'href_name'))
+                self.span(text or item_field.get('name', 'key', 'href_name'))
         return self
 
     def main_section_title(self, item, attrib={}, **kwargs):
@@ -174,7 +179,10 @@ class htmltree(object):
         """
         return self.tag('span', value, attrib, **kwargs)
 
-    def info(self, value='', attrib={"class": 'leading-text'}, **kwargs):
+    def spanc(self, cls, value=''):
+        return self.tagc('span', cls, value)
+
+    def info(self, value='', attrib={"class": 'info'}, **kwargs):
         """
         Method creates info element
         :param value: span optional text
@@ -245,6 +253,21 @@ class htmltree(object):
         :return: self
         """
         element = self.tag(tag_name, value, attrib, **kwargs)
+        self.roots.append(element)
+        return self
+
+    def openc(self, tag_name, cls=''):
+        """
+        Method opens current element, shifts current top.
+          When adding new elements, current top is this newly created
+        :param tag_name: tag name
+        :param cls: class name
+        :return: self
+        """
+        if cls:
+            element = self.tag(tag_name, '', {"class": cls})
+        else:
+            element = self.tag(tag_name, '')
         self.roots.append(element)
         return self
 
@@ -328,9 +351,11 @@ class htmltree(object):
         :param value: value to be secured
         :return: safe value consisting of numbers and alphabet chars and _ char
         """
-        value = re.sub(r'\W+', '-', value)
-        value = re.sub(r'-$', '', value)
-        return value
+        if value:
+            value = re.sub(r'\W+', '-', value)
+            value = re.sub(r'-$', '', value)
+            return value
+        return ''
 
     @staticmethod
     def chain_values(value, sub_value=''):

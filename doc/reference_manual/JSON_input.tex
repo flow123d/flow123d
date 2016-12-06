@@ -139,7 +139,7 @@ people:
 \begin{itemize}
  \item Unquoted string values can not contain characters: colon \verb':', hash \verb'#', 
  brackets \verb'[]', braces \verb'{}', less then \verb'<', vertical bar \verb'|'.
- \item For indentation one can use only spaces tabs are not allowed. However, your editor editor may automatically convert tab to spaces.
+ \item For indentation one can use only spaces; tabs are not allowed. However, your editor may automatically convert tabs to spaces.
  \item Boolean special strings must be quoted if you want to express a string. This is not problem for the Flow123d input.
  \item Numbers starting with digit zero are interpreted as octal numbers. 
 \end{itemize}
@@ -336,10 +336,10 @@ grouped into composed regions called also region sets. A simple region may be pa
 Initial assignment of the simple regions to the elements is given by the physical groups of the input GMSH file. Further
 modification of this assignment as well as creation of new simple or composed regions can be done 
 through the list of operations under the key \hyperA{Mesh::regions}{{\tt regions}}. The operations are performed in the order given by the input.
-Operation \hyperA{Region::From-Id}{{\tt From\_Id}} sets the name of a simple region having only ID in the input GMSH file. Operation 
-\hyperA{Region::From-Label}{{\tt From\_Label}} can rename a simple region. Operation \hyperA{Region::From-Elements}{{\tt From\_Elements}}
+Operation \hyperA{IT::From-Id}{{\tt From\_Id}} sets the name of a simple region having only ID in the input GMSH file. Operation 
+\hyperA{IT::From-Label}{{\tt From\_Label}} can rename a simple region. Operation \hyperA{IT::From-Elements}{{\tt From\_Elements}}
 assign new simple region to the given list of elements overwriting their region given by the input mesh file. Finally operations 
-\hyperA{Region::Union}{{\tt Union}}, \hyperA{Region::Difference}{{\tt Difference}} and \hyperA{Region::Intersection}{{\tt Intersection}}
+\hyperA{IT::Union}{{\tt Union}}, \hyperA{IT::Difference}{{\tt Difference}} and \hyperA{IT::Intersection}{{\tt Intersection}}
 implements standard set operations with both simple and complex regions resulting in new composed regions.
 
 
@@ -366,40 +366,31 @@ the evaluation algorithms, these are always assumed to be continuous and the tim
 
 Example:
 \begin{verbatim}
-input_fields = [   
-    { // time=0.0  - default value
-        r_set="BULK",
-        conductivity=1   // setting the conductivity field on all regions
-    },
-    {
-        region="2d_part",
-        conductivity=2  // overwriting the previous value
-    },
-    {   time=1.0,
-        region="2d_part",
-        conductivity={
-            // from time=1.0 we switch to the linear function in time
-            TYPE=FieldFormula,
-            value="2+t"      
-        }    
-    },
-    {   time=2.0,
-        region="2d_part",
-        conductivity={
-            // from time=2.0 we switch to elementwise field, but only
-            // on the region "2d_part"
-            TYPE=FieldElementwise,
-            gmsh_file="./input/data.msh",
-            field_name="conductivity"
-        }
-    }    
-]               
+input_fields:
+  - # time=0.0  - default value
+    region: BULK
+    conductivity: 1   # setting the conductivity field on all regions
+  - region: 2d_part
+    conductivity: 2  # overwriting the previous value
+  - time: 1.0
+    region: 2d_part
+    conductivity: !FieldFormula
+      # from time=1.0 we switch to the linear function in time
+      value: 2+t
+  - time: 2.0
+    region: 2d_part
+    conductivity: !FieldElementwise
+      # from time=2.0 we switch to elementwise field, but only
+      # on the region "2d_part"
+      gmsh_file: ./input/data.msh
+      field_name: conductivity
 \end{verbatim}
 
 
 
 \subsubsection{Field Algorithms}
-\label{sec:Fields}
+\label{sec:Fields}\hypertarget{sec:Fields}{}
+
 A general time and space dependent, scalar, vector, or  tensor valued function can be specified through the family of abstract records 
 \verb'Field:R3 -> X', where $X$ is a type of value returned by the field, which can be:
 \begin{itemize}
@@ -477,4 +468,37 @@ Example, unit for the pressure head:
 
 
 \subsection{Output Records}
-\tbd{JAN BŘEZINA:OUTPUT RECORDS}
+Output from the models is controlled by an interplay of following records: \hyperA{IT::OutputStream}{{\tt OutputStream}},
+\hyperA{IT::Balance}{{\tt Balance}}, and \hyperA{IT::EquationOutput}{{\tt EquationOutput}}. The first two are part of the 
+records of so called {\it balance equations} which provides complete description of some balanced quantity. 
+Every such equation have its own balance output controlled by the \verb'Balance' record and its own output stream for the 
+spatial data controled by the \verb'OutputStream' record. Further every equation with its own output fields 
+(every input field is also output field) have the \verb'EquationOutput' record to setup output of its fields.
+
+\subsubsection{Balance}
+The balance output is performed in times given by the key \hyperA{Balance::times}{{\tt times}}
+with type \verb'TimeGrid' described \hyperlink{sec:TimeGrid}{below}. Setting the key \hyperA{Balance::add-output-times}{{\tt add\_output\_times}} 
+to \verb'true' the set of balance output times is enriched by the output times of the output stream of the same equation.
+
+\subsubsection{OutputStream}
+Set the file format of the output stream, possibly setting the output name, however the default value for the file name is preferred and the corresponding key 
+\hyperA{OutputStream::file}{{\tt file}} is obsolete.
+The time set provided by the optional key \hyperA{OutputStream::times}{{\tt times}} is used as a default time set for a similar key in associated 
+\verb'EquationOutput' records. Finally, the key \hyperA{OutputStream::observe-points}{{\tt observe\_points}} is used to specify observation points
+in which the associated equation output evaluates the observed fields.
+
+\subsubsection{EquationOuput}
+The output of the fields can be done in two ways: full spatial information saved only at selected time points in form of 
+VTU or GMSH file, or full temporal information saved for every computational time, but only in selected output points.
+The list of fields for spatial output is given by key \hyperA{EquationOutput::fields}{{\tt fields}} while the fields 
+evaluated in the observation points are selected by the key \hyperA{EquationOutput::observe-fields}{{\tt observe\_fields}}.
+The outputs times for the spatial output can be selected individually for every field in the 
+\hyperA{EquationOutput::fields}{{\tt fields}} however the default list of output times is given by the key
+\hyperA{EquationOutput::times}{{\tt times}} which can by optionally extended by the list of input times
+using the key \hyperA{EquationOutput::add-input-times}{{\tt add\_input\_times}}.
+
+\subsubsection{TimeGrid Array}
+\hypertarget{sec:TimeGrid}{}
+
+An array of the \hyperA{IT::TimeGrid}{{\tt TimeGrid}} records may be used to setup a sequence of times. Such sequence is used in particular 
+to triger various types of output. A single TimeGrid represents a regular grid of times with given start time, end time and step.

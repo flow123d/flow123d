@@ -130,12 +130,13 @@ def main():
             if item.input_type == InputType.RECORD:
                 for key in getattr(item, 'keys', []):
                     if key.type.get_reference().input_type == InputType.ARRAY:
-                        key.type.get_reference().subtype.get_reference().add_ref(item)
+                        key.type.get_reference().subtype.get_reference().add_link(item)
                     else:
-                        key.type.get_reference().add_ref(item)
+                        key.type.get_reference().get_generic_root().add_link(item)
+
             if item.input_type == InputType.ABSTRACT_RECORD:
                 for imp in getattr(item, 'implementations', []):
-                    imp.get_reference().add_ref(item)
+                    imp.get_reference().add_link(item)
 
     # sort items by type and name
     items = sorted(items, key=lambda x: '{}{}'.format(x.input_type.value, x.name))
