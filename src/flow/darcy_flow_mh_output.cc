@@ -132,12 +132,13 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 // 	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
 // 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
     
-    field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, true, true);
-    output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);
-    
-    field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, true, false);
-    output_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
-    
+//     if(darcy_flow->mh_dh.enrich_velocity){
+        field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, true, true);
+        output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);
+        
+        field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, true, false);
+        output_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
+//     }
     field_velocity_reg_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, false, true);
     output_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_reg_part);
 
