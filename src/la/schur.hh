@@ -73,6 +73,8 @@ public:
      */
     SchurComplement(SchurComplement &other);
 
+    void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
+
     /**
      * Sets specific parameters defined by user in input file and used to calculate. Call set_from_input of complement
      */
