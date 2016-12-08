@@ -56,6 +56,12 @@ table_function_tensor: !FieldTimeFunction
       - [ [5,3,4], [2,3,7], [5,6,3] ]
 )YAML";
 
+
+FieldAlgoBaseInitData get_field_init_data(std::string field_name, double max_limit = std::numeric_limits<double>::max() ) {
+	return FieldAlgoBaseInitData(field_name, 3, UnitSI::dimensionless(), std::make_pair(0, max_limit) );
+}
+
+
 TEST(FieldTableFunction, table_function) {
 
     // setup FilePath directories
@@ -75,12 +81,9 @@ TEST(FieldTableFunction, table_function) {
     point(0)=1.0; point(1)=2.0; point(2)=3.0;
     ElementAccessor<3> elm;
 
-    UnitSI unit = UnitSI().m();
-    FieldAlgoBaseInitData init_data_conc(3, unit);
-
     {
         std::shared_ptr< ScalarField > scalar_base =
-        		ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_scalar"), init_data_conc);
+        		ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_scalar"), get_field_init_data("table_function_scalar"));
         auto scalar = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<0>::Scalar> >(scalar_base);
 
         scalar->set_time(0.0);
@@ -105,7 +108,7 @@ TEST(FieldTableFunction, table_function) {
 
     {
         std::shared_ptr< VectorField > vector_base =
-        		VectorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_vector"), init_data_conc);
+        		VectorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_vector"), get_field_init_data("table_function_vector", 2.5));
         auto vector = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<3>::VectorFixed> >(vector_base);
     	arma::vec result;
 
@@ -137,7 +140,7 @@ TEST(FieldTableFunction, table_function) {
 
     {
         std::shared_ptr< TensorField > tensor_base =
-        		TensorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_tensor"), init_data_conc);
+        		TensorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_tensor"), get_field_init_data("table_function_tensor"));
         auto tensor = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<3>::TensorFixed> >(tensor_base);
     	arma::mat::fixed<3,3> result;
 

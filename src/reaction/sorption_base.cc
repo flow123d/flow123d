@@ -98,7 +98,8 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     *this += porosity
             .name("porosity")
             .units( UnitSI::dimensionless() )
-            .flags(FieldFlag::input_copy);
+            .flags(FieldFlag::input_copy)
+			.set_limits(0.0);
     
     output_fields += *this;
     output_fields += conc_solid.name(output_field_name).units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);

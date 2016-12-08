@@ -56,7 +56,7 @@ const int FieldElementwise<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  internal_raw_data(true), mesh_(NULL)
+  internal_raw_data(true), mesh_(NULL), unit_si_( UnitSI::dimensionless() )
 
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
@@ -68,11 +68,11 @@ template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data,
 		unsigned int n_components)
 : FieldAlgorithmBase<spacedim, Value>(n_components),
-internal_raw_data(false), mesh_(NULL)
+internal_raw_data(false), mesh_(NULL), unit_si_( UnitSI::dimensionless() )
 {
 	n_components_ = this->value_.n_rows() * this->value_.n_cols();
 	data_ = data;
-	this->scale_data();
+	this->scale_and_check_limits();
 }
 
 
@@ -81,6 +81,9 @@ internal_raw_data(false), mesh_(NULL)
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
+	this->unit_si_ = init_data.unit_si_;
+	this->limits_ = init_data.limits_;
 
 	DebugOut() << "Reader file: " << string(reader_file_);
 	ASSERT(internal_raw_data).error("Trying to initialize internal FieldElementwise from input.");
@@ -127,7 +130,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
 
     data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(search_header,
     		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
-    this->scale_data();
+    this->scale_and_check_limits();
     return search_header.actual;
 }
 
@@ -203,12 +206,19 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
 
 
 template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::scale_data()
+void FieldElementwise<spacedim, Value>::scale_and_check_limits()
 {
 	if (Value::is_scalable()) {
 		std::vector<typename Value::element_type> &vec = *( data_.get() );
-		for(unsigned int i=0; i<vec.size(); ++i)
+		for(unsigned int i=0; i<vec.size(); ++i) {
 			vec[i] *= this->unit_conversion_coefficient_;
+			if ( (vec[i] < limits_.first) || (vec[i] > limits_.second) ) {
+				int el_id = mesh_->elements_id_maps(boundary_domain_)[(unsigned int)(i / this->n_components_)];
+                WarningOut().fmt("Value '{}' of FieldElementwise '{}', element id '{}' at address '{}' is out of limits: <{}, {}>\n"
+                		"Unit of the Field: [{}]\n",
+						vec[i], field_name_, el_id, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );
+			}
+		}
 	}
 }
 

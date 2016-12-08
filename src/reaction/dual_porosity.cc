@@ -80,7 +80,8 @@ DualPorosity::EqData::EqData()
           .name("porosity_immobile")
           .description("Porosity of the immobile zone.")
           .input_default("0")
-          .units( UnitSI::dimensionless() );
+          .units( UnitSI::dimensionless() )
+		  .set_limits(0.0);
 
   *this += init_conc_immobile
           .name("init_conc_immobile")
@@ -91,7 +92,8 @@ DualPorosity::EqData::EqData()
   *this +=porosity
         .name("porosity")
         .units( UnitSI::dimensionless() )
-        .flags( FieldFlag::input_copy );
+        .flags( FieldFlag::input_copy )
+		.set_limits(0.0);
 
   *this += conc_immobile
           .name("conc_immobile")
