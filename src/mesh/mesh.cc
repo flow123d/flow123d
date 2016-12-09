@@ -80,7 +80,7 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
  el_ds(nullptr)
 {
 
-    Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( input_str, const_cast<IT::Record *>(&Mesh::get_input_type()), Input::FileFormat::format_JSON );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);

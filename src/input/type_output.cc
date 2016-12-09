@@ -46,7 +46,7 @@ OutputBase::~OutputBase() {}
 
 OutputBase::OutputBase()
 {
-    TypeBase::lazy_finish();
+    //TypeBase::lazy_finish();
 }
 
 

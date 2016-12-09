@@ -132,7 +132,7 @@ Input::Record Application::read_input() {
     // read main input file
     FilePath fpath(main_input_filename_, FilePath::FileType::input_file);
     try {
-    	Input::ReaderToStorage json_reader(fpath, get_input_type() );
+    	Input::ReaderToStorage json_reader(fpath, &get_input_type() );
         root_record = json_reader.get_root_interface<Input::Record>();
     } catch (Input::ReaderToStorage::ExcInputError &e ) {
       e << Input::ReaderToStorage::EI_File(fpath); throw;
@@ -219,7 +219,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         FilePath(vm["input_format"].as<string>(), FilePath::output_file).open_stream(json_stream);
         // create the root Record
         it::Record root_type = get_input_type();
-        Input::Type::TypeBase::lazy_finish();
+        Input::Type::TypeBase::lazy_finish( get_input_type() );
         json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
         json_stream.close();
         exit( exit_output );

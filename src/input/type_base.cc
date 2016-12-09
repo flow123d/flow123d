@@ -80,8 +80,9 @@ string TypeBase::desc() const {
 
 
 
-void TypeBase::lazy_finish() {
+void TypeBase::lazy_finish(TypeBase& type) {
 	Input::TypeRepository<Instance>::get_instance().finish();
+	type.finish();
 	Input::TypeRepository<Abstract>::get_instance().finish(true);
 	Input::TypeRepository<Record>::get_instance().finish(true);
 	Input::TypeRepository<Tuple>::get_instance().finish(true);

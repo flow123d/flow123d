@@ -162,7 +162,7 @@ public:
      *  2) finish of non-generic Abstract and non-generic Record types
      *  3) finish of the other types
      */
-    static void lazy_finish();
+    static void lazy_finish(TypeBase& type);
 
 
     /**
