@@ -90,7 +90,7 @@ protected:
 
 TEST_F(InputTypeDispatchTest, all) {
 
-    Input::ReaderToStorage json_reader(json_input, *root_record, Input::FileFormat::format_JSON);
+    Input::ReaderToStorage json_reader(json_input, root_record, Input::FileFormat::format_JSON);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("int_val")) );
     EXPECT_EQ("some_string", *(rec.find<std::string>("str_val")) );

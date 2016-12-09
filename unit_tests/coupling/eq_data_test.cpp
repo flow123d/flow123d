@@ -145,7 +145,7 @@ public:
     };
 
 protected:
-    static const Input::Type::Record & get_input_type();
+    static Input::Type::Record & get_input_type();
     static MultiField<3, FieldValue<3>::Scalar> empty_mf;
     EqData data;
     std::vector<string> component_names;
@@ -165,7 +165,7 @@ protected:
 
     void read_input(const string &input) {
         // read input string
-        Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_JSON );
+        Input::ReaderToStorage reader( input, &get_input_type(), Input::FileFormat::format_JSON );
         Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
         TimeGovernor tg(0.0, 1.0);
@@ -208,7 +208,7 @@ protected:
 
 MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
 
-const IT::Record & SomeEquation::get_input_type() {
+IT::Record & SomeEquation::get_input_type() {
 	return IT::Record("SomeEquation","")
 	        .declare_key("data", IT::Array(
 	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )

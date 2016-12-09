@@ -105,7 +105,7 @@ regions:
 TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::ReaderToStorage reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_YAML );
+    Input::ReaderToStorage reader( mesh_input, const_cast<Input::Type::Record *>(&Mesh::get_input_type()), Input::FileFormat::format_YAML );
     auto rec = reader.get_root_interface<Input::Record>();
     Mesh mesh( rec );
     mesh.init_from_input();

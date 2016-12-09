@@ -74,7 +74,7 @@ TEST(FieldTableFunction, table_function) {
         .close();
 
     // read input string
-    Input::ReaderToStorage reader( field_time_function_input, rec_type, Input::FileFormat::format_YAML );
+    Input::ReaderToStorage reader( field_time_function_input, &rec_type, Input::FileFormat::format_YAML );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     Space<3>::Point point;

@@ -169,7 +169,7 @@ TEST(OutputMesh, write_on_output_mesh) {
 
 
     // read input string
-    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( input, &rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     // create FieldAlgorithmBase field
@@ -217,7 +217,7 @@ const string input_om = R"INPUT(
 class TestOutputMesh : public testing::Test, public OutputMesh {
 public:
     TestOutputMesh()
-    : OutputMesh(mesh_, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
+    : OutputMesh(mesh_, Input::ReaderToStorage( input_om, const_cast<Input::Type::Record *>(&OutputMeshBase::get_input_type()), Input::FileFormat::format_JSON )
                             .get_root_interface<Input::Record>())
     {
     }

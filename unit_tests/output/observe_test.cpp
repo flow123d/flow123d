@@ -234,7 +234,7 @@ TEST(Observe, all) {
                 .make_field_descriptor_type("SomeEquation")
                 .close() ), Input::Type::Default::obligatory(), "")
         .close();
-    auto in_rec = Input::ReaderToStorage(test_input, output_type, Input::FileFormat::format_JSON)
+    auto in_rec = Input::ReaderToStorage(test_input, &output_type, Input::FileFormat::format_JSON)
         .get_root_interface<Input::Record>();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);

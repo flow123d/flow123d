@@ -143,7 +143,7 @@ TEST(FieldPython, read_from_input) {
         .close();
 
     // read input string
-    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( input, &rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
     UnitSI unit = UnitSI().m();
     FieldAlgoBaseInitData init_data("field_python", 3, unit);

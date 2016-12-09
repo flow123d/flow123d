@@ -50,7 +50,7 @@ TEST(MultiField, transposition) {
 	    .declare_key("transposed", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 	    .close();
 
-	Input::ReaderToStorage json_reader(field_constant_input, in_rec, Input::FileFormat::format_YAML);
+	Input::ReaderToStorage json_reader(field_constant_input, &in_rec, Input::FileFormat::format_YAML);
 	Input::Record input = json_reader.get_root_interface<Input::Record>();
 
 	Input::Array common = input.val<Input::Array>("common");
@@ -127,7 +127,7 @@ protected:
     	}
     }
 
-    static const Input::Type::Record & get_input_type();
+    static Input::Type::Record & get_input_type();
     static ScalarMultiField empty_mf;
     Mesh *mesh;
     Space<3>::Point point;
@@ -135,7 +135,7 @@ protected:
 
 MultiFieldTest::ScalarMultiField MultiFieldTest::empty_mf = MultiFieldTest::ScalarMultiField();
 
-const Input::Type::Record & MultiFieldTest::get_input_type() {
+Input::Type::Record & MultiFieldTest::get_input_type() {
 	return Input::Type::Record("MultiField", "Complete multi field")
 		.declare_key("const_field_full", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("const_field_base", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
@@ -149,7 +149,7 @@ const Input::Type::Record & MultiFieldTest::get_input_type() {
 
 
 TEST_F(MultiFieldTest, complete_test) {
-	Input::ReaderToStorage json_reader(all_fields_input, MultiFieldTest::get_input_type(), Input::FileFormat::format_YAML);
+	Input::ReaderToStorage json_reader(all_fields_input, &(MultiFieldTest::get_input_type()), Input::FileFormat::format_YAML);
 	Input::Record input = json_reader.get_root_interface<Input::Record>();
 
     { // test of FieldConstant - full input
@@ -239,7 +239,7 @@ TEST(Operators, assignment) {
 	FieldSet set_of_field;
 	set_of_field += mf_base;
     Input::Type::Array list_type = Input::Type::Array(set_of_field.make_field_descriptor_type("MultiFieldTest"));
-    Input::ReaderToStorage reader( eq_data_input, list_type, Input::FileFormat::format_JSON);
+    Input::ReaderToStorage reader( eq_data_input, &list_type, Input::FileFormat::format_JSON);
     Input::Array in_list=reader.get_root_interface<Input::Array>();
     set_of_field.set_input_list(in_list);
 

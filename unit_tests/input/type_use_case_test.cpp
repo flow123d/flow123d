@@ -56,7 +56,7 @@ private:
  */
 class Application : public testing::Test{
 public:
-    static const Input::Type::Record & get_input_type();
+    static Input::Type::Record & get_input_type();
 
     inline Input::Record input()
     {
@@ -66,7 +66,7 @@ public:
     void SetUp() override {
     	std::string f_name = string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con";
     	FilePath fp(f_name, FilePath::FileType::input_file);
-    	json_reader = new Input::ReaderToStorage(fp, get_input_type() );
+    	json_reader = new Input::ReaderToStorage(fp, &get_input_type() );
     }
     void TearDown() override {
     	delete json_reader;
@@ -103,7 +103,7 @@ TEST_F(Application, init) {
 
 namespace it = Input::Type;
 
-const it::Record & Application::get_input_type() {
+it::Record & Application::get_input_type() {
 	return it::Record("Application", "Root record of the whole application.")
 		// Array of equations with types given by method of class Equation
 		.declare_key("equations", it::Array( Equation::get_input_type(), 1, 10 ), it::Default::obligatory(), "")

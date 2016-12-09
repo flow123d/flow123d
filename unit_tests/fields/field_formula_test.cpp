@@ -53,7 +53,7 @@ TEST(FieldFormula, read_from_input) {
         .close();
 
     // read input string
-    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( input, &rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     Space<3>::Point point_1, point_2;
@@ -169,7 +169,7 @@ TEST(FieldFormula, set_time) {
     input_type.finish();
 
     // read input string
-    Input::ReaderToStorage reader( set_time_input, input_type, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( set_time_input, &input_type, Input::FileFormat::format_JSON );
     Input::Array in_array=reader.get_root_interface<Input::Array>();
 
     auto it = in_array.begin<Input::AbstractRecord>();

@@ -57,7 +57,7 @@ const string cyclic_array_json = R"JSON(
 )JSON";
 
 
-IT::Record get_type_record() {
+static IT::Record & get_type_record() {
     IT::Record value_rec = IT::Record("value", "Record with boolean value")
 		.declare_key("some_boolean", IT::Bool(), IT::Default("false"),
 				"Some boolean value.")
@@ -76,7 +76,7 @@ IT::Record get_type_record() {
              "Value record.")
 		.close();
 
-	IT::Record root_record = IT::Record("Problem", "Record of problem")
+	static IT::Record root_record = IT::Record("Problem", "Record of problem")
 		.declare_key("data", data_rec, IT::Default::obligatory(),
 	             "Definition of data.")
     	.declare_key("pause_after_run", IT::Bool(), IT::Default("false"),
@@ -91,14 +91,14 @@ IT::Record get_type_record() {
 TEST(JSONReference, valid_reference_rec_test) {
 	using namespace Input;
 
-	ReaderToStorage json_reader( valid_record_json, get_type_record(), FileFormat::format_JSON);
+	ReaderToStorage json_reader( valid_record_json, &get_type_record(), FileFormat::format_JSON);
 }
 
 TEST(JSONReference, cyclic_reference_rec_test) {
 	using namespace Input;
 
     EXPECT_THROW_WHAT(
-    		{ReaderToStorage json_reader( cyclic_record_json, get_type_record(), FileFormat::format_JSON);},
+    		{ReaderToStorage json_reader( cyclic_record_json, &get_type_record(), FileFormat::format_JSON);},
 			PathBase::ExcReferenceNotFound,
 			"cannot follow reference");
 }
@@ -107,7 +107,7 @@ TEST(JSONReference, cyclic_reference_arr_test) {
 	using namespace Input;
 
     EXPECT_THROW_WHAT(
-    		{ReaderToStorage json_reader( cyclic_array_json, get_type_record(), FileFormat::format_JSON);},
+    		{ReaderToStorage json_reader( cyclic_array_json, &get_type_record(), FileFormat::format_JSON);},
 			PathBase::ExcReferenceNotFound,
 			"cannot follow reference");
 }
