@@ -181,11 +181,11 @@ protected:
     };
 
     // overload parent class method in order to reset pointers
-    void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
+    void read_stream(istream &in, Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
     	this->try_transpose_read_ = false;
-    	Type::TypeBase::lazy_finish();
+    	Type::TypeBase::lazy_finish( root_type );
     	ReaderToStorage::read_stream(in, root_type, format);
     }
 };
@@ -1003,7 +1003,7 @@ TEST(InputReaderToStorageTest_external, get_root_interface) {
 		.close();
     one_rec.finish();
 
-    ReaderToStorage json_reader("{ one=1 }", one_rec, FileFormat::format_JSON);
+    ReaderToStorage json_reader("{ one=1 }", &one_rec, FileFormat::format_JSON);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("one")) );
     //json_reader.get_storage()->print(cout);

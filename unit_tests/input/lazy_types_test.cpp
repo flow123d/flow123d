@@ -97,7 +97,7 @@ IT::Abstract InputTypeCollection::stat_a_rec=IT::Abstract("stat_a_rec","");
 
 
 TEST(LazyTypes, all) {
-    TypeBase::lazy_finish();
+    TypeBase::lazy_finish(&InputTypeCollection::main_record);
 
     std::cout << OutputText(&InputTypeCollection::main_record) << std::endl;
 

@@ -116,10 +116,9 @@ using namespace Input::Type;
 
     // construction
     std::shared_ptr<Array> arr_int = std::make_shared<Array>(Integer(), 1, 8);
-    Array arr_arr_dbl( Array( Double() ));
 
-    Record rec_2("record_type_2", "desc");
-    rec_2.close();
+    Record rec_2 = Record("record_type_2", "desc")
+        .close();
 
     Array arr_rec_shared_ptr( rec_2 );
 
@@ -128,7 +127,14 @@ using namespace Input::Type;
 
     Array arr_of_sel( sel );
 
-    Input::Type::TypeBase::lazy_finish();
+	Record helper_rec = Record("helper_record", "Helper record allows correct lazy_finish")
+			.declare_key("val_0", *(arr_int.get()), "desc.")
+			.declare_key("val_1", Array( Double() ), "desc.")
+			.declare_key("val_2", arr_rec_shared_ptr, "desc.")
+			.declare_key("val_3", arr_of_sel, "desc.")
+			.close();
+
+    Input::Type::TypeBase::lazy_finish( *(&helper_rec) );
 
     // get_sub_type
     EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // std::smart_ptr assert fails
@@ -391,7 +397,7 @@ TEST_F(InputTypeAttributesTest, base_test) {
 		.declare_key("file", FileName::output(), Default::optional(), "File for output stream.")
 		.close();
 
-	TypeBase::lazy_finish();
+	TypeBase::lazy_finish( &main_rec );
 
 	{
 		std::stringstream ss;
