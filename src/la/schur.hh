@@ -76,6 +76,11 @@ public:
     void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
 
     /**
+     * Sets specific parameters defined by user in input file and used to calculate. Call set_from_input of complement
+     */
+    void set_from_input(const Input::Record in_rec) override;
+
+    /**
      * Returns pointer to LinSys object representing the schur complement.
      */
     LinSys *get_system() const {return (Compl);}

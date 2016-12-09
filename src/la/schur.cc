@@ -107,10 +107,12 @@ SchurComplement::SchurComplement(SchurComplement &other)
 
 
 
-void SchurComplement::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
+void SchurComplement::set_from_input(const Input::Record in_rec)
 {
-    LinSys_PETSC::set_tolerances(r_tol, a_tol, max_it);
-    if (Compl !=nullptr) Compl->set_tolerances(r_tol, a_tol, max_it);
+    LinSys_PETSC::set_from_input( in_rec );
+
+    ASSERT_PTR(Compl).error();
+    Compl->set_from_input( in_rec );
 }
 
 /**
@@ -227,14 +229,16 @@ void SchurComplement::form_rhs()
 
 
 
+void SchurComplement::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
+{
+    LinSys_PETSC::set_tolerances(r_tol, a_tol, max_it);
+    if (Compl !=nullptr) Compl->set_tolerances(r_tol, a_tol, max_it);
+}
+
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
-	OLD_ASSERT(ls != nullptr, "NULL complement ls.\n");
+	ASSERT_PTR(ls).error();
     Compl = ls;
-    if (!in_rec_.is_empty()) {
-        Compl->set_from_input( in_rec_ );
-    }
-    Compl->set_tolerances(r_tol_, a_tol_, max_it_);
 }
 
 
