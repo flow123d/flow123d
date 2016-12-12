@@ -654,16 +654,16 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
     mesh_flags_[ele->index()] = true;
         
     bool enrich = false;
-//     for(unsigned int i=0; i < ele->n_nodes(); i++){
-//         double d = arma::norm(sing->center() - ele->node[i]->point(),2);
-// //         DBGCOUT(<< d << "\n");
-//         if(d < radius){
-//             enrich = true;
-//         }
-//     }
+    for(unsigned int i=0; i < ele->n_nodes(); i++){
+        double d = arma::norm(sing->center() - ele->node[i]->point(),2);
+//         DBGCOUT(<< d << "\n");
+        if(d < radius){
+            enrich = true;
+        }
+    }
     
 //     if(ele->index() == 5) enrich = true;
-    if(ele->index() == 49) enrich = true;
+//     if(ele->index() == 49) enrich = true;
 //     if(ele->index() == 645) enrich = true;
     
     // front advancing enrichment of neighboring elements

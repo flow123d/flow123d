@@ -329,7 +329,6 @@ void DarcyMH::init_eq_data()
 void DarcyMH::initialize() {
 
     init_eq_data();
-    output_object = new DarcyFlowMHOutput(this, input_record_);
     
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
@@ -376,6 +375,7 @@ void DarcyMH::initialize() {
         size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     }
     
+    output_object = new DarcyFlowMHOutput(this, input_record_);
     
     create_linear_system(rec);
 
@@ -1013,12 +1013,14 @@ void DarcyMH::allocate_mh_matrix()
 //         }
 
         if(ele_ac.is_enriched() && ele_ac.dim() == 2){
-            int ele1d_row, ele2d_row;
-            ele1d_row = mh_dh.row_4_el[ele_ac.xfem_data_pointer()->intersection_ele_global_idx()];
-            ele2d_row = ele_row;
-            // singularity edge integrals pressure - sing lagrange multiplier
-            ls->mat_set_value(ele1d_row, ele2d_row, 0);
-            ls->mat_set_value(ele2d_row, ele1d_row, 0);
+            const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
+            for(int w=0; w < xd.n_enrichments(); w++){
+                if(xd.is_singularity_inside(w)){
+                    int ele1d_row = mh_dh.row_4_el[ele_ac.xfem_data_pointer()->intersection_ele_global_idx()];
+                    ls->mat_set_values(ndofs_vel, dofs_vel, 1, &ele1d_row, zeros);
+                    ls->mat_set_values(1, &ele1d_row, ndofs_vel, dofs_vel, zeros);
+                }
+            }
         }
 
 //         if(ele_ac.is_enriched()){

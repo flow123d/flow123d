@@ -680,9 +680,8 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
     
     //as long as pressure is not enriched and is P0
     ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
-    double p2_val = 1.0;
-    int ele_row = loc_system_.row_dofs[loc_ele_dof],
-        ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
+    double temp = 1.0;
+    int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
     
     int nvals = loc_vel_dofs.size();
     double val;
@@ -695,45 +694,33 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
 
             fv_rt_sing_->reinit(ele);
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
+            temp = 1.0 / sing->sigma();
             
-            // Bw integral p2-(v.n)
-            for (int i=0; i < nvals; i++){
-                val = 0;
-//                 double sum = 0;
-                for(unsigned int q=0; q < quad.size();q++){
-                    arma::vec n = sing->center() - quad.real_point(q);
-                    n = n / arma::norm(n,2);
-                    val += p2_val
-                                * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
-                                * quad.weight(q);
-//                     sum += quad.weight(q);
+            vector<double> sum(nvals,0);
+            for(unsigned int q=0; q < quad.size();q++){
+                arma::vec n = sing->center() - quad.real_point(q);
+                n = n / arma::norm(n,2);
+                for (int i=0; i < nvals; i++){
+                    // int B_w 1/sigma * (u.n)*(v.n)
+                    for (int j=0; j < nvals; j++){
+                        val = temp 
+                            * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
+                            * arma::dot(fv_rt_sing_->shape_vector(j,q),n)
+                            * quad.weight(q);
+                        loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[j], val, 0.0);
+                        loc_system_.add_value(loc_vel_dofs[j], loc_vel_dofs[i], val, 0.0);
+                    }
+                    
+//                     DBGVAR(val);
+                    val = arma::dot(fv_rt_sing_->shape_vector(i,q),n) * quad.weight(q);
+                    sum[i] += val;
+                    ad_->lin_sys->mat_set_value(loc_system_.row_dofs[loc_vel_dofs[i]], ele1d_row, val);
+                    ad_->lin_sys->mat_set_value(ele1d_row, loc_system_.row_dofs[loc_vel_dofs[i]], val);
                 }
-//                 DBGVAR(sum);
-//                 DBGVAR(sing->circumference());
-                DBGVAR(val);
-                loc_system_.add_value(loc_ele_dof, loc_vel_dofs[i], val, 0.0);
-                loc_system_.add_value(loc_vel_dofs[i], loc_ele_dof, val, 0.0);
             }
-            
-            // Bw integral p1-p2            
-            if(quad.size() == sing->q_points().size()) val = sing->circumference() * sing->sigma();
-            else{
-                val = 0;
-                for(unsigned int q=0; q < quad.size();q++)
-                    val += quad.weight(q);
-                val = sing->sigma() * val;
-            }
-            
-            DBGVAR(val);
-            DBGVAR(ele_row);
-            DBGVAR(ele1d_row);
-            ad_->lin_sys->mat_set_value(ele_row, ele1d_row, val);
-            ad_->lin_sys->mat_set_value(ele1d_row, ele_row, val);
-            ad_->lin_sys->mat_set_value(ele_row, ele_row, -val);
-            ad_->lin_sys->mat_set_value(ele1d_row, ele1d_row, -val);
-                
-//             ad_->lin_sys->mat_set_values(1, &ele_row, nvals, vel_dofs, val);
-//             ad_->lin_sys->mat_set_values(nvals, vel_dofs, 1, &ele_row, val);
+//             DBGVAR(sum[0]);
+//             DBGVAR(sum[1]);
+//             DBGVAR(sum[2]);
         }
     }
 }
