@@ -11,6 +11,7 @@
  * in gtest library.
  */
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include "io/output_time.hh"
 #include "io/output_data_base.hh"
@@ -212,7 +213,7 @@ public:
 	: OutputTime()
 
 	{
-	    my_mesh = new Mesh();
+	    my_mesh = mesh_constructor();
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record *>(&OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();

@@ -15,6 +15,7 @@
 
 #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
+#include <mesh_constructor.hh>
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
 #include "fields/field_python.hh"
@@ -117,7 +118,7 @@ public:
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
         FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = new Mesh;
+        mesh_ = mesh_constructor();
         ifstream in(string( mesh_file ).c_str());
         mesh_->read_gmsh_from_stream(in);
 

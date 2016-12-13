@@ -9,6 +9,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest.hh>
+#include <mesh_constructor.hh>
 
 #include <fields/multi_field.hh>
 #include <fields/field_elementwise.hh>
@@ -106,7 +107,7 @@ protected:
 
     	FilePath mesh_file( "../fields/simplest_cube_data.msh", FilePath::input_file);
         GmshMeshReader reader(mesh_file);
-        mesh = new Mesh;
+        mesh = mesh_constructor();
         reader.read_physical_names(mesh);
         reader.read_mesh(mesh);
         mesh->check_and_finish();
@@ -224,7 +225,7 @@ TEST(Operators, assignment) {
     FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
     FilePath mesh_file("../mesh/simplest_cube.msh", FilePath::input_file);
     GmshMeshReader msh_reader(mesh_file);
-    Mesh * mesh = new Mesh;
+    Mesh * mesh = mesh_constructor();
     msh_reader.read_physical_names(mesh);
 	msh_reader.read_mesh(mesh);
 	mesh->check_and_finish();

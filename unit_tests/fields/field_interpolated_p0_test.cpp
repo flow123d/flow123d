@@ -28,6 +28,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include "system/system.hh"
 #include "input/input_type.hh"
@@ -131,7 +132,7 @@ public:
         Profiler::initialize();
 
         //FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
-        mesh = new Mesh;
+        mesh = mesh_constructor();
         stringstream in(gmsh_mesh.c_str());
         mesh->read_gmsh_from_stream(in);
 

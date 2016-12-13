@@ -8,6 +8,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 #include <fstream>
 
 #include "io/output_time.hh"
@@ -42,7 +43,7 @@ public:
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
-        this->_mesh = new Mesh();
+        this->_mesh = mesh_constructor();
         ifstream in(string(mesh_file).c_str());
         this->_mesh->read_gmsh_from_stream(in);
 
