@@ -67,7 +67,7 @@ protected:
         : selection_of_childs( std::make_shared<Selection> (name + "_TYPE_selection") ),
 		  description_(description),
 		  type_name_(name),
-		  finished_(false),
+		  finish_status_(FinishStatus::none_),
 		  closed_(false),
 		  selection_default_(Default::obligatory())
         {}
@@ -89,7 +89,7 @@ protected:
         const string type_name_;
 
         /// Abstract is finished when it has added all descendant records.
-        bool finished_;
+        FinishStatus finish_status_;
 
         /// If Abstract is closed, we do not allow any further declaration calls.
         bool closed_;
@@ -173,7 +173,7 @@ public:
      *  Set Abstract as parent of derived Records (for mechanism of
      *  set parent and descendant see \p Record::derive_from)
      */
-    bool finish(bool is_generic = false) override;
+    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
 
     /// Returns reference to the inherited Record with given name.
     const Record  &get_descendant(const string& name) const;
@@ -190,6 +190,9 @@ public:
 
     /// Returns number of descendants in the child_data_.
     unsigned int child_size() const;
+
+    /// Implements @p TypeBase::finish_status.
+    virtual FinishStatus finish_status() const override;
 
     /// Implements @p TypeBase::is_finished.
     virtual bool is_finished() const override;
@@ -310,7 +313,7 @@ public:
      * Adds descendants of ancestor Abstract, calls close() and complete keys with non-null
      * pointers to lazy types.
      */
-    bool finish(bool is_generic = false) override;
+	FinishStatus finish(FinishType finish_type = FinishType::regular) override;
 
     /// Add inherited Record.
     AdHocAbstract &add_child(const Record &subrec);

@@ -123,19 +123,20 @@ int Abstract::add_child(const Record &subrec)
 }
 
 
-bool Abstract::finish(bool is_generic) {
-	if (child_data_->finished_) return true;
+FinishStatus Abstract::finish(FinishType finish_type) {
+	if (this->is_finished()) return child_data_->finish_status_;
 
 	ASSERT(child_data_->closed_)(this->type_name()).error();
 
 	child_data_->selection_of_childs->close();
 
-	child_data_->finished_ = true;
+	child_data_->finish_status_ = (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_;
 
 	for (auto &child : child_data_->list_of_childs) {
-		if (!is_generic && child.is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
+		if ((finish_type != FinishType::root_of_generic) && child.is_root_of_generic_subtree())
+			THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
 		child.add_parent(*this);
-       	child_data_->finished_ = child_data_->finished_ && child.finish(is_generic);
+		child_data_->finish_status_ = TypeBase::merge_status(child_data_->finish_status_, child.finish(finish_type));
 	}
 
     // check validity of possible default value of TYPE key
@@ -152,7 +153,7 @@ bool Abstract::finish(bool is_generic) {
 		}
     }
 
-	return (child_data_->finished_);
+	return (child_data_->finish_status_);
 }
 
 
@@ -162,8 +163,13 @@ Abstract &Abstract::close() {
 }
 
 
+FinishStatus Abstract::finish_status() const {
+    return child_data_->finish_status_;
+}
+
+
 bool Abstract::is_finished() const {
-    return child_data_->finished_;
+    return child_data_->finish_status_ != FinishStatus::none_;
 }
 
 
@@ -223,7 +229,7 @@ Abstract Abstract::deep_copy() const {
 	Abstract abstract = Abstract();
 	abstract.child_data_ =  std::make_shared<Abstract::ChildData>(*this->child_data_);
 	abstract.child_data_->closed_ = false;
-	abstract.child_data_->finished_ = false;
+	abstract.child_data_->finish_status_ = FinishStatus::none_;
 	abstract.child_data_->list_of_childs.clear();
 	abstract.child_data_->selection_of_childs = std::make_shared<Selection>(this->type_name() + "_TYPE_selection");
 	abstract.copy_attributes(*attributes_);
@@ -289,11 +295,11 @@ AdHocAbstract &AdHocAbstract::add_child(const Record &subrec)
 }
 
 
-bool AdHocAbstract::finish(bool is_generic)
+FinishStatus AdHocAbstract::finish(FinishType finish_type)
 {
-	if (child_data_->finished_) return true;
+	if (this->is_finished()) return child_data_->finish_status_;
 
-	const_cast<Abstract &>(ancestor_).finish(is_generic);
+	const_cast<Abstract &>(ancestor_).finish(finish_type);
 
 	//test default descendant of ancestor
 	const Record * default_desc = ancestor_.get_default_descendant();
@@ -306,7 +312,7 @@ bool AdHocAbstract::finish(bool is_generic)
 	    child_data_->list_of_childs.push_back(*it);
 	}
 
-	return Abstract::finish(is_generic);
+	return Abstract::finish(finish_type);
 }
 
 

@@ -81,16 +81,29 @@ string TypeBase::desc() const {
 
 
 void TypeBase::lazy_finish(TypeBase& type) {
-	Input::TypeRepository<Instance>::get_instance().finish();
 	type.finish();
-	Input::TypeRepository<Abstract>::get_instance().finish(true);
-	Input::TypeRepository<Record>::get_instance().finish(true);
-	Input::TypeRepository<Tuple>::get_instance().finish(true);
-	Input::TypeRepository<Abstract>::get_instance().finish();
-	Input::TypeRepository<Record>::get_instance().finish();
-	Input::TypeRepository<Tuple>::get_instance().finish();
-	Input::TypeRepository<Selection>::get_instance().finish();
+	TypeBase::delete_unfinished_types();
 }
+
+
+void TypeBase::delete_unfinished_types() {
+	Input::TypeRepository<Instance>::get_instance().finish(FinishType::deleted);
+	Input::TypeRepository<Abstract>::get_instance().finish(FinishType::deleted);
+	Input::TypeRepository<Record>::get_instance().finish(FinishType::deleted);
+	Input::TypeRepository<Tuple>::get_instance().finish(FinishType::deleted);
+	Input::TypeRepository<Selection>::get_instance().finish(FinishType::deleted);
+}
+
+
+FinishStatus TypeBase::merge_status(FinishStatus status, FinishStatus other) {
+	if (status==FinishStatus::none_ || other==FinishStatus::none_) return FinishStatus::none_;
+	else {
+		ASSERT((status!=FinishStatus::regular_) || (other!=FinishStatus::deleted_))
+				.error("You can't merge regular FinishStatus with deleted.");
+		return status;
+	}
+}
+
 
 
  std::string TypeBase::hash_str(TypeHash hash) {
@@ -186,20 +199,24 @@ TypeBase::TypeHash Array::content_hash() const
 }
 
 
-bool Array::finish(bool is_generic) {
-	return data_->finish(is_generic);
+FinishStatus Array::finish(FinishType finish_type) {
+	return data_->finish(finish_type);
 }
 
 
 
-bool Array::ArrayData::finish(bool is_generic)
+FinishStatus Array::ArrayData::finish(FinishType finish_type)
 {
-	if (finished) return true;
+	if (finish_status != FinishStatus::none_) return finish_status;
 
-	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) type_of_values_ = type_of_values_->make_instance().first;
-	if (!is_generic && type_of_values_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
+	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) {
+		type_of_values_->finish(FinishType::root_of_generic); // finish Instance object
+		type_of_values_ = type_of_values_->make_instance().first;
+	}
+	if ((finish_type != FinishType::root_of_generic) && type_of_values_->is_root_of_generic_subtree())
+		THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
 
-	return (finished = type_of_values_->finish(is_generic) );
+	return (finish_status = type_of_values_->finish(finish_type) );
 }
 
 
@@ -240,7 +257,7 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 Array Array::deep_copy() const {
 	Array arr = Array(Integer()); // Type integer will be overwritten
 	arr.data_ = std::make_shared<Array::ArrayData>(*this->data_);
-	arr.data_->finished = false;
+	arr.data_->finish_status = FinishStatus::none_;
 	return arr;
 }
 

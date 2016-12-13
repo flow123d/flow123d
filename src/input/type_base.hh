@@ -65,6 +65,19 @@ DECLARE_EXCEPTION( ExcUnknownDescendant, << "Unknown descendant of TypeBase clas
 
 
 
+enum FinishType {
+    regular,          // default finish of type in IST
+	root_of_generic,  // finish of type, that is root of generic subtree
+	deleted           // finish of type, that is not contained in IST, mark this type ad deleted
+};
+
+enum FinishStatus {
+	none_,            // unfinished type
+	regular_,         // finished type (of IST)
+	deleted_          // finished type marked as deleted (type is not a part of IST)
+};
+
+
 /**
  * @brief Base of classes for declaring structure of the input data.
  *
@@ -101,6 +114,9 @@ public:
      * For Record and Array types this say nothing about child types referenced in particular type object.
      * In particular for Record and Selection, it returns true after @p finish() method is called.
      */
+    virtual FinishStatus finish_status() const
+    {return FinishStatus::regular_;}
+
     virtual bool is_finished() const
     {return true;}
 
@@ -166,6 +182,18 @@ public:
 
 
     /**
+     * @brief Finishes and marks all types registered in type repositories and unused in IST.
+     *
+     * Steps of this method:
+     *  1) finishes all types unused in IST, marks them as deleted (FinishStatus::deleted_)
+     *  2) iterates these deleted types once more, checks shared pointers link to Record keys, descendants of Abstract etc.
+     *     - if count == 1, it's OK, method resets shared pointer
+     *     - in other cases throws error
+     */
+    static void delete_unfinished_types();
+
+
+    /**
      * @brief Finish method. Finalize construction of "Lazy types": Record, Selection, Abstract and generic type.
      *
      * These input types are typically defined by means of static generating methods, whose allows initialization
@@ -177,8 +205,8 @@ public:
      * Finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p is_generic
      * to true.
      */
-    virtual bool finish(bool is_generic = false)
-    { return true; };
+    virtual FinishStatus finish(FinishType finish_type = FinishType::regular)
+    { return (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_; };
 
     /**
      * @brief Hash of the type specification.
@@ -212,6 +240,14 @@ public:
     inline bool is_root_of_generic_subtree() {
     	return root_of_generic_subtree_;
     }
+
+    /**
+     * Merges two FinishStatuses.
+     *
+     *  - if one of them has value none_, returns FinishStatus::none_
+     *  - in other cases both statuses must have same value, this value is returned
+     */
+    static FinishStatus merge_status(FinishStatus status, FinishStatus other);
 
 protected:
 
@@ -329,10 +365,10 @@ protected:
 
     	/// Constructor
     	ArrayData(unsigned int min_size, unsigned int max_size)
-    	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
+    	: lower_bound_(min_size), upper_bound_(max_size), finish_status(FinishStatus::none_)
     	{}
     	/// Finishes initialization of the ArrayData.
-    	bool finish(bool is_generic = false);
+    	FinishStatus finish(FinishType finish_type = FinishType::regular);
     	/// Type of Array
     	std::shared_ptr<TypeBase> type_of_values_;
     	/// Minimal size of Array
@@ -340,7 +376,7 @@ protected:
     	/// Maximal size of Array
     	unsigned int upper_bound_;
     	/// Flag specified if Array is finished
-    	bool finished;
+    	FinishStatus finish_status;
 
     };
 
@@ -367,11 +403,15 @@ public:
     TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    bool finish(bool is_generic = false) override;
+    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+
+    /// Override @p Type::TypeBase::finish_status.
+    FinishStatus finish_status() const override {
+        return data_->finish_status; }
 
     /// Override @p Type::TypeBase::is_finished.
     bool is_finished() const override {
-        return data_->finished; }
+        return data_->finish_status != FinishStatus::none_; }
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const {

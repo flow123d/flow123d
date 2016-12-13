@@ -77,7 +77,7 @@ public:
      * finished and then in second step can be finished
      * other types.
      */
-    void finish(bool is_root_of_generic_subtree = false);
+    void finish(Type::FinishType is_root_of_generic_subtree = Type::FinishType::regular);
 
     /// Container-like access to the data stored in TypeRepository. Returns iterator to the first data.
     TypeRepositoryMapIter begin() const {
@@ -112,17 +112,18 @@ std::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
 }
 
 template <class T>
-void TypeRepository<T>::finish(bool is_root_of_generic_subtree) {
+void TypeRepository<T>::finish(Type::FinishType is_root_of_generic_subtree) {
 	// We need reverse iterating for correct finish of generic types.
 	for (typename TypeRepositoryMap::reverse_iterator it = type_repository_map_.rbegin(); it != type_repository_map_.rend(); ++it) {
-		if (is_root_of_generic_subtree == it->second->is_root_of_generic_subtree()) {
-			if (is_root_of_generic_subtree) {
+		it->second->finish(is_root_of_generic_subtree);
+		/*if (is_root_of_generic_subtree == it->second->is_root_of_generic_subtree()) {
+			if (is_root_of_generic_subtree == Type::FinishType::root_of_generic) {
 				//ASSERT(it->second->is_finished())(it->second->type_name()).warning("Unused root of generic subtree.");
-				it->second->finish(true);
+				it->second->finish(Type::FinishType::root_of_generic);
 			} else {
 				it->second->finish();
 			}
-		}
+		}*/
 	}
 }
 

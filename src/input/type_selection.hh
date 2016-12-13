@@ -177,8 +177,8 @@ public:
     inline unsigned int size() const;
 
     /// Finish declaration of the Selection type.
-    bool finish(bool is_generic = false) override
-        { ASSERT(data_->closed_)(this->type_name()).error(); return true; }
+    FinishStatus finish(FinishType finish_type = FinishType::regular) override
+        { ASSERT(data_->closed_)(this->type_name()).error(); return FinishStatus::regular_; }
 
 
     /// Implements \p TypeBase::is_closed
