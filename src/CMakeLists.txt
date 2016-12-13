@@ -217,7 +217,6 @@ add_library(intersections_lib
     intersection/intersection_point_aux.cc
     intersection/intersection_aux.cc
     intersection/intersection_local.cc
-    intersection/tracing_algorithm.cc
     intersection/compute_intersection.cc
     intersection/inspect_elements_algorithm.cc
     intersection/inspect_elements.cc
