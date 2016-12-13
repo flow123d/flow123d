@@ -9,7 +9,6 @@
 #include "plucker.hh"
 #include "intersection_point_aux.hh"
 #include "intersection_aux.hh"
-//#include "tracing_algorithm.hh"
 
 using namespace std;
 namespace computeintersection{
@@ -285,8 +284,7 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_pathologic(uns
 }
 
 
-IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPointAux<1,2>> &IP12s,
-                                                          bool compute_zeros_plucker_products)
+IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPointAux<1,2>> &IP12s)
 {
     ASSERT_EQ_DBG(0, IP12s.size());
     compute_plucker_products();
@@ -349,19 +347,6 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
         IP12s.push_back(IP);
         return result;
 
-    } else if(compute_zeros_plucker_products){
-        ASSERT_DBG(0).error("currently unsupported");
-        // 3 zero products: 
-        //      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
-        //      -> triangle side is part of the line (and otherwise)
-        for(unsigned int i = 0; i < 3;i++){
-                IntersectionPointAux<1,2> IP;
-                if(compute_pathologic(i,IP))
-                {
-                    IP12s.push_back(IP);
-                    return IntersectionResult::degenerate;
-                }
-        }
     } else {
         return IntersectionResult::degenerate;
     }
@@ -799,7 +784,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 
 
 		if  (CI12[face].is_computed()) continue;
-	    IntersectionResult result = CI12[face].compute(IP12s, false);
+	    IntersectionResult result = CI12[face].compute(IP12s);
         //DebugOut().VarFmt(face).VarFmt(int(result)) << "1d-3d";
 
 		if (int(result) < int(IntersectionResult::degenerate) ) {
@@ -1216,7 +1201,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     // S3 Edge - S2 intersections; collect all signs, make dummy intersections
 	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
 	    std::vector<IPAux12> IP12_local;
-	    IntersectionResult result = CI12[tetra_edge].compute(IP12_local, false);
+	    IntersectionResult result = CI12[tetra_edge].compute(IP12_local);
 	    //DebugOut().VarFmt(tetra_edge).VarFmt(int(result));
 	    if (result < IntersectionResult::degenerate) {
 	        ASSERT_DBG(IP12_local.size() ==1);

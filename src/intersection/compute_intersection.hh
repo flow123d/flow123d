@@ -95,7 +95,7 @@ public:
      * NOTE: Why this is not done in constructor?
      * Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
      */
-	IntersectionResult compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
+	IntersectionResult compute(std::vector<IntersectionPointAux<1,2>> &IP12s);
     
     /** Computes final 1d-2d intersection. (Use when this is the resulting dimension object).
      * TODO: as in 1d-3d check the topology after interpolation
