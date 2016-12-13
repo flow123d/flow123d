@@ -240,7 +240,7 @@ auto FieldVelocityInternal<2>::value_vector_xfem_single(LocalElementAccessorBase
         auto sing = xdata->enrichment_func(w);
         flux += mh_dh_->mh_solution[ele_ac.vel_sing_row(w)] * sing->vector(p);
     }
-    DBGVAR(flux);
+//     DBGVAR(flux);
     return flux;
 }
 #endif /* FIELD_VELOCITY_HH_ */

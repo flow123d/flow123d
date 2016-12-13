@@ -163,6 +163,11 @@ public:
     double sigma() const;
     void set_sigma(double s);
     
+    double pressure() const
+    { return pressure_;}
+    void set_pressure(double p)
+    { pressure_ = p;}
+    
 private:
     
     /// center of the singularity
@@ -179,6 +184,7 @@ private:
     
     /// Value of the permeability coefficient between dimensions.
     double sigma_;
+    double pressure_;
 };
 
 

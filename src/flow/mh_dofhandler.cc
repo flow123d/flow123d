@@ -492,68 +492,111 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     
     int new_enrich_node_idx = 0;
     
-    FOR_ELEMENTS(mesh_,ele){
-        unsigned int idx = ele->index();
-        if(ele->dim() == 1) {
-            std::vector<computeintersection::ILpair>& ilpairs = intersections->intersection_map_[idx];
-            if(ilpairs.size() == 0) continue;
-            
-            for(computeintersection::ILpair& ilp : ilpairs){
-                ASSERT_PTR_DBG(ilp.second);
-                //TODO: check different intersection
-                computeintersection::IntersectionLocal<1,2>* il = static_cast<computeintersection::IntersectionLocal<1,2>*>(ilp.second);
-                ASSERT_PTR_DBG(il);
-                // we want to consider here only singularities (line segment and triangle not in a plane)
-                if(il->size() != 1) continue;   //process only IL with one IP
+//     FOR_ELEMENTS(mesh_,ele){
+//         unsigned int idx = ele->index();
+//         if(ele->dim() == 1) {
+//             std::vector<computeintersection::ILpair>& ilpairs = intersections->intersection_map_[idx];
+//             if(ilpairs.size() == 0) continue;
+//             
+//             for(computeintersection::ILpair& ilp : ilpairs){
+//                 ASSERT_PTR_DBG(ilp.second);
+//                 //TODO: check different intersection
+//                 computeintersection::IntersectionLocal<1,2>* il = static_cast<computeintersection::IntersectionLocal<1,2>*>(ilp.second);
+//                 ASSERT_PTR_DBG(il);
+//                 // we want to consider here only singularities (line segment and triangle not in a plane)
+//                 if(il->size() != 1) continue;   //process only IL with one IP
+//                 
+//                 ElementFullIter ele2d = mesh_->element(il->bulk_ele_idx());
+//                 
+//                 DBGCOUT("singularity: ele 1d: " << idx << "  2d: " << ele2d->index() << "\n");
+//                 //create singularity
+//                 Space<3>::Point center = (*il)[0].coords(ele);
+//                 double radius = cross_section.value(center,ele->element_accessor());               
+// //                 DebugOut().fmt("intersection:  c {} b {}\n", il->component_idx(), il->bulk_ele_idx());
+// //                 center.print(MessageOut(),"center");
+// //                 DebugOut() << "radius " << radius << "\n";
+//                 Space<3>::Point n = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
+//                                                 ele2d->node[2]->point() - ele2d->node[0]->point());
+//                 Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
+//                 
+//                 auto sing = std::make_shared<Singularity0D<3>>(center, radius, direction_vector, n);
+//                 // set sigma of 1d element
+//                 sing->set_sigma(sigma.value(center, ele->element_accessor()));
+//                 singularities.push_back(sing);
+// //                 node_values.push_back(std::map<int, double>());
+// //                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
+//                 
+// //                 unsigned int sing_idx = singularities_12d_.size()-1;
+// //                 if(ele->xfem_data == nullptr){
+// //                     xfem_data_1d.push_back(XFEMComplementData(sing, sing_idx));
+// //                     xfem_data_1d.back().set_element(idx, ele2d->index());        
+// //                     xfem_data_1d.back().set_complement();
+// //                     ele->xfem_data = & xfem_data_1d.back();
+// //                 }
+// //                 else{
+// //                     auto xdata = static_cast<XFEMComplementData*>(ele->xfem_data);
+// //                     ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMComplementData Type!");
+// //                     xdata->add_data(sing, sing_idx);
+// //                 }
+//                 
+//                 
+//                 //TODO: suggest proper enrichment radius
+//                 double enr_radius = 1.5*std::sqrt(ele2d->measure());
+//                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
+//                 clear_mesh_flags();
+// 
+//                 find_ele_to_enrich(singularities.back(), idx, ele2d, enr_radius, new_enrich_node_idx);
+//             }
+//         }
+//     }
+    
                 
-                ElementFullIter ele2d = mesh_->element(il->bulk_ele_idx());
-                
-                DBGCOUT("singularity: ele 1d: " << idx << "  2d: " << ele2d->index() << "\n");
-                //create singularity
-                Space<3>::Point center = (*il)[0].coords(ele);
-                double radius = cross_section.value(center,ele->element_accessor());               
-//                 DebugOut().fmt("intersection:  c {} b {}\n", il->component_idx(), il->bulk_ele_idx());
-//                 center.print(MessageOut(),"center");
-//                 DebugOut() << "radius " << radius << "\n";
-                Space<3>::Point n = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
-                                                ele2d->node[2]->point() - ele2d->node[0]->point());
-                Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
-                
-                auto sing = std::make_shared<Singularity0D<3>>(center, radius, direction_vector, n);
-                // set sigma of 1d element
-                sing->set_sigma(sigma.value(center, ele->element_accessor()));
-                singularities.push_back(sing);
-//                 node_values.push_back(std::map<int, double>());
-//                 node_vec_values.push_back(std::map<int, Space<3>::Point>());
-                
-//                 unsigned int sing_idx = singularities_12d_.size()-1;
-//                 if(ele->xfem_data == nullptr){
-//                     xfem_data_1d.push_back(XFEMComplementData(sing, sing_idx));
-//                     xfem_data_1d.back().set_element(idx, ele2d->index());        
-//                     xfem_data_1d.back().set_complement();
-//                     ele->xfem_data = & xfem_data_1d.back();
-//                 }
-//                 else{
-//                     auto xdata = static_cast<XFEMComplementData*>(ele->xfem_data);
-//                     ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMComplementData Type!");
-//                     xdata->add_data(sing, sing_idx);
-//                 }
-                
-                
-                //TODO: suggest proper enrichment radius
-                double enr_radius = 1.5*std::sqrt(ele2d->measure());
-                DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
-                clear_mesh_flags();
-
-                find_ele_to_enrich(singularities.back(), idx, ele2d, enr_radius, new_enrich_node_idx);
+    //create singularity
+//     Space<3>::Point center ({3.3, 3.3, 0}); //triangle
+    Space<3>::Point center ({0, 0, 0}); //circle
+    double radius = 0.15,
+           sigma_const = 2e5,
+           pressure = 100;
+    Space<3>::Point direction_vector ({0,0,1});
+    Space<3>::Point n;
+    
+    ElementFullIter ele2d(mesh_->element.begin());
+    for(; ele2d != mesh_->element.end(); ++ele2d){
+        if(ele2d->dim() == 2){
+            arma::vec p = ele2d->project_point(center);
+            if(p[0]>=0.0 && p[0]<=1.0 &&
+               p[1]>=0.0 && p[1]<=1.0 &&
+               p[2]>=0.0 && p[2]<=1.0)
+            {
+                n = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
+                                ele2d->node[2]->point() - ele2d->node[0]->point());
+                break;
             }
         }
     }
+                
+    DBGCOUT("singularity: 2d: " << ele2d->index() << "\n");
+                
+    auto sing = std::make_shared<Singularity0D<3>>(center, radius, direction_vector, n);
+    // set sigma of 1d element
+    sing->set_sigma(sigma_const);
+    sing->set_pressure(pressure);
+    singularities.push_back(sing);
+
+    //TODO: suggest proper enrichment radius
+    double enr_radius = 0.5;//1.3*std::sqrt(ele2d->measure());
+    DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
+    clear_mesh_flags();
+
+    find_ele_to_enrich(singularities.back(), 0, ele2d, enr_radius, new_enrich_node_idx);
+    
+    
+    
     //shrink here (invalidates iterators, pointers); element xdata pointer is set in distribute_enriched_dofs()
     xfem_data.shrink_to_fit();
 
     // update invalid pointers //HACK for xfem without enriching:
-    if(! (enrich_pressure || enrich_velocity))
+//     if(! (enrich_pressure || enrich_velocity))
     for(XFEMElementSingularData& xdata : xfem_data){
         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
 //         xdata.print(cout);
@@ -698,7 +741,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         
         //HACK for xfem without enriching:
         // shortcut when not enriching
-        if(! (enrich_velocity || enrich_pressure)) return;
+//         if(! (enrich_velocity || enrich_pressure)) return;
         
         Node* node; //shortcut
         // number the enriched nodes and compute node values
