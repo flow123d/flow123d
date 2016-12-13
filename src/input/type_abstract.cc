@@ -136,7 +136,8 @@ FinishStatus Abstract::finish(FinishType finish_type) {
 		if ((finish_type != FinishType::root_of_generic) && child.is_root_of_generic_subtree())
 			THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
 		child.add_parent(*this);
-		child_data_->finish_status_ = TypeBase::merge_status(child_data_->finish_status_, child.finish(finish_type));
+		child.finish(finish_type);
+		ASSERT(child.is_finished()).error();
 	}
 
     // check validity of possible default value of TYPE key

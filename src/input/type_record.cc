@@ -254,7 +254,8 @@ FinishStatus Record::finish(FinishType finish_type)
 			    THROW( ExcGenericWithoutInstance()
 			            << EI_Object(it->type_->type_name())
 			            << EI_TypeName(this->type_name()));
-           	data_->finish_status_ = TypeBase::merge_status(data_->finish_status_, it->type_->finish(finish_type));
+			it->type_->finish(finish_type);
+			ASSERT(it->type_->is_finished()).error();
         }
 
         if (finish_type != FinishType::root_of_generic) {

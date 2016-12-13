@@ -209,6 +209,8 @@ FinishStatus Array::ArrayData::finish(FinishType finish_type)
 {
 	if (finish_status != FinishStatus::none_) return finish_status;
 
+	finish_status = (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_;
+
 	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) {
 		type_of_values_->finish(FinishType::root_of_generic); // finish Instance object
 		type_of_values_ = type_of_values_->make_instance().first;
@@ -216,7 +218,9 @@ FinishStatus Array::ArrayData::finish(FinishType finish_type)
 	if ((finish_type != FinishType::root_of_generic) && type_of_values_->is_root_of_generic_subtree())
 		THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
 
-	return (finish_status = type_of_values_->finish(finish_type) );
+	type_of_values_->finish(finish_type);
+	ASSERT(type_of_values_->is_finished()).error();
+	return (finish_status);
 }
 
 
