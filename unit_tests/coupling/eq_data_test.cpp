@@ -22,6 +22,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include <vector>
 #include <boost/foreach.hpp>
@@ -156,7 +157,7 @@ protected:
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
         FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh= new Mesh;
+        mesh = mesh_constructor();
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
         component_names = { "comp_0", "comp_1", "comp_2" };

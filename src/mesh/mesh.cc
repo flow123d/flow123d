@@ -73,21 +73,6 @@ const IT::Record & Mesh::get_input_type() {
 
 const unsigned int Mesh::undef_idx;
 
-Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
-:comm_(comm),
- row_4_el(nullptr),
- el_4_loc(nullptr),
- el_ds(nullptr)
-{
-
-    Input::ReaderToStorage reader( input_str, const_cast<IT::Record *>(&Mesh::get_input_type()), Input::FileFormat::format_JSON );
-    in_record_ = reader.get_root_interface<Input::Record>();
-
-    reinit(in_record_);
-}
-
-
-
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),

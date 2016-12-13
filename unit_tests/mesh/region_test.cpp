@@ -7,6 +7,7 @@
 
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest.hh>
+#include <mesh_constructor.hh>
 
 #include "mesh/region.hh"
 #include "mesh/mesh.h"
@@ -240,7 +241,7 @@ TEST(Region, read_regions_from_yaml) {
 
     stringstream in(gmsh_mesh.c_str());
     GmshMeshReader reader(in);
-    Mesh * mesh = new Mesh;
+    Mesh * mesh = mesh_constructor();
 
 	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
 	Input::ReaderToStorage json_reader( read_regions_yaml, &element_map_array_input_type, Input::FileFormat::format_YAML);
@@ -330,7 +331,7 @@ TEST(Region, read_regions_error_messages) {
 
     FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
     GmshMeshReader reader(mesh_file);
-    Mesh * mesh = new Mesh;
+    Mesh * mesh = mesh_constructor();
 	reader.read_physical_names(mesh);
 
 	{

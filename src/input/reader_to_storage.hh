@@ -126,8 +126,6 @@ public:
     T get_root_interface() const;
 
 
-protected:
-
     /**
      * @brief Default constructor.
      *
@@ -142,6 +140,8 @@ protected:
      * store the data into private storage tree using \p StorageBase classes.
      */
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format);
+
+protected:
 
     /// Getter for root of the storage tree.
     StorageBase *get_storage()
