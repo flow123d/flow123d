@@ -532,8 +532,11 @@ template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,2>(un
     
 template<unsigned int dim> template<unsigned int OutDim, unsigned int InDim> 
 inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact_(unsigned int i)
-{   ASSERT_LT_DBG(OutDim, dim);
-    ASSERT_LT_DBG(InDim, dim);}
+{
+    ASSERT(false)(dim)(OutDim)(InDim)(i).error("Not implemented.");
+    //ASSERT_LT_DBG(OutDim, dim);
+    //ASSERT_LT_DBG(InDim, dim);
+}
 
 
 template<unsigned int dim>
