@@ -154,7 +154,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
     typedef typename Space<spacedim>::Point Point;
     unsigned int j;
     
-    bool switch_delta = true;
+//     bool switch_delta = true;
     
     // can we suppose for this FE and element that:
     //  - jacobian (and its inverse and determinant) is constant on the element
@@ -188,7 +188,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
             arma::mat::fixed<dim+1,dim> raw_values;
             arma::mat::fixed<dim+1,dim> shape_values;
             
-            for (unsigned int j=0; j<n_regular_dofs_; j++)
+            for (j=0; j<n_regular_dofs_; j++)
                 raw_values.row(j) = trans(fe->basis_vector(j, quad.point(q)));
             
             shape_values = fe->get_node_matrix() * raw_values;

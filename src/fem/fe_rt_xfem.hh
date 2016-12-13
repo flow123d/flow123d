@@ -150,7 +150,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
     typedef typename Space<spacedim>::Point Point;
     unsigned int j;
     
-    bool switch_delta = true;
+    bool switch_delta = false;
     
     // can we suppose for this FE and element that:
     //  - jacobian (and its inverse and determinant) is constant on the element
