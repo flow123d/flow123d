@@ -93,8 +93,8 @@ public:
     /// Implements reading of reference keys, and check of cyclic references.
     PathBase * find_ref_node() override;
 
-    /// Implements @p PathBase::get_descendant_name
-    std::string get_descendant_name() const override;
+    /// Implements @p PathBase::get_record_name
+    std::string get_record_name() const override;
 
 protected:
 

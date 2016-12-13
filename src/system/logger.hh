@@ -247,4 +247,5 @@ Logger &operator<<(Logger & log, const T & x)
     fmt("'" + string(#var) + "': {} " , (var))
 
 
+
 #endif /* LOGGER_HH_ */

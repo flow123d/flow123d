@@ -1,0 +1,60 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Test12 - demonstration of unstability of reaction solver without CFL condition
+    (exact solution (50+5*exp(-55*t))/55)
+  mesh:
+    mesh_file: ../00_mesh/prism_3el.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    input_fields:
+      - rid: 1
+        anisotropy: 1
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_piezo_head: 0
+    output:
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: {}
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    output_stream: 
+      file: ./decay.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - rid: 1
+          init_conc:
+            - 1
+            - 0
+        - region: .BOUNDARY
+          bc_conc:
+            - 1
+            - 0
+    output_stream: 
+      file: ./transport_decay.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 2e-0
+    substances:
+      - A
+      - B
+    time:
+      end_time: 10.0
+    reaction_term: !RadioactiveDecay
+      decays:
+        - radionuclide: A
+          half_life: 1.38e-1 # ~ ln(2)/5 -> k=5
+          products: B
+        - radionuclide: B
+          half_life: 1.38e-2 # ~ ln(2)/50 -> k=50
+          products: A
+    balance:
+      cumulative: true

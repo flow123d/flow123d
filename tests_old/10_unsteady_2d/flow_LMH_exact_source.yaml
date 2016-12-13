@@ -1,0 +1,54 @@
+# Steady, source problem, with analytical solution:
+# p(x) = (1-x)^2
+# v(x) = 2*(1-x)
+# source = -2
+#
+# conductivity 1.0
+# Check that source works well with Dirichlet BC
+#
+
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Test15 - 2D unsteady flow LM
+  mesh:
+    mesh_file: ./input/test10_1d.msh
+  flow_equation: !Flow_Richards_LMH
+    output_specific:
+      raw_flow_output: ./raw_output.txt
+    input_fields:
+      - region: ALL
+        storativity: 0.0
+      - region: plane
+        water_source_density: !FieldFormula
+          value: -2
+        conductivity: 1.0
+        cross_section: 1.0
+      - region: .bc_inflow
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .bc_outflow
+        bc_type: dirichlet
+        bc_pressure: 1.0
+
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    n_schurs: 2
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    balance:
+      cumulative: true
+#    time:
+#      end_time: 1.0
+#      max_dt: 0.01
+#      min_dt: 0.01
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+#      times:
+#        - step: 0.1

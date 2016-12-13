@@ -8,6 +8,7 @@ from ist.base import Unicode
 from ist.formatters.html2latex import Html2Latex
 from ist.formatters.markdown2html import markdown2html
 
+
 class texlist(list):
     """
     Helper class for creating latex document
@@ -247,7 +248,6 @@ class texlist(list):
             else:
                 desc_result.append(self.plain_mode(r))
         return ''.join(desc_result)
-
 
     @staticmethod
     def equation_mode(value):

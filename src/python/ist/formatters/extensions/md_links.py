@@ -27,6 +27,10 @@ def build_url(label, base, end):
 
 
 class MdLinkExtension(Extension):
+    """
+    Class MdLinkExtension md module for links to IST elements
+    """
+
     def __init__(self, *args, **kwargs):
         self.md = None
         self.config = {
@@ -40,12 +44,17 @@ class MdLinkExtension(Extension):
         # append to end of inline patterns
         # WIKILINK_RE = r'\[\[([\w0-9_ -]+)\]\]'
         WIKILINK_RE = r'\[\[([\w0-9_#:-]+)\]\]'
-        wikilinkPattern = MdLinks(WIKILINK_RE, { })
+        wikilinkPattern = MdLinks(WIKILINK_RE, {})
         wikilinkPattern.md = md
         md.inlinePatterns.add('mdlinks', wikilinkPattern, "<not_strong")
 
 
 class MdLinks(Pattern):
+    """
+    Class MdLinks tries to find appropriated element by specified id or name
+    and expose given property
+    """
+
     def __init__(self, pattern, config):
         super(MdLinks, self).__init__(pattern)
         self.config = config
@@ -59,7 +68,7 @@ class MdLinks(Pattern):
                 opts = ('r', 'record', 's', 'selection', 'a', 'abstract', 'ar')
                 if label[:pos] in opts:
                     link_type = label[:pos]
-                    label = label[pos+1:]
+                    label = label[pos + 1:]
 
             element = self.build_element(link_type, label)
             return element
@@ -89,11 +98,17 @@ class MdLinks(Pattern):
             a.text = link_text or item.href_name
             a.set('href', '#{item.href_id}'.format(item=item))
         else:
-            Logger.instance().warning('Link not found %s %s' % (link_type, label) )
+            Logger.instance().warning('Link not found %s %s' % (link_type, label))
             return ''
         a.set('text', a.text)
         return a
 
 
 def makeExtension(*args, **kwargs):
+    """
+    Register extension
+    :param args:
+    :param kwargs:
+    :return:
+    """
     return MdLinkExtension(*args, **kwargs)

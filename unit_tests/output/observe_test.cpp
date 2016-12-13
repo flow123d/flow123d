@@ -24,9 +24,9 @@
 #include "../arma_expect.hh"
 #include <fstream>
 
+
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
-
 
 /**
  * Supposed to be used on 'simplest_cube':
@@ -58,8 +58,6 @@ const string test_input = R"JSON(
     { name: "s_2d_el2", point: [0, -0.5, -0.5], snap_region: "2D XY diagonal", snap_dim: 2},
     // find 1D observe element , snap to node [-1, -1 ,1]
     { name: "s_1d_el2", point: [-0.5, -0.5, 0], snap_region: "1D diagonal", snap_dim: 0}
-  ],
-  observe_fields: [
   ],
   input_fields: [
        {
@@ -229,9 +227,7 @@ TEST(Observe, all) {
     armadillo_setup();
     EqData field_set;
 
-    auto field_selection = field_set.make_output_field_selection("eq_data", "").close();
     auto output_type = Input::Type::Record("Output", "")
-        .declare_key("observe_fields", Input::Type::Array(field_selection), Input::Type::Default::obligatory(), "" )
         .declare_key("observe_points", Input::Type::Array(ObservePoint::get_input_type()), Input::Type::Default::obligatory(), "")
         .declare_key("input_fields", Input::Type::Array(
                 EqData()

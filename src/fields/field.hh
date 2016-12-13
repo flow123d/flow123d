@@ -173,7 +173,7 @@ public:
     /**
      * Direct read access to the table of Field pointers on regions.
      */
-    //boost::shared_ptr< FieldBaseType > operator[] (Region reg);
+    //std::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().
@@ -241,6 +241,14 @@ public:
      */
     FieldResult field_result( RegionSet region_set) const override;
 
+    /**
+     * Return specification of the field value type in form of the string:
+     * [ <element type>, NRows, NCols]
+     *
+     * Result is valid JSON (and/or flow style YAML).
+     * For multifields not implemented.
+     */
+    std::string get_value_attribute() const override;
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
@@ -342,7 +350,7 @@ template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const
 {
 
-	OLD_ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
+    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
 	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
 	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
@@ -356,7 +364,7 @@ template<int spacedim, class Value>
 inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list) const
 {
-	OLD_ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
+    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
 	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
 	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,

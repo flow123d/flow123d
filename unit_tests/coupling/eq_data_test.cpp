@@ -25,7 +25,6 @@
 
 #include <vector>
 #include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
 
 #include "system/sys_profiler.hh"
 

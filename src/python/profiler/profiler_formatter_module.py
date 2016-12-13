@@ -14,7 +14,10 @@ Package contains:
 """
 
 from __future__ import absolute_import
-import os, json, datetime, importlib
+import os
+import json
+import datetime
+import importlib
 from utils.logger import Logger
 
 
@@ -29,7 +32,6 @@ class ProfilerJSONDecoder(json.JSONDecoder):
     returned object has all values properly typed so
     formatters can make mathematical or other operation without worries
     """
-
 
     def decode(self, json_string):
         """Decodes json_string which is string that is given to json.loads method"""
@@ -49,7 +51,6 @@ class ProfilerJSONDecoder(json.JSONDecoder):
         self.convert_fields(default_obj, self.dateFields, self.parse_date, False)
 
         return default_obj
-
 
     def default_serializer(self, obj):
         """Default JSON serializer."""
@@ -80,7 +81,6 @@ class ProfilerFormatter(object):
     Class which dynamically loads formatter and perform conversion
     """
 
-
     @staticmethod
     def get_class_instance(cls):
         """Method returns class instance upon given name in profiler.formatters.* ns"""
@@ -88,7 +88,6 @@ class ProfilerFormatter(object):
         class_ = getattr(module, cls)
         instance = class_()
         return instance
-
 
     @staticmethod
     def list_formatters():

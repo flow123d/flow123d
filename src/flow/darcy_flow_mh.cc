@@ -130,12 +130,16 @@ const it::Record & DarcyMH::type_field_descriptor() {
 const it::Record & DarcyMH::get_input_type() {
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
-        .declare_key("linear_solver", LinSys::get_input_type(), it::Default::obligatory(),
+        .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
         .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"),
             "Residual tolerance.")
+        .declare_key("min_it", it::Integer(0), it::Default("1"),
+            "Minimum number of iterations (linear solves) to use. This is usefull if the convergence criteria "
+            "does not characterize your goal well enough so it converges prematurely possibly without the single linear solve."
+            "If greater then 'max_it' the value is set to 'max_it'.")
         .declare_key("max_it", it::Integer(0), it::Default("100"),
-            "Maximal number of iterations (linear solves) of the non-linear solver.")
+            "Maximum number of iterations (linear solves) of the non-linear solver.")
         .declare_key("converge_on_stagnation", it::Bool(), it::Default("false"),
             "If a stagnation of the nonlinear solver is detected the solver stops. "
             "A divergence is reported by default forcing the end of the simulation. Setting this flag to 'true', the solver"
@@ -159,7 +163,7 @@ const it::Record & DarcyMH::get_input_type() {
                 "Parameters of output form MH module.")
         .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
-        .declare_key("time", TimeGovernor::get_input_type(),
+        .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
                 "Time governor setting for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
@@ -184,7 +188,7 @@ DarcyMH::EqData::EqData()
     	cross_section.units( UnitSI().m(3).md() );
 
     ADD_FIELD(conductivity, "Isotropic conductivity scalar.", "1.0" );
-    	conductivity.units( UnitSI().m().s(-1) );
+    	conductivity.units( UnitSI().m().s(-1) ).set_limits(0.0);
 
     ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
     	sigma.units( UnitSI::dimensionless() );
@@ -248,18 +252,19 @@ DarcyMH::EqData::EqData()
 DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
     solution(nullptr),
-    schur0(nullptr)
+    schur0(nullptr),
+    data_changed_(false)
 {
 
     is_linear_=true;
 
     START_TIMER("Darcy constructor");
     {
-        Input::Record time_record;
-        if ( in_rec.opt_val("time", time_record) )
+        auto time_record = input_record_.val<Input::Record>("time");
+        //if ( in_rec.opt_val("time", time_record) )
             time_ = new TimeGovernor(time_record);
-        else
-            time_ = new TimeGovernor();
+        //else
+        //    time_ = new TimeGovernor();
     }
 
     data_ = make_shared<EqData>();
@@ -309,6 +314,14 @@ void DarcyMH::init_eq_data()
 
 
     data_->set_input_list( this->input_record_.val<Input::Array>("input_fields") );
+    // Check that the time step was set for the transient simulation.
+    if (! zero_time_term(true) && time_->is_default() ) {
+        //THROW(ExcAssertMsg());
+        //THROW(ExcMissingTimeGovernor() << input_record_.ei_address());
+        MessageOut() << "Missing the key 'time', obligatory for the transient problems." << endl;
+        ASSERT(false);
+    }
+
     data_->mark_input_times(*time_);
 }
 
@@ -330,7 +343,7 @@ void DarcyMH::initialize() {
             .val<Input::AbstractRecord>("linear_solver");
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
-    data_->set_time(time_->step(), LimitSide::right);
+    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     data_->system_.local_matrix = std::make_shared<arma::mat>();
     create_linear_system(rec);
 
@@ -374,7 +387,8 @@ void DarcyMH::zero_time_step()
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
 
-    data_->set_time(time_->step(), LimitSide::right);
+    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
+
     // zero_time_term means steady case
     bool zero_time_term_from_right = zero_time_term();
 
@@ -406,7 +420,7 @@ void DarcyMH::update_solution()
     time_->next_time();
 
     time_->view("DARCY"); //time governor information output
-    data_->set_time(time_->step(), LimitSide::left);
+    data_changed_ = data_->set_time(time_->step(), LimitSide::left) || data_changed_;
     bool zero_time_term_from_left=zero_time_term();
 
     bool jump_time = data_->storativity.is_jump_time();
@@ -433,7 +447,7 @@ void DarcyMH::update_solution()
         return;
     }
 
-    data_->set_time(time_->step(), LimitSide::right);
+    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
@@ -450,15 +464,18 @@ void DarcyMH::update_solution()
 
 }
 
-bool DarcyMH::zero_time_term() {
-    return data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+bool DarcyMH::zero_time_term(bool time_global) {
+    if (time_global) {
+        return (data_->storativity.input_list_size() == 0);
+    } else {
+        return data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    }
 }
 
 
 void DarcyMH::solve_nonlinear()
 {
 
-	DebugOut().fmt("dt: {}\n", time_->step().length());
     assembly_linear_system();
     double residual_norm = schur0->compute_residual();
     unsigned int l_it=0;
@@ -472,16 +489,19 @@ void DarcyMH::solve_nonlinear()
     Input::Record nl_solver_rec = input_record_.val<Input::Record>("nonlinear_solver");
     this->tolerance_ = nl_solver_rec.val<double>("tolerance");
     this->max_n_it_  = nl_solver_rec.val<unsigned int>("max_it");
+    this->min_n_it_  = nl_solver_rec.val<unsigned int>("min_it");
+    if (this->min_n_it_ > this->max_n_it_) this->min_n_it_ = this->max_n_it_;
 
     if (! is_linear_common) {
         // set tolerances of the linear solver unless they are set by user.
-        schur0->set_tolerances(0.1, 0.1*this->tolerance_, 10);
+        schur0->set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
     }
     vector<double> convergence_history;
 
     Vec save_solution;
     VecDuplicate(schur0->get_solution(), &save_solution);
-    while (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_) {
+    while (nonlinear_iteration_ < this->min_n_it_ ||
+           (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
 
@@ -505,11 +525,18 @@ void DarcyMH::solve_nonlinear()
 
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common) break;
+        data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
-
+        /*
+        double * sol;
+        unsigned int sol_size;
+        get_solution_vector(sol, sol_size);
+        if (mh_dh.el_ds->myp() == 0)
+            VecView(sol_vec, PETSC_VIEWER_STDOUT_SELF);
+        */
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", convergedReason );
         //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
@@ -706,12 +733,14 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     data_->system_.dirichlet_edge[i] = 1;
 
                 } else if ( type == EqData::total_flux) {
+
                     // internally we work with outward flux
                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-                            double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-                            ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-                            ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
+                    double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    DebugOut().fmt("erow: {} flux: {} mesure: {} cs: {}", edge_row, bc_flux, bcd->element()->measure(), cross_section);
+                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+                    ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
 
                 } else if (type==EqData::seepage) {
                     is_linear_=false;
@@ -1244,8 +1273,6 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*mh_dh.rows_ds));
-                ls->set_from_input(in_rec);
-                ls->set_solution( NULL );
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -1262,11 +1289,12 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     // make schur2
                     schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
                     schur2->set_positive_definite();
-                    schur2->set_from_input(in_rec);
                     ls1->set_complement( schur2 );
                     schur1 = ls1;
                 }
                 ls->set_complement( schur1 );
+                ls->set_from_input(in_rec);
+                ls->set_solution( NULL );
                 schur0=ls;
             }
 
@@ -1295,8 +1323,9 @@ void DarcyMH::assembly_linear_system() {
     is_linear_=true;
     bool is_steady = zero_time_term();
 	//DebugOut() << "Assembly linear system\n";
-	if (data_->changed()) {
-		//DebugOut()  << "Data changed\n";
+	if (data_changed_) {
+	    data_changed_ = false;
+	    //DebugOut()  << "Data changed\n";
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
@@ -1418,7 +1447,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // trace computation
         arma::vec3 centre = ele_ac.centre();
         double conduct = data_->conductivity.value( centre , ele_ac.element_accessor() );
-        arma::mat33 aniso = data_->anisotropy.value( centre, ele_ac.element_accessor() );
+        auto aniso = data_->anisotropy.value( centre, ele_ac.element_accessor() );
 
         // compute mean on the diagonal
         double coef = 0.;
@@ -1642,7 +1671,8 @@ void DarcyMH::setup_time_term() {
 
         //DebugOut().fmt("time_term: {} {} {} {} {}\n", mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
         if (balance_ != nullptr)
-        	balance_->add_mass_matrix_values(water_balance_idx_, ele_ac.region().bulk_idx(), {ele_ac.ele_row()}, {diagonal_coeff});
+        	balance_->add_mass_matrix_values(water_balance_idx_,
+        	        ele_ac.region().bulk_idx(), { int(ele_ac.ele_row()) }, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);

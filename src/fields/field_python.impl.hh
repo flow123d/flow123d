@@ -35,6 +35,7 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
 		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+		.copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
 		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
 				"Python script given as in place string")
 		.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
@@ -42,6 +43,8 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 		.declare_key("function", it::String(), it::Default::obligatory(),
 				"Function in the given script that returns tuple containing components of the return type.\n"
 				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+		//.declare_key("units", FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys(), it::Default::optional(),
+		//		"Definition of unit.")
 		.close();
 }
 
@@ -83,14 +86,18 @@ void FieldPython<spacedim, Value>::set_python_field_from_string(const string &py
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+	this->init_unit_conversion_coefficient(rec, init_data);
+
     Input::Iterator<string> it = rec.find<string>("script_string");
     if (it) {
         set_python_field_from_string( *it, rec.val<string>("function") );
     } else {
         Input::Iterator<FilePath> it = rec.find<FilePath>("script_file");
         if (! it) xprintf(UsrErr, "Either 'script_string' or 'script_file' has to be specified in PythonField initialization.");
-        set_python_field_from_file( *it, rec.val<string>("function") );
+        try {
+            set_python_field_from_file( *it, rec.val<string>("function") );
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
     }
 }
 
@@ -149,6 +156,7 @@ template <int spacedim, class Value>
 typename Value::return_type const & FieldPython<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
     set_value(p,elm, this->value_);
+    this->value_.scale(this->unit_conversion_coefficient_);
     return this->r_value_;
 }
 
@@ -167,6 +175,7 @@ void FieldPython<spacedim, Value>::value_list (const std::vector< Point >  &poin
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, envelope.n_rows(),this->value_.n_rows());
         set_value(point_list[i], elm, envelope );
+        envelope.scale(this->unit_conversion_coefficient_);
     }
 }
 

@@ -147,7 +147,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             FilePath raw_output_file_path;
             if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
             	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
-            	raw_output_file_path.open_stream(raw_output_file);
+            	try {
+            		raw_output_file_path.open_stream(raw_output_file);
+            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
 
         }
@@ -158,9 +160,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {
-    chkerr(VecDestroy(&vec_corner_pressure));
-
-    delete dh;
+    if (dh) {
+        chkerr(VecDestroy(&vec_corner_pressure));
+        delete dh;
+    }
 };
 
 

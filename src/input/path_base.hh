@@ -142,14 +142,14 @@ public:
     std::string as_string() const;
 
     /**
-     * @brief Gets name of descendant of Abstract.
+     * @brief Gets name of descendant Record of Abstract.
      *
      * - for JSON returns value of TYPE key
      * - for YAML returns value of tag
      *
      * If descendant name is not found returns empty string.
      */
-    virtual std::string get_descendant_name() const =0;
+    virtual std::string get_record_name() const =0;
 
 protected:
     /// Forbid default constructor.

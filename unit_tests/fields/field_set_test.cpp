@@ -23,6 +23,7 @@
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 enum {
@@ -182,25 +183,6 @@ TEST_F(SomeEquation, field_descriptor) {
 	EXPECT_TRUE( descriptor.has_key("velocity"));
 	EXPECT_TRUE( descriptor.has_key("init_pressure"));
 	EXPECT_TRUE( descriptor.has_key("reaction_type"));
-}
-
-
-
-TEST_F(SomeEquation, output_field_selection) {
-    auto data = EqData();
-    BCField<3, FieldValue<3>::Scalar > bc_pressure;
-    data+=bc_pressure
-        .name("bc_pressure");
-
-    Input::Type::Selection sel
-        = data.make_output_field_selection("Sel", "desc").close();
-    sel.finish();
-
-    // Selection should not contain BC field bc_pressure.
-    EXPECT_EQ(3, sel.size());
-    EXPECT_TRUE( sel.has_name("velocity"));
-    EXPECT_TRUE( sel.has_name("init_pressure"));
-    EXPECT_TRUE( sel.has_name("reaction_type"));
 }
 
 

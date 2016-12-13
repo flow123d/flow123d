@@ -10,6 +10,22 @@ class TexList(list):
     """
     Helper class for creating latex document
     """
+    special_chars = [
+        ['''\\''', r'{\textbackslash}'],
+        [r'{', r'{\{}'],
+        [r'}', r'{\}}'],
+        [r'%', r'{\%}'],
+        [r'$', r'{\$}'],
+        [r'#', r'{\#}'],
+        [r'&', r'{\&}'],
+        [r'_', r'{\_}'],
+        [r'^', r'{\^{}}'],
+        [r'|', r'{\textbar}'],
+        [r'>', r'{\textgreater}'],
+        [r'<', r'{\textless}'],
+        [r'->', r'{\rightarrow}'],
+        [r'<-', r'{\leftarrow}'],
+    ]
     m2h = markdown2html()
     _OPEN = '{'
     _CLOSE = '}'
@@ -46,7 +62,6 @@ class TexList(list):
     def to_string(self, fix_newlines=True):
         if not fix_newlines:
             return ''.join(self)
-        print len(self)
 
         tmp_list = list()
         nl = False
@@ -189,17 +204,18 @@ class TexList(list):
             return
         self.append(self._TAB * n)
 
-    @staticmethod
-    def description(value):
+    @classmethod
+    def description(cls, value):
         if not value.strip():
             return ''
-        html = TexList.m2h.parse(str(value), True)
+
+        html = TexList.m2h.parse2latex(str(value))
         latex = Html2Latex(html)
         result = latex.to_latex()
-        return TexList.auto_mode(result)
+        return ''.join(result)
 
-    @staticmethod
-    def equation_mode(value):
+    @classmethod
+    def equation_mode(cls, value):
         """
         Method will ensure that value will be valid equation in latex
         :type value: str or list
@@ -208,8 +224,8 @@ class TexList(list):
         """
         return value if type(value) is str else ''.join(value)
 
-    @staticmethod
-    def plain_mode(value):
+    @classmethod
+    def plain_mode(cls, value):
         """
         Method will ensure that value will be valid text in latex
         no equation
@@ -218,17 +234,27 @@ class TexList(list):
         :return:
         """
         value = value if type(value) is str else ''.join(value)
-        value = re.sub(r'\$ElementData', r'\$ElementData', value)
-        value = value \
-            .replace('_', '\\_') \
-            .replace("'", "'") \
-            .replace('->', '$\\rightarrow$') \
-            .replace('<-', '$\\leftarrow$') \
-            .replace('\n\n', '\n')
+
+        value = cls.prepare_plain(value)
+        return cls.finish_plain(value)
+
+    @classmethod
+    def prepare_plain(cls, value):
+        # replace all characters with placeholders
+        # since some characters contains other non allowed chars
+        for i in range(len(cls.special_chars)):
+            value = value.replace(cls.special_chars[i][0], '(-(-{}-)-)'.format(i))
+        return value
+
+    @classmethod
+    def finish_plain(cls, value):
+        # replace placeholders with escaped characters
+        for i in range(len(cls.special_chars)):
+            value = value.replace('(-(-{}-)-)'.format(i), cls.special_chars[i][1])
         return str(value)
 
-    @staticmethod
-    def name_mode(value):
+    @classmethod
+    def name_mode(cls, value):
         """
         Method will ensure that value will be valid name in latex
         This method will replace all characters except a-z A-Z 0-9 and -
@@ -239,8 +265,8 @@ class TexList(list):
         value = value if type(value) is str else ''.join(value)
         return re.sub('[^a-zA-Z0-9-]+', '-', value)
 
-    @staticmethod
-    def auto_mode(values):
+    @classmethod
+    def auto_mode(cls, values):
         result = list()
         for value in values:
             if value.startswith('{$') and value.endswith('$}'):
@@ -251,8 +277,8 @@ class TexList(list):
                 result.append(TexList.TYPE_PLAIN(value))
         return ''.join(result).rstrip('\\')
 
-    @staticmethod
-    def none_mode(values):
+    @classmethod
+    def none_mode(cls, values):
         if type(values) is str:
             return values
         return ''.join(values)

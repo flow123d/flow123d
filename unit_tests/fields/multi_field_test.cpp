@@ -24,6 +24,9 @@
 using namespace std;
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
+FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
+FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
 
 string field_constant_input = R"YAML(
 common: !FieldConstant 
@@ -114,7 +117,8 @@ protected:
 
     void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
     	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
-    		auto subfield = ScalarField::function_factory((*it), 3);
+    	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
+    		auto subfield = ScalarField::function_factory((*it), init_data);
     		subfield->set_mesh(mesh, false);
     		subfield->set_time(0.0);
     		auto result = subfield->value( point, elm );
