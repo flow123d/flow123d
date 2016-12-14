@@ -118,6 +118,9 @@ public:
     TypeHash content_hash() const   override;
 
 
+    /// Implements @p TypeBase::finish_status.
+    FinishStatus finish_status() const override;
+
     /// Implements \p TypeBase::is_finished
     bool is_finished() const override;
 
@@ -177,8 +180,7 @@ public:
     inline unsigned int size() const;
 
     /// Finish declaration of the Selection type.
-    FinishStatus finish(FinishType finish_type = FinishType::regular) override
-        { ASSERT(data_->closed_)(this->type_name()).error(); return FinishStatus::regular_; }
+    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
 
 
     /// Implements \p TypeBase::is_closed
@@ -209,7 +211,7 @@ private:
 
     	/// Constructor.
         SelectionData(const string &name)
-        : type_name_(name), closed_(false)
+        : type_name_(name), closed_(false), finish_status_(FinishStatus::none_)
         {}
 
         /// Inster new value to the Selection
@@ -238,6 +240,9 @@ private:
 
         /// Indicator of closed Selection.
         mutable bool closed_;
+
+        /// Indicator of finished Selection.
+        FinishStatus finish_status_;
     };
 
     /// Handle to actual Selection data.

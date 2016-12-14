@@ -129,6 +129,7 @@ FinishStatus Abstract::finish(FinishType finish_type) {
 	ASSERT(child_data_->closed_)(this->type_name()).error();
 
 	child_data_->selection_of_childs->close();
+	child_data_->selection_of_childs->finish();
 
 	child_data_->finish_status_ = (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_;
 

@@ -199,12 +199,12 @@ using namespace Input::Type;
 
     sel2.add_value(green,"green");
     sel2.close();
-    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, feal::Exc_assert, "in finished Selection.");
+    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, feal::Exc_assert, "in closed Selection.");
 
     Selection sel3;
     EXPECT_TRUE( sel3.is_finished());
     EXPECT_EQ("EmptySelection", sel3.type_name());
-    EXPECT_THROW_WHAT( {sel3.add_value(1,"one");}, feal::Exc_assert, "in finished Selection.");
+    EXPECT_THROW_WHAT( {sel3.add_value(1,"one");}, feal::Exc_assert, "in closed Selection.");
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
     EXPECT_FALSE( sel2.has_name("xblue") );
