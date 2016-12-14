@@ -97,16 +97,21 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
         
         if(elm->dim() == dim)
         {
-                intersection_map_[idx].resize(iea.intersection_list_[idx].size());
+//                 intersection_map_[idx].resize(iea.intersection_list_[idx].size());
+                intersection_map_[idx].reserve(iea.intersection_list_[idx].size());
                 for(unsigned int j = 0; j < iea.intersection_list_[idx].size(); j++){
+                    
+                    // skip zero intersections (are made in iea.prolongate())
+                    if(iea.intersection_list_[idx][j].size() == 0) continue;
+                    
                     bulk_idx = iea.intersection_list_[idx][j].bulk_ele_idx();
                     storage.push_back(IntersectionLocal<dim,3>(iea.intersection_list_[idx][j]));
                     
                     // create map for component element
-                    intersection_map_[idx][j] = std::make_pair(
-                                                    bulk_idx, 
-                                                    &(storage.back())
-                                                );
+                    intersection_map_[idx].push_back(std::make_pair(
+                                                        bulk_idx,
+                                                        &(storage.back()))
+                                                    );
                     
 //                  // write down intersections
 //                     IntersectionLocal<dim,3>* il = 
