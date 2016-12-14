@@ -220,7 +220,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         // create the root Record
         it::Record root_type = get_input_type();
         root_type.finish();
-        TypeBase::delete_unfinished_types();
+        Input::Type::TypeBase::delete_unfinished_types();
         json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
         json_stream.close();
         exit( exit_output );
