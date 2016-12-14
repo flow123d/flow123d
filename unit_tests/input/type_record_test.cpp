@@ -243,7 +243,7 @@ using namespace Input::Type;
 			.declare_key("int_array", Instance(generic_rec, param_vec).close(), "key desc")
 			.close();
 
-		// simulate order and is_finished parameter of calling finish methods in lazy_finish
+		// simulate order and is_finished parameter of calling finish methods of IST
 		generic_rec.finish(FinishType::root_of_generic);
 		rec.finish();
 	}

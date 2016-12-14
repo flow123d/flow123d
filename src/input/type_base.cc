@@ -80,12 +80,6 @@ string TypeBase::desc() const {
 
 
 
-void TypeBase::lazy_finish(TypeBase& type) {
-	type.finish();
-	TypeBase::delete_unfinished_types();
-}
-
-
 void TypeBase::delete_unfinished_types() {
 	Input::TypeRepository<Instance>::get_instance().finish(FinishType::deleted);
 	Input::TypeRepository<Abstract>::get_instance().finish(FinishType::deleted);

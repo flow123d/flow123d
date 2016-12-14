@@ -127,14 +127,14 @@ using namespace Input::Type;
 
     Array arr_of_sel( sel );
 
-	Record helper_rec = Record("helper_record", "Helper record allows correct lazy_finish")
+	Record helper_rec = Record("helper_record", "Helper record simplifies finish")
 			.declare_key("val_0", *(arr_int.get()), "desc.")
 			.declare_key("val_1", Array( Double() ), "desc.")
 			.declare_key("val_2", arr_rec_shared_ptr, "desc.")
 			.declare_key("val_3", arr_of_sel, "desc.")
 			.close();
 
-    Input::Type::TypeBase::lazy_finish( *(&helper_rec) );
+    helper_rec.finish();
 
     // get_sub_type
     EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // std::smart_ptr assert fails
@@ -397,7 +397,7 @@ TEST_F(InputTypeAttributesTest, base_test) {
 		.declare_key("file", FileName::output(), Default::optional(), "File for output stream.")
 		.close();
 
-	TypeBase::lazy_finish( &main_rec );
+	main_rec.finish();
 
 	{
 		std::stringstream ss;

@@ -168,7 +168,7 @@ using namespace Input::Type;
 	AdHocDataTest::get_adhoc_1();
 	AdHocDataTest::get_adhoc_2();
 	AdHocDataTest::get_rec();
-	TypeBase::lazy_finish( AdHocDataTest::get_rec() );
+	AdHocDataTest::get_rec().finish();
 
 	EXPECT_EQ( 2, AdHocDataTest::get_in_rec1().size());
 	EXPECT_EQ( 2, AdHocDataTest::get_in_rec2().size());

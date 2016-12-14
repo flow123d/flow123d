@@ -219,7 +219,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         FilePath(vm["input_format"].as<string>(), FilePath::output_file).open_stream(json_stream);
         // create the root Record
         it::Record root_type = get_input_type();
-        Input::Type::TypeBase::lazy_finish( get_input_type() );
+        root_type.finish();
+        TypeBase::delete_unfinished_types();
         json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
         json_stream.close();
         exit( exit_output );

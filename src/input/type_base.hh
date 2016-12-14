@@ -171,17 +171,6 @@ public:
 
 
     /**
-     * @brief Finishes all types registered in type repositories.
-     *
-     * Finish must be executed in suitable order
-     *  1) finish of Instance types, generic Abstract and generic Record types
-     *  2) finish of non-generic Abstract and non-generic Record types
-     *  3) finish of the other types
-     */
-    static void lazy_finish(TypeBase& type);
-
-
-    /**
      * @brief Finishes and marks all types registered in type repositories and unused in IST.
      *
      * Steps of this method:
