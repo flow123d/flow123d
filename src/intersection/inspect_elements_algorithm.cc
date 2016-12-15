@@ -661,6 +661,15 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
         prolongation_decide(elm, ele_3D,is);
         n_intersections_++;
     }
+    else{
+        // NOTE: we get here, when create_prolongation creates an empty intersection
+        // - it can happen, that the CI will be empty
+        // - currently, we remove it when storing the final intersection objects
+        // - or we can erase it at this point
+//         WarningOut() << "zero is: c " << elm->index() << " b " << ele_3D.index();
+//         auto & v = intersection_list_[pr.component_elm_idx];
+//         v.erase( v.next(v.being(),pr.dictionary_idx) );
+    }
 }
 
 
