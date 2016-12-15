@@ -81,21 +81,19 @@ string TypeBase::desc() const {
 
 
 void TypeBase::delete_unfinished_types() {
+	// mark unfinished types as deleted
 	Input::TypeRepository<Instance>::get_instance().finish(FinishType::deleted);
 	Input::TypeRepository<Abstract>::get_instance().finish(FinishType::deleted);
 	Input::TypeRepository<Record>::get_instance().finish(FinishType::deleted);
 	Input::TypeRepository<Tuple>::get_instance().finish(FinishType::deleted);
 	Input::TypeRepository<Selection>::get_instance().finish(FinishType::deleted);
-}
 
-
-FinishStatus TypeBase::merge_status(FinishStatus status, FinishStatus other) {
-	if (status==FinishStatus::none_ || other==FinishStatus::none_) return FinishStatus::none_;
-	else {
-		ASSERT((status!=FinishStatus::regular_) || (other!=FinishStatus::deleted_))
-				.error("You can't merge regular FinishStatus with deleted.");
-		return status;
-	}
+	// check and remove deleted types
+	Input::TypeRepository<Instance>::get_instance().reset_deleted_types();
+	Input::TypeRepository<Abstract>::get_instance().reset_deleted_types();
+	Input::TypeRepository<Record>::get_instance().reset_deleted_types();
+	Input::TypeRepository<Tuple>::get_instance().reset_deleted_types();
+	Input::TypeRepository<Selection>::get_instance().reset_deleted_types();
 }
 
 

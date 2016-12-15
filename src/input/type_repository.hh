@@ -79,6 +79,16 @@ public:
      */
     void finish(Type::FinishType finish_type = Type::FinishType::regular);
 
+    /**
+     * @brief Reset and remove types marked as deleted during finish.
+     *
+     * Iterate through all types stored in TypeRepository and -
+     *  - check count of usage of shared pointer to type (must be one)
+     *  - reset this shared pointer
+     *  - remove type from repository
+     */
+    void reset_deleted_types();
+
     /// Container-like access to the data stored in TypeRepository. Returns iterator to the first data.
     TypeRepositoryMapIter begin() const {
         return type_repository_map_.begin();
@@ -115,6 +125,17 @@ template <class T>
 void TypeRepository<T>::finish(Type::FinishType finish_type) {
 	for (typename TypeRepositoryMap::iterator it = type_repository_map_.begin(); it != type_repository_map_.end(); ++it) {
 		it->second->finish(finish_type);
+	}
+}
+
+template <class T>
+void TypeRepository<T>::reset_deleted_types() {
+	for (typename TypeRepositoryMap::reverse_iterator it = type_repository_map_.rbegin(); it != type_repository_map_.rend(); ++it) {
+		if (it->second->finish_status() == Type::FinishStatus::deleted_) {
+			ASSERT(it->second.use_count() == 1)(it->second.use_count()).error();
+			it->second.reset();
+			type_repository_map_.erase(it->first);
+		}
 	}
 }
 

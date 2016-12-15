@@ -230,14 +230,6 @@ public:
     	return root_of_generic_subtree_;
     }
 
-    /**
-     * Merges two FinishStatuses.
-     *
-     *  - if one of them has value none_, returns FinishStatus::none_
-     *  - in other cases both statuses must have same value, this value is returned
-     */
-    static FinishStatus merge_status(FinishStatus status, FinishStatus other);
-
 protected:
 
     /// The default constructor.
