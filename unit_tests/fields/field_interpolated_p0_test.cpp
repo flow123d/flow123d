@@ -28,6 +28,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <reader_root_interface.hh>
 #include <mesh_constructor.hh>
 
 #include "system/system.hh"
@@ -144,8 +145,7 @@ public:
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
-        Input::ReaderToStorage reader( input, &rec_type, Input::FileFormat::format_JSON );
-        rec=reader.get_root_interface<Input::Record>();
+        rec=reader_root_interface<Input::Record>( input, *(&rec_type) );
 
         test_time[0] = 0.0;
         test_time[1] = 1.0;

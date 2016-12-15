@@ -23,9 +23,16 @@
 
 using namespace std;
 
-/*class MeshTest :  public testing::Test, public Mesh {
-    virtual void SetUp() {}
-    virtual void TearDown() {}
+class MeshTest :  public testing::Test, public Mesh {
+public:
+    MeshTest()
+    : Mesh(*mesh_constructor())
+    {
+    }
+
+    ~MeshTest()
+    {
+    }
 };
 
 
@@ -48,7 +55,7 @@ TEST_F(MeshTest, intersect_nodes_lists) {
     intersect_element_lists(node_list, result);
     EXPECT_EQ( vector<unsigned int>( {0,1,2,3,4} ), result );
 
-}*/
+}
 
 
 
