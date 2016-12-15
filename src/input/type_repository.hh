@@ -130,12 +130,17 @@ void TypeRepository<T>::finish(Type::FinishType finish_type) {
 
 template <class T>
 void TypeRepository<T>::reset_deleted_types() {
+	std::vector< Type::TypeBase::TypeHash > deleted_hashes;
 	for (typename TypeRepositoryMap::reverse_iterator it = type_repository_map_.rbegin(); it != type_repository_map_.rend(); ++it) {
 		if (it->second->finish_status() == Type::FinishStatus::deleted_) {
 			ASSERT(it->second.use_count() == 1)(it->second.use_count()).error();
 			it->second.reset();
-			type_repository_map_.erase(it->first);
+			deleted_hashes.push_back(it->first);
 		}
+	}
+
+	for (auto deleted_hash : deleted_hashes) {
+		type_repository_map_.erase(deleted_hash);
 	}
 }
 
