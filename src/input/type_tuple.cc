@@ -102,6 +102,7 @@ FinishStatus Tuple::finish(FinishStatus finish_type)
 			THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
 		it->type_->finish(finish_type);
 		ASSERT(it->type_->is_finished()).error();
+		if (finish_type == FinishStatus::delete_) it->type_.reset();
     }
 
     // Add autoconvertibility

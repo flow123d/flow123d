@@ -215,6 +215,7 @@ FinishStatus Array::ArrayData::finish(FinishStatus finish_type)
 
 	type_of_values_->finish(finish_type);
 	ASSERT(type_of_values_->is_finished()).error();
+	if (finish_type == FinishStatus::delete_) type_of_values_.reset();
 	return (finish_status);
 }
 

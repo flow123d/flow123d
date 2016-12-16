@@ -257,9 +257,10 @@ FinishStatus Record::finish(FinishStatus finish_type)
 			            << EI_TypeName(this->type_name()));
 			it->type_->finish(finish_type);
 			ASSERT(it->type_->is_finished()).error();
+			if (finish_type == FinishStatus::delete_) it->type_.reset();
         }
 
-        if (finish_type != FinishStatus::generic_) {
+        if (finish_type == FinishStatus::regular_) {
             try {
                 it->default_.check_validity(it->type_);
             } catch (ExcWrongDefaultJSON & e) {
