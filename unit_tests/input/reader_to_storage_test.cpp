@@ -186,7 +186,6 @@ protected:
     	this->root_type_ = nullptr;
     	this->try_transpose_read_ = false;
     	root_type.finish();
-    	Type::TypeBase::delete_unfinished_types();
     	ReaderToStorage::read_stream(in, root_type, format);
     }
 };
