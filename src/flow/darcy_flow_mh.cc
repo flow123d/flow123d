@@ -188,7 +188,7 @@ DarcyMH::EqData::EqData()
     	cross_section.units( UnitSI().m(3).md() );
 
     ADD_FIELD(conductivity, "Isotropic conductivity scalar.", "1.0" );
-    	conductivity.units( UnitSI().m().s(-1) );
+    	conductivity.units( UnitSI().m().s(-1) ).set_limits(0.0);
 
     ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
     	sigma.units( UnitSI::dimensionless() );
@@ -1274,8 +1274,6 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*mh_dh.rows_ds));
-                ls->set_from_input(in_rec);
-                ls->set_solution( NULL );
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -1292,11 +1290,12 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     // make schur2
                     schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
                     schur2->set_positive_definite();
-                    schur2->set_from_input(in_rec);
                     ls1->set_complement( schur2 );
                     schur1 = ls1;
                 }
                 ls->set_complement( schur1 );
+                ls->set_from_input(in_rec);
+                ls->set_solution( NULL );
                 schur0=ls;
             }
 
