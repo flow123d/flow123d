@@ -258,8 +258,7 @@ void TransportOperatorSplitting::zero_time_step()
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
-    convection->output_stream()->write_time_frame();
-    if (balance_ != nullptr) balance_->output(time_->t());
+    output_data();
 
 }
 
