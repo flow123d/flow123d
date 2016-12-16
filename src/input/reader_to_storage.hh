@@ -112,10 +112,10 @@ public:
      *
      * Parameter @p root_type provides input type tree declaration. See @p read_from_stream for details.
      */
-    ReaderToStorage(const FilePath &in_file, Type::TypeBase *root_type);
+    ReaderToStorage(const FilePath &in_file, Type::TypeBase &root_type);
 
     /// Read a storage from string (e.g. complex default value).
-    ReaderToStorage( const string &default_str, Type::TypeBase *root_type, FileFormat format);
+    ReaderToStorage( const string &default_str, Type::TypeBase &root_type, FileFormat format);
 
     /**
      * @brief Returns the root accessor.

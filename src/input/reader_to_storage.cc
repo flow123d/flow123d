@@ -46,7 +46,7 @@ ReaderToStorage::ReaderToStorage()
 
 
 
-ReaderToStorage::ReaderToStorage(const FilePath &in_file, Type::TypeBase *root_type)
+ReaderToStorage::ReaderToStorage(const FilePath &in_file, Type::TypeBase &root_type)
 : ReaderToStorage()
 {
 	std::string fname = in_file;
@@ -64,22 +64,22 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, Type::TypeBase *root_t
 	in_file.open_stream(in);
 
     // finish of root_type ensures finish of whole IST
-    root_type->finish();
+    root_type.finish();
 
-	read_stream(in, *root_type, format);
+	read_stream(in, root_type, format);
 }
 
 
 
-ReaderToStorage::ReaderToStorage( const string &str, Type::TypeBase *root_type, FileFormat format)
+ReaderToStorage::ReaderToStorage( const string &str, Type::TypeBase &root_type, FileFormat format)
 : ReaderToStorage()
 {
     // finish of root_type ensures finish of whole IST
-    root_type->finish();
+    root_type.finish();
 
 	try {
 		istringstream is(str);
-		read_stream(is, *root_type, format);
+		read_stream(is, root_type, format);
 	} catch (ExcNotJSONFormat &e) {
 		e << EI_File("STRING: "+str); throw;
 	}

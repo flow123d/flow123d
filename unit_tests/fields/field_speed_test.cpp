@@ -244,7 +244,7 @@ public:
 	    set_of_field_ += field_;
 
 	    Input::Type::Array list_type = Input::Type::Array(set_of_field_.make_field_descriptor_type("FieldSpeedTest"));
-	    Input::ReaderToStorage reader( field_input, &list_type, Input::FileFormat::format_JSON);
+	    Input::ReaderToStorage reader( field_input, list_type, Input::FileFormat::format_JSON);
 	    Input::Array in_list=reader.get_root_interface<Input::Array>();
 	    field_.set_input_list(in_list);
 

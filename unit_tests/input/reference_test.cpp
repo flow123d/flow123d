@@ -91,14 +91,14 @@ static IT::Record & get_type_record() {
 TEST(JSONReference, valid_reference_rec_test) {
 	using namespace Input;
 
-	ReaderToStorage json_reader( valid_record_json, &get_type_record(), FileFormat::format_JSON);
+	ReaderToStorage json_reader( valid_record_json, get_type_record(), FileFormat::format_JSON);
 }
 
 TEST(JSONReference, cyclic_reference_rec_test) {
 	using namespace Input;
 
     EXPECT_THROW_WHAT(
-    		{ReaderToStorage json_reader( cyclic_record_json, &get_type_record(), FileFormat::format_JSON);},
+    		{ReaderToStorage json_reader( cyclic_record_json, get_type_record(), FileFormat::format_JSON);},
 			PathBase::ExcReferenceNotFound,
 			"cannot follow reference");
 }
@@ -107,7 +107,7 @@ TEST(JSONReference, cyclic_reference_arr_test) {
 	using namespace Input;
 
     EXPECT_THROW_WHAT(
-    		{ReaderToStorage json_reader( cyclic_array_json, &get_type_record(), FileFormat::format_JSON);},
+    		{ReaderToStorage json_reader( cyclic_array_json, get_type_record(), FileFormat::format_JSON);},
 			PathBase::ExcReferenceNotFound,
 			"cannot follow reference");
 }

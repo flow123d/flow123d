@@ -1004,7 +1004,7 @@ TEST(InputReaderToStorageTest_external, get_root_interface) {
 		.close();
     one_rec.finish();
 
-    ReaderToStorage json_reader("{ one=1 }", &one_rec, FileFormat::format_JSON);
+    ReaderToStorage json_reader("{ one=1 }", one_rec, FileFormat::format_JSON);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("one")) );
     //json_reader.get_storage()->print(cout);

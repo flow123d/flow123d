@@ -474,7 +474,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
     	auto input_type = get_input_type().make_instance().first;
-        Input::ReaderToStorage reader( default_input, &(*input_type), Input::FileFormat::format_JSON );
+        Input::ReaderToStorage reader( default_input, *input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
     	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());

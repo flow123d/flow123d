@@ -244,7 +244,7 @@ TEST(Region, read_regions_from_yaml) {
     Mesh * mesh = mesh_constructor();
 
 	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
-	Input::ReaderToStorage json_reader( read_regions_yaml, &element_map_array_input_type, Input::FileFormat::format_YAML);
+	Input::ReaderToStorage json_reader( read_regions_yaml, element_map_array_input_type, Input::FileFormat::format_YAML);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	reader.read_physical_names(mesh);
@@ -336,19 +336,19 @@ TEST(Region, read_regions_error_messages) {
 
 	{
 		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
-		Input::ReaderToStorage json_reader( invalid_input_1, &element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::ReaderToStorage json_reader( invalid_input_1, element_map_array_input_type, Input::FileFormat::format_YAML);
 		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionDB::ExcNonuniqueLabel, "id: 37, label: '3D front'");
 	}
 	{
 		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
-		Input::ReaderToStorage json_reader( invalid_input_2, &element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::ReaderToStorage json_reader( invalid_input_2, element_map_array_input_type, Input::FileFormat::format_YAML);
 		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionDB::ExcNonuniqueLabel, "id: 41, label: '3D back'");
 	}
 	{
 		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
-		Input::ReaderToStorage json_reader( invalid_input_3, &element_map_array_input_type, Input::FileFormat::format_YAML);
+		Input::ReaderToStorage json_reader( invalid_input_3, element_map_array_input_type, Input::FileFormat::format_YAML);
 		Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionSetBase::ExcEmptyRegionSetResult,
 				"Empty result of Intersection operation.");

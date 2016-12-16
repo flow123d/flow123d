@@ -132,7 +132,7 @@ Input::Record Application::read_input() {
     // read main input file
     FilePath fpath(main_input_filename_, FilePath::FileType::input_file);
     try {
-    	Input::ReaderToStorage json_reader(fpath, &get_input_type() );
+    	Input::ReaderToStorage json_reader(fpath, get_input_type() );
         root_record = json_reader.get_root_interface<Input::Record>();
     } catch (Input::ReaderToStorage::ExcInputError &e ) {
       e << Input::ReaderToStorage::EI_File(fpath); throw;

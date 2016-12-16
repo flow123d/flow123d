@@ -77,7 +77,7 @@ public:
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
-        Input::ReaderToStorage reader( input, &rec_type, Input::FileFormat::format_JSON );
+        Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
         rec=reader.get_root_interface<Input::Record>();
 
         test_time[0] = 0.0;

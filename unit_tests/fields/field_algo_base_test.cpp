@@ -89,7 +89,7 @@ public:
 	Input::Array input_list(const string& str) {
 		static std::vector<Input::Array> inputs;
 		unsigned int input_last = inputs.size(); // position of new item
-		Input::ReaderToStorage reader(str, test_input_list.get(), Input::FileFormat::format_JSON );
+		Input::ReaderToStorage reader(str, *test_input_list, Input::FileFormat::format_JSON );
 		inputs.push_back( reader.get_root_interface<Input::Array>() );
 		return inputs[input_last];
 	}
@@ -610,7 +610,7 @@ TEST(Field, init_from_input) {
 
 
     // read input string
-    Input::ReaderToStorage reader( field_input, &main_record, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( field_input, main_record, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     sorption_type.set_mesh(*mesh);
@@ -735,7 +735,7 @@ TEST(Field, field_result) {
         );
 
     // read input string
-    Input::ReaderToStorage reader( field_input_list, &main_array, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( field_input_list, main_array, Input::FileFormat::format_JSON );
     Input::Array array=reader.get_root_interface<Input::Array>();
 
     TestFieldSet data;

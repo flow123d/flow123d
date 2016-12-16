@@ -59,7 +59,7 @@ public:
     // initialize mesh with given yaml input
     void init_mesh(string input_yaml)
     {
-    	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record *>(&OutputTime::get_input_type()), Input::FileFormat::format_YAML)
+    	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_YAML)
         				.get_root_interface<Input::Record>();
         this->init_from_input("dummy_equation", *(this->_mesh), in_rec);
 

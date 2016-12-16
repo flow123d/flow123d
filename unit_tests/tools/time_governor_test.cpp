@@ -33,7 +33,7 @@ Input::Record read_input(const string &json_input)
 		.close();
 
 	//json reading according to keys defined in in_rec
-	Input::ReaderToStorage json_reader(json_input, &in_rec, Input::FileFormat::format_JSON);
+	Input::ReaderToStorage json_reader(json_input, in_rec, Input::FileFormat::format_JSON);
 
 	//getting root record
 	static Input::Record rec;
