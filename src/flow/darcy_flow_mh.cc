@@ -253,7 +253,8 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
     solution(nullptr),
     schur0(nullptr),
-    data_changed_(false)
+    data_changed_(false),
+    output_object(nullptr)
 {
 
     is_linear_=true;
@@ -1309,10 +1310,12 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
         else {
             xprintf(Err, "Unknown solver type. Internal error.\n");
         }
+
+        END_TIMER("preallocation");
+        make_serial_scatter();
+
     }
 
-    END_TIMER("preallocation");
-    make_serial_scatter();
 }
 
 
@@ -1531,16 +1534,19 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-    if (schur0 != NULL) delete schur0;
+    if (schur0 != NULL) {
+        delete schur0;
+        VecScatterDestroy(&par_to_all);
+    }
 
 	if (solution != NULL) {
 	    chkerr(VecDestroy(&sol_vec));
 		delete [] solution;
 	}
 
-	delete output_object;
+	if (output_object)	delete output_object;
 
-	VecScatterDestroy(&par_to_all);
+
     
 }
 
