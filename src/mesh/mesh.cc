@@ -80,7 +80,17 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   el_4_loc(nullptr),
   el_ds(nullptr)
 {
-    reinit(in_record_);
+	// set in_record_, if input accessor is empty
+	if (in_record_.is_empty()) {
+		istringstream is("{mesh_file=\"\"}");
+	    Input::ReaderToStorage reader;
+	    IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
+	    in_rec.finish();
+	    reader.read_stream(is, in_rec, Input::FileFormat::format_JSON);
+	    in_record_ = reader.get_root_interface<Input::Record>();
+	}
+
+	reinit(in_record_);
 }
 
 

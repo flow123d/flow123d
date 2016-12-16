@@ -70,7 +70,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 
 	// read mesh, create tree
     {
-       source_mesh_ = new Mesh(rec);
+       source_mesh_ = new Mesh( Input::Record() );
        reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
        ReaderInstances::instance()->get_reader(reader_file_)->read_mesh( source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
