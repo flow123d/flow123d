@@ -63,9 +63,8 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, Type::TypeBase *root_t
 	std::ifstream in;
 	in_file.open_stream(in);
 
-    // finish all input types
+    // finish of root_type ensures finish of whole IST
     root_type->finish();
-    Type::TypeBase::delete_unfinished_types();
 
 	read_stream(in, *root_type, format);
 }
@@ -75,9 +74,8 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, Type::TypeBase *root_t
 ReaderToStorage::ReaderToStorage( const string &str, Type::TypeBase *root_type, FileFormat format)
 : ReaderToStorage()
 {
-    // finish all input types
+    // finish of root_type ensures finish of whole IST
     root_type->finish();
-    Type::TypeBase::delete_unfinished_types();
 
 	try {
 		istringstream is(str);
