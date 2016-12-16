@@ -8,7 +8,6 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
-#include <reader_root_interface.hh>
 #include <mesh_constructor.hh>
 #include <fstream>
 
@@ -49,15 +48,6 @@ public:
         this->_mesh->read_gmsh_from_stream(in);
 
         component_names = { "comp_0", "comp_1", "comp_2" };
-
-        // helper record, we must finished subtrees of used fields before called Field<>::set_time
-        Input::Type::Record rec_type = Input::Type::Record("HelperRecord","")
-            .declare_key("scalar", FieldAlgorithmBase<3, FieldValue<0>::Scalar >::get_input_type_instance(), "" )
-            .declare_key("vector", FieldAlgorithmBase<3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
-            .declare_key("tensor", FieldAlgorithmBase<3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
-            .close();
-        rec_type.finish();
-
     }
 
     ~TestOutputVTK()
@@ -69,8 +59,8 @@ public:
     // initialize mesh with given yaml input
     void init_mesh(string input_yaml)
     {
-        auto in_rec = reader_root_interface<Input::Record>( input_yaml, const_cast<Input::Type::Record &>(OutputTime::get_input_type()),
-        		Input::FileFormat::format_YAML );
+    	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record *>(&OutputTime::get_input_type()), Input::FileFormat::format_YAML)
+        				.get_root_interface<Input::Record>();
         this->init_from_input("dummy_equation", *(this->_mesh), in_rec);
 
         // create output mesh identical to computational mesh

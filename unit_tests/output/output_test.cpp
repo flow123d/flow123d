@@ -11,7 +11,6 @@
  * in gtest library.
  */
 #include <flow_gtest_mpi.hh>
-#include <reader_root_interface.hh>
 #include <mesh_constructor.hh>
 
 #include "io/output_time.hh"
@@ -216,9 +215,8 @@ public:
 	{
 	    my_mesh = mesh_constructor();
 	    auto in_rec =
-	            //Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record *>(&OutputTime::get_input_type()), Input::FileFormat::format_JSON)
-                //.get_root_interface<Input::Record>();
-	            reader_root_interface<Input::Record>( test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type())  );
+	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record *>(&OutputTime::get_input_type()), Input::FileFormat::format_JSON)
+                .get_root_interface<Input::Record>();
 	    this->init_from_input("dummy_equation", *my_mesh, in_rec);
 	    Profiler::initialize();
 		// read simple mesh
@@ -227,16 +225,6 @@ public:
 	    my_mesh->read_gmsh_from_stream(in);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
-
-	    // helper record, we must finished subtrees of used fields before called Field<>::set_time
-        Input::Type::Record rec_type = Input::Type::Record("HelperRecord","")
-            .declare_key("scalar", FieldAlgorithmBase<3, FieldValue<0>::Scalar >::get_input_type_instance(), "" )
-            .declare_key("enum", FieldAlgorithmBase<3, FieldValue<0>::Enum >::get_input_type_instance( get_test_selection() ), "" )
-            .declare_key("integer", FieldAlgorithmBase<3, FieldValue<0>::Integer >::get_input_type_instance(), "" )
-            .declare_key("vector", FieldAlgorithmBase<3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
-            .declare_key("tensor", FieldAlgorithmBase<3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
-            .close();
-        rec_type.finish();
 
 	}
 	virtual ~TestOutputTime() {
