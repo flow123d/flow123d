@@ -73,7 +73,7 @@ public:
     MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) override;
 
     /// Implements @p TypeBase::finish.
-    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
 protected:
     /// name of parameter
@@ -101,7 +101,7 @@ public:
     const Instance &close() const;
 
     /// Finish declaration of the Instance type. Call finish of stored @p generic_type_
-    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /**
      * @brief Implements @p TypeBase::make_instance.

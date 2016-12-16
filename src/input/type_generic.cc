@@ -70,9 +70,11 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 }
 
 
-FinishStatus Parameter::finish(FinishType finish_type) {
-	if (finish_type == FinishType::regular) THROW( ExcParamaterInIst() << EI_Object(this->name_));
-	return (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_;
+FinishStatus Parameter::finish(FinishStatus finish_type) {
+	ASSERT(finish_type != FinishStatus::none_).error();
+
+	if (finish_type == FinishStatus::regular_) THROW( ExcParamaterInIst() << EI_Object(this->name_));
+	return finish_type;
 }
 
 
@@ -102,7 +104,7 @@ const Instance &Instance::close() const {
 }
 
 
-FinishStatus Instance::finish(FinishType finish_type) {
+FinishStatus Instance::finish(FinishStatus finish_type) {
 	return generic_type_.finish(finish_type);
 }
 

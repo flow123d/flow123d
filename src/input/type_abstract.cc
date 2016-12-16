@@ -123,7 +123,9 @@ int Abstract::add_child(const Record &subrec)
 }
 
 
-FinishStatus Abstract::finish(FinishType finish_type) {
+FinishStatus Abstract::finish(FinishStatus finish_type) {
+	ASSERT(finish_type != FinishStatus::none_).error();
+
 	if (this->is_finished()) return child_data_->finish_status_;
 
 	ASSERT(child_data_->closed_)(this->type_name()).error();
@@ -131,10 +133,10 @@ FinishStatus Abstract::finish(FinishType finish_type) {
 	child_data_->selection_of_childs->close();
 	child_data_->selection_of_childs->finish();
 
-	child_data_->finish_status_ = (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_;
+	child_data_->finish_status_ = finish_type;
 
 	for (auto &child : child_data_->list_of_childs) {
-		if ((finish_type != FinishType::root_of_generic) && child.is_root_of_generic_subtree())
+		if ((finish_type != FinishStatus::generic_) && child.is_root_of_generic_subtree())
 			THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
 		child.add_parent(*this);
 		child.finish(finish_type);
@@ -297,7 +299,7 @@ AdHocAbstract &AdHocAbstract::add_child(const Record &subrec)
 }
 
 
-FinishStatus AdHocAbstract::finish(FinishType finish_type)
+FinishStatus AdHocAbstract::finish(FinishStatus finish_type)
 {
 	if (this->is_finished()) return child_data_->finish_status_;
 

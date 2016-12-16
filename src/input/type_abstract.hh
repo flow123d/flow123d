@@ -173,7 +173,7 @@ public:
      *  Set Abstract as parent of derived Records (for mechanism of
      *  set parent and descendant see \p Record::derive_from)
      */
-    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /// Returns reference to the inherited Record with given name.
     const Record  &get_descendant(const string& name) const;
@@ -313,7 +313,7 @@ public:
      * Adds descendants of ancestor Abstract, calls close() and complete keys with non-null
      * pointers to lazy types.
      */
-	FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+	FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /// Add inherited Record.
     AdHocAbstract &add_child(const Record &subrec);

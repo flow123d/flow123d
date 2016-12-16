@@ -234,23 +234,24 @@ bool Record::is_closed() const {
 
 
 
-FinishStatus Record::finish(FinishType finish_type)
+FinishStatus Record::finish(FinishStatus finish_type)
 {
+	ASSERT(finish_type != FinishStatus::none_).error();
 
 	if (this->is_finished()) return data_->finish_status_;
 
 	ASSERT(data_->closed_)(this->type_name()).error();
 
-    data_->finish_status_ = (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_;
+    data_->finish_status_ = finish_type;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
 
       	if (it->key_ != "TYPE") {
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) {
-				it->type_->finish(FinishType::root_of_generic); // finish Instance object
+				it->type_->finish(FinishStatus::generic_); // finish Instance object
 				it->type_ = it->type_->make_instance().first;
 			}
-			if ((finish_type != FinishType::root_of_generic) && it->type_->is_root_of_generic_subtree())
+			if ((finish_type != FinishStatus::generic_) && it->type_->is_root_of_generic_subtree())
 			    THROW( ExcGenericWithoutInstance()
 			            << EI_Object(it->type_->type_name())
 			            << EI_TypeName(this->type_name()));
@@ -258,7 +259,7 @@ FinishStatus Record::finish(FinishType finish_type)
 			ASSERT(it->type_->is_finished()).error();
         }
 
-        if (finish_type != FinishType::root_of_generic) {
+        if (finish_type != FinishStatus::generic_) {
             try {
                 it->default_.check_validity(it->type_);
             } catch (ExcWrongDefaultJSON & e) {

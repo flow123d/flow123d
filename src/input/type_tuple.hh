@@ -97,7 +97,7 @@ public:
      *
      * Completes Tuple (check auto convertible key, parameters of generic types etc).
      */
-    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /**
      * @brief Override Record::derive_from

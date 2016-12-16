@@ -82,11 +82,11 @@ string TypeBase::desc() const {
 
 void TypeBase::delete_unfinished_types() {
 	// mark unfinished types as deleted
-	Input::TypeRepository<Instance>::get_instance().finish(FinishType::deleted);
-	Input::TypeRepository<Abstract>::get_instance().finish(FinishType::deleted);
-	Input::TypeRepository<Record>::get_instance().finish(FinishType::deleted);
-	Input::TypeRepository<Tuple>::get_instance().finish(FinishType::deleted);
-	Input::TypeRepository<Selection>::get_instance().finish(FinishType::deleted);
+	Input::TypeRepository<Instance>::get_instance().finish(FinishStatus::delete_);
+	Input::TypeRepository<Abstract>::get_instance().finish(FinishStatus::delete_);
+	Input::TypeRepository<Record>::get_instance().finish(FinishStatus::delete_);
+	Input::TypeRepository<Tuple>::get_instance().finish(FinishStatus::delete_);
+	Input::TypeRepository<Selection>::get_instance().finish(FinishStatus::delete_);
 
 	// check and remove deleted types
 	Input::TypeRepository<Instance>::get_instance().reset_deleted_types();
@@ -191,23 +191,26 @@ TypeBase::TypeHash Array::content_hash() const
 }
 
 
-FinishStatus Array::finish(FinishType finish_type) {
+FinishStatus Array::finish(FinishStatus finish_type) {
 	return data_->finish(finish_type);
 }
 
 
 
-FinishStatus Array::ArrayData::finish(FinishType finish_type)
+FinishStatus Array::ArrayData::finish(FinishStatus finish_type)
 {
+	ASSERT(finish_type != FinishStatus::none_).error();
+
 	if (finish_status != FinishStatus::none_) return finish_status;
 
-	finish_status = (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_;
+
+	finish_status = finish_type;
 
 	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) {
-		type_of_values_->finish(FinishType::root_of_generic); // finish Instance object
+		type_of_values_->finish(FinishStatus::generic_); // finish Instance object
 		type_of_values_ = type_of_values_->make_instance().first;
 	}
-	if ((finish_type != FinishType::root_of_generic) && type_of_values_->is_root_of_generic_subtree())
+	if ((finish_type != FinishStatus::generic_) && type_of_values_->is_root_of_generic_subtree())
 		THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
 
 	type_of_values_->finish(finish_type);

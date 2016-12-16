@@ -68,12 +68,14 @@ const Selection & Selection::close() const {
 }
 
 
-FinishStatus Selection::finish(FinishType finish_type ) {
+FinishStatus Selection::finish(FinishStatus finish_type ) {
+	ASSERT(finish_type != FinishStatus::none_).error();
+
 	if (this->is_finished()) return data_->finish_status_;
 
 	ASSERT(data_->closed_)(this->type_name()).error();
 
-	data_->finish_status_ = (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_;
+	data_->finish_status_ = finish_type;
 	return data_->finish_status_;
 }
 

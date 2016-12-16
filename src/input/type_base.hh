@@ -65,16 +65,18 @@ DECLARE_EXCEPTION( ExcUnknownDescendant, << "Unknown descendant of TypeBase clas
 
 
 
-enum FinishType {
-    regular,          // default finish of type in IST
-	root_of_generic,  // finish of type, that is root of generic subtree
-	deleted           // finish of type, that is not contained in IST, mark this type ad deleted
-};
-
+/**
+ * FinishStatus manages finish of elements in IST.
+ *
+ * Specifies:
+ *  - finish status of IST elements
+ *  - type of executing finish
+ */
 enum FinishStatus {
-	none_,            // unfinished type
-	regular_,         // finished type (of IST)
-	deleted_          // finished type marked as deleted (type is not a part of IST)
+	none_,      //< unfinished element / this type can't be used as type of finish
+	regular_,   //< finished element of IST / finish of IST executed recursively from root element
+	generic_,   //< finished element in generic subtree / finish of generic subtree (executed from Instance object)
+	delete_     //< finished element marked as deleted (that doesn't appear in IST) / finish of unused elements (that can be removed)
 };
 
 
@@ -194,8 +196,11 @@ public:
      * Finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p is_generic
      * to true.
      */
-    virtual FinishStatus finish(FinishType finish_type = FinishType::regular)
-    { return (finish_type == FinishType::deleted) ? FinishStatus::deleted_ : FinishStatus::regular_; };
+    virtual FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_)
+    {
+    	ASSERT(finish_type != FinishStatus::none_).error();
+    	return finish_type;
+    };
 
     /**
      * @brief Hash of the type specification.
@@ -349,7 +354,7 @@ protected:
     	: lower_bound_(min_size), upper_bound_(max_size), finish_status(FinishStatus::none_)
     	{}
     	/// Finishes initialization of the ArrayData.
-    	FinishStatus finish(FinishType finish_type = FinishType::regular);
+    	FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_);
     	/// Type of Array
     	std::shared_ptr<TypeBase> type_of_values_;
     	/// Minimal size of Array
@@ -384,7 +389,7 @@ public:
     TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /// Override @p Type::TypeBase::finish_status.
     FinishStatus finish_status() const override {

@@ -384,7 +384,7 @@ public:
      *
      * Calls close() and completes Record (check auto convertible key, parameters of generic types etc).
      */
-    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /**
      * @brief Add TYPE key as obligatory.

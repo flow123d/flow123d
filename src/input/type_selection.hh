@@ -180,7 +180,7 @@ public:
     inline unsigned int size() const;
 
     /// Finish declaration of the Selection type.
-    FinishStatus finish(FinishType finish_type = FinishType::regular) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
 
     /// Implements \p TypeBase::is_closed

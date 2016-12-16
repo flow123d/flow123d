@@ -255,7 +255,7 @@ TEST(OutputTypeParameter, parameter_test) {
 
 	static Instance inst = Instance(param_record, param_vec)
 								.close();
-	inst.finish(FinishType::root_of_generic);
+	inst.finish(FinishStatus::generic_);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
     cout << OutputJSONMachine(/* *(&param_record),*/ get_rev_num_data()) << endl;
