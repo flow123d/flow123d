@@ -57,7 +57,7 @@ const string cyclic_array_json = R"JSON(
 )JSON";
 
 
-IT::Record get_type_record() {
+static IT::Record & get_type_record() {
     IT::Record value_rec = IT::Record("value", "Record with boolean value")
 		.declare_key("some_boolean", IT::Bool(), IT::Default("false"),
 				"Some boolean value.")
@@ -76,7 +76,7 @@ IT::Record get_type_record() {
              "Value record.")
 		.close();
 
-	IT::Record root_record = IT::Record("Problem", "Record of problem")
+	static IT::Record root_record = IT::Record("Problem", "Record of problem")
 		.declare_key("data", data_rec, IT::Default::obligatory(),
 	             "Definition of data.")
     	.declare_key("pause_after_run", IT::Bool(), IT::Default("false"),

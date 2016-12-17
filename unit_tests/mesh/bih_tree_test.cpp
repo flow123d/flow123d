@@ -18,6 +18,7 @@
 #include <cmath>
 #include <algorithm>
 #include <fstream>
+#include <mesh_constructor.hh>
 
 #include "system/sys_profiler.hh"
 
@@ -113,7 +114,7 @@ public:
 
 		START_TIMER("create mesh");
 		GmshMeshReader reader(mesh_file);
-		mesh = new Mesh();
+		mesh = mesh_constructor();
 		reader.read_physical_names(mesh);
 		reader.read_mesh(mesh);
 		END_TIMER("create mesh");
@@ -293,19 +294,21 @@ TEST(BIH_Tree_Test, 2d_mesh) {
     Profiler::initialize();
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/noncompatible_small.msh", FilePath::input_file);
 
-    Mesh mesh;
+    Mesh * mesh = mesh_constructor();
 	GmshMeshReader reader(mesh_file);
 
-	reader.read_physical_names(&mesh);
-	reader.read_mesh(&mesh);
+	reader.read_physical_names(mesh);
+	reader.read_mesh(mesh);
 	unsigned int element_limit=20;
-	BIHTree bt(&mesh, element_limit);
+	BIHTree bt(mesh, element_limit);
 	std::vector<unsigned int> insec_list;
 
 	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0 0"), arma::vec3("-0.7 0 0")), insec_list);
 	for(auto i_ele : insec_list) {
-		cout << "idx: " << i_ele << "id: " << mesh.element.get_id( &(mesh.element[i_ele]) ) << endl;
+		cout << "idx: " << i_ele << "id: " << mesh->element.get_id( &(mesh->element[i_ele]) ) << endl;
 	}
+
+	delete mesh;
 
 
 }

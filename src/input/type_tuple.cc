@@ -66,13 +66,15 @@ const Tuple &Tuple::close() const {
 }
 
 
-bool Tuple::finish(bool is_generic)
+FinishStatus Tuple::finish(FinishStatus finish_type)
 {
-	if (data_->finished) return true;
+	ASSERT(finish_type != FinishStatus::none_).error();
+
+	if (this->is_finished()) return data_->finish_status_;
 
 	ASSERT(data_->closed_)(this->type_name()).error();
 
-    data_->finished = true;
+	data_->finish_status_ = finish_type;
 
     // iterates through keys
     bool obligatory_keys = true; // check order of keys (at first obligatory keys are defined, then other keys)
@@ -92,9 +94,15 @@ bool Tuple::finish(bool is_generic)
 		}
 
 		// Performs finish of keys
-		if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-		if (!is_generic && it->type_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
-       	data_->finished = data_->finished && it->type_->finish(is_generic);
+		if (typeid( *(it->type_.get()) ) == typeid(Instance)) {
+			it->type_->finish(FinishStatus::generic_); // finish Instance object
+			it->type_ = it->type_->make_instance().first;
+		}
+		if ((finish_type != FinishStatus::generic_) && it->type_->is_root_of_generic_subtree())
+			THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
+		it->type_->finish(finish_type);
+		ASSERT(it->type_->is_finished()).error();
+		if (finish_type == FinishStatus::delete_) it->type_.reset();
     }
 
     // Add autoconvertibility
@@ -103,7 +111,7 @@ bool Tuple::finish(bool is_generic)
         data_->auto_conversion_key=data_->keys.begin()->key_;
     }
 
-    return (data_->finished);
+    return (data_->finish_status_);
 }
 
 
@@ -136,7 +144,7 @@ Tuple Tuple::deep_copy() const {
 	Tuple tuple = Tuple();
 	tuple.data_ =  std::make_shared<Record::RecordData>(*this->data_);
 	tuple.data_->closed_ = false;
-	tuple.data_->finished = false;
+	tuple.data_->finish_status_ = FinishStatus::none_;
 	tuple.generic_type_hash_ = this->generic_type_hash_;
 	tuple.parameter_map_ = this->parameter_map_;
 	tuple.copy_attributes(*attributes_);

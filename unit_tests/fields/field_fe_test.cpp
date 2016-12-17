@@ -10,6 +10,7 @@
 #define TEST_USE_MPI
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 
 #include "fields/field_fe.hh"
@@ -44,7 +45,7 @@ public:
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
         
         FilePath mesh_file( "fields/one_element_2d.msh", FilePath::input_file);
-        mesh= new Mesh;
+        mesh= mesh_constructor();
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
         dh = new DOFHandlerMultiDim(*mesh);

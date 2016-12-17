@@ -103,7 +103,7 @@ namespace IT=Input::Type;
 
 class AdHocDataTest : public testing::Test {
 public:
-	static const IT::Record & get_rec();
+	static IT::Record & get_rec();
 	static const IT::Record & get_in_rec1();
 	static const IT::Record & get_in_rec2();
 	static const IT::Abstract & get_ancestor();
@@ -133,7 +133,7 @@ const IT::AdHocAbstract & AdHocDataTest::get_adhoc_1() {
 	return ad_hoc;
 }
 
-const IT::Record & AdHocDataTest::get_rec() {
+IT::Record & AdHocDataTest::get_rec() {
 	return IT::Record("Problem","Base record")
 		.declare_key("adhoc_1", AdHocDataTest::get_adhoc_1(), "" )
 		.declare_key("adhoc_2", AdHocDataTest::get_adhoc_2(), "" )
@@ -168,7 +168,7 @@ using namespace Input::Type;
 	AdHocDataTest::get_adhoc_1();
 	AdHocDataTest::get_adhoc_2();
 	AdHocDataTest::get_rec();
-	TypeBase::lazy_finish();
+	AdHocDataTest::get_rec().finish();
 
 	EXPECT_EQ( 2, AdHocDataTest::get_in_rec1().size());
 	EXPECT_EQ( 2, AdHocDataTest::get_in_rec2().size());
