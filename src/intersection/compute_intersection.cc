@@ -73,17 +73,19 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute_plucker_products(){
 		plucker_coordinates_abscissa_->compute((*abscissa_)[0].point_coordinates(),
                                                (*abscissa_)[1].point_coordinates());
 	}
+	scale_line_=plucker_coordinates_abscissa_->scale();
 
 //  DBGMSG("Abscissa:\n");
 //     (*abscissa_)[0].point_coordinates().print();
 //     (*abscissa_)[1].point_coordinates().print();
-
+	scale_triangle_=std::numeric_limits<double>::max();
 	// if not already computed, compute plucker coordinates of triangle sides
 	for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
 		if(!plucker_coordinates_triangle_[side]->is_computed()){
-			plucker_coordinates_triangle_[side]->compute((*triangle_)[side][0].point_coordinates(), 
+		    plucker_coordinates_triangle_[side]->compute((*triangle_)[side][0].point_coordinates(),
                                                          (*triangle_)[side][1].point_coordinates());
 		}
+		scale_triangle_ = std::min( scale_triangle_, plucker_coordinates_triangle_[side]->scale());
 		
         ASSERT_DBG(plucker_products_[side]).error("Undefined plucker product.");
         if(*plucker_products_[side] == plucker_empty){
@@ -299,21 +301,22 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
                     signed_plucker_product(1),
                     signed_plucker_product(2)};
     double w_sum = w[0] + w[1] + w[2];
-    // if all products 0, we need avoiding zero division
-    //DebugOut().VarFmt(w_sum);
 
-    if(std::abs(w_sum) > rounding_epsilon)
-        w = w / w_sum;
-    
     unsigned int n_positive = 0;
     unsigned int n_negative = 0;
     unsigned int zero_idx_sum =0;
+    DebugOut().VarFmt(std::fabs(w_sum));
+    DebugOut().VarFmt(scale_line_);
+    DebugOut().VarFmt(scale_triangle_);
+    if(std::fabs(w_sum) > rounding_epsilon*scale_line_*scale_triangle_*scale_triangle_) {
+        w = w / w_sum;
 
-    for (unsigned int i=0; i < 3; i++) {
-        //DebugOut().VarFmt(i).VarFmt(w[i]);
-        if (w[i] > rounding_epsilon) n_positive++;
-        else if ( w[i] > -rounding_epsilon) zero_idx_sum+=i;
-        else n_negative++;
+        for (unsigned int i=0; i < 3; i++) {
+            //DebugOut().VarFmt(i).VarFmt(w[i]);
+            if (w[i] > rounding_epsilon) n_positive++;
+            else if ( w[i] > -rounding_epsilon) zero_idx_sum+=i;
+            else n_negative++;
+        }
     }
 
     // any negative barycentric coordinate means, no intersection
@@ -340,7 +343,7 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
         }
         //DebugOut().VarFmt(non_zero_idx).VarFmt(signed_plucker_product(non_zero_idx));
 
-        auto result = signed_plucker_product(non_zero_idx) > 0 ?
+        IntersectionResult result = signed_plucker_product(non_zero_idx) > 0 ?
                 IntersectionResult::positive : IntersectionResult::negative;
         IP.set_orientation(result);
 

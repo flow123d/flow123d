@@ -197,6 +197,8 @@ private:
     
     /// Flag 'computed'; is true if intersection has been computed already.
     bool computed_;
+    ///
+    double scale_line_, scale_triangle_;
     
 	Simplex<1> *abscissa_;
 	Simplex<2> *triangle_;

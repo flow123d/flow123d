@@ -48,6 +48,7 @@ class Plucker{
 private:
 
 	arma::vec6 coordinates_; ///< Plucker coordinates.
+	double scale_;
 	bool computed_;          ///< True, if Plucker coordinates are computed; false otherwise.
 
 public:
@@ -64,6 +65,9 @@ public:
 	Plucker(const Plucker &p);
     /// Destructor.
 	~Plucker(){};
+
+	double scale() const
+	{ return scale_; }
 
     /// Returns Plucker coordinate of @p index.
 	double operator[](const unsigned int index) const;

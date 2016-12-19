@@ -98,6 +98,13 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0.5, 0.2, 0.3}
                 }});
 
+    // no intersection
+    c.push_back({ "90_n", {
+                }});
+    c.push_back({ "91_n", {
+                }});
+
+
     // special cases:
     // s3 touch cases (intersection on boundary of s3)
     c.push_back({ "00_s", {{0, 0, 1}} }); // s2 corner - s3 vertex
@@ -149,7 +156,6 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0.5, 0.5, 0},
                 {0, 0.25, 0.25},
                 {0, 0, 1}}});
-
 
 }
 
