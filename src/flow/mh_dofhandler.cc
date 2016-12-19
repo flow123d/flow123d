@@ -553,9 +553,9 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 
     //create singularity
 //     Space<3>::Point center ({3.3, 3.3, 0}); //triangle
-    Space<3>::Point center ({0, 0, 0}); //circle
-    double radius = 0.15,
-           sigma_const = 2e5,
+    Space<3>::Point center ({-0.1, 0, 0}); //circle
+    double radius = 0.03,
+           sigma_const = 1,
            pressure = 100;
     Space<3>::Point direction_vector ({0,0,1});
     Space<3>::Point n;
@@ -584,7 +584,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     singularities.push_back(sing);
 
     //TODO: suggest proper enrichment radius
-    double enr_radius = 0.5;//1.3*std::sqrt(ele2d->measure());
+    double enr_radius = 0.8*std::sqrt(ele2d->measure());
     DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
     clear_mesh_flags();
 

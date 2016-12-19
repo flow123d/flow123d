@@ -681,7 +681,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
     //as long as pressure is not enriched and is P0
     ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
     double temp = 1.0;
-    int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
+//     int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
     
     int nvals = loc_vel_dofs.size();
     double val;
@@ -708,7 +708,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
                             * arma::dot(fv_rt_sing_->shape_vector(j,q),n)
                             * quad.weight(q);
                         loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[j], val, 0.0);
-                        loc_system_.add_value(loc_vel_dofs[j], loc_vel_dofs[i], val, 0.0);
+//                         loc_system_.add_value(loc_vel_dofs[j], loc_vel_dofs[i], val, 0.0);
                     }
                     
 //                     DBGVAR(val);
