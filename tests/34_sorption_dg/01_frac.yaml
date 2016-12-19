@@ -55,8 +55,8 @@ problem: !Coupling_Sequential
           porosity: 0.25
         - region: 2d
           rock_density: 2700
-          sorption_mult:
-            - 0.2
+          sorption_coefficient:
+            - 4e-4
             - 0
         - region: .sides
           time: 5
