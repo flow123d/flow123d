@@ -77,7 +77,7 @@ problem: !Coupling_Sequential
         - region: ALL
           rock_density: 1.0
           sorption_type: linear
-          isotherm_mult: !FieldFormula
+          distribution_coefficient: !FieldFormula
             value: '0.6'
           isotherm_other: 0.4
       output:
