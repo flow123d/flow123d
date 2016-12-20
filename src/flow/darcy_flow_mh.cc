@@ -1012,16 +1012,16 @@ void DarcyMH::allocate_mh_matrix()
 //             }
 //         }
 
-        if(ele_ac.is_enriched() && ele_ac.dim() == 2){
-            const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
-            for(int w=0; w < xd.n_enrichments(); w++){
-                if(xd.is_singularity_inside(w)){
-                    int ele1d_row = mh_dh.row_4_el[ele_ac.xfem_data_pointer()->intersection_ele_global_idx()];
-                    ls->mat_set_values(ndofs_vel, dofs_vel, 1, &ele1d_row, zeros);
-                    ls->mat_set_values(1, &ele1d_row, ndofs_vel, dofs_vel, zeros);
-                }
-            }
-        }
+//         if(ele_ac.is_enriched() && ele_ac.dim() == 2){
+//             const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
+//             for(int w=0; w < xd.n_enrichments(); w++){
+//                 if(xd.is_singularity_inside(w)){
+//                     int ele1d_row = mh_dh.row_4_el[ele_ac.xfem_data_pointer()->intersection_ele_global_idx()];
+//                     ls->mat_set_values(ndofs_vel, dofs_vel, 1, &ele1d_row, zeros);
+//                     ls->mat_set_values(1, &ele1d_row, ndofs_vel, dofs_vel, zeros);
+//                 }
+//             }
+//         }
 
 //         if(ele_ac.is_enriched()){
 //                 const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();

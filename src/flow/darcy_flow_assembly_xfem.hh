@@ -81,6 +81,10 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
+        
+        if(ele_ac.is_enriched())
+            loc_system_.get_matrix().print(cout, "matrix");
+        
         //mast be last due to overriding xfem fe values
         if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
             assemble_singular_velocity(ele_ac);
@@ -697,6 +701,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
             temp = 1.0 / sing->sigma();
             
 //             vector<double> sum(nvals,0);
+            arma::mat matt(nvals, nvals+1);
             for(unsigned int q=0; q < quad.size();q++){
                 arma::vec n = sing->center() - quad.real_point(q);
                 n = n / arma::norm(n,2);
@@ -709,17 +714,20 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
                             * quad.weight(q);
                         loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[j], val, 0.0);
 //                         loc_system_.add_value(loc_vel_dofs[j], loc_vel_dofs[i], val, 0.0);
+                        matt(i,j) += val;
+                        
                     }
                     
 //                     DBGVAR(val);
                     val = - sing->pressure() * arma::dot(fv_rt_sing_->shape_vector(i,q),n) * quad.weight(q);
                     loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[i], 0.0, val);
-                    
+                    matt(i,nvals) = val;
 //                     sum[i] += val;
 //                     ad_->lin_sys->mat_set_value(loc_system_.row_dofs[loc_vel_dofs[i]], ele1d_row, val);
 //                     ad_->lin_sys->mat_set_value(ele1d_row, loc_system_.row_dofs[loc_vel_dofs[i]], val);
                 }
             }
+            DBGCOUT(<< "\n" << matt);
 //             DBGVAR(sum[0]);
 //             DBGVAR(sum[1]);
 //             DBGVAR(sum[2]);

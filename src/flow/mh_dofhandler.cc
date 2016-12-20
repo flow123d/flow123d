@@ -553,7 +553,8 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
                 
     //create singularity
 //     Space<3>::Point center ({3.3, 3.3, 0}); //triangle
-    Space<3>::Point center ({-0.1, 0, 0}); //circle
+//     Space<3>::Point center ({-0.1, 0, 0}); //circle
+    Space<3>::Point center ({0.3, 0.3, 0}); //circle
     double radius = 0.03,
            sigma_const = 1,
            pressure = 100;
@@ -697,14 +698,15 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
     mesh_flags_[ele->index()] = true;
         
     bool enrich = false;
-    for(unsigned int i=0; i < ele->n_nodes(); i++){
-        double d = arma::norm(sing->center() - ele->node[i]->point(),2);
-//         DBGCOUT(<< d << "\n");
-        if(d < radius){
-            enrich = true;
-        }
-    }
+//     for(unsigned int i=0; i < ele->n_nodes(); i++){
+//         double d = arma::norm(sing->center() - ele->node[i]->point(),2);
+// //         DBGCOUT(<< d << "\n");
+//         if(d < radius){
+//             enrich = true;
+//         }
+//     }
     
+    if(ele->index() == 0) enrich = true;
 //     if(ele->index() == 5) enrich = true;
 //     if(ele->index() == 49) enrich = true;
 //     if(ele->index() == 645) enrich = true;
