@@ -546,6 +546,25 @@ private:
     auto vertex_faces(uint i_vtx) -> FacePair;
 
 
+    inline bool have_backlink(uint i_obj) {
+        ASSERT_LT_DBG(i_obj, object_next.size());
+        unsigned int ip = object_next[i_obj];
+        if (ip == no_idx) return false;
+        ASSERT_LT_DBG(ip, IP_next.size());
+        return IP_next[ip] == i_obj;
+    }
+
+    /**
+     * Set links: obj_before -> IP -> obj_after
+     * if obj_after have null successor, set obj_after -> IP (backlink)
+     */
+    inline void set_links(uint obj_before_ip, uint ip_idx, uint obj_after_ip) {
+        object_next[obj_before_ip] = ip_idx;
+        IP_next.push_back( obj_after_ip);
+        if (object_next[obj_after_ip] == no_idx) {
+            object_next[obj_after_ip] = ip_idx;
+        }
+    }
 };
 
 } // END namespace_close

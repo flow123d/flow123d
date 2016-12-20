@@ -1052,14 +1052,6 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     std::fill(object_next.begin(), object_next.end(), no_idx);
 	std::vector<IPAux13> IP13s;
 
-	std::function<bool(unsigned int)> have_backlink_lambda = [this](uint i_obj)
-	        {
-                 ASSERT_LT_DBG(i_obj, this->object_next.size());
-	             auto ip = this->object_next[i_obj];
-	             if (ip == no_idx) return false;
-	             ASSERT_LT_DBG(ip, this->IP_next.size());
-	             return this->IP_next[ip] == i_obj;
-	        };
 
     unsigned int object_before_ip, object_after_ip;
 
@@ -1128,25 +1120,20 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             }
 
             IP23_list.push_back(IP23);
-            IP_next.push_back(no_idx);
 
             unsigned int ip_idx = IP23_list.size()-1;
             //DebugOut().fmt("before: {} after: {} ip: {}\n", object_before_ip, object_after_ip, ip_idx);
-            ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size());
-            if (have_backlink_lambda(object_after_ip)) {
+            ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size()+1);
+            if (have_backlink(object_after_ip)) {
                 // target object is already target of other IP, so it must be source object
                 std::swap(object_before_ip, object_after_ip);
             }
             //DebugOut().fmt("_before: {} _after: {}\n", object_before_ip, object_after_ip);
-            ASSERT_DBG( ! have_backlink_lambda(object_after_ip) ); // at least one could be target object
-            object_next[object_before_ip] = ip_idx;
-            IP_next[ip_idx] = object_after_ip;
-            if (object_next[object_after_ip] == no_idx) {
-                    object_next[object_after_ip] = ip_idx;
-                }
-            }
-    }
+            ASSERT_DBG( ! have_backlink(object_after_ip) ); // at least one could be target object
+            set_links(object_before_ip, ip_idx, object_after_ip);
+        }
 
+    }
 
     // now we have at most single true degenerate IP in IP23
     // TODO:
@@ -1179,6 +1166,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	    if (! processed_edge[tetra_edge]) {
 	        IPAux12 &IP12 = IP12s_[tetra_edge];
 
+
 	        double edge_coord = IP12.local_bcoords_A()[0];
 	        //DebugOut().VarFmt(tetra_edge) << IP12;
 	        // skip no intersection and degenerate intersections
@@ -1206,7 +1194,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
 	            unsigned int s3_object = s3_dim_starts[edge_dim] + i_edge;
 
-	            if ( have_backlink_lambda(s3_object) ) {
+	            if ( have_backlink(s3_object) ) {
 	                object_before_ip = s3_object;
 	                object_after_ip = face_pair[1];
 	            } else {
@@ -1219,11 +1207,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
 	            IP23_list.push_back(IP23);
 	            unsigned int ip_idx = IP23_list.size()-1;
-	            object_next[object_before_ip] = ip_idx;
-	            IP_next.push_back( object_after_ip);
-	            if (object_next[object_after_ip] == no_idx) {
-	                    object_next[object_after_ip] = ip_idx;
-	                }
+	            set_links(object_before_ip, ip_idx, object_after_ip);
 
 	        } else { // interior of S2, just use the face pair
 	            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
@@ -1232,16 +1216,11 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                 IP23_list.push_back(IP23);
 	            unsigned int ip_idx = IP23_list.size()-1;
 
-	            if ( have_backlink_lambda(face_pair[1]) ) {
+	            if ( have_backlink(face_pair[1]) ) {
                     object_next[ face_pair[1] ] = ip_idx;
                     IP_next.push_back( face_pair[0] );
 	            } else {
-                    object_next[ face_pair[0] ] = ip_idx;
-                    IP_next.push_back( face_pair[1] );
-                    if (object_next[face_pair[1]] == no_idx) {
-                            object_next[face_pair[1]] = ip_idx;
-                        }
-
+	                set_links(face_pair[0], ip_idx, face_pair[1]);
 	            }
 	        }
 	    }
