@@ -18,14 +18,7 @@ class ModuleExecWithLimit(ScriptModule):
         """
         Arguments additional check
         """
-
-        # check commands
-        if not self.rest:
-            self.parser.exit_usage('No command specified!', exit_code=1)
-
-        # check limits (at least one limit must be set)
-        if self.arg_options.time_limit is None and self.arg_options.memory_limit is None:
-            self.parser.exit_usage('No limits specified!', exit_code=2)
+        return
 
     def _run(self):
         """
@@ -34,7 +27,7 @@ class ModuleExecWithLimit(ScriptModule):
 
         # prepare executor
         progress = not self.arg_options.batch
-        executor = BinExecutor(self.rest)
+        executor = BinExecutor(self.arg_options.rest)
         pypy = PyPy(executor, progress=progress)
         n_lines = 0 if self.arg_options.batch else 10
 
@@ -57,12 +50,12 @@ class ModuleExecWithLimit(ScriptModule):
         return pypy
 
 
-def do_work(parser, args=None):
+def do_work(arg_options, debug=False):
     """
     Main method which invokes ModuleExecWithLimit
-    :rtype: scripts.core.threads.PyPy
-    :type args: list
-    :type parser: utils.argparser.ArgParser
+    :rtype: ParallelThreads
+    :type debug: bool
+    :type arg_options: utils.argparser.ExecWithLimitArgs
     """
-    module = ModuleExecWithLimit()
-    return module.run(parser, args, False)
+    module = ModuleExecWithLimit(arg_options)
+    return module.run(debug)

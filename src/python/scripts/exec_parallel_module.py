@@ -31,30 +31,24 @@ class ModuleExecParallel(ScriptModule):
     Class ModuleExecParallel is backend for script exec_parallel.py
     """
 
-    def __init__(self):
-        super(ModuleExecParallel, self).__init__()
+    def __init__(self, arg_options):
+        super(ModuleExecParallel, self).__init__(arg_options)
         self.proc, self.time_limit, self.memory_limit = None, None, None
 
     def _check_arguments(self):
         """
         Arguments additional check
         """
-
-        # no args
-        if len(self.rest) == 0:
-            self.parser.exit_usage('no MPI executable provided', exit_code=1)
-        # only one arg
-        if len(self.rest) == 1:
-            self.parser.exit_usage('no command provided', exit_code=2)
+        return
 
     def _run(self):
         """
         Run method for this module
         """
 
-        self.proc = ensure_iterable(self.arg_options.get('cpu'))
-        self.time_limit = self.arg_options.get('time_limit')
-        self.memory_limit = self.arg_options.get('memory_limit')
+        self.proc = ensure_iterable(self.arg_options.cpu)
+        self.time_limit = self.arg_options.time_limit
+        self.memory_limit = self.arg_options.memory_limit
 
         # set default values if not set
         self.proc = self.proc if self.proc else DEFAULTS.get('proc')
@@ -153,7 +147,7 @@ class ModuleExecParallel(ScriptModule):
             python=sys.executable,
             script=pkgutil.get_loader('exec_parallel').filename,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
-            args="" if not self.rest else Command.to_string(self.rest),
+            args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
             dump_output=case.fs.dump_output,
             log_file=case.fs.job_output
         )
@@ -172,9 +166,9 @@ class ModuleExecParallel(ScriptModule):
         :param proc:
         """
         if int(proc) == 0:
-            command = self.rest[1:]
+            command = self.arg_options.rest[1:]
         else:
-            command = [self.rest[0], '-np', proc] + self.rest[1:]
+            command = [self.arg_options.rest[0], '-np', proc] + self.arg_options.rest[1:]
 
         n_lines = 0 if self.arg_options.batch else 10
         pypy = PyPy(BinExecutor(command))
@@ -200,7 +194,7 @@ class ModuleExecParallel(ScriptModule):
         return pypy
 
 
-def do_work(parser, args=None, debug=False):
+def do_work(arg_options=None, debug=False):
     """
     Main method which invokes ModuleExecParallel
     :rtype: scripts.core.threads.ResultHolder or
@@ -208,17 +202,16 @@ def do_work(parser, args=None, debug=False):
             scripts.serialization.PyPyResult or
             scripts.core.threads.PyPy
     :type debug: bool
-    :type args: list
-    :type parser: utils.argparser.ArgParser
+    :type arg_options: utils.argparser.ExecParallelArgs
     """
-    module = ModuleExecParallel()
-    result = module.run(parser, args, debug)
+    module = ModuleExecParallel(arg_options)
+    result = module.run(debug)
 
     # pickle out result on demand
-    if parser.simple_options.dump:
+    if arg_options.dump:
         try:
             import pickle
-            pickle.dump(result.dump(), open(parser.simple_options.dump, 'wb'))
+            pickle.dump(result.dump(), open(arg_options.dump, 'wb'))
         except:
             pass # TODO implement dump in pbs mode
     return result

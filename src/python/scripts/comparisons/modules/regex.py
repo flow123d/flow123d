@@ -19,8 +19,8 @@ common_config:
     - regex:
         files:
           - "*.*"
-
 """
+
 
 class Regex(InPlaceComparison):
     """
