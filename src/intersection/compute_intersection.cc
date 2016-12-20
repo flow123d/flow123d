@@ -949,9 +949,9 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::print_plucker_coordinates_tree
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection()
 : no_idx(100),
 s3_dim_starts({0, 4, 10, 14}), // vertices, edges, faces, volume
-s2_dim_starts({15, 18, 21})  // vertices, sides, surface
-
-{
+s2_dim_starts({15, 18, 21}),   // vertices, sides, surface
+object_next(22, no_idx)        // 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
+ {
 
     plucker_coordinates_triangle_.resize(3, nullptr);
     plucker_coordinates_tetrahedron.resize(6, nullptr);
@@ -1048,21 +1048,17 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     //        intersection.bulk_ele_idx());
 
     IP23_list.clear();
-    degenerate_ips.clear();
-
+    IP_next.clear();
+    std::fill(object_next.begin(), object_next.end(), no_idx);
 	std::vector<IPAux13> IP13s;
 
-	std::vector<unsigned int> IP_next;
-	// 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
-	std::vector<unsigned int> object_next(22, no_idx);
-
-	std::function<bool(unsigned int)> have_backlink_lambda = [&IP_next, &object_next, this](uint i_obj)
+	std::function<bool(unsigned int)> have_backlink_lambda = [this](uint i_obj)
 	        {
-                 ASSERT_LT_DBG(i_obj, object_next.size());
-	             auto ip = object_next[i_obj];
+                 ASSERT_LT_DBG(i_obj, this->object_next.size());
+	             auto ip = this->object_next[i_obj];
 	             if (ip == no_idx) return false;
-	             ASSERT_LT_DBG(ip, IP_next.size());
-	             return IP_next[ip] == i_obj;
+	             ASSERT_LT_DBG(ip, this->IP_next.size());
+	             return this->IP_next[ip] == i_obj;
 	        };
 
     unsigned int object_before_ip, object_after_ip;

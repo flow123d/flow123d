@@ -498,12 +498,8 @@ public:
      * @return number of intersection points found
      */
     void compute(IntersectionAux<2,3> &intersection);
-    typedef std::array<uint, 2> FacePair;
 
-    bool ips_topology_equal(const IPAux23 &first, const IPAux23 &second);
-    bool obj_have_back_link(unsigned int i_obj);
-    auto edge_faces(uint i_edge) -> FacePair;
-    auto vertex_faces(uint i_vtx) -> FacePair;
+
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
     void print_plucker_coordinates(std::ostream &os);
@@ -511,13 +507,17 @@ public:
     void print_plucker_coordinates_tree(std::ostream &os);
 
 private:
+    // S3 n-face pair (for edge-triangle phase)
+    typedef std::array<uint, 2> FacePair;
+
+
     const unsigned int no_idx;
     // TODO rename s4 to s3, s3 to s2
     std::vector<unsigned int> s3_dim_starts; // get global index of n-face i of dimension d: s4_dim_starts[d]+i
     std::vector<unsigned int> s2_dim_starts;  // same for n-faces of S2
 
     std::vector<IPAux12> IP12s_;
-    std::vector<IPAux23> IP23_list, degenerate_ips;
+    std::vector<IPAux23> IP23_list; //, degenerate_ips;
 
     /// Vector of Plucker coordinates for triangle side.
     std::vector<Plucker *> plucker_coordinates_triangle_;
@@ -531,6 +531,21 @@ private:
     ComputeIntersection<Simplex<1>, Simplex<3>> CI13[3];
     /// Compute 1D-2D intersection objects [6]
     ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];
+
+
+    // successors of IPs
+    std::vector<unsigned int> IP_next;
+    // successors of n-face objects
+    // 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
+    std::vector<unsigned int> object_next;
+
+
+    bool ips_topology_equal(const IPAux23 &first, const IPAux23 &second);
+    bool obj_have_back_link(unsigned int i_obj);
+    auto edge_faces(uint i_edge) -> FacePair;
+    auto vertex_faces(uint i_vtx) -> FacePair;
+
+
 };
 
 } // END namespace_close
