@@ -86,14 +86,14 @@ problem: !Coupling_Sequential
             sorption_type:
               - linear
               - freundlich
-            isotherm_mult: 0.02
+            distribution_coefficient: 0.02
             isotherm_other:
               - 0
               - 0.5
         output:
           fields:
             - sorption_type
-            - isotherm_mult
+            - distribution_coefficient
             - isotherm_other
             - init_conc_solid
             - conc_solid
@@ -109,7 +109,7 @@ problem: !Coupling_Sequential
         output:
           fields:
             - sorption_type
-            - isotherm_mult
+            - distribution_coefficient
             - isotherm_other
             - init_conc_solid
             - conc_immobile_solid
