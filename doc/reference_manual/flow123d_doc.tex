@@ -256,14 +256,26 @@ and execute the \verb'install.sh' script:
 \begin{verbatim}
   > cd Flow123d-2.1.0-linux
   > ./install.sh
+  Importing docker image 'flow/v2.0.0'
+  Modifying docker image 'flow/v2.0.0'
+  ...
 \end{verbatim}
-\tbd{what should be the result?}
+Install script will first import image into your system and then personalise this image for the current user. The script will also print
+additional information during personalisation process. Whole process may take several minutes (depending on your machine performance).
 
 
 \subsection{Installing Flow123d on Windows}
-On the Windows systems we require Powershell. \tbd{Is it standard part of which Windows or how it can be obtained.} 
-Make sure \verb'powershell' command is in the system path. \tbd{How} To install Flow123d on Windows,
-first download the Windows installation package archive \verb'Flow123d-2.1.0-windows.zip' and extract it to any folder.
+On the Windows systems we require Powershell. Windows PowerShell needs to be installed on Windows Server 2008 and Windows Vista only.
+It is already installed on Windows Server 2008 R2 and Windows 7 and higher. To install PowerShell follow instructions in 
+\href{https://msdn.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell}{Microsoft tutorial}.
+%\tbd{Is it standard part of which Windows or how it can be obtained.}
+
+Make sure \verb'powershell' command is in the system PATH. \href{http://www.powershelladmin.com/wiki/PowerShell_Executables_File_System_Locations}{Powershell executable location}
+ is determined by Windows version, but generally it is \\\verb'%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe'. To add
+ this location to system PATH variable follow instructions \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft tutorial}.
+%\tbd{How} 
+
+To install Flow123d on Windows, first download the Windows installation package archive \verb'Flow123d-2.1.0-windows.zip' and extract it to any folder.
 This will create a directory \verb'Flow123d-2.1.0-windows' navigate to that directory and execute \verb'install.bat' file.
 Executing \verb'install.bat' will start an installation process which will:
 \begin{enumerate}
