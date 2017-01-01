@@ -69,12 +69,14 @@ const Tuple &Tuple::close() const {
 FinishStatus Tuple::finish(FinishStatus finish_type)
 {
 	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(data_->finish_status_ != FinishStatus::in_perform_)(this->type_name()).error("Recursion in the IST element of type Tuple.");
 
 	if (this->is_finished()) return data_->finish_status_;
 
 	ASSERT(data_->closed_)(this->type_name()).error();
 
-	data_->finish_status_ = finish_type;
+	data_->finish_status_ = FinishStatus::in_perform_;
 
     // iterates through keys
     bool obligatory_keys = true; // check order of keys (at first obligatory keys are defined, then other keys)
@@ -111,6 +113,7 @@ FinishStatus Tuple::finish(FinishStatus finish_type)
         data_->auto_conversion_key=data_->keys.begin()->key_;
     }
 
+    data_->finish_status_ = finish_type;
     return (data_->finish_status_);
 }
 
