@@ -181,7 +181,6 @@ Jan B\v rezina, Jan Stebel, David Flanderka, Pavel Exner, Jan Hyb\v s
 
 \chapter{Getting Started} \label{chapter:getting_started}
 
-%\tbd{TODO-JAN BŘEZINA: update after all new sections are written.}
 \section{Introduction}
 Flow123D is a software for simulation of water flow, reactionary solute transport and heat transfer in a heterogeneous 
 porous and fractured medium. In particular it is suited for simulation of underground processes in a granite rock.
@@ -194,21 +193,22 @@ Both models use the mixed-hybrid finite element method for the space discretizat
 Both models can also switch between a transient case and a sequence of the steady states within a single simulation. The model for unsaturated medium use 
 a lumped variant of the mixed-hybrid method in order to guarantee stability for short time steps which is connected with the satisfaction of the maximum principle.
 
-In the present version only the model for the unsaturated media can be sequentially coupled  with the transport models including 
+In the present version,  only the model for the unsaturated media can be sequentially coupled  with the transport models including 
 two models for the solute transport and one model for the heat transfer.
 
-The first solute transport model can deal only with pure advection of several substances without any diffusion-dispersion term. It uses 
-explicit Euler method for time discretization and finite volume method for space discretization.
-The second solute transport model describes general advection with hydrodynamic dispersion for several substances. 
-It uses implicit Euler method for time discretization and discontinuous Galerkin method of
+The first solute transport model can deal only with a pure advection of several substances without any diffusion-dispersion term. It uses 
+the explicit Euler method for time discretization and the finite volume method for space discretization.
+The second solute transport model describes a general advection with hydrodynamic dispersion for several substances. 
+It uses the implicit Euler method for time discretization and the discontinuous Galerkin method of
 the first, second or third order for the discretization in space.
 The operator splitting method can be used to couple any of these two solute transport models with  
  various processes described by the reaction term.  The reaction term can treat any meaningful combination of the dual porosity, 
 equilibrium sorptions, decays and linear reactions. 
 
-The heat transfer model assumes equilibrium between temperature of the rock and the fluid phase. It uses the same numerical scheme as the second transport model.
+The heat transfer model assumes equilibrium between temperature of the rock and the fluid phase. It uses the same numerical scheme as the second transport model, 
+that is implicit DG method.
 
-The program support output of all input and many output fields into two file formats. You can use file format of GMSH mesh generator and post-processor 
+The program supports output of all input and output fields into two file formats. You can use file format of GMSH mesh generator and post-processor 
 or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of the VTK data.
 
 The program is implemented in C/C++ using essentially PETSc library for linear algebra. All models can run in parallel using MPI environment, however, 
@@ -268,12 +268,11 @@ additional information during personalisation process. Whole process may take se
 On the Windows systems we require Powershell. Windows PowerShell needs to be installed on Windows Server 2008 and Windows Vista only.
 It is already installed on Windows Server 2008 R2 and Windows 7 and higher. To install PowerShell follow instructions in 
 \href{https://msdn.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell}{Microsoft tutorial}.
-%\tbd{Is it standard part of which Windows or how it can be obtained.}
 
-Make sure \verb'powershell' command is in the system PATH. \href{http://www.powershelladmin.com/wiki/PowerShell_Executables_File_System_Locations}{Powershell executable location}
+Make sure \verb'powershell' command is in the system PATH. 
+\href{http://www.powershelladmin.com/wiki/PowerShell_Executables_File_System_Locations}{Powershell executable location}
  is determined by Windows version, but generally it is \\\verb'%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe'. To add
  this location to system PATH variable follow instructions \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft tutorial}.
-%\tbd{How} 
 
 To install Flow123d on Windows, first download the Windows installation package archive \verb'Flow123d-2.1.0-windows.zip' and extract it to any folder.
 This will create a directory \verb'Flow123d-2.1.0-windows' navigate to that directory and execute \verb'install.bat' file.
