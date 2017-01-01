@@ -8,6 +8,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 #include <fstream>
 
 #include "io/output_time.hh"
@@ -42,7 +43,7 @@ public:
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
-        this->_mesh = new Mesh();
+        this->_mesh = mesh_constructor();
         ifstream in(string(mesh_file).c_str());
         this->_mesh->read_gmsh_from_stream(in);
 
@@ -58,7 +59,7 @@ public:
     // initialize mesh with given yaml input
     void init_mesh(string input_yaml)
     {
-        auto in_rec = Input::ReaderToStorage(input_yaml, OutputTime::get_input_type(), Input::FileFormat::format_YAML)
+    	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_YAML)
         				.get_root_interface<Input::Record>();
         this->init_from_input("dummy_equation", *(this->_mesh), in_rec);
 
@@ -112,6 +113,8 @@ public:
 
 
 TEST_F(TestOutputVTK, write_data_ascii) {
+	//( const_cast<Input::Type::Instance &>(FieldAlgorithmBase<3, FieldValue<3>::VectorFixed >::get_input_type_instance()) ).finish(Input::Type::FinishType::root_of_generic);
+
 	this->init_mesh(test_output_time_ascii);
     this->current_step=1;
     this->write_data();

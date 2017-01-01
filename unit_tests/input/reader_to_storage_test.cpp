@@ -181,11 +181,11 @@ protected:
     };
 
     // overload parent class method in order to reset pointers
-    void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
+    void read_stream(istream &in, Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
     	this->try_transpose_read_ = false;
-    	Type::TypeBase::lazy_finish();
+    	root_type.finish();
     	ReaderToStorage::read_stream(in, root_type, format);
     }
 };
