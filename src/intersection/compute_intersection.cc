@@ -1124,12 +1124,6 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             unsigned int ip_idx = IP23_list.size()-1;
             //DebugOut().fmt("before: {} after: {} ip: {}\n", object_before_ip, object_after_ip, ip_idx);
             ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size()+1);
-            if (have_backlink(object_after_ip)) {
-                // target object is already target of other IP, so it must be source object
-                std::swap(object_before_ip, object_after_ip);
-            }
-            //DebugOut().fmt("_before: {} _after: {}\n", object_before_ip, object_after_ip);
-            ASSERT_DBG( ! have_backlink(object_after_ip) ); // at least one could be target object
             set_links(object_before_ip, ip_idx, object_after_ip);
         }
 
@@ -1190,52 +1184,34 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
 	        }
 
-	        if (IP12.dim_B() < 2 ) { // boundary of S2
+            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
+            IP23.set_topology_B(i_edge, edge_dim);
 
+            IP23_list.push_back(IP23);
+            unsigned int ip_idx = IP23_list.size()-1;
+
+
+	        if (IP12.dim_B() < 2 ) { // boundary of S2, these ICs are duplicate
 	            unsigned int s3_object = s3_dim_starts[edge_dim] + i_edge;
-
 	            if ( have_backlink(s3_object) ) {
-	                object_before_ip = s3_object;
-	                object_after_ip = face_pair[1];
+	                set_links(s3_object, ip_idx, face_pair[1]);
 	            } else {
-                    object_before_ip = face_pair[0];
-                    object_after_ip = s3_object;
+	                set_links(face_pair[0], ip_idx, s3_object);
 	            }
-
-	            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
-                IP23.set_topology_B(i_edge, edge_dim);
-
-	            IP23_list.push_back(IP23);
-	            unsigned int ip_idx = IP23_list.size()-1;
-	            set_links(object_before_ip, ip_idx, object_after_ip);
 
 	        } else { // interior of S2, just use the face pair
-	            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
-	            IP23.set_topology_B(i_edge, edge_dim);
-
-                IP23_list.push_back(IP23);
-	            unsigned int ip_idx = IP23_list.size()-1;
-
-	            if ( have_backlink(face_pair[1]) ) {
-                    object_next[ face_pair[1] ] = ip_idx;
-                    IP_next.push_back( face_pair[0] );
-	            } else {
 	                set_links(face_pair[0], ip_idx, face_pair[1]);
-	            }
 	        }
 	    }
 	}
 
 
-    // Return IPs in correct order
-
-
+    // Return IPs in correct order and remove duplicates
 	ASSERT_EQ(0, intersection.size());
 
-
-
     if (IP23_list.size() == 0) return; // empty intersection
-    // detect first IP, this needs to be done only in case of
+
+    // detect first IP, this needs to be done only in the case of
     // point or line intersections, where IPs links do not form closed cycle
     // Possibly we do this only if we detect such case through previous phases.
     vector<char> have_predecessor(IP23_list.size(), 0);

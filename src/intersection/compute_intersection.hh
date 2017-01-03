@@ -559,6 +559,12 @@ private:
      * if obj_after have null successor, set obj_after -> IP (backlink)
      */
     inline void set_links(uint obj_before_ip, uint ip_idx, uint obj_after_ip) {
+        if (have_backlink(obj_after_ip)) {
+            // target object is already target of other IP, so it must be source object
+            std::swap(obj_before_ip, obj_after_ip);
+        }
+        //DebugOut().fmt("_before: {} _after: {}\n", object_before_ip, object_after_ip);
+        ASSERT_DBG( ! have_backlink(obj_after_ip) ); // at least one could be target object
         object_next[obj_before_ip] = ip_idx;
         IP_next.push_back( obj_after_ip);
         if (object_next[obj_after_ip] == no_idx) {
